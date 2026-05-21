@@ -1,16 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T2T Field Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:sans-serif;padding:16px}
-.fg{width:100%;max-width:480px;position:relative}
+body{background:transparent}
+.fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
@@ -20,7 +14,7 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 .tb:hover:not(.dim){border-color:#378ADD!important}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
 .cover{background:#0F6E56;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
-.t2t{font-family:'Playfair Display',serif;font-size:96px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
+.t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
 .sub{font-size:17px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:20px}
 .rul{width:120px;height:.5px;background:#5DCAA5;margin-bottom:28px}
 .sm{font-size:11px;color:#9FE1CB;letter-spacing:5px;text-transform:uppercase;margin-bottom:8px}
@@ -108,55 +102,17 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 .xis{font-size:13px;color:var(--color-text-tertiary,#888);line-height:1.55}
 .xm{font-size:12px;font-style:italic;color:var(--color-text-tertiary,#888);text-align:center;padding:16px 0 4px}
 .fp{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);margin-bottom:28px;line-height:1.3}
-/* Auth */
-.auth-screen{position:fixed;inset:0;background:#0F6E56;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;z-index:1000}
-.auth-logo{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:10px}
-.auth-sub{font-size:14px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:8px}
-.auth-rul{width:100px;height:.5px;background:#5DCAA5;margin:0 auto 32px}
-.auth-form{width:100%;max-width:300px;display:flex;flex-direction:column;gap:12px}
-.auth-input{width:100%;padding:13px 16px;border-radius:8px;border:1px solid rgba(93,202,165,0.5);background:#fff;color:#0F6E56;font-size:15px;outline:none;transition:border-color .2s}
-.auth-input::placeholder{color:#aaa;font-style:italic}
-.auth-input:focus{border-color:#C9A87C}
-.auth-btn{width:100%;padding:14px 0;border-radius:8px;background:#C9A87C;border:none;color:#07402F;font-size:13px;font-weight:700;letter-spacing:4px;text-transform:uppercase;cursor:pointer;margin-top:4px;transition:background .2s}
-.auth-btn:hover{background:#d9b88c}
-.auth-toggle{font-size:12px;color:#9FE1CB;cursor:pointer;margin-top:10px;letter-spacing:1px}
-.auth-toggle:hover{color:#C9A87C}
-.auth-status{font-size:11px;color:#5DCAA5;letter-spacing:2px;min-height:18px;margin-top:2px}
-.auth-skip{font-size:11px;color:rgba(159,225,203,0.45);cursor:pointer;margin-top:20px;letter-spacing:3px;text-transform:uppercase;transition:color .2s}
-.auth-skip:hover{color:#9FE1CB}
-.user-pill{position:fixed;top:12px;right:12px;background:rgba(15,110,86,0.9);color:#9FE1CB;font-size:11px;letter-spacing:2px;padding:5px 10px;border-radius:20px;z-index:500;cursor:default}
 </style>
-</head>
-<body>
-
-<!-- AUTH SCREEN -->
-<div class="auth-screen" id="auth-screen">
-  <div class="auth-logo">T2T</div>
-  <div class="auth-sub">Thoughts to Things</div>
-  <div class="auth-rul"></div>
-  <div class="auth-form">
-    <input class="auth-input" id="auth-email" type="email" placeholder="your@email.com" autocomplete="email">
-    <input class="auth-input" id="auth-pass" type="password" placeholder="Password" autocomplete="current-password">
-    <button class="auth-btn" id="auth-submit">Begin Your Journey</button>
-    <div class="auth-toggle" id="auth-toggle-link">New traveler? Create your account</div>
-    <div class="auth-status" id="auth-status"></div>
-  </div>
-  <div class="auth-skip" id="auth-skip">Continue as guest &middot; data not saved</div>
-</div>
-
-<!-- USER PILL (shown after login) -->
-<div class="user-pill" id="user-pill" style="display:none"></div>
-
 <div class="fg" id="fg-root">
 
 <div class="sc" id="s-cover">
   <div class="card"><div class="cover">
-    <div class="t2t" data-text-id="title">T2T</div>
-    <div class="sub" data-text-id="subtitle">Thoughts to Things</div>
+    <div class="t2t" data-text-id="cover-title">T2T</div>
+    <div class="sub" data-text-id="cover-subtitle">Thoughts to Things</div>
     <div class="rul"></div>
-    <div class="sm" data-text-id="eyebrow">A Choose Your Own Adventure Experience</div>
-    <div class="aut" data-text-id="authors">By Larry Smithers &amp; Bill Fritsch</div>
-    <div class="tag" data-text-id="tagline">Every great journey starts with a single step.</div>
+    <div class="sm" data-text-id="cover-eyebrow">A Choose Your Own Adventure Experience</div>
+    <div class="aut" data-text-id="cover-authors">By Larry Smithers &amp; Bill Fritsch</div>
+    <div class="tag" data-text-id="cover-tagline">Every great journey starts with a single step.</div>
   </div></div>
   <div class="bar">
     <button class="tb dim">⬅️</button>
@@ -188,10 +144,10 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-cover-t2t">
   <div class="card rnd"><div class="sw">
-    <div class="se">What is T2T?</div>
-    <div class="sh">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
-    <div class="sb">Not a philosophy. Not something you have to believe in before it works. A system.</div>
-    <div class="sb">It works the first time you try it.</div>
+    <div class="se" data-text-id="t2t-eyebrow">What is T2T?</div>
+    <div class="sh" data-text-id="t2t-headline">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
+    <div class="sb" data-text-id="t2t-body1">Not a philosophy. Not something you have to believe in before it works. A system.</div>
+    <div class="sb" data-text-id="t2t-body2">It works the first time you try it.</div>
     <div class="sp"></div>
     <div class="bp">
       <button class="bb" id="b-t2t-back">⬅️</button>
@@ -206,11 +162,16 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-cover-goals">
   <div class="card rnd"><div class="sw" style="align-items:center;justify-content:center;text-align:center">
-    <div class="se" style="margin-bottom:20px">T2T Goals</div>
-    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px">May you find…</div>
-    <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gs">Inspiration</div><div class="gr"></div>
-    <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gs">Mastery</div><div class="gr"></div>
-    <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div><div class="gs">Joy in the process</div>
+    <div class="se" style="margin-bottom:20px" data-text-id="goals-eyebrow">T2T Goals</div>
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px" data-text-id="goals-intro">May you find…</div>
+    <div class="gi" data-text-id="goals-vision">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div>
+    <div class="gs" data-text-id="goals-vision-sub">Inspiration</div>
+    <div class="gr"></div>
+    <div class="gi" data-text-id="goals-excellence">The <span style="color:#993556">Excellence</span> to make it real.</div>
+    <div class="gs" data-text-id="goals-excellence-sub">Mastery</div>
+    <div class="gr"></div>
+    <div class="gi" data-text-id="goals-journey">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div>
+    <div class="gs" data-text-id="goals-journey-sub">Joy in the process</div>
     <div class="sp"></div>
     <div class="bp">
       <button class="bb" id="b-goals-back">⬅️</button>
@@ -249,10 +210,10 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-invention">
   <div class="card"><div class="ip">
-    <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.2;margin-bottom:24px" data-text-id="title">Every great invention started as a thought.</div>
-    <div style="font-size:18px;color:var(--color-text-primary,#111);line-height:1.9;margin-bottom:16px">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
-    <div style="font-size:18px;font-weight:600;color:var(--color-text-primary,#111);margin-bottom:18px">Every single one — thought first.</div>
-    <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7" data-text-id="body">And every one of them began the same way.<br>Someone answered one question:</div>
+    <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.2;margin-bottom:24px" data-text-id="invention-headline">Every great invention started as a thought.</div>
+    <div style="font-size:18px;color:var(--color-text-primary,#111);line-height:1.9;margin-bottom:16px" data-text-id="invention-examples">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
+    <div style="font-size:18px;font-weight:600;color:var(--color-text-primary,#111);margin-bottom:18px" data-text-id="invention-emphasis">Every single one — thought first.</div>
+    <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7" data-text-id="invention-close">And every one of them began the same way.<br>Someone answered one question:</div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-inv-back">⬅️</button>
@@ -283,10 +244,10 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-invention-thoughts">
   <div class="card rnd"><div class="sw">
-    <div class="se">Some thoughts about thoughts.</div>
-    <div class="sh">A thought is the beginning of everything.</div>
-    <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
-    <div class="sb">That's not mystical. That's just how things get made.</div>
+    <div class="se" data-text-id="ith-eyebrow">Some thoughts about thoughts.</div>
+    <div class="sh" data-text-id="ith-headline">A thought is the beginning of everything.</div>
+    <div class="sb" data-text-id="ith-body1">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
+    <div class="sb" data-text-id="ith-body2">That's not mystical. That's just how things get made.</div>
     <div class="sp"></div>
     <div class="bp">
       <button class="bb" id="b-ith-back">⬅️</button>
@@ -325,10 +286,10 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-want">
   <div class="card"><div class="ip">
-    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.15;margin-bottom:24px" data-text-id="title">What do you want?</div>
+    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.15;margin-bottom:24px" data-text-id="want-headline">What do you want?</div>
     <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:24px">
-    <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--color-text-secondary,#555);line-height:1.8;max-width:380px;margin-bottom:14px" data-text-id="subtitle">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
-    <div style="font-size:13px;color:var(--color-text-tertiary,#888)" data-text-id="caption">— Alfred E. Neuman</div>
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--color-text-secondary,#555);line-height:1.8;max-width:380px;margin-bottom:14px" data-text-id="want-quote">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
+    <div style="font-size:13px;color:var(--color-text-tertiary,#888)" data-text-id="want-attribution">— Alfred E. Neuman</div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-want-back">⬅️</button>
@@ -380,13 +341,13 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-know">
   <div class="card"><div class="ip">
-    <div class="ep">Do you know what you want?</div>
+    <div class="ep" data-text-id="know-eyebrow">Do you know what you want?</div>
     <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:28px">
-    <div class="fp" data-text-id="title">Do you know what you want?</div>
+    <div class="fp" data-text-id="know-question">Do you know what you want?</div>
     <div style="display:flex;gap:14px;justify-content:center">
-      <button id="b-know-no" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff" data-text-id="btn1">No</button>
-      <button id="b-know-sortof" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff" data-text-id="btn2">Sort of</button>
-      <button id="b-know-yes" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#0F6E56;color:#fff" data-text-id="btn3">Yes</button>
+      <button id="b-know-no" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff">No</button>
+      <button id="b-know-sortof" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
+      <button id="b-know-yes" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#0F6E56;color:#fff">Yes</button>
     </div>
   </div></div>
   <div class="bar">
@@ -442,20 +403,20 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-idea">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="iw">
-    <div class="it" data-text-id="title">💡 Idea</div><hr class="ir">
-    <div class="ig" data-text-id="subtitle">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
-    <button class="ib" id="b-capture-idea" data-text-id="btn1">Capture an Idea</button>
-    <button class="ib" id="b-sea-ideas" data-text-id="btn2">Sea of Ideas</button>
+    <div class="it" data-text-id="idea-icon">💡 Idea</div><hr class="ir">
+    <div class="ig" data-text-id="idea-description">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
+    <button class="ib" id="b-capture-idea" data-text-id="idea-btn-capture">Capture an Idea</button>
+    <button class="ib" id="b-sea-ideas" data-text-id="idea-btn-sea">My Sea of Ideas</button>
   </div></div>
   <div class="bar ibar"><button class="tb itb" id="b-idea-back">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-idea-capture">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="icw">
-    <div class="icl">Idea</div>
-    <div class="icit">💡 Idea</div>
+    <div class="icl" data-text-id="idea-capture-label">Idea</div>
+    <div class="icit" data-text-id="idea-capture-title">💡 Idea</div>
     <hr class="icr">
-    <div class="icq" data-text-id="subtitle">Ideas are so fragile. Write this one down before it's gone.</div>
+    <div class="icq" data-text-id="idea-capture-prompt">Ideas are so fragile. Write this one down before it's gone.</div>
     <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
     <div class="sp"></div>
   </div></div>
@@ -467,20 +428,20 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-journal">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="jw">
-    <div class="jt" data-text-id="title">✏️ Journal</div><hr class="jr">
-    <div class="jg" data-text-id="subtitle">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div>
-    <button class="jb" id="b-add-note" data-text-id="btn1">Add a Note to my Journal</button>
-    <button class="jb" id="b-view-journal" data-text-id="btn2">View My Journal</button>
+    <div class="jt" data-text-id="journal-icon">✏️ Journal</div><hr class="jr">
+    <div class="jg" data-text-id="journal-description">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div>
+    <button class="jb" id="b-add-note" data-text-id="journal-btn-add">Add a Note to my Journal</button>
+    <button class="jb" id="b-view-journal" data-text-id="journal-btn-view">View My Journal</button>
   </div></div>
   <div class="bar jbar"><button class="tb jtb" id="b-journal-back">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-journal-capture">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="jcw">
-    <div class="jcl">Journal</div>
-    <div class="jcit">✏️ Journal</div>
+    <div class="jcl" data-text-id="journal-capture-label">Journal</div>
+    <div class="jcit" data-text-id="journal-capture-title">✏️ Journal</div>
     <hr class="jcr">
-    <div class="jcq" data-text-id="subtitle">For collecting personal questions, comments, or thoughts.</div>
+    <div class="jcq" data-text-id="journal-capture-prompt">For collecting personal questions, comments, or thoughts.</div>
     <textarea class="jct" id="journal-text" placeholder="Notes:"></textarea>
     <div class="sp"></div>
   </div></div>
@@ -492,16 +453,16 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-misc">
   <div class="card rnd"><div class="xw">
-    <div class="xe">🌸 Misc</div>
-    <div class="xd" data-text-id="subtitle">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
-    <div class="xt" data-text-id="body">Like an Easter egg — those who look, find.</div>
+    <div class="xe" data-text-id="misc-eyebrow">🌸 Misc</div>
+    <div class="xd" data-text-id="misc-description">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
+    <div class="xt" data-text-id="misc-tagline">Like an Easter egg — those who look, find.</div>
     <hr class="xr">
     <div class="xi" id="b-authors">
       <div class="xii">👤</div>
-      <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
+      <div><div class="xit" data-text-id="misc-authors-title">Meet the authors</div><div class="xis" data-text-id="misc-authors-desc">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
     </div>
     <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
+    <div class="xm" data-text-id="misc-footer">More will appear here as the journey unfolds.</div>
     <div class="bp">
       <button class="bb" id="b-misc-back">⬅️</button>
       <button class="bb" id="b-misc-map">🗺️</button>
@@ -515,10 +476,10 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-authors">
   <div class="card rnd"><div class="sw">
-    <div class="se">Meet the authors</div>
-    <div class="sh" data-text-id="title">A revolution that started with a conversation.</div>
-    <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
-    <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
+    <div class="se" data-text-id="authors-eyebrow">Meet the authors</div>
+    <div class="sh" data-text-id="authors-headline">A revolution that started with a conversation.</div>
+    <div class="sb" data-text-id="authors-body1">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
+    <div class="sb" data-text-id="authors-body2">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
     <div class="sp"></div>
     <div class="bp">
       <button class="bb" id="b-aut-back">⬅️</button>
@@ -533,11 +494,11 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 
 <div class="sc" id="s-tools">
   <div class="card rnd"><div class="xw">
-    <div class="xe">🛠️ Tools</div>
-    <div class="xd" data-text-id="subtitle">Practical resources for the journey ahead.</div>
+    <div class="xe" data-text-id="tools-eyebrow">🛠️ Tools</div>
+    <div class="xd" data-text-id="tools-description">Practical resources for the journey ahead.</div>
     <hr class="xr">
     <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
+    <div class="xm" data-text-id="tools-footer">More will appear here as the journey unfolds.</div>
     <div class="bp">
       <button class="bb" id="b-tools-back">⬅️</button>
       <button class="bb" id="b-tools-map">🗺️</button>
@@ -552,73 +513,6 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
 </div>
 <script>
 (function(){
-  var SUPABASE_URL='https://jyvvbjxqmxdgsxfcrfdn.supabase.co';
-  var SUPABASE_ANON_KEY='sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh';
-  var currentUser=null, travelerId=null, isGuest=false;
-
-  function sbFetch(path,method,body,token){
-    var h={'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY};
-    if(token) h['Authorization']='Bearer '+token;
-    return fetch(SUPABASE_URL+path,{method:method||'GET',headers:h,body:body?JSON.stringify(body):undefined});
-  }
-
-  function setStatus(msg){var el=document.getElementById('auth-status');if(el)el.textContent=msg;}
-
-  function enterGuide(user,guest){
-    currentUser=user; isGuest=!!guest;
-    travelerId=user?(user.id||user.email):('guest-'+Date.now());
-    document.getElementById('auth-screen').style.display='none';
-    var pill=document.getElementById('user-pill');
-    if(pill){pill.style.display='block';pill.textContent=isGuest?'👤 Guest':'✔ '+(user&&user.email?user.email:'Traveler');}
-    nav('s-cover');
-  }
-
-  function saveEntry(type,text,ctx){
-    if(isGuest||!currentUser||!currentUser.access_token) return;
-    sbFetch('/rest/v1/journal_entries','POST',{
-      traveler_id:travelerId,entry:text,stage:'Introduction',page:ctx,
-      voice:type==='idea'?'Idea':'Journal',
-      idea:type==='idea'?text:null,
-      notes:type==='note'?text:null
-    },currentUser.access_token).catch(function(){});
-  }
-
-  var authMode='signin';
-  document.getElementById('auth-toggle-link').addEventListener('click',function(){
-    authMode=authMode==='signin'?'signup':'signin';
-    document.getElementById('auth-submit').textContent=authMode==='signup'?'Create Account':'Begin Your Journey';
-    this.textContent=authMode==='signup'?'Already have an account? Sign in':'New traveler? Create your account';
-    setStatus('');
-  });
-
-  document.getElementById('auth-submit').addEventListener('click',function(){
-    var email=document.getElementById('auth-email').value.trim();
-    var pass=document.getElementById('auth-pass').value;
-    if(!email||!pass){setStatus('Please enter email and password.');return;}
-    setStatus(authMode==='signup'?'Creating account…':'Signing in…');
-    var ep=authMode==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password';
-    sbFetch(ep,'POST',{email:email,password:pass})
-      .then(function(r){return r.json();})
-      .then(function(d){
-        if(d.error){setStatus(d.error_description||d.error||'Error — please try again.');return;}
-        var user=d.user||(d.session&&d.session.user)||{email:email};
-        if(d.access_token) user.access_token=d.access_token;
-        if(!user&&authMode==='signup'){setStatus('Check your email to confirm your account.');return;}
-        enterGuide(user,false);
-      })
-      .catch(function(){setStatus('Connection issue — entering as guest.');enterGuide(null,true);});
-  });
-
-  document.getElementById('auth-skip').addEventListener('click',function(){enterGuide(null,true);});
-
-  function notify(msg){
-    var n=document.createElement('div');
-    n.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0F6E56;color:#C9A87C;font-size:13px;letter-spacing:2px;padding:10px 20px;border-radius:20px;z-index:9999;font-family:sans-serif';
-    n.textContent=msg;document.body.appendChild(n);
-    setTimeout(function(){n.remove();},2500);
-  }
-
-  /* ── Nav engine ── */
   var cur='s-cover', prev='s-cover';
   var UTIL=['s-idea','s-idea-capture','s-journal','s-journal-capture','s-misc','s-authors','s-tools'];
   var ctxMap={'s-cover':'Field Guide','s-cover-mg':'Field Guide','s-cover-t2t':'Field Guide','s-cover-goals':'Field Guide','s-cover-map':'Field Guide','s-invention':'Every great invention started as a thought.','s-invention-mg':'Every great invention started as a thought.','s-invention-thoughts':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-want':'What do you want?','s-want-mg':'What do you want?','s-want-map':'What do you want?','s-know':'Do you know what you want?','s-know-mg':'Do you know what you want?','s-know-map':'Do you know what you want?'};
@@ -712,9 +606,9 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
   wire('b-wmap-back',    function(){ nav('s-want-mg'); });
   wire('b-know-back', function(){ nav('s-want'); });
   wire('b-know-mg',   function(){ nav('s-know-mg'); });
-  wire('b-know-no',     function(){ notify('Starting your Dream journey…'); });
-  wire('b-know-sortof', function(){ notify('Starting your Dream journey…'); });
-  wire('b-know-yes',    function(){ notify('Starting your Dream journey…'); });
+  wire('b-know-no',     function(){ sendPrompt('No [on: Do you know what you want?]'); });
+  wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
+  wire('b-know-yes',    function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
   wire('b-know-more',   function(){});
   wire('b-kmg-back',     function(){ nav('s-know'); });
   wire('b-kmg-map',      function(){ nav('s-know-map'); });
@@ -729,11 +623,11 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
   wire('tog-km-thing',   function(){ togglePh('km-thing'); });
   wire('b-kmap-back',    function(){ nav('s-know-mg'); });
   wire('b-capture-idea',      function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
-  wire('b-sea-ideas',         function(){ notify('💡 Your Sea of Ideas — coming soon'); });
+  wire('b-sea-ideas',         function(){ sendPrompt('💡 My Sea of Ideas [on: '+getCtx()+']'); });
   wire('b-idea-back',         function(){ nav(mgOrigin); });
   wire('b-idea-capture-back', function(){ nav('s-idea'); });
   wire('b-add-note',          function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
-  wire('b-view-journal',      function(){ notify('✏️ Your Journal — coming soon'); });
+  wire('b-view-journal',      function(){ sendPrompt('✏️ View My Journal [on: '+getCtx()+']'); });
   wire('b-journal-back',      function(){ nav(mgOrigin); });
   wire('b-journal-capture-back', function(){ nav('s-journal'); });
   wire('b-authors',      function(){ nav('s-authors'); });
@@ -770,7 +664,7 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
     var text=t.value.trim(); if(!text) return;
     var now=new Date();
     try{ window.storage&&window.storage.set('idea:'+now.getTime(),JSON.stringify({type:'idea',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
-    saveEntry('idea',text,getCtx()); notify('💡 Idea saved!');
+    sendPrompt('💡 Idea captured: '+text);
     nav('s-idea');
   });
   wire('b-save-journal', function(){
@@ -778,14 +672,9 @@ html,body{height:100%;background:#1a1a1a;display:flex;align-items:center;justify
     var text=t.value.trim(); if(!text) return;
     var now=new Date();
     try{ window.storage&&window.storage.set('note:'+now.getTime(),JSON.stringify({type:'note',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
-    saveEntry('note',text,getCtx()); notify('✏️ Journal note saved!');
+    sendPrompt('✏️ Journal note saved: '+text);
     nav('s-journal');
   });
   nav('s-cover');
 })();
 </script>
-
-<!-- ✳ Spec Panel -->
-<script src="/spec-panel.js"></script>
-</body>
-</html>
