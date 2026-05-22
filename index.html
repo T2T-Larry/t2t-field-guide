@@ -694,7 +694,7 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     sendPrompt('✏️ Journal note saved: '+text);
     nav('s-journal');
   });
-  nav('s-cover');
+  window.addEventListener('load', function(){ nav('s-cover'); });
 })();
 </script>
 <!-- ✳ Spec Panel --><script src="/spec-panel.js"></script>
