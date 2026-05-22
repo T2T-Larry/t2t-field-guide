@@ -30,7 +30,7 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.15);
       border: 1px solid rgba(255,255,255,0.35);
       display: flex;
       align-items: center;
