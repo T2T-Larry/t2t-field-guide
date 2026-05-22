@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T2T Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f5;
+  --color-text-primary: #111111;
+  --color-text-secondary: #555555;
+  --color-text-tertiary: #888888;
+  --color-border-primary: #cccccc;
+  --color-border-secondary: #dddddd;
+  --color-border-tertiary: #eeeeee;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f0f0}
+.fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto}
+.sc{display:none!important}
+.sc.active{display:flex!important;flex-direction:column}
+.card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.card.rnd{border-radius:12px}
+.bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px}
+.tb{width:80px;height:36px;background:#E6F1FB!important;border:1px solid #B5D4F4!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.tb:hover:not(.dim){border-color:#378ADD!important}
+.tb.dim{opacity:.32;cursor:default;pointer-events:none}
+.cover{background:#0F6E56;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
+.t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
+.sub{font-size:17px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:20px}
+.rul{width:120px;height:.5px;background:#5DCAA5;margin-bottom:28px}
+.sm{font-size:11px;color:#9FE1CB;letter-spacing:5px;text-transform:uppercase;margin-bottom:8px}
+.aut{font-size:12px;color:#9FE1CB;letter-spacing:3px;text-transform:uppercase;margin-bottom:36px}
+.tag{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#C9A87C}
+.ip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 40px;text-align:center;background:var(--color-background-primary,#fff)}
+.ep{font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:24px}
+.mgw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:var(--color-background-primary,#fff)}
+.mgh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:4px}
+.mgt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);line-height:1.5;margin-bottom:14px}
+.mgr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:10px}
+.mgl{font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:6px}
+.mglr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:2px}
+.mgs{display:flex;flex-direction:column;margin-bottom:14px}
+.mgi{display:flex;padding:10px 0;font-size:15px;color:var(--color-text-primary,#111);cursor:pointer;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--color-border-tertiary,#eee)}
+.mgi:last-child{border-bottom:none}.mgi:hover{color:#0F6E56}
+.arr{color:var(--color-text-tertiary,#888);font-size:13px}
+.sp{flex:1}
+.bp{background:#E6F1FB!important;border:.5px solid #B5D4F4!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin-top:16px}
+.bb{flex:1;height:36px;background:#ffffff!important;border:1px solid #B5D4F4!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.bb:hover{border-color:#378ADD!important}
+.sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
+.se{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:14px}
+.sh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);line-height:1.4;margin-bottom:10px}
+.sb{font-size:15px;color:var(--color-text-secondary,#555);line-height:1.75;margin-bottom:6px}
+.gi{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);line-height:1.5;margin-bottom:4px}
+.gs{font-size:14px;color:var(--color-text-secondary,#555);margin-bottom:18px}
+.gr{width:40px;border:none;border-top:1.5px solid var(--color-border-primary,#ccc);margin:0 auto 18px}
+.mw{flex:1;display:flex;flex-direction:column;padding:20px 28px;background:var(--color-background-primary,#fff)}
+.mt{font-size:19px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:2px}
+.mtt{font-size:12px;font-style:italic;color:var(--color-text-tertiary,#888);margin-bottom:10px}
+.mr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:12px}
+.pr{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;background:var(--color-background-secondary,#f5f5f5);margin-bottom:4px}
+.pr.tap{cursor:pointer}.pl2{font-size:13px;font-weight:500;color:var(--color-text-primary,#111)}
+.ptg{margin-left:auto;font-size:11px;color:var(--color-text-tertiary,#888)}
+.ps{padding-left:12px;display:flex;flex-direction:column;margin-bottom:4px}
+.st{font-size:12px;padding:4px 0;display:flex;align-items:baseline;gap:8px}
+.sn{font-size:11px;min-width:16px;text-align:right;color:var(--color-text-tertiary,#888)}
+.sl{flex:1;color:var(--color-text-tertiary,#888)}
+.st.here .sl{font-weight:600;color:#0F6E56;font-size:13px}
+.st.unv{opacity:.4}
+.cm{font-size:11px;font-style:italic;color:var(--color-text-tertiary,#888);padding:4px 0 4px 24px}
+.phd{display:none}
+.iw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 40px 24px;background:#EBF4FF}
+.it{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
+.ir{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:24px}
+.ig{font-size:13px;font-style:italic;color:#3A6080;line-height:1.6;margin-bottom:36px;max-width:340px}
+.ib{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:1.5px solid #A8CAFE!important;background:#ffffff!important;color:#1A3A5C!important;margin-bottom:14px;transition:border-color .15s;display:block}
+.ib:hover{border-color:#378ADD!important}
+.ibar{background:#c8e8df!important}
+.itb{background:#ffffff!important;border:1px solid #a8d8cc!important}
+.icw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#EBF4FF}
+.icl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
+.icit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
+.icr{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:16px}
+.icq{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#3A6080;margin-bottom:18px;line-height:1.6}
+.ict{width:100%;min-height:140px;background:#ffffff;border:1px solid #A8CAFE;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#1A3A5C;resize:none;line-height:1.7;outline:none}
+.save-btn{flex:1;height:36px;background:#ffffff!important;border:1px solid #a8d8cc!important;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#cccccc;pointer-events:none;transition:all .2s}
+.save-btn.active{color:#000000!important;border-color:#378ADD!important;pointer-events:auto}
+.jw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 40px 24px;background:#FDF6E8}
+.jt{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
+.jr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:24px}
+.jg{font-size:13px;font-style:italic;color:#7A5C3A;line-height:1.6;margin-bottom:36px;max-width:340px}
+.jb{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:1.5px solid #C9A87C!important;background:#ffffff!important;color:#3B2510!important;margin-bottom:14px;transition:border-color .15s;display:block}
+.jb:hover{border-color:#8B5E2A!important}
+.jbar{background:#C9A87C!important}
+.jtb{background:#ffffff!important;border:1px solid #A87C4A!important}
+.jcw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#FDF6E8}
+.jcl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
+.jcit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
+.jcr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:16px}
+.jcq{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#7A5C3A;margin-bottom:18px;line-height:1.6}
+.jct{width:100%;min-height:140px;background:#ffffff;border:1px solid #C9A87C;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#3B2510;resize:none;line-height:1.7;outline:none}
+.jsave-btn{flex:1;height:36px;background:#ffffff!important;border:1px solid #A87C4A!important;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#cccccc;pointer-events:none;transition:all .2s}
+.jsave-btn.active{color:#000000!important;border-color:#8B5E2A!important;pointer-events:auto}
+.xw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:var(--color-background-primary,#fff)}
+.xe{font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:10px}
+.xd{font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7;margin-bottom:6px}
+.xt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);margin-bottom:20px;line-height:1.5}
+.xr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:16px}
+.xi{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:.5px solid var(--color-border-tertiary,#eee);cursor:pointer}
+.xi:last-child{border-bottom:none}.xi:hover .xit{color:#0F6E56}
+.xii{font-size:20px;margin-top:2px;min-width:24px;text-align:center}
+.xit{font-size:15px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:3px}
+.xis{font-size:13px;color:var(--color-text-tertiary,#888);line-height:1.55}
+.xm{font-size:12px;font-style:italic;color:var(--color-text-tertiary,#888);text-align:center;padding:16px 0 4px}
+.fp{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);margin-bottom:28px;line-height:1.3}
+</style>
+</head>
+<body>
+<div class="fg" id="fg-root">
+
+<div class="sc" id="s-cover">
+  <div class="card"><div class="cover">
+    <div class="t2t" data-text-id="cover-title">T2T</div>
+    <div class="sub" data-text-id="cover-subtitle">Thoughts to Things</div>
+    <div class="rul"></div>
+    <div class="sm" data-text-id="cover-eyebrow">A Choose Your Own Adventure Experience</div>
+    <div class="aut" data-text-id="cover-authors">By Larry Smithers &amp; Bill Fritsch</div>
+    <div class="tag" data-text-id="cover-tagline">Every great journey starts with a single step.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb dim">⬅️</button>
+    <button class="tb" id="b-cover-mg">🔍</button>
+    <button class="tb" id="b-cover-next">➡️</button>
+  </div>
+</div>
+
+<div class="sc" id="s-cover-mg">
+  <div class="card rnd"><div class="mgw">
+    <div class="mgh">🔍 Details — Field Guide</div>
+    <div class="mgt">More about this page, plus places to keep what matters.</div>
+    <hr class="mgr"><div class="mgl">More</div><hr class="mglr">
+    <div class="mgs">
+      <div class="mgi" id="b-t2t"><span>🤔 What is T2T?</span><span class="arr">›</span></div>
+      <div class="mgi" id="b-goals"><span>🎯 T2T Goals</span><span class="arr">›</span></div>
+    </div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-cmg-back">⬅️</button>
+      <button class="bb" id="b-cmg-map">🗺️</button>
+      <button class="bb" id="b-cmg-idea">💡</button>
+      <button class="bb" id="b-cmg-journal">✏️</button>
+      <button class="bb" id="b-cmg-misc">🌸</button>
+      <button class="bb" id="b-cmg-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-cover-t2t">
+  <div class="card rnd"><div class="sw">
+    <div class="se" data-text-id="t2t-eyebrow">What is T2T?</div>
+    <div class="sh" data-text-id="t2t-headline">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
+    <div class="sb" data-text-id="t2t-body1">Not a philosophy. Not something you have to believe in before it works. A system.</div>
+    <div class="sb" data-text-id="t2t-body2">It works the first time you try it.</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-t2t-back">⬅️</button>
+      <button class="bb" id="b-t2t-map">🗺️</button>
+      <button class="bb" id="b-t2t-idea">💡</button>
+      <button class="bb" id="b-t2t-journal">✏️</button>
+      <button class="bb" id="b-t2t-misc">🌸</button>
+      <button class="bb" id="b-t2t-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-cover-goals">
+  <div class="card rnd"><div class="sw" style="align-items:center;justify-content:center;text-align:center">
+    <div class="se" style="margin-bottom:20px" data-text-id="goals-eyebrow">T2T Goals</div>
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px" data-text-id="goals-intro">May you find…</div>
+    <div class="gi" data-text-id="goals-vision">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div>
+    <div class="gs" data-text-id="goals-vision-sub">Inspiration</div>
+    <div class="gr"></div>
+    <div class="gi" data-text-id="goals-excellence">The <span style="color:#993556">Excellence</span> to make it real.</div>
+    <div class="gs" data-text-id="goals-excellence-sub">Mastery</div>
+    <div class="gr"></div>
+    <div class="gi" data-text-id="goals-journey">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div>
+    <div class="gs" data-text-id="goals-journey-sub">Joy in the process</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-goals-back">⬅️</button>
+      <button class="bb" id="b-goals-map">🗺️</button>
+      <button class="bb" id="b-goals-idea">💡</button>
+      <button class="bb" id="b-goals-journal">✏️</button>
+      <button class="bb" id="b-goals-misc">🌸</button>
+      <button class="bb" id="b-goals-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-cover-map">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
+    <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
+    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
+    <div class="ps">
+      <div class="st here"><span class="sn">📍</span><span class="sl">Field Guide</span></div>
+      <div class="st"><span class="sn">2.</span><span class="sl">Every great invention started as a thought.</span></div>
+      <div class="st unv"><span class="sn">3.</span><span class="sl">What do you want?</span></div>
+      <div class="st unv"><span class="sn">4.</span><span class="sl">Do you know what you want?</span></div>
+    </div>
+    <div class="pr tap" id="tog-cm-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="cm-dream-tog">▼</span></div>
+    <div id="cm-dream" class="ps phd"><div class="st unv"><span class="sn">💡</span><span class="sl">CREATE</span></div><div class="st unv"><span class="sn">∇</span><span class="sl">SHAPE</span></div><div class="st unv"><span class="sn">🗣️</span><span class="sl">SHARE</span></div><div class="st unv"><span class="sn">🔭</span><span class="sl">VISION ALIGN</span></div></div>
+    <div class="pr tap" id="tog-cm-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="cm-believe-tog">▼</span></div>
+    <div id="cm-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-cm-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="cm-dare-tog">▼</span></div>
+    <div id="cm-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-cm-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="cm-journey-tog">▼</span></div>
+    <div id="cm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-cm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="cm-thing-tog">▼</span></div>
+    <div id="cm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+  </div></div>
+  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-cmap-back" style="max-width:80px">⬅️</button></div>
+</div>
+
+<div class="sc" id="s-invention">
+  <div class="card"><div class="ip">
+    <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.2;margin-bottom:24px" data-text-id="invention-headline">Every great invention started as a thought.</div>
+    <div style="font-size:18px;color:var(--color-text-primary,#111);line-height:1.9;margin-bottom:16px" data-text-id="invention-examples">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
+    <div style="font-size:18px;font-weight:600;color:var(--color-text-primary,#111);margin-bottom:18px" data-text-id="invention-emphasis">Every single one — thought first.</div>
+    <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7" data-text-id="invention-close">And every one of them began the same way.<br>Someone answered one question:</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-inv-back">⬅️</button>
+    <button class="tb" id="b-inv-mg">🔍</button>
+    <button class="tb" id="b-inv-next">➡️</button>
+  </div>
+</div>
+
+<div class="sc" id="s-invention-mg">
+  <div class="card rnd"><div class="mgw">
+    <div class="mgh">🔍 Details — Every great invention…</div>
+    <div class="mgt">More about this page, plus places to keep what matters.</div>
+    <hr class="mgr"><div class="mgl">More</div><hr class="mglr">
+    <div class="mgs">
+      <div class="mgi" id="b-inv-thoughts"><span>Some thoughts about thoughts.</span><span class="arr">›</span></div>
+    </div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-img-back">⬅️</button>
+      <button class="bb" id="b-img-map">🗺️</button>
+      <button class="bb" id="b-img-idea">💡</button>
+      <button class="bb" id="b-img-journal">✏️</button>
+      <button class="bb" id="b-img-misc">🌸</button>
+      <button class="bb" id="b-img-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-invention-thoughts">
+  <div class="card rnd"><div class="sw">
+    <div class="se" data-text-id="ith-eyebrow">Some thoughts about thoughts.</div>
+    <div class="sh" data-text-id="ith-headline">A thought is the beginning of everything.</div>
+    <div class="sb" data-text-id="ith-body1">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
+    <div class="sb" data-text-id="ith-body2">That's not mystical. That's just how things get made.</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-ith-back">⬅️</button>
+      <button class="bb" id="b-ith-map">🗺️</button>
+      <button class="bb" id="b-ith-idea">💡</button>
+      <button class="bb" id="b-ith-journal">✏️</button>
+      <button class="bb" id="b-ith-misc">🌸</button>
+      <button class="bb" id="b-ith-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-invention-map">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
+    <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
+    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
+    <div class="ps">
+      <div class="st"><span class="sn">1.</span><span class="sl">Field Guide</span></div>
+      <div class="st here"><span class="sn">📍</span><span class="sl">Every great invention started as a thought.</span></div>
+      <div class="st unv"><span class="sn">3.</span><span class="sl">What do you want?</span></div>
+      <div class="st unv"><span class="sn">4.</span><span class="sl">Do you know what you want?</span></div>
+    </div>
+    <div class="pr tap" id="tog-im-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="im-dream-tog">▼</span></div>
+    <div id="im-dream" class="ps phd"><div class="st unv"><span class="sn">💡</span><span class="sl">CREATE</span></div><div class="st unv"><span class="sn">∇</span><span class="sl">SHAPE</span></div><div class="st unv"><span class="sn">🗣️</span><span class="sl">SHARE</span></div><div class="st unv"><span class="sn">🔭</span><span class="sl">VISION ALIGN</span></div></div>
+    <div class="pr tap" id="tog-im-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="im-believe-tog">▼</span></div>
+    <div id="im-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-im-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="im-dare-tog">▼</span></div>
+    <div id="im-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-im-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="im-journey-tog">▼</span></div>
+    <div id="im-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-im-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="im-thing-tog">▼</span></div>
+    <div id="im-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+  </div></div>
+  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-imap-back" style="max-width:80px">⬅️</button></div>
+</div>
+
+<div class="sc" id="s-want">
+  <div class="card"><div class="ip">
+    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.15;margin-bottom:24px" data-text-id="want-headline">What do you want?</div>
+    <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:24px">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--color-text-secondary,#555);line-height:1.8;max-width:380px;margin-bottom:14px" data-text-id="want-quote">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
+    <div style="font-size:13px;color:var(--color-text-tertiary,#888)" data-text-id="want-attribution">— Alfred E. Neuman</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-want-back">⬅️</button>
+    <button class="tb" id="b-want-mg">🔍</button>
+    <button class="tb" id="b-want-next">➡️</button>
+  </div>
+</div>
+
+<div class="sc" id="s-want-mg">
+  <div class="card rnd"><div class="mgw">
+    <div class="mgh">🔍 Details — What do you want?</div>
+    <div class="mgt">More about this page, plus places to keep what matters.</div>
+    <hr class="mgr">
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-wmg-back">⬅️</button>
+      <button class="bb" id="b-wmg-map">🗺️</button>
+      <button class="bb" id="b-wmg-idea">💡</button>
+      <button class="bb" id="b-wmg-journal">✏️</button>
+      <button class="bb" id="b-wmg-misc">🌸</button>
+      <button class="bb" id="b-wmg-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-want-map">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
+    <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
+    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
+    <div class="ps">
+      <div class="st"><span class="sn">1.</span><span class="sl">Field Guide</span></div>
+      <div class="st"><span class="sn">2.</span><span class="sl">Every great invention started as a thought.</span></div>
+      <div class="st here"><span class="sn">📍</span><span class="sl">What do you want?</span></div>
+      <div class="st unv"><span class="sn">4.</span><span class="sl">Do you know what you want?</span></div>
+    </div>
+    <div class="pr tap" id="tog-wm-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="wm-dream-tog">▼</span></div>
+    <div id="wm-dream" class="ps phd"><div class="st unv"><span class="sn">💡</span><span class="sl">CREATE</span></div><div class="st unv"><span class="sn">∇</span><span class="sl">SHAPE</span></div><div class="st unv"><span class="sn">🗣️</span><span class="sl">SHARE</span></div><div class="st unv"><span class="sn">🔭</span><span class="sl">VISION ALIGN</span></div></div>
+    <div class="pr tap" id="tog-wm-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="wm-believe-tog">▼</span></div>
+    <div id="wm-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-wm-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="wm-dare-tog">▼</span></div>
+    <div id="wm-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-wm-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="wm-journey-tog">▼</span></div>
+    <div id="wm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-wm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="wm-thing-tog">▼</span></div>
+    <div id="wm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+  </div></div>
+  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-wmap-back" style="max-width:80px">⬅️</button></div>
+</div>
+
+<div class="sc" id="s-know">
+  <div class="card"><div class="ip">
+    <div class="ep" data-text-id="know-eyebrow">Do you know what you want?</div>
+    <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:28px">
+    <div class="fp" data-text-id="know-question">Do you know what you want?</div>
+    <div style="display:flex;gap:14px;justify-content:center">
+      <button id="b-know-no" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff">No</button>
+      <button id="b-know-sortof" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
+      <button id="b-know-yes" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#0F6E56;color:#fff">Yes</button>
+    </div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-know-back">⬅️</button>
+    <button class="tb" id="b-know-mg">🔍</button>
+    <button class="tb dim">➡️</button>
+  </div>
+</div>
+
+<div class="sc" id="s-know-mg">
+  <div class="card rnd"><div class="mgw">
+    <div class="mgh">🔍 Details — Do you know what you want?</div>
+    <div class="mgt">More about this page, plus places to keep what matters.</div>
+    <hr class="mgr"><div class="mgl">More</div><hr class="mglr">
+    <div class="mgs">
+      <div class="mgi" id="b-know-more"><span>More content coming.</span><span class="arr">›</span></div>
+    </div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-kmg-back">⬅️</button>
+      <button class="bb" id="b-kmg-map">🗺️</button>
+      <button class="bb" id="b-kmg-idea">💡</button>
+      <button class="bb" id="b-kmg-journal">✏️</button>
+      <button class="bb" id="b-kmg-misc">🌸</button>
+      <button class="bb" id="b-kmg-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-know-map">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
+    <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
+    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
+    <div class="ps">
+      <div class="st"><span class="sn">1.</span><span class="sl">Field Guide</span></div>
+      <div class="st"><span class="sn">2.</span><span class="sl">Every great invention started as a thought.</span></div>
+      <div class="st"><span class="sn">3.</span><span class="sl">What do you want?</span></div>
+      <div class="st here"><span class="sn">📍</span><span class="sl">Do you know what you want?</span></div>
+    </div>
+    <div class="pr tap" id="tog-km-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="km-dream-tog">▼</span></div>
+    <div id="km-dream" class="ps phd"><div class="st unv"><span class="sn">💡</span><span class="sl">CREATE</span></div><div class="st unv"><span class="sn">∇</span><span class="sl">SHAPE</span></div><div class="st unv"><span class="sn">🗣️</span><span class="sl">SHARE</span></div><div class="st unv"><span class="sn">🔭</span><span class="sl">VISION ALIGN</span></div></div>
+    <div class="pr tap" id="tog-km-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="km-believe-tog">▼</span></div>
+    <div id="km-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-km-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="km-dare-tog">▼</span></div>
+    <div id="km-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-km-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="km-journey-tog">▼</span></div>
+    <div id="km-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-km-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="km-thing-tog">▼</span></div>
+    <div id="km-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+  </div></div>
+  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-kmap-back" style="max-width:80px">⬅️</button></div>
+</div>
+
+<div class="sc" id="s-idea">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="iw">
+    <div class="it" data-text-id="idea-icon">💡 Idea</div><hr class="ir">
+    <div class="ig" data-text-id="idea-description">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
+    <button class="ib" id="b-capture-idea" data-text-id="idea-btn-capture">Capture an Idea</button>
+    <button class="ib" id="b-sea-ideas" data-text-id="idea-btn-sea">My Sea of Ideas</button>
+  </div></div>
+  <div class="bar ibar"><button class="tb itb" id="b-idea-back">⬅️</button></div>
+</div>
+
+<div class="sc" id="s-idea-capture">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="icw">
+    <div class="icl" data-text-id="idea-capture-label">Idea</div>
+    <div class="icit" data-text-id="idea-capture-title">💡 Idea</div>
+    <hr class="icr">
+    <div class="icq" data-text-id="idea-capture-prompt">Ideas are so fragile. Write this one down before it's gone.</div>
+    <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar ibar">
+    <button class="tb itb" id="b-idea-capture-back">⬅️</button>
+    <button class="save-btn" id="b-save-idea">SAVE</button>
+  </div>
+</div>
+
+<div class="sc" id="s-journal">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jw">
+    <div class="jt" data-text-id="journal-icon">✏️ Journal</div><hr class="jr">
+    <div class="jg" data-text-id="journal-description">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div>
+    <button class="jb" id="b-add-note" data-text-id="journal-btn-add">Add a Note to my Journal</button>
+    <button class="jb" id="b-view-journal" data-text-id="journal-btn-view">View My Journal</button>
+  </div></div>
+  <div class="bar jbar"><button class="tb jtb" id="b-journal-back">⬅️</button></div>
+</div>
+
+<div class="sc" id="s-journal-capture">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jcw">
+    <div class="jcl" data-text-id="journal-capture-label">Journal</div>
+    <div class="jcit" data-text-id="journal-capture-title">✏️ Journal</div>
+    <hr class="jcr">
+    <div class="jcq" data-text-id="journal-capture-prompt">For collecting personal questions, comments, or thoughts.</div>
+    <textarea class="jct" id="journal-text" placeholder="Notes:"></textarea>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar jbar">
+    <button class="tb jtb" id="b-journal-capture-back">⬅️</button>
+    <button class="jsave-btn" id="b-save-journal">SAVE</button>
+  </div>
+</div>
+
+<div class="sc" id="s-misc">
+  <div class="card rnd"><div class="xw">
+    <div class="xe" data-text-id="misc-eyebrow">🌸 Misc</div>
+    <div class="xd" data-text-id="misc-description">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
+    <div class="xt" data-text-id="misc-tagline">Like an Easter egg — those who look, find.</div>
+    <hr class="xr">
+    <div class="xi" id="b-authors">
+      <div class="xii">👤</div>
+      <div><div class="xit" data-text-id="misc-authors-title">Meet the authors</div><div class="xis" data-text-id="misc-authors-desc">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
+    </div>
+    <div class="sp"></div>
+    <div class="xm" data-text-id="misc-footer">More will appear here as the journey unfolds.</div>
+    <div class="bp">
+      <button class="bb" id="b-misc-back">⬅️</button>
+      <button class="bb" id="b-misc-map">🗺️</button>
+      <button class="bb" id="b-misc-idea">💡</button>
+      <button class="bb" id="b-misc-journal">✏️</button>
+      <button class="bb" id="b-misc-misc">🌸</button>
+      <button class="bb" id="b-misc-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-authors">
+  <div class="card rnd"><div class="sw">
+    <div class="se" data-text-id="authors-eyebrow">Meet the authors</div>
+    <div class="sh" data-text-id="authors-headline">A revolution that started with a conversation.</div>
+    <div class="sb" data-text-id="authors-body1">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
+    <div class="sb" data-text-id="authors-body2">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-aut-back">⬅️</button>
+      <button class="bb" id="b-aut-map">🗺️</button>
+      <button class="bb" id="b-aut-idea">💡</button>
+      <button class="bb" id="b-aut-journal">✏️</button>
+      <button class="bb" id="b-aut-misc">🌸</button>
+      <button class="bb" id="b-aut-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="sc" id="s-tools">
+  <div class="card rnd"><div class="xw">
+    <div class="xe" data-text-id="tools-eyebrow">🛠️ Tools</div>
+    <div class="xd" data-text-id="tools-description">Practical resources for the journey ahead.</div>
+    <hr class="xr">
+    <div class="sp"></div>
+    <div class="xm" data-text-id="tools-footer">More will appear here as the journey unfolds.</div>
+    <div class="bp">
+      <button class="bb" id="b-tools-back">⬅️</button>
+      <button class="bb" id="b-tools-map">🗺️</button>
+      <button class="bb" id="b-tools-idea">💡</button>
+      <button class="bb" id="b-tools-journal">✏️</button>
+      <button class="bb" id="b-tools-misc">🌸</button>
+      <button class="bb" id="b-tools-tools">🛠️</button>
+    </div>
+  </div></div>
+</div>
+
+</div>
+<script>
+(function(){
+  var cur='s-cover', prev='s-cover';
+  var UTIL=['s-idea','s-idea-capture','s-journal','s-journal-capture','s-misc','s-authors','s-tools'];
+  var ctxMap={'s-cover':'Field Guide','s-cover-mg':'Field Guide','s-cover-t2t':'Field Guide','s-cover-goals':'Field Guide','s-cover-map':'Field Guide','s-invention':'Every great invention started as a thought.','s-invention-mg':'Every great invention started as a thought.','s-invention-thoughts':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-want':'What do you want?','s-want-mg':'What do you want?','s-want-map':'What do you want?','s-know':'Do you know what you want?','s-know-mg':'Do you know what you want?','s-know-map':'Do you know what you want?'};
+  var mgMap={'s-cover':'s-cover-mg','s-cover-mg':'s-cover-mg','s-cover-t2t':'s-cover-mg','s-cover-goals':'s-cover-mg','s-cover-map':'s-cover-mg','s-invention':'s-invention-mg','s-invention-mg':'s-invention-mg','s-invention-thoughts':'s-invention-mg','s-invention-map':'s-invention-mg','s-want':'s-want-mg','s-want-mg':'s-want-mg','s-want-map':'s-want-mg','s-know':'s-know-mg','s-know-mg':'s-know-mg','s-know-map':'s-know-mg','s-misc':'s-misc','s-authors':'s-misc','s-idea':'s-idea','s-idea-capture':'s-idea','s-journal':'s-journal','s-journal-capture':'s-journal','s-tools':'s-tools'};
+  var mapMap={'s-cover':'s-cover-map','s-cover-mg':'s-cover-map','s-cover-t2t':'s-cover-map','s-cover-goals':'s-cover-map','s-invention':'s-invention-map','s-invention-mg':'s-invention-map','s-invention-thoughts':'s-invention-map','s-want':'s-want-map','s-want-mg':'s-want-map','s-know':'s-know-map','s-know-mg':'s-know-map'};
+  function getCtx(){ return ctxMap[prev]||ctxMap[cur]||'Field Guide'; }
+  var MG=['s-cover-mg','s-cover-t2t','s-cover-goals','s-invention-mg','s-invention-thoughts','s-want-mg','s-know-mg'];
+  var mgOrigin='s-cover-mg';
+  function nav(id){
+    var t=document.getElementById(id); if(!t) return;
+    document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
+    t.classList.add('active');
+    if(UTIL.indexOf(id)===-1){ prev=cur; }
+    if(MG.indexOf(id)!==-1){ mgOrigin=id; }
+    cur=id;
+    window.scrollTo(0,0);
+  }
+  function navMap(){ nav(mapMap[prev]||mapMap[cur]||'s-cover-map'); }
+  function togglePh(id){
+    var el=document.getElementById(id), tog=document.getElementById(id+'-tog');
+    if(!el) return;
+    var hidden=el.classList.contains('phd')||el.style.display==='none';
+    if(hidden){ el.classList.remove('phd'); el.style.display='flex'; if(tog) tog.textContent='▲'; }
+    else { el.classList.add('phd'); el.style.display='none'; if(tog) tog.textContent='▼'; }
+  }
+  function wire(id, fn){ var el=document.getElementById(id); if(el) el.addEventListener('click', fn); }
+  wire('b-cover-mg',   function(){ nav('s-cover-mg'); });
+  wire('b-cover-next', function(){ nav('s-invention'); });
+  wire('b-t2t',          function(){ nav('s-cover-t2t'); });
+  wire('b-goals',        function(){ nav('s-cover-goals'); });
+  wire('b-cmg-back',     function(){ nav('s-cover'); });
+  wire('b-cmg-map',      function(){ nav('s-cover-map'); });
+  wire('b-cmg-idea',     function(){ nav('s-idea'); });
+  wire('b-cmg-journal',  function(){ nav('s-journal'); });
+  wire('b-cmg-misc',     function(){ nav('s-misc'); });
+  wire('b-cmg-tools',    function(){ nav('s-tools'); });
+  wire('b-t2t-back',    function(){ nav('s-cover-mg'); });
+  wire('b-t2t-map',     function(){ nav('s-cover-map'); });
+  wire('b-t2t-idea',    function(){ nav('s-idea'); });
+  wire('b-t2t-journal', function(){ nav('s-journal'); });
+  wire('b-t2t-misc',    function(){ nav('s-misc'); });
+  wire('b-t2t-tools',   function(){ nav('s-tools'); });
+  wire('b-goals-back',    function(){ nav('s-cover-mg'); });
+  wire('b-goals-map',     function(){ nav('s-cover-map'); });
+  wire('b-goals-idea',    function(){ nav('s-idea'); });
+  wire('b-goals-journal', function(){ nav('s-journal'); });
+  wire('b-goals-misc',    function(){ nav('s-misc'); });
+  wire('b-goals-tools',   function(){ nav('s-tools'); });
+  wire('tog-cm-dream',   function(){ togglePh('cm-dream'); });
+  wire('tog-cm-believe', function(){ togglePh('cm-believe'); });
+  wire('tog-cm-dare',    function(){ togglePh('cm-dare'); });
+  wire('tog-cm-journey', function(){ togglePh('cm-journey'); });
+  wire('tog-cm-thing',   function(){ togglePh('cm-thing'); });
+  wire('b-cmap-back',    function(){ nav('s-cover-mg'); });
+  wire('b-inv-back', function(){ nav('s-cover'); });
+  wire('b-inv-mg',   function(){ nav('s-invention-mg'); });
+  wire('b-inv-next', function(){ nav('s-want'); });
+  wire('b-inv-thoughts', function(){ nav('s-invention-thoughts'); });
+  wire('b-img-back',     function(){ nav('s-invention'); });
+  wire('b-img-map',      function(){ nav('s-invention-map'); });
+  wire('b-img-idea',     function(){ nav('s-idea'); });
+  wire('b-img-journal',  function(){ nav('s-journal'); });
+  wire('b-img-misc',     function(){ nav('s-misc'); });
+  wire('b-img-tools',    function(){ nav('s-tools'); });
+  wire('b-ith-back',    function(){ nav('s-invention-mg'); });
+  wire('b-ith-map',     function(){ nav('s-invention-map'); });
+  wire('b-ith-idea',    function(){ nav('s-idea'); });
+  wire('b-ith-journal', function(){ nav('s-invention-map'); });
+  wire('b-ith-misc',    function(){ nav('s-misc'); });
+  wire('b-ith-tools',   function(){ nav('s-tools'); });
+  wire('tog-im-dream',   function(){ togglePh('im-dream'); });
+  wire('tog-im-believe', function(){ togglePh('im-believe'); });
+  wire('tog-im-dare',    function(){ togglePh('im-dare'); });
+  wire('tog-im-journey', function(){ togglePh('im-journey'); });
+  wire('tog-im-thing',   function(){ togglePh('im-thing'); });
+  wire('b-imap-back',    function(){ nav('s-invention-mg'); });
+  wire('b-want-back', function(){ nav('s-invention'); });
+  wire('b-want-mg',   function(){ nav('s-want-mg'); });
+  wire('b-want-next', function(){ nav('s-know'); });
+  wire('b-wmg-back',     function(){ nav('s-want'); });
+  wire('b-wmg-map',      function(){ nav('s-want-map'); });
+  wire('b-wmg-idea',     function(){ nav('s-idea'); });
+  wire('b-wmg-journal',  function(){ nav('s-journal'); });
+  wire('b-wmg-misc',     function(){ nav('s-misc'); });
+  wire('b-wmg-tools',    function(){ nav('s-tools'); });
+  wire('tog-wm-dream',   function(){ togglePh('wm-dream'); });
+  wire('tog-wm-believe', function(){ togglePh('wm-believe'); });
+  wire('tog-wm-dare',    function(){ togglePh('wm-dare'); });
+  wire('tog-wm-journey', function(){ togglePh('wm-journey'); });
+  wire('tog-wm-thing',   function(){ togglePh('wm-thing'); });
+  wire('b-wmap-back',    function(){ nav('s-want-mg'); });
+  wire('b-know-back', function(){ nav('s-want'); });
+  wire('b-know-mg',   function(){ nav('s-know-mg'); });
+  wire('b-know-no',     function(){ sendPrompt('No [on: Do you know what you want?]'); });
+  wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
+  wire('b-know-yes',    function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
+  wire('b-know-more',   function(){});
+  wire('b-kmg-back',     function(){ nav('s-know'); });
+  wire('b-kmg-map',      function(){ nav('s-know-map'); });
+  wire('b-kmg-idea',     function(){ nav('s-idea'); });
+  wire('b-kmg-journal',  function(){ nav('s-journal'); });
+  wire('b-kmg-misc',     function(){ nav('s-misc'); });
+  wire('b-kmg-tools',    function(){ nav('s-tools'); });
+  wire('tog-km-dream',   function(){ togglePh('km-dream'); });
+  wire('tog-km-believe', function(){ togglePh('km-believe'); });
+  wire('tog-km-dare',    function(){ togglePh('km-dare'); });
+  wire('tog-km-journey', function(){ togglePh('km-journey'); });
+  wire('tog-km-thing',   function(){ togglePh('km-thing'); });
+  wire('b-kmap-back',    function(){ nav('s-know-mg'); });
+  wire('b-capture-idea',      function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
+  wire('b-sea-ideas',         function(){ sendPrompt('💡 My Sea of Ideas [on: '+getCtx()+']'); });
+  wire('b-idea-back',         function(){ nav(mgOrigin); });
+  wire('b-idea-capture-back', function(){ nav('s-idea'); });
+  wire('b-add-note',          function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
+  wire('b-view-journal',      function(){ sendPrompt('✏️ View My Journal [on: '+getCtx()+']'); });
+  wire('b-journal-back',      function(){ nav(mgOrigin); });
+  wire('b-journal-capture-back', function(){ nav('s-journal'); });
+  wire('b-authors',      function(){ nav('s-authors'); });
+  wire('b-misc-back',    function(){ nav(mgOrigin); });
+  wire('b-misc-map',     navMap);
+  wire('b-misc-idea',    function(){ nav('s-idea'); });
+  wire('b-misc-journal', function(){ nav('s-journal'); });
+  wire('b-misc-misc',    function(){ nav('s-misc'); });
+  wire('b-misc-tools',   function(){ nav('s-tools'); });
+  wire('b-aut-back',    function(){ nav('s-misc'); });
+  wire('b-aut-map',     navMap);
+  wire('b-aut-idea',    function(){ nav('s-idea'); });
+  wire('b-aut-journal', function(){ nav('s-journal'); });
+  wire('b-aut-misc',    function(){ nav('s-misc'); });
+  wire('b-aut-tools',   function(){ nav('s-tools'); });
+  wire('b-tools-back',    function(){ nav(mgOrigin); });
+  wire('b-tools-map',     navMap);
+  wire('b-tools-idea',    function(){ nav('s-idea'); });
+  wire('b-tools-journal', function(){ nav('s-journal'); });
+  wire('b-tools-misc',    function(){ nav('s-misc'); });
+  wire('b-tools-tools',   function(){ nav('s-tools'); });
+  var ideaTA=document.getElementById('idea-text');
+  if(ideaTA) ideaTA.addEventListener('input',function(){
+    var b=document.getElementById('b-save-idea');
+    if(b) b.classList.toggle('active', this.value.trim().length>0);
+  });
+  var journalTA=document.getElementById('journal-text');
+  if(journalTA) journalTA.addEventListener('input',function(){
+    var b=document.getElementById('b-save-journal');
+    if(b) b.classList.toggle('active', this.value.trim().length>0);
+  });
+  wire('b-save-idea', function(){
+    var t=document.getElementById('idea-text'); if(!t) return;
+    var text=t.value.trim(); if(!text) return;
+    var now=new Date();
+    try{ window.storage&&window.storage.set('idea:'+now.getTime(),JSON.stringify({type:'idea',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
+    sendPrompt('💡 Idea captured: '+text);
+    nav('s-idea');
+  });
+  wire('b-save-journal', function(){
+    var t=document.getElementById('journal-text'); if(!t) return;
+    var text=t.value.trim(); if(!text) return;
+    var now=new Date();
+    try{ window.storage&&window.storage.set('note:'+now.getTime(),JSON.stringify({type:'note',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
+    sendPrompt('✏️ Journal note saved: '+text);
+    nav('s-journal');
+  });
+  nav('s-cover');
+})();
+</script>
+<!-- ✳ Spec Panel --><script src="/spec-panel.js"></script>
+</body>
+</html>
