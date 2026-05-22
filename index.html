@@ -22,8 +22,8 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
 .fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto}
-.sc{display:flex;flex-direction:column}
-
+.sc{display:none!important}
+.sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
 .card.rnd{border-radius:12px}
 .bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px}
