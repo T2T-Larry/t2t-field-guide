@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T2T Field Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
@@ -103,6 +109,8 @@ body{background:transparent}
 .xm{font-size:12px;font-style:italic;color:var(--color-text-tertiary,#888);text-align:center;padding:16px 0 4px}
 .fp{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);margin-bottom:28px;line-height:1.3}
 </style>
+</head>
+<body>
 <div class="fg" id="fg-root">
 
 <div class="sc" id="s-cover">
@@ -580,7 +588,7 @@ body{background:transparent}
   wire('b-ith-back',    function(){ nav('s-invention-mg'); });
   wire('b-ith-map',     function(){ nav('s-invention-map'); });
   wire('b-ith-idea',    function(){ nav('s-idea'); });
-  wire('b-ith-journal', function(){ nav('s-journal'); });
+  wire('b-ith-journal', function(){ nav('s-invention-map'); });
   wire('b-ith-misc',    function(){ nav('s-misc'); });
   wire('b-ith-tools',   function(){ nav('s-tools'); });
   wire('tog-im-dream',   function(){ togglePh('im-dream'); });
@@ -678,3 +686,6 @@ body{background:transparent}
   nav('s-cover');
 })();
 </script>
+<!-- ✳ Spec Panel --><script src="/spec-panel.js"></script>
+</body>
+</html>
