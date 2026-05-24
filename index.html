@@ -1,35 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T2T Field Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <style>
-:root{
-  --font-sans: system-ui, -apple-system, sans-serif;
-  --color-background-primary: #ffffff;
-  --color-background-secondary: #f5f5f5;
-  --color-text-primary: #111111;
-  --color-text-secondary: #555555;
-  --color-text-tertiary: #888888;
-  --color-border-primary: #cccccc;
-  --color-border-secondary: #dddddd;
-  --color-border-tertiary: #eeeeee;
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
-.fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto}
+body{background:transparent}
+.fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:960px;margin:0 auto}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
 .card.rnd{border-radius:12px}
 .bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px}
-.tb{width:80px;height:36px;background:#E6F1FB!important;border:1px solid #B5D4F4!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.tb{width:80px;height:36px;background:#E6F1FB!important;border:1px solid #B5D4F4!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s;position:relative}
 .tb:hover:not(.dim){border-color:#378ADD!important}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
+.tb[title]:hover::after{content:attr(title);position:absolute;bottom:44px;left:50%;transform:translateX(-50%);background:#111;color:#fff;font-size:11px;letter-spacing:1px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none}
 .cover{background:#0F6E56;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
 .t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
 .sub{font-size:17px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:20px}
@@ -51,8 +35,9 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
 .arr{color:var(--color-text-tertiary,#888);font-size:13px}
 .sp{flex:1}
 .bp{background:#E6F1FB!important;border:.5px solid #B5D4F4!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin-top:16px}
-.bb{flex:1;height:36px;background:#ffffff!important;border:1px solid #B5D4F4!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.bb{flex:1;height:36px;background:#ffffff!important;border:1px solid #B5D4F4!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s;position:relative}
 .bb:hover{border-color:#378ADD!important}
+.bb[title]:hover::after{content:attr(title);position:absolute;bottom:44px;left:50%;transform:translateX(-50%);background:#111;color:#fff;font-size:11px;letter-spacing:1px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;z-index:10}
 .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
 .se{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:14px}
 .sh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);line-height:1.4;margin-bottom:10px}
@@ -119,24 +104,54 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
 .xis{font-size:13px;color:var(--color-text-tertiary,#888);line-height:1.55}
 .xm{font-size:12px;font-style:italic;color:var(--color-text-tertiary,#888);text-align:center;padding:16px 0 4px}
 .fp{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);margin-bottom:28px;line-height:1.3}
- </style>
-</head>
-<body>
+/* Journal Cover */
+.jcov{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 32px 24px;background:#FDF6E8;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,94,42,.12) 27px,rgba(139,94,42,.12) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(139,94,42,.08) 27px,rgba(139,94,42,.08) 28px)}
+.jcov-name{font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:#7A5C3A;margin-bottom:20px}
+.jcov-frame{border:2px solid #111;background:#fff;width:100%;max-width:300px;padding:24px 28px;text-align:center;margin-bottom:16px}
+.jcov-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#111;letter-spacing:1px;margin-bottom:6px}
+.jcov-proj{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#555;margin-bottom:14px}
+.jcov-rule{width:60px;border:none;border-top:1px solid #111;margin:0 auto 14px}
+.jcov-sub{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#333}
+.jcov-dates{display:inline-flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #C9A87C;border-radius:20px;padding:6px 16px;font-size:11px;color:#7A5C3A;letter-spacing:2px}
+/* Journal view */
+.jvw{flex:1;display:flex;flex-direction:column;padding:20px 28px;background:#FDF6E8}
+.jvh{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#3B2510;margin-bottom:2px}
+.jvs{font-size:12px;font-style:italic;color:#7A5C3A;margin-bottom:14px}
+.jvr{border:none;border-top:1px solid #C9A87C;margin-bottom:16px}
+.jv-empty{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#A87C4A;text-align:center;padding:40px 0;line-height:1.8}
+.jcard{background:#fff;border:1px solid #C9A87C;border-radius:10px;padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:border-color .15s}
+.jcard:hover{border-color:#8B5E2A}
+.jcard-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:6px}
+.jcard-text{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#3B2510;line-height:1.55;margin-bottom:10px}
+.jcard-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
+/* Journal entry */
+.jew{flex:1;display:flex;flex-direction:column;padding:24px 28px;background:#FDF6E8}
+.je-back-link{font-size:12px;color:#A87C4A;cursor:pointer;margin-bottom:18px;display:flex;align-items:center;gap:4px}
+.je-back-link:hover{color:#3B2510}
+.je-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:10px}
+.je-text{font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#3B2510;line-height:1.75;margin-bottom:20px}
+.je-rule{border:none;border-top:1px solid #C9A87C;margin-bottom:12px}
+.je-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
+/* Backpack bar */
+.bpbar{background:#2A4A3A!important}
+.bptb{background:#ffffff!important;border:1px solid #5A8A7A!important}
+</style>
+
 <div class="fg" id="fg-root">
 
 <div class="sc" id="s-cover">
   <div class="card"><div class="cover">
-    <div class="t2t" data-text-id="cover-title">T2T</div>
-    <div class="sub" data-text-id="cover-subtitle">Thoughts to Things</div>
+    <div class="t2t">T2T</div>
+    <div class="sub">Thoughts to Things</div>
     <div class="rul"></div>
-    <div class="sm" data-text-id="cover-eyebrow">A Choose Your Own Adventure Experience</div>
-    <div class="aut" data-text-id="cover-authors">By Larry Smithers &amp; Bill Fritsch</div>
-    <div class="tag" data-text-id="cover-tagline">Every great journey starts with a single step.</div>
+    <div class="sm">A Choose Your Own Adventure Experience</div>
+    <div class="aut">By Larry Smithers &amp; Bill Fritsch</div>
+    <div class="tag">Every great journey starts with a single step.</div>
   </div></div>
   <div class="bar">
-    <button class="tb dim">⬅️</button>
-    <button class="tb" id="b-cover-mg">🔍</button>
-    <button class="tb" id="b-cover-next">➡️</button>
+    <button class="tb dim" title="return">⬅️</button>
+    <button class="tb" id="b-cover-mg" title="details">🔍</button>
+    <button class="tb" id="b-cover-next" title="next">➡️</button>
   </div>
 </div>
 
@@ -151,54 +166,49 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     </div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-cmg-back">⬅️</button>
-      <button class="bb" id="b-cmg-map">🗺️</button>
-      <button class="bb" id="b-cmg-idea">💡</button>
-      <button class="bb" id="b-cmg-journal">✏️</button>
-      <button class="bb" id="b-cmg-misc">🌸</button>
-      <button class="bb" id="b-cmg-tools">🛠️</button>
+      <button class="bb" id="b-cmg-back" title="return">⬅️</button>
+      <button class="bb" id="b-cmg-map" title="map">🗺️</button>
+      <button class="bb" id="b-cmg-idea" title="idea">💡</button>
+      <button class="bb" id="b-cmg-journal" title="journal">✏️</button>
+      <button class="bb" id="b-cmg-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-cmg-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-cover-t2t">
   <div class="card rnd"><div class="sw">
-    <div class="se" data-text-id="t2t-eyebrow">What is T2T?</div>
-    <div class="sh" data-text-id="t2t-headline">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
-    <div class="sb" data-text-id="t2t-body1">Not a philosophy. Not something you have to believe in before it works. A system.</div>
-    <div class="sb" data-text-id="t2t-body2">It works the first time you try it.</div>
+    <div class="se">What is T2T?</div>
+    <div class="sh">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
+    <div class="sb">Not a philosophy. Not something you have to believe in before it works. A system.</div>
+    <div class="sb">It works the first time you try it.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-t2t-back">⬅️</button>
-      <button class="bb" id="b-t2t-map">🗺️</button>
-      <button class="bb" id="b-t2t-idea">💡</button>
-      <button class="bb" id="b-t2t-journal">✏️</button>
-      <button class="bb" id="b-t2t-misc">🌸</button>
-      <button class="bb" id="b-t2t-tools">🛠️</button>
+      <button class="bb" id="b-t2t-back" title="return">⬅️</button>
+      <button class="bb" id="b-t2t-map" title="map">🗺️</button>
+      <button class="bb" id="b-t2t-idea" title="idea">💡</button>
+      <button class="bb" id="b-t2t-journal" title="journal">✏️</button>
+      <button class="bb" id="b-t2t-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-t2t-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-cover-goals">
   <div class="card rnd"><div class="sw" style="align-items:center;justify-content:center;text-align:center">
-    <div class="se" style="margin-bottom:20px" data-text-id="goals-eyebrow">T2T Goals</div>
-    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px" data-text-id="goals-intro">May you find…</div>
-    <div class="gi" data-text-id="goals-vision">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div>
-    <div class="gs" data-text-id="goals-vision-sub">Inspiration</div>
-    <div class="gr"></div>
-    <div class="gi" data-text-id="goals-excellence">The <span style="color:#993556">Excellence</span> to make it real.</div>
-    <div class="gs" data-text-id="goals-excellence-sub">Mastery</div>
-    <div class="gr"></div>
-    <div class="gi" data-text-id="goals-journey">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div>
-    <div class="gs" data-text-id="goals-journey-sub">Joy in the process</div>
+    <div class="se" style="margin-bottom:20px;font-size:22px;font-weight:700;font-family:'Playfair Display',serif;letter-spacing:2px;color:var(--color-text-primary,#111)">T2T Goals</div>
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px">May you find…</div>
+    <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gr"></div>
+    <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gr"></div>
+    <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-goals-back">⬅️</button>
-      <button class="bb" id="b-goals-map">🗺️</button>
-      <button class="bb" id="b-goals-idea">💡</button>
-      <button class="bb" id="b-goals-journal">✏️</button>
-      <button class="bb" id="b-goals-misc">🌸</button>
-      <button class="bb" id="b-goals-tools">🛠️</button>
+      <button class="bb" id="b-goals-back" title="return">⬅️</button>
+      <button class="bb" id="b-goals-map" title="map">🗺️</button>
+      <button class="bb" id="b-goals-idea" title="idea">💡</button>
+      <button class="bb" id="b-goals-journal" title="journal">✏️</button>
+      <button class="bb" id="b-goals-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-goals-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
@@ -224,20 +234,21 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     <div class="pr tap" id="tog-cm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="cm-thing-tog">▼</span></div>
     <div id="cm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-cmap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar bpbar"><button class="bb bptb" id="b-cmap-back" style="max-width:80px" title="return">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-invention">
   <div class="card"><div class="ip">
-    <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.2;margin-bottom:24px" data-text-id="invention-headline">Every great invention started as a thought.</div>
-    <div style="font-size:18px;color:var(--color-text-primary,#111);line-height:1.9;margin-bottom:16px" data-text-id="invention-examples">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
-    <div style="font-size:18px;font-weight:600;color:var(--color-text-primary,#111);margin-bottom:18px" data-text-id="invention-emphasis">Every single one — thought first.</div>
-    <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7" data-text-id="invention-close">And every one of them began the same way.<br>Someone answered one question:</div>
+    <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.2;margin-bottom:24px">Every great invention started as a thought.</div>
+    <div style="font-size:18px;color:var(--color-text-primary,#111);line-height:1.9;margin-bottom:16px">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
+    <div style="font-size:18px;font-weight:600;color:var(--color-text-primary,#111);margin-bottom:18px">Every single one — thought first.</div>
+    <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7">And every one of them began the same way.<br>Someone answered one question:</div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-inv-back">⬅️</button>
-    <button class="tb" id="b-inv-mg">🔍</button>
-    <button class="tb" id="b-inv-next">➡️</button>
+    <button class="tb" id="b-inv-back" title="return">⬅️</button>
+    <button class="tb" id="b-inv-mg" title="details">🔍</button>
+    <button class="tb" id="b-inv-gem" title="gem">💎</button>
+    <button class="tb" id="b-inv-next" title="next">➡️</button>
   </div>
 </div>
 
@@ -251,30 +262,30 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     </div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-img-back">⬅️</button>
-      <button class="bb" id="b-img-map">🗺️</button>
-      <button class="bb" id="b-img-idea">💡</button>
-      <button class="bb" id="b-img-journal">✏️</button>
-      <button class="bb" id="b-img-misc">🌸</button>
-      <button class="bb" id="b-img-tools">🛠️</button>
+      <button class="bb" id="b-img-back" title="return">⬅️</button>
+      <button class="bb" id="b-img-map" title="map">🗺️</button>
+      <button class="bb" id="b-img-idea" title="idea">💡</button>
+      <button class="bb" id="b-img-journal" title="journal">✏️</button>
+      <button class="bb" id="b-img-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-img-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-invention-thoughts">
   <div class="card rnd"><div class="sw">
-    <div class="se" data-text-id="ith-eyebrow">Some thoughts about thoughts.</div>
-    <div class="sh" data-text-id="ith-headline">A thought is the beginning of everything.</div>
-    <div class="sb" data-text-id="ith-body1">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
-    <div class="sb" data-text-id="ith-body2">That's not mystical. That's just how things get made.</div>
+    <div class="se">Some thoughts about thoughts.</div>
+    <div class="sh">A thought is the beginning of everything.</div>
+    <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
+    <div class="sb">That's not mystical. That's just how things get made.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-ith-back">⬅️</button>
-      <button class="bb" id="b-ith-map">🗺️</button>
-      <button class="bb" id="b-ith-idea">💡</button>
-      <button class="bb" id="b-ith-journal">✏️</button>
-      <button class="bb" id="b-ith-misc">🌸</button>
-      <button class="bb" id="b-ith-tools">🛠️</button>
+      <button class="bb" id="b-ith-back" title="return">⬅️</button>
+      <button class="bb" id="b-ith-map" title="map">🗺️</button>
+      <button class="bb" id="b-ith-idea" title="idea">💡</button>
+      <button class="bb" id="b-ith-journal" title="journal">✏️</button>
+      <button class="bb" id="b-ith-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-ith-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
@@ -300,20 +311,21 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     <div class="pr tap" id="tog-im-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="im-thing-tog">▼</span></div>
     <div id="im-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-imap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar bpbar"><button class="bb bptb" id="b-imap-back" style="max-width:80px" title="return">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-want">
   <div class="card"><div class="ip">
-    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.15;margin-bottom:24px" data-text-id="want-headline">What do you want?</div>
+    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--color-text-primary,#111);line-height:1.15;margin-bottom:24px">What do you want?</div>
     <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:24px">
-    <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--color-text-secondary,#555);line-height:1.8;max-width:380px;margin-bottom:14px" data-text-id="want-quote">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
-    <div style="font-size:13px;color:var(--color-text-tertiary,#888)" data-text-id="want-attribution">— Alfred E. Neuman</div>
+    <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--color-text-secondary,#555);line-height:1.8;max-width:380px;margin-bottom:14px">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
+    <div style="font-size:13px;color:var(--color-text-tertiary,#888)">— Alfred E. Neuman</div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-want-back">⬅️</button>
-    <button class="tb" id="b-want-mg">🔍</button>
-    <button class="tb" id="b-want-next">➡️</button>
+    <button class="tb" id="b-want-back" title="return">⬅️</button>
+    <button class="tb" id="b-want-mg" title="details">🔍</button>
+    <button class="tb" id="b-want-gem" title="gem">💎</button>
+    <button class="tb" id="b-want-next" title="next">➡️</button>
   </div>
 </div>
 
@@ -324,12 +336,12 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     <hr class="mgr">
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-wmg-back">⬅️</button>
-      <button class="bb" id="b-wmg-map">🗺️</button>
-      <button class="bb" id="b-wmg-idea">💡</button>
-      <button class="bb" id="b-wmg-journal">✏️</button>
-      <button class="bb" id="b-wmg-misc">🌸</button>
-      <button class="bb" id="b-wmg-tools">🛠️</button>
+      <button class="bb" id="b-wmg-back" title="return">⬅️</button>
+      <button class="bb" id="b-wmg-map" title="map">🗺️</button>
+      <button class="bb" id="b-wmg-idea" title="idea">💡</button>
+      <button class="bb" id="b-wmg-journal" title="journal">✏️</button>
+      <button class="bb" id="b-wmg-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-wmg-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
@@ -355,14 +367,14 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     <div class="pr tap" id="tog-wm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="wm-thing-tog">▼</span></div>
     <div id="wm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-wmap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar bpbar"><button class="bb bptb" id="b-wmap-back" style="max-width:80px" title="return">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-know">
   <div class="card"><div class="ip">
-    <div class="ep" data-text-id="know-eyebrow">Do you know what you want?</div>
+    <div class="ep">Do you know what you want?</div>
     <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:28px">
-    <div class="fp" data-text-id="know-question">Do you know what you want?</div>
+    <div class="fp">Do you know what you want?</div>
     <div style="display:flex;gap:14px;justify-content:center">
       <button id="b-know-no" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff">No</button>
       <button id="b-know-sortof" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
@@ -370,9 +382,10 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     </div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-know-back">⬅️</button>
-    <button class="tb" id="b-know-mg">🔍</button>
-    <button class="tb dim">➡️</button>
+    <button class="tb" id="b-know-back" title="return">⬅️</button>
+    <button class="tb" id="b-know-mg" title="details">🔍</button>
+    <button class="tb" id="b-know-gem" title="gem">💎</button>
+    <button class="tb dim" title="next">➡️</button>
   </div>
 </div>
 
@@ -386,12 +399,12 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     </div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-kmg-back">⬅️</button>
-      <button class="bb" id="b-kmg-map">🗺️</button>
-      <button class="bb" id="b-kmg-idea">💡</button>
-      <button class="bb" id="b-kmg-journal">✏️</button>
-      <button class="bb" id="b-kmg-misc">🌸</button>
-      <button class="bb" id="b-kmg-tools">🛠️</button>
+      <button class="bb" id="b-kmg-back" title="return">⬅️</button>
+      <button class="bb" id="b-kmg-map" title="map">🗺️</button>
+      <button class="bb" id="b-kmg-idea" title="idea">💡</button>
+      <button class="bb" id="b-kmg-journal" title="journal">✏️</button>
+      <button class="bb" id="b-kmg-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-kmg-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
@@ -417,114 +430,168 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     <div class="pr tap" id="tog-km-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="km-thing-tog">▼</span></div>
     <div id="km-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#c8e8df!important"><button class="bb itb" id="b-kmap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar bpbar"><button class="bb bptb" id="b-kmap-back" style="max-width:80px" title="return">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-idea">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="iw">
-    <div class="it" data-text-id="idea-icon">💡 Idea</div><hr class="ir">
-    <div class="ig" data-text-id="idea-description">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
-    <button class="ib" id="b-capture-idea" data-text-id="idea-btn-capture">Capture an Idea</button>
-    <button class="ib" id="b-sea-ideas" data-text-id="idea-btn-sea">My Sea of Ideas</button>
+    <div class="it">💡 Idea</div><hr class="ir">
+    <div class="ig">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
+    <button class="ib" id="b-capture-idea">Capture an Idea</button>
+    <button class="ib" id="b-sea-ideas">My Sea of Ideas</button>
   </div></div>
-  <div class="bar ibar"><button class="tb itb" id="b-idea-back">⬅️</button></div>
+  <div class="bar ibar"><button class="tb itb" id="b-idea-back" title="return">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-idea-capture">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="icw">
-    <div class="icl" data-text-id="idea-capture-label">Idea</div>
-    <div class="icit" data-text-id="idea-capture-title">💡 Idea</div>
+    <div class="icl">Idea</div>
+    <div class="icit">💡 Idea</div>
     <hr class="icr">
-    <div class="icq" data-text-id="idea-capture-prompt">Ideas are so fragile. Write this one down before it's gone.</div>
+    <div class="icq">Ideas are so fragile. Write this one down before it's gone.</div>
     <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
     <div class="sp"></div>
   </div></div>
   <div class="bar ibar">
-    <button class="tb itb" id="b-idea-capture-back">⬅️</button>
+    <button class="tb itb" id="b-idea-capture-back" title="return">⬅️</button>
     <button class="save-btn" id="b-save-idea">SAVE</button>
   </div>
 </div>
 
 <div class="sc" id="s-journal">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="jw">
-    <div class="jt" data-text-id="journal-icon">✏️ Journal</div><hr class="jr">
-    <div class="jg" data-text-id="journal-description">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div>
-    <button class="jb" id="b-add-note" data-text-id="journal-btn-add">Add a Note to my Journal</button>
-    <button class="jb" id="b-view-journal" data-text-id="journal-btn-view">View My Journal</button>
+    <div class="jt">✏️ Journal</div><hr class="jr">
+    <div class="jg">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div>
+    <button class="jb" id="b-add-note">Add a Note to my Journal</button>
+    <button class="jb" id="b-view-journal">View My Journal</button>
   </div></div>
-  <div class="bar jbar"><button class="tb jtb" id="b-journal-back">⬅️</button></div>
+  <div class="bar jbar"><button class="tb jtb" id="b-journal-back" title="return">⬅️</button></div>
 </div>
 
 <div class="sc" id="s-journal-capture">
   <div class="card" style="border-radius:12px 12px 0 0"><div class="jcw">
-    <div class="jcl" data-text-id="journal-capture-label">Journal</div>
-    <div class="jcit" data-text-id="journal-capture-title">✏️ Journal</div>
+    <div class="jcl">Journal</div>
+    <div class="jcit">✏️ Journal</div>
     <hr class="jcr">
-    <div class="jcq" data-text-id="journal-capture-prompt">For collecting personal questions, comments, or thoughts.</div>
+    <div class="jcq">For collecting personal questions, comments, or thoughts.</div>
     <textarea class="jct" id="journal-text" placeholder="Notes:"></textarea>
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb jtb" id="b-journal-capture-back">⬅️</button>
+    <button class="tb jtb" id="b-journal-capture-back" title="return">⬅️</button>
     <button class="jsave-btn" id="b-save-journal">SAVE</button>
+  </div>
+</div>
+
+<div class="sc" id="s-journal-cover">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jcov">
+    <div class="jcov-name">LARRY SMITHERS</div>
+    <div class="jcov-frame">
+      <div class="jcov-title">Field Guide Journal</div>
+      <div class="jcov-proj">Project #1</div>
+      <hr class="jcov-rule">
+      <div class="jcov-sub">A journey from thought to thing.</div>
+    </div>
+    <div class="jcov-dates">
+      <span id="jcov-start">Started —</span>
+      <span style="color:#C9A87C">·</span>
+      <span id="jcov-end">Ongoing</span>
+    </div>
+  </div></div>
+  <div class="bar jbar">
+    <button class="tb jtb" id="b-jcov-back" title="return">⬅️</button>
+    <button class="tb jtb" id="b-jcov-entries" title="entries">📖</button>
+    <button class="tb jtb" id="b-jcov-add" title="add note">✏️</button>
+  </div>
+</div>
+
+<div class="sc" id="s-journal-view">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jvw">
+    <div class="jvh">Field Guide Journal</div>
+    <div class="jvs" id="jv-count">Your entries</div>
+    <hr class="jvr">
+    <div id="jv-entries-list">
+      <div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>
+    </div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar jbar">
+    <button class="tb jtb" id="b-jview-back" title="return">⬅️</button>
+    <button class="tb jtb" id="b-jview-cover" title="cover">📔</button>
+    <button class="tb jtb" id="b-jview-add" title="add note">✏️</button>
+  </div>
+</div>
+
+<div class="sc" id="s-journal-entry">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jew">
+    <div class="je-back-link" id="b-je-back">‹ Back to Journal</div>
+    <div class="je-num" id="je-num">001</div>
+    <div class="je-text" id="je-text"></div>
+    <hr class="je-rule">
+    <div class="je-eyebrow" id="je-eyebrow"></div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar jbar">
+    <button class="tb jtb" id="b-jentry-back" title="return">⬅️</button>
+    <button class="tb jtb" id="b-jentry-add" title="add note">✏️</button>
   </div>
 </div>
 
 <div class="sc" id="s-misc">
   <div class="card rnd"><div class="xw">
-    <div class="xe" data-text-id="misc-eyebrow">🌸 Misc</div>
-    <div class="xd" data-text-id="misc-description">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
-    <div class="xt" data-text-id="misc-tagline">Like an Easter egg — those who look, find.</div>
+    <div class="xe">🌸 Trivia</div>
+    <div class="xd">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
+    <div class="xt">Like an Easter egg — those who look, find.</div>
     <hr class="xr">
     <div class="xi" id="b-authors">
       <div class="xii">👤</div>
-      <div><div class="xit" data-text-id="misc-authors-title">Meet the authors</div><div class="xis" data-text-id="misc-authors-desc">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
+      <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
     </div>
     <div class="sp"></div>
-    <div class="xm" data-text-id="misc-footer">More will appear here as the journey unfolds.</div>
+    <div class="xm">More will appear here as the journey unfolds.</div>
     <div class="bp">
-      <button class="bb" id="b-misc-back">⬅️</button>
-      <button class="bb" id="b-misc-map">🗺️</button>
-      <button class="bb" id="b-misc-idea">💡</button>
-      <button class="bb" id="b-misc-journal">✏️</button>
-      <button class="bb" id="b-misc-misc">🌸</button>
-      <button class="bb" id="b-misc-tools">🛠️</button>
+      <button class="bb" id="b-misc-back" title="return">⬅️</button>
+      <button class="bb" id="b-misc-map" title="map">🗺️</button>
+      <button class="bb" id="b-misc-idea" title="idea">💡</button>
+      <button class="bb" id="b-misc-journal" title="journal">✏️</button>
+      <button class="bb" id="b-misc-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-misc-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-authors">
   <div class="card rnd"><div class="sw">
-    <div class="se" data-text-id="authors-eyebrow">Meet the authors</div>
-    <div class="sh" data-text-id="authors-headline">A revolution that started with a conversation.</div>
-    <div class="sb" data-text-id="authors-body1">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
-    <div class="sb" data-text-id="authors-body2">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
+    <div class="se">Meet the authors</div>
+    <div class="sh">A revolution that started with a conversation.</div>
+    <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
+    <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-aut-back">⬅️</button>
-      <button class="bb" id="b-aut-map">🗺️</button>
-      <button class="bb" id="b-aut-idea">💡</button>
-      <button class="bb" id="b-aut-journal">✏️</button>
-      <button class="bb" id="b-aut-misc">🌸</button>
-      <button class="bb" id="b-aut-tools">🛠️</button>
+      <button class="bb" id="b-aut-back" title="return">⬅️</button>
+      <button class="bb" id="b-aut-map" title="map">🗺️</button>
+      <button class="bb" id="b-aut-idea" title="idea">💡</button>
+      <button class="bb" id="b-aut-journal" title="journal">✏️</button>
+      <button class="bb" id="b-aut-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-aut-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-tools">
   <div class="card rnd"><div class="xw">
-    <div class="xe" data-text-id="tools-eyebrow">🛠️ Tools</div>
-    <div class="xd" data-text-id="tools-description">Practical resources for the journey ahead.</div>
+    <div class="xe">🛠️ Tools</div>
+    <div class="xd">Practical resources for the journey ahead.</div>
     <hr class="xr">
     <div class="sp"></div>
-    <div class="xm" data-text-id="tools-footer">More will appear here as the journey unfolds.</div>
+    <div class="xm">More will appear here as the journey unfolds.</div>
     <div class="bp">
-      <button class="bb" id="b-tools-back">⬅️</button>
-      <button class="bb" id="b-tools-map">🗺️</button>
-      <button class="bb" id="b-tools-idea">💡</button>
-      <button class="bb" id="b-tools-journal">✏️</button>
-      <button class="bb" id="b-tools-misc">🌸</button>
-      <button class="bb" id="b-tools-tools">🛠️</button>
+      <button class="bb" id="b-tools-back" title="return">⬅️</button>
+      <button class="bb" id="b-tools-map" title="map">🗺️</button>
+      <button class="bb" id="b-tools-idea" title="idea">💡</button>
+      <button class="bb" id="b-tools-journal" title="journal">✏️</button>
+      <button class="bb" id="b-tools-misc" title="trivia">🌸</button>
+      <button class="bb" id="b-tools-tools" title="tools">🛠️</button>
     </div>
   </div></div>
 </div>
@@ -533,13 +600,40 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
 <script>
 (function(){
   var cur='s-cover', prev='s-cover';
-  var UTIL=['s-idea','s-idea-capture','s-journal','s-journal-capture','s-misc','s-authors','s-tools'];
+  var UTIL=['s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-misc','s-authors','s-tools'];
   var ctxMap={'s-cover':'Field Guide','s-cover-mg':'Field Guide','s-cover-t2t':'Field Guide','s-cover-goals':'Field Guide','s-cover-map':'Field Guide','s-invention':'Every great invention started as a thought.','s-invention-mg':'Every great invention started as a thought.','s-invention-thoughts':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-want':'What do you want?','s-want-mg':'What do you want?','s-want-map':'What do you want?','s-know':'Do you know what you want?','s-know-mg':'Do you know what you want?','s-know-map':'Do you know what you want?'};
-  var mgMap={'s-cover':'s-cover-mg','s-cover-mg':'s-cover-mg','s-cover-t2t':'s-cover-mg','s-cover-goals':'s-cover-mg','s-cover-map':'s-cover-mg','s-invention':'s-invention-mg','s-invention-mg':'s-invention-mg','s-invention-thoughts':'s-invention-mg','s-invention-map':'s-invention-mg','s-want':'s-want-mg','s-want-mg':'s-want-mg','s-want-map':'s-want-mg','s-know':'s-know-mg','s-know-mg':'s-know-mg','s-know-map':'s-know-mg','s-misc':'s-misc','s-authors':'s-misc','s-idea':'s-idea','s-idea-capture':'s-idea','s-journal':'s-journal','s-journal-capture':'s-journal','s-tools':'s-tools'};
+  var mgMap={'s-cover':'s-cover-mg','s-cover-mg':'s-cover-mg','s-cover-t2t':'s-cover-mg','s-cover-goals':'s-cover-mg','s-cover-map':'s-cover-mg','s-invention':'s-invention-mg','s-invention-mg':'s-invention-mg','s-invention-thoughts':'s-invention-mg','s-invention-map':'s-invention-mg','s-want':'s-want-mg','s-want-mg':'s-want-mg','s-want-map':'s-want-mg','s-know':'s-know-mg','s-know-mg':'s-know-mg','s-know-map':'s-know-mg','s-misc':'s-misc','s-authors':'s-misc','s-idea':'s-idea','s-idea-capture':'s-idea','s-journal':'s-journal','s-journal-capture':'s-journal','s-journal-cover':'s-journal','s-journal-view':'s-journal','s-journal-entry':'s-journal-view','s-tools':'s-tools'};
   var mapMap={'s-cover':'s-cover-map','s-cover-mg':'s-cover-map','s-cover-t2t':'s-cover-map','s-cover-goals':'s-cover-map','s-invention':'s-invention-map','s-invention-mg':'s-invention-map','s-invention-thoughts':'s-invention-map','s-want':'s-want-map','s-want-mg':'s-want-map','s-know':'s-know-map','s-know-mg':'s-know-map'};
   function getCtx(){ return ctxMap[prev]||ctxMap[cur]||'Field Guide'; }
   var MG=['s-cover-mg','s-cover-t2t','s-cover-goals','s-invention-mg','s-invention-thoughts','s-want-mg','s-know-mg'];
   var mgOrigin='s-cover-mg';
+  function loadEntries(){ var e=[]; try{ var r=sessionStorage.getItem('jentries'); if(r) e=JSON.parse(r); }catch(ex){} return e; }
+  function saveEntryToSession(entry){ try{ var e=loadEntries(); e.push(entry); sessionStorage.setItem('jentries',JSON.stringify(e)); }catch(ex){} }
+  function renderJournalView(){
+    var entries=loadEntries(), list=document.getElementById('jv-entries-list'), count=document.getElementById('jv-count');
+    if(!list) return;
+    if(!entries||entries.length===0){ list.innerHTML='<div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>'; if(count) count.textContent='Your entries'; return; }
+    if(count) count.textContent=entries.length+' '+(entries.length===1?'entry':'entries');
+    list.innerHTML='';
+    entries.forEach(function(e,i){
+      var num=String(i+1).padStart(3,'0'), preview=e.text.length>120?e.text.substring(0,120)+'…':e.text, eyebrow=(e.date||'')+(e.phase?' · '+e.phase:'')+(e.page?' · '+e.page:'');
+      var card=document.createElement('div'); card.className='jcard';
+      card.innerHTML='<div class="jcard-num">'+num+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+eyebrow+'</div>';
+      card.addEventListener('click',(function(idx){ return function(){ openEntry(idx); }; })(i));
+      list.appendChild(card);
+    });
+  }
+  function openEntry(idx){
+    var entries=loadEntries(), e=entries[idx]; if(!e) return;
+    var num=String(idx+1).padStart(3,'0'), eyebrow=(e.date||'')+(e.phase?' · '+e.phase:'')+(e.page?' · '+e.page:'');
+    var el=document.getElementById('je-num'); if(el) el.textContent=num;
+    var et=document.getElementById('je-text'); if(et) et.textContent=e.text;
+    var ee=document.getElementById('je-eyebrow'); if(ee) ee.textContent=eyebrow;
+    nav('s-journal-entry');
+  }
+  function initJournalCover(){
+    try{ var s=sessionStorage.getItem('jstarted'); if(!s){ s=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); sessionStorage.setItem('jstarted',s); } var el=document.getElementById('jcov-start'); if(el) el.textContent='Started '+s; }catch(e){}
+  }
   function nav(id){
     var t=document.getElementById(id); if(!t) return;
     document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
@@ -547,17 +641,14 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
     if(UTIL.indexOf(id)===-1){ prev=cur; }
     if(MG.indexOf(id)!==-1){ mgOrigin=id; }
     cur=id;
+    if(id==='s-journal-view') renderJournalView();
+    if(id==='s-journal-cover') initJournalCover();
     window.scrollTo(0,0);
   }
   function navMap(){ nav(mapMap[prev]||mapMap[cur]||'s-cover-map'); }
-  function togglePh(id){
-    var el=document.getElementById(id), tog=document.getElementById(id+'-tog');
-    if(!el) return;
-    var hidden=el.classList.contains('phd')||el.style.display==='none';
-    if(hidden){ el.classList.remove('phd'); el.style.display='flex'; if(tog) tog.textContent='▲'; }
-    else { el.classList.add('phd'); el.style.display='none'; if(tog) tog.textContent='▼'; }
-  }
+  function togglePh(id){ var el=document.getElementById(id), tog=document.getElementById(id+'-tog'); if(!el) return; var hidden=el.classList.contains('phd')||el.style.display==='none'; if(hidden){ el.classList.remove('phd'); el.style.display='flex'; if(tog) tog.textContent='▲'; } else { el.classList.add('phd'); el.style.display='none'; if(tog) tog.textContent='▼'; } }
   function wire(id, fn){ var el=document.getElementById(id); if(el) el.addEventListener('click', fn); }
+  function gemPrompt(){ sendPrompt('💎 Gem [on: '+getCtx()+']'); }
   wire('b-cover-mg',   function(){ nav('s-cover-mg'); });
   wire('b-cover-next', function(){ nav('s-invention'); });
   wire('b-t2t',          function(){ nav('s-cover-t2t'); });
@@ -588,6 +679,7 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
   wire('b-cmap-back',    function(){ nav('s-cover-mg'); });
   wire('b-inv-back', function(){ nav('s-cover'); });
   wire('b-inv-mg',   function(){ nav('s-invention-mg'); });
+  wire('b-inv-gem',  gemPrompt);
   wire('b-inv-next', function(){ nav('s-want'); });
   wire('b-inv-thoughts', function(){ nav('s-invention-thoughts'); });
   wire('b-img-back',     function(){ nav('s-invention'); });
@@ -599,7 +691,7 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
   wire('b-ith-back',    function(){ nav('s-invention-mg'); });
   wire('b-ith-map',     function(){ nav('s-invention-map'); });
   wire('b-ith-idea',    function(){ nav('s-idea'); });
-  wire('b-ith-journal', function(){ nav('s-invention-map'); });
+  wire('b-ith-journal', function(){ nav('s-journal'); });
   wire('b-ith-misc',    function(){ nav('s-misc'); });
   wire('b-ith-tools',   function(){ nav('s-tools'); });
   wire('tog-im-dream',   function(){ togglePh('im-dream'); });
@@ -610,6 +702,7 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
   wire('b-imap-back',    function(){ nav('s-invention-mg'); });
   wire('b-want-back', function(){ nav('s-invention'); });
   wire('b-want-mg',   function(){ nav('s-want-mg'); });
+  wire('b-want-gem',  gemPrompt);
   wire('b-want-next', function(){ nav('s-know'); });
   wire('b-wmg-back',     function(){ nav('s-want'); });
   wire('b-wmg-map',      function(){ nav('s-want-map'); });
@@ -625,6 +718,7 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
   wire('b-wmap-back',    function(){ nav('s-want-mg'); });
   wire('b-know-back', function(){ nav('s-want'); });
   wire('b-know-mg',   function(){ nav('s-know-mg'); });
+  wire('b-know-gem',  gemPrompt);
   wire('b-know-no',     function(){ sendPrompt('No [on: Do you know what you want?]'); });
   wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
   wire('b-know-yes',    function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
@@ -646,9 +740,18 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
   wire('b-idea-back',         function(){ nav(mgOrigin); });
   wire('b-idea-capture-back', function(){ nav('s-idea'); });
   wire('b-add-note',          function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
-  wire('b-view-journal',      function(){ sendPrompt('✏️ View My Journal [on: '+getCtx()+']'); });
+  wire('b-view-journal',      function(){ nav('s-journal-cover'); });
   wire('b-journal-back',      function(){ nav(mgOrigin); });
   wire('b-journal-capture-back', function(){ nav('s-journal'); });
+  wire('b-jcov-back',    function(){ nav('s-journal'); });
+  wire('b-jcov-entries', function(){ nav('s-journal-view'); });
+  wire('b-jcov-add',     function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
+  wire('b-jview-back',  function(){ nav('s-journal'); });
+  wire('b-jview-cover', function(){ nav('s-journal-cover'); });
+  wire('b-jview-add',   function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
+  wire('b-je-back',      function(){ nav('s-journal-view'); });
+  wire('b-jentry-back',  function(){ nav('s-journal-view'); });
+  wire('b-jentry-add',   function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
   wire('b-authors',      function(){ nav('s-authors'); });
   wire('b-misc-back',    function(){ nav(mgOrigin); });
   wire('b-misc-map',     navMap);
@@ -669,34 +772,27 @@ body{background:#f0f0f1;display:flex;justify-content:center;padding:20px}
   wire('b-tools-misc',    function(){ nav('s-misc'); });
   wire('b-tools-tools',   function(){ nav('s-tools'); });
   var ideaTA=document.getElementById('idea-text');
-  if(ideaTA) ideaTA.addEventListener('input',function(){
-    var b=document.getElementById('b-save-idea');
-    if(b) b.classList.toggle('active', this.value.trim().length>0);
-  });
+  if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active', this.value.trim().length>0); });
   var journalTA=document.getElementById('journal-text');
-  if(journalTA) journalTA.addEventListener('input',function(){
-    var b=document.getElementById('b-save-journal');
-    if(b) b.classList.toggle('active', this.value.trim().length>0);
-  });
+  if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active', this.value.trim().length>0); });
   wire('b-save-idea', function(){
     var t=document.getElementById('idea-text'); if(!t) return;
     var text=t.value.trim(); if(!text) return;
     var now=new Date();
     try{ window.storage&&window.storage.set('idea:'+now.getTime(),JSON.stringify({type:'idea',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
-    sendPrompt('💡 Idea captured: '+text);
-    nav('s-idea');
+    sendPrompt('💡 Idea captured: '+text); nav('s-idea');
   });
   wire('b-save-journal', function(){
     var t=document.getElementById('journal-text'); if(!t) return;
     var text=t.value.trim(); if(!text) return;
     var now=new Date();
-    try{ window.storage&&window.storage.set('note:'+now.getTime(),JSON.stringify({type:'note',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
-    sendPrompt('✏️ Journal note saved: '+text);
-    nav('s-journal');
+    var date=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    var phase=ctxMap[prev]||'Introduction';
+    var entry={type:'note',text:text,date:date,phase:phase,page:getCtx(),timestamp:now.toLocaleString()};
+    try{ window.storage&&window.storage.set('note:'+now.getTime(),JSON.stringify(entry)); }catch(e){}
+    saveEntryToSession(entry);
+    sendPrompt('✏️ Journal note saved: '+text); nav('s-journal');
   });
-  window.addEventListener('load', function(){ nav('s-cover'); });
+  nav('s-cover');
 })();
 </script>
-<!-- ✳ Spec Panel --><script src="spec-panel.js"></script>
-</body>
-</html>
