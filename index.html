@@ -443,7 +443,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
     <div class="it">💡 Idea</div><hr class="ir">
     <div class="ig">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
     <button class="ib" id="b-capture-idea">Capture an Idea</button>
-    <button class="ib" id="b-sea-ideas">My Sea of Ideas</button>
+    <button class="ib" id="b-sea-ideas">Sea of Ideas</button>
   </div></div>
   <div class="bar ibar"><button class="tb itb" id="b-idea-back" title="return">⬅️</button></div>
 </div>
@@ -453,7 +453,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
     <div class="icl">Idea</div>
     <div class="icit">💡 Idea</div>
     <hr class="icr">
-    <div class="icq">Ideas are so fragile. Write this one down before it's gone.</div>
+    <div class="icq">Ideas are fragile. Write them down before they're gone.</div>
     <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
     <div class="sp"></div>
   </div></div>
@@ -746,7 +746,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
   wire('tog-km-thing',   function(){ togglePh('km-thing'); });
   wire('b-kmap-back',    function(){ nav('s-know-mg'); });
   wire('b-capture-idea',      function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
-  wire('b-sea-ideas',         function(){ sendPrompt('💡 My Sea of Ideas [on: '+getCtx()+']'); });
+  wire('b-sea-ideas',         function(){ sendPrompt('💡 Sea of Ideas [on: '+getCtx()+']'); });
   wire('b-idea-back',         function(){ nav(mgOrigin); });
   wire('b-idea-capture-back', function(){ nav('s-idea'); });
   wire('b-add-note',          function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; } var tp=document.getElementById('journal-topic'); if(tp) tp.value=''; if(t) t.focus(); var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
