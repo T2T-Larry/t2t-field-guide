@@ -31,11 +31,11 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
 .mglr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:2px}
 .mgs{display:flex;flex-direction:column;margin-bottom:14px}
 .mgi{display:flex;padding:10px 0;font-size:15px;color:var(--color-text-primary,#111);cursor:pointer;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--color-border-tertiary,#eee)}
-.mgi:last-child{border-bottom:none}.mgi:hover{color:#0F6E56}
+.mgi:last-child{border-bottom:none}.mgi{border-bottom:none!important}.mgi:hover{color:#0F6E56}
 .arr{color:var(--color-text-tertiary,#888);font-size:13px}
 .sp{flex:1}
-.bp{background:#E6F1FB!important;border:.5px solid #B5D4F4!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin-top:16px}
-.bb{flex:1;height:36px;background:#ffffff!important;border:1px solid #B5D4F4!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s;position:relative}
+.bp{background:#0a4a38!important;border:.5px solid #0a4a38!important;border-radius:0 0 12px 12px;padding:10px 16px;display:flex;gap:6px;margin-top:auto}
+.bb{flex:1;height:36px;background:#E6F1FB!important;border:1px solid #B5D4F4!important;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s;position:relative}
 .bb:hover{border-color:#378ADD!important}
 .bb[title]:hover::after{content:attr(title);position:absolute;bottom:44px;left:50%;transform:translateX(-50%);background:#111;color:#fff;font-size:11px;letter-spacing:1px;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;z-index:10}
 .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
@@ -133,7 +133,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
 .je-rule{border:none;border-top:1px solid #C9A87C;margin-bottom:12px}
 .je-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
 /* Backpack bar */
-.bpbar{background:#2A4A3A!important}
+.bpbar{background:#0a4a38!important}
 .bptb{background:#ffffff!important;border:1px solid #5A8A7A!important}
 </style>
 
@@ -151,6 +151,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
   <div class="bar">
     <button class="tb dim" title="return">⬅️</button>
     <button class="tb" id="b-cover-mg" title="details">🔍</button>
+    <button class="tb" id="b-cover-gem" title="gem">💎</button>
     <button class="tb" id="b-cover-next" title="next">➡️</button>
   </div>
 </div>
@@ -177,25 +178,27 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
 </div>
 
 <div class="sc" id="s-cover-t2t">
-  <div class="card rnd"><div class="sw">
-    <div class="se">What is T2T?</div>
+  <div class="card"><div class="sw" style="justify-content:center">
+    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:var(--color-text-primary,#111);margin-bottom:12px;line-height:1.1">What is T2T?</div>
+    <div style="width:80px;border:none;border-top:2px solid var(--color-border-primary,#ccc);margin:0 0 20px"></div>
     <div class="sh">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
     <div class="sb">Not a philosophy. Not something you have to believe in before it works. A system.</div>
     <div class="sb">It works the first time you try it.</div>
     <div class="sp"></div>
-    <div class="bp">
-      <button class="bb" id="b-t2t-back" title="return">⬅️</button>
-      <button class="bb" id="b-t2t-map" title="map">🗺️</button>
-      <button class="bb" id="b-t2t-idea" title="idea">💡</button>
-      <button class="bb" id="b-t2t-journal" title="journal">✏️</button>
-      <button class="bb" id="b-t2t-misc" title="trivia">🌸</button>
-      <button class="bb" id="b-t2t-tools" title="tools">🛠️</button>
-    </div>
   </div></div>
+  <div class="bar">
+    <button class="tb" id="b-t2t-back" title="return">⬅️</button>
+    <button class="tb" id="b-t2t-gem" title="gem">💎</button>
+    <button class="tb" id="b-t2t-map" title="map">🗺️</button>
+    <button class="tb" id="b-t2t-idea" title="idea">💡</button>
+    <button class="tb" id="b-t2t-journal" title="journal">✏️</button>
+    <button class="tb" id="b-t2t-misc" title="trivia">🌸</button>
+    <button class="tb" id="b-t2t-tools" title="tools">🛠️</button>
+  </div>
 </div>
 
 <div class="sc" id="s-cover-goals">
-  <div class="card"><div class="sw" style="align-items:center;justify-content:center;text-align:center">
+  <div class="card"><div class="sw" style="align-items:center;justify-content:center;text-align:center;padding:28px 40px">
     <div style="font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:var(--color-text-primary,#111);letter-spacing:2px;margin-bottom:12px">T2T Goals</div>
     <div style="width:80px;border:none;border-top:2px solid var(--color-border-primary,#ccc);margin:0 auto 24px"></div>
     <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px">May you find…</div>
@@ -652,6 +655,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
   function wire(id, fn){ var el=document.getElementById(id); if(el) el.addEventListener('click', fn); }
   function gemPrompt(){ sendPrompt('💎 Gem [on: '+getCtx()+']'); }
   wire('b-cover-mg',   function(){ nav('s-cover-mg'); });
+  wire('b-cover-gem',  gemPrompt);
   wire('b-cover-next', function(){ nav('s-invention'); });
   wire('b-t2t',          function(){ nav('s-cover-t2t'); });
   wire('b-goals',        function(){ nav('s-cover-goals'); });
@@ -662,6 +666,7 @@ body{background:#d0d0d0;min-height:100vh;display:flex;align-items:center;justify
   wire('b-cmg-misc',     function(){ nav('s-misc'); });
   wire('b-cmg-tools',    function(){ nav('s-tools'); });
   wire('b-t2t-back',    function(){ nav('s-cover-mg'); });
+  wire('b-t2t-gem',    gemPrompt);
   wire('b-t2t-map',     function(){ nav('s-cover-map'); });
   wire('b-t2t-idea',    function(){ nav('s-idea'); });
   wire('b-t2t-journal', function(){ nav('s-journal'); });
