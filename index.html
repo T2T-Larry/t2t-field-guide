@@ -113,7 +113,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .jct{width:100%;min-height:140px;background:#ffffff;border:1px solid #C9A87C;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#3B2510;resize:none;line-height:1.7;outline:none}
 .jsave-btn{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#cccccc;pointer-events:none;transition:all .2s}
 .jsave-btn.active{color:#000000!important;border-color:#8B5E2A!important;pointer-events:auto}
-.xw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:var(--color-background-primary,#fff)}
+.xw{flex:1;display:flex;flex-direction:column;background:var(--color-background-primary,#fff)}
 .xe{font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:10px}
 .xd{font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7;margin-bottom:6px}
 .xt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);margin-bottom:20px;line-height:1.5}
@@ -574,59 +574,62 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 
 <div class="sc" id="s-misc">
   <div class="card rnd"><div class="xw">
-    <div class="xe">🌸 Misc</div>
-    <div class="xd">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
-    <div class="xt">Like an Easter egg — those who look, find.</div>
-    <hr class="xr">
-    <div class="xi" id="b-authors">
-      <div class="xii">👤</div>
-      <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
-    </div>
-    <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
-    <div class="bp">
-      <button class="bb" id="b-misc-back"><span class="sp-emoji">⬅️</span></button>
-      <button class="bb" id="b-misc-map"><span class="sp-emoji">🗺️</span></button>
-      <button class="bb" id="b-misc-idea"><span class="sp-emoji">💡</span></button>
-      <button class="bb" id="b-misc-journal"><span class="sp-emoji">✏️</span></button>
-      <button class="bb" id="b-misc-misc"><span class="sp-emoji">🌸</span></button>
-      <button class="bb" id="b-misc-tools"><span class="sp-emoji">🛠️</span></button>
+    <div class="mg-head"><div class="mgh">🌸 Misc</div><div class="mgt">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div></div>
+    <div class="mg-band"><div class="mgl">Like an Easter egg — those who look, find.</div></div>
+    <div style="padding:0 28px;flex:1;display:flex;flex-direction:column">
+      <div class="xi" id="b-authors">
+        <div class="xii">👤</div>
+        <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
+      </div>
+      <div class="sp"></div>
+      <div class="xm">More will appear here as the journey unfolds.</div>
+      <div class="bp">
+        <button class="bb" id="b-misc-back"><span class="sp-emoji">⬅️</span></button>
+        <button class="bb" id="b-misc-map"><span class="sp-emoji">🗺️</span></button>
+        <button class="bb" id="b-misc-idea"><span class="sp-emoji">💡</span></button>
+        <button class="bb" id="b-misc-journal"><span class="sp-emoji">✏️</span></button>
+        <button class="bb" id="b-misc-misc"><span class="sp-emoji">🌸</span></button>
+        <button class="bb" id="b-misc-tools"><span class="sp-emoji">🛠️</span></button>
+      </div>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-authors">
-  <div class="card rnd"><div class="sw">
-    <div class="se">Meet the authors</div>
-    <div class="sh">A revolution that started with a conversation.</div>
-    <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
-    <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
-    <div class="sp"></div>
-    <div class="bp">
-      <button class="bb" id="b-aut-back"><span class="sp-emoji">⬅️</span></button>
-      <button class="bb" id="b-aut-map"><span class="sp-emoji">🗺️</span></button>
-      <button class="bb" id="b-aut-idea"><span class="sp-emoji">💡</span></button>
-      <button class="bb" id="b-aut-journal"><span class="sp-emoji">✏️</span></button>
-      <button class="bb" id="b-aut-misc"><span class="sp-emoji">🌸</span></button>
-      <button class="bb" id="b-aut-tools"><span class="sp-emoji">🛠️</span></button>
+  <div class="card rnd"><div class="xw">
+    <div class="mg-head"><div class="mgh">👤 Meet the authors</div><div class="mgt">A revolution that started with a conversation.</div></div>
+    <div class="mg-band"><div class="mgl">Story</div></div>
+    <div style="padding:16px 28px;flex:1;display:flex;flex-direction:column">
+      <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
+      <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
+      <div class="sp"></div>
+      <div class="bp">
+        <button class="bb" id="b-aut-back"><span class="sp-emoji">⬅️</span></button>
+        <button class="bb" id="b-aut-map"><span class="sp-emoji">🗺️</span></button>
+        <button class="bb" id="b-aut-idea"><span class="sp-emoji">💡</span></button>
+        <button class="bb" id="b-aut-journal"><span class="sp-emoji">✏️</span></button>
+        <button class="bb" id="b-aut-misc"><span class="sp-emoji">🌸</span></button>
+        <button class="bb" id="b-aut-tools"><span class="sp-emoji">🛠️</span></button>
+      </div>
     </div>
   </div></div>
 </div>
 
 <div class="sc" id="s-tools">
   <div class="card rnd"><div class="xw">
-    <div class="xe">🛠️ Tools</div>
-    <div class="xd">Practical resources for the journey ahead.</div>
-    <hr class="xr">
-    <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
-    <div class="bp">
-      <button class="bb" id="b-tools-back"><span class="sp-emoji">⬅️</span></button>
-      <button class="bb" id="b-tools-map"><span class="sp-emoji">🗺️</span></button>
-      <button class="bb" id="b-tools-idea"><span class="sp-emoji">💡</span></button>
-      <button class="bb" id="b-tools-journal"><span class="sp-emoji">✏️</span></button>
-      <button class="bb" id="b-tools-misc"><span class="sp-emoji">🌸</span></button>
-      <button class="bb" id="b-tools-tools"><span class="sp-emoji">🛠️</span></button>
+    <div class="mg-head"><div class="mgh">🛠️ Tools</div><div class="mgt">Practical resources for the journey ahead.</div></div>
+    <div class="mg-band"><div class="mgl">Coming soon</div></div>
+    <div style="padding:0 28px;flex:1;display:flex;flex-direction:column">
+      <div class="sp"></div>
+      <div class="xm">More will appear here as the journey unfolds.</div>
+      <div class="bp">
+        <button class="bb" id="b-tools-back"><span class="sp-emoji">⬅️</span></button>
+        <button class="bb" id="b-tools-map"><span class="sp-emoji">🗺️</span></button>
+        <button class="bb" id="b-tools-idea"><span class="sp-emoji">💡</span></button>
+        <button class="bb" id="b-tools-journal"><span class="sp-emoji">✏️</span></button>
+        <button class="bb" id="b-tools-misc"><span class="sp-emoji">🌸</span></button>
+        <button class="bb" id="b-tools-tools"><span class="sp-emoji">🛠️</span></button>
+      </div>
     </div>
   </div></div>
 </div>
