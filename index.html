@@ -20,7 +20,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .tb:hover:not(.dim){border-color:#378ADD!important}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
-.tb .sp-emoji,.bb .sp-emoji,.itb .sp-emoji,.jtb .sp-emoji{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.45))}
+.sp-emoji{display:inline-block;text-shadow:1px 1px 0 rgba(0,0,0,.5),-1px -1px 0 rgba(255,255,255,.3)}
 /* Sign-in screen */
 .siw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#0F6E56;text-align:center}
 .si-t2t{font-family:'Playfair Display',serif;font-size:72px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:8px}
@@ -42,7 +42,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .tag{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#C9A87C}
 .ip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 40px;text-align:center;background:var(--color-background-primary,#fff)}
 .ep{font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:24px}
-.mgw{flex:1;display:flex;flex-direction:column;background:#fff}
+.mgw{flex:1;display:flex;flex-direction:column;background:#fff;min-height:540px}
 .mgh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:4px}
 .mgt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);line-height:1.5;margin-bottom:0}
 .mg-head{padding:24px 28px 16px;background:#fff;border-bottom:3px solid #0F6E56}
@@ -56,7 +56,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .mgi:last-child{border-bottom:none}.mgi:hover{color:#0F6E56}
 .arr{color:var(--color-text-tertiary,#888);font-size:13px}
 .sp{flex:1}
-.bp{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin-top:16px}
+.bp{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin:16px 0 0}
 .bb{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .bb:hover{border-color:#378ADD!important}
 .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
@@ -201,7 +201,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
       <div class="mgi" id="b-goals"><span>🎯 T2T Goals</span><span class="arr">›</span></div>
     </div>
     <div class="sp"></div>
-    <div class="bp" style="margin:0 28px 20px">
+    <div class="bp">
       <button class="bb" id="b-cmg-back"><span class="sp-emoji">⬅️</span></button>
       <button class="bb" id="b-cmg-map"><span class="sp-emoji">🗺️</span></button>
       <button class="bb" id="b-cmg-idea"><span class="sp-emoji">💡</span></button>
@@ -295,7 +295,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
       <div class="mgi" id="b-inv-thoughts"><span>Some thoughts about thoughts.</span><span class="arr">›</span></div>
     </div>
     <div class="sp"></div>
-    <div class="bp" style="margin:0 28px 20px">
+    <div class="bp">
       <button class="bb" id="b-img-back"><span class="sp-emoji">⬅️</span></button>
       <button class="bb" id="b-img-map"><span class="sp-emoji">🗺️</span></button>
       <button class="bb" id="b-img-idea"><span class="sp-emoji">💡</span></button>
@@ -367,7 +367,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="mg-head"><div class="mgh">🔍 Details — What do you want?</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
     <div class="mg-band"><div class="mgl">More</div></div>
     <div class="sp"></div>
-    <div class="bp" style="margin:0 28px 20px">
+    <div class="bp">
       <button class="bb" id="b-wmg-back"><span class="sp-emoji">⬅️</span></button>
       <button class="bb" id="b-wmg-map"><span class="sp-emoji">🗺️</span></button>
       <button class="bb" id="b-wmg-idea"><span class="sp-emoji">💡</span></button>
@@ -428,7 +428,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
       <div class="mgi" id="b-know-more"><span>More content coming.</span><span class="arr">›</span></div>
     </div>
     <div class="sp"></div>
-    <div class="bp" style="margin:0 28px 20px">
+    <div class="bp">
       <button class="bb" id="b-kmg-back"><span class="sp-emoji">⬅️</span></button>
       <button class="bb" id="b-kmg-map"><span class="sp-emoji">🗺️</span></button>
       <button class="bb" id="b-kmg-idea"><span class="sp-emoji">💡</span></button>
