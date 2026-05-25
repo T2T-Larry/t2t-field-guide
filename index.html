@@ -9,11 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:transparent}
-.fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto}
+html,body{height:100%;background:#d0d0d0}
+body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min-height:100%}
+.fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
-.card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.card{min-height:540px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
 .card.rnd{border-radius:12px}
 .bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
@@ -33,19 +34,22 @@ body{background:transparent}
 /* Cover */
 .cover{background:#0F6E56;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
 .t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
-.sub{font-size:17px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:20px}
+.sub{font-size:17px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:20px;text-shadow:2px 3px 0 #07402F}
 .rul{width:120px;height:.5px;background:#5DCAA5;margin-bottom:28px}
 .sm{font-size:11px;color:#9FE1CB;letter-spacing:5px;text-transform:uppercase;margin-bottom:8px}
 .aut{font-size:12px;color:#9FE1CB;letter-spacing:3px;text-transform:uppercase;margin-bottom:36px}
 .tag{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#C9A87C}
 .ip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 40px;text-align:center;background:var(--color-background-primary,#fff)}
 .ep{font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:24px}
-.mgw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:var(--color-background-primary,#fff)}
+.mgw{flex:1;display:flex;flex-direction:column;background:#fff}
 .mgh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:4px}
-.mgt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);line-height:1.5;margin-bottom:14px}
+.mgt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);line-height:1.5;margin-bottom:0}
+.mg-head{padding:24px 28px 16px;background:#fff;border-bottom:3px solid #0F6E56}
+.mg-band{background:#c8e8df;padding:7px 28px 6px;border-bottom:.5px solid #8ec8b8}
 .mgr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:10px}
-.mgl{font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:6px}
+.mgl{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:0}
 .mglr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:2px}
+.mg-items{padding:0 28px;display:flex;flex-direction:column;margin-bottom:14px}
 .mgs{display:flex;flex-direction:column;margin-bottom:14px}
 .mgi{display:flex;padding:10px 0;font-size:15px;color:var(--color-text-primary,#111);cursor:pointer;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--color-border-tertiary,#eee)}
 .mgi:last-child{border-bottom:none}.mgi:hover{color:#0F6E56}
@@ -189,15 +193,14 @@ body{background:transparent}
 
 <div class="sc" id="s-cover-mg">
   <div class="card rnd"><div class="mgw">
-    <div class="mgh">🔍 Details — Field Guide</div>
-    <div class="mgt">More about this page, plus places to keep what matters.</div>
-    <hr class="mgr"><div class="mgl">More</div><hr class="mglr">
-    <div class="mgs">
+    <div class="mg-head"><div class="mgh">🔍 Details — Field Guide</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
+    <div class="mg-band"><div class="mgl">More</div></div>
+    <div class="mg-items">
       <div class="mgi" id="b-t2t"><span>🤔 What is T2T?</span><span class="arr">›</span></div>
       <div class="mgi" id="b-goals"><span>🎯 T2T Goals</span><span class="arr">›</span></div>
     </div>
     <div class="sp"></div>
-    <div class="bp">
+    <div class="bp" style="margin:0 28px 20px">
       <button class="bb" id="b-cmg-back">⬅️</button>
       <button class="bb" id="b-cmg-map">🗺️</button>
       <button class="bb" id="b-cmg-idea">💡</button>
@@ -285,14 +288,13 @@ body{background:transparent}
 
 <div class="sc" id="s-invention-mg">
   <div class="card rnd"><div class="mgw">
-    <div class="mgh">🔍 Details — Every great invention…</div>
-    <div class="mgt">More about this page, plus places to keep what matters.</div>
-    <hr class="mgr"><div class="mgl">More</div><hr class="mglr">
-    <div class="mgs">
+    <div class="mg-head"><div class="mgh">🔍 Details — Every great invention…</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
+    <div class="mg-band"><div class="mgl">More</div></div>
+    <div class="mg-items">
       <div class="mgi" id="b-inv-thoughts"><span>Some thoughts about thoughts.</span><span class="arr">›</span></div>
     </div>
     <div class="sp"></div>
-    <div class="bp">
+    <div class="bp" style="margin:0 28px 20px">
       <button class="bb" id="b-img-back">⬅️</button>
       <button class="bb" id="b-img-map">🗺️</button>
       <button class="bb" id="b-img-idea">💡</button>
@@ -361,11 +363,10 @@ body{background:transparent}
 
 <div class="sc" id="s-want-mg">
   <div class="card rnd"><div class="mgw">
-    <div class="mgh">🔍 Details — What do you want?</div>
-    <div class="mgt">More about this page, plus places to keep what matters.</div>
-    <hr class="mgr">
+    <div class="mg-head"><div class="mgh">🔍 Details — What do you want?</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
+    <div class="mg-band"><div class="mgl">More</div></div>
     <div class="sp"></div>
-    <div class="bp">
+    <div class="bp" style="margin:0 28px 20px">
       <button class="bb" id="b-wmg-back">⬅️</button>
       <button class="bb" id="b-wmg-map">🗺️</button>
       <button class="bb" id="b-wmg-idea">💡</button>
@@ -420,14 +421,13 @@ body{background:transparent}
 
 <div class="sc" id="s-know-mg">
   <div class="card rnd"><div class="mgw">
-    <div class="mgh">🔍 Details — Do you know what you want?</div>
-    <div class="mgt">More about this page, plus places to keep what matters.</div>
-    <hr class="mgr"><div class="mgl">More</div><hr class="mglr">
-    <div class="mgs">
+    <div class="mg-head"><div class="mgh">🔍 Details — Do you know what you want?</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
+    <div class="mg-band"><div class="mgl">More</div></div>
+    <div class="mg-items">
       <div class="mgi" id="b-know-more"><span>More content coming.</span><span class="arr">›</span></div>
     </div>
     <div class="sp"></div>
-    <div class="bp">
+    <div class="bp" style="margin:0 28px 20px">
       <button class="bb" id="b-kmg-back">⬅️</button>
       <button class="bb" id="b-kmg-map">🗺️</button>
       <button class="bb" id="b-kmg-idea">💡</button>
