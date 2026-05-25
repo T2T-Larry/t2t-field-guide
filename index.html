@@ -17,9 +17,10 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .card{min-height:540px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
 .card.rnd{border-radius:12px}
 .bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
-.tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
+.tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .tb:hover:not(.dim){border-color:#378ADD!important}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
+.tb .sp-emoji,.bb .sp-emoji,.itb .sp-emoji,.jtb .sp-emoji{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.45))}
 /* Sign-in screen */
 .siw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#0F6E56;text-align:center}
 .si-t2t{font-family:'Playfair Display',serif;font-size:72px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:8px}
@@ -56,7 +57,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .arr{color:var(--color-text-tertiary,#888);font-size:13px}
 .sp{flex:1}
 .bp{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin-top:16px}
-.bb{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
+.bb{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .bb:hover{border-color:#378ADD!important}
 .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
 .se{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:14px}
@@ -84,10 +85,10 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .it{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
 .ir{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:24px}
 .ig{font-size:13px;font-style:italic;color:#3A6080;line-height:1.6;margin-bottom:36px;max-width:340px}
-.ib{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#1A3A5C!important;margin-bottom:14px;transition:border-color .15s;display:block;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
+.ib{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#1A3A5C!important;margin-bottom:14px;transition:border-color .15s;display:block}
 .ib:hover{border-color:#378ADD!important}
 .ibar{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important}
-.itb{background:#ffffff!important;border:2px solid #111!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
+.itb{background:#ffffff!important;border:2px solid #111!important}
 .icw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#EBF4FF}
 .icl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
 .icit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
@@ -100,10 +101,10 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .jt{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
 .jr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:24px}
 .jg{font-size:13px;font-style:italic;color:#7A5C3A;line-height:1.6;margin-bottom:36px;max-width:340px}
-.jb{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#3B2510!important;margin-bottom:14px;transition:border-color .15s;display:block;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
+.jb{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#3B2510!important;margin-bottom:14px;transition:border-color .15s;display:block}
 .jb:hover{border-color:#8B5E2A!important}
 .jbar{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important}
-.jtb{background:#ffffff!important;border:2px solid #111!important;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.18))}
+.jtb{background:#ffffff!important;border:2px solid #111!important}
 .jcw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#FDF6E8}
 .jcl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
 .jcit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
@@ -185,9 +186,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="tag">Every great journey starts with a single step.</div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-cover-back">⬅️</button>
-    <button class="tb" id="b-cover-mg">🔍</button>
-    <button class="tb" id="b-cover-next">➡️</button>
+    <button class="tb" id="b-cover-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb" id="b-cover-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-cover-next"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
@@ -201,12 +202,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     </div>
     <div class="sp"></div>
     <div class="bp" style="margin:0 28px 20px">
-      <button class="bb" id="b-cmg-back">⬅️</button>
-      <button class="bb" id="b-cmg-map">🗺️</button>
-      <button class="bb" id="b-cmg-idea">💡</button>
-      <button class="bb" id="b-cmg-journal">✏️</button>
-      <button class="bb" id="b-cmg-misc">🌸</button>
-      <button class="bb" id="b-cmg-tools">🛠️</button>
+      <button class="bb" id="b-cmg-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-cmg-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-cmg-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-cmg-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-cmg-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-cmg-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -219,12 +220,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sb">It works the first time you try it.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-t2t-back">⬅️</button>
-      <button class="bb" id="b-t2t-map">🗺️</button>
-      <button class="bb" id="b-t2t-idea">💡</button>
-      <button class="bb" id="b-t2t-journal">✏️</button>
-      <button class="bb" id="b-t2t-misc">🌸</button>
-      <button class="bb" id="b-t2t-tools">🛠️</button>
+      <button class="bb" id="b-t2t-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-t2t-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-t2t-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-t2t-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-t2t-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-t2t-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -238,12 +239,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div><div class="gs">Joy in the process</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-goals-back">⬅️</button>
-      <button class="bb" id="b-goals-map">🗺️</button>
-      <button class="bb" id="b-goals-idea">💡</button>
-      <button class="bb" id="b-goals-journal">✏️</button>
-      <button class="bb" id="b-goals-misc">🌸</button>
-      <button class="bb" id="b-goals-tools">🛠️</button>
+      <button class="bb" id="b-goals-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-goals-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-goals-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-goals-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-goals-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-goals-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -269,7 +270,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="pr tap" id="tog-cm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="cm-thing-tog">▼</span></div>
     <div id="cm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-cmap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-cmap-back" style="max-width:80px"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-invention">
@@ -280,9 +281,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7">And every one of them began the same way.<br>Someone answered one question:</div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-inv-back">⬅️</button>
-    <button class="tb" id="b-inv-mg">🔍</button>
-    <button class="tb" id="b-inv-next">➡️</button>
+    <button class="tb" id="b-inv-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb" id="b-inv-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-inv-next"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
@@ -295,12 +296,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     </div>
     <div class="sp"></div>
     <div class="bp" style="margin:0 28px 20px">
-      <button class="bb" id="b-img-back">⬅️</button>
-      <button class="bb" id="b-img-map">🗺️</button>
-      <button class="bb" id="b-img-idea">💡</button>
-      <button class="bb" id="b-img-journal">✏️</button>
-      <button class="bb" id="b-img-misc">🌸</button>
-      <button class="bb" id="b-img-tools">🛠️</button>
+      <button class="bb" id="b-img-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-img-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-img-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-img-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-img-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-img-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -313,12 +314,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sb">That's not mystical. That's just how things get made.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-ith-back">⬅️</button>
-      <button class="bb" id="b-ith-map">🗺️</button>
-      <button class="bb" id="b-ith-idea">💡</button>
-      <button class="bb" id="b-ith-journal">✏️</button>
-      <button class="bb" id="b-ith-misc">🌸</button>
-      <button class="bb" id="b-ith-tools">🛠️</button>
+      <button class="bb" id="b-ith-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-ith-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-ith-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-ith-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-ith-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-ith-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -344,7 +345,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="pr tap" id="tog-im-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="im-thing-tog">▼</span></div>
     <div id="im-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-imap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-imap-back" style="max-width:80px"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-want">
@@ -355,9 +356,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div style="font-size:13px;color:var(--color-text-tertiary,#888)">— Alfred E. Neuman</div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-want-back">⬅️</button>
-    <button class="tb" id="b-want-mg">🔍</button>
-    <button class="tb" id="b-want-next">➡️</button>
+    <button class="tb" id="b-want-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb" id="b-want-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-want-next"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
@@ -367,12 +368,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="mg-band"><div class="mgl">More</div></div>
     <div class="sp"></div>
     <div class="bp" style="margin:0 28px 20px">
-      <button class="bb" id="b-wmg-back">⬅️</button>
-      <button class="bb" id="b-wmg-map">🗺️</button>
-      <button class="bb" id="b-wmg-idea">💡</button>
-      <button class="bb" id="b-wmg-journal">✏️</button>
-      <button class="bb" id="b-wmg-misc">🌸</button>
-      <button class="bb" id="b-wmg-tools">🛠️</button>
+      <button class="bb" id="b-wmg-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-wmg-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-wmg-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-wmg-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-wmg-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-wmg-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -398,7 +399,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="pr tap" id="tog-wm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="wm-thing-tog">▼</span></div>
     <div id="wm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-wmap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-wmap-back" style="max-width:80px"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-know">
@@ -413,9 +414,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     </div>
   </div></div>
   <div class="bar">
-    <button class="tb" id="b-know-back">⬅️</button>
-    <button class="tb" id="b-know-mg">🔍</button>
-    <button class="tb dim">➡️</button>
+    <button class="tb" id="b-know-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb" id="b-know-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb dim"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
@@ -428,12 +429,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     </div>
     <div class="sp"></div>
     <div class="bp" style="margin:0 28px 20px">
-      <button class="bb" id="b-kmg-back">⬅️</button>
-      <button class="bb" id="b-kmg-map">🗺️</button>
-      <button class="bb" id="b-kmg-idea">💡</button>
-      <button class="bb" id="b-kmg-journal">✏️</button>
-      <button class="bb" id="b-kmg-misc">🌸</button>
-      <button class="bb" id="b-kmg-tools">🛠️</button>
+      <button class="bb" id="b-kmg-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-kmg-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-kmg-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-kmg-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-kmg-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-kmg-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -459,7 +460,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="pr tap" id="tog-km-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="km-thing-tog">▼</span></div>
     <div id="km-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-kmap-back" style="max-width:80px">⬅️</button></div>
+  <div class="bar" style="background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important"><button class="bb itb" id="b-kmap-back" style="max-width:80px"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-idea">
@@ -469,7 +470,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <button class="ib" id="b-capture-idea">Capture an Idea</button>
     <button class="ib" id="b-sea-ideas">My Sea of Ideas</button>
   </div></div>
-  <div class="bar ibar"><button class="tb itb" id="b-idea-back">⬅️</button></div>
+  <div class="bar ibar"><button class="tb itb" id="b-idea-back"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-idea-capture">
@@ -482,7 +483,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar ibar">
-    <button class="tb itb" id="b-idea-capture-back">⬅️</button>
+    <button class="tb itb" id="b-idea-capture-back"><span class="sp-emoji">⬅️</span></button>
     <button class="save-btn" id="b-save-idea">SAVE</button>
   </div>
 </div>
@@ -494,7 +495,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <button class="jb" id="b-add-note">Add a Note to my Journal</button>
     <button class="jb" id="b-view-journal">View My Journal</button>
   </div></div>
-  <div class="bar jbar"><button class="tb jtb" id="b-journal-back">⬅️</button></div>
+  <div class="bar jbar"><button class="tb jtb" id="b-journal-back"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-journal-capture">
@@ -507,7 +508,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb jtb" id="b-journal-capture-back">⬅️</button>
+    <button class="tb jtb" id="b-journal-capture-back"><span class="sp-emoji">⬅️</span></button>
     <button class="jsave-btn" id="b-save-journal">SAVE</button>
   </div>
 </div>
@@ -529,9 +530,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     </div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb jtb" id="b-jcov-back">⬅️</button>
-    <button class="tb jtb" id="b-jcov-entries">📖</button>
-    <button class="tb jtb" id="b-jcov-add">✏️</button>
+    <button class="tb jtb" id="b-jcov-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb jtb" id="b-jcov-entries"><span class="sp-emoji">📖</span></button>
+    <button class="tb jtb" id="b-jcov-add"><span class="sp-emoji">✏️</span></button>
   </div>
 </div>
 
@@ -547,9 +548,9 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb jtb" id="b-jview-back">⬅️</button>
-    <button class="tb jtb" id="b-jview-cover">📔</button>
-    <button class="tb jtb" id="b-jview-add">✏️</button>
+    <button class="tb jtb" id="b-jview-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb jtb" id="b-jview-cover"><span class="sp-emoji">📔</span></button>
+    <button class="tb jtb" id="b-jview-add"><span class="sp-emoji">✏️</span></button>
   </div>
 </div>
 
@@ -564,8 +565,8 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb jtb" id="b-jentry-back">⬅️</button>
-    <button class="tb jtb" id="b-jentry-add">✏️</button>
+    <button class="tb jtb" id="b-jentry-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb jtb" id="b-jentry-add"><span class="sp-emoji">✏️</span></button>
   </div>
 </div>
 
@@ -582,12 +583,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
     <div class="xm">More will appear here as the journey unfolds.</div>
     <div class="bp">
-      <button class="bb" id="b-misc-back">⬅️</button>
-      <button class="bb" id="b-misc-map">🗺️</button>
-      <button class="bb" id="b-misc-idea">💡</button>
-      <button class="bb" id="b-misc-journal">✏️</button>
-      <button class="bb" id="b-misc-misc">🌸</button>
-      <button class="bb" id="b-misc-tools">🛠️</button>
+      <button class="bb" id="b-misc-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-misc-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-misc-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-misc-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-misc-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-misc-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -600,12 +601,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
     <div class="sp"></div>
     <div class="bp">
-      <button class="bb" id="b-aut-back">⬅️</button>
-      <button class="bb" id="b-aut-map">🗺️</button>
-      <button class="bb" id="b-aut-idea">💡</button>
-      <button class="bb" id="b-aut-journal">✏️</button>
-      <button class="bb" id="b-aut-misc">🌸</button>
-      <button class="bb" id="b-aut-tools">🛠️</button>
+      <button class="bb" id="b-aut-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-aut-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-aut-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-aut-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-aut-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-aut-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
@@ -618,12 +619,12 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
     <div class="xm">More will appear here as the journey unfolds.</div>
     <div class="bp">
-      <button class="bb" id="b-tools-back">⬅️</button>
-      <button class="bb" id="b-tools-map">🗺️</button>
-      <button class="bb" id="b-tools-idea">💡</button>
-      <button class="bb" id="b-tools-journal">✏️</button>
-      <button class="bb" id="b-tools-misc">🌸</button>
-      <button class="bb" id="b-tools-tools">🛠️</button>
+      <button class="bb" id="b-tools-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-tools-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-tools-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-tools-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-tools-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-tools-tools"><span class="sp-emoji">🛠️</span></button>
     </div>
   </div></div>
 </div>
