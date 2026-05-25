@@ -13,15 +13,14 @@ html,body{height:100%;background:#d0d0d0}
 body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min-height:100%}
 .fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
 .sc{display:none!important}
-.sc.active{display:flex!important;flex-direction:column;height:620px}
-.card{border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
-.card.rnd{border-radius:12px 12px 0 0}
-.bar{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
-.tb,.bb{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
-.tb:hover:not(.dim):not(:disabled),.bb:hover{border-color:#378ADD!important}
-.tb.dim,.tb:disabled{opacity:.32;cursor:default;pointer-events:none}
+.sc.active{display:flex!important;flex-direction:column}
+.card{min-height:540px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.card.rnd{border-radius:12px}
+.bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
+.tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.tb:hover:not(.dim){border-color:#378ADD!important}
+.tb.dim{opacity:.32;cursor:default;pointer-events:none}
 .sp-emoji{display:inline-block;text-shadow:2px 2px 0 rgba(0,0,0,.65),-1px -1px 0 rgba(255,255,255,.4)}
-/* Sign-in screen */
 .siw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#0F6E56;text-align:center}
 .si-t2t{font-family:'Playfair Display',serif;font-size:72px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:8px}
 .si-sub{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#C9A87C;letter-spacing:2px;margin-bottom:28px;text-shadow:2px 3px 0 #07402F}
@@ -32,7 +31,6 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .si-input{width:100%;padding:13px 16px;border-radius:10px;font-size:15px;color:#111;outline:none;font-family:sans-serif;display:block;margin-bottom:16px;background:#ffffff;border-top:2.5px solid #031910;border-left:2px solid #031910;border-right:1.5px solid #aaa;border-bottom:1.5px solid #aaa}
 .si-input::placeholder{color:#aaa;opacity:1}
 .si-btn{width:100%;padding:14px 0;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#C9A87C!important;color:#111!important;display:block}
-/* Cover */
 .cover{background:#0F6E56;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
 .t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:#C9A87C;letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
 .sub{font-size:17px;color:#C9A87C;letter-spacing:8px;text-transform:uppercase;margin-bottom:20px;text-shadow:2px 3px 0 #07402F}
@@ -42,21 +40,21 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .tag{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#C9A87C}
 .ip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 40px;text-align:center;background:var(--color-background-primary,#fff)}
 .ep{font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:24px}
-.mgw{flex:1;display:flex;flex-direction:column;background:#fff}
+.mgw{flex:1;display:flex;flex-direction:column;background:#fff;min-height:540px}
 .mgh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:4px}
 .mgt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);line-height:1.5;margin-bottom:0}
 .mg-head{padding:24px 28px 16px;background:#fff;border-bottom:3px solid #0F6E56}
 .mg-band{background:#c8e8df;padding:7px 28px 6px;border-bottom:.5px solid #8ec8b8}
-.mgr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:10px}
 .mgl{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:0}
-.mglr{border:none;border-top:.5px solid var(--color-border-secondary,#ddd);margin-bottom:2px}
 .mg-items{padding:0 28px;display:flex;flex-direction:column;margin-bottom:14px}
-.mgs{display:flex;flex-direction:column;margin-bottom:14px}
 .mgi{display:flex;padding:10px 0;font-size:15px;color:var(--color-text-primary,#111);cursor:pointer;align-items:center;justify-content:space-between;border-bottom:1px solid #c8e8df}
 .mgi:last-child{border-bottom:1px solid #c8e8df}.mgi:hover{color:#0F6E56}
 .arr{color:var(--color-text-tertiary,#888);font-size:13px}
 .sp{flex:1}
-.sw{flex:1;display:flex;flex-direction:column;background:var(--color-background-primary,#fff)}
+.bp{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin:16px 0 0}
+.bb{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.bb:hover{border-color:#378ADD!important}
+.sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
 .se{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:14px}
 .sh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);line-height:1.4;margin-bottom:10px}
 .sb{font-size:15px;color:var(--color-text-secondary,#555);line-height:1.75;margin-bottom:6px}
@@ -78,13 +76,14 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .st.unv{opacity:.4}
 .cm{font-size:11px;font-style:italic;color:var(--color-text-tertiary,#888);padding:4px 0 4px 24px}
 .phd{display:none}
-.iw{flex:1;display:flex;flex-direction:column;background:#EBF4FF}
+.iw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 40px 24px;background:#EBF4FF}
 .it{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
 .ir{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:24px}
 .ig{font-size:13px;font-style:italic;color:#3A6080;line-height:1.6;margin-bottom:36px;max-width:340px}
 .ib{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#1A3A5C!important;margin-bottom:14px;transition:border-color .15s;display:block}
 .ib:hover{border-color:#378ADD!important}
 .ibar{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important}
+.itb{background:#ffffff!important;border:2px solid #111!important}
 .icw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#EBF4FF}
 .icl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
 .icit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
@@ -93,13 +92,14 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .ict{width:100%;min-height:140px;background:#ffffff;border:1px solid #A8CAFE;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#1A3A5C;resize:none;line-height:1.7;outline:none}
 .save-btn{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#cccccc;pointer-events:none;transition:all .2s}
 .save-btn.active{color:#000000!important;border-color:#378ADD!important;pointer-events:auto}
-.jw{flex:1;display:flex;flex-direction:column;background:#FDF6E8}
+.jw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 40px 24px;background:#FDF6E8}
 .jt{font-family:'Playfair Display',serif;font-size:80px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
 .jr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:24px}
 .jg{font-size:13px;font-style:italic;color:#7A5C3A;line-height:1.6;margin-bottom:36px;max-width:340px}
 .jb{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#3B2510!important;margin-bottom:14px;transition:border-color .15s;display:block}
 .jb:hover{border-color:#8B5E2A!important}
 .jbar{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important}
+.jtb{background:#ffffff!important;border:2px solid #111!important}
 .jcw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#FDF6E8}
 .jcl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
 .jcit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
@@ -108,7 +108,7 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .jct{width:100%;min-height:140px;background:#ffffff;border:1px solid #C9A87C;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#3B2510;resize:none;line-height:1.7;outline:none}
 .jsave-btn{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#cccccc;pointer-events:none;transition:all .2s}
 .jsave-btn.active{color:#000000!important;border-color:#8B5E2A!important;pointer-events:auto}
-.xw{flex:1;display:flex;flex-direction:column;background:var(--color-background-primary,#fff)}
+.xw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:var(--color-background-primary,#fff)}
 .xe{font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:10px}
 .xd{font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7;margin-bottom:6px}
 .xt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);margin-bottom:20px;line-height:1.5}
@@ -120,7 +120,6 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .xis{font-size:13px;color:var(--color-text-tertiary,#888);line-height:1.55}
 .xm{font-size:12px;font-style:italic;color:var(--color-text-tertiary,#888);text-align:center;padding:16px 0 4px}
 .fp{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;font-style:italic;color:var(--color-text-primary,#111);margin-bottom:28px;line-height:1.3}
-/* Journal Cover screen */
 .jcov{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 32px 24px;background:#FDF6E8;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,94,42,.12) 27px,rgba(139,94,42,.12) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(139,94,42,.08) 27px,rgba(139,94,42,.08) 28px)}
 .jcov-name{font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:#7A5C3A;margin-bottom:20px}
 .jcov-frame{border:2px solid #111;background:#fff;width:100%;max-width:300px;padding:24px 28px;text-align:center;margin-bottom:16px}
@@ -129,7 +128,6 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .jcov-rule{width:60px;border:none;border-top:1px solid #111;margin:0 auto 14px}
 .jcov-sub{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#333}
 .jcov-dates{display:inline-flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #C9A87C;border-radius:20px;padding:6px 16px;font-size:11px;color:#7A5C3A;letter-spacing:2px}
-/* Journal view (entry list) */
 .jvw{flex:1;display:flex;flex-direction:column;padding:20px 28px;background:#FDF6E8}
 .jvh{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#3B2510;margin-bottom:2px}
 .jvs{font-size:12px;font-style:italic;color:#7A5C3A;margin-bottom:14px}
@@ -140,7 +138,6 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 .jcard-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:6px}
 .jcard-text{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#3B2510;line-height:1.55;margin-bottom:10px}
 .jcard-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
-/* Journal full entry */
 .jew{flex:1;display:flex;flex-direction:column;padding:24px 28px;background:#FDF6E8}
 .je-back-link{font-size:12px;color:#A87C4A;cursor:pointer;margin-bottom:18px;display:flex;align-items:center;gap:4px}
 .je-back-link:hover{color:#3B2510}
@@ -153,9 +150,8 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
 <body>
 <div class="fg" id="fg-root">
 
-<!-- Sign-in screen -->
 <div class="sc" id="s-signin">
-  <div class="card"><div class="siw">
+  <div class="card rnd"><div class="siw">
     <div class="si-t2t">T2T</div>
     <div class="si-sub">Thoughts to Things</div>
     <div class="si-rule"></div>
@@ -168,10 +164,8 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
       <button class="si-btn" id="b-signin">Sign In</button>
     </div>
   </div></div>
-  <div class="bar"></div>
 </div>
 
-<!-- Cover screen -->
 <div class="sc" id="s-cover">
   <div class="card"><div class="cover">
     <div class="t2t">T2T</div>
@@ -184,69 +178,69 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
   <div class="bar">
     <button class="tb" id="b-cover-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-cover-mg"><span class="sp-emoji">🔍</span></button>
-    <button class="tb" id="b-cover-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb" id="b-cover-next"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-cover-mg">
-  <div class="card"><div class="mgw">
+  <div class="card rnd"><div class="mgw">
     <div class="mg-head"><div class="mgh">🔍 Details — Field Guide</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
     <div class="mg-band"><div class="mgl">More</div></div>
     <div class="mg-items">
       <div class="mgi" id="b-t2t"><span>🤔 What is T2T?</span><span class="arr">›</span></div>
       <div class="mgi" id="b-goals"><span>🎯 T2T Goals</span><span class="arr">›</span></div>
     </div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-cmg-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-cmg-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-cmg-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-cmg-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-cmg-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-cmg-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-cmg-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-cmg-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-cmg-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-cmg-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-cmg-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-cmg-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-cover-t2t">
-  <div class="card"><div class="sw">
-    <div class="mg-head"><div class="mgh">🤔 What is T2T?</div><div class="mgt">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div></div>
-    <div class="mg-band"><div class="mgl">The idea</div></div>
-    <div style="padding:16px 28px;flex:1;display:flex;flex-direction:column">
-      <div class="sb">Not a philosophy. Not something you have to believe in before it works. A system.</div>
-      <div class="sb">It works the first time you try it.</div>
+  <div class="card rnd"><div class="sw">
+    <div class="se">What is T2T?</div>
+    <div class="sh">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
+    <div class="sb">Not a philosophy. Not something you have to believe in before it works. A system.</div>
+    <div class="sb">It works the first time you try it.</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-t2t-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-t2t-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-t2t-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-t2t-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-t2t-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-t2t-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-t2t-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-t2t-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-t2t-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-t2t-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-t2t-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-t2t-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-cover-goals">
-  <div class="card"><div class="sw">
-    <div class="mg-head"><div class="mgh">🎯 T2T Goals</div><div class="mgt">May you find…</div></div>
-    <div class="mg-band"><div class="mgl">The vision</div></div>
-    <div style="padding:16px 28px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
-      <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gs">Inspiration</div><div class="gr"></div>
-      <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gs">Mastery</div><div class="gr"></div>
-      <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div><div class="gs">Joy in the process</div>
+  <div class="card rnd"><div class="sw" style="align-items:center;justify-content:center;text-align:center">
+    <div class="se" style="margin-bottom:20px">T2T Goals</div>
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--color-text-secondary,#555);margin-bottom:22px">May you find…</div>
+    <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gs">Inspiration</div><div class="gr"></div>
+    <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gs">Mastery</div><div class="gr"></div>
+    <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div><div class="gs">Joy in the process</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-goals-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-goals-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-goals-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-goals-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-goals-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-goals-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-goals-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-goals-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-goals-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-goals-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-goals-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-goals-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-cover-map">
-  <div class="card"><div class="mw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
     <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
     <div class="pr"><span class="pl2">🚪 Introduction</span></div>
     <div class="ps">
@@ -265,14 +259,13 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div id="cm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
     <div class="pr tap" id="tog-cm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="cm-thing-tog">▼</span></div>
     <div id="cm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="sp"></div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-cmap-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-cmap-bp-map" disabled><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-cmap-bp-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-cmap-bp-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-cmap-bp-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-cmap-bp-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb" id="b-cmap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="tb" id="b-cmap-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="tb" id="b-cmap-misc"><span class="sp-emoji">🌸</span></button>
   </div>
 </div>
 
@@ -286,49 +279,49 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
   <div class="bar">
     <button class="tb" id="b-inv-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-inv-mg"><span class="sp-emoji">🔍</span></button>
-    <button class="tb" id="b-inv-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb" id="b-inv-next"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-invention-mg">
-  <div class="card"><div class="mgw">
+  <div class="card rnd"><div class="mgw">
     <div class="mg-head"><div class="mgh">🔍 Details — Every great invention…</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
     <div class="mg-band"><div class="mgl">More</div></div>
     <div class="mg-items">
       <div class="mgi" id="b-inv-thoughts"><span>Some thoughts about thoughts.</span><span class="arr">›</span></div>
     </div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-img-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-img-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-img-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-img-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-img-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-img-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-img-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-img-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-img-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-img-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-img-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-img-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-invention-thoughts">
-  <div class="card"><div class="sw">
-    <div class="mg-head"><div class="mgh">💭 Some thoughts about thoughts.</div><div class="mgt">A thought is the beginning of everything.</div></div>
-    <div class="mg-band"><div class="mgl">The idea</div></div>
-    <div style="padding:16px 28px;flex:1;display:flex;flex-direction:column">
-      <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
-      <div class="sb">That's not mystical. That's just how things get made.</div>
+  <div class="card rnd"><div class="sw">
+    <div class="se">Some thoughts about thoughts.</div>
+    <div class="sh">A thought is the beginning of everything.</div>
+    <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
+    <div class="sb">That's not mystical. That's just how things get made.</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-ith-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-ith-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-ith-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-ith-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-ith-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-ith-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-ith-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-ith-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-ith-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-ith-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-ith-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-ith-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-invention-map">
-  <div class="card"><div class="mw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
     <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
     <div class="pr"><span class="pl2">🚪 Introduction</span></div>
     <div class="ps">
@@ -347,14 +340,13 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div id="im-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
     <div class="pr tap" id="tog-im-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="im-thing-tog">▼</span></div>
     <div id="im-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="sp"></div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-imap-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-imap-bp-map" disabled><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-imap-bp-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-imap-bp-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-imap-bp-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-imap-bp-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb" id="b-imap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="tb" id="b-imap-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="tb" id="b-imap-misc"><span class="sp-emoji">🌸</span></button>
   </div>
 </div>
 
@@ -368,28 +360,28 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
   <div class="bar">
     <button class="tb" id="b-want-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-want-mg"><span class="sp-emoji">🔍</span></button>
-    <button class="tb" id="b-want-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb" id="b-want-next"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-want-mg">
-  <div class="card"><div class="mgw">
+  <div class="card rnd"><div class="mgw">
     <div class="mg-head"><div class="mgh">🔍 Details — What do you want?</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
     <div class="mg-band"><div class="mgl">More</div></div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-wmg-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-wmg-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-wmg-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-wmg-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-wmg-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-wmg-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-wmg-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-wmg-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-wmg-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-wmg-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-wmg-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-wmg-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-want-map">
-  <div class="card"><div class="mw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
     <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
     <div class="pr"><span class="pl2">🚪 Introduction</span></div>
     <div class="ps">
@@ -408,14 +400,13 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div id="wm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
     <div class="pr tap" id="tog-wm-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="wm-thing-tog">▼</span></div>
     <div id="wm-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="sp"></div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-wmap-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-wmap-bp-map" disabled><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-wmap-bp-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-wmap-bp-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-wmap-bp-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-wmap-bp-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb" id="b-wmap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="tb" id="b-wmap-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="tb" id="b-wmap-misc"><span class="sp-emoji">🌸</span></button>
   </div>
 </div>
 
@@ -433,31 +424,31 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
   <div class="bar">
     <button class="tb" id="b-know-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-know-mg"><span class="sp-emoji">🔍</span></button>
-    <button class="tb" id="b-know-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb dim"><span class="sp-emoji">➡️</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-know-mg">
-  <div class="card"><div class="mgw">
+  <div class="card rnd"><div class="mgw">
     <div class="mg-head"><div class="mgh">🔍 Details — Do you know what you want?</div><div class="mgt">More about this page, plus places to keep what matters.</div></div>
     <div class="mg-band"><div class="mgl">More</div></div>
     <div class="mg-items">
       <div class="mgi" id="b-know-more"><span>More content coming.</span><span class="arr">›</span></div>
     </div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-kmg-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-kmg-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-kmg-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-kmg-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-kmg-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-kmg-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-kmg-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-kmg-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-kmg-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-kmg-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-kmg-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-kmg-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-know-map">
-  <div class="card"><div class="mw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="mw">
     <div class="mt">Map</div><div class="mtt">You are here.</div><hr class="mr">
     <div class="pr"><span class="pl2">🚪 Introduction</span></div>
     <div class="ps">
@@ -476,43 +467,29 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div id="km-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
     <div class="pr tap" id="tog-km-thing"><span class="pl2">🏆 The Thing</span><span class="ptg" id="km-thing-tog">▼</span></div>
     <div id="km-thing" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="sp"></div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-kmap-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-kmap-bp-map" disabled><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-kmap-bp-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-kmap-bp-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-kmap-bp-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-kmap-bp-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb" id="b-kmap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="tb" id="b-kmap-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="tb" id="b-kmap-misc"><span class="sp-emoji">🌸</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-idea">
-  <div class="card"><div class="iw">
-    <div style="width:100%;background:#fff;border-bottom:3px solid #185FA5;padding:20px 28px 16px;text-align:left">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:#1A3A5C;margin-bottom:4px">💡 Idea</div>
-      <div style="font-size:13px;font-style:italic;color:#3A6080;line-height:1.5">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
-    </div>
-    <div style="width:100%;background:#c8e8df;padding:7px 28px 6px;border-bottom:.5px solid #8ec8b8;text-align:left">
-      <div class="mgl">Capture</div>
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 28px 16px;width:100%">
-      <button class="ib" id="b-capture-idea">Capture an Idea</button>
-      <button class="ib" id="b-sea-ideas">Sea of Ideas</button>
-    </div>
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="iw">
+    <div class="it">💡 Idea</div><hr class="ir">
+    <div class="ig">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div>
+    <div style="width:100%;background:#c8e8df;border-top:.5px solid #8ec8b8;border-bottom:.5px solid #8ec8b8;height:3px;margin:4px 0 28px"></div>
+    <button class="ib" id="b-capture-idea">Capture an Idea</button>
+    <button class="ib" id="b-sea-ideas">Sea of Ideas</button>
   </div></div>
-  <div class="bar ibar">
-    <button class="tb" id="b-idea-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-idea-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-idea-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-idea-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-idea-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-idea-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
+  <div class="bar ibar"><button class="tb itb" id="b-idea-back"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-idea-capture">
-  <div class="card"><div class="icw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="icw">
     <div class="icl">Idea</div>
     <div class="icit">💡 Idea</div>
     <hr class="icr">
@@ -521,42 +498,24 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar ibar">
-    <button class="tb" id="b-idea-capture-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-icap-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-icap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="tb itb" id="b-idea-capture-back"><span class="sp-emoji">⬅️</span></button>
     <button class="save-btn" id="b-save-idea">SAVE</button>
-    <button class="tb" id="b-icap-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-icap-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-icap-tools"><span class="sp-emoji">🛠️</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-journal">
-  <div class="card"><div class="jw">
-    <div style="width:100%;background:#fff;border-bottom:3px solid #0F6E56;padding:20px 28px 16px;text-align:left">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:#3B2510;margin-bottom:4px">✏️ Journal</div>
-      <div style="font-size:13px;font-style:italic;color:#7A5C3A;line-height:1.5">Your personal record of the adventure. Everything you notice, feel, and want to remember.</div>
-    </div>
-    <div style="width:100%;background:#c8e8df;padding:7px 28px 6px;border-bottom:.5px solid #8ec8b8;text-align:left">
-      <div class="mgl">Your journal</div>
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 28px 16px;width:100%">
-      <button class="jb" id="b-add-note">Add a Note to my Journal</button>
-      <button class="jb" id="b-view-journal">View Journal</button>
-    </div>
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jw">
+    <div class="jt">✏️ Journal</div><hr class="jr">
+    <div class="jg">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div>
+    <div style="width:100%;background:#C9A87C;border-top:.5px solid #A87C4A;border-bottom:.5px solid #A87C4A;height:3px;margin:4px 0 28px"></div>
+    <button class="jb" id="b-add-note">Add a Note to my Journal</button>
+    <button class="jb" id="b-view-journal">View Journal</button>
   </div></div>
-  <div class="bar jbar">
-    <button class="tb" id="b-journal-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-journal-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-journal-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-journal-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-journal-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-journal-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
+  <div class="bar jbar"><button class="tb jtb" id="b-journal-back"><span class="sp-emoji">⬅️</span></button></div>
 </div>
 
 <div class="sc" id="s-journal-capture">
-  <div class="card"><div class="jcw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jcw">
     <div class="jcl">Journal</div>
     <div class="jcit">✏️ Journal</div>
     <hr class="jcr">
@@ -565,19 +524,13 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb" id="b-journal-capture-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-jcap-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-jcap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="tb jtb" id="b-journal-capture-back"><span class="sp-emoji">⬅️</span></button>
     <button class="jsave-btn" id="b-save-journal">SAVE</button>
-    <button class="tb" id="b-jcap-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-jcap-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-jcap-tools"><span class="sp-emoji">🛠️</span></button>
   </div>
 </div>
 
-<!-- Journal Cover screen -->
 <div class="sc" id="s-journal-cover">
-  <div class="card"><div class="jcov">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jcov">
     <div class="jcov-name">LARRY SMITHERS</div>
     <div class="jcov-frame">
       <div class="jcov-title">Field Guide Journal</div>
@@ -592,19 +545,14 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     </div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb" id="b-jcov-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-jcov-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-jcov-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-jcov-entries"><span class="sp-emoji">📖</span></button>
-    <button class="tb" id="b-jcov-add"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-jcov-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-jcov-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb jtb" id="b-jcov-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb jtb" id="b-jcov-entries"><span class="sp-emoji">📖</span></button>
+    <button class="tb jtb" id="b-jcov-add"><span class="sp-emoji">✏️</span></button>
   </div>
 </div>
 
-<!-- Journal View (entry list) screen -->
 <div class="sc" id="s-journal-view">
-  <div class="card"><div class="jvw">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jvw">
     <div class="jvh">Field Guide Journal</div>
     <div class="jvs" id="jv-count">Your entries</div>
     <hr class="jvr">
@@ -614,19 +562,14 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb" id="b-jview-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-jview-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-jview-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-jview-cover"><span class="sp-emoji">📔</span></button>
-    <button class="tb" id="b-jview-add"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-jview-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-jview-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb jtb" id="b-jview-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb jtb" id="b-jview-cover"><span class="sp-emoji">📔</span></button>
+    <button class="tb jtb" id="b-jview-add"><span class="sp-emoji">✏️</span></button>
   </div>
 </div>
 
-<!-- Journal Full Entry screen -->
 <div class="sc" id="s-journal-entry">
-  <div class="card"><div class="jew">
+  <div class="card" style="border-radius:12px 12px 0 0"><div class="jew">
     <div class="je-back-link" id="b-je-back">‹ Back to Journal</div>
     <div class="je-num" id="je-num">001</div>
     <div class="je-text" id="je-text"></div>
@@ -635,69 +578,68 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
     <div class="sp"></div>
   </div></div>
   <div class="bar jbar">
-    <button class="tb" id="b-jentry-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb" id="b-jentry-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="tb" id="b-jentry-idea"><span class="sp-emoji">💡</span></button>
-    <button class="tb" id="b-jentry-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="tb" id="b-jentry-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="tb" id="b-jentry-tools"><span class="sp-emoji">🛠️</span></button>
+    <button class="tb jtb" id="b-jentry-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb jtb" id="b-jentry-add"><span class="sp-emoji">✏️</span></button>
   </div>
 </div>
 
 <div class="sc" id="s-misc">
-  <div class="card"><div class="xw">
-    <div class="mg-head"><div class="mgh">🌸 Trivia</div><div class="mgt">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div></div>
-    <div class="mg-band"><div class="mgl">Like an Easter egg — those who look, find.</div></div>
-    <div style="padding:0 28px;flex:1;display:flex;flex-direction:column">
-      <div class="xi" id="b-authors">
-        <div class="xii">👤</div>
-        <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
-      </div><div class="xm">More will appear here as the journey unfolds.</div>
-      
+  <div class="card rnd"><div class="xw">
+    <div class="xe">🌸 Trivia</div>
+    <div class="xd">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div>
+    <div class="xt">Like an Easter egg — those who look, find.</div>
+    <hr class="xr">
+    <div class="xi" id="b-authors">
+      <div class="xii">👤</div>
+      <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
+    </div>
+    <div class="sp"></div>
+    <div class="xm">More will appear here as the journey unfolds.</div>
+    <div class="bp">
+      <button class="bb" id="b-misc-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-misc-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-misc-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-misc-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-misc-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-misc-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-misc-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-misc-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-misc-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-misc-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-misc-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-misc-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-authors">
-  <div class="card"><div class="xw">
-    <div class="mg-head"><div class="mgh">👤 Meet the authors</div><div class="mgt">A revolution that started with a conversation.</div></div>
-    <div class="mg-band"><div class="mgl">Story</div></div>
-    <div style="padding:16px 28px;flex:1;display:flex;flex-direction:column">
-      <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
-      <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
+  <div class="card rnd"><div class="sw">
+    <div class="se">Meet the authors</div>
+    <div class="sh">A revolution that started with a conversation.</div>
+    <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
+    <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
+    <div class="sp"></div>
+    <div class="bp">
+      <button class="bb" id="b-aut-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-aut-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-aut-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-aut-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-aut-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-aut-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-aut-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-aut-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-aut-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-aut-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-aut-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-aut-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 <div class="sc" id="s-tools">
-  <div class="card"><div class="xw">
-    <div class="mg-head"><div class="mgh">🛠️ Tools</div><div class="mgt">Practical resources for the journey ahead.</div></div>
-    <div class="mg-band"><div class="mgl">Coming soon</div></div>
-    <div style="padding:0 28px;flex:1;display:flex;flex-direction:column"><div class="xm">More will appear here as the journey unfolds.</div>
-      
+  <div class="card rnd"><div class="xw">
+    <div class="xe">🛠️ Tools</div>
+    <div class="xd">Practical resources for the journey ahead.</div>
+    <hr class="xr">
+    <div class="sp"></div>
+    <div class="xm">More will appear here as the journey unfolds.</div>
+    <div class="bp">
+      <button class="bb" id="b-tools-back"><span class="sp-emoji">⬅️</span></button>
+      <button class="bb" id="b-tools-map"><span class="sp-emoji">🗺️</span></button>
+      <button class="bb" id="b-tools-idea"><span class="sp-emoji">💡</span></button>
+      <button class="bb" id="b-tools-journal"><span class="sp-emoji">✏️</span></button>
+      <button class="bb" id="b-tools-misc"><span class="sp-emoji">🌸</span></button>
+      <button class="bb" id="b-tools-tools"><span class="sp-emoji">🛠️</span></button>
+    </div>
   </div></div>
-  <div class="bar">
-    <button class="bb" id="b-tools-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="bb" id="b-tools-map"><span class="sp-emoji">🗺️</span></button>
-    <button class="bb" id="b-tools-idea"><span class="sp-emoji">💡</span></button>
-    <button class="bb" id="b-tools-journal"><span class="sp-emoji">✏️</span></button>
-    <button class="bb" id="b-tools-misc"><span class="sp-emoji">🌸</span></button>
-    <button class="bb" id="b-tools-tools"><span class="sp-emoji">🛠️</span></button>
-  </div>
 </div>
 
 </div>
@@ -712,272 +654,54 @@ body{display:flex;align-items:flex-start;justify-content:center;padding:16px;min
   var MG=['s-cover-mg','s-cover-t2t','s-cover-goals','s-invention-mg','s-invention-thoughts','s-want-mg','s-know-mg'];
   var mgOrigin='s-cover-mg';
   var currentEntryIdx=0;
-  function loadEntries(){
-    var entries=[];
-    try{ var raw=sessionStorage.getItem('jentries'); if(raw) entries=JSON.parse(raw); }catch(e){}
-    return entries;
-  }
-  function saveEntryToSession(entry){
-    try{ var entries=loadEntries(); entries.push(entry); sessionStorage.setItem('jentries',JSON.stringify(entries)); }catch(e){}
-  }
-  function renderJournalView(){
-    var entries=loadEntries();
-    var list=document.getElementById('jv-entries-list');
-    var count=document.getElementById('jv-count');
-    if(!list) return;
-    if(!entries||entries.length===0){
-      list.innerHTML='<div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>';
-      if(count) count.textContent='Your entries';
-      return;
-    }
-    if(count) count.textContent=entries.length+' '+(entries.length===1?'entry':'entries');
-    list.innerHTML='';
-    entries.forEach(function(e,i){
-      var num=String(i+1).padStart(3,'0');
-      var preview=e.text.length>120?e.text.substring(0,120)+'…':e.text;
-      var eyebrow=(e.date||'')+(e.phase?' · '+e.phase:'')+(e.page?' · '+e.page:'');
-      var card=document.createElement('div');
-      card.className='jcard';
-      card.innerHTML='<div class="jcard-num">'+num+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+eyebrow+'</div>';
-      card.addEventListener('click',(function(idx){ return function(){ openEntry(idx); }; })(i));
-      list.appendChild(card);
-    });
-  }
-  function openEntry(idx){
-    var entries=loadEntries(); var e=entries[idx]; if(!e) return;
-    currentEntryIdx=idx;
-    var num=String(idx+1).padStart(3,'0');
-    var eyebrow=(e.date||'')+(e.phase?' · '+e.phase:'')+(e.page?' · '+e.page:'');
-    var el=document.getElementById('je-num'); if(el) el.textContent=num;
-    var et=document.getElementById('je-text'); if(et) et.textContent=e.text;
-    var ee=document.getElementById('je-eyebrow'); if(ee) ee.textContent=eyebrow;
-    nav('s-journal-entry');
-  }
-  function initJournalCover(){
-    try{
-      var started=sessionStorage.getItem('jstarted');
-      if(!started){ started=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); sessionStorage.setItem('jstarted',started); }
-      var el=document.getElementById('jcov-start'); if(el) el.textContent='Started '+started;
-    }catch(e){}
-  }
-  function nav(id){
-    var t=document.getElementById(id); if(!t) return;
-    document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
-    t.classList.add('active');
-    if(UTIL.indexOf(id)===-1){ prev=cur; }
-    if(MG.indexOf(id)!==-1){ mgOrigin=id; }
-    cur=id;
-    if(id==='s-journal-view') renderJournalView();
-    if(id==='s-journal-cover') initJournalCover();
-    window.scrollTo(0,0);
-  }
-  function navMap(){ nav(mapMap[prev]||mapMap[cur]||'s-cover-map'); }
-  function togglePh(id){
-    var el=document.getElementById(id), tog=document.getElementById(id+'-tog');
-    if(!el) return;
-    var hidden=el.classList.contains('phd')||el.style.display==='none';
-    if(hidden){ el.classList.remove('phd'); el.style.display='flex'; if(tog) tog.textContent='▲'; }
-    else { el.classList.add('phd'); el.style.display='none'; if(tog) tog.textContent='▼'; }
-  }
-  function wire(id, fn){ var el=document.getElementById(id); if(el) el.addEventListener('click', fn); }
-  // Sign-in
-  wire('b-signin', function(){ nav('s-cover'); });
-  // Content screens — ⬅️ · 🔍 · 💎 · ➡️
-  wire('b-cover-back', function(){ nav('s-signin'); });
-  wire('b-cover-mg',   function(){ nav('s-cover-mg'); });
-  wire('b-cover-gem',  function(){ sendPrompt('💎 Gem [on: Field Guide]'); });
-  wire('b-cover-next', function(){ nav('s-invention'); });
-  wire('b-inv-back', function(){ nav('s-cover'); });
-  wire('b-inv-mg',   function(){ nav('s-invention-mg'); });
-  wire('b-inv-gem',  function(){ sendPrompt('💎 Gem [on: Every great invention started as a thought.]'); });
-  wire('b-inv-next', function(){ nav('s-want'); });
-  wire('b-want-back', function(){ nav('s-invention'); });
-  wire('b-want-mg',   function(){ nav('s-want-mg'); });
-  wire('b-want-gem',  function(){ sendPrompt('💎 Gem [on: What do you want?]'); });
-  wire('b-want-next', function(){ nav('s-know'); });
-  wire('b-know-back', function(){ nav('s-want'); });
-  wire('b-know-mg',   function(){ nav('s-know-mg'); });
-  wire('b-know-gem',  function(){ sendPrompt('💎 Gem [on: Do you know what you want?]'); });
-  wire('b-know-no',     function(){ sendPrompt('No [on: Do you know what you want?]'); });
-  wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
-  wire('b-know-yes',    function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
-  // MG screens
-  wire('b-t2t',          function(){ nav('s-cover-t2t'); });
-  wire('b-goals',        function(){ nav('s-cover-goals'); });
-  wire('b-cmg-back',     function(){ nav('s-cover'); });
-  wire('b-cmg-map',      function(){ nav('s-cover-map'); });
-  wire('b-cmg-idea',     function(){ nav('s-idea'); });
-  wire('b-cmg-journal',  function(){ nav('s-journal'); });
-  wire('b-cmg-misc',     function(){ nav('s-misc'); });
-  wire('b-cmg-tools',    function(){ nav('s-tools'); });
-  wire('b-t2t-back',    function(){ nav('s-cover-mg'); });
-  wire('b-t2t-map',     function(){ nav('s-cover-map'); });
-  wire('b-t2t-idea',    function(){ nav('s-idea'); });
-  wire('b-t2t-journal', function(){ nav('s-journal'); });
-  wire('b-t2t-misc',    function(){ nav('s-misc'); });
-  wire('b-t2t-tools',   function(){ nav('s-tools'); });
-  wire('b-goals-back',    function(){ nav('s-cover-mg'); });
-  wire('b-goals-map',     function(){ nav('s-cover-map'); });
-  wire('b-goals-idea',    function(){ nav('s-idea'); });
-  wire('b-goals-journal', function(){ nav('s-journal'); });
-  wire('b-goals-misc',    function(){ nav('s-misc'); });
-  wire('b-goals-tools',   function(){ nav('s-tools'); });
-  wire('tog-cm-dream',   function(){ togglePh('cm-dream'); });
-  wire('tog-cm-believe', function(){ togglePh('cm-believe'); });
-  wire('tog-cm-dare',    function(){ togglePh('cm-dare'); });
-  wire('tog-cm-journey', function(){ togglePh('cm-journey'); });
-  wire('tog-cm-thing',   function(){ togglePh('cm-thing'); });
-  wire('b-cmap-back',function(){nav('s-cover-mg');});wire('b-cmap-bp-map',navMap);wire('b-cmap-bp-idea',function(){nav('s-idea');});wire('b-cmap-bp-journal',function(){nav('s-journal');});wire('b-cmap-bp-misc',function(){nav('s-misc');});wire('b-cmap-bp-tools',function(){nav('s-tools');});
-  wire('b-imap-back',function(){nav('s-invention-mg');});wire('b-imap-bp-map',navMap);wire('b-imap-bp-idea',function(){nav('s-idea');});wire('b-imap-bp-journal',function(){nav('s-journal');});wire('b-imap-bp-misc',function(){nav('s-misc');});wire('b-imap-bp-tools',function(){nav('s-tools');});
-  wire('b-wmap-back',function(){nav('s-want-mg');});wire('b-wmap-bp-map',navMap);wire('b-wmap-bp-idea',function(){nav('s-idea');});wire('b-wmap-bp-journal',function(){nav('s-journal');});wire('b-wmap-bp-misc',function(){nav('s-misc');});wire('b-wmap-bp-tools',function(){nav('s-tools');});
-  wire('b-kmap-back',function(){nav('s-know-mg');});wire('b-kmap-bp-map',navMap);wire('b-kmap-bp-idea',function(){nav('s-idea');});wire('b-kmap-bp-journal',function(){nav('s-journal');});wire('b-kmap-bp-misc',function(){nav('s-misc');});wire('b-kmap-bp-tools',function(){nav('s-tools');});
-  wire('b-inv-thoughts', function(){ nav('s-invention-thoughts'); });
-  wire('b-img-back',     function(){ nav('s-invention'); });
-  wire('b-img-map',      function(){ nav('s-invention-map'); });
-  wire('b-img-idea',     function(){ nav('s-idea'); });
-  wire('b-img-journal',  function(){ nav('s-journal'); });
-  wire('b-img-misc',     function(){ nav('s-misc'); });
-  wire('b-img-tools',    function(){ nav('s-tools'); });
-  wire('b-ith-back',    function(){ nav('s-invention-mg'); });
-  wire('b-ith-map',     function(){ nav('s-invention-map'); });
-  wire('b-ith-idea',    function(){ nav('s-idea'); });
-  wire('b-ith-journal', function(){ nav('s-journal'); });
-  wire('b-ith-misc',    function(){ nav('s-misc'); });
-  wire('b-ith-tools',   function(){ nav('s-tools'); });
-  wire('tog-im-dream',   function(){ togglePh('im-dream'); });
-  wire('tog-im-believe', function(){ togglePh('im-believe'); });
-  wire('tog-im-dare',    function(){ togglePh('im-dare'); });
-  wire('tog-im-journey', function(){ togglePh('im-journey'); });
-  wire('tog-im-thing',   function(){ togglePh('im-thing'); });
-  wire('b-wmg-back',     function(){ nav('s-want'); });
-  wire('b-wmg-map',      function(){ nav('s-want-map'); });
-  wire('b-wmg-idea',     function(){ nav('s-idea'); });
-  wire('b-wmg-journal',  function(){ nav('s-journal'); });
-  wire('b-wmg-misc',     function(){ nav('s-misc'); });
-  wire('b-wmg-tools',    function(){ nav('s-tools'); });
-  wire('tog-wm-dream',   function(){ togglePh('wm-dream'); });
-  wire('tog-wm-believe', function(){ togglePh('wm-believe'); });
-  wire('tog-wm-dare',    function(){ togglePh('wm-dare'); });
-  wire('tog-wm-journey', function(){ togglePh('wm-journey'); });
-  wire('tog-wm-thing',   function(){ togglePh('wm-thing'); });
-  wire('b-know-more',   function(){});
-  wire('b-kmg-back',     function(){ nav('s-know'); });
-  wire('b-kmg-map',      function(){ nav('s-know-map'); });
-  wire('b-kmg-idea',     function(){ nav('s-idea'); });
-  wire('b-kmg-journal',  function(){ nav('s-journal'); });
-  wire('b-kmg-misc',     function(){ nav('s-misc'); });
-  wire('b-kmg-tools',    function(){ nav('s-tools'); });
-  wire('tog-km-dream',   function(){ togglePh('km-dream'); });
-  wire('tog-km-believe', function(){ togglePh('km-believe'); });
-  wire('tog-km-dare',    function(){ togglePh('km-dare'); });
-  wire('tog-km-journey', function(){ togglePh('km-journey'); });
-  wire('tog-km-thing',   function(){ togglePh('km-thing'); });
-  // Idea landing
-  wire('b-idea-back',    function(){ nav(mgOrigin); });
-  wire('b-idea-map',     navMap);
-  wire('b-idea-idea',    function(){ nav('s-idea'); });
-  wire('b-idea-journal', function(){ nav('s-journal'); });
-  wire('b-idea-misc',    function(){ nav('s-misc'); });
-  wire('b-idea-tools',   function(){ nav('s-tools'); });
-  wire('b-capture-idea', function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
-  wire('b-sea-ideas',    function(){ sendPrompt('💡 Sea of Ideas [on: '+getCtx()+']'); });
-  // Idea capture
-  wire('b-idea-capture-back', function(){ nav('s-idea'); });
-  wire('b-icap-map',     navMap);
-  wire('b-icap-idea',    function(){ nav('s-idea'); });
-  wire('b-icap-journal', function(){ nav('s-journal'); });
-  wire('b-icap-misc',    function(){ nav('s-misc'); });
-  wire('b-icap-tools',   function(){ nav('s-tools'); });
-  // Journal landing
-  wire('b-journal-back',    function(){ nav(mgOrigin); });
-  wire('b-journal-map',     navMap);
-  wire('b-journal-idea',    function(){ nav('s-idea'); });
-  wire('b-journal-journal', function(){ nav('s-journal'); });
-  wire('b-journal-misc',    function(){ nav('s-misc'); });
-  wire('b-journal-tools',   function(){ nav('s-tools'); });
-  wire('b-add-note',     function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
-  wire('b-view-journal', function(){ nav('s-journal-cover'); });
-  // Journal capture
-  wire('b-journal-capture-back', function(){ nav('s-journal'); });
-  wire('b-jcap-map',     navMap);
-  wire('b-jcap-idea',    function(){ nav('s-idea'); });
-  wire('b-jcap-journal', function(){ nav('s-journal'); });
-  wire('b-jcap-misc',    function(){ nav('s-misc'); });
-  wire('b-jcap-tools',   function(){ nav('s-tools'); });
-  // Journal cover
-  wire('b-jcov-back',    function(){ nav('s-journal'); });
-  wire('b-jcov-map',     navMap);
-  wire('b-jcov-idea',    function(){ nav('s-idea'); });
-  wire('b-jcov-entries', function(){ nav('s-journal-view'); });
-  wire('b-jcov-add',     function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
-  wire('b-jcov-misc',    function(){ nav('s-misc'); });
-  wire('b-jcov-tools',   function(){ nav('s-tools'); });
-  // Journal view
-  wire('b-jview-back',  function(){ nav('s-journal'); });
-  wire('b-jview-map',   navMap);
-  wire('b-jview-idea',  function(){ nav('s-idea'); });
-  wire('b-jview-cover', function(){ nav('s-journal-cover'); });
-  wire('b-jview-add',   function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){ t.value=''; t.focus(); } var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
-  wire('b-jview-misc',  function(){ nav('s-misc'); });
-  wire('b-jview-tools', function(){ nav('s-tools'); });
-  // Journal entry
-  wire('b-je-back',       function(){ nav('s-journal-view'); });
-  wire('b-jentry-back',   function(){ nav('s-journal-view'); });
-  wire('b-jentry-map',    navMap);
-  wire('b-jentry-idea',   function(){ nav('s-idea'); });
-  wire('b-jentry-journal',function(){ nav('s-journal'); });
-  wire('b-jentry-misc',   function(){ nav('s-misc'); });
-  wire('b-jentry-tools',  function(){ nav('s-tools'); });
-  // Trivia / Authors / Tools
-  wire('b-authors',      function(){ nav('s-authors'); });
-  wire('b-misc-back',    function(){ nav(mgOrigin); });
-  wire('b-misc-map',     navMap);
-  wire('b-misc-idea',    function(){ nav('s-idea'); });
-  wire('b-misc-journal', function(){ nav('s-journal'); });
-  wire('b-misc-misc',    function(){ nav('s-misc'); });
-  wire('b-misc-tools',   function(){ nav('s-tools'); });
-  wire('b-aut-back',    function(){ nav('s-misc'); });
-  wire('b-aut-map',     navMap);
-  wire('b-aut-idea',    function(){ nav('s-idea'); });
-  wire('b-aut-journal', function(){ nav('s-journal'); });
-  wire('b-aut-misc',    function(){ nav('s-misc'); });
-  wire('b-aut-tools',   function(){ nav('s-tools'); });
-  wire('b-tools-back',    function(){ nav(mgOrigin); });
-  wire('b-tools-map',     navMap);
-  wire('b-tools-idea',    function(){ nav('s-idea'); });
-  wire('b-tools-journal', function(){ nav('s-journal'); });
-  wire('b-tools-misc',    function(){ nav('s-misc'); });
-  wire('b-tools-tools',   function(){ nav('s-tools'); });
-  var ideaTA=document.getElementById('idea-text');
-  if(ideaTA) ideaTA.addEventListener('input',function(){
-    var b=document.getElementById('b-save-idea');
-    if(b) b.classList.toggle('active', this.value.trim().length>0);
-  });
-  var journalTA=document.getElementById('journal-text');
-  if(journalTA) journalTA.addEventListener('input',function(){
-    var b=document.getElementById('b-save-journal');
-    if(b) b.classList.toggle('active', this.value.trim().length>0);
-  });
-  wire('b-save-idea', function(){
-    var t=document.getElementById('idea-text'); if(!t) return;
-    var text=t.value.trim(); if(!text) return;
-    var now=new Date();
-    try{ window.storage&&window.storage.set('idea:'+now.getTime(),JSON.stringify({type:'idea',text:text,context:getCtx(),timestamp:now.toLocaleString()})); }catch(e){}
-    sendPrompt('💡 Idea captured: '+text);
-    nav('s-idea');
-  });
-  wire('b-save-journal', function(){
-    var t=document.getElementById('journal-text'); if(!t) return;
-    var text=t.value.trim(); if(!text) return;
-    var now=new Date();
-    var date=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-    var phase=ctxMap[prev]||'Introduction';
-    var entry={type:'note',text:text,date:date,phase:phase,page:getCtx(),timestamp:now.toLocaleString()};
-    try{ window.storage&&window.storage.set('note:'+now.getTime(),JSON.stringify(entry)); }catch(e){}
-    saveEntryToSession(entry);
-    sendPrompt('✏️ Journal note saved: '+text);
-    nav('s-journal');
-  });
+  function loadEntries(){var entries=[];try{var raw=sessionStorage.getItem('jentries');if(raw)entries=JSON.parse(raw);}catch(e){}return entries;}
+  function saveEntryToSession(entry){try{var entries=loadEntries();entries.push(entry);sessionStorage.setItem('jentries',JSON.stringify(entries));}catch(e){}}
+  function renderJournalView(){var entries=loadEntries();var list=document.getElementById('jv-entries-list');var count=document.getElementById('jv-count');if(!list)return;if(!entries||entries.length===0){list.innerHTML='<div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>';if(count)count.textContent='Your entries';return;}if(count)count.textContent=entries.length+' '+(entries.length===1?'entry':'entries');list.innerHTML='';entries.forEach(function(e,i){var num=String(i+1).padStart(3,'0');var preview=e.text.length>120?e.text.substring(0,120)+'…':e.text;var eyebrow=(e.date||'')+(e.phase?' · '+e.phase:'')+(e.page?' · '+e.page:'');var card=document.createElement('div');card.className='jcard';card.innerHTML='<div class="jcard-num">'+num+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+eyebrow+'</div>';card.addEventListener('click',(function(idx){return function(){openEntry(idx);};})(i));list.appendChild(card);});}
+  function openEntry(idx){var entries=loadEntries();var e=entries[idx];if(!e)return;currentEntryIdx=idx;var num=String(idx+1).padStart(3,'0');var eyebrow=(e.date||'')+(e.phase?' · '+e.phase:'')+(e.page?' · '+e.page:'');var el=document.getElementById('je-num');if(el)el.textContent=num;var et=document.getElementById('je-text');if(et)et.textContent=e.text;var ee=document.getElementById('je-eyebrow');if(ee)ee.textContent=eyebrow;nav('s-journal-entry');}
+  function initJournalCover(){try{var started=sessionStorage.getItem('jstarted');if(!started){started=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});sessionStorage.setItem('jstarted',started);}var el=document.getElementById('jcov-start');if(el)el.textContent='Started '+started;}catch(e){}}
+  function nav(id){var t=document.getElementById(id);if(!t)return;document.querySelectorAll('.sc').forEach(function(s){s.classList.remove('active');});t.classList.add('active');if(UTIL.indexOf(id)===-1){prev=cur;}if(MG.indexOf(id)!==-1){mgOrigin=id;}cur=id;if(id==='s-journal-view')renderJournalView();if(id==='s-journal-cover')initJournalCover();window.scrollTo(0,0);}
+  function navMap(){nav(mapMap[prev]||mapMap[cur]||'s-cover-map');}
+  function togglePh(id){var el=document.getElementById(id),tog=document.getElementById(id+'-tog');if(!el)return;var hidden=el.classList.contains('phd')||el.style.display==='none';if(hidden){el.classList.remove('phd');el.style.display='flex';if(tog)tog.textContent='▲';}else{el.classList.add('phd');el.style.display='none';if(tog)tog.textContent='▼';}}
+  function wire(id,fn){var el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
+  wire('b-signin',function(){nav('s-cover');});
+  wire('b-cover-back',function(){nav('s-signin');});wire('b-cover-mg',function(){nav('s-cover-mg');});wire('b-cover-next',function(){nav('s-invention');});
+  wire('b-t2t',function(){nav('s-cover-t2t');});wire('b-goals',function(){nav('s-cover-goals');});
+  wire('b-cmg-back',function(){nav('s-cover');});wire('b-cmg-map',function(){nav('s-cover-map');});wire('b-cmg-idea',function(){nav('s-idea');});wire('b-cmg-journal',function(){nav('s-journal');});wire('b-cmg-misc',function(){nav('s-misc');});wire('b-cmg-tools',function(){nav('s-tools');});
+  wire('b-t2t-back',function(){nav('s-cover-mg');});wire('b-t2t-map',function(){nav('s-cover-map');});wire('b-t2t-idea',function(){nav('s-idea');});wire('b-t2t-journal',function(){nav('s-journal');});wire('b-t2t-misc',function(){nav('s-misc');});wire('b-t2t-tools',function(){nav('s-tools');});
+  wire('b-goals-back',function(){nav('s-cover-mg');});wire('b-goals-map',function(){nav('s-cover-map');});wire('b-goals-idea',function(){nav('s-idea');});wire('b-goals-journal',function(){nav('s-journal');});wire('b-goals-misc',function(){nav('s-misc');});wire('b-goals-tools',function(){nav('s-tools');});
+  wire('tog-cm-dream',function(){togglePh('cm-dream');});wire('tog-cm-believe',function(){togglePh('cm-believe');});wire('tog-cm-dare',function(){togglePh('cm-dare');});wire('tog-cm-journey',function(){togglePh('cm-journey');});wire('tog-cm-thing',function(){togglePh('cm-thing');});
+  wire('b-cmap-back',function(){nav(prev);});wire('b-cmap-idea',function(){nav('s-idea');});wire('b-cmap-journal',function(){nav('s-journal');});wire('b-cmap-misc',function(){nav('s-misc');});
+  wire('b-inv-back',function(){nav('s-cover');});wire('b-inv-mg',function(){nav('s-invention-mg');});wire('b-inv-next',function(){nav('s-want');});wire('b-inv-thoughts',function(){nav('s-invention-thoughts');});
+  wire('b-img-back',function(){nav('s-invention');});wire('b-img-map',function(){nav('s-invention-map');});wire('b-img-idea',function(){nav('s-idea');});wire('b-img-journal',function(){nav('s-journal');});wire('b-img-misc',function(){nav('s-misc');});wire('b-img-tools',function(){nav('s-tools');});
+  wire('b-ith-back',function(){nav('s-invention-mg');});wire('b-ith-map',function(){nav('s-invention-map');});wire('b-ith-idea',function(){nav('s-idea');});wire('b-ith-journal',function(){nav('s-journal');});wire('b-ith-misc',function(){nav('s-misc');});wire('b-ith-tools',function(){nav('s-tools');});
+  wire('tog-im-dream',function(){togglePh('im-dream');});wire('tog-im-believe',function(){togglePh('im-believe');});wire('tog-im-dare',function(){togglePh('im-dare');});wire('tog-im-journey',function(){togglePh('im-journey');});wire('tog-im-thing',function(){togglePh('im-thing');});
+  wire('b-imap-back',function(){nav(prev);});wire('b-imap-idea',function(){nav('s-idea');});wire('b-imap-journal',function(){nav('s-journal');});wire('b-imap-misc',function(){nav('s-misc');});
+  wire('b-want-back',function(){nav('s-invention');});wire('b-want-mg',function(){nav('s-want-mg');});wire('b-want-next',function(){nav('s-know');});
+  wire('b-wmg-back',function(){nav('s-want');});wire('b-wmg-map',function(){nav('s-want-map');});wire('b-wmg-idea',function(){nav('s-idea');});wire('b-wmg-journal',function(){nav('s-journal');});wire('b-wmg-misc',function(){nav('s-misc');});wire('b-wmg-tools',function(){nav('s-tools');});
+  wire('tog-wm-dream',function(){togglePh('wm-dream');});wire('tog-wm-believe',function(){togglePh('wm-believe');});wire('tog-wm-dare',function(){togglePh('wm-dare');});wire('tog-wm-journey',function(){togglePh('wm-journey');});wire('tog-wm-thing',function(){togglePh('wm-thing');});
+  wire('b-wmap-back',function(){nav(prev);});wire('b-wmap-idea',function(){nav('s-idea');});wire('b-wmap-journal',function(){nav('s-journal');});wire('b-wmap-misc',function(){nav('s-misc');});
+  wire('b-know-back',function(){nav('s-want');});wire('b-know-mg',function(){nav('s-know-mg');});
+  wire('b-know-no',function(){sendPrompt('No [on: Do you know what you want?]');});wire('b-know-sortof',function(){sendPrompt('Sort of [on: Do you know what you want?]');});wire('b-know-yes',function(){sendPrompt('Yes [on: Do you know what you want?]');});
+  wire('b-know-more',function(){});
+  wire('b-kmg-back',function(){nav('s-know');});wire('b-kmg-map',function(){nav('s-know-map');});wire('b-kmg-idea',function(){nav('s-idea');});wire('b-kmg-journal',function(){nav('s-journal');});wire('b-kmg-misc',function(){nav('s-misc');});wire('b-kmg-tools',function(){nav('s-tools');});
+  wire('tog-km-dream',function(){togglePh('km-dream');});wire('tog-km-believe',function(){togglePh('km-believe');});wire('tog-km-dare',function(){togglePh('km-dare');});wire('tog-km-journey',function(){togglePh('km-journey');});wire('tog-km-thing',function(){togglePh('km-thing');});
+  wire('b-kmap-back',function(){nav(prev);});wire('b-kmap-idea',function(){nav('s-idea');});wire('b-kmap-journal',function(){nav('s-journal');});wire('b-kmap-misc',function(){nav('s-misc');});
+  wire('b-capture-idea',function(){nav('s-idea-capture');setTimeout(function(){var t=document.getElementById('idea-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-idea');if(b)b.classList.remove('active');},50);});
+  wire('b-sea-ideas',function(){sendPrompt('💡 Sea of Ideas [on: '+getCtx()+']');});
+  wire('b-idea-back',function(){nav(mgOrigin);});wire('b-idea-capture-back',function(){nav('s-idea');});
+  wire('b-add-note',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
+  wire('b-view-journal',function(){nav('s-journal-cover');});wire('b-journal-back',function(){nav(mgOrigin);});wire('b-journal-capture-back',function(){nav('s-journal');});
+  wire('b-jcov-back',function(){nav('s-journal');});wire('b-jcov-entries',function(){nav('s-journal-view');});wire('b-jcov-add',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
+  wire('b-jview-back',function(){nav('s-journal');});wire('b-jview-cover',function(){nav('s-journal-cover');});wire('b-jview-add',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
+  wire('b-je-back',function(){nav('s-journal-view');});wire('b-jentry-back',function(){nav('s-journal-view');});wire('b-jentry-add',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
+  wire('b-authors',function(){nav('s-authors');});
+  wire('b-misc-back',function(){nav(mgOrigin);});wire('b-misc-map',navMap);wire('b-misc-idea',function(){nav('s-idea');});wire('b-misc-journal',function(){nav('s-journal');});wire('b-misc-misc',function(){nav('s-misc');});wire('b-misc-tools',function(){nav('s-tools');});
+  wire('b-aut-back',function(){nav('s-misc');});wire('b-aut-map',navMap);wire('b-aut-idea',function(){nav('s-idea');});wire('b-aut-journal',function(){nav('s-journal');});wire('b-aut-misc',function(){nav('s-misc');});wire('b-aut-tools',function(){nav('s-tools');});
+  wire('b-tools-back',function(){nav(mgOrigin);});wire('b-tools-map',navMap);wire('b-tools-idea',function(){nav('s-idea');});wire('b-tools-journal',function(){nav('s-journal');});wire('b-tools-misc',function(){nav('s-misc');});wire('b-tools-tools',function(){nav('s-tools');});
+  var ideaTA=document.getElementById('idea-text');if(ideaTA)ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
+  var journalTA=document.getElementById('journal-text');if(journalTA)journalTA.addEventListener('input',function(){var b=document.getElementById('b-save-journal');if(b)b.classList.toggle('active',this.value.trim().length>0);});
+  wire('b-save-idea',function(){var t=document.getElementById('idea-text');if(!t)return;var text=t.value.trim();if(!text)return;var now=new Date();try{window.storage&&window.storage.set('idea:'+now.getTime(),JSON.stringify({type:'idea',text:text,context:getCtx(),timestamp:now.toLocaleString()}));}catch(e){}sendPrompt('💡 Idea captured: '+text);nav('s-idea');});
+  wire('b-save-journal',function(){var t=document.getElementById('journal-text');if(!t)return;var text=t.value.trim();if(!text)return;var now=new Date();var date=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});var phase=ctxMap[prev]||'Introduction';var entry={type:'note',text:text,date:date,phase:phase,page:getCtx(),timestamp:now.toLocaleString()};try{window.storage&&window.storage.set('note:'+now.getTime(),JSON.stringify(entry));}catch(e){}saveEntryToSession(entry);sendPrompt('✏️ Journal note saved: '+text);nav('s-journal');});
   nav('s-signin');
 })();
 </script>
