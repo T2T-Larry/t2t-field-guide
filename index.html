@@ -13,11 +13,11 @@ html,body{height:100%;background:#d0d0d0}
 body{display:flex;align-items:center;justify-content:center;padding:16px;min-height:100%}
 .fg{font-family:var(--font-sans,sans-serif);width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
 .sc{display:none!important}
-.sc.active{display:flex!important;flex-direction:column}
-.card{min-height:540px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.sc.active{display:flex!important;flex-direction:column;height:620px}
+.card{border-radius:12px;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0}
 .card.rnd{border-radius:12px}
-.bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
-.tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.bar{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:6px;padding:8px;border-top:1px solid #1a7a5e;flex-shrink:0}
+.tb{width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s;flex-shrink:0}
 .tb:hover:not(.dim){border-color:#378ADD!important}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
 .sp-emoji{display:inline-block;text-shadow:2px 2px 0 rgba(0,0,0,.65),-1px -1px 0 rgba(255,255,255,.4)}
@@ -40,7 +40,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .tag{font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#C9A87C}
 .ip{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 40px;text-align:center;background:var(--color-background-primary,#fff)}
 .ep{font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:24px}
-.mgw{flex:1;display:flex;flex-direction:column;background:#fff;min-height:540px}
+.mgw{flex:1;display:flex;flex-direction:column;background:#fff;overflow:hidden}
 .mgh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:var(--color-text-primary,#111);margin-bottom:4px}
 .mgt{font-size:13px;font-style:italic;color:var(--color-text-tertiary,#888);line-height:1.5;margin-bottom:0}
 .mg-head{padding:24px 28px 16px;background:#fff;border-bottom:3px solid #0F6E56}
@@ -51,8 +51,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .mgi:last-child{border-bottom:1px solid #c8e8df}.mgi:hover{color:#0F6E56}
 .arr{color:var(--color-text-tertiary,#888);font-size:13px}
 .sp{flex:1}
-.bp{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important;border-radius:12px;padding:8px;display:flex;gap:6px;margin:16px 0 0}
-.bb{flex:1;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:10px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.bp{background:#0a4a38!important;border-top:1px solid #1a7a5e!important;display:flex;justify-content:center;align-items:center;gap:6px;padding:8px;flex-shrink:0;margin:0}
+.bb{flex:1;max-width:80px;height:36px;background:#ffffff!important;border:2px solid #111!important;border-radius:8px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .bb:hover{border-color:#378ADD!important}
 .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:var(--color-background-primary,#fff)}
 .se{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--color-text-tertiary,#888);margin-bottom:14px}
@@ -82,8 +82,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .ig{font-size:13px;font-style:italic;color:#3A6080;line-height:1.6;margin-bottom:36px;max-width:340px}
 .ib{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#1A3A5C!important;margin-bottom:14px;transition:border-color .15s;display:block}
 .ib:hover{border-color:#378ADD!important}
-.ibar{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important}
+.ibar{background:#0a4a38!important;border-top:1px solid #1a7a5e!important}
 .itb{background:#ffffff!important;border:2px solid #111!important}
+
 .icw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#EBF4FF}
 .icl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
 .icit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
@@ -98,7 +99,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .jg{font-size:13px;font-style:italic;color:#7A5C3A;line-height:1.6;margin-bottom:36px;max-width:340px}
 .jb{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111!important;background:#ffffff!important;color:#3B2510!important;margin-bottom:14px;transition:border-color .15s;display:block}
 .jb:hover{border-color:#8B5E2A!important}
-.jbar{background:#0a4a38!important;border:2px solid #0d5c47!important;border-top:1px solid #1a7a5e!important}
+.jbar{background:#0a4a38!important;border-top:1px solid #1a7a5e!important}
 .jtb{background:#ffffff!important;border:2px solid #111!important}
 .jcw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#FDF6E8}
 .jcl{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#C9A87C;margin-bottom:14px}
@@ -174,11 +175,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="sm">A Choose Your Own Adventure Experience</div>
     <div class="aut">By Larry Smithers &amp; Bill Fritsch</div>
     <div class="tag">Every great journey starts with a single step.</div>
-  </div></div>
+  </div>
   <div class="bar">
     <button class="tb" id="b-cover-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-cover-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-cover-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb" id="b-cover-next"><span class="sp-emoji">➡️</span></button>
+  </div>
   </div>
 </div>
 
@@ -271,11 +274,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div style="font-size:18px;color:var(--color-text-primary,#111);line-height:1.9;margin-bottom:16px">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
     <div style="font-size:18px;font-weight:600;color:var(--color-text-primary,#111);margin-bottom:18px">Every single one — thought first.</div>
     <div style="font-size:15px;color:var(--color-text-secondary,#555);line-height:1.7">And every one of them began the same way.<br>Someone answered one question:</div>
-  </div></div>
+  </div>
   <div class="bar">
     <button class="tb" id="b-inv-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-inv-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-inv-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb" id="b-inv-next"><span class="sp-emoji">➡️</span></button>
+  </div>
   </div>
 </div>
 
@@ -347,11 +352,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <hr style="width:100%;border:none;border-top:1px solid var(--color-border-primary,#ccc);margin-bottom:24px">
     <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:var(--color-text-secondary,#555);line-height:1.8;max-width:380px;margin-bottom:14px">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
     <div style="font-size:13px;color:var(--color-text-tertiary,#888)">— Alfred E. Neuman</div>
-  </div></div>
+  </div>
   <div class="bar">
     <button class="tb" id="b-want-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-want-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-want-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb" id="b-want-next"><span class="sp-emoji">➡️</span></button>
+  </div>
   </div>
 </div>
 
@@ -405,11 +412,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <button id="b-know-sortof" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
       <button id="b-know-yes" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#0F6E56;color:#fff">Yes</button>
     </div>
-  </div></div>
+  </div>
   <div class="bar">
     <button class="tb" id="b-know-back"><span class="sp-emoji">⬅️</span></button>
     <button class="tb" id="b-know-mg"><span class="sp-emoji">🔍</span></button>
+    <button class="tb" id="b-know-gem"><span class="sp-emoji">💎</span></button>
     <button class="tb dim"><span class="sp-emoji">➡️</span></button>
+  </div>
   </div>
 </div>
 
@@ -464,7 +473,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <button class="ib" id="b-capture-idea">Capture an Idea</button>
     <button class="ib" id="b-sea-ideas">Sea of Ideas</button>
   </div></div>
-  <div class="bar ibar"><button class="tb itb" id="b-idea-back"><span class="sp-emoji">⬅️</span></button></div>
+  <div class="bar ibar"><button class="tb itb" id="b-idea-back"><span class="sp-emoji">⬅️</span></button><button class="bb" id="b-idea-map"><span class="sp-emoji">🗺️</span></button><button class="bb" id="b-idea-idea"><span class="sp-emoji">💡</span></button><button class="bb" id="b-idea-journal"><span class="sp-emoji">✏️</span></button><button class="bb" id="b-idea-misc"><span class="sp-emoji">🌸</span></button><button class="bb" id="b-idea-tools"><span class="sp-emoji">🛠️</span></button></div>
 </div>
 
 <div class="sc" id="s-idea-capture">
@@ -478,6 +487,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div></div>
   <div class="bar ibar">
     <button class="tb itb" id="b-idea-capture-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="bb" id="b-icap-map"><span class="sp-emoji">🗺️</span></button>
+    <button class="bb" id="b-icap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="bb" id="b-icap-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-icap-misc"><span class="sp-emoji">🌸</span></button>
+    <button class="bb" id="b-icap-tools"><span class="sp-emoji">🛠️</span></button>
     <button class="save-btn" id="b-save-idea">SAVE</button>
   </div>
 </div>
@@ -490,7 +504,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <button class="jb" id="b-add-note">Add a Note to my Journal</button>
     <button class="jb" id="b-view-journal">View Journal</button>
   </div></div>
-  <div class="bar jbar"><button class="tb jtb" id="b-journal-back"><span class="sp-emoji">⬅️</span></button></div>
+  <div class="bar jbar"><button class="tb jtb" id="b-journal-back"><span class="sp-emoji">⬅️</span></button><button class="bb" id="b-journal-map"><span class="sp-emoji">🗺️</span></button><button class="bb" id="b-journal-idea"><span class="sp-emoji">💡</span></button><button class="bb" id="b-journal-journal"><span class="sp-emoji">✏️</span></button><button class="bb" id="b-journal-misc"><span class="sp-emoji">🌸</span></button><button class="bb" id="b-journal-tools"><span class="sp-emoji">🛠️</span></button></div>
 </div>
 
 <div class="sc" id="s-journal-capture">
@@ -504,6 +518,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div></div>
   <div class="bar jbar">
     <button class="tb jtb" id="b-journal-capture-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="bb" id="b-jcap-map"><span class="sp-emoji">🗺️</span></button>
+    <button class="bb" id="b-jcap-idea"><span class="sp-emoji">💡</span></button>
+    <button class="bb" id="b-jcap-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jcap-misc"><span class="sp-emoji">🌸</span></button>
+    <button class="bb" id="b-jcap-tools"><span class="sp-emoji">🛠️</span></button>
     <button class="jsave-btn" id="b-save-journal">SAVE</button>
   </div>
 </div>
@@ -525,8 +544,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div></div>
   <div class="bar jbar">
     <button class="tb jtb" id="b-jcov-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb jtb" id="b-jcov-entries"><span class="sp-emoji">📖</span></button>
-    <button class="tb jtb" id="b-jcov-add"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jcov-map"><span class="sp-emoji">🗺️</span></button>
+    <button class="bb" id="b-jcov-idea"><span class="sp-emoji">💡</span></button>
+    <button class="bb" id="b-jcov-entries"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jcov-misc"><span class="sp-emoji">🌸</span></button>
+    <button class="bb" id="b-jcov-tools"><span class="sp-emoji">🛠️</span></button>
   </div>
 </div>
 
@@ -542,8 +564,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div></div>
   <div class="bar jbar">
     <button class="tb jtb" id="b-jview-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb jtb" id="b-jview-cover"><span class="sp-emoji">📔</span></button>
-    <button class="tb jtb" id="b-jview-add"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jview-map"><span class="sp-emoji">🗺️</span></button>
+    <button class="bb" id="b-jview-idea"><span class="sp-emoji">💡</span></button>
+    <button class="bb" id="b-jview-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jview-misc"><span class="sp-emoji">🌸</span></button>
+    <button class="bb" id="b-jview-tools"><span class="sp-emoji">🛠️</span></button>
   </div>
 </div>
 
@@ -558,7 +583,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div></div>
   <div class="bar jbar">
     <button class="tb jtb" id="b-jentry-back"><span class="sp-emoji">⬅️</span></button>
-    <button class="tb jtb" id="b-jentry-add"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jentry-map"><span class="sp-emoji">🗺️</span></button>
+    <button class="bb" id="b-jentry-idea"><span class="sp-emoji">💡</span></button>
+    <button class="bb" id="b-jentry-journal"><span class="sp-emoji">✏️</span></button>
+    <button class="bb" id="b-jentry-misc"><span class="sp-emoji">🌸</span></button>
+    <button class="bb" id="b-jentry-tools"><span class="sp-emoji">🛠️</span></button>
   </div>
 </div>
 
@@ -676,6 +705,17 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-jcov-back',function(){nav('s-journal');});wire('b-jcov-entries',function(){nav('s-journal-view');});wire('b-jcov-add',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
   wire('b-jview-back',function(){nav('s-journal');});wire('b-jview-cover',function(){nav('s-journal-cover');});wire('b-jview-add',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
   wire('b-je-back',function(){nav('s-journal-view');});wire('b-jentry-back',function(){nav('s-journal-view');});wire('b-jentry-add',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});
+  wire('b-cover-gem',function(){sendPrompt('💎 Gem [on: Field Guide]');});
+  wire('b-inv-gem',function(){sendPrompt('💎 Gem [on: Every great invention started as a thought.]');});
+  wire('b-want-gem',function(){sendPrompt('💎 Gem [on: What do you want?]');});
+  wire('b-know-gem',function(){sendPrompt('💎 Gem [on: Do you know what you want?]');});
+  wire('b-idea-map',navMap);wire('b-idea-idea',function(){nav('s-idea');});wire('b-idea-journal',function(){nav('s-journal');});wire('b-idea-misc',function(){nav('s-misc');});wire('b-idea-tools',function(){nav('s-tools');});
+  wire('b-icap-map',navMap);wire('b-icap-idea',function(){nav('s-idea');});wire('b-icap-journal',function(){nav('s-journal');});wire('b-icap-misc',function(){nav('s-misc');});wire('b-icap-tools',function(){nav('s-tools');});
+  wire('b-journal-map',navMap);wire('b-journal-idea',function(){nav('s-idea');});wire('b-journal-journal',function(){nav('s-journal');});wire('b-journal-misc',function(){nav('s-misc');});wire('b-journal-tools',function(){nav('s-tools');});
+  wire('b-jcap-map',navMap);wire('b-jcap-idea',function(){nav('s-idea');});wire('b-jcap-journal',function(){nav('s-journal');});wire('b-jcap-misc',function(){nav('s-misc');});wire('b-jcap-tools',function(){nav('s-tools');});
+  wire('b-jcov-map',navMap);wire('b-jcov-idea',function(){nav('s-idea');});wire('b-jcov-misc',function(){nav('s-misc');});wire('b-jcov-tools',function(){nav('s-tools');});
+  wire('b-jview-map',navMap);wire('b-jview-idea',function(){nav('s-idea');});wire('b-jview-journal',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});wire('b-jview-misc',function(){nav('s-misc');});wire('b-jview-tools',function(){nav('s-tools');});
+  wire('b-jentry-map',navMap);wire('b-jentry-idea',function(){nav('s-idea');});wire('b-jentry-journal',function(){nav('s-journal-capture');setTimeout(function(){var t=document.getElementById('journal-text');if(t){t.value='';t.focus();}var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');},50);});wire('b-jentry-misc',function(){nav('s-misc');});wire('b-jentry-tools',function(){nav('s-tools');});
   wire('b-authors',function(){nav('s-authors');});
   wire('b-misc-back',function(){nav(mgOrigin);});wire('b-misc-map',navMap);wire('b-misc-idea',function(){nav('s-idea');});wire('b-misc-journal',function(){nav('s-journal');});wire('b-misc-misc',function(){nav('s-misc');});wire('b-misc-tools',function(){nav('s-tools');});
   wire('b-aut-back',function(){nav('s-misc');});wire('b-aut-map',navMap);wire('b-aut-idea',function(){nav('s-idea');});wire('b-aut-journal',function(){nav('s-journal');});wire('b-aut-misc',function(){nav('s-misc');});wire('b-aut-tools',function(){nav('s-tools');});
