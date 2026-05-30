@@ -124,6 +124,26 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .je-text{font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#3B2510;line-height:1.75;margin-bottom:20px}
 .je-rule{border:none;border-top:1px solid #C9A87C;margin-bottom:12px}
 .je-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
+.tools-body{flex:1;display:flex;flex-direction:column;align-items:center;background:#8B5E2A}
+.tools-head{width:100%;padding:20px 28px 14px;background:#7a4e1e;border-bottom:2px solid #6a3e10}
+.tools-eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#f5ddb0;opacity:.8;margin-bottom:4px}
+.tools-headline{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fdf0d5;line-height:1.2}
+.tools-orbital{position:relative;width:320px;height:310px;flex-shrink:0;margin-top:10px}
+button.t-gear{position:absolute!important;width:86px!important;height:86px!important;border-radius:50%!important;background-color:#ffffff!important;border:2px solid #e8d4a8!important;font-size:38px!important;cursor:pointer!important;display:flex!important;align-items:center!important;justify-content:center!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:4!important;padding:0!important;line-height:1!important;-webkit-appearance:none;appearance:none}
+button.t-gear:hover{background-color:#f5f0e8!important}
+button.t-orb{position:absolute!important;width:88px!important;height:54px!important;background-color:#ffffff!important;border:none!important;border-radius:11px!important;cursor:pointer!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;z-index:3!important;box-shadow:3px 4px 0px rgba(0,0,0,0.45)!important;-webkit-appearance:none;appearance:none;transition:transform .1s}
+button.t-orb:hover{transform:translate(-1px,-1px)}
+button.t-orb:active{transform:translate(1px,1px)}
+.t-name{font-family:'Playfair Display',serif!important;font-size:12px!important;font-weight:700!important;color:#3B1F00!important;letter-spacing:.04em;line-height:1;display:block}
+.t-sub{font-family:'Playfair Display',serif!important;font-size:8.5px!important;font-weight:700!important;color:#8B5E2A!important;letter-spacing:.1em;text-transform:uppercase;line-height:1;display:block}
+.tcat-body{flex:1;display:flex;flex-direction:column;padding:20px 24px 24px;background:var(--color-background-primary,#fff)}
+.tcat-ey{font-size:11px;letter-spacing:.1em;color:#7a6a50;text-transform:uppercase;margin-bottom:4px}
+.tcat-ti{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#2a1f0e;margin-bottom:6px}
+.tcat-de{font-size:13px;color:#5a4a30;line-height:1.55;margin-bottom:20px}
+.tcat-row{background:#fff;border:1.5px solid #c9b99a;border-radius:12px;padding:14px 18px;font-family:'Playfair Display',serif;font-size:15px;font-weight:500;color:#2a1f0e;cursor:pointer;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;transition:background .15s;text-align:left;width:100%}
+.tcat-row:hover{background:#f0e8d8;border-color:#a07840}
+.tcat-arr{color:#a07840;flex-shrink:0;margin-left:8px}
+.tcat-soon{font-size:11px;color:#a89878;font-style:italic;text-align:center;margin-top:10px}
 </style>
 </head>
 <body>
@@ -650,12 +670,29 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <div class="sc" id="s-tools">
-  <div class="card map"><div class="iw">
-    <div class="mg-head"><div class="mgh">🛠️ Tools</div><div class="mgt">Practical resources for the journey ahead.</div></div>
-    <div class="mg-band"></div>
-    <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
-    <div class="sp"></div>
+  <div class="card"><div class="tools-body">
+    <div class="tools-head">
+      <div class="tools-eyebrow">The Explorer's Kit</div>
+      <div class="tools-headline">Every explorer needs tools.</div>
+    </div>
+    <div class="tools-orbital" id="t-orbital">
+      <button class="t-gear" id="b-tools-cfg">⚙️</button>
+      <button class="t-orb" id="t-question"><span class="t-name">QUESTION</span><span class="t-sub">Tools</span></button>
+      <button class="t-orb" id="t-create"><span class="t-name">CREATE</span><span class="t-sub">Tools</span></button>
+      <button class="t-orb" id="t-shape"><span class="t-name">SHAPE</span><span class="t-sub">Tools</span></button>
+      <button class="t-orb" id="t-share"><span class="t-name">SHARE</span><span class="t-sub">Tools</span></button>
+      <button class="t-orb" id="t-dare"><span class="t-name">DARE</span><span class="t-sub">Tools</span></button>
+      <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:6;" viewBox="0 0 320 310">
+        <defs>
+          <marker id="tar1" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0.5 L6,3.5 L0,6.5 Z" fill="#f5c87a"/></marker>
+          <marker id="tar2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0.5 L6,3.5 L0,6.5 Z" fill="#f5c87a"/></marker>
+          <marker id="tar3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0.5 L6,3.5 L0,6.5 Z" fill="#f5c87a"/></marker>
+        </defs>
+        <path d="M 160.9,103.01 A 52,52 0 1,1 159.1,103.01" fill="none" stroke="#f5c87a" stroke-width="2.5" marker-end="url(#tar1)"/>
+        <path d="M 204,176 A 52,52 0 0,1 202.5,179" fill="none" stroke="#f5c87a" stroke-width="2.5" marker-end="url(#tar2)"/>
+        <path d="M 117.5,179 A 52,52 0 0,1 116,176" fill="none" stroke="#f5c87a" stroke-width="2.5" marker-end="url(#tar3)"/>
+      </svg>
+    </div>
   </div></div>
   <div class="bar">
     <button class="tb" id="b-tools-back"><span class="sp-emoji">⬅️</span></button>
@@ -664,6 +701,125 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <button class="tb" id="b-tools-journal"><span class="sp-emoji">✏️</span></button>
     <button class="tb" id="b-tools-misc"><span class="sp-emoji">🌸</span></button>
     <button class="tb" id="b-tools-tools"><span class="sp-emoji">🛠️</span></button>
+  </div>
+</div>
+
+<div class="sc" id="s-tcat-question">
+  <div class="card"><div class="tcat-body">
+    <div class="tcat-ey">Tools · Question</div>
+    <div class="tcat-ti">QUESTION</div>
+    <div class="tcat-de">Tools for inquiry, reflection, and assessment. Return here at any point — not just the beginning.</div>
+    <button class="tcat-row">Reflection Prompts <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Aligns <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Assessments <span class="tcat-arr">→</span></button>
+    <div class="tcat-soon">More tools coming as the journey grows.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-tq-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb"><span class="sp-emoji">🗺️</span></button>
+    <button class="tb"><span class="sp-emoji">💡</span></button>
+    <button class="tb"><span class="sp-emoji">✏️</span></button>
+    <button class="tb"><span class="sp-emoji">🌸</span></button>
+    <button class="tb"><span class="sp-emoji">🛠️</span></button>
+  </div>
+</div>
+
+<div class="sc" id="s-tcat-create">
+  <div class="card"><div class="tcat-body">
+    <div class="tcat-ey">Tools · Create</div>
+    <div class="tcat-ti">CREATE</div>
+    <div class="tcat-de">Tools for generating new material. Pick one up when you need ideas that don't exist yet.</div>
+    <button class="tcat-row">Sea of Ideas <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Five Sensing <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Wishing License <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Rules of Creative Thinking <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Lightning Bug <span class="tcat-arr">→</span></button>
+    <div class="tcat-soon">More tools coming as the journey grows.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-tc-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb"><span class="sp-emoji">🗺️</span></button>
+    <button class="tb"><span class="sp-emoji">💡</span></button>
+    <button class="tb"><span class="sp-emoji">✏️</span></button>
+    <button class="tb"><span class="sp-emoji">🌸</span></button>
+    <button class="tb"><span class="sp-emoji">🛠️</span></button>
+  </div>
+</div>
+
+<div class="sc" id="s-tcat-shape">
+  <div class="card"><div class="tcat-body">
+    <div class="tcat-ey">Tools · Shape</div>
+    <div class="tcat-ti">SHAPE</div>
+    <div class="tcat-de">Tools for finding form and pattern in what you've already collected.</div>
+    <button class="tcat-row">Cluster <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Hearts <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Dream Choice <span class="tcat-arr">→</span></button>
+    <div class="tcat-soon">More tools coming as the journey grows.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-tsh-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb"><span class="sp-emoji">🗺️</span></button>
+    <button class="tb"><span class="sp-emoji">💡</span></button>
+    <button class="tb"><span class="sp-emoji">✏️</span></button>
+    <button class="tb"><span class="sp-emoji">🌸</span></button>
+    <button class="tb"><span class="sp-emoji">🛠️</span></button>
+  </div>
+</div>
+
+<div class="sc" id="s-tcat-share">
+  <div class="card"><div class="tcat-body">
+    <div class="tcat-ey">Tools · Share</div>
+    <div class="tcat-ti">SHARE</div>
+    <div class="tcat-de">Tools for moving your work to others. When the thinking is ready to be heard.</div>
+    <button class="tcat-row">Briefing Board <span class="tcat-arr">→</span></button>
+    <div class="tcat-soon">More tools coming as the journey grows.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-tsr-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb"><span class="sp-emoji">🗺️</span></button>
+    <button class="tb"><span class="sp-emoji">💡</span></button>
+    <button class="tb"><span class="sp-emoji">✏️</span></button>
+    <button class="tb"><span class="sp-emoji">🌸</span></button>
+    <button class="tb"><span class="sp-emoji">🛠️</span></button>
+  </div>
+</div>
+
+<div class="sc" id="s-tcat-dare">
+  <div class="card"><div class="tcat-body">
+    <div class="tcat-ey">Tools · Dare</div>
+    <div class="tcat-ti">DARE</div>
+    <div class="tcat-de">Tools for detailed design, planning, and doing. Spans Believe and Journey — daring is a commitment you renew.</div>
+    <button class="tcat-row">Briefing Board <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Planning Tools <span class="tcat-arr">→</span></button>
+    <div class="tcat-soon">More tools coming as the journey grows.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-td-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb"><span class="sp-emoji">🗺️</span></button>
+    <button class="tb"><span class="sp-emoji">💡</span></button>
+    <button class="tb"><span class="sp-emoji">✏️</span></button>
+    <button class="tb"><span class="sp-emoji">🌸</span></button>
+    <button class="tb"><span class="sp-emoji">🛠️</span></button>
+  </div>
+</div>
+
+<div class="sc" id="s-tcat-cfg">
+  <div class="card"><div class="tcat-body">
+    <div class="tcat-ey">Settings</div>
+    <div class="tcat-ti">⚙️</div>
+    <div class="tcat-de">Set conditions for your session. Configure before you begin — or adjust anytime.</div>
+    <button class="tcat-row">Session Setup <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Facilitator Settings <span class="tcat-arr">→</span></button>
+    <button class="tcat-row">Preferences <span class="tcat-arr">→</span></button>
+    <div class="tcat-soon">More settings coming as the journey grows.</div>
+  </div></div>
+  <div class="bar">
+    <button class="tb" id="b-tcfg-back"><span class="sp-emoji">⬅️</span></button>
+    <button class="tb"><span class="sp-emoji">🗺️</span></button>
+    <button class="tb"><span class="sp-emoji">💡</span></button>
+    <button class="tb"><span class="sp-emoji">✏️</span></button>
+    <button class="tb"><span class="sp-emoji">🌸</span></button>
+    <button class="tb"><span class="sp-emoji">🛠️</span></button>
   </div>
 </div>
 </div>
@@ -675,7 +831,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var sb=supabase.createClient(SB_URL,SB_KEY);
 
   var cur='s-signin',prev='s-signin';
-  var UTIL=['s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-misc','s-authors','s-tools'];
+  var UTIL=['s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-misc','s-authors','s-tools','s-tcat-question','s-tcat-create','s-tcat-shape','s-tcat-share','s-tcat-dare','s-tcat-cfg'];
   var ctxMap={'s-cover':'Field Guide','s-cover-mg':'Field Guide','s-cover-t2t':'Field Guide','s-cover-goals':'Field Guide','s-cover-map':'Field Guide','s-invention':'Every great invention started as a thought.','s-invention-mg':'Every great invention started as a thought.','s-invention-thoughts':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-want':'What do you want?','s-want-mg':'What do you want?','s-want-map':'What do you want?','s-know':'Do you know what you want?','s-know-mg':'Do you know what you want?','s-know-map':'Do you know what you want?'};
   var mapMap={'s-cover':'s-cover-map','s-cover-mg':'s-cover-map','s-cover-t2t':'s-cover-map','s-cover-goals':'s-cover-map','s-invention':'s-invention-map','s-invention-mg':'s-invention-map','s-invention-thoughts':'s-invention-map','s-want':'s-want-map','s-want-mg':'s-want-map','s-know':'s-know-map','s-know-mg':'s-know-map'};
   var MG=['s-cover-mg','s-cover-t2t','s-cover-goals','s-invention-mg','s-invention-thoughts','s-want-mg','s-know-mg'];
@@ -752,6 +908,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-misc-back',function(){nav(mgOrigin);});wire('b-misc-map',navMap);wire('b-misc-idea',function(){nav('s-idea');});wire('b-misc-journal',function(){nav('s-journal');});wire('b-misc-misc',function(){nav('s-misc');});wire('b-misc-tools',function(){nav('s-tools');});
   wire('b-aut-back',function(){nav('s-misc');});wire('b-aut-map',navMap);wire('b-aut-idea',function(){nav('s-idea');});wire('b-aut-journal',function(){nav('s-journal');});wire('b-aut-misc',function(){nav('s-misc');});wire('b-aut-tools',function(){nav('s-tools');});
   wire('b-tools-back',function(){nav(mgOrigin);});wire('b-tools-map',navMap);wire('b-tools-idea',function(){nav('s-idea');});wire('b-tools-journal',function(){nav('s-journal');});wire('b-tools-misc',function(){nav('s-misc');});wire('b-tools-tools',function(){nav('s-tools');});
+  (function(){var cx=160,cy=155,r=124;[['t-question','s-tcat-question'],['t-create','s-tcat-create'],['t-shape','s-tcat-shape'],['t-share','s-tcat-share'],['t-dare','s-tcat-dare']].forEach(function(pair,i){var rad=(-90+i*72)*Math.PI/180;var el=document.getElementById(pair[0]);if(el){el.style.left=(cx+r*Math.cos(rad)-44)+'px';el.style.top=(cy+r*Math.sin(rad)-27)+'px';el.addEventListener('click',function(){nav(pair[1]);});}});wire('b-tools-cfg',function(){nav('s-tcat-cfg');});wire('b-tq-back',function(){nav('s-tools');});wire('b-tc-back',function(){nav('s-tools');});wire('b-tsh-back',function(){nav('s-tools');});wire('b-tsr-back',function(){nav('s-tools');});wire('b-td-back',function(){nav('s-tools');});wire('b-tcfg-back',function(){nav('s-tools');});})();
   var ideaTA=document.getElementById('idea-text');if(ideaTA)ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
   var journalTA=document.getElementById('journal-text');if(journalTA)journalTA.addEventListener('input',function(){var b=document.getElementById('b-save-journal');if(b)b.classList.toggle('active',this.value.trim().length>0);});
   wire('b-save-idea',function(){var t=document.getElementById('idea-text');if(!t)return;var text=t.value.trim();if(!text)return;var now=new Date();sendPrompt('💡 Idea captured: '+text);nav('s-idea');});
