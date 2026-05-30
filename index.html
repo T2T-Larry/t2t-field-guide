@@ -142,6 +142,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <input class="si-input" type="password" id="si-password" placeholder="password">
       <button class="si-btn" id="b-signin">Sign In</button>
       <div class="si-error" id="si-error"></div>
+      <div style="text-align:center;margin-top:16px"><span id="b-forgot" style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#9FE1CB;cursor:pointer;text-decoration:underline">Forgot password?</span></div>
+      <div class="si-error" id="si-forgot-msg" style="color:#9FE1CB;text-align:center;margin-top:6px"></div>
     </div>
   </div></div>
 </div>
@@ -711,6 +713,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   }
 
   wire('b-signin',doSignIn);
+  wire('b-forgot',async function(){var email=document.getElementById('si-email').value.trim();if(!email){showError('Enter your email first.');return;}var r=await sb.auth.resetPasswordForEmail(email,{redirectTo:'https://t2t-larry.github.io/t2t-field-guide/'});var m=document.getElementById('si-forgot-msg');if(m)m.textContent=r.error?'Could not send reset email.':'Reset email sent — check your inbox.';});
   document.getElementById('si-password').addEventListener('keydown',function(e){if(e.key==='Enter')doSignIn();});
 
   wire('b-cover-back',function(){nav('s-signin');});wire('b-cover-mg',function(){nav('s-cover-mg');});wire('b-cover-next',function(){nav('s-invention');});
