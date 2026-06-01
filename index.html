@@ -13,32 +13,34 @@ html,body{height:100%;background:#d0d0d0}
 body{display:flex;align-items:center;justify-content:center;padding:16px;min-height:100%}
 
 /* ── SHELL ── */
-.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:420px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
 .card.rnd{border-radius:12px}
 
-/* ── PP TOOLBAR (3-button, dark teal) ── */
-.bar{background:#0a4a38;border-radius:0 0 12px 12px;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
+/* ── PP TOOLBAR — 3 buttons ── */
+.bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
+/* ── SUB TOOLBAR — 2 buttons ── */
+.bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .tb{width:80px;height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .tb:hover:not(.dim){border-color:#378ADD}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
 
-/* ── MG SCREEN ── */
+/* ── SHARED MG SCREEN ── */
 .mg-wrap{width:100%;background:#0F6E56;display:flex;flex-direction:column;flex:1}
-.mg-head{padding:28px 28px 22px;text-align:center}
-.mg-ring{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:30px}
-.mg-ttl{font-size:24px;font-weight:700;color:#C9A87C;letter-spacing:1px;margin-bottom:6px}
-.mg-desc{font-size:13px;font-style:italic;color:#9FE1CB;line-height:1.55;max-width:260px;margin:0 auto}
-.mg-hrule{height:1px;background:rgba(255,255,255,.15);margin:0 24px}
-.mg-body{background:#f5faf8;padding:20px 20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;flex:1}
-.mg-row{display:flex;gap:12px;justify-content:center}
-.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:14px;cursor:pointer;font-size:30px;width:88px;height:88px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s}
+.mg-head{padding:24px 24px 18px;text-align:center}
+.mg-ring{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px}
+.mg-ttl{font-size:22px;font-weight:700;color:#C9A87C;letter-spacing:1px;margin-bottom:5px}
+.mg-desc{font-size:13px;font-style:italic;color:#9FE1CB;line-height:1.5;max-width:240px;margin:0 auto}
+.mg-hrule{height:1px;background:rgba(255,255,255,.15);margin:0 20px}
+.mg-body{background:#f5faf8;padding:18px 18px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;flex:1}
+.mg-row{display:flex;gap:10px;justify-content:center}
+.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:14px;cursor:pointer;font-size:28px;width:84px;height:84px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s}
 .mg-btn:hover{background:#e8f5f2;border-color:#0a4a38;box-shadow:0 4px 12px rgba(0,0,0,.35);transform:translateY(-1px)}
 .mg-btn:active{transform:scale(.97)}
-.mg-bar{background:#0a4a38;padding:12px 20px;border-top:1px solid #1a7a5e;display:flex;align-items:center;justify-content:center}
-.mg-ret{display:flex;align-items:center;justify-content:center;width:52px;height:40px;background:#ffffff;border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-size:22px;box-shadow:0 3px 8px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.2);transition:all .15s}
+.mg-bar{background:#0a4a38;padding:10px 16px;border-top:1px solid #1a7a5e;display:flex;align-items:center;justify-content:center}
+.mg-ret{display:flex;align-items:center;justify-content:center;width:50px;height:38px;background:#ffffff;border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-size:20px;box-shadow:0 3px 8px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.2);transition:all .15s}
 .mg-ret:hover{background:#e8f5f2;box-shadow:0 4px 12px rgba(0,0,0,.4);transform:translateY(-1px)}
 .mg-ret:active{transform:scale(.97)}
 
@@ -68,7 +70,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .ep{font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:24px}
 .fp{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;font-style:italic;color:#111;margin-bottom:28px;line-height:1.3}
 
-/* ── SUB-PAGE content (.sw) ── */
+/* ── CONTENT SCREEN (.sw) ── */
 .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:#ffffff}
 .se{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:14px}
 .sh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:#111;line-height:1.4;margin-bottom:10px}
@@ -81,14 +83,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 /* ── MAP SCREEN ── */
 .mw{flex:1;display:flex;flex-direction:column;padding:0 0 12px;background:#ffffff}
-.mg-mhead{width:100%;padding:24px 28px 16px;background:#ffffff;border-bottom:3px solid #0F6E56}
-.mg-mh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:#111;margin-bottom:4px}
+.mg-mhead{width:100%;padding:20px 24px 14px;background:#ffffff;border-bottom:3px solid #0F6E56}
+.mg-mh{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:#111;margin-bottom:4px}
 .mg-mt{font-size:13px;font-style:italic;color:#888;line-height:1.5}
-.pr{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;background:#f5f5f5;margin-bottom:4px;margin-left:20px;margin-right:20px}
+.pr{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;background:#f5f5f5;margin-bottom:4px;margin-left:16px;margin-right:16px}
 .pr.tap{cursor:pointer}
 .pl2{font-size:13px;font-weight:500;color:#111}
 .ptg{margin-left:auto;font-size:11px;color:#888}
-.ps{padding-left:32px;padding-right:20px;display:flex;flex-direction:column;margin-bottom:4px}
+.ps{padding-left:28px;padding-right:16px;display:flex;flex-direction:column;margin-bottom:4px}
 .st{font-size:12px;padding:4px 0;display:flex;align-items:baseline;gap:8px}
 .sn{font-size:11px;min-width:40px;text-align:right;color:#888}
 .sl{flex:1;color:#888}
@@ -99,76 +101,91 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 /* ── IDEA SCREENS ── */
 .iw{flex:1;display:flex;flex-direction:column;align-items:center;text-align:left;padding:0 0 24px;background:#EBF4FF}
-.ib{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#1A3A5C;margin-bottom:14px;transition:border-color .15s;display:block}
+.ib{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#1A3A5C;margin-bottom:14px;transition:border-color .15s;display:block}
 .ib:hover{border-color:#378ADD}
-.icw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#EBF4FF}
-.icit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:16px}
-.icr{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:16px}
-.icq{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#3A6080;margin-bottom:18px;line-height:1.6}
-.ict{width:100%;min-height:140px;background:#ffffff;border:1px solid #A8CAFE;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#1A3A5C;resize:none;line-height:1.7;outline:none}
-.save-btn{flex:1;height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#ccc;pointer-events:none;transition:all .2s}
+.icw{flex:1;display:flex;flex-direction:column;padding:24px 28px 20px;background:#EBF4FF}
+.icit{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:14px}
+.icr{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:14px}
+.icq{font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#3A6080;margin-bottom:16px;line-height:1.6}
+.ict{width:100%;min-height:120px;background:#ffffff;border:1px solid #A8CAFE;border-radius:10px;padding:14px;font-size:15px;font-family:'Playfair Display',serif;font-style:italic;color:#1A3A5C;resize:none;line-height:1.7;outline:none}
+.save-btn{height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#ccc;pointer-events:none;transition:all .2s;padding:0 16px}
 .save-btn.active{color:#000;border-color:#378ADD;pointer-events:auto}
 
 /* ── JOURNAL SCREENS ── */
 .jw{flex:1;display:flex;flex-direction:column;align-items:center;text-align:left;padding:0 0 24px;background:#FDF6E8}
-.jb{width:240px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#3B2510;margin-bottom:14px;transition:border-color .15s;display:block}
+.jb{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#3B2510;margin-bottom:14px;transition:border-color .15s;display:block}
 .jb:hover{border-color:#8B5E2A}
-.jcw{flex:1;display:flex;flex-direction:column;padding:28px 32px 20px;background:#FDF6E8}
-.jcit{font-family:'Playfair Display',serif;font-size:52px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:16px}
-.jcr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:16px}
-.jcq{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#7A5C3A;margin-bottom:18px;line-height:1.6}
-.jct{width:100%;min-height:140px;background:#ffffff;border:1px solid #C9A87C;border-radius:10px;padding:16px;font-size:16px;font-family:'Playfair Display',serif;font-style:italic;color:#3B2510;resize:none;line-height:1.7;outline:none}
-.jsave-btn{flex:1;height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#ccc;pointer-events:none;transition:all .2s}
+.jcw{flex:1;display:flex;flex-direction:column;padding:24px 28px 20px;background:#FDF6E8}
+.jcit{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:14px}
+.jcr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:14px}
+.jcq{font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#7A5C3A;margin-bottom:16px;line-height:1.6}
+.jct{width:100%;min-height:120px;background:#ffffff;border:1px solid #C9A87C;border-radius:10px;padding:14px;font-size:15px;font-family:'Playfair Display',serif;font-style:italic;color:#3B2510;resize:none;line-height:1.7;outline:none}
+.jsave-btn{height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:2px;color:#ccc;pointer-events:none;transition:all .2s;padding:0 16px}
 .jsave-btn.active{color:#000;border-color:#8B5E2A;pointer-events:auto}
-.jcov{flex:1;display:flex;flex-direction:column;align-items:left;justify-content:center;padding:32px 32px 24px;background:#FDF6E8;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,94,42,.12) 27px,rgba(139,94,42,.12) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(139,94,42,.08) 27px,rgba(139,94,42,.08) 28px)}
-.jcov-name{font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:#7A5C3A;margin-bottom:20px}
-.jcov-frame{border:2px solid #111;background:#fff;width:100%;max-width:300px;padding:24px 28px;text-align:center;margin-bottom:16px}
-.jcov-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#111;letter-spacing:1px;margin-bottom:6px}
-.jcov-proj{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#555;margin-bottom:14px}
-.jcov-rule{width:60px;border:none;border-top:1px solid #111;margin:0 auto 14px}
+.jcov{flex:1;display:flex;flex-direction:column;align-items:left;justify-content:center;padding:28px 28px 20px;background:#FDF6E8;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,94,42,.12) 27px,rgba(139,94,42,.12) 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,rgba(139,94,42,.08) 27px,rgba(139,94,42,.08) 28px)}
+.jcov-name{font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:#7A5C3A;margin-bottom:16px}
+.jcov-frame{border:2px solid #111;background:#fff;width:100%;max-width:280px;padding:20px 24px;text-align:center;margin-bottom:14px}
+.jcov-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#111;letter-spacing:1px;margin-bottom:6px}
+.jcov-proj{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:#555;margin-bottom:12px}
+.jcov-rule{width:60px;border:none;border-top:1px solid #111;margin:0 auto 12px}
 .jcov-sub{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#333}
 .jcov-dates{display:inline-flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #C9A87C;border-radius:20px;padding:6px 16px;font-size:11px;color:#7A5C3A;letter-spacing:2px}
-.jvw{flex:1;display:flex;flex-direction:column;padding:20px 28px;background:#FDF6E8}
-.jvh{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#3B2510;margin-bottom:2px}
-.jvs{font-size:12px;font-style:italic;color:#7A5C3A;margin-bottom:14px}
-.jvr{border:none;border-top:1px solid #C9A87C;margin-bottom:16px}
-.jv-empty{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#A87C4A;text-align:center;padding:40px 0;line-height:1.8}
-.jcard{background:#fff;border:1px solid #C9A87C;border-radius:10px;padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:border-color .15s}
+.jvw{flex:1;display:flex;flex-direction:column;padding:18px 24px;background:#FDF6E8}
+.jvh{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#3B2510;margin-bottom:2px}
+.jvs{font-size:12px;font-style:italic;color:#7A5C3A;margin-bottom:12px}
+.jvr{border:none;border-top:1px solid #C9A87C;margin-bottom:14px}
+.jv-empty{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#A87C4A;text-align:center;padding:32px 0;line-height:1.8}
+.jcard{background:#fff;border:1px solid #C9A87C;border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
 .jcard:hover{border-color:#8B5E2A}
-.jcard-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:6px}
-.jcard-text{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#3B2510;line-height:1.55;margin-bottom:10px}
+.jcard-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:5px}
+.jcard-text{font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#3B2510;line-height:1.55;margin-bottom:8px}
 .jcard-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
-.jew{flex:1;display:flex;flex-direction:column;padding:24px 28px;background:#FDF6E8}
-.je-back-link{font-size:12px;color:#A87C4A;cursor:pointer;margin-bottom:18px;display:flex;align-items:center;gap:4px}
+.jew{flex:1;display:flex;flex-direction:column;padding:20px 24px;background:#FDF6E8}
+.je-back-link{font-size:12px;color:#A87C4A;cursor:pointer;margin-bottom:16px}
 .je-back-link:hover{color:#3B2510}
-.je-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:10px}
-.je-text{font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#3B2510;line-height:1.75;margin-bottom:20px}
-.je-rule{border:none;border-top:1px solid #C9A87C;margin-bottom:12px}
+.je-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:8px}
+.je-text{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#3B2510;line-height:1.75;margin-bottom:18px}
+.je-rule{border:none;border-top:1px solid #C9A87C;margin-bottom:10px}
 .je-eyebrow{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#A87C4A}
 
-/* ── GEMS SCREEN ── */
+/* ── GEMS ── */
 .gew{flex:1;display:flex;flex-direction:column;background:#1A1A2E}
-.gem-mhead{width:100%;padding:24px 28px 16px;background:#1A1A2E;border-bottom:3px solid #C9A87C}
-.gem-mh{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:#C9A87C;margin-bottom:4px}
+.gem-mhead{width:100%;padding:20px 24px 14px;background:#1A1A2E;border-bottom:3px solid #C9A87C}
+.gem-mh{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:#C9A87C;margin-bottom:4px}
 .gem-mt{font-size:13px;font-style:italic;color:#8888aa;line-height:1.5}
-.gem-band{width:100%;background:#2d2d4e;padding:7px 28px 6px;border-bottom:.5px solid #444466;margin-bottom:14px}
-.gem-card{margin:0 28px 14px;background:#2d2d4e;border:1px solid #C9A87C;border-radius:12px;padding:20px 22px}
-.gem-quote{font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#E8D5B0;line-height:1.75;margin-bottom:14px}
+.gem-band{width:100%;background:#2d2d4e;padding:7px 24px 6px;border-bottom:.5px solid #444466;margin-bottom:12px}
+.gem-card{margin:0 24px 12px;background:#2d2d4e;border:1px solid #C9A87C;border-radius:12px;padding:18px 20px}
+.gem-quote{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#E8D5B0;line-height:1.75;margin-bottom:12px}
 .gem-attr{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#C9A87C}
-.gem-empty{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#8888aa;text-align:center;padding:40px 28px;line-height:1.8}
+.gem-empty{font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#8888aa;text-align:center;padding:36px 24px;line-height:1.8}
 
-/* ── TRIVIA / TOOLS (.xw) ── */
-.xw{flex:1;display:flex;flex-direction:column;padding:0 0 24px;background:#ffffff}
-.xi{display:flex;align-items:flex-start;gap:14px;padding:14px 28px;border-bottom:.5px solid #eee;cursor:pointer}
+/* ── TRIVIA / TOOLS ── */
+.xw{flex:1;display:flex;flex-direction:column;background:#ffffff}
+.xi{display:flex;align-items:flex-start;gap:12px;padding:12px 24px;border-bottom:.5px solid #eee;cursor:pointer}
 .xi:last-child{border-bottom:none}
 .xi:hover .xit{color:#0F6E56}
-.xii{font-size:20px;margin-top:2px;min-width:24px;text-align:center}
-.xit{font-size:15px;font-weight:500;color:#111;margin-bottom:3px}
-.xis{font-size:13px;color:#888;line-height:1.55}
+.xii{font-size:18px;margin-top:2px;min-width:22px;text-align:center}
+.xit{font-size:14px;font-weight:500;color:#111;margin-bottom:3px}
+.xis{font-size:12px;color:#888;line-height:1.55}
 .xm{font-size:12px;font-style:italic;color:#888;text-align:center;padding:16px 0 4px}
 
-/* ── BOOK/DETAILS sub-screen ── */
-.bw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:#ffffff}
+/* ── TOOLS PENTAGON ── */
+.tools-wrap{flex:1;display:flex;flex-direction:column;background:#f9f5ef}
+.tools-orbital{position:relative;width:340px;height:340px;margin:16px auto 8px;flex-shrink:0}
+.tools-hub{position:absolute;width:72px;height:72px;border-radius:50%;background:#0a4a38;border:2px solid #1a7a5e;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);left:50%;top:50%;transform:translate(-50%,-50%)}
+.tools-orbit-ring{position:absolute;width:220px;height:220px;border-radius:50%;border:1px dashed #c8b89a;left:50%;top:50%;transform:translate(-50%,-50%)}
+.pb{position:absolute;width:86px;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;transition:all .15s;clip-path:polygon(10% 0%,90% 0%,100% 50%,90% 100%,10% 100%,0% 50%);background:#C9A87C;border:none}
+.pb:hover{background:#b8976a;transform:scale(1.08)}
+.pb:active{transform:scale(.96)}
+.pb-label{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#3B2510;line-height:1}
+.cat-body{flex:1;display:flex;flex-direction:column;padding:20px 24px;background:#f9f5ef;overflow-y:auto}
+.cat-eyebrow{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:8px}
+.cat-title{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#3B2510;margin-bottom:8px}
+.cat-desc{font-size:14px;color:#7A5C3A;line-height:1.6;margin-bottom:18px;font-style:italic}
+.tool-row{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;background:#ffffff;border:1.5px solid #C9A87C;border-radius:10px;margin-bottom:10px;cursor:pointer;font-family:'Playfair Display',serif;font-size:14px;color:#3B2510;transition:border-color .15s}
+.tool-row:hover{border-color:#8B5E2A}
+.arr{color:#C9A87C;font-size:16px}
+.soon{font-size:12px;font-style:italic;color:#a89070;text-align:center;padding:12px 0}
 </style>
 </head>
 <body>
@@ -194,7 +211,39 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     0.10 COVER
+     SHARED MG — one screen, used by all
+═══════════════════════════════════ -->
+<div class="sc" id="s-mg">
+  <div class="card"><div class="mg-wrap">
+    <div class="mg-head">
+      <div class="mg-ring">🔍</div>
+      <div class="mg-ttl">Details</div>
+      <div class="mg-desc">More about this page, plus places to keep what matters.</div>
+    </div>
+    <div class="mg-hrule"></div>
+    <div class="mg-body">
+      <div class="mg-row">
+        <div class="mg-btn" id="b-mg-map">🗺️</div>
+        <div class="mg-btn" id="b-mg-book">📖</div>
+      </div>
+      <div class="mg-row">
+        <div class="mg-btn" id="b-mg-idea">💡</div>
+        <div class="mg-btn" id="b-mg-journal">✏️</div>
+        <div class="mg-btn" id="b-mg-gems">💎</div>
+      </div>
+      <div class="mg-row">
+        <div class="mg-btn" id="b-mg-trivia">🌸</div>
+        <div class="mg-btn" id="b-mg-tools">🛠️</div>
+      </div>
+    </div>
+  </div></div>
+  <div class="mg-bar">
+    <div class="mg-ret" id="b-mg-ret">⬅️</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     0.10 COVER — Primary Path Page
 ═══════════════════════════════════ -->
 <div class="sc" id="s-cover">
   <div class="card"><div class="cover">
@@ -205,67 +254,16 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="aut">By Larry Smithers &amp; Bill Fritsch</div>
     <div class="tag">Every great journey starts with a single step.</div>
   </div></div>
-  <div class="bar">
+  <div class="bar3">
     <button class="tb dim">⬅️</button>
     <button class="tb" id="b-cover-mg">🔍</button>
     <button class="tb" id="b-cover-next">➡️</button>
   </div>
 </div>
 
-<!-- COVER MG -->
-<div class="sc" id="s-cover-mg">
-  <div class="card"><div class="mg-wrap">
-    <div class="mg-head">
-      <div class="mg-ring">🔍</div>
-      <div class="mg-ttl">Details</div>
-      <div class="mg-desc">More about this page, plus places to keep what matters.</div>
-    </div>
-    <div class="mg-hrule"></div>
-    <div class="mg-body">
-      <div class="mg-row">
-        <div class="mg-btn" id="b-cmg-map">🗺️</div>
-        <div class="mg-btn" id="b-cmg-book">📖</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-cmg-idea">💡</div>
-        <div class="mg-btn" id="b-cmg-journal">✏️</div>
-        <div class="mg-btn" id="b-cmg-gems">💎</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-cmg-trivia">🌸</div>
-        <div class="mg-btn" id="b-cmg-tools">🛠️</div>
-      </div>
-    </div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-cmg-ret">⬅️</div>
-  </div>
-</div>
-
-<!-- COVER: Book/Details sub-screen -->
-<div class="sc" id="s-cover-book">
-  <div class="card"><div class="bw">
-    <div class="se">About This Page</div>
-    <div class="mg-band"></div>
-    <div class="sh">What is T2T?</div>
-    <div class="sb">T2T — Thoughts to Things — is a system for transforming imagination into reality.</div>
-    <div class="sb">Not a philosophy. Not something you have to believe in before it works. A system.</div>
-    <div class="sb">It works the first time you try it.</div>
-    <div class="sp"></div>
-    <div class="sh" style="margin-top:8px">T2T Goals</div>
-    <div class="mg-band"></div>
-    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#555;margin-bottom:16px">May you find…</div>
-    <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gs">Inspiration</div><div class="gr"></div>
-    <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gs">Mastery</div><div class="gr"></div>
-    <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div><div class="gs">Joy in the process</div>
-    <div class="sp"></div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-cbook-ret">⬅️</div>
-  </div>
-</div>
-
-<!-- COVER MAP -->
+<!-- ═══════════════════════════════════
+     COVER MAP
+═══════════════════════════════════ -->
 <div class="sc" id="s-cover-map">
   <div class="card"><div class="mw">
     <div class="mg-mhead"><div class="mg-mh">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
@@ -286,70 +284,48 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="pr tap" id="tog-cm-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="cm-journey-tog">▼</span></div>
     <div id="cm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-cmap-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-cmap-back">⬅️</button>
+    <button class="tb" id="b-cmap-mg">🔍</button>
+  </div>
+</div>
+
+<!-- COVER BOOK -->
+<div class="sc" id="s-cover-book">
+  <div class="card"><div class="sw">
+    <div class="se">About This Page</div>
+    <div class="mg-band"></div>
+    <div class="sh">What is T2T?</div>
+    <div class="sb">T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.</div>
+    <div class="sp"></div>
+    <div class="sh">T2T Goals</div>
+    <div class="mg-band"></div>
+    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;margin-bottom:14px">May you find…</div>
+    <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gs">Inspiration</div><div class="gr"></div>
+    <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gs">Mastery</div><div class="gr"></div>
+    <div class="gi">A <span style="color:#3B6D11">Beautiful Journey</span> along the way.</div><div class="gs">Joy in the process</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-cbook-back">⬅️</button>
+    <button class="tb" id="b-cbook-mg">🔍</button>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════
-     0.20 INVENTION
+     0.20 INVENTION — Primary Path Page
 ═══════════════════════════════════ -->
 <div class="sc" id="s-invention">
   <div class="card"><div class="ip">
-    <div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#111;line-height:1.2;margin-bottom:24px">Every great invention started as a thought.</div>
-    <div style="font-size:18px;color:#111;line-height:1.9;margin-bottom:16px">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
-    <div style="font-size:18px;font-weight:600;color:#111;margin-bottom:32px">Every single one — thought first.</div>
-    <div style="font-size:15px;color:#555;line-height:1.7">And every one of them began the same way.<br>Someone answered one question:</div>
+    <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;color:#111;line-height:1.2;margin-bottom:24px">Every great invention started as a thought.</div>
+    <div style="font-size:17px;color:#111;line-height:1.9;margin-bottom:16px">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>
+    <div style="font-size:17px;font-weight:600;color:#111;margin-bottom:32px">Every single one — thought first.</div>
+    <div style="font-size:14px;color:#555;line-height:1.7">And every one of them began the same way.<br>Someone answered one question:</div>
   </div></div>
-  <div class="bar">
+  <div class="bar3">
     <button class="tb" id="b-inv-back">⬅️</button>
     <button class="tb" id="b-inv-mg">🔍</button>
     <button class="tb" id="b-inv-next">➡️</button>
-  </div>
-</div>
-
-<!-- INVENTION MG -->
-<div class="sc" id="s-invention-mg">
-  <div class="card"><div class="mg-wrap">
-    <div class="mg-head">
-      <div class="mg-ring">🔍</div>
-      <div class="mg-ttl">Details</div>
-      <div class="mg-desc">More about this page, plus places to keep what matters.</div>
-    </div>
-    <div class="mg-hrule"></div>
-    <div class="mg-body">
-      <div class="mg-row">
-        <div class="mg-btn" id="b-img-map">🗺️</div>
-        <div class="mg-btn" id="b-img-book">📖</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-img-idea">💡</div>
-        <div class="mg-btn" id="b-img-journal">✏️</div>
-        <div class="mg-btn" id="b-img-gems">💎</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-img-trivia">🌸</div>
-        <div class="mg-btn" id="b-img-tools">🛠️</div>
-      </div>
-    </div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-img-ret">⬅️</div>
-  </div>
-</div>
-
-<!-- INVENTION: Book sub-screen -->
-<div class="sc" id="s-invention-book">
-  <div class="card"><div class="bw">
-    <div class="se">Some thoughts about thoughts.</div>
-    <div class="mg-band"></div>
-    <div class="sh">A thought is the beginning of everything.</div>
-    <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
-    <div class="sb">That's not mystical. That's just how things get made.</div>
-    <div class="sp"></div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-ibook-ret">⬅️</div>
   </div>
 </div>
 
@@ -374,55 +350,42 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="pr tap" id="tog-im-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="im-journey-tog">▼</span></div>
     <div id="im-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-imap-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-imap-back">⬅️</button>
+    <button class="tb" id="b-imap-mg">🔍</button>
+  </div>
+</div>
+
+<!-- INVENTION BOOK -->
+<div class="sc" id="s-invention-book">
+  <div class="card"><div class="sw">
+    <div class="se">Some thoughts about thoughts.</div>
+    <div class="mg-band"></div>
+    <div class="sh">A thought is the beginning of everything.</div>
+    <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
+    <div class="sb">That's not mystical. That's just how things get made.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-ibook-back">⬅️</button>
+    <button class="tb" id="b-ibook-mg">🔍</button>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════
-     0.30 WANT
+     0.30 WANT — Primary Path Page
 ═══════════════════════════════════ -->
 <div class="sc" id="s-want">
   <div class="card"><div class="ip">
-    <div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;color:#111;line-height:1.15;margin-bottom:24px">What do you want?</div>
+    <div style="font-family:'Playfair Display',serif;font-size:40px;font-weight:700;color:#111;line-height:1.15;margin-bottom:24px">What do you want?</div>
     <hr style="width:100%;border:none;border-top:1px solid #ccc;margin-bottom:24px">
-    <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:#555;line-height:1.8;max-width:380px;margin-bottom:14px">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
+    <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.8;max-width:340px;margin-bottom:14px">"Most people don't know what they want, but they're pretty sure they haven't got it."</div>
     <div style="font-size:13px;color:#888">— Alfred E. Neuman</div>
   </div></div>
-  <div class="bar">
+  <div class="bar3">
     <button class="tb" id="b-want-back">⬅️</button>
     <button class="tb" id="b-want-mg">🔍</button>
     <button class="tb" id="b-want-next">➡️</button>
-  </div>
-</div>
-
-<!-- WANT MG -->
-<div class="sc" id="s-want-mg">
-  <div class="card"><div class="mg-wrap">
-    <div class="mg-head">
-      <div class="mg-ring">🔍</div>
-      <div class="mg-ttl">Details</div>
-      <div class="mg-desc">More about this page, plus places to keep what matters.</div>
-    </div>
-    <div class="mg-hrule"></div>
-    <div class="mg-body">
-      <div class="mg-row">
-        <div class="mg-btn" id="b-wmg-map">🗺️</div>
-        <div class="mg-btn" id="b-wmg-book">📖</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-wmg-idea">💡</div>
-        <div class="mg-btn" id="b-wmg-journal">✏️</div>
-        <div class="mg-btn" id="b-wmg-gems">💎</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-wmg-trivia">🌸</div>
-        <div class="mg-btn" id="b-wmg-tools">🛠️</div>
-      </div>
-    </div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-wmg-ret">⬅️</div>
   </div>
 </div>
 
@@ -447,13 +410,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="pr tap" id="tog-wm-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="wm-journey-tog">▼</span></div>
     <div id="wm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-wmap-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-wmap-back">⬅️</button>
+    <button class="tb" id="b-wmap-mg">🔍</button>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════
-     0.40 KNOW
+     0.40 KNOW — Primary Path Page
 ═══════════════════════════════════ -->
 <div class="sc" id="s-know">
   <div class="card"><div class="ip">
@@ -461,45 +425,15 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <hr style="width:100%;border:none;border-top:1px solid #ccc;margin-bottom:28px">
     <div class="fp">Do you know what you want?</div>
     <div style="display:flex;gap:14px;justify-content:center">
-      <button id="b-know-no" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff">No</button>
-      <button id="b-know-sortof" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
-      <button id="b-know-yes" style="padding:12px 28px;font-size:15px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#0F6E56;color:#fff">Yes</button>
+      <button id="b-know-no" style="padding:12px 24px;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff">No</button>
+      <button id="b-know-sortof" style="padding:12px 24px;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
+      <button id="b-know-yes" style="padding:12px 24px;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#0F6E56;color:#fff">Yes</button>
     </div>
   </div></div>
-  <div class="bar">
+  <div class="bar3">
     <button class="tb" id="b-know-back">⬅️</button>
     <button class="tb" id="b-know-mg">🔍</button>
     <button class="tb dim">➡️</button>
-  </div>
-</div>
-
-<!-- KNOW MG -->
-<div class="sc" id="s-know-mg">
-  <div class="card"><div class="mg-wrap">
-    <div class="mg-head">
-      <div class="mg-ring">🔍</div>
-      <div class="mg-ttl">Details</div>
-      <div class="mg-desc">More about this page, plus places to keep what matters.</div>
-    </div>
-    <div class="mg-hrule"></div>
-    <div class="mg-body">
-      <div class="mg-row">
-        <div class="mg-btn" id="b-kmg-map">🗺️</div>
-        <div class="mg-btn" id="b-kmg-book">📖</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-kmg-idea">💡</div>
-        <div class="mg-btn" id="b-kmg-journal">✏️</div>
-        <div class="mg-btn" id="b-kmg-gems">💎</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-kmg-trivia">🌸</div>
-        <div class="mg-btn" id="b-kmg-tools">🛠️</div>
-      </div>
-    </div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-kmg-ret">⬅️</div>
   </div>
 </div>
 
@@ -524,8 +458,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="pr tap" id="tog-km-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="km-journey-tog">▼</span></div>
     <div id="km-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-kmap-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-kmap-back">⬅️</button>
+    <button class="tb" id="b-kmap-mg">🔍</button>
   </div>
 </div>
 
@@ -535,12 +470,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-idea">
   <div class="card"><div class="iw">
     <div class="mg-mhead" style="background:#EBF4FF;border-bottom:3px solid #378ADD"><div class="mg-mh" style="color:#1A3A5C">💡 Idea</div><div class="mg-mt" style="color:#3A6080">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div></div>
-    <div style="background:#d4e8ff;padding:7px 28px 6px;border-bottom:.5px solid #A8CAFE;margin-bottom:14px;width:100%"></div>
-    <button class="ib" id="b-capture-idea" style="margin-top:28px">Capture an Idea</button>
+    <div style="background:#d4e8ff;padding:7px 24px 6px;border-bottom:.5px solid #A8CAFE;margin-bottom:14px;width:100%"></div>
+    <button class="ib" id="b-capture-idea" style="margin-top:24px">Capture an Idea</button>
     <button class="ib" id="b-sea-ideas">Sea of Ideas</button>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-idea-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-idea-back">⬅️</button>
+    <button class="tb" id="b-idea-mg">🔍</button>
   </div>
 </div>
 
@@ -552,9 +488,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar" style="gap:10px">
-    <div class="mg-ret" id="b-icap-ret">⬅️</div>
-    <button class="save-btn" id="b-save-idea" style="flex:1;margin-left:10px">SAVE</button>
+  <div class="bar2" style="gap:10px">
+    <button class="tb" id="b-icap-back">⬅️</button>
+    <button class="tb" id="b-icap-mg">🔍</button>
+    <button class="save-btn" id="b-save-idea">SAVE</button>
   </div>
 </div>
 
@@ -563,13 +500,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 ═══════════════════════════════════ -->
 <div class="sc" id="s-journal">
   <div class="card"><div class="jw">
-    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510">✏️ Journal</div><div class="mg-mt" style="color:#7A5C3A">Your personal record of the adventure. Everything you notice, feel, discover, and want to remember.</div></div>
-    <div style="background:#f0e6d0;padding:7px 28px 6px;border-bottom:.5px solid #C9A87C;margin-bottom:14px;width:100%"></div>
-    <button class="jb" id="b-add-note" style="margin-top:28px">Add a Note to my Journal</button>
+    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510">✏️ Journal</div><div class="mg-mt" style="color:#7A5C3A">Your personal record of the adventure. Everything you notice, feel, and want to remember.</div></div>
+    <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;margin-bottom:14px;width:100%"></div>
+    <button class="jb" id="b-add-note" style="margin-top:24px">Add a Note to my Journal</button>
     <button class="jb" id="b-view-journal">View Journal</button>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-journal-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-journal-back">⬅️</button>
+    <button class="tb" id="b-journal-mg">🔍</button>
   </div>
 </div>
 
@@ -581,9 +519,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <textarea class="jct" id="journal-text" placeholder="Notes:"></textarea>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar" style="gap:10px">
-    <div class="mg-ret" id="b-jcap-ret">⬅️</div>
-    <button class="jsave-btn" id="b-save-journal" style="flex:1;margin-left:10px">SAVE</button>
+  <div class="bar2" style="gap:10px">
+    <button class="tb" id="b-jcap-back">⬅️</button>
+    <button class="tb" id="b-jcap-mg">🔍</button>
+    <button class="jsave-btn" id="b-save-journal">SAVE</button>
   </div>
 </div>
 
@@ -598,8 +537,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     </div>
     <div class="jcov-dates"><span id="jcov-start">Started —</span><span style="color:#C9A87C">·</span><span>Ongoing</span></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-jcov-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-jcov-back">⬅️</button>
+    <button class="tb" id="b-jcov-mg">🔍</button>
   </div>
 </div>
 
@@ -611,8 +551,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div id="jv-entries-list"><div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div></div>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-jview-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-jview-back">⬅️</button>
+    <button class="tb" id="b-jview-mg">🔍</button>
   </div>
 </div>
 
@@ -625,8 +566,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="je-eyebrow" id="je-eyebrow"></div>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-jentry-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-jentry-back">⬅️</button>
+    <button class="tb" id="b-jentry-mg">🔍</button>
   </div>
 </div>
 
@@ -640,8 +582,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div id="gems-list"><div class="gem-empty">No Gems found yet.<br>They surface when you're ready.</div></div>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-gems-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-gems-back">⬅️</button>
+    <button class="tb" id="b-gems-mg">🔍</button>
   </div>
 </div>
 
@@ -650,7 +593,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 ═══════════════════════════════════ -->
 <div class="sc" id="s-trivia">
   <div class="card"><div class="xw">
-    <div class="mg-mhead"><div class="mg-mh">🌸 Trivia</div><div class="mg-mt">Stories, quotes, opinions — and even things that might have nothing to do with T2T.</div></div>
+    <div class="mg-mhead"><div class="mg-mh">🌸 Trivia</div><div class="mg-mt">Stories, quotes, opinions — and things that might have nothing to do with T2T.</div></div>
     <div class="mg-band"></div>
     <div class="xi" id="b-authors">
       <div class="xii">👤</div>
@@ -660,13 +603,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="xm">More will appear here as the journey unfolds.</div>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-trivia-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-trivia-back">⬅️</button>
+    <button class="tb" id="b-trivia-mg">🔍</button>
   </div>
 </div>
 
 <div class="sc" id="s-authors">
-  <div class="card rnd"><div class="bw">
+  <div class="card"><div class="sw">
     <div class="se">Meet the authors</div>
     <div class="mg-band"></div>
     <div class="sh">A revolution that started with a conversation.</div>
@@ -674,25 +618,111 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-aut-ret">⬅️</div>
+  <div class="bar2">
+    <button class="tb" id="b-aut-back">⬅️</button>
+    <button class="tb" id="b-aut-mg">🔍</button>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════
-     🛠️ TOOLS (shared)
+     🛠️ TOOLS (shared) — pentagon orbital
 ═══════════════════════════════════ -->
 <div class="sc" id="s-tools">
-  <div class="card"><div class="xw">
-    <div class="mg-mhead"><div class="mg-mh">🛠️ Tools</div><div class="mg-mt">Practical resources for the journey ahead.</div></div>
-    <div class="mg-band"></div>
-    <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
+  <div class="card"><div class="tools-wrap">
+    <div class="mg-mhead"><div class="mg-mh">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
+    <div class="tools-orbital" id="tools-orbital">
+      <div class="tools-orbit-ring"></div>
+      <div class="tools-hub" id="btn-configure">⚙️</div>
+      <button class="pb" id="pb-question"><span class="pb-label">QUESTION</span></button>
+      <button class="pb" id="pb-create"><span class="pb-label">CREATE</span></button>
+      <button class="pb" id="pb-shape"><span class="pb-label">SHAPE</span></button>
+      <button class="pb" id="pb-share"><span class="pb-label">SHARE</span></button>
+      <button class="pb" id="pb-dare"><span class="pb-label">DARE</span></button>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-tools-back">⬅️</button>
+    <button class="tb" id="b-tools-mg">🔍</button>
+  </div>
+</div>
+
+<!-- TOOLS sub-screens -->
+<div class="sc" id="s-question">
+  <div class="card"><div class="cat-body">
+    <div class="cat-eyebrow">Tools</div>
+    <div class="cat-title">❓</div>
+    <div class="cat-desc">Spans all phases — the question is always present. What do you want? What's true? What's possible?</div>
+    <button class="tool-row">Clarifying Questions <span class="arr">→</span></button>
+    <button class="tool-row">Reality Check <span class="arr">→</span></button>
+    <div class="soon">More tools coming as the journey grows.</div>
     <div class="sp"></div>
   </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-tools-ret">⬅️</div>
-  </div>
+  <div class="bar2"><button class="tb" id="b-q-back">⬅️</button><button class="tb" id="b-q-mg">🔍</button></div>
+</div>
+
+<div class="sc" id="s-create">
+  <div class="card"><div class="cat-body">
+    <div class="cat-eyebrow">Tools</div>
+    <div class="cat-title">💡</div>
+    <div class="cat-desc">Dream Phase. The spark that starts everything — vision, imagination, and the first bold idea.</div>
+    <button class="tool-row">Wishing Well <span class="arr">→</span></button>
+    <button class="tool-row">Vision Board <span class="arr">→</span></button>
+    <div class="soon">More tools coming as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-c-back">⬅️</button><button class="tb" id="b-c-mg">🔍</button></div>
+</div>
+
+<div class="sc" id="s-shape">
+  <div class="card"><div class="cat-body">
+    <div class="cat-eyebrow">Tools</div>
+    <div class="cat-title">🔬</div>
+    <div class="cat-desc">Believe Phase. Turning imagination into a plan — testing, refining, making the idea real and specific.</div>
+    <button class="tool-row">Design Canvas <span class="arr">→</span></button>
+    <button class="tool-row">Prototype Kit <span class="arr">→</span></button>
+    <div class="soon">More tools coming as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-sh-back">⬅️</button><button class="tb" id="b-sh-mg">🔍</button></div>
+</div>
+
+<div class="sc" id="s-share">
+  <div class="card"><div class="cat-body">
+    <div class="cat-eyebrow">Tools</div>
+    <div class="cat-title">🗣️</div>
+    <div class="cat-desc">Dare Phase. Putting it out into the world — presenting, pitching, and finding your audience.</div>
+    <button class="tool-row">Briefing Board <span class="arr">→</span></button>
+    <button class="tool-row">Pitch Builder <span class="arr">→</span></button>
+    <div class="soon">More tools coming as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-sr-back">⬅️</button><button class="tb" id="b-sr-mg">🔍</button></div>
+</div>
+
+<div class="sc" id="s-dare">
+  <div class="card"><div class="cat-body">
+    <div class="cat-eyebrow">Tools</div>
+    <div class="cat-title">⚖️</div>
+    <div class="cat-desc">Journey Phase. Committing and doing — planning, tracking, and staying on the beautiful path.</div>
+    <button class="tool-row">Briefing Board <span class="arr">→</span></button>
+    <button class="tool-row">Planning Tools <span class="arr">→</span></button>
+    <div class="soon">More tools coming as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-d-back">⬅️</button><button class="tb" id="b-d-mg">🔍</button></div>
+</div>
+
+<div class="sc" id="s-configure">
+  <div class="card"><div class="cat-body">
+    <div class="cat-eyebrow">Settings</div>
+    <div class="cat-title">⚙️</div>
+    <div class="cat-desc">Set conditions for your session. Configure before you begin — or adjust anytime.</div>
+    <button class="tool-row">Session Setup <span class="arr">→</span></button>
+    <button class="tool-row">Facilitator Settings <span class="arr">→</span></button>
+    <div class="soon">More settings coming as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-cfg-back">⬅️</button><button class="tb" id="b-cfg-mg">🔍</button></div>
 </div>
 
 </div><!-- /.fg -->
@@ -703,28 +733,27 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var stack = [];
 
   var ctxMap = {
-    's-cover':'Field Guide','s-cover-mg':'Field Guide','s-cover-book':'Field Guide','s-cover-map':'Field Guide',
-    's-invention':'Every great invention started as a thought.','s-invention-mg':'Every great invention started as a thought.','s-invention-book':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.',
-    's-want':'What do you want?','s-want-mg':'What do you want?','s-want-map':'What do you want?',
-    's-know':'Do you know what you want?','s-know-mg':'Do you know what you want?','s-know-map':'Do you know what you want?'
+    's-cover':'Field Guide','s-cover-map':'Field Guide','s-cover-book':'Field Guide',
+    's-invention':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-invention-book':'Every great invention started as a thought.',
+    's-want':'What do you want?','s-want-map':'What do you want?',
+    's-know':'Do you know what you want?','s-know-map':'Do you know what you want?'
   };
 
   var mapMap = {
-    's-cover':'s-cover-map','s-cover-mg':'s-cover-map','s-cover-book':'s-cover-map','s-cover-map':'s-cover-map',
-    's-invention':'s-invention-map','s-invention-mg':'s-invention-map','s-invention-book':'s-invention-map','s-invention-map':'s-invention-map',
-    's-want':'s-want-map','s-want-mg':'s-want-map','s-want-map':'s-want-map',
-    's-know':'s-know-map','s-know-mg':'s-know-map','s-know-map':'s-know-map'
+    's-cover':'s-cover-map','s-cover-map':'s-cover-map','s-cover-book':'s-cover-map',
+    's-invention':'s-invention-map','s-invention-map':'s-invention-map','s-invention-book':'s-invention-map',
+    's-want':'s-want-map','s-want-map':'s-want-map',
+    's-know':'s-know-map','s-know-map':'s-know-map'
   };
 
   function getCtx(){ for(var i=stack.length-1;i>=0;i--){ if(ctxMap[stack[i]]) return ctxMap[stack[i]]; } return ctxMap[cur]||'Field Guide'; }
-  function getMap(){ for(var i=stack.length-1;i>=0;i--){ if(mapMap[stack[i]]) return mapMap[stack[i]]; } return mapMap[cur]||'s-cover-map'; }
 
   function nav(id, push){
-    var t = document.getElementById(id); if(!t) return;
+    var t=document.getElementById(id); if(!t) return;
     document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
     t.classList.add('active');
-    if(push !== false) stack.push(cur);
-    cur = id;
+    if(push!==false) stack.push(cur);
+    cur=id;
     if(id==='s-journal-view') renderJournalView();
     if(id==='s-journal-cover') initJournalCover();
     if(id==='s-gems') renderGems();
@@ -732,11 +761,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   }
 
   function goBack(){ if(stack.length>0){ var d=stack.pop(); nav(d,false); } }
+  function goMG(){ nav('s-mg'); }
+  function goMap(){ var m=mapMap[cur]; for(var i=stack.length-1;i>=0;i--){ if(mapMap[stack[i]]){ m=mapMap[stack[i]]; break; } } nav(m||'s-cover-map'); }
 
-  function wire(id, fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
+  function wire(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
 
   function togglePh(id){
-    var el=document.getElementById(id), tog=document.getElementById(id+'-tog'); if(!el) return;
+    var el=document.getElementById(id),tog=document.getElementById(id+'-tog'); if(!el) return;
     var hidden=el.classList.contains('phd')||el.style.display==='none';
     if(hidden){ el.classList.remove('phd'); el.style.display='flex'; if(tog) tog.textContent='▲'; }
     else{ el.classList.add('phd'); el.style.display='none'; if(tog) tog.textContent='▼'; }
@@ -746,7 +777,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   function loadEntries(){ try{ var r=sessionStorage.getItem('jentries'); return r?JSON.parse(r):[]; }catch(e){ return []; } }
   function saveEntry(e){ try{ var a=loadEntries(); a.push(e); sessionStorage.setItem('jentries',JSON.stringify(a)); }catch(e){} }
   function renderJournalView(){
-    var entries=loadEntries(), list=document.getElementById('jv-entries-list'), count=document.getElementById('jv-count');
+    var entries=loadEntries(),list=document.getElementById('jv-entries-list'),count=document.getElementById('jv-count');
     if(!list) return;
     if(!entries.length){ list.innerHTML='<div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>'; if(count) count.textContent='Your entries'; return; }
     if(count) count.textContent=entries.length+' '+(entries.length===1?'entry':'entries');
@@ -754,8 +785,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     entries.forEach(function(e,i){
       var card=document.createElement('div'); card.className='jcard';
       var preview=e.text.length>120?e.text.substring(0,120)+'…':e.text;
-      var eyebrow=(e.date||'')+(e.page?' · '+e.page:'');
-      card.innerHTML='<div class="jcard-num">'+String(i+1).padStart(3,'0')+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+eyebrow+'</div>';
+      card.innerHTML='<div class="jcard-num">'+String(i+1).padStart(3,'0')+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+((e.date||'')+(e.page?' · '+e.page:''))+'</div>';
       card.addEventListener('click',(function(idx){ return function(){
         var en=loadEntries()[idx]; if(!en) return;
         var el=document.getElementById('je-num'); if(el) el.textContent=String(idx+1).padStart(3,'0');
@@ -773,123 +803,135 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // ── GEMS ──
   function loadGems(){ try{ var r=sessionStorage.getItem('gems'); return r?JSON.parse(r):[]; }catch(e){ return []; } }
   function renderGems(){
-    var gems=loadGems(), list=document.getElementById('gems-list'); if(!list) return;
+    var gems=loadGems(),list=document.getElementById('gems-list'); if(!list) return;
     if(!gems.length){ list.innerHTML='<div class="gem-empty">No Gems found yet.<br>They surface when you\'re ready.</div>'; return; }
     list.innerHTML=''; gems.forEach(function(g){ var c=document.createElement('div'); c.className='gem-card'; c.innerHTML='<div class="gem-quote">'+g.text+'</div><div class="gem-attr">'+g.attr+'</div>'; list.appendChild(c); });
   }
 
-  // ══════════════════════════════════════
-  //  WIRING
-  // ══════════════════════════════════════
+  // ── TOOLS PENTAGON ──
+  function positionPentagon(){
+    var ids=['pb-question','pb-create','pb-shape','pb-share','pb-dare'];
+    var orbital=document.getElementById('tools-orbital'); if(!orbital) return;
+    var cx=170,cy=170,r=118;
+    ids.forEach(function(id,i){
+      var angleDeg=-90+(i*72);
+      var rad=angleDeg*Math.PI/180;
+      var x=cx+r*Math.cos(rad);
+      var y=cy+r*Math.sin(rad);
+      var el=document.getElementById(id); if(!el) return;
+      el.style.left=(x-43)+'px';
+      el.style.top=(y-27)+'px';
+    });
+  }
 
+  // ══════════════════════════════════════
+  //  SHARED MG WIRING
+  // ══════════════════════════════════════
+  wire('b-mg-ret', goBack);
+  wire('b-mg-map', goMap);
+  wire('b-mg-book', function(){
+    var bookMap={'s-cover':'s-cover-book','s-invention':'s-invention-book'};
+    var dest='s-cover-book';
+    for(var i=stack.length-1;i>=0;i--){ if(bookMap[stack[i]]){ dest=bookMap[stack[i]]; break; } }
+    if(bookMap[cur]) dest=bookMap[cur];
+    nav(dest);
+  });
+  wire('b-mg-idea', function(){ nav('s-idea'); });
+  wire('b-mg-journal', function(){ nav('s-journal'); });
+  wire('b-mg-gems', function(){ nav('s-gems'); });
+  wire('b-mg-trivia', function(){ nav('s-trivia'); });
+  wire('b-mg-tools', function(){ nav('s-tools'); });
+
+  // ── SIGN-IN ──
   wire('b-signin', function(){ nav('s-cover'); });
 
-  // 0.10 COVER
-  wire('b-cover-mg', function(){ nav('s-cover-mg'); });
+  // ── 0.10 COVER ──
+  wire('b-cover-mg', goMG);
   wire('b-cover-next', function(){ nav('s-invention'); });
-  wire('b-cmg-ret', goBack);
-  wire('b-cmg-map', function(){ nav('s-cover-map'); });
-  wire('b-cmg-book', function(){ nav('s-cover-book'); });
-  wire('b-cmg-idea', function(){ nav('s-idea'); });
-  wire('b-cmg-journal', function(){ nav('s-journal'); });
-  wire('b-cmg-gems', function(){ nav('s-gems'); });
-  wire('b-cmg-trivia', function(){ nav('s-trivia'); });
-  wire('b-cmg-tools', function(){ nav('s-tools'); });
-  wire('b-cbook-ret', goBack);
-  wire('b-cmap-ret', goBack);
-  wire('tog-cm-dream', function(){ togglePh('cm-dream'); });
-  wire('tog-cm-believe', function(){ togglePh('cm-believe'); });
-  wire('tog-cm-dare', function(){ togglePh('cm-dare'); });
-  wire('tog-cm-journey', function(){ togglePh('cm-journey'); });
+  wire('b-cmap-back', goBack); wire('b-cmap-mg', goMG);
+  wire('b-cbook-back', goBack); wire('b-cbook-mg', goMG);
+  wire('tog-cm-dream',function(){ togglePh('cm-dream'); });
+  wire('tog-cm-believe',function(){ togglePh('cm-believe'); });
+  wire('tog-cm-dare',function(){ togglePh('cm-dare'); });
+  wire('tog-cm-journey',function(){ togglePh('cm-journey'); });
 
-  // 0.20 INVENTION
+  // ── 0.20 INVENTION ──
   wire('b-inv-back', function(){ nav('s-cover'); });
-  wire('b-inv-mg', function(){ nav('s-invention-mg'); });
+  wire('b-inv-mg', goMG);
   wire('b-inv-next', function(){ nav('s-want'); });
-  wire('b-img-ret', goBack);
-  wire('b-img-map', function(){ nav('s-invention-map'); });
-  wire('b-img-book', function(){ nav('s-invention-book'); });
-  wire('b-img-idea', function(){ nav('s-idea'); });
-  wire('b-img-journal', function(){ nav('s-journal'); });
-  wire('b-img-gems', function(){ nav('s-gems'); });
-  wire('b-img-trivia', function(){ nav('s-trivia'); });
-  wire('b-img-tools', function(){ nav('s-tools'); });
-  wire('b-ibook-ret', goBack);
-  wire('b-imap-ret', goBack);
-  wire('tog-im-dream', function(){ togglePh('im-dream'); });
-  wire('tog-im-believe', function(){ togglePh('im-believe'); });
-  wire('tog-im-dare', function(){ togglePh('im-dare'); });
-  wire('tog-im-journey', function(){ togglePh('im-journey'); });
+  wire('b-imap-back', goBack); wire('b-imap-mg', goMG);
+  wire('b-ibook-back', goBack); wire('b-ibook-mg', goMG);
+  wire('tog-im-dream',function(){ togglePh('im-dream'); });
+  wire('tog-im-believe',function(){ togglePh('im-believe'); });
+  wire('tog-im-dare',function(){ togglePh('im-dare'); });
+  wire('tog-im-journey',function(){ togglePh('im-journey'); });
 
-  // 0.30 WANT
+  // ── 0.30 WANT ──
   wire('b-want-back', function(){ nav('s-invention'); });
-  wire('b-want-mg', function(){ nav('s-want-mg'); });
+  wire('b-want-mg', goMG);
   wire('b-want-next', function(){ nav('s-know'); });
-  wire('b-wmg-ret', goBack);
-  wire('b-wmg-map', function(){ nav('s-want-map'); });
-  wire('b-wmg-book', function(){ nav('s-want-mg'); });
-  wire('b-wmg-idea', function(){ nav('s-idea'); });
-  wire('b-wmg-journal', function(){ nav('s-journal'); });
-  wire('b-wmg-gems', function(){ nav('s-gems'); });
-  wire('b-wmg-trivia', function(){ nav('s-trivia'); });
-  wire('b-wmg-tools', function(){ nav('s-tools'); });
-  wire('b-wmap-ret', goBack);
-  wire('tog-wm-dream', function(){ togglePh('wm-dream'); });
-  wire('tog-wm-believe', function(){ togglePh('wm-believe'); });
-  wire('tog-wm-dare', function(){ togglePh('wm-dare'); });
-  wire('tog-wm-journey', function(){ togglePh('wm-journey'); });
+  wire('b-wmap-back', goBack); wire('b-wmap-mg', goMG);
+  wire('tog-wm-dream',function(){ togglePh('wm-dream'); });
+  wire('tog-wm-believe',function(){ togglePh('wm-believe'); });
+  wire('tog-wm-dare',function(){ togglePh('wm-dare'); });
+  wire('tog-wm-journey',function(){ togglePh('wm-journey'); });
 
-  // 0.40 KNOW
+  // ── 0.40 KNOW ──
   wire('b-know-back', function(){ nav('s-want'); });
-  wire('b-know-mg', function(){ nav('s-know-mg'); });
+  wire('b-know-mg', goMG);
   wire('b-know-no', function(){ sendPrompt('No [on: Do you know what you want?]'); });
   wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
   wire('b-know-yes', function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
-  wire('b-kmg-ret', goBack);
-  wire('b-kmg-map', function(){ nav('s-know-map'); });
-  wire('b-kmg-book', function(){ nav('s-know-mg'); });
-  wire('b-kmg-idea', function(){ nav('s-idea'); });
-  wire('b-kmg-journal', function(){ nav('s-journal'); });
-  wire('b-kmg-gems', function(){ nav('s-gems'); });
-  wire('b-kmg-trivia', function(){ nav('s-trivia'); });
-  wire('b-kmg-tools', function(){ nav('s-tools'); });
-  wire('b-kmap-ret', goBack);
-  wire('tog-km-dream', function(){ togglePh('km-dream'); });
-  wire('tog-km-believe', function(){ togglePh('km-believe'); });
-  wire('tog-km-dare', function(){ togglePh('km-dare'); });
-  wire('tog-km-journey', function(){ togglePh('km-journey'); });
+  wire('b-kmap-back', goBack); wire('b-kmap-mg', goMG);
+  wire('tog-km-dream',function(){ togglePh('km-dream'); });
+  wire('tog-km-believe',function(){ togglePh('km-believe'); });
+  wire('tog-km-dare',function(){ togglePh('km-dare'); });
+  wire('tog-km-journey',function(){ togglePh('km-journey'); });
 
-  // 💡 IDEA
+  // ── 💡 IDEA ──
+  wire('b-idea-back', goBack); wire('b-idea-mg', goMG);
   wire('b-capture-idea', function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){t.value='';t.focus();} var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
   wire('b-sea-ideas', function(){ sendPrompt('💡 Sea of Ideas [on: '+getCtx()+']'); });
-  wire('b-idea-ret', goBack);
-  wire('b-icap-ret', goBack);
-  wire('b-save-idea', function(){ var t=document.getElementById('idea-text'); if(!t) return; var text=t.value.trim(); if(!text) return; sendPrompt('💡 Idea captured: '+text); nav('s-idea'); });
+  wire('b-icap-back', goBack); wire('b-icap-mg', goMG);
+  wire('b-save-idea', function(){ var t=document.getElementById('idea-text'); if(!t) return; var text=t.value.trim(); if(!text) return; sendPrompt('💡 Idea captured: '+text); goBack(); });
   var ideaTA=document.getElementById('idea-text'); if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
-  // ✏️ JOURNAL
+  // ── ✏️ JOURNAL ──
+  wire('b-journal-back', goBack); wire('b-journal-mg', goMG);
   wire('b-add-note', function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){t.value='';t.focus();} var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
   wire('b-view-journal', function(){ nav('s-journal-cover'); });
-  wire('b-journal-ret', goBack);
-  wire('b-jcap-ret', goBack);
-  wire('b-jcov-ret', goBack);
-  wire('b-jview-ret', goBack);
-  wire('b-jentry-ret', goBack);
+  wire('b-jcap-back', goBack); wire('b-jcap-mg', goMG);
+  wire('b-jcov-back', goBack); wire('b-jcov-mg', goMG);
+  wire('b-jview-back', goBack); wire('b-jview-mg', goMG);
+  wire('b-jentry-back', goBack); wire('b-jentry-mg', goMG);
   wire('b-je-back', function(){ nav('s-journal-view'); });
-  wire('b-save-journal', function(){ var t=document.getElementById('journal-text'); if(!t) return; var text=t.value.trim(); if(!text) return; var now=new Date(); saveEntry({text:text,date:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),page:getCtx()}); sendPrompt('✏️ Journal note saved: '+text); nav('s-journal'); });
+  wire('b-save-journal', function(){ var t=document.getElementById('journal-text'); if(!t) return; var text=t.value.trim(); if(!text) return; var now=new Date(); saveEntry({text:text,date:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),page:getCtx()}); sendPrompt('✏️ Journal note saved: '+text); goBack(); });
   var journalTA=document.getElementById('journal-text'); if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
-  // 💎 GEMS
-  wire('b-gems-ret', goBack);
+  // ── 💎 GEMS ──
+  wire('b-gems-back', goBack); wire('b-gems-mg', goMG);
 
-  // 🌸 TRIVIA
-  wire('b-trivia-ret', goBack);
+  // ── 🌸 TRIVIA ──
+  wire('b-trivia-back', goBack); wire('b-trivia-mg', goMG);
   wire('b-authors', function(){ nav('s-authors'); });
-  wire('b-aut-ret', goBack);
+  wire('b-aut-back', goBack); wire('b-aut-mg', goMG);
 
-  // 🛠️ TOOLS
-  wire('b-tools-ret', goBack);
+  // ── 🛠️ TOOLS ──
+  wire('b-tools-back', goBack); wire('b-tools-mg', goMG);
+  wire('pb-question', function(){ nav('s-question'); });
+  wire('pb-create',   function(){ nav('s-create'); });
+  wire('pb-shape',    function(){ nav('s-shape'); });
+  wire('pb-share',    function(){ nav('s-share'); });
+  wire('pb-dare',     function(){ nav('s-dare'); });
+  wire('btn-configure', function(){ nav('s-configure'); });
+  wire('b-q-back', goBack); wire('b-q-mg', goMG);
+  wire('b-c-back', goBack); wire('b-c-mg', goMG);
+  wire('b-sh-back', goBack); wire('b-sh-mg', goMG);
+  wire('b-sr-back', goBack); wire('b-sr-mg', goMG);
+  wire('b-d-back', goBack); wire('b-d-mg', goMG);
+  wire('b-cfg-back', goBack); wire('b-cfg-mg', goMG);
 
+  positionPentagon();
   nav('s-signin', false);
 })();
 </script>
