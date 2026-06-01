@@ -13,7 +13,7 @@ html,body{height:100%;background:#d0d0d0}
 body{display:flex;align-items:center;justify-content:center;padding:16px;min-height:100%}
 
 /* ── SHELL ── */
-.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:420px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
@@ -964,12 +964,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   });
 
   function postIdeaToMiro(text, ctx, color){
-    var prompt='Post this idea as a sticky note on the Sea of Ideas Miro board (https://miro.com/app/board/uXjVNVoFoec=/). Use color '+color+', size w=280. Content: "💡 '+text+'\\n[from: '+ctx+']". Just create the sticky note, no other response needed.';
-    fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,messages:[{role:'user',content:prompt}]})
-    }).catch(function(){});
+    sendPrompt('🌊 Post this as a sticky note on my Sea of Ideas Miro board (https://miro.com/app/board/uXjVNVoFoec=/). Color: '+color+'. Content: 💡 '+text+' [from: '+ctx+']');
   }
   var ideaTA=document.getElementById('idea-text'); if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
