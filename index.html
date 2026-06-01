@@ -171,13 +171,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 /* ── TOOLS PENTAGON ── */
 .tools-wrap{flex:1;display:flex;flex-direction:column;background:#f9f5ef}
-.tools-orbital{position:relative;width:340px;height:340px;margin:16px auto 8px;flex-shrink:0}
-.tools-hub{position:absolute;width:72px;height:72px;border-radius:50%;background:#0a4a38;border:2px solid #1a7a5e;display:flex;align-items:center;justify-content:center;font-size:32px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);left:50%;top:50%;transform:translate(-50%,-50%)}
-.tools-orbit-ring{position:absolute;width:220px;height:220px;border-radius:50%;border:1px dashed #c8b89a;left:50%;top:50%;transform:translate(-50%,-50%)}
-.pb{position:absolute;width:86px;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;transition:all .15s;clip-path:polygon(10% 0%,90% 0%,100% 50%,90% 100%,10% 100%,0% 50%);background:#C9A87C;border:none}
-.pb:hover{background:#b8976a;transform:scale(1.08)}
-.pb:active{transform:scale(.96)}
-.pb-label{font-family:'Playfair Display',serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#3B2510;line-height:1}
+.tools-orbital{display:flex;align-items:center;justify-content:center;padding:12px 0 8px;flex-shrink:0}
+.orb-svg{overflow:visible}
+.btn-group{cursor:pointer}
+.btn-group rect{transition:fill .15s}
+.btn-group:hover rect{fill:#b8976a!important}
 .cat-body{flex:1;display:flex;flex-direction:column;padding:20px 24px;background:#f9f5ef;overflow-y:auto}
 .cat-eyebrow{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:8px}
 .cat-title{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#3B2510;margin-bottom:8px}
@@ -630,14 +628,34 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-tools">
   <div class="card"><div class="tools-wrap">
     <div class="mg-mhead"><div class="mg-mh">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
-    <div class="tools-orbital" id="tools-orbital">
-      <div class="tools-orbit-ring"></div>
-      <div class="tools-hub" id="btn-configure">⚙️</div>
-      <button class="pb" id="pb-question"><span class="pb-label">QUESTION</span></button>
-      <button class="pb" id="pb-create"><span class="pb-label">CREATE</span></button>
-      <button class="pb" id="pb-shape"><span class="pb-label">SHAPE</span></button>
-      <button class="pb" id="pb-share"><span class="pb-label">SHARE</span></button>
-      <button class="pb" id="pb-dare"><span class="pb-label">DARE</span></button>
+    <div class="tools-orbital">
+      <svg class="orb-svg" id="orb-svg" width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
+        <defs><filter id="btn-glow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.28)"/><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.18)"/></filter></defs>
+        <circle cx="160" cy="160" r="105" fill="none" stroke="#c8b89a" stroke-width="1" stroke-dasharray="4,6"/>
+        <g id="orb-arrows" fill="#c8b89a"></g>
+        <circle cx="160" cy="160" r="34" fill="#0a4a38" stroke="#1a7a5e" stroke-width="2" filter="url(#btn-glow)" id="btn-configure" style="cursor:pointer"/>
+        <text x="160" y="169" text-anchor="middle" font-size="26" dominant-baseline="middle" style="pointer-events:none">⚙️</text>
+        <g class="btn-group" id="pb-question" transform="translate(160,55)">
+          <rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/>
+          <text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" style="pointer-events:none">?</text>
+        </g>
+        <g class="btn-group" id="pb-create" transform="translate(259.8,130.3)">
+          <rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/>
+          <text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">CREATE</text>
+        </g>
+        <g class="btn-group" id="pb-shape" transform="translate(221.8,245.7)">
+          <rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/>
+          <text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">SHAPE</text>
+        </g>
+        <g class="btn-group" id="pb-share" transform="translate(98.2,245.7)">
+          <rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/>
+          <text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">SHARE</text>
+        </g>
+        <g class="btn-group" id="pb-dare" transform="translate(60.2,130.3)">
+          <rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/>
+          <text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">DARE</text>
+        </g>
+      </svg>
     </div>
   </div></div>
   <div class="bar2">
@@ -808,20 +826,20 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     list.innerHTML=''; gems.forEach(function(g){ var c=document.createElement('div'); c.className='gem-card'; c.innerHTML='<div class="gem-quote">'+g.text+'</div><div class="gem-attr">'+g.attr+'</div>'; list.appendChild(c); });
   }
 
-  // ── TOOLS PENTAGON ──
-  function positionPentagon(){
-    var ids=['pb-question','pb-create','pb-shape','pb-share','pb-dare'];
-    var orbital=document.getElementById('tools-orbital'); if(!orbital) return;
-    var cx=170,cy=170,r=118;
-    ids.forEach(function(id,i){
-      var angleDeg=-90+(i*72);
-      var rad=angleDeg*Math.PI/180;
-      var x=cx+r*Math.cos(rad);
-      var y=cy+r*Math.sin(rad);
-      var el=document.getElementById(id); if(!el) return;
-      el.style.left=(x-43)+'px';
-      el.style.top=(y-27)+'px';
-    });
+  // ── TOOLS PENTAGON ARROWS ──
+  function drawPentagonArrows(){
+    var arrowG=document.getElementById("orb-arrows"); if(!arrowG) return;
+    var cx=160,cy=160,r=105,ns="http://www.w3.org/2000/svg";
+    for(var i=0;i<5;i++){
+      var midRad=(-90+i*72+36)*Math.PI/180;
+      var px=cx+r*Math.cos(midRad),py=cy+r*Math.sin(midRad);
+      var tx=-Math.sin(midRad),ty=Math.cos(midRad);
+      var nx=Math.cos(midRad),ny=Math.sin(midRad);
+      var s=7;
+      var poly=document.createElementNS(ns,"polygon");
+      poly.setAttribute("points",(px+tx*s)+","+(py+ty*s)+" "+(px-tx*s-nx*(s*0.7))+","+(py-ty*s-ny*(s*0.7))+" "+(px-tx*s+nx*(s*0.7))+","+(py-ty*s+ny*(s*0.7)));
+      arrowG.appendChild(poly);
+    }
   }
 
   // ══════════════════════════════════════
@@ -931,7 +949,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-d-back', goBack); wire('b-d-mg', goMG);
   wire('b-cfg-back', goBack); wire('b-cfg-mg', goMG);
 
-  positionPentagon();
+  drawPentagonArrows();
   nav('s-signin', false);
 })();
 </script>
