@@ -13,7 +13,7 @@ html,body{height:100%;background:#d0d0d0}
 body{display:flex;align-items:center;justify-content:center;padding:16px;min-height:100%}
 
 /* ── SHELL ── */
-.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:420px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
@@ -28,7 +28,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
 
 /* ── SHARED MG SCREEN ── */
-.mg-wrap{width:100%;max-width:420px;margin:0 auto;background:#0F6E56;display:flex;flex-direction:column;flex:1}
+.mg-wrap{width:100%;background:#0F6E56;display:flex;flex-direction:column;flex:1}
 .mg-head{padding:24px 24px 18px;text-align:center}
 .mg-ring{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px}
 .mg-ttl{font-size:22px;font-weight:700;color:#C9A87C;letter-spacing:1px;margin-bottom:5px}
@@ -103,7 +103,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .iw{flex:1;display:flex;flex-direction:column;align-items:center;text-align:left;padding:0 0 24px;background:#EBF4FF}
 .ib{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#1A3A5C;margin-bottom:14px;transition:border-color .15s;display:block}
 .ib:hover{border-color:#378ADD}
-.icw{flex:1;display:flex;flex-direction:column;padding:24px 28px 20px;background:#EBF4FF}
+.icw{flex:1;display:flex;flex-direction:column;padding:24px 28px 20px;background:#EBF4FF;position:relative}
 .icit{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:14px}
 .icr{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:14px}
 .icq{font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#3A6080;margin-bottom:16px;line-height:1.6}
@@ -463,6 +463,34 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
+     🌈 DREAM PHASE — Coming Attractions
+═══════════════════════════════════ -->
+<div class="sc" id="s-dream-intro">
+  <div class="card"><div class="sw">
+    <div class="se" style="color:#7c3aed">🌈 Phase 1</div>
+    <div class="mg-band" style="background:#ede9fe;border-bottom:.5px solid #c4b5fd"></div>
+    <div class="sh" style="color:#111;font-size:26px;margin-bottom:6px">Dream Phase</div>
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#555;margin-bottom:20px;line-height:1.6">You are about to discover what you want — maybe for the first time. Here is what lies ahead on your Dream journey.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1000</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative License</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1100</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sea of Ideas</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1200</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Cluster</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1300</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Resonance</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1400</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sort to Simplicity</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1500</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">PLUSing</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1600</span><span style="font-family:'Playfair Display',serif;font-size:14px;color:#111">Finding Your Passion</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1700</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1800</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision Align</span></div>
+    </div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-dream-intro-back">⬅️</button>
+    <button class="tb" id="b-dream-intro-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
      💡 IDEA (shared)
 ═══════════════════════════════════ -->
 <div class="sc" id="s-idea">
@@ -485,6 +513,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="icq">Ideas are so fragile. Write this one down before it's gone.</div>
     <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
     <div class="sp"></div>
+    <div id="idea-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px"><div style="font-size:52px">🌊</div><div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#1A3A5C">Posted!</div><div style="font-size:13px;font-style:italic;color:#3A6080">Your idea is in the Sea of Ideas.</div></div>
   </div></div>
   <div class="bar2" style="gap:10px">
     <button class="tb" id="b-icap-back">⬅️</button>
@@ -754,7 +783,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     's-cover':'Field Guide','s-cover-map':'Field Guide','s-cover-book':'Field Guide',
     's-invention':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-invention-book':'Every great invention started as a thought.',
     's-want':'What do you want?','s-want-map':'What do you want?',
-    's-know':'Do you know what you want?','s-know-map':'Do you know what you want?'
+    's-know':'Do you know what you want?','s-know-map':'Do you know what you want?','s-dream-intro':'Dream Phase'
   };
 
   var mapMap = {
@@ -897,10 +926,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // ── 0.40 KNOW ──
   wire('b-know-back', function(){ nav('s-want'); });
   wire('b-know-mg', goMG);
-  wire('b-know-no', function(){ sendPrompt('No [on: Do you know what you want?]'); });
+  wire('b-know-no', function(){ nav('s-dream-intro'); });
   wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
   wire('b-know-yes', function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
   wire('b-kmap-back', goBack); wire('b-kmap-mg', goMG);
+  wire('b-dream-intro-back', goBack); wire('b-dream-intro-mg', goMG);
   wire('tog-km-dream',function(){ togglePh('km-dream'); });
   wire('tog-km-believe',function(){ togglePh('km-believe'); });
   wire('tog-km-dare',function(){ togglePh('km-dare'); });
@@ -909,9 +939,38 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // ── 💡 IDEA ──
   wire('b-idea-back', goBack); wire('b-idea-mg', goMG);
   wire('b-capture-idea', function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){t.value='';t.focus();} var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
-  wire('b-sea-ideas', function(){ sendPrompt('💡 Sea of Ideas [on: '+getCtx()+']'); });
+  wire('b-sea-ideas', function(){ window.open('https://miro.com/app/board/uXjVNVoFoec=/','_blank'); });
   wire('b-icap-back', goBack); wire('b-icap-mg', goMG);
-  wire('b-save-idea', function(){ var t=document.getElementById('idea-text'); if(!t) return; var text=t.value.trim(); if(!text) return; sendPrompt('💡 Idea captured: '+text); goBack(); });
+  var MIRO_COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
+  function randomMiroColor(){ return MIRO_COLORS[Math.floor(Math.random()*MIRO_COLORS.length)]; }
+
+  wire('b-save-idea', function(){
+    var t=document.getElementById('idea-text'); if(!t) return;
+    var text=t.value.trim(); if(!text) return;
+    var ctx=getCtx();
+    var color=randomMiroColor();
+    postIdeaToMiro(text, ctx, color);
+    sendPrompt('💡 Idea captured: '+text);
+    t.value='';
+    t.style.display='none';
+    var btn=document.getElementById('b-save-idea'); if(btn) btn.classList.remove('active');
+    var posted=document.getElementById('idea-posted');
+    if(posted){ posted.style.display='flex'; }
+    setTimeout(function(){
+      if(posted) posted.style.display='none';
+      t.style.display='block';
+      t.focus();
+    }, 1400);
+  });
+
+  function postIdeaToMiro(text, ctx, color){
+    var prompt='Post this idea as a sticky note on the Sea of Ideas Miro board (https://miro.com/app/board/uXjVNVoFoec=/). Use color '+color+', size w=280. Content: "💡 '+text+'\\n[from: '+ctx+']". Just create the sticky note, no other response needed.';
+    fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,messages:[{role:'user',content:prompt}]})
+    }).catch(function(){});
+  }
   var ideaTA=document.getElementById('idea-text'); if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
   // ── ✏️ JOURNAL ──
