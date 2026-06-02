@@ -253,7 +253,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="tag">Every great journey starts with a single step.</div>
   </div></div>
   <div class="bar3">
-    <button class="tb" onclick="nav('s-signin')">⬅️</button>
+    <button class="tb" id="b-cover-back">⬅️</button>
     <button class="tb" id="b-cover-mg">🔍</button>
     <button class="tb" id="b-cover-next">➡️</button>
   </div>
@@ -893,6 +893,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-signin', function(){ nav('s-cover'); });
      
   // ── 0.10 COVER ──
+    // ── 0.10 COVER ──
+  wire('b-cover-back', function(){ nav('s-signin'); });
   wire('b-cover-mg', goMG);
   wire('b-cover-next', function(){ nav('s-invention'); });
   wire('b-cmap-back', goBack); wire('b-cmap-mg', goMG);
