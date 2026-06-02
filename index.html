@@ -189,7 +189,20 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </head>
 <body>
 <div class="fg" id="fg-root">
-
+     
+<!-- PASSWORD RESET -->
+<div class="sc" id="s-reset">
+  <div class="card rnd"><div class="siw">
+    <div class="si-t2t">T2T</div>
+    <div class="si-sub">Set New Password</div>
+    <div class="si-rule"></div>
+    <div class="si-fields">
+      <label class="si-lbl">New Password</label>
+      <input class="si-input" type="password" id="reset-password" placeholder="new password">
+      <button class="si-btn" id="b-reset-save">Set Password</button>
+    </div>
+  </div></div>
+</div>
 <!-- ═══════════════════════════════════
      SIGN-IN
 ═══════════════════════════════════ -->
@@ -1020,7 +1033,27 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-cfg-back', goBack); wire('b-cfg-mg', goMG);
 
   drawPentagonArrows();
-  nav('s-signin', false);
+ drawPentagonArrows();
+
+  // ── PASSWORD RESET HANDLER ──
+  (async function(){
+    const hash = window.location.hash;
+    if(hash.includes('type=recovery')){
+      nav('s-reset', false);
+      wire('b-reset-save', async function(){
+        var pw = document.getElementById('reset-password').value;
+        if(!pw || pw.length < 6){ alert('Password must be at least 6 characters.'); return; }
+        var btn = document.getElementById('b-reset-save');
+        btn.textContent = 'Saving…'; btn.disabled = true;
+        var res = await _sb.auth.updateUser({ password: pw });
+        if(res.error){ btn.textContent = 'Set Password'; btn.disabled = false; alert(res.error.message); }
+        else { alert('Password updated! Please sign in.'); nav('s-signin', false); }
+      });
+    } else {
+      nav('s-signin', false);
+    }
+  })();
+     
 })();
 </script>
 </body>
