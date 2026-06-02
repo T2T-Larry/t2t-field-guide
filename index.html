@@ -185,6 +185,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .arr{color:#C9A87C;font-size:16px}
 .soon{font-size:12px;font-style:italic;color:#a89070;text-align:center;padding:12px 0}
 </style>
+     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">
@@ -889,8 +890,21 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-mg-trivia', function(){ nav('s-trivia'); });
   wire('b-mg-tools', function(){ nav('s-tools'); });
 
-  // ── SIGN-IN ──
-  wire('b-signin', function(){ nav('s-cover'); });
+// ── SIGN-IN ──
+  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
+  wire('b-signin',async function(){
+    var email=document.getElementById('si-email').value.trim();
+    var password=document.getElementById('si-password').value;
+    var btn=document.getElementById('b-signin');
+    btn.textContent='Signing in…'; btn.disabled=true;
+    var res=await _sb.auth.signInWithPassword({email,password});
+    if(res.error){
+      btn.textContent='Sign In'; btn.disabled=false;
+      alert('Incorrect email or password.');
+    } else {
+      nav('s-cover');
+    }
+  });
      
   // ── 0.10 COVER ──
     // ── 0.10 COVER ──
