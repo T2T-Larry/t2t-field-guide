@@ -906,6 +906,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-mg-trivia', function(){ nav('s-trivia'); });
   wire('b-mg-tools', function(){ nav('s-tools'); });
 
+     wire('b-forgot', async function(){
+    var email=document.getElementById('si-email').value.trim();
+    if(!email){ alert('Enter your email address first, then tap Forgot password.'); return; }
+    var res=await _sb.auth.resetPasswordForEmail(email, {redirectTo:'https://t2t-larry.github.io/t2t-field-guide/'});
+    if(res.error){ alert(res.error.message); }
+    else{ alert('Reset email sent! Check your inbox.'); }
+  });
+     
 // ── SIGN-IN ──
   const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
   wire('b-signin',async function(){
