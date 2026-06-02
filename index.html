@@ -185,11 +185,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .arr{color:#C9A87C;font-size:16px}
 .soon{font-size:12px;font-style:italic;color:#a89070;text-align:center;padding:12px 0}
 </style>
-     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">
-     
+
 <!-- PASSWORD RESET -->
 <div class="sc" id="s-reset">
   <div class="card rnd"><div class="siw">
@@ -203,6 +203,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     </div>
   </div></div>
 </div>
+
 <!-- ═══════════════════════════════════
      SIGN-IN
 ═══════════════════════════════════ -->
@@ -217,7 +218,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <input class="si-input" type="email" id="si-email" placeholder="your@email.com">
       <label class="si-lbl">Password</label>
       <input class="si-input" type="password" id="si-password" placeholder="password">
-<button class="si-btn" id="b-signin">Sign In</button>
+      <button class="si-btn" id="b-signin">Sign In</button>
       <div style="text-align:center;margin-top:14px">
         <span id="b-forgot" style="font-size:12px;color:#9FE1CB;cursor:pointer;letter-spacing:1px">Forgot password?</span>
       </div>
@@ -906,17 +907,18 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-mg-trivia', function(){ nav('s-trivia'); });
   wire('b-mg-tools', function(){ nav('s-tools'); });
 
-     wire('b-forgot', async function(){
+  // ── SIGN-IN ──
+  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
+
+  wire('b-forgot', async function(){
     var email=document.getElementById('si-email').value.trim();
     if(!email){ alert('Enter your email address first, then tap Forgot password.'); return; }
     var res=await _sb.auth.resetPasswordForEmail(email, {redirectTo:'https://t2t-larry.github.io/t2t-field-guide/'});
     if(res.error){ alert(res.error.message); }
     else{ alert('Reset email sent! Check your inbox.'); }
   });
-     
-// ── SIGN-IN ──
-  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
-  wire('b-signin',async function(){
+
+  wire('b-signin', async function(){
     var email=document.getElementById('si-email').value.trim();
     var password=document.getElementById('si-password').value;
     var btn=document.getElementById('b-signin');
@@ -929,9 +931,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       nav('s-cover');
     }
   });
-     
+
   // ── 0.10 COVER ──
-    // ── 0.10 COVER ──
   wire('b-cover-back', function(){ nav('s-signin'); });
   wire('b-cover-mg', goMG);
   wire('b-cover-next', function(){ nav('s-invention'); });
@@ -1044,7 +1045,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-cfg-back', goBack); wire('b-cfg-mg', goMG);
 
   drawPentagonArrows();
- drawPentagonArrows();
 
   // ── PASSWORD RESET HANDLER ──
   (async function(){
@@ -1064,7 +1064,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       nav('s-signin', false);
     }
   })();
-     
+
 })();
 </script>
 </body>
