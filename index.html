@@ -593,7 +593,38 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     🌈 DREAM PHASE — Coming Attractions
+     WANT — MORE HUB (empty)
+═══════════════════════════════════ -->
+<div class="sc" id="s-want-more">
+  <div class="card"><div class="more-hub">
+    <div class="more-eyebrow">WANT · MORE</div>
+    <hr class="more-rule">
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#bbb;text-align:center;padding:32px 0;line-height:1.8">Nothing here yet.<br>More will surface as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-want-more-back">⬅️</button>
+    <button class="tb" id="b-want-more-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     KNOW — MORE HUB (empty)
+═══════════════════════════════════ -->
+<div class="sc" id="s-know-more">
+  <div class="card"><div class="more-hub">
+    <div class="more-eyebrow">KNOW · MORE</div>
+    <hr class="more-rule">
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#bbb;text-align:center;padding:32px 0;line-height:1.8">Nothing here yet.<br>More will surface as the journey grows.</div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-know-more-back">⬅️</button>
+    <button class="tb" id="b-know-more-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ — Coming Attractions
 ═══════════════════════════════════ -->
 <div class="sc" id="s-dream-intro">
   <div class="card"><div class="sw">
@@ -932,6 +963,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var stack = [];
   var primaryPage = null;
   var primaryPages = ['s-cover','s-invention','s-want','s-know','s-dream-intro'];
+  var primaryForMore = {
+    's-want-more':'s-want','s-know-more':'s-know'
+  };
 
   var ctxMap = {
     's-cover':'Field Guide','s-cover-map':'Field Guide','s-cover-more':'Field Guide',
@@ -956,7 +990,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     's-cover':'s-cover-more','s-cover-map':'s-cover-more','s-cover-more':'s-cover-more',
     's-what-is-t2t':'s-cover-more','s-t2t-goals':'s-cover-more',
     's-invention':'s-invention-more','s-invention-more':'s-invention-more',
-    's-thoughts-1':'s-invention-more','s-thoughts-2':'s-invention-more','s-thoughts-3':'s-invention-more'
+    's-thoughts-1':'s-invention-more','s-thoughts-2':'s-invention-more','s-thoughts-3':'s-invention-more',
+    's-want':'s-want-more','s-want-more':'s-want-more',
+    's-know':'s-know-more','s-know-more':'s-know-more'
   };
 
   function getCtx(){ for(var i=stack.length-1;i>=0;i--){ if(ctxMap[stack[i]]) return ctxMap[stack[i]]; } return ctxMap[cur]||'Field Guide'; }
@@ -1218,6 +1254,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-thoughts-3-back', goBack); wire('b-thoughts-3-mg', goMG);
   wire('b-thoughts-next-3', function(){});
   wire('b-thoughts-prev-3', function(){ nav('s-thoughts-2'); });
+
+  wire('b-want-more-back', goBack); wire('b-want-more-mg', goMG);
+  wire('b-know-more-back', goBack); wire('b-know-more-mg', goMG);
 
   // ── 0.30 WANT ──
   wire('b-want-back', function(){ nav('s-invention'); });
