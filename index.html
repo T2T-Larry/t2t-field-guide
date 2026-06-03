@@ -95,10 +95,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .ptg{margin-left:auto;font-size:11px;color:#888}
 .ps{padding-left:28px;padding-right:16px;display:flex;flex-direction:column;margin-bottom:4px}
 .st{font-size:12px;padding:4px 0;display:flex;align-items:baseline;gap:8px}
-.sn{font-size:11px;min-width:40px;text-align:right;color:#888}
-.sl{flex:1;color:#888}
+.sn{font-size:11px;min-width:40px;text-align:right;color:#aaa}
+.sl{flex:1;color:#aaa}
+.st.here .sn{color:#0F6E56}
 .st.here .sl{font-weight:600;color:#0F6E56;font-size:13px}
-.st.unv{opacity:.4}
+.st.vis .sn{color:#666}
+.st.vis .sl{color:#444}
+.st.unv .sn{color:#ccc}
+.st.unv .sl{color:#ccc}
 .cm{font-size:11px;font-style:italic;color:#888;padding:4px 0 4px 24px}
 .phd{display:none}
 
@@ -296,31 +300,26 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     COVER MAP
+     SHARED MAP — one screen, rendered dynamically
 ═══════════════════════════════════ -->
 <div class="sc" id="s-cover-map">
   <div class="card"><div class="mw">
     <div class="mg-mhead"><div class="mg-mh">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
     <div class="mg-band"></div>
     <div class="pr"><span class="pl2">🚪 Introduction</span></div>
-    <div class="ps">
-      <div class="st here"><span class="sn">📍 0.10</span><span class="sl">Field Guide</span></div>
-      <div class="st"><span class="sn">0.20</span><span class="sl">Every great invention started as a thought.</span></div>
-      <div class="st unv"><span class="sn">0.30</span><span class="sl">What do you want?</span></div>
-      <div class="st unv"><span class="sn">0.40</span><span class="sl">Do you know what you want?</span></div>
-    </div>
-    <div class="pr tap" id="tog-cm-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="cm-dream-tog">▼</span></div>
-    <div id="cm-dream" class="ps phd"><div class="st unv"><span class="sn">1.10</span><span class="sl">Coming soon.</span></div></div>
-    <div class="pr tap" id="tog-cm-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="cm-believe-tog">▼</span></div>
-    <div id="cm-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-cm-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="cm-dare-tog">▼</span></div>
-    <div id="cm-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-cm-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="cm-journey-tog">▼</span></div>
-    <div id="cm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="ps" id="map-intro-steps"></div>
+    <div class="pr tap" id="tog-map-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="map-dream-tog">▼</span></div>
+    <div id="map-dream" class="ps phd"><div class="st"><span class="sn" style="color:#aaa">1100</span><span class="sl" style="color:#aaa">Coming soon.</span></div></div>
+    <div class="pr tap" id="tog-map-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="map-believe-tog">▼</span></div>
+    <div id="map-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-map-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="map-dare-tog">▼</span></div>
+    <div id="map-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
+    <div class="pr tap" id="tog-map-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="map-journey-tog">▼</span></div>
+    <div id="map-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
   </div></div>
   <div class="bar2">
-    <button class="tb" id="b-cmap-back">⬅️</button>
-    <button class="tb" id="b-cmap-mg">🔍</button>
+    <button class="tb" id="b-map-back">⬅️</button>
+    <button class="tb" id="b-map-mg">🔍</button>
   </div>
 </div>
 
@@ -363,32 +362,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- INVENTION MAP -->
-<div class="sc" id="s-invention-map">
-  <div class="card"><div class="mw">
-    <div class="mg-mhead"><div class="mg-mh">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
-    <div class="mg-band"></div>
-    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
-    <div class="ps">
-      <div class="st"><span class="sn">0.10</span><span class="sl">Field Guide</span></div>
-      <div class="st here"><span class="sn">📍 0.20</span><span class="sl">Every great invention started as a thought.</span></div>
-      <div class="st unv"><span class="sn">0.30</span><span class="sl">What do you want?</span></div>
-      <div class="st unv"><span class="sn">0.40</span><span class="sl">Do you know what you want?</span></div>
-    </div>
-    <div class="pr tap" id="tog-im-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="im-dream-tog">▼</span></div>
-    <div id="im-dream" class="ps phd"><div class="st unv"><span class="sn">1.10</span><span class="sl">Coming soon.</span></div></div>
-    <div class="pr tap" id="tog-im-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="im-believe-tog">▼</span></div>
-    <div id="im-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-im-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="im-dare-tog">▼</span></div>
-    <div id="im-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-im-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="im-journey-tog">▼</span></div>
-    <div id="im-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-imap-back">⬅️</button>
-    <button class="tb" id="b-imap-mg">🔍</button>
-  </div>
-</div>
+
 
 <!-- INVENTION BOOK -->
 <div class="sc" id="s-invention-book">
@@ -423,32 +397,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- WANT MAP -->
-<div class="sc" id="s-want-map">
-  <div class="card"><div class="mw">
-    <div class="mg-mhead"><div class="mg-mh">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
-    <div class="mg-band"></div>
-    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
-    <div class="ps">
-      <div class="st"><span class="sn">0.10</span><span class="sl">Field Guide</span></div>
-      <div class="st"><span class="sn">0.20</span><span class="sl">Every great invention started as a thought.</span></div>
-      <div class="st here"><span class="sn">📍 0.30</span><span class="sl">What do you want?</span></div>
-      <div class="st unv"><span class="sn">0.40</span><span class="sl">Do you know what you want?</span></div>
-    </div>
-    <div class="pr tap" id="tog-wm-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="wm-dream-tog">▼</span></div>
-    <div id="wm-dream" class="ps phd"><div class="st unv"><span class="sn">1.10</span><span class="sl">Coming soon.</span></div></div>
-    <div class="pr tap" id="tog-wm-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="wm-believe-tog">▼</span></div>
-    <div id="wm-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-wm-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="wm-dare-tog">▼</span></div>
-    <div id="wm-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-wm-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="wm-journey-tog">▼</span></div>
-    <div id="wm-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-wmap-back">⬅️</button>
-    <button class="tb" id="b-wmap-mg">🔍</button>
-  </div>
-</div>
+
 
 <!-- ═══════════════════════════════════
      0.40 KNOW — Primary Path Page
@@ -471,32 +420,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- KNOW MAP -->
-<div class="sc" id="s-know-map">
-  <div class="card"><div class="mw">
-    <div class="mg-mhead"><div class="mg-mh">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
-    <div class="mg-band"></div>
-    <div class="pr"><span class="pl2">🚪 Introduction</span></div>
-    <div class="ps">
-      <div class="st"><span class="sn">0.10</span><span class="sl">Field Guide</span></div>
-      <div class="st"><span class="sn">0.20</span><span class="sl">Every great invention started as a thought.</span></div>
-      <div class="st"><span class="sn">0.30</span><span class="sl">What do you want?</span></div>
-      <div class="st here"><span class="sn">📍 0.40</span><span class="sl">Do you know what you want?</span></div>
-    </div>
-    <div class="pr tap" id="tog-km-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="km-dream-tog">▼</span></div>
-    <div id="km-dream" class="ps phd"><div class="st unv"><span class="sn">1.10</span><span class="sl">Coming soon.</span></div></div>
-    <div class="pr tap" id="tog-km-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="km-believe-tog">▼</span></div>
-    <div id="km-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-km-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="km-dare-tog">▼</span></div>
-    <div id="km-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-km-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="km-journey-tog">▼</span></div>
-    <div id="km-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-kmap-back">⬅️</button>
-    <button class="tb" id="b-kmap-mg">🔍</button>
-  </div>
-</div>
+
 
 <!-- ═══════════════════════════════════
      🌈 DREAM PHASE — Coming Attractions
@@ -846,12 +770,61 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   var mapMap = {
     's-cover':'s-cover-map','s-cover-map':'s-cover-map','s-cover-book':'s-cover-map',
-    's-invention':'s-invention-map','s-invention-map':'s-invention-map','s-invention-book':'s-invention-map',
-    's-want':'s-want-map','s-want-map':'s-want-map',
-    's-know':'s-know-map','s-know-map':'s-know-map'
+    's-invention':'s-cover-map','s-invention-map':'s-cover-map','s-invention-book':'s-cover-map',
+    's-want':'s-cover-map','s-want-map':'s-cover-map',
+    's-know':'s-cover-map','s-know-map':'s-cover-map'
   };
 
   function getCtx(){ for(var i=stack.length-1;i>=0;i--){ if(ctxMap[stack[i]]) return ctxMap[stack[i]]; } return ctxMap[cur]||'Field Guide'; }
+
+  // ── VISITED PAGES ──
+  // pageNums: map screen-id → page number
+  var pageNums = {
+    's-cover':'0100','s-cover-map':'0100','s-cover-book':'0100',
+    's-invention':'0200','s-invention-book':'0200',
+    's-want':'0300',
+    's-know':'0400','s-dream-intro':'0400'
+  };
+  // introSteps: ordered list of intro path pages
+  var introSteps = [
+    {num:'0100', label:'Field Guide',                              id:'s-cover'},
+    {num:'0200', label:'Every great invention started as a thought.', id:'s-invention'},
+    {num:'0300', label:'What do you want?',                        id:'s-want'},
+    {num:'0400', label:'Do you know what you want?',               id:'s-know'}
+  ];
+
+  function getVisited(){ try{ var v=sessionStorage.getItem('visitedPages'); return v?JSON.parse(v):[]; }catch(e){ return []; } }
+  function addVisited(num){ if(!num) return; try{ var v=getVisited(); if(v.indexOf(num)===-1){ v.push(num); sessionStorage.setItem('visitedPages',JSON.stringify(v)); upsertVisited(num); } }catch(e){} }
+  async function upsertVisited(num){
+    try{
+      var user=await _sb.auth.getUser();
+      if(!user||!user.data||!user.data.user) return;
+      await _sb.from('visited_pages').upsert({user_id:user.data.user.id, page_num:num},{onConflict:'user_id,page_num'});
+    }catch(e){}
+  }
+  async function loadVisitedFromSupabase(){
+    try{
+      var user=await _sb.auth.getUser();
+      if(!user||!user.data||!user.data.user) return;
+      var res=await _sb.from('visited_pages').select('page_num').eq('user_id',user.data.user.id);
+      if(res.data){ var nums=res.data.map(function(r){ return r.page_num; }); sessionStorage.setItem('visitedPages',JSON.stringify(nums)); }
+    }catch(e){}
+  }
+
+  function renderMap(){
+    var visited=getVisited();
+    var curNum=pageNums[cur]||null;
+    var el=document.getElementById('map-intro-steps'); if(!el) return;
+    el.innerHTML='';
+    introSteps.forEach(function(step){
+      var div=document.createElement('div');
+      var isCur=(step.num===curNum);
+      var isVis=visited.indexOf(step.num)!==-1 && !isCur;
+      div.className='st'+(isCur?' here':isVis?' vis':'');
+      div.innerHTML='<span class="sn">'+(isCur?'📍':isVis?'👣':step.num)+'</span><span class="sl">'+step.label+'</span>';
+      el.appendChild(div);
+    });
+  }
 
   function nav(id, push){
     var t=document.getElementById(id); if(!t) return;
@@ -859,6 +832,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     t.classList.add('active');
     if(push!==false) stack.push(cur);
     cur=id;
+    var pn=pageNums[id]; if(pn) addVisited(pn);
+    if(id==='s-cover-map') renderMap();
     if(id==='s-journal-view') renderJournalView();
     if(id==='s-journal-cover') initJournalCover();
     if(id==='s-gems') renderGems();
@@ -999,6 +974,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       btn.textContent='Sign In'; btn.disabled=false;
       alert('Incorrect email or password.');
     } else {
+      await loadVisitedFromSupabase();
       nav('s-cover');
     }
   });
@@ -1008,32 +984,24 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-cover-mg', goMG);
   wire('b-cover-next', function(){ nav('s-invention'); });
   wire('b-cmap-back', goBack); wire('b-cmap-mg', goMG);
+  wire('b-map-back', goBack); wire('b-map-mg', goMG);
   wire('b-cbook-back', goBack); wire('b-cbook-mg', goMG);
-  wire('tog-cm-dream',function(){ togglePh('cm-dream'); });
-  wire('tog-cm-believe',function(){ togglePh('cm-believe'); });
-  wire('tog-cm-dare',function(){ togglePh('cm-dare'); });
-  wire('tog-cm-journey',function(){ togglePh('cm-journey'); });
+  wire('tog-map-dream',function(){ togglePh('map-dream'); });
+  wire('tog-map-believe',function(){ togglePh('map-believe'); });
+  wire('tog-map-dare',function(){ togglePh('map-dare'); });
+  wire('tog-map-journey',function(){ togglePh('map-journey'); });
 
   // ── 0.20 INVENTION ──
   wire('b-inv-back', function(){ nav('s-cover'); });
   wire('b-inv-mg', goMG);
   wire('b-inv-next', function(){ nav('s-want'); });
-  wire('b-imap-back', goBack); wire('b-imap-mg', goMG);
   wire('b-ibook-back', goBack); wire('b-ibook-mg', goMG);
-  wire('tog-im-dream',function(){ togglePh('im-dream'); });
-  wire('tog-im-believe',function(){ togglePh('im-believe'); });
-  wire('tog-im-dare',function(){ togglePh('im-dare'); });
-  wire('tog-im-journey',function(){ togglePh('im-journey'); });
 
   // ── 0.30 WANT ──
   wire('b-want-back', function(){ nav('s-invention'); });
   wire('b-want-mg', goMG);
   wire('b-want-next', function(){ nav('s-know'); });
-  wire('b-wmap-back', goBack); wire('b-wmap-mg', goMG);
-  wire('tog-wm-dream',function(){ togglePh('wm-dream'); });
-  wire('tog-wm-believe',function(){ togglePh('wm-believe'); });
-  wire('tog-wm-dare',function(){ togglePh('wm-dare'); });
-  wire('tog-wm-journey',function(){ togglePh('wm-journey'); });
+
 
   // ── 0.40 KNOW ──
   wire('b-know-back', function(){ nav('s-want'); });
@@ -1041,12 +1009,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-know-no', function(){ nav('s-dream-intro'); });
   wire('b-know-sortof', function(){ sendPrompt('Sort of [on: Do you know what you want?]'); });
   wire('b-know-yes', function(){ sendPrompt('Yes [on: Do you know what you want?]'); });
-  wire('b-kmap-back', goBack); wire('b-kmap-mg', goMG);
   wire('b-dream-intro-back', goBack); wire('b-dream-intro-mg', goMG);
-  wire('tog-km-dream',function(){ togglePh('km-dream'); });
-  wire('tog-km-believe',function(){ togglePh('km-believe'); });
-  wire('tog-km-dare',function(){ togglePh('km-dare'); });
-  wire('tog-km-journey',function(){ togglePh('km-journey'); });
 
   // ── 💡 IDEA ──
   wire('b-idea-back', goBack); wire('b-idea-mg', goMG);
