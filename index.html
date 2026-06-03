@@ -13,7 +13,7 @@ html,body{height:100%;background:#d0d0d0}
 body{display:flex;align-items:center;justify-content:center;padding:16px;min-height:100%}
 
 /* ── SHELL ── */
-.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18)}
+.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative}
 .sc{display:none!important}
 .sc.active{display:flex!important;flex-direction:column}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
@@ -27,20 +27,23 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .tb:hover:not(.dim){border-color:#378ADD}
 .tb.dim{opacity:.32;cursor:default;pointer-events:none}
 
-/* ── SHARED MG SCREEN ── */
-.mg-wrap{width:100%;background:#0F6E56;display:flex;flex-direction:column;flex:1}
-.mg-head{padding:24px 24px 18px;text-align:center}
-.mg-ring{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px}
-.mg-ttl{font-size:22px;font-weight:700;color:#C9A87C;letter-spacing:1px;margin-bottom:5px}
-.mg-desc{font-size:13px;font-style:italic;color:#9FE1CB;line-height:1.5;max-width:240px;margin:0 auto}
-.mg-hrule{height:1px;background:rgba(255,255,255,.15);margin:0 20px}
-.mg-body{background:#f5faf8;padding:18px 18px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;flex:1}
-.mg-row{display:flex;gap:10px;justify-content:center}
-.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:14px;cursor:pointer;font-size:28px;width:84px;height:84px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s}
+/* ── SHARED MG SCREEN — modal overlay ── */
+.mg-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.52);z-index:100;align-items:center;justify-content:center;border-radius:12px}
+.mg-overlay.active{display:flex}
+.mg-modal{width:300px;max-width:90%;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3)}
+.mg-wrap{width:100%;background:#0F6E56;display:flex;flex-direction:column}
+.mg-head{padding:20px 20px 14px;text-align:center}
+.mg-ring{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:24px}
+.mg-ttl{font-size:19px;font-weight:700;color:#C9A87C;letter-spacing:1px;margin-bottom:4px}
+.mg-desc{font-size:12px;font-style:italic;color:#9FE1CB;line-height:1.5;max-width:220px;margin:0 auto}
+.mg-hrule{height:1px;background:rgba(255,255,255,.15);margin:0 16px}
+.mg-body{background:#f5faf8;padding:14px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.mg-row{display:flex;gap:8px;justify-content:center}
+.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:12px;cursor:pointer;font-size:24px;width:72px;height:72px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s}
 .mg-btn:hover{background:#e8f5f2;border-color:#0a4a38;box-shadow:0 4px 12px rgba(0,0,0,.35);transform:translateY(-1px)}
 .mg-btn:active{transform:scale(.97)}
-.mg-bar{background:#0a4a38;padding:10px 16px;border-top:1px solid #1a7a5e;display:flex;align-items:center;justify-content:center}
-.mg-ret{display:flex;align-items:center;justify-content:center;width:50px;height:38px;background:#ffffff;border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-size:20px;box-shadow:0 3px 8px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.2);transition:all .15s}
+.mg-bar{background:#0a4a38;padding:9px 14px;border-top:1px solid #1a7a5e;display:flex;align-items:center;justify-content:center}
+.mg-ret{display:flex;align-items:center;justify-content:center;width:46px;height:34px;background:#ffffff;border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.2);transition:all .15s}
 .mg-ret:hover{background:#e8f5f2;box-shadow:0 4px 12px rgba(0,0,0,.4);transform:translateY(-1px)}
 .mg-ret:active{transform:scale(.97)}
 
@@ -240,34 +243,36 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     SHARED MG — one screen, used by all
+     SHARED MG — modal overlay, floats over source page
 ═══════════════════════════════════ -->
-<div class="sc" id="s-mg">
-  <div class="card"><div class="mg-wrap">
-    <div class="mg-head">
-      <div class="mg-ring">🔍</div>
-      <div class="mg-ttl">Details</div>
-      <div class="mg-desc">More about this page, plus places to keep what matters.</div>
+<div class="mg-overlay" id="mg-overlay">
+  <div class="mg-modal">
+    <div class="mg-wrap">
+      <div class="mg-head">
+        <div class="mg-ring">🔍</div>
+        <div class="mg-ttl">Details</div>
+        <div class="mg-desc">More about this page, plus places to keep what matters.</div>
+      </div>
+      <div class="mg-hrule"></div>
+      <div class="mg-body">
+        <div class="mg-row">
+          <div class="mg-btn" id="b-mg-map">🗺️</div>
+          <div class="mg-btn" id="b-mg-book">📖</div>
+        </div>
+        <div class="mg-row">
+          <div class="mg-btn" id="b-mg-idea">💡</div>
+          <div class="mg-btn" id="b-mg-journal">✏️</div>
+          <div class="mg-btn" id="b-mg-gems">💎</div>
+        </div>
+        <div class="mg-row">
+          <div class="mg-btn" id="b-mg-trivia">🌸</div>
+          <div class="mg-btn" id="b-mg-tools">🛠️</div>
+        </div>
+      </div>
     </div>
-    <div class="mg-hrule"></div>
-    <div class="mg-body">
-      <div class="mg-row">
-        <div class="mg-btn" id="b-mg-map">🗺️</div>
-        <div class="mg-btn" id="b-mg-book">📖</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-mg-idea">💡</div>
-        <div class="mg-btn" id="b-mg-journal">✏️</div>
-        <div class="mg-btn" id="b-mg-gems">💎</div>
-      </div>
-      <div class="mg-row">
-        <div class="mg-btn" id="b-mg-trivia">🌸</div>
-        <div class="mg-btn" id="b-mg-tools">🛠️</div>
-      </div>
+    <div class="mg-bar">
+      <div class="mg-ret" id="b-mg-ret">⬅️</div>
     </div>
-  </div></div>
-  <div class="mg-bar">
-    <div class="mg-ret" id="b-mg-ret">⬅️</div>
   </div>
 </div>
 
@@ -861,9 +866,20 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     window.scrollTo(0,0);
   }
 
-  function goBack(){ if(stack.length>0){ var d=stack.pop(); nav(d,false); } }
-  function goMG(){ nav('s-mg'); }
-  function goMap(){ var m=mapMap[cur]; for(var i=stack.length-1;i>=0;i--){ if(mapMap[stack[i]]){ m=mapMap[stack[i]]; break; } } nav(m||'s-cover-map'); }
+  function goBack(){
+    var ov=document.getElementById("mg-overlay");
+    if(ov && ov.classList.contains("active")){ ov.classList.remove("active"); return; }
+    if(stack.length>0){ var d=stack.pop(); nav(d,false); }
+  }
+  function goMG(){
+    var ov=document.getElementById("mg-overlay");
+    if(ov) ov.classList.add("active");
+  }
+  function closeMG(){
+    var ov=document.getElementById("mg-overlay");
+    if(ov) ov.classList.remove("active");
+  }
+  function goMap(){ closeMG(); var m=mapMap[cur]; for(var i=stack.length-1;i>=0;i--){ if(mapMap[stack[i]]){ m=mapMap[stack[i]]; break; } } nav(m||"s-cover-map"); }
 
   function wire(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
 
@@ -946,20 +962,23 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
 
   // ── SHARED MG WIRING ──
-  wire('b-mg-ret', goBack);
-  wire('b-mg-map', goMap);
-  wire('b-mg-book', function(){
-    var bookMap={'s-cover':'s-cover-book','s-invention':'s-invention-book'};
-    var dest='s-cover-book';
+  var mgOv=document.getElementById("mg-overlay");
+  if(mgOv) mgOv.addEventListener("click",function(e){ if(e.target===mgOv) closeMG(); });
+  wire("b-mg-ret", closeMG);
+  wire("b-mg-map", goMap);
+  wire("b-mg-book", function(){
+    closeMG();
+    var bookMap={"s-cover":"s-cover-book","s-invention":"s-invention-book"};
+    var dest="s-cover-book";
     for(var i=stack.length-1;i>=0;i--){ if(bookMap[stack[i]]){ dest=bookMap[stack[i]]; break; } }
     if(bookMap[cur]) dest=bookMap[cur];
     nav(dest);
   });
-  wire('b-mg-idea', function(){ nav('s-idea'); });
-  wire('b-mg-journal', function(){ nav('s-journal'); });
-  wire('b-mg-gems', function(){ nav('s-gems'); });
-  wire('b-mg-trivia', function(){ nav('s-trivia'); });
-  wire('b-mg-tools', function(){ nav('s-tools'); });
+  wire("b-mg-idea", function(){ closeMG(); nav("s-idea"); });
+  wire("b-mg-journal", function(){ closeMG(); nav("s-journal"); });
+  wire("b-mg-gems", function(){ closeMG(); nav("s-gems"); });
+  wire("b-mg-trivia", function(){ closeMG(); nav("s-trivia"); });
+  wire("b-mg-tools", function(){ closeMG(); nav("s-tools"); });
 
   // ── SIGN-IN ──
   wire('b-forgot', async function(){
