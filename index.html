@@ -184,13 +184,26 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .tool-row:hover{border-color:#8B5E2A}
 .arr{color:#C9A87C;font-size:16px}
 .soon{font-size:12px;font-style:italic;color:#a89070;text-align:center;padding:12px 0}
+
+/* ── CHANGE PASSWORD ── */
+.cpw{flex:1;display:flex;flex-direction:column;padding:32px 36px;background:#f9f5ef}
+.cp-eyebrow{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:8px}
+.cp-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#3B2510;margin-bottom:6px}
+.cp-desc{font-size:13px;font-style:italic;color:#7A5C3A;line-height:1.6;margin-bottom:28px}
+.cp-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#7A5C3A;margin-bottom:8px}
+.cp-input{width:100%;padding:13px 16px;border-radius:10px;font-size:15px;color:#111;outline:none;font-family:sans-serif;display:block;margin-bottom:20px;background:#ffffff;border-top:2.5px solid #3B2510;border-left:2px solid #3B2510;border-right:1.5px solid #C9A87C;border-bottom:1.5px solid #C9A87C}
+.cp-input::placeholder{color:#bba98a;opacity:1}
+.cp-btn{width:100%;padding:14px 0;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid #111;background:#C9A87C;color:#111;display:block;opacity:.45;pointer-events:none;transition:opacity .2s}
+.cp-btn.active{opacity:1;pointer-events:auto}
+.cp-msg{font-size:13px;font-style:italic;text-align:center;margin-top:14px;min-height:20px;color:#3B6D11}
+.cp-msg.err{color:#A32D2D}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">
 
-<!-- PASSWORD RESET -->
+<!-- PASSWORD RESET (email link flow) -->
 <div class="sc" id="s-reset">
   <div class="card rnd"><div class="siw">
     <div class="si-t2t">T2T</div>
@@ -777,6 +790,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2"><button class="tb" id="b-d-back">⬅️</button><button class="tb" id="b-d-mg">🔍</button></div>
 </div>
 
+<!-- ⚙️ CONFIGURE — now includes Change Password -->
 <div class="sc" id="s-configure">
   <div class="card"><div class="cat-body">
     <div class="cat-eyebrow">Settings</div>
@@ -784,10 +798,31 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="cat-desc">Set conditions for your session. Configure before you begin — or adjust anytime.</div>
     <button class="tool-row">Session Setup <span class="arr">→</span></button>
     <button class="tool-row">Facilitator Settings <span class="arr">→</span></button>
+    <button class="tool-row" id="b-go-change-pw">Change Password <span class="arr">→</span></button>
     <div class="soon">More settings coming as the journey grows.</div>
     <div class="sp"></div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-cfg-back">⬅️</button><button class="tb" id="b-cfg-mg">🔍</button></div>
+</div>
+
+<!-- ═══════════════════════════════════
+     🔑 CHANGE PASSWORD
+═══════════════════════════════════ -->
+<div class="sc" id="s-change-password">
+  <div class="card"><div class="cpw">
+    <div class="cp-eyebrow">Settings · Security</div>
+    <div class="cp-title">Change Password</div>
+    <div class="cp-desc">Enter a new password for your account. You will remain signed in after saving.</div>
+    <label class="cp-lbl">New Password</label>
+    <input class="cp-input" type="password" id="cp-new-password" placeholder="new password" autocomplete="new-password">
+    <button class="cp-btn" id="b-cp-save">Save Password</button>
+    <div class="cp-msg" id="cp-msg"></div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-cp-back">⬅️</button>
+    <button class="tb" id="b-cp-mg">🔍</button>
+  </div>
 </div>
 
 </div><!-- /.fg -->
@@ -822,6 +857,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(id==='s-journal-view') renderJournalView();
     if(id==='s-journal-cover') initJournalCover();
     if(id==='s-gems') renderGems();
+    if(id==='s-change-password') initChangePassword();
     window.scrollTo(0,0);
   }
 
@@ -873,6 +909,21 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     list.innerHTML=''; gems.forEach(function(g){ var c=document.createElement('div'); c.className='gem-card'; c.innerHTML='<div class="gem-quote">'+g.text+'</div><div class="gem-attr">'+g.attr+'</div>'; list.appendChild(c); });
   }
 
+  // ── CHANGE PASSWORD ──
+  function initChangePassword(){
+    var input=document.getElementById('cp-new-password');
+    var btn=document.getElementById('b-cp-save');
+    var msg=document.getElementById('cp-msg');
+    if(input){ input.value=''; }
+    if(btn){ btn.classList.remove('active'); }
+    if(msg){ msg.textContent=''; msg.className='cp-msg'; }
+  }
+  var cpInput=document.getElementById('cp-new-password');
+  if(cpInput) cpInput.addEventListener('input',function(){
+    var btn=document.getElementById('b-cp-save');
+    if(btn) btn.classList.toggle('active', this.value.trim().length >= 6);
+  });
+
   // ── TOOLS PENTAGON ARROWS ──
   function drawPentagonArrows(){
     var arrowG=document.getElementById("orb-arrows"); if(!arrowG) return;
@@ -890,8 +941,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   }
 
   // ══════════════════════════════════════
-  //  SHARED MG WIRING
+  //  SUPABASE
   // ══════════════════════════════════════
+  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
+
+  // ── SHARED MG WIRING ──
   wire('b-mg-ret', goBack);
   wire('b-mg-map', goMap);
   wire('b-mg-book', function(){
@@ -908,8 +962,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-mg-tools', function(){ nav('s-tools'); });
 
   // ── SIGN-IN ──
-  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
-
   wire('b-forgot', async function(){
     var email=document.getElementById('si-email').value.trim();
     if(!email){ alert('Enter your email address first, then tap Forgot password.'); return; }
@@ -1044,9 +1096,32 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-d-back', goBack); wire('b-d-mg', goMG);
   wire('b-cfg-back', goBack); wire('b-cfg-mg', goMG);
 
+  // ── ⚙️ CONFIGURE ──
+  wire('b-go-change-pw', function(){ nav('s-change-password'); });
+
+  // ── 🔑 CHANGE PASSWORD ──
+  wire('b-cp-back', goBack); wire('b-cp-mg', goMG);
+  wire('b-cp-save', async function(){
+    var input=document.getElementById('cp-new-password');
+    var msg=document.getElementById('cp-msg');
+    var btn=document.getElementById('b-cp-save');
+    var pw=input ? input.value.trim() : '';
+    if(!pw || pw.length < 6){ if(msg){ msg.textContent='Password must be at least 6 characters.'; msg.className='cp-msg err'; } return; }
+    btn.textContent='Saving…'; btn.disabled=true;
+    var res=await _sb.auth.updateUser({ password: pw });
+    btn.textContent='Save Password'; btn.disabled=false;
+    if(res.error){
+      if(msg){ msg.textContent=res.error.message; msg.className='cp-msg err'; }
+    } else {
+      if(msg){ msg.textContent='Password updated successfully.'; msg.className='cp-msg'; }
+      if(input) input.value='';
+      btn.classList.remove('active');
+    }
+  });
+
   drawPentagonArrows();
 
-  // ── PASSWORD RESET HANDLER ──
+  // ── PASSWORD RESET HANDLER (email link flow) ──
   (async function(){
     const hash = window.location.hash;
     if(hash.includes('type=recovery')){
