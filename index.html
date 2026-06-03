@@ -1344,7 +1344,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-dream-intro-back', goBack); wire('b-dream-intro-mg', goMG);
 
   // ── 💡 IDEA ──
-  wire('b-idea-back', goMG); wire('b-idea-mg', goMG);
+  wire('b-idea-back', goBack); wire('b-idea-mg', goMG);
   wire('b-capture-idea', function(){
     nav('s-idea-capture');
     setTimeout(function(){
@@ -1381,7 +1381,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
   // ── ✏️ JOURNAL ──
-  wire('b-journal-back', goMG); wire('b-journal-mg', goMG);
+  wire('b-journal-back', goBack); wire('b-journal-mg', goMG);
   wire('b-add-note', function(){
     nav('s-journal-capture');
     setTimeout(function(){
