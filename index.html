@@ -141,8 +141,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 /* ── IDEA SCREENS ── */
 .iw{flex:1;display:flex;flex-direction:column;align-items:center;text-align:left;padding:0 0 24px;background:#EBF4FF}
-.ib{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#1A3A5C;margin-bottom:14px;transition:border-color .15s;display:block}
-.ib:hover{border-color:#378ADD}
+.ib{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#1A3A5C;margin-bottom:14px;transition:all .15s;display:block;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14)}
+.ib:hover{border-color:#378ADD;box-shadow:0 4px 12px rgba(0,0,0,.30);transform:translateY(-1px)}
+.ib:active{transform:scale(.97)}
 .icw{flex:1;display:flex;flex-direction:column;padding:24px 28px 20px;background:#EBF4FF;position:relative}
 .icit{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:#1A3A5C;line-height:1;margin-bottom:14px}
 .icr{border:none;border-top:1px solid #A8CAFE;width:100%;margin-bottom:14px}
@@ -152,9 +153,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .save-btn.active{color:#000;border-color:#378ADD;pointer-events:auto}
 
 /* ── JOURNAL SCREENS ── */
-.jw{flex:1;display:flex;flex-direction:column;align-items:center;text-align:left;padding:0 0 24px;background:#FDF6E8}
-.jb{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#3B2510;margin-bottom:14px;transition:border-color .15s;display:block}
-.jb:hover{border-color:#8B5E2A}
+.jw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:left;padding:0 0 24px;background:#FDF6E8}
+.jb{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#3B2510;margin-bottom:14px;transition:all .15s;display:block;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14)}
+.jb:hover{border-color:#8B5E2A;box-shadow:0 4px 12px rgba(0,0,0,.30);transform:translateY(-1px)}
+.jb:active{transform:scale(.97)}
 .jcw{flex:1;display:flex;flex-direction:column;padding:24px 28px 20px;background:#FDF6E8}
 .jcit{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:#3B2510;line-height:1;margin-bottom:14px}
 .jcr{border:none;border-top:1px solid #C9A87C;width:100%;margin-bottom:14px}
@@ -480,13 +482,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="reader-line">Thoughts occur both consciously<br>and subconsciously.</div>
     </div>
     <div class="paging-strip">
-      <button class="pg-btn dim" id="b-thoughts-prev-1">
-        <svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg>
-      </button>
+      <button class="pg-btn dim" id="b-thoughts-prev-1"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
       <span class="pg-indicator">1 of 3</span>
-      <button class="pg-btn" id="b-thoughts-next-1">
-        <svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg>
-      </button>
+      <button class="pg-btn" id="b-thoughts-next-1"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
     </div>
   </div></div>
   <div class="bar2">
@@ -511,13 +509,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="reader-line small">conscious thoughts per day.</div>
     </div>
     <div class="paging-strip">
-      <button class="pg-btn" id="b-thoughts-prev-2">
-        <svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg>
-      </button>
+      <button class="pg-btn" id="b-thoughts-prev-2"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
       <span class="pg-indicator">2 of 3</span>
-      <button class="pg-btn" id="b-thoughts-next-2">
-        <svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg>
-      </button>
+      <button class="pg-btn" id="b-thoughts-next-2"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
     </div>
   </div></div>
   <div class="bar2">
@@ -539,13 +533,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="reader-line accent" style="font-size:24px">Thoughts with imagination.</div>
     </div>
     <div class="paging-strip">
-      <button class="pg-btn" id="b-thoughts-prev-3">
-        <svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg>
-      </button>
+      <button class="pg-btn" id="b-thoughts-prev-3"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
       <span class="pg-indicator">3 of 3</span>
-      <button class="pg-btn dim" id="b-thoughts-next-3">
-        <svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg>
-      </button>
+      <button class="pg-btn dim" id="b-thoughts-next-3"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
     </div>
   </div></div>
   <div class="bar2">
@@ -690,7 +680,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="card"><div class="jw">
     <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510">✏️ Journal</div><div class="mg-mt" style="color:#7A5C3A">Your personal record of the adventure. Everything you notice, feel, and want to remember.</div></div>
     <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;margin-bottom:14px;width:100%"></div>
-    <button class="jb" id="b-add-note" style="margin-top:24px">Add a Note to my Journal</button>
+    <button class="jb" id="b-add-note" style="margin-top:0">Add Note to Journal</button>
     <button class="jb" id="b-view-journal">View Journal</button>
   </div></div>
   <div class="bar2">
@@ -985,7 +975,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     's-want':'s-cover-map','s-know':'s-cover-map'
   };
 
-  // More hub map — which More hub belongs to which primary page
   var moreMap = {
     's-cover':'s-cover-more','s-cover-map':'s-cover-more','s-cover-more':'s-cover-more',
     's-what-is-t2t':'s-cover-more','s-t2t-goals':'s-cover-more',
@@ -997,7 +986,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   function getCtx(){ for(var i=stack.length-1;i>=0;i--){ if(ctxMap[stack[i]]) return ctxMap[stack[i]]; } return ctxMap[cur]||'Field Guide'; }
 
-  // ── VISITED PAGES ──
   var pageNums = {
     's-cover':'0100','s-cover-map':'0100','s-cover-more':'0100',
     's-what-is-t2t':'0110','s-t2t-goals':'0120',
@@ -1007,7 +995,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     's-know':'0400','s-dream-intro':'0400'
   };
 
-  // More visited tracking — which content links have been explored
   var moreVisited = {};
 
   function getVisited(){ try{ var v=sessionStorage.getItem('visitedPages'); return v?JSON.parse(v):[]; }catch(e){ return []; } }
@@ -1108,29 +1095,77 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     else{ el.classList.add('phd'); el.style.display='none'; if(tog) tog.textContent='▼'; }
   }
 
+  // ══════════════════════════════════════
+  //  SUPABASE
+  // ══════════════════════════════════════
+  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
+
   // ── JOURNAL ──
-  function loadEntries(){ try{ var r=sessionStorage.getItem('jentries'); return r?JSON.parse(r):[]; }catch(e){ return []; } }
-  function saveEntry(e){ try{ var a=loadEntries(); a.push(e); sessionStorage.setItem('jentries',JSON.stringify(a)); }catch(e){} }
-  function renderJournalView(){
-    var entries=loadEntries(),list=document.getElementById('jv-entries-list'),count=document.getElementById('jv-count');
+  // Loads entries: tries Supabase first, falls back to sessionStorage
+  async function loadEntriesFromSupabase(){
+    try{
+      var user=await _sb.auth.getUser();
+      if(!user||!user.data||!user.data.user) return null;
+      var res=await _sb.from('journal_notes').select('*').eq('user_id',user.data.user.id).order('created_at',{ascending:true});
+      if(res.error) return null;
+      return res.data||[];
+    }catch(e){ return null; }
+  }
+  async function saveEntryToSupabase(text, pageCtx){
+    try{
+      var user=await _sb.auth.getUser();
+      if(!user||!user.data||!user.data.user) return false;
+      var now=new Date();
+      var dateStr=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      var res=await _sb.from('journal_notes').insert({
+        user_id: user.data.user.id,
+        note_text: text,
+        page_context: pageCtx,
+        entry_date: dateStr,
+        created_at: now.toISOString()
+      });
+      return !res.error;
+    }catch(e){ return false; }
+  }
+
+  // Local sessionStorage fallback
+  function loadEntriesLocal(){ try{ var r=sessionStorage.getItem('jentries'); return r?JSON.parse(r):[]; }catch(e){ return []; } }
+  function saveEntryLocal(e){ try{ var a=loadEntriesLocal(); a.push(e); sessionStorage.setItem('jentries',JSON.stringify(a)); }catch(e){} }
+
+  async function renderJournalView(){
+    var list=document.getElementById('jv-entries-list'),count=document.getElementById('jv-count');
     if(!list) return;
-    if(!entries.length){ list.innerHTML='<div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>'; if(count) count.textContent='Your entries'; return; }
+    list.innerHTML='<div class="jv-empty" style="opacity:.5">Loading…</div>';
+
+    var entries = await loadEntriesFromSupabase();
+    if(!entries){
+      // fallback to local
+      entries = loadEntriesLocal().map(function(e){ return {note_text:e.text, entry_date:e.date, page_context:e.page}; });
+    }
+
+    if(!entries.length){
+      list.innerHTML='<div class="jv-empty">No entries yet.<br>Every journey starts with a first note.</div>';
+      if(count) count.textContent='Your entries';
+      return;
+    }
     if(count) count.textContent=entries.length+' '+(entries.length===1?'entry':'entries');
     list.innerHTML='';
     entries.forEach(function(e,i){
       var card=document.createElement('div'); card.className='jcard';
-      var preview=e.text.length>120?e.text.substring(0,120)+'…':e.text;
-      card.innerHTML='<div class="jcard-num">'+String(i+1).padStart(3,'0')+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+((e.date||'')+(e.page?' · '+e.page:''))+'</div>';
-      card.addEventListener('click',(function(idx){ return function(){
-        var en=loadEntries()[idx]; if(!en) return;
+      var text=e.note_text||e.text||'';
+      var preview=text.length>120?text.substring(0,120)+'…':text;
+      var eyebrow=(e.entry_date||e.date||'')+(e.page_context||e.page?' · '+(e.page_context||e.page):'');
+      card.innerHTML='<div class="jcard-num">'+String(i+1).padStart(3,'0')+'</div><div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+eyebrow+'</div>';
+      card.addEventListener('click',(function(entry,idx){ return function(){
         var el=document.getElementById('je-num'); if(el) el.textContent=String(idx+1).padStart(3,'0');
-        var et=document.getElementById('je-text'); if(et) et.textContent=en.text;
-        var ee=document.getElementById('je-eyebrow'); if(ee) ee.textContent=(en.date||'')+(en.page?' · '+en.page:'');
+        var et=document.getElementById('je-text'); if(et) et.textContent=entry.note_text||entry.text||'';
+        var ee=document.getElementById('je-eyebrow'); if(ee) ee.textContent=(entry.entry_date||entry.date||'')+(entry.page_context||entry.page?' · '+(entry.page_context||entry.page):'');
         nav('s-journal-entry');
-      }; })(i));
+      }; })(e,i));
       list.appendChild(card);
     });
   }
+
   function initJournalCover(){
     try{ var s=sessionStorage.getItem('jstarted'); if(!s){ s=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); sessionStorage.setItem('jstarted',s); } var el=document.getElementById('jcov-start'); if(el) el.textContent='Started '+s; }catch(e){}
   }
@@ -1173,11 +1208,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       arrowG.appendChild(poly);
     }
   }
-
-  // ══════════════════════════════════════
-  //  SUPABASE
-  // ══════════════════════════════════════
-  const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
 
   // ── SHARED MG WIRING ──
   var mgOv=document.getElementById("mg-overlay");
@@ -1245,14 +1275,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // ── THOUGHTS READER ──
   wire('b-thoughts-1-back', goBack); wire('b-thoughts-1-mg', goMG);
   wire('b-thoughts-next-1', function(){ nav('s-thoughts-2'); });
-  wire('b-thoughts-prev-1', function(){});
-
   wire('b-thoughts-2-back', goBack); wire('b-thoughts-2-mg', goMG);
   wire('b-thoughts-next-2', function(){ nav('s-thoughts-3'); });
   wire('b-thoughts-prev-2', function(){ nav('s-thoughts-1'); });
-
   wire('b-thoughts-3-back', goBack); wire('b-thoughts-3-mg', goMG);
-  wire('b-thoughts-next-3', function(){});
   wire('b-thoughts-prev-3', function(){ nav('s-thoughts-2'); });
 
   wire('b-want-more-back', goBack); wire('b-want-more-mg', goMG);
@@ -1273,7 +1299,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   // ── 💡 IDEA ──
   wire('b-idea-back', goBack); wire('b-idea-mg', goMG);
-  wire('b-capture-idea', function(){ nav('s-idea-capture'); setTimeout(function(){ var t=document.getElementById('idea-text'); if(t){t.value='';t.focus();} var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active'); },50); });
+  wire('b-capture-idea', function(){
+    nav('s-idea-capture');
+    setTimeout(function(){
+      var t=document.getElementById('idea-text'); if(t){t.value='';t.focus();}
+      var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active');
+    },50);
+  });
   wire('b-sea-ideas', function(){ window.open('https://miro.com/app/board/uXjVNVoFoec=/','_blank'); });
   wire('b-icap-back', goBack); wire('b-icap-mg', goMG);
   var MIRO_COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
@@ -1299,19 +1331,49 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   function postIdeaToMiro(text, ctx, color){
     sendPrompt('🌊 Post this as a sticky note on my Sea of Ideas Miro board (https://miro.com/app/board/uXjVNVoFoec=/). Color: '+color+'. Content: 💡 '+text+' [from: '+ctx+']');
   }
-  var ideaTA=document.getElementById('idea-text'); if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
+  var ideaTA=document.getElementById('idea-text');
+  if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
   // ── ✏️ JOURNAL ──
   wire('b-journal-back', goBack); wire('b-journal-mg', goMG);
-  wire('b-add-note', function(){ nav('s-journal-capture'); setTimeout(function(){ var t=document.getElementById('journal-text'); if(t){t.value='';t.focus();} var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active'); },50); });
+  wire('b-add-note', function(){
+    nav('s-journal-capture');
+    setTimeout(function(){
+      var t=document.getElementById('journal-text'); if(t){t.value='';t.focus();}
+      var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active');
+    },50);
+  });
   wire('b-view-journal', function(){ nav('s-journal-cover'); });
   wire('b-jcap-back', goBack); wire('b-jcap-mg', goMG);
   wire('b-jcov-back', goBack); wire('b-jcov-mg', goMG);
   wire('b-jview-back', goBack); wire('b-jview-mg', goMG);
   wire('b-jentry-back', goBack); wire('b-jentry-mg', goMG);
   wire('b-je-back', function(){ nav('s-journal-view'); });
-  wire('b-save-journal', function(){ var t=document.getElementById('journal-text'); if(!t) return; var text=t.value.trim(); if(!text) return; var now=new Date(); saveEntry({text:text,date:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),page:getCtx()}); sendPrompt('✏️ Journal note saved: '+text); goBack(); });
-  var journalTA=document.getElementById('journal-text'); if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
+
+  wire('b-save-journal', async function(){
+    var t=document.getElementById('journal-text'); if(!t) return;
+    var text=t.value.trim(); if(!text) return;
+    var btn=document.getElementById('b-save-journal');
+    var ctx=getCtx();
+
+    // Save to Supabase; fall back to local if it fails
+    var saved=await saveEntryToSupabase(text, ctx);
+    if(!saved){
+      var now=new Date();
+      saveEntryLocal({text:text,date:now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),page:ctx});
+    }
+
+    sendPrompt('✏️ Journal note saved: '+text);
+
+    // Clear input and reset button
+    t.value='';
+    if(btn){ btn.classList.remove('active'); }
+
+    goBack();
+  });
+
+  var journalTA=document.getElementById('journal-text');
+  if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
   // ── 💎 GEMS ──
   wire('b-gems-back', goBack); wire('b-gems-mg', goMG);
