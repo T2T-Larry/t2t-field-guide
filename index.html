@@ -153,7 +153,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .save-btn.active{color:#000;border-color:#378ADD;pointer-events:auto}
 
 /* ── JOURNAL SCREENS ── */
-.jw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:left;padding:0 0 24px;background:#FDF6E8}
+.jw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:left;padding:0 0 24px;background:#FDF6E8}
 .jb{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#3B2510;margin-bottom:14px;transition:all .15s;display:block;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14)}
 .jb:hover{border-color:#8B5E2A;box-shadow:0 4px 12px rgba(0,0,0,.30);transform:translateY(-1px)}
 .jb:active{transform:scale(.97)}
@@ -684,7 +684,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 ═══════════════════════════════════ -->
 <div class="sc" id="s-journal">
   <div class="card"><div class="jw">
-    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510">✏️ Journal</div><div class="mg-mt" style="color:#7A5C3A">Your personal record of the adventure. Everything you notice, feel, and want to remember.</div></div>
+    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510;font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">✏️ Journal</div><div class="mg-mt" style="color:#7A5C3A">Your personal record of the adventure. Everything you notice, feel, and want to remember.</div></div>
     <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;margin-bottom:14px;width:100%"></div>
     <button class="jb" id="b-add-note" style="margin-top:0">Add Note to Journal</button>
     <button class="jb" id="b-view-journal">View Journal</button>
@@ -1413,12 +1413,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
     if(typeof sendPrompt!=="undefined") sendPrompt('✏️ Journal note saved: '+(topic?'['+topic+'] ':'')+text);
 
-    // Clear both fields and reset button
+    // Clear both fields and reset button — stay on capture screen
     t.value='';
     if(topicEl) topicEl.value='';
     if(btn){ btn.classList.remove('active'); }
-
-    goBack();
+    setTimeout(function(){ var tp=document.getElementById('journal-topic'); if(tp) tp.focus(); },50);
   });
 
   var journalTA=document.getElementById('journal-text');
