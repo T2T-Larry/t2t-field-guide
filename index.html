@@ -39,8 +39,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .mg-hrule{height:1px;background:rgba(255,255,255,.15);margin:0 16px}
 .mg-body{background:#f5faf8;padding:14px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px}
 .mg-row{display:flex;gap:8px;justify-content:center}
-.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:12px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1px;width:72px;height:72px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s;text-align:center;padding:0 4px;line-height:1.3;color:#111}
-.mg-btn.emoji{font-size:24px;letter-spacing:0;font-weight:400}
+.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:12px;cursor:pointer;font-size:24px;width:72px;height:72px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s}
 .mg-btn:hover{background:#e8f5f2;border-color:#0a4a38;box-shadow:0 4px 12px rgba(0,0,0,.35);transform:translateY(-1px)}
 .mg-btn:active{transform:scale(.97)}
 .mg-bar{background:#0a4a38;padding:9px 14px;border-top:1px solid #1a7a5e;display:flex;align-items:center;justify-content:center}
@@ -87,9 +86,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 /* ── MORE HUB ── */
 .more-hub{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:#ffffff}
-.more-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:6px}
-.more-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#111;margin-bottom:6px}
-.more-desc{font-size:13px;font-style:italic;color:#888;line-height:1.6;margin-bottom:24px}
+.more-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:16px}
 .more-rule{border:none;border-top:1px solid #e0e0e0;margin-bottom:24px}
 .more-link{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,background .15s;text-decoration:none}
 .more-link:hover{border-color:#0F6E56;background:#f0faf6}
@@ -297,16 +294,16 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="mg-body">
         <div class="mg-row">
           <div class="mg-btn" id="b-mg-map">🗺️</div>
-          <div class="mg-btn" id="b-mg-more">📖<br><span style="font-size:9px;letter-spacing:1px;font-weight:700">MORE ABOUT<br>THIS</span></div>
+          <div class="mg-btn" id="b-mg-more">📖</div>
         </div>
         <div class="mg-row">
-          <div class="mg-btn emoji" id="b-mg-idea">💡</div>
-          <div class="mg-btn emoji" id="b-mg-journal">✏️</div>
-          <div class="mg-btn emoji" id="b-mg-gems">💎</div>
+          <div class="mg-btn" id="b-mg-idea">💡</div>
+          <div class="mg-btn" id="b-mg-journal">✏️</div>
+          <div class="mg-btn" id="b-mg-gems">💎</div>
         </div>
         <div class="mg-row">
-          <div class="mg-btn emoji" id="b-mg-trivia">🌸</div>
-          <div class="mg-btn emoji" id="b-mg-tools">🛠️</div>
+          <div class="mg-btn" id="b-mg-trivia">🌸</div>
+          <div class="mg-btn" id="b-mg-tools">🛠️</div>
         </div>
       </div>
     </div>
@@ -365,8 +362,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-cover-more">
   <div class="card"><div class="more-hub">
     <div class="more-eyebrow">More About This</div>
-    <div class="more-title">Field Guide</div>
-    <div class="more-desc">Explore what's behind the cover.</div>
     <hr class="more-rule">
     <div class="more-link" id="b-more-what-is-t2t">
       <div class="more-link-left">
@@ -452,8 +447,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-invention-more">
   <div class="card"><div class="more-hub">
     <div class="more-eyebrow">More About This</div>
-    <div class="more-title">Every great invention…</div>
-    <div class="more-desc">Go deeper on the ideas behind this page.</div>
     <hr class="more-rule">
     <div class="more-link" id="b-more-thoughts">
       <div class="more-link-left">
