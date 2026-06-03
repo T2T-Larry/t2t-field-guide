@@ -954,8 +954,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     's-cover':'s-cover-more','s-cover-map':'s-cover-more','s-cover-more':'s-cover-more',
     's-what-is-t2t':'s-cover-more','s-t2t-goals':'s-cover-more',
     's-invention':'s-invention-more','s-invention-more':'s-invention-more',
-    's-thoughts-1':'s-invention-more','s-thoughts-2':'s-invention-more','s-thoughts-3':'s-invention-more',
-    's-want':'s-cover-map','s-know':'s-cover-map'
+    's-thoughts-1':'s-invention-more','s-thoughts-2':'s-invention-more','s-thoughts-3':'s-invention-more'
   };
 
   function getCtx(){ for(var i=stack.length-1;i>=0;i--){ if(ctxMap[stack[i]]) return ctxMap[stack[i]]; } return ctxMap[cur]||'Field Guide'; }
@@ -1056,9 +1055,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   }
   function goMore(){
     closeMG();
-    var m=moreMap[cur];
-    for(var i=stack.length-1;i>=0;i--){ if(moreMap[stack[i]]){ m=moreMap[stack[i]]; break; } }
-    nav(m||"s-cover-more");
+    var m = moreMap[cur];
+    if(!m){
+      for(var i=stack.length-1;i>=0;i--){
+        if(moreMap[stack[i]]){ m=moreMap[stack[i]]; break; }
+      }
+    }
+    if(!m) return;
+    nav(m);
   }
 
   function wire(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
