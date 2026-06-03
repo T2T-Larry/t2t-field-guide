@@ -361,7 +361,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 ═══════════════════════════════════ -->
 <div class="sc" id="s-cover-more">
   <div class="card"><div class="more-hub">
-    <div class="more-eyebrow">More About This</div>
+    <div class="more-eyebrow">T2T · MORE</div>
     <hr class="more-rule">
     <div class="more-link" id="b-more-what-is-t2t">
       <div class="more-link-left">
@@ -394,7 +394,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- WHAT IS T2T — content page -->
 <div class="sc" id="s-what-is-t2t">
   <div class="card"><div class="sw">
-    <div class="se">More About This</div>
+    <div class="se">T2T</div>
     <div class="mg-band"></div>
     <div class="sh">What is T2T?</div>
     <div class="sb">T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.</div>
@@ -409,7 +409,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- T2T GOALS — content page -->
 <div class="sc" id="s-t2t-goals">
   <div class="card"><div class="sw">
-    <div class="se">More About This</div>
+    <div class="se">T2T</div>
     <div class="mg-band"></div>
     <div class="sh">T2T Goals</div>
     <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;margin-bottom:14px">May you find…</div>
@@ -446,7 +446,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 ═══════════════════════════════════ -->
 <div class="sc" id="s-invention-more">
   <div class="card"><div class="more-hub">
-    <div class="more-eyebrow">More About This</div>
+    <div class="more-eyebrow">THOUGHT · MORE</div>
     <hr class="more-rule">
     <div class="more-link" id="b-more-thoughts">
       <div class="more-link-left">
@@ -472,7 +472,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-thoughts-1">
   <div class="card"><div class="reader-wrap">
     <div class="reader-body">
-      <div class="reader-eyebrow">More about Thoughts</div>
+      <div class="reader-eyebrow">THOUGHT</div>
       <div class="reader-line bold">Thoughts happen.</div>
       <div class="reader-spacer"></div>
       <div class="reader-line">We are constantly thinking.</div>
@@ -498,7 +498,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-thoughts-2">
   <div class="card"><div class="reader-wrap">
     <div class="reader-body">
-      <div class="reader-eyebrow">More about Thoughts</div>
+      <div class="reader-eyebrow">THOUGHT</div>
       <div class="reader-line small">Conscious thoughts make up only about</div>
       <div class="reader-spacer"></div>
       <div class="reader-line bold" style="font-size:52px;letter-spacing:2px">5%</div>
@@ -529,7 +529,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc" id="s-thoughts-3">
   <div class="card"><div class="reader-wrap">
     <div class="reader-body">
-      <div class="reader-eyebrow">More about Thoughts</div>
+      <div class="reader-eyebrow">THOUGHT</div>
       <div class="reader-line italic" style="font-size:18px;color:#888">But, don't worry.</div>
       <div class="reader-spacer"></div>
       <div class="reader-line small">Scientists tell us that <strong>98 percent</strong> of those 60,000 thoughts are repeats from the day before.</div>
@@ -930,6 +930,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 (function(){
   var cur = 's-signin';
   var stack = [];
+  var primaryPage = null;
+  var primaryPages = ['s-cover','s-invention','s-want','s-know','s-dream-intro'];
 
   var ctxMap = {
     's-cover':'Field Guide','s-cover-map':'Field Guide','s-cover-more':'Field Guide',
@@ -1024,6 +1026,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     t.classList.add('active');
     if(push!==false) stack.push(cur);
     cur=id;
+    if(primaryPages.indexOf(id)!==-1) primaryPage=id;
     var pn=pageNums[id]; if(pn) addVisited(pn);
     if(id==='s-journal-view') renderJournalView();
     if(id==='s-journal-cover') initJournalCover();
@@ -1055,12 +1058,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   }
   function goMore(){
     closeMG();
-    var m = moreMap[cur];
-    if(!m){
-      for(var i=stack.length-1;i>=0;i--){
-        if(moreMap[stack[i]]){ m=moreMap[stack[i]]; break; }
-      }
-    }
+    var m = moreMap[primaryPage] || moreMap[cur];
     if(!m) return;
     nav(m);
   }
