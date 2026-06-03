@@ -1261,11 +1261,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire("b-mg-ret", closeMG);
   wire("b-mg-map", goMap);
   wire("b-mg-more", goMore);
-  wire("b-mg-idea", function(){ closeMG(); nav("s-idea"); });
-  wire("b-mg-journal", function(){ closeMG(); nav("s-journal"); });
-  wire("b-mg-gems", function(){ closeMG(); nav("s-gems"); });
-  wire("b-mg-trivia", function(){ closeMG(); nav("s-trivia"); });
-  wire("b-mg-tools", function(){ closeMG(); nav("s-tools"); });
+  wire("b-mg-idea", function(){ closeMG(); nav("s-idea", false); });
+  wire("b-mg-journal", function(){ closeMG(); nav("s-journal", false); });
+  wire("b-mg-gems", function(){ closeMG(); nav("s-gems", false); });
+  wire("b-mg-trivia", function(){ closeMG(); nav("s-trivia", false); });
+  wire("b-mg-tools", function(){ closeMG(); nav("s-tools", false); });
 
   // ── SIGN-IN ──
   wire('b-forgot', async function(){
@@ -1344,7 +1344,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-dream-intro-back', goBack); wire('b-dream-intro-mg', goMG);
 
   // ── 💡 IDEA ──
-  wire('b-idea-back', goBack); wire('b-idea-mg', goMG);
+  wire('b-idea-back', goMG); wire('b-idea-mg', goMG);
   wire('b-capture-idea', function(){
     nav('s-idea-capture');
     setTimeout(function(){
@@ -1381,7 +1381,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   if(ideaTA) ideaTA.addEventListener('input',function(){ var b=document.getElementById('b-save-idea'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
   // ── ✏️ JOURNAL ──
-  wire('b-journal-back', goBack); wire('b-journal-mg', goMG);
+  wire('b-journal-back', goMG); wire('b-journal-mg', goMG);
   wire('b-add-note', function(){
     nav('s-journal-capture');
     setTimeout(function(){
@@ -1428,15 +1428,15 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
   // ── 💎 GEMS ──
-  wire('b-gems-back', goBack); wire('b-gems-mg', goMG);
+  wire('b-gems-back', goMG); wire('b-gems-mg', goMG);
 
   // ── 🌸 TRIVIA ──
-  wire('b-trivia-back', goBack); wire('b-trivia-mg', goMG);
+  wire('b-trivia-back', goMG); wire('b-trivia-mg', goMG);
   wire('b-authors', function(){ nav('s-authors'); });
   wire('b-aut-back', goBack); wire('b-aut-mg', goMG);
 
   // ── 🛠️ TOOLS ──
-  wire('b-tools-back', goBack); wire('b-tools-mg', goMG);
+  wire('b-tools-back', goMG); wire('b-tools-mg', goMG);
   wire('pb-question', function(){ nav('s-question'); });
   wire('pb-create',   function(){ nav('s-create'); });
   wire('pb-shape',    function(){ nav('s-shape'); });
