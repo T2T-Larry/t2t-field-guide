@@ -39,7 +39,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .mg-hrule{height:1px;background:rgba(255,255,255,.15);margin:0 16px}
 .mg-body{background:#f5faf8;padding:14px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:8px}
 .mg-row{display:flex;gap:8px;justify-content:center}
-.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:12px;cursor:pointer;font-size:24px;width:72px;height:72px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s}
+.mg-btn{display:flex;align-items:center;justify-content:center;background:#ffffff;border:2px solid #1a1a1a;border-radius:12px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1px;width:72px;height:72px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.18);transition:all .15s;text-align:center;padding:0 4px;line-height:1.3;color:#111}
+.mg-btn.emoji{font-size:24px;letter-spacing:0;font-weight:400}
 .mg-btn:hover{background:#e8f5f2;border-color:#0a4a38;box-shadow:0 4px 12px rgba(0,0,0,.35);transform:translateY(-1px)}
 .mg-btn:active{transform:scale(.97)}
 .mg-bar{background:#0a4a38;padding:9px 14px;border-top:1px solid #1a7a5e;display:flex;align-items:center;justify-content:center}
@@ -83,6 +84,41 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .gr{width:40px;border:none;border-top:1.5px solid #ccc;margin:0 auto 18px}
 .sp{flex:1}
 .mg-band{width:100%;background:#c8e8df;padding:7px 28px 6px;border-bottom:.5px solid #8ec8b8;margin-bottom:14px}
+
+/* ── MORE HUB ── */
+.more-hub{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:#ffffff}
+.more-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:6px}
+.more-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#111;margin-bottom:6px}
+.more-desc{font-size:13px;font-style:italic;color:#888;line-height:1.6;margin-bottom:24px}
+.more-rule{border:none;border-top:1px solid #e0e0e0;margin-bottom:24px}
+.more-link{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,background .15s;text-decoration:none}
+.more-link:hover{border-color:#0F6E56;background:#f0faf6}
+.more-link.visited{border-color:#c8e8df;background:#f5fdf9}
+.more-link-left{display:flex;align-items:center;gap:12px}
+.more-link-icon{font-size:20px;width:32px;text-align:center;flex-shrink:0}
+.more-link-label{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:#111;line-height:1.3}
+.more-link-sub{font-size:12px;color:#888;margin-top:2px}
+.more-link-arrow{font-size:18px;color:#C9A87C;flex-shrink:0}
+.more-link.visited .more-link-arrow::before{content:'👣'}
+.more-link:not(.visited) .more-link-arrow::before{content:'›'}
+
+/* ── MORE CONTENT READER ── */
+.reader-wrap{flex:1;display:flex;flex-direction:column;background:#ffffff}
+.reader-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 44px;text-align:center}
+.reader-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:20px}
+.reader-line{font-family:'Playfair Display',serif;font-size:22px;font-weight:400;color:#111;line-height:1.8;margin-bottom:0}
+.reader-line.bold{font-weight:700}
+.reader-line.italic{font-style:italic}
+.reader-line.accent{color:#0F6E56;font-weight:700}
+.reader-line.small{font-size:17px;color:#555}
+.reader-spacer{height:20px}
+/* ── PAGING STRIP ── */
+.paging-strip{display:flex;align-items:center;justify-content:center;gap:20px;padding:10px 0 8px;background:#ffffff;border-top:1px solid #e8e8e8}
+.pg-btn{width:36px;height:36px;background:#111;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.pg-btn:hover:not(.dim){background:#333}
+.pg-btn.dim{opacity:.2;cursor:default;pointer-events:none}
+.pg-btn svg{width:14px;height:14px;fill:#ffffff}
+.pg-indicator{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#aaa;min-width:48px;text-align:center}
 
 /* ── MAP SCREEN ── */
 .mw{flex:1;display:flex;flex-direction:column;padding:0 0 12px;background:#ffffff}
@@ -247,7 +283,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     SHARED MG — modal overlay, floats over source page
+     SHARED MG — modal overlay
 ═══════════════════════════════════ -->
 <div class="mg-overlay" id="mg-overlay">
   <div class="mg-modal">
@@ -261,16 +297,16 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="mg-body">
         <div class="mg-row">
           <div class="mg-btn" id="b-mg-map">🗺️</div>
-          <div class="mg-btn" id="b-mg-book">📖</div>
+          <div class="mg-btn" id="b-mg-more">📖<br><span style="font-size:9px;letter-spacing:1px;font-weight:700">MORE ABOUT<br>THIS</span></div>
         </div>
         <div class="mg-row">
-          <div class="mg-btn" id="b-mg-idea">💡</div>
-          <div class="mg-btn" id="b-mg-journal">✏️</div>
-          <div class="mg-btn" id="b-mg-gems">💎</div>
+          <div class="mg-btn emoji" id="b-mg-idea">💡</div>
+          <div class="mg-btn emoji" id="b-mg-journal">✏️</div>
+          <div class="mg-btn emoji" id="b-mg-gems">💎</div>
         </div>
         <div class="mg-row">
-          <div class="mg-btn" id="b-mg-trivia">🌸</div>
-          <div class="mg-btn" id="b-mg-tools">🛠️</div>
+          <div class="mg-btn emoji" id="b-mg-trivia">🌸</div>
+          <div class="mg-btn emoji" id="b-mg-tools">🛠️</div>
         </div>
       </div>
     </div>
@@ -300,7 +336,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     SHARED MAP — one screen, rendered dynamically
+     SHARED MAP
 ═══════════════════════════════════ -->
 <div class="sc" id="s-cover-map">
   <div class="card"><div class="mw">
@@ -323,16 +359,64 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- COVER BOOK -->
-<div class="sc" id="s-cover-book">
+<!-- ═══════════════════════════════════
+     COVER — MORE HUB
+═══════════════════════════════════ -->
+<div class="sc" id="s-cover-more">
+  <div class="card"><div class="more-hub">
+    <div class="more-eyebrow">More About This</div>
+    <div class="more-title">Field Guide</div>
+    <div class="more-desc">Explore what's behind the cover.</div>
+    <hr class="more-rule">
+    <div class="more-link" id="b-more-what-is-t2t">
+      <div class="more-link-left">
+        <div class="more-link-icon">📖</div>
+        <div>
+          <div class="more-link-label">What is T2T?</div>
+          <div class="more-link-sub">A system, not a philosophy.</div>
+        </div>
+      </div>
+      <div class="more-link-arrow"></div>
+    </div>
+    <div class="more-link" id="b-more-t2t-goals">
+      <div class="more-link-left">
+        <div class="more-link-icon">🎯</div>
+        <div>
+          <div class="more-link-label">T2T Goals</div>
+          <div class="more-link-sub">Vision · Excellence · Beautiful Journey.</div>
+        </div>
+      </div>
+      <div class="more-link-arrow"></div>
+    </div>
+    <div class="sp"></div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-cover-more-back">⬅️</button>
+    <button class="tb" id="b-cover-more-mg">🔍</button>
+  </div>
+</div>
+
+<!-- WHAT IS T2T — content page -->
+<div class="sc" id="s-what-is-t2t">
   <div class="card"><div class="sw">
-    <div class="se">About This Page</div>
+    <div class="se">More About This</div>
     <div class="mg-band"></div>
     <div class="sh">What is T2T?</div>
     <div class="sb">T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.</div>
     <div class="sp"></div>
-    <div class="sh">T2T Goals</div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-what-is-t2t-back">⬅️</button>
+    <button class="tb" id="b-what-is-t2t-mg">🔍</button>
+  </div>
+</div>
+
+<!-- T2T GOALS — content page -->
+<div class="sc" id="s-t2t-goals">
+  <div class="card"><div class="sw">
+    <div class="se">More About This</div>
     <div class="mg-band"></div>
+    <div class="sh">T2T Goals</div>
     <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;margin-bottom:14px">May you find…</div>
     <div class="gi">A clear <span style="color:#185FA5">Vision</span> of something you want to create.</div><div class="gs">Inspiration</div><div class="gr"></div>
     <div class="gi">The <span style="color:#993556">Excellence</span> to make it real.</div><div class="gs">Mastery</div><div class="gr"></div>
@@ -340,8 +424,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="sp"></div>
   </div></div>
   <div class="bar2">
-    <button class="tb" id="b-cbook-back">⬅️</button>
-    <button class="tb" id="b-cbook-mg">🔍</button>
+    <button class="tb" id="b-t2t-goals-back">⬅️</button>
+    <button class="tb" id="b-t2t-goals-mg">🔍</button>
   </div>
 </div>
 
@@ -362,21 +446,118 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-
-
-<!-- INVENTION BOOK -->
-<div class="sc" id="s-invention-book">
-  <div class="card"><div class="sw">
-    <div class="se">Some thoughts about thoughts.</div>
-    <div class="mg-band"></div>
-    <div class="sh">A thought is the beginning of everything.</div>
-    <div class="sb">Before anything exists in the world, it exists as a thought. Every object you see, every system you use, every solution that works — it started as something someone imagined.</div>
-    <div class="sb">That's not mystical. That's just how things get made.</div>
+<!-- ═══════════════════════════════════
+     INVENTION — MORE HUB
+═══════════════════════════════════ -->
+<div class="sc" id="s-invention-more">
+  <div class="card"><div class="more-hub">
+    <div class="more-eyebrow">More About This</div>
+    <div class="more-title">Every great invention…</div>
+    <div class="more-desc">Go deeper on the ideas behind this page.</div>
+    <hr class="more-rule">
+    <div class="more-link" id="b-more-thoughts">
+      <div class="more-link-left">
+        <div class="more-link-icon">🧠</div>
+        <div>
+          <div class="more-link-label">More about Thoughts</div>
+          <div class="more-link-sub">60,000 a day. Only 2% are new.</div>
+        </div>
+      </div>
+      <div class="more-link-arrow"></div>
+    </div>
     <div class="sp"></div>
   </div></div>
   <div class="bar2">
-    <button class="tb" id="b-ibook-back">⬅️</button>
-    <button class="tb" id="b-ibook-mg">🔍</button>
+    <button class="tb" id="b-inv-more-back">⬅️</button>
+    <button class="tb" id="b-inv-more-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     MORE ABOUT THOUGHTS — 3-screen reader
+═══════════════════════════════════ -->
+<div class="sc" id="s-thoughts-1">
+  <div class="card"><div class="reader-wrap">
+    <div class="reader-body">
+      <div class="reader-eyebrow">More about Thoughts</div>
+      <div class="reader-line bold">Thoughts happen.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line">We are constantly thinking.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line">Thoughts occur both consciously<br>and subconsciously.</div>
+    </div>
+    <div class="paging-strip">
+      <button class="pg-btn dim" id="b-thoughts-prev-1">
+        <svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg>
+      </button>
+      <span class="pg-indicator">1 of 3</span>
+      <button class="pg-btn" id="b-thoughts-next-1">
+        <svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg>
+      </button>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-thoughts-1-back">⬅️</button>
+    <button class="tb" id="b-thoughts-1-mg">🔍</button>
+  </div>
+</div>
+
+<div class="sc" id="s-thoughts-2">
+  <div class="card"><div class="reader-wrap">
+    <div class="reader-body">
+      <div class="reader-eyebrow">More about Thoughts</div>
+      <div class="reader-line small">Conscious thoughts make up only about</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line bold" style="font-size:52px;letter-spacing:2px">5%</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line small">of our total thoughts.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line small">Even at 5%, humans have more than</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line bold" style="font-size:36px">60,000</div>
+      <div class="reader-line small">conscious thoughts per day.</div>
+    </div>
+    <div class="paging-strip">
+      <button class="pg-btn" id="b-thoughts-prev-2">
+        <svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg>
+      </button>
+      <span class="pg-indicator">2 of 3</span>
+      <button class="pg-btn" id="b-thoughts-next-2">
+        <svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg>
+      </button>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-thoughts-2-back">⬅️</button>
+    <button class="tb" id="b-thoughts-2-mg">🔍</button>
+  </div>
+</div>
+
+<div class="sc" id="s-thoughts-3">
+  <div class="card"><div class="reader-wrap">
+    <div class="reader-body">
+      <div class="reader-eyebrow">More about Thoughts</div>
+      <div class="reader-line italic" style="font-size:18px;color:#888">But, don't worry.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line small">Scientists tell us that <strong>98 percent</strong> of those 60,000 thoughts are repeats from the day before.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line small">The other <strong>2%</strong> are new thoughts.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line accent" style="font-size:24px">Thoughts with imagination.</div>
+    </div>
+    <div class="paging-strip">
+      <button class="pg-btn" id="b-thoughts-prev-3">
+        <svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg>
+      </button>
+      <span class="pg-indicator">3 of 3</span>
+      <button class="pg-btn dim" id="b-thoughts-next-3">
+        <svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg>
+      </button>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-thoughts-3-back">⬅️</button>
+    <button class="tb" id="b-thoughts-3-mg">🔍</button>
   </div>
 </div>
 
@@ -396,8 +577,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <button class="tb" id="b-want-next">➡️</button>
   </div>
 </div>
-
-
 
 <!-- ═══════════════════════════════════
      0.40 KNOW — Primary Path Page
@@ -419,8 +598,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <button class="tb dim">➡️</button>
   </div>
 </div>
-
-
 
 <!-- ═══════════════════════════════════
      🌈 DREAM PHASE — Coming Attractions
@@ -612,7 +789,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     🛠️ TOOLS (shared) — pentagon orbital
+     🛠️ TOOLS (shared)
 ═══════════════════════════════════ -->
 <div class="sc" id="s-tools">
   <div class="card"><div class="tools-wrap">
@@ -719,7 +896,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2"><button class="tb" id="b-d-back">⬅️</button><button class="tb" id="b-d-mg">🔍</button></div>
 </div>
 
-<!-- ⚙️ CONFIGURE — now includes Change Password -->
+<!-- ⚙️ CONFIGURE -->
 <div class="sc" id="s-configure">
   <div class="card"><div class="cat-body">
     <div class="cat-eyebrow">Settings</div>
@@ -762,36 +939,46 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var stack = [];
 
   var ctxMap = {
-    's-cover':'Field Guide','s-cover-map':'Field Guide','s-cover-book':'Field Guide',
-    's-invention':'Every great invention started as a thought.','s-invention-map':'Every great invention started as a thought.','s-invention-book':'Every great invention started as a thought.',
-    's-want':'What do you want?','s-want-map':'What do you want?',
-    's-know':'Do you know what you want?','s-know-map':'Do you know what you want?','s-dream-intro':'Dream Phase'
+    's-cover':'Field Guide','s-cover-map':'Field Guide','s-cover-more':'Field Guide',
+    's-what-is-t2t':'Field Guide','s-t2t-goals':'Field Guide',
+    's-invention':'Every great invention started as a thought.',
+    's-invention-more':'Every great invention started as a thought.',
+    's-thoughts-1':'More about Thoughts','s-thoughts-2':'More about Thoughts','s-thoughts-3':'More about Thoughts',
+    's-want':'What do you want?',
+    's-know':'Do you know what you want?','s-dream-intro':'Dream Phase'
   };
 
   var mapMap = {
-    's-cover':'s-cover-map','s-cover-map':'s-cover-map','s-cover-book':'s-cover-map',
-    's-invention':'s-cover-map','s-invention-map':'s-cover-map','s-invention-book':'s-cover-map',
-    's-want':'s-cover-map','s-want-map':'s-cover-map',
-    's-know':'s-cover-map','s-know-map':'s-cover-map'
+    's-cover':'s-cover-map','s-cover-map':'s-cover-map','s-cover-more':'s-cover-map',
+    's-what-is-t2t':'s-cover-map','s-t2t-goals':'s-cover-map',
+    's-invention':'s-cover-map','s-invention-more':'s-cover-map',
+    's-thoughts-1':'s-cover-map','s-thoughts-2':'s-cover-map','s-thoughts-3':'s-cover-map',
+    's-want':'s-cover-map','s-know':'s-cover-map'
+  };
+
+  // More hub map — which More hub belongs to which primary page
+  var moreMap = {
+    's-cover':'s-cover-more','s-cover-map':'s-cover-more','s-cover-more':'s-cover-more',
+    's-what-is-t2t':'s-cover-more','s-t2t-goals':'s-cover-more',
+    's-invention':'s-invention-more','s-invention-more':'s-invention-more',
+    's-thoughts-1':'s-invention-more','s-thoughts-2':'s-invention-more','s-thoughts-3':'s-invention-more',
+    's-want':'s-cover-map','s-know':'s-cover-map'
   };
 
   function getCtx(){ for(var i=stack.length-1;i>=0;i--){ if(ctxMap[stack[i]]) return ctxMap[stack[i]]; } return ctxMap[cur]||'Field Guide'; }
 
   // ── VISITED PAGES ──
-  // pageNums: map screen-id → page number
   var pageNums = {
-    's-cover':'0100','s-cover-map':'0100','s-cover-book':'0100',
-    's-invention':'0200','s-invention-book':'0200',
+    's-cover':'0100','s-cover-map':'0100','s-cover-more':'0100',
+    's-what-is-t2t':'0110','s-t2t-goals':'0120',
+    's-invention':'0200','s-invention-more':'0200',
+    's-thoughts-1':'0210','s-thoughts-2':'0210','s-thoughts-3':'0210',
     's-want':'0300',
     's-know':'0400','s-dream-intro':'0400'
   };
-  // introSteps: ordered list of intro path pages
-  var introSteps = [
-    {num:'0100', label:'Field Guide',                              id:'s-cover'},
-    {num:'0200', label:'Every great invention started as a thought.', id:'s-invention'},
-    {num:'0300', label:'What do you want?',                        id:'s-want'},
-    {num:'0400', label:'Do you know what you want?',               id:'s-know'}
-  ];
+
+  // More visited tracking — which content links have been explored
+  var moreVisited = {};
 
   function getVisited(){ try{ var v=sessionStorage.getItem('visitedPages'); return v?JSON.parse(v):[]; }catch(e){ return []; } }
   function addVisited(num){ if(!num) return; try{ var v=getVisited(); if(v.indexOf(num)===-1){ v.push(num); sessionStorage.setItem('visitedPages',JSON.stringify(v)); upsertVisited(num); } }catch(e){} }
@@ -811,6 +998,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     }catch(e){}
   }
 
+  var introSteps = [
+    {num:'0100', label:'Field Guide',                                  id:'s-cover'},
+    {num:'0200', label:'Every great invention started as a thought.',  id:'s-invention'},
+    {num:'0300', label:'What do you want?',                            id:'s-want'},
+    {num:'0400', label:'Do you know what you want?',                   id:'s-know'}
+  ];
+
   function renderMap(curNum){
     var visited=getVisited();
     if(curNum===undefined) curNum=pageNums[cur]||null;
@@ -826,6 +1020,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     });
   }
 
+  function markMoreLinkVisited(linkId){
+    moreVisited[linkId] = true;
+    var el = document.getElementById(linkId);
+    if(el) el.classList.add('visited');
+  }
+
   function nav(id, push){
     var t=document.getElementById(id); if(!t) return;
     document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
@@ -833,7 +1033,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(push!==false) stack.push(cur);
     cur=id;
     var pn=pageNums[id]; if(pn) addVisited(pn);
-
     if(id==='s-journal-view') renderJournalView();
     if(id==='s-journal-cover') initJournalCover();
     if(id==='s-gems') renderGems();
@@ -854,7 +1053,20 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var ov=document.getElementById("mg-overlay");
     if(ov) ov.classList.remove("active");
   }
-  function goMap(){ closeMG(); var srcNum=pageNums[cur]||null; var m=mapMap[cur]; for(var i=stack.length-1;i>=0;i--){ if(mapMap[stack[i]]){ m=mapMap[stack[i]]; break; } } nav(m||"s-cover-map"); renderMap(srcNum); }
+  function goMap(){
+    closeMG();
+    var srcNum=pageNums[cur]||null;
+    var m=mapMap[cur];
+    for(var i=stack.length-1;i>=0;i--){ if(mapMap[stack[i]]){ m=mapMap[stack[i]]; break; } }
+    nav(m||"s-cover-map");
+    renderMap(srcNum);
+  }
+  function goMore(){
+    closeMG();
+    var m=moreMap[cur];
+    for(var i=stack.length-1;i>=0;i--){ if(moreMap[stack[i]]){ m=moreMap[stack[i]]; break; } }
+    nav(m||"s-cover-more");
+  }
 
   function wire(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
 
@@ -941,14 +1153,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   if(mgOv) mgOv.addEventListener("click",function(e){ if(e.target===mgOv) closeMG(); });
   wire("b-mg-ret", closeMG);
   wire("b-mg-map", goMap);
-  wire("b-mg-book", function(){
-    closeMG();
-    var bookMap={"s-cover":"s-cover-book","s-invention":"s-invention-book"};
-    var dest="s-cover-book";
-    for(var i=stack.length-1;i>=0;i--){ if(bookMap[stack[i]]){ dest=bookMap[stack[i]]; break; } }
-    if(bookMap[cur]) dest=bookMap[cur];
-    nav(dest);
-  });
+  wire("b-mg-more", goMore);
   wire("b-mg-idea", function(){ closeMG(); nav("s-idea"); });
   wire("b-mg-journal", function(){ closeMG(); nav("s-journal"); });
   wire("b-mg-gems", function(){ closeMG(); nav("s-gems"); });
@@ -963,7 +1168,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(res.error){ alert(res.error.message); }
     else{ alert('Reset email sent! Check your inbox.'); }
   });
-
   wire('b-signin', async function(){
     var email=document.getElementById('si-email').value.trim();
     var password=document.getElementById('si-password').value;
@@ -983,25 +1187,47 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-cover-back', function(){ nav('s-signin'); });
   wire('b-cover-mg', goMG);
   wire('b-cover-next', function(){ nav('s-invention'); });
-  wire('b-cmap-back', goBack); wire('b-cmap-mg', goMG);
   wire('b-map-back', goBack); wire('b-map-mg', goMG);
-  wire('b-cbook-back', goBack); wire('b-cbook-mg', goMG);
   wire('tog-map-dream',function(){ togglePh('map-dream'); });
   wire('tog-map-believe',function(){ togglePh('map-believe'); });
   wire('tog-map-dare',function(){ togglePh('map-dare'); });
   wire('tog-map-journey',function(){ togglePh('map-journey'); });
 
+  // ── COVER MORE HUB ──
+  wire('b-cover-more-back', goBack);
+  wire('b-cover-more-mg', goMG);
+  wire('b-more-what-is-t2t', function(){ nav('s-what-is-t2t'); markMoreLinkVisited('b-more-what-is-t2t'); });
+  wire('b-more-t2t-goals', function(){ nav('s-t2t-goals'); markMoreLinkVisited('b-more-t2t-goals'); });
+  wire('b-what-is-t2t-back', goBack); wire('b-what-is-t2t-mg', goMG);
+  wire('b-t2t-goals-back', goBack); wire('b-t2t-goals-mg', goMG);
+
   // ── 0.20 INVENTION ──
   wire('b-inv-back', function(){ nav('s-cover'); });
   wire('b-inv-mg', goMG);
   wire('b-inv-next', function(){ nav('s-want'); });
-  wire('b-ibook-back', goBack); wire('b-ibook-mg', goMG);
+
+  // ── INVENTION MORE HUB ──
+  wire('b-inv-more-back', goBack);
+  wire('b-inv-more-mg', goMG);
+  wire('b-more-thoughts', function(){ nav('s-thoughts-1'); markMoreLinkVisited('b-more-thoughts'); });
+
+  // ── THOUGHTS READER ──
+  wire('b-thoughts-1-back', goBack); wire('b-thoughts-1-mg', goMG);
+  wire('b-thoughts-next-1', function(){ nav('s-thoughts-2'); });
+  wire('b-thoughts-prev-1', function(){});
+
+  wire('b-thoughts-2-back', goBack); wire('b-thoughts-2-mg', goMG);
+  wire('b-thoughts-next-2', function(){ nav('s-thoughts-3'); });
+  wire('b-thoughts-prev-2', function(){ nav('s-thoughts-1'); });
+
+  wire('b-thoughts-3-back', goBack); wire('b-thoughts-3-mg', goMG);
+  wire('b-thoughts-next-3', function(){});
+  wire('b-thoughts-prev-3', function(){ nav('s-thoughts-2'); });
 
   // ── 0.30 WANT ──
   wire('b-want-back', function(){ nav('s-invention'); });
   wire('b-want-mg', goMG);
   wire('b-want-next', function(){ nav('s-know'); });
-
 
   // ── 0.40 KNOW ──
   wire('b-know-back', function(){ nav('s-want'); });
@@ -1018,7 +1244,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-icap-back', goBack); wire('b-icap-mg', goMG);
   var MIRO_COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
   function randomMiroColor(){ return MIRO_COLORS[Math.floor(Math.random()*MIRO_COLORS.length)]; }
-
   wire('b-save-idea', function(){
     var t=document.getElementById('idea-text'); if(!t) return;
     var text=t.value.trim(); if(!text) return;
@@ -1037,7 +1262,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       t.focus();
     }, 1400);
   });
-
   function postIdeaToMiro(text, ctx, color){
     sendPrompt('🌊 Post this as a sticky note on my Sea of Ideas Miro board (https://miro.com/app/board/uXjVNVoFoec=/). Color: '+color+'. Content: 💡 '+text+' [from: '+ctx+']');
   }
@@ -1077,8 +1301,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-sr-back', goBack); wire('b-sr-mg', goMG);
   wire('b-d-back', goBack); wire('b-d-mg', goMG);
   wire('b-cfg-back', goBack); wire('b-cfg-mg', goMG);
-
-  // ── ⚙️ CONFIGURE ──
   wire('b-go-change-pw', function(){ nav('s-change-password'); });
 
   // ── 🔑 CHANGE PASSWORD ──
@@ -1103,7 +1325,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   drawPentagonArrows();
 
-  // ── PASSWORD RESET HANDLER (email link flow) ──
+  // ── PASSWORD RESET HANDLER ──
   (async function(){
     const hash = window.location.hash;
     if(hash.includes('type=recovery')){
