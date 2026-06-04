@@ -795,7 +795,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
         if (statusEl) { statusEl.textContent = '🌊 In your Sea of Ideas!'; setTimeout(function(){ if(statusEl) statusEl.textContent=''; }, 3000); }
       } else {
         var err = await res.json();
-        console.warn('Miro post failed:', err);
+        console.warn('Miro post failed — status:', res.status, 'body:', JSON.stringify(err));
         if (statusEl) statusEl.textContent = '';
       }
     } catch(e) {
