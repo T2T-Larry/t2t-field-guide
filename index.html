@@ -1084,7 +1084,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(stack.length>0){ var d=stack.pop(); nav(d,false); }
   }
   function goMG(){
-    mgOrigin = cur;
+    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    if(utilScreens.indexOf(cur)===-1) mgOrigin = cur;
     var ov=document.getElementById("mg-overlay");
     if(ov) ov.classList.add("active");
   }
