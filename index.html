@@ -1101,7 +1101,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // COVER
   wire('b-cover-back', function(){ nav('s-signin'); });
   wire('b-cover-mg', goMG); wire('b-cover-next', function(){ nav('s-invention'); });
-  wire('b-map-back', goBack); wire('b-map-mg', goMG);
+  wire('b-map-back', function(){ if(mgOrigin){ nav(mgOrigin,false); } goMG(); }); wire('b-map-mg', goMG);
   wire('tog-map-dream',function(){ togglePh('map-dream'); });
   wire('tog-map-believe',function(){ togglePh('map-believe'); });
   wire('tog-map-dare',function(){ togglePh('map-dare'); });
