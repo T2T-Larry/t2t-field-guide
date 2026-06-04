@@ -504,14 +504,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="reader-body">
       <div class="reader-eyebrow">THOUGHT</div>
       <div class="reader-line small">Conscious thoughts make up only about</div>
-      <div class="reader-spacer"></div>
-      <div class="reader-line bold" style="font-size:52px;letter-spacing:2px">5%</div>
-      <div class="reader-spacer"></div>
+      <div style="height:10px"></div>
+      <div class="reader-line bold" style="font-size:42px;letter-spacing:2px">5%</div>
+      <div style="height:10px"></div>
       <div class="reader-line small">of our total thoughts.</div>
-      <div class="reader-spacer"></div>
+      <div style="height:14px"></div>
       <div class="reader-line small">Even at 5%, humans have more than</div>
-      <div class="reader-spacer"></div>
-      <div class="reader-line bold" style="font-size:36px">60,000</div>
+      <div style="height:10px"></div>
+      <div class="reader-line bold" style="font-size:30px">60,000</div>
       <div class="reader-line small">conscious thoughts per day.</div>
     </div>
     <div class="paging-strip">
@@ -1320,12 +1320,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-more-thoughts', function(){ nav('s-thoughts-1'); markMoreLinkVisited('b-more-thoughts'); });
 
   // ── THOUGHTS READER ──
-  wire('b-thoughts-1-back', goBack); wire('b-thoughts-1-mg', goMG);
+  wire('b-thoughts-1-back', function(){ nav('s-invention-more'); }); wire('b-thoughts-1-mg', goMG);
   wire('b-thoughts-next-1', function(){ nav('s-thoughts-2'); });
-  wire('b-thoughts-2-back', goBack); wire('b-thoughts-2-mg', goMG);
+  wire('b-thoughts-2-back', function(){ nav('s-invention-more'); }); wire('b-thoughts-2-mg', goMG);
   wire('b-thoughts-next-2', function(){ nav('s-thoughts-3'); });
   wire('b-thoughts-prev-2', function(){ nav('s-thoughts-1'); });
-  wire('b-thoughts-3-back', goBack); wire('b-thoughts-3-mg', goMG);
+  wire('b-thoughts-3-back', function(){ nav('s-invention-more'); }); wire('b-thoughts-3-mg', goMG);
   wire('b-thoughts-prev-3', function(){ nav('s-thoughts-2'); });
 
   wire('b-want-more-back', goBack); wire('b-want-more-mg', goMG);
@@ -1429,7 +1429,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-gems-back', goMG); wire('b-gems-mg', goMG);
 
   // ── 🌸 TRIVIA ──
-  wire('b-trivia-back', goMG); wire('b-trivia-mg', goMG);
+  wire('b-trivia-back', goBack); wire('b-trivia-mg', goMG);
   wire('b-authors', function(){ nav('s-authors'); });
   wire('b-aut-back', goBack); wire('b-aut-mg', goMG);
 
