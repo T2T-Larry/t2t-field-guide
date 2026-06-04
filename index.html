@@ -781,18 +781,24 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- ═══════════════════════════════════
-     🌸 TRIVIA (shared)
+     🌸 TRIVIA (shared) — hub style
 ═══════════════════════════════════ -->
 <div class="sc" id="s-trivia">
-  <div class="card"><div class="xw">
-    <div class="mg-mhead"><div class="mg-mh">🌸 Trivia</div><div class="mg-mt">Stories, quotes, opinions — and things that might have nothing to do with T2T.</div></div>
-    <div class="mg-band"></div>
-    <div class="xi" id="b-authors">
-      <div class="xii">👤</div>
-      <div><div class="xit">Meet the authors</div><div class="xis">The accountant who became more creative than anyone. The grandfather who invented the green foam. A revolution that started with a conversation.</div></div>
+  <div class="card"><div class="more-hub">
+    <div class="more-eyebrow">🌸 TRIVIA</div>
+    <hr class="more-rule">
+    <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-bottom:18px;line-height:1.6">Stories, quotes, opinions — and things that might have nothing to do with T2T.</div>
+    <div class="more-link" id="b-authors">
+      <div class="more-link-left">
+        <div class="more-link-icon">👤</div>
+        <div>
+          <div class="more-link-label">Meet the authors</div>
+          <div class="more-link-sub">A revolution that started with a conversation.</div>
+        </div>
+      </div>
+      <div class="more-link-arrow"></div>
     </div>
-    <div class="sp"></div>
-    <div class="xm">More will appear here as the journey unfolds.</div>
+    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;padding:10px 2px 0;line-height:1.7">Walt Disney was fired from his first newspaper job for &ldquo;lacking imagination and having no original ideas.&rdquo;</div>
     <div class="sp"></div>
   </div></div>
   <div class="bar2">
@@ -1115,7 +1121,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   const _sb=supabase.createClient('https://jyvvbjxqmxdgsxfcrfdn.supabase.co','sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh');
 
   // ── JOURNAL ──
-  // Loads entries: tries Supabase first, falls back to sessionStorage
   async function loadEntriesFromSupabase(){
     try{
       var user=await _sb.auth.getUser();
@@ -1144,7 +1149,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     }catch(e){ return null; }
   }
 
-  // Fire-and-forget: ask Claude for a suggested topic, save to Supabase
   async function suggestTopic(noteId, text){
     try{
       var response = await fetch('https://api.anthropic.com/v1/messages',{
@@ -1164,7 +1168,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     }catch(e){}
   }
 
-  // Local sessionStorage fallback
   function loadEntriesLocal(){ try{ var r=sessionStorage.getItem('jentries'); return r?JSON.parse(r):[]; }catch(e){ return []; } }
   function saveEntryLocal(e){ try{ var a=loadEntriesLocal(); a.push(e); sessionStorage.setItem('jentries',JSON.stringify(a)); }catch(e){} }
 
@@ -1175,7 +1178,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
     var entries = await loadEntriesFromSupabase();
     if(!entries){
-      // fallback to local
       entries = loadEntriesLocal().map(function(e){ return {note_text:e.text, entry_date:e.date, page_context:e.page}; });
     }
 
@@ -1405,10 +1407,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var btn=document.getElementById('b-save-journal');
     var ctx=getCtx();
 
-    // Save to Supabase; fall back to local if it fails
     var noteId=await saveEntryToSupabase(text, ctx, topic);
     if(noteId){
-      // Fire-and-forget: suggest a topic if none was entered
       if(!topic) suggestTopic(noteId, text);
     } else {
       var now=new Date();
@@ -1417,7 +1417,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
     if(typeof sendPrompt!=="undefined") sendPrompt('✏️ Journal note saved: '+(topic?'['+topic+'] ':'')+text);
 
-    // Clear both fields and reset button — stay on capture screen
     t.value='';
     if(topicEl) topicEl.value='';
     if(btn){ btn.classList.remove('active'); }
