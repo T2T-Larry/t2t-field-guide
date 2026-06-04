@@ -769,6 +769,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   async function postIdeaToMiro(text, ctx) {
     var boardId = _member.miro_board_id;
     if (!boardId) { console.warn('No Miro board for this member.'); return; }
+    if (!boardId.endsWith('=')) boardId = boardId + '=';
     var statusEl = document.getElementById('idea-status');
     if (statusEl) statusEl.textContent = 'Sending to Sea of Ideas…';
 
