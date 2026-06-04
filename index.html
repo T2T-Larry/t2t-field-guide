@@ -500,18 +500,18 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <div class="sc" id="s-thoughts-2">
-  <div class="card"><div class="reader-wrap">
+  <div class="card" style="max-height:440px"><div class="reader-wrap">
     <div class="reader-body">
       <div class="reader-eyebrow">THOUGHT</div>
       <div class="reader-line small">Conscious thoughts make up only about</div>
-      <div style="height:10px"></div>
-      <div class="reader-line bold" style="font-size:42px;letter-spacing:2px">5%</div>
-      <div style="height:10px"></div>
+      <div style="height:8px"></div>
+      <div class="reader-line bold" style="font-size:40px;letter-spacing:2px">5%</div>
+      <div style="height:8px"></div>
       <div class="reader-line small">of our total thoughts.</div>
-      <div style="height:14px"></div>
-      <div class="reader-line small">Even at 5%, humans have more than</div>
       <div style="height:10px"></div>
-      <div class="reader-line bold" style="font-size:30px">60,000</div>
+      <div class="reader-line small">Even at 5%, humans have more than</div>
+      <div style="height:8px"></div>
+      <div class="reader-line bold" style="font-size:28px">60,000</div>
       <div class="reader-line small">conscious thoughts per day.</div>
     </div>
     <div class="paging-strip">
@@ -1084,6 +1084,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(stack.length>0){ var d=stack.pop(); nav(d,false); }
   }
   function goMG(){
+    mgOrigin = cur;
     var ov=document.getElementById("mg-overlay");
     if(ov) ov.classList.add("active");
   }
@@ -1261,17 +1262,18 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var mgOv=document.getElementById("mg-overlay");
   if(mgOv) mgOv.addEventListener("click",function(e){ if(e.target===mgOv) closeMG(); });
   wire("b-mg-ret", function(){
+    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    var behind = utilScreens.indexOf(cur) !== -1;
     closeMG();
-    var utilScreens=['s-trivia','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3'];
-    if(utilScreens.indexOf(cur)!==-1 && mgOrigin){ nav(mgOrigin, false); }
+    if(behind && mgOrigin){ nav(mgOrigin, false); mgOrigin=null; }
   });
   wire("b-mg-map", goMap);
-  wire("b-mg-more", function(){ mgOrigin=cur; goMore(); });
-  wire("b-mg-idea",    function(){ mgOrigin=cur; closeMG(); nav("s-idea", false); });
-  wire("b-mg-journal", function(){ mgOrigin=cur; closeMG(); nav("s-journal", false); });
-  wire("b-mg-gems",    function(){ mgOrigin=cur; closeMG(); nav("s-gems", false); });
-  wire("b-mg-trivia",  function(){ mgOrigin=cur; closeMG(); nav("s-trivia", false); });
-  wire("b-mg-tools",   function(){ mgOrigin=cur; closeMG(); nav("s-tools", false); });
+  wire("b-mg-more", function(){ closeMG(); goMore(); });
+  wire("b-mg-idea",    function(){ closeMG(); nav("s-idea", false); });
+  wire("b-mg-journal", function(){ closeMG(); nav("s-journal", false); });
+  wire("b-mg-gems",    function(){ closeMG(); nav("s-gems", false); });
+  wire("b-mg-trivia",  function(){ closeMG(); nav("s-trivia", false); });
+  wire("b-mg-tools",   function(){ closeMG(); nav("s-tools", false); });
 
   // ── SIGN-IN ──
   wire('b-forgot', async function(){
