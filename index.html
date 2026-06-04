@@ -1262,11 +1262,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   if(mgOv) mgOv.addEventListener("click",function(e){ if(e.target===mgOv) closeMG(); });
   wire("b-mg-ret", function(){
     closeMG();
-    var utilScreens=['s-trivia','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    var utilScreens=['s-trivia','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3'];
     if(utilScreens.indexOf(cur)!==-1 && mgOrigin){ nav(mgOrigin, false); }
   });
   wire("b-mg-map", goMap);
-  wire("b-mg-more", goMore);
+  wire("b-mg-more", function(){ mgOrigin=cur; goMore(); });
   wire("b-mg-idea",    function(){ mgOrigin=cur; closeMG(); nav("s-idea", false); });
   wire("b-mg-journal", function(){ mgOrigin=cur; closeMG(); nav("s-journal", false); });
   wire("b-mg-gems",    function(){ mgOrigin=cur; closeMG(); nav("s-gems", false); });
@@ -1307,7 +1307,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('tog-map-journey',function(){ togglePh('map-journey'); });
 
   // ── COVER MORE HUB ──
-  wire('b-cover-more-back', goBack);
+  wire('b-cover-more-back', goMG);
   wire('b-cover-more-mg', goMG);
   wire('b-more-what-is-t2t', function(){ nav('s-what-is-t2t'); markMoreLinkVisited('b-more-what-is-t2t'); });
   wire('b-more-t2t-goals', function(){ nav('s-t2t-goals'); markMoreLinkVisited('b-more-t2t-goals'); });
@@ -1320,7 +1320,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-inv-next', function(){ nav('s-want'); });
 
   // ── INVENTION MORE HUB ──
-  wire('b-inv-more-back', goBack);
+  wire('b-inv-more-back', goMG);
   wire('b-inv-more-mg', goMG);
   wire('b-more-thoughts', function(){ nav('s-thoughts-1'); markMoreLinkVisited('b-more-thoughts'); });
 
@@ -1333,8 +1333,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-thoughts-3-back', function(){ nav('s-invention-more'); }); wire('b-thoughts-3-mg', goMG);
   wire('b-thoughts-prev-3', function(){ nav('s-thoughts-2'); });
 
-  wire('b-want-more-back', goBack); wire('b-want-more-mg', goMG);
-  wire('b-know-more-back', goBack); wire('b-know-more-mg', goMG);
+  wire('b-want-more-back', goMG); wire('b-want-more-mg', goMG);
+  wire('b-know-more-back', goMG); wire('b-know-more-mg', goMG);
 
   // ── 0.30 WANT ──
   wire('b-want-back', function(){ nav('s-invention'); });
