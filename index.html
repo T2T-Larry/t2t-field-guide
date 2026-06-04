@@ -764,43 +764,42 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // ══════════════════════════════════════
   //  MIRO — AUTONOMOUS STICKY NOTE POST
   // ══════════════════════════════════════
-  const MIRO_MCP_URL = 'https://mcp.miro.com';
+  const MIRO_TOKEN = "eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_r3xDBBWEDnl0zV1LzbqUBL1UHKo";
 
   async function postIdeaToMiro(text, ctx) {
     var boardId = _member.miro_board_id;
-    if (!boardId) {
-      console.warn('No Miro board configured for this member.');
-      return;
-    }
+    if (!boardId) { console.warn('No Miro board for this member.'); return; }
     var statusEl = document.getElementById('idea-status');
     if (statusEl) statusEl.textContent = 'Sending to Sea of Ideas…';
 
     var MIRO_COLORS = ['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
     var color = MIRO_COLORS[Math.floor(Math.random() * MIRO_COLORS.length)];
     var memberTag = _member.display_name ? '[' + _member.display_name + '] ' : '';
-    var noteText = '💡 ' + memberTag + text + '\n\n— ' + ctx;
+    var noteContent = '<p>💡 <strong>' + memberTag + '</strong></p><p>' + text + '</p><p><em>— ' + ctx + '</em></p>';
 
     try {
-      var res = await fetch('https://api.anthropic.com/v1/messages', {
+      var res = await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/sticky_notes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + MIRO_TOKEN
+        },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 200,
-          system: 'You are a Miro automation assistant. Post the sticky note to the specified Miro board using the Miro MCP tool. Confirm when done.',
-          messages: [{
-            role: 'user',
-            content: 'Post a ' + color + ' sticky note to Miro board ' + boardId + ' with this text: ' + noteText
-          }],
-          mcp_servers: [{ type: 'url', url: MIRO_MCP_URL, name: 'miro-mcp' }]
+          data: { content: noteContent, shape: 'square' },
+          style: { fillColor: color, textAlign: 'left', textAlignVertical: 'top' },
+          geometry: { width: 220 },
+          position: { x: Math.floor(Math.random()*1200)-600, y: Math.floor(Math.random()*800)-400, origin: 'center', relativeTo: 'canvas_center' }
         })
       });
       if (res.ok) {
         if (statusEl) { statusEl.textContent = '🌊 In your Sea of Ideas!'; setTimeout(function(){ if(statusEl) statusEl.textContent=''; }, 3000); }
       } else {
-        if (statusEl) { statusEl.textContent = ''; }
+        var err = await res.json();
+        console.warn('Miro post failed:', err);
+        if (statusEl) statusEl.textContent = '';
       }
     } catch(e) {
+      console.warn('Miro error:', e);
       if (statusEl) statusEl.textContent = '';
     }
   }
