@@ -572,9 +572,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 ═══════════════════════════════════ -->
 <div class="sc" id="s-know">
   <div class="card"><div class="ip">
-    <div class="ep">Do you know what you want?</div>
-    <hr style="width:100%;border:none;border-top:1px solid #ccc;margin-bottom:28px">
     <div class="fp">Do you know what you want?</div>
+    <hr style="width:100%;border:none;border-top:1px solid #ccc;margin-bottom:28px">
     <div style="display:flex;gap:14px;justify-content:center">
       <button id="b-know-no" style="padding:12px 24px;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#E24B4A;color:#fff">No</button>
       <button id="b-know-sortof" style="padding:12px 24px;font-size:14px;font-weight:600;border-radius:8px;cursor:pointer;border:none;background:#EF9F27;color:#fff">Sort of</button>
@@ -1357,7 +1356,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-capture-idea', function(){
     nav('s-idea-capture');
     setTimeout(function(){
-      var t=document.getElementById('idea-text'); if(t){t.value='';t.focus();}
+      var t=document.getElementById('idea-text'); if(t) t.value='';
       var b=document.getElementById('b-save-idea'); if(b) b.classList.remove('active');
     },50);
   });
@@ -1394,7 +1393,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-add-note', function(){
     nav('s-journal-capture');
     setTimeout(function(){
-      var t=document.getElementById('journal-text'); if(t){t.value='';t.focus();}
+      var t=document.getElementById('journal-text'); if(t) t.value='';
       var tp=document.getElementById('journal-topic'); if(tp) tp.value='';
       var b=document.getElementById('b-save-journal'); if(b) b.classList.remove('active');
     },50);
@@ -1427,7 +1426,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     t.value='';
     if(topicEl) topicEl.value='';
     if(btn){ btn.classList.remove('active'); }
-    setTimeout(function(){ var tp=document.getElementById('journal-topic'); if(tp) tp.focus(); },50);
   });
 
   var journalTA=document.getElementById('journal-text');
