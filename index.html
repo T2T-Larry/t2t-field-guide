@@ -590,6 +590,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2">
     <button class="tb" id="b-sea-back">⬅️</button>
     <button class="tb" id="b-sea-mg">🔍</button>
+    <button class="tb" id="b-sea-full">⛶</button>
   </div>
 </div>
 
@@ -1173,6 +1174,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     nav('s-idea', false);
   });
   wire('b-sea-mg', goMG);
+  wire('b-sea-full', function(){
+    var embed = document.getElementById('miro-embed');
+    if (!embed) return;
+    if (embed.requestFullscreen) embed.requestFullscreen();
+    else if (embed.webkitRequestFullscreen) embed.webkitRequestFullscreen();
+    else if (embed.mozRequestFullScreen) embed.mozRequestFullScreen();
+  });
 
   wire('b-icap-back', goBack); wire('b-icap-mg', goMG);
 
