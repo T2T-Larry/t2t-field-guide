@@ -154,7 +154,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .jcov-rule{width:60px;border:none;border-top:1px solid #111;margin:0 auto 12px}
 .jcov-sub{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#555}
 .jcov-dates{display:flex;gap:10px;align-items:center;justify-content:center;background:#fff;border:1.5px solid #C9A87C;border-radius:20px;padding:6px 16px;font-size:11px;color:#7A5C3A;letter-spacing:2px;width:100%;max-width:260px;box-sizing:border-box}
-.jvw{flex:1;display:flex;flex-direction:column;padding:18px 24px;background:#FDF6E8}
+.jvw{flex:1;display:flex;flex-direction:column;padding:18px 24px;background:#FDF6E8;overflow:hidden}
+#jv-entries-list{flex:1;overflow-y:auto;padding-right:4px}
 .jvh{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#3B2510;margin-bottom:2px}
 .jvs{font-size:12px;font-style:italic;color:#7A5C3A;margin-bottom:12px}
 .jvr{border:none;border-top:1px solid #C9A87C;margin-bottom:14px}
@@ -647,7 +648,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     </div>
     <div class="jcov-dates"><span id="jcov-start">Started —</span><span style="color:#C9A87C">·</span><span>Ongoing</span></div>
   </div></div>
-  <div class="bar2"><button class="tb" id="b-jcov-back">⬅️</button><button class="tb" id="b-jcov-mg">🔍</button></div>
+  <div class="bar2"><button class="tb" id="b-jcov-back">⬅️</button><button class="tb" id="b-jcov-mg">🔍</button><button class="tb" id="b-jcov-next">➡️</button></div>
 </div>
 
 <!-- JOURNAL VIEW (list) -->
@@ -1022,7 +1023,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var countEl = document.getElementById('je-nav-count'); if(countEl) countEl.textContent=(idx+1)+' of '+entries.length;
     var prevBtn = document.getElementById('b-je-prev');
     var nextBtn = document.getElementById('b-je-next');
-    if(prevBtn) prevBtn.classList.toggle('dim', idx===0);
+    if(prevBtn) prevBtn.classList.remove('dim'); // cover is always one step back
     if(nextBtn) nextBtn.classList.toggle('dim', idx===entries.length-1);
   }
 
@@ -1224,11 +1225,17 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   wire('b-jcap-back', goBack); wire('b-jcap-mg', goMG);
   wire('b-jcov-back', goBack); wire('b-jcov-mg', goMG);
+  wire('b-jcov-next', function(){
+    if(_jeEntries.length > 0){ showEntryAt(_jeEntries, 0); nav('s-journal-entry'); }
+  });
   wire('b-jview-back', goBack); wire('b-jview-mg', goMG);
   wire('b-jentry-back', goBack); wire('b-jentry-mg', goMG);
   wire('b-je-back', function(){ nav('s-journal-view'); });
 
-  wire('b-je-prev', function(){ if(_jeIndex > 0){ showEntryAt(_jeEntries, _jeIndex - 1); } });
+  wire('b-je-prev', function(){
+    if(_jeIndex > 0){ showEntryAt(_jeEntries, _jeIndex - 1); }
+    else { nav('s-journal-cover'); }
+  });
   wire('b-je-next', function(){ if(_jeIndex < _jeEntries.length - 1){ showEntryAt(_jeEntries, _jeIndex + 1); } });
 
   wire('b-save-journal', async function(){
