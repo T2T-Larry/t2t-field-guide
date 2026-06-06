@@ -239,7 +239,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .cat-eyebrow{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:8px}
 .cat-title{font-family:'Playfair Display',serif;font-size:36px;font-weight:700;color:#3B2510;margin-bottom:8px}
 .cat-desc{font-size:14px;color:#7A5C3A;line-height:1.6;margin-bottom:18px;font-style:italic}
-.tool-row{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;background:#ffffff;border:1.5px solid #C9A87C;border-radius:10px;margin-bottom:10px;cursor:pointer;font-family:'Playfair Display',serif;font-size:14px;color:#3B2510;transition:border-color .15s}
+/* FIX 3: tool-row font-size 14→16px, padding increased */
+.tool-row{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 16px;background:#ffffff;border:1.5px solid #C9A87C;border-radius:10px;margin-bottom:10px;cursor:pointer;font-family:'Playfair Display',serif;font-size:16px;color:#3B2510;transition:border-color .15s}
 .tool-row:hover{border-color:#8B5E2A}
 .arr{color:#C9A87C;font-size:16px}
 .soon{font-size:12px;font-style:italic;color:#a89070;text-align:center;padding:12px 0}
@@ -347,7 +348,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- SHARED MAP -->
 <div class="sc" id="s-cover-map">
   <div class="card"><div class="mw">
-    <div class="mg-mhead"><div class="mg-mh">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
+    <!-- FIX 4d: Map title → 48px -->
+    <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
     <div class="mg-band"></div>
     <div class="pr"><span class="pl2">🚪 Introduction</span></div>
     <div class="ps" id="map-intro-steps"></div>
@@ -565,15 +567,22 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="sh" style="color:#111;font-size:26px;margin-bottom:6px">Dream Phase</div>
     <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#555;margin-bottom:20px;line-height:1.6">You are about to discover what you want — maybe for the first time.</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1000</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative License</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1100</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sea of Ideas</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1200</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Cluster</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1300</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Resonance</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1400</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sort to Simplicity</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1500</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">PLUSing</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1600</span><span style="font-family:'Playfair Display',serif;font-size:14px;color:#111">Finding Your Passion</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1700</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1800</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision Align</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1000</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Dream Phase</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1100</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">CREATE</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1110</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative License</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1120</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative vs Analytical Thinking</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1130</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Rules of Creative Thinking</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1140</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sea of Ideas</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1150</span><span style="font-family:'Playfair Display',serif;font-size:14px;color:#111">PLUSing</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1400</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">SHAPE</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1410</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Cluster</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1420</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Resonance</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1430</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sort to Simplicity</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1440</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Finding Your Passion</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1700</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">SHARE</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1710</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1720</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision Treatment</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1730</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Vision Align</span></div>
     </div>
     <div class="sp"></div>
   </div></div>
@@ -583,7 +592,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- 💡 IDEA HUB -->
 <div class="sc" id="s-idea">
   <div class="card"><div class="iw">
-    <div class="mg-mhead" style="background:#EBF4FF;border-bottom:3px solid #378ADD"><div class="mg-mh" style="color:#1A3A5C">💡 Idea</div><div class="mg-mt" style="color:#3A6080">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div></div>
+    <!-- FIX 4a: Idea hub title → 48px -->
+    <div class="mg-mhead" style="background:#EBF4FF;border-bottom:3px solid #378ADD"><div class="mg-mh" style="color:#1A3A5C;font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">💡 Idea</div><div class="mg-mt" style="color:#3A6080">Sparks caught along the way — wild, half-formed, completely unrelated. All welcome.</div></div>
     <div style="background:#d4e8ff;padding:7px 24px 6px;border-bottom:.5px solid #A8CAFE;width:100%"></div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="ib" id="b-capture-idea">Capture an Idea</button>
@@ -754,9 +764,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2"><button class="tb" id="b-gems-back">⬅️</button><button class="tb" id="b-gems-mg">🔍</button></div>
 </div>
 
-<!-- 💎 ADD A GEM -->
+<!-- 💎 ADD A GEM — FIX 1/2: removed fixed height, card now flexible -->
 <div class="sc" id="s-gem-add">
-  <div class="card" style="height:440px;max-height:440px;min-height:0;overflow:hidden;flex:none">
+  <div class="card" style="min-height:0;overflow:hidden;flex:1">
     <div class="gcw">
       <div class="gc-title">💎 Add a Gem</div>
       <div class="gc-ctx" id="gc-ctx-label"></div>
@@ -808,7 +818,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- 🌸 TRIVIA -->
 <div class="sc" id="s-trivia">
   <div class="card"><div class="more-hub">
-    <div class="mg-mhead"><div class="mg-mh">🌸 Trivia</div><div class="mg-mt">Stories, quotes, opinions — and things that might have nothing to do with T2T.</div></div>
+    <!-- FIX 4c: Trivia title → 48px -->
+    <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🌸 Trivia</div><div class="mg-mt">Stories, quotes, opinions — and things that might have nothing to do with T2T.</div></div>
     <div class="mg-band"></div>
     <div class="more-link" id="b-authors">
       <div class="more-link-left"><div class="more-link-icon">👤</div><div><div class="more-link-label">Meet the authors</div><div class="more-link-sub">A revolution that started with a conversation.</div></div></div>
@@ -833,7 +844,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- 🛠️ TOOLS -->
 <div class="sc" id="s-tools">
   <div class="card"><div class="tools-wrap">
-    <div class="mg-mhead"><div class="mg-mh">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
+    <!-- FIX 4b: Tools title → 48px -->
+    <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
     <div class="tools-orbital">
       <svg class="orb-svg" id="orb-svg" width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
         <defs><filter id="btn-glow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.28)"/><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.18)"/></filter></defs>
@@ -842,10 +854,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
         <circle cx="160" cy="160" r="34" fill="#0a4a38" stroke="#1a7a5e" stroke-width="2" filter="url(#btn-glow)" id="btn-configure" style="cursor:pointer"/>
         <text x="160" y="169" text-anchor="middle" font-size="26" dominant-baseline="middle" style="pointer-events:none">⚙️</text>
         <g class="btn-group" id="pb-question" transform="translate(160,55)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" style="pointer-events:none">?</text></g>
-        <g class="btn-group" id="pb-create" transform="translate(259.8,130.3)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">CREATE</text></g>
-        <g class="btn-group" id="pb-shape" transform="translate(221.8,245.7)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">SHAPE</text></g>
-        <g class="btn-group" id="pb-share" transform="translate(98.2,245.7)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">SHARE</text></g>
-        <g class="btn-group" id="pb-dare" transform="translate(60.2,130.3)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="10" font-weight="700" fill="#3B2510" letter-spacing="1.5" style="pointer-events:none">DARE</text></g>
+        <!-- FIX 3b: pentagon button labels 10→13px -->
+        <g class="btn-group" id="pb-create" transform="translate(259.8,130.3)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">CREATE</text></g>
+        <g class="btn-group" id="pb-shape" transform="translate(221.8,245.7)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHAPE</text></g>
+        <g class="btn-group" id="pb-share" transform="translate(98.2,245.7)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHARE</text></g>
+        <g class="btn-group" id="pb-dare" transform="translate(60.2,130.3)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">DARE</text></g>
       </svg>
     </div>
   </div></div>
@@ -1015,7 +1028,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     's-invention-more':'Every great invention started as a thought.',
     's-thoughts-1':'More about Thoughts','s-thoughts-2':'More about Thoughts','s-thoughts-3':'More about Thoughts',
     's-want':'What do you want?',
-    's-know':'Do you know what you want?','s-dream-intro':'Dream Phase'
+    's-know':'Do you know what you want?','s-dream-intro':'Dream Phase',
+    's-trivia':'Trivia','s-authors':'Meet the Authors'
   };
 
   var mapMap = {
@@ -1046,14 +1060,20 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var moreVisited = {};
   var mgOrigin = null;
 
-  // ── GEMS CANDIDATES MAP ──
+  // ── GEMS CANDIDATES MAP — FIX 1: trivia + authors added ──
   var gemsMap = {
+    's-trivia': [
+      {text:'Walt Disney was fired from his first newspaper job for \u201clacking imagination and having no original ideas.\u201d', attr:'T2T Trivia'},
+    ],
+    's-authors': [
+      {text:'Every great thing begins small \u2014 a grandfather\'s invention, a conversation between two people who believed something was possible.', attr:'T2T Field Guide'},
+    ],
     's-cover': [
       {text:'Every great journey starts with a single step.', attr:'T2T Field Guide'},
     ],
     's-invention': [
       {text:'Every great invention started as a thought.', attr:'T2T Field Guide'},
-      {text:'The light bulb… The airplane… The internet… The vaccine… The symphony. Every single one — thought first.', attr:'T2T Field Guide'},
+      {text:'The light bulb\u2026 The airplane\u2026 The internet\u2026 The vaccine\u2026 The symphony. Every single one \u2014 thought first.', attr:'T2T Field Guide'},
     ],
     's-want': [
       {text:'Most people don\'t know what they want, but they\'re pretty sure they haven\'t got it.', attr:'Alfred E. Neuman'},
@@ -1065,21 +1085,21 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       {text:'T2T is a system for transforming imagination into reality. Not a philosophy. A system. It works the first time you try it.', attr:'T2T Field Guide'},
     ],
     's-t2t-goals': [
-      {text:'A clear Vision of something you want to create.', attr:'T2T · Goal 1'},
-      {text:'The Excellence to make it real.', attr:'T2T · Goal 2'},
-      {text:'A Beautiful Journey along the way.', attr:'T2T · Goal 3'},
+      {text:'A clear Vision of something you want to create.', attr:'T2T \u00b7 Goal 1'},
+      {text:'The Excellence to make it real.', attr:'T2T \u00b7 Goal 2'},
+      {text:'A Beautiful Journey along the way.', attr:'T2T \u00b7 Goal 3'},
     ],
     's-thoughts-1': [
-      {text:'Thoughts happen. We are constantly thinking — consciously and subconsciously.', attr:'T2T Field Guide'},
+      {text:'Thoughts happen. We are constantly thinking \u2014 consciously and subconsciously.', attr:'T2T Field Guide'},
     ],
     's-thoughts-2': [
       {text:'Humans have more than 60,000 conscious thoughts per day.', attr:'T2T Field Guide'},
     ],
     's-thoughts-3': [
-      {text:'98% of our thoughts are repeats. The other 2% are new thoughts — thoughts with imagination.', attr:'T2T Field Guide'},
+      {text:'98% of our thoughts are repeats. The other 2% are new thoughts \u2014 thoughts with imagination.', attr:'T2T Field Guide'},
     ],
     's-dream-intro': [
-      {text:'You are about to discover what you want — maybe for the first time.', attr:'T2T Field Guide'},
+      {text:'You are about to discover what you want \u2014 maybe for the first time.', attr:'T2T Field Guide'},
     ],
   };
 
@@ -1234,14 +1254,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var countEl = document.getElementById('je-nav-count'); if(countEl) countEl.textContent=(idx+1)+' of '+entries.length;
     var prevBtn = document.getElementById('b-je-prev');
     var nextBtn = document.getElementById('b-je-next');
-    if(prevBtn) prevBtn.classList.remove('dim'); // cover is always one step back
+    if(prevBtn) prevBtn.classList.remove('dim');
     if(nextBtn) nextBtn.classList.toggle('dim', idx===entries.length-1);
   }
 
   async function renderJournalView(){
     var list=document.getElementById('jv-entries-list'),count=document.getElementById('jv-count');
     if(!list) return;
-    list.innerHTML='<div class="jv-empty" style="opacity:.5">Loading…</div>';
+    list.innerHTML='<div class="jv-empty" style="opacity:.5">Loading\u2026</div>';
     var entries=await loadEntriesFromSupabase();
     if(!entries){ entries=loadEntriesLocal().map(function(e){ return {note_text:e.text,entry_date:e.date,page_context:e.page}; }); }
     _jeEntries = entries;
@@ -1252,9 +1272,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       var card=document.createElement('div'); card.className='jcard';
       var text=e.note_text||e.text||'';
       var topic=e.topic||''; var suggested=e.suggested_topic||'';
-      var preview=text.length>120?text.substring(0,120)+'…':text;
-      var eyebrow=(e.entry_date||e.date||'')+(e.page_context||e.page?' · '+(e.page_context||e.page):'');
-      var topicHtml=topic?'<div class="jcard-topic">'+topic+'</div>':(suggested?'<div class="jcard-suggested">✦ '+suggested+'</div>':'');
+      var preview=text.length>120?text.substring(0,120)+'\u2026':text;
+      var eyebrow=(e.entry_date||e.date||'')+(e.page_context||e.page?' \u00b7 '+(e.page_context||e.page):'');
+      var topicHtml=topic?'<div class="jcard-topic">'+topic+'</div>':(suggested?'<div class="jcard-suggested">\u2756 '+suggested+'</div>':'');
       card.innerHTML='<div class="jcard-num">'+String(i+1).padStart(3,'0')+'</div>'+topicHtml+'<div class="jcard-text">'+preview+'</div><div class="jcard-eyebrow">'+eyebrow+'</div>';
       card.addEventListener('click',(function(idx){ return function(){
         showEntryAt(_jeEntries, idx);
@@ -1284,10 +1304,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   }
 
   function openGemAdd() {
-    // find candidates from current page or stack
     var srcPage = primaryPage || cur;
     var candidates = gemsMap[srcPage] || gemsMap[cur] || [];
-    // search stack for a page with gems
     if (!candidates.length) {
       for (var i = stack.length - 1; i >= 0; i--) {
         if (gemsMap[stack[i]] && gemsMap[stack[i]].length) { candidates = gemsMap[stack[i]]; break; }
@@ -1344,7 +1362,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   async function renderGemsView(){
     var list=document.getElementById('gv-entries-list'), count=document.getElementById('gv-count');
     if(!list) return;
-    list.innerHTML='<div class="gv-empty" style="opacity:.5">Loading…</div>';
+    list.innerHTML='<div class="gv-empty" style="opacity:.5">Loading\u2026</div>';
     try{
       var user=await _sb.auth.getUser();
       if(!user||!user.data||!user.data.user){ list.innerHTML='<div class="gv-empty">Sign in to see your Gems.</div>'; return; }
@@ -1356,7 +1374,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       gems.forEach(function(g,i){
         var card=document.createElement('div'); card.className='gcard';
         var text=g.gem_text||''; var attr=g.attribution||'';
-        var preview=text.length>120?text.substring(0,120)+'…':text;
+        var preview=text.length>120?text.substring(0,120)+'\u2026':text;
         card.innerHTML='<div class="gcard-num">'+String(i+1).padStart(3,'0')+'</div><div class="gcard-text">'+preview+'</div>'+(attr?'<div class="gcard-attr">'+attr+'</div>':'');
         list.appendChild(card);
       });
@@ -1408,7 +1426,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var email=document.getElementById('si-email').value.trim();
     var password=document.getElementById('si-password').value;
     var btn=document.getElementById('b-signin');
-    btn.textContent='Signing in…'; btn.disabled=true;
+    btn.textContent='Signing in\u2026'; btn.disabled=true;
     var res=await _sb.auth.signInWithPassword({email,password});
     if(res.error){
       btn.textContent='Sign In'; btn.disabled=false;
@@ -1480,7 +1498,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var text=t.value.trim(); if(!text) return;
     var ctx=getCtx();
     var btn=document.getElementById('b-save-idea');
-    btn.classList.remove('active'); btn.textContent='SAVING…';
+    btn.classList.remove('active'); btn.textContent='SAVING\u2026';
     try {
       var user=await _sb.auth.getUser();
       if(user&&user.data&&user.data.user){
@@ -1545,7 +1563,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var journalTA=document.getElementById('journal-text');
   if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
-  // ✏️ JOURNAL MIRO
   wire('b-journal-miro', openJournalMiro);
   wire('b-jmiro-back', function(){ var embed=document.getElementById('journal-miro-embed'); if(embed) embed.src=''; nav('s-journal',false); });
   wire('b-jmiro-mg', goMG);
@@ -1556,7 +1573,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     else if(embed.mozRequestFullScreen) embed.mozRequestFullScreen();
   });
 
-  // 💎 GEMS
   wire('b-gems-back', function(){ if(mgOrigin){ nav(mgOrigin,false); } goMG(); }); wire('b-gems-mg', goMG);
   wire('b-add-gem', openGemAdd);
   wire('b-gadd-back', function(){ nav('s-gems'); }); wire('b-gadd-mg', goMG);
@@ -1567,9 +1583,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   wire('b-save-gem', async function(){
     var btn = document.getElementById('b-save-gem');
     var status = document.getElementById('gc-status');
-    btn.classList.remove('active'); btn.textContent = 'SAVING…';
+    btn.classList.remove('active'); btn.textContent = 'SAVING\u2026';
     var saved = 0;
-    // save checked candidates
     var checked = document.querySelectorAll('#gc-candidates input:checked');
     for (var i = 0; i < checked.length; i++) {
       var idx = parseInt(checked[i].getAttribute('data-idx'));
@@ -1583,7 +1598,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
         saved++;
       }
     }
-    // save write-your-own
     var ownText = (document.getElementById('gc-own-text') || {}).value || '';
     if (ownText.trim()) {
       await saveGemToSupabase(ownText.trim(), null);
@@ -1592,7 +1606,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     }
     btn.textContent = 'SAVE';
     if (status) status.textContent = saved + (saved === 1 ? ' Gem saved.' : ' Gems saved.');
-    // clear after short pause
     setTimeout(function(){
       document.querySelectorAll('#gc-candidates input').forEach(function(c){ c.checked=false; });
       document.querySelectorAll('#gc-candidates .gc-option').forEach(function(d){ d.classList.remove('selected'); });
@@ -1639,7 +1652,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var input=document.getElementById('cp-new-password'),msg=document.getElementById('cp-msg'),btn=document.getElementById('b-cp-save');
     var pw=input?input.value.trim():'';
     if(!pw||pw.length<6){ if(msg){ msg.textContent='Password must be at least 6 characters.'; msg.className='cp-msg err'; } return; }
-    btn.textContent='Saving…'; btn.disabled=true;
+    btn.textContent='Saving\u2026'; btn.disabled=true;
     var res=await _sb.auth.updateUser({password:pw});
     btn.textContent='Save Password'; btn.disabled=false;
     if(res.error){ if(msg){ msg.textContent=res.error.message; msg.className='cp-msg err'; } }
@@ -1656,7 +1669,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
         var pw=document.getElementById('reset-password').value;
         if(!pw||pw.length<6){ alert('Password must be at least 6 characters.'); return; }
         var btn=document.getElementById('b-reset-save');
-        btn.textContent='Saving…'; btn.disabled=true;
+        btn.textContent='Saving\u2026'; btn.disabled=true;
         var res=await _sb.auth.updateUser({password:pw});
         if(res.error){ btn.textContent='Set Password'; btn.disabled=false; alert(res.error.message); }
         else { alert('Password updated! Please sign in.'); nav('s-signin',false); }
