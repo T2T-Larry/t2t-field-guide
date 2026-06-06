@@ -957,8 +957,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var boardId = _member.gems_board_id;
     if (!boardId) return;
     if (!boardId.endsWith('=')) boardId = boardId + '=';
-    var memberTag = _member.display_name ? '[' + _member.display_name + '] ' : '';
-    var noteContent = '<p>💎 <strong>' + memberTag + '</strong></p><p>' + text + '</p>' + (attr ? '<p><em>— ' + attr + '</em></p>' : '');
+    var attrLine = (attr && attr !== _member.display_name) ? '<p><em>— ' + attr + '</em></p>' : '';
+    var noteContent = '<p>💎</p><p>' + text + '</p>' + attrLine;
     try {
       var res = await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/sticky_notes', {
         method:'POST',
@@ -978,8 +978,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var boardId = _member.journal_board_id;
     if (!boardId) return;
     if (!boardId.endsWith('=')) boardId = boardId + '=';
-    var memberTag = _member.display_name ? '[' + _member.display_name + '] ' : '';
-    var noteContent = '<p>✏️ <strong>' + memberTag + '</strong></p><p>' + text + '</p>' + (ctx ? '<p><em>— ' + ctx + '</em></p>' : '');
+    var noteContent = '<p>✏️</p><p>' + text + '</p>' + (ctx ? '<p><em>— ' + ctx + '</em></p>' : '');
     try {
       await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/sticky_notes', {
         method:'POST',
