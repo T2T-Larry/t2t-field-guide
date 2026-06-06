@@ -644,8 +644,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;width:100%"></div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="jb" id="b-add-note">Add Note to Journal</button>
-      <button class="jb" style="margin-bottom:8px">View Journal</button>
-      <div style="display:flex;gap:12px">
+      <button class="jb" id="b-view-journal">View Journal</button>
+      <div id="journal-view-choices" style="display:none;flex-direction:row;gap:12px;margin-top:4px">
         <button class="jb" id="b-jview-list" style="width:100px;font-size:13px;margin-bottom:0">List</button>
         <button class="jb" id="b-jview-miro" style="width:100px;font-size:13px;margin-bottom:0">Miro</button>
       </div>
@@ -744,8 +744,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div style="background:#ede9fe;padding:7px 24px 6px;border-bottom:.5px solid #c4b5fd;width:100%"></div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="gb" id="b-add-gem">Add a Gem</button>
-      <button class="gb" style="margin-bottom:8px">View Gems</button>
-      <div style="display:flex;gap:12px">
+      <button class="gb" id="b-view-gems">View Gems</button>
+      <div id="gems-view-choices" style="display:none;flex-direction:row;gap:12px;margin-top:4px">
         <button class="gb" id="b-gview-list" style="width:100px;font-size:13px;margin-bottom:0">List</button>
         <button class="gb" id="b-gview-miro" style="width:100px;font-size:13px;margin-bottom:0">Miro</button>
       </div>
@@ -1505,6 +1505,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     },50);
   });
 
+  wire('b-view-journal', function(){
+    var choices = document.getElementById('journal-view-choices');
+    if (!choices) return;
+    var showing = choices.style.display === 'flex';
+    choices.style.display = showing ? 'none' : 'flex';
+  });
   wire('b-jview-list', openJournalView);
   wire('b-jview-miro', openJournalMiro);
 
@@ -1594,6 +1600,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       if(status) status.textContent='';
       updateGemSaveBtn();
     }, 2000);
+  });
+  wire('b-view-gems', function(){
+    var choices = document.getElementById('gems-view-choices');
+    if (!choices) return;
+    var showing = choices.style.display === 'flex';
+    choices.style.display = showing ? 'none' : 'flex';
   });
   wire('b-gview-list', function(){ nav('s-gems-list'); renderGemsView(); });
   wire('b-gview-miro', openGemsMiro);
