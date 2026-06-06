@@ -627,11 +627,23 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;width:100%"></div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="jb" id="b-add-note">Add Note to Journal</button>
-      <button class="jb" id="b-view-journal">LIST</button>
-      <button class="jb" id="b-journal-miro">MIRO</button>
+      <button class="jb" id="b-view-journal">View Journal</button>
     </div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-journal-back">⬅️</button><button class="tb" id="b-journal-mg">🔍</button></div>
+</div>
+
+<!-- JOURNAL VIEW HUB -->
+<div class="sc" id="s-journal-view-hub">
+  <div class="card"><div class="jw">
+    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510;font-size:32px;font-weight:700;line-height:1;padding-bottom:6px">✏️ View Journal</div><div class="mg-mt" style="color:#7A5C3A">Choose how you'd like to explore your entries.</div></div>
+    <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;width:100%"></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
+      <button class="jb" id="b-jview-list">List</button>
+      <button class="jb" id="b-jview-miro">Miro Board</button>
+    </div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-jvhub-back">⬅️</button><button class="tb" id="b-jvhub-mg">🔍</button></div>
 </div>
 
 <!-- JOURNAL CAPTURE -->
@@ -724,11 +736,23 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div style="background:#ede9fe;padding:7px 24px 6px;border-bottom:.5px solid #c4b5fd;width:100%"></div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="gb" id="b-add-gem">Add a Gem</button>
-      <button class="gb" id="b-gems-list">LIST</button>
-      <button class="gb" id="b-gems-miro">MIRO</button>
+      <button class="gb" id="b-view-gems">View Gems</button>
     </div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-gems-back">⬅️</button><button class="tb" id="b-gems-mg">🔍</button></div>
+</div>
+
+<!-- 💎 GEMS VIEW HUB -->
+<div class="sc" id="s-gems-view-hub">
+  <div class="card"><div class="ghw">
+    <div class="mg-mhead" style="background:#F5F3FF;border-bottom:3px solid #7c3aed"><div class="mg-mh" style="color:#5B21B6;font-size:32px;font-weight:700;line-height:1;padding-bottom:6px">💎 View Gems</div><div class="mg-mt" style="color:#7c3aed">Choose how you'd like to explore your Gems.</div></div>
+    <div style="background:#ede9fe;padding:7px 24px 6px;border-bottom:.5px solid #c4b5fd;width:100%"></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
+      <button class="gb" id="b-gview-list">List</button>
+      <button class="gb" id="b-gview-miro">Miro Board</button>
+    </div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-gvhub-back">⬅️</button><button class="tb" id="b-gvhub-mg">🔍</button></div>
 </div>
 
 <!-- 💎 GEMS LIST -->
@@ -1067,7 +1091,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(stack.length>0){ var d=stack.pop(); nav(d,false); }
   }
   function goMG(){
-    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-journal-miro','s-gems','s-gems-list','s-gems-miro','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-view-hub','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-journal-miro','s-gems','s-gems-view-hub','s-gems-list','s-gems-miro','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
     if(utilScreens.indexOf(cur)===-1) mgOrigin=cur;
     var ov=document.getElementById("mg-overlay");
     if(ov) ov.classList.add("active");
@@ -1244,7 +1268,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var mgOv=document.getElementById("mg-overlay");
   if(mgOv) mgOv.addEventListener("click",function(e){ if(e.target===mgOv) closeMG(); });
   wire("b-mg-ret", function(){
-    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-journal-miro','s-gems','s-gems-list','s-gems-miro','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-view-hub','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-journal-miro','s-gems','s-gems-view-hub','s-gems-list','s-gems-miro','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
     var behind=utilScreens.indexOf(cur)!==-1;
     closeMG();
     if(behind && mgOrigin){ nav(mgOrigin,false); mgOrigin=null; }
@@ -1363,7 +1387,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     },50);
   });
 
-  wire('b-view-journal', openJournalView);
+  wire('b-view-journal', function(){ nav('s-journal-view-hub'); });
+  wire('b-jvhub-back', function(){ nav('s-journal'); }); wire('b-jvhub-mg', goMG);
+  wire('b-jview-list', openJournalView);
+  wire('b-jview-miro', openJournalMiro);
 
   wire('b-jcap-back', goBack); wire('b-jcap-mg', goMG);
   wire('b-jcov-back', goBack); wire('b-jcov-mg', goMG);
@@ -1398,7 +1425,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   // ✏️ JOURNAL MIRO
   wire('b-journal-miro', openJournalMiro);
-  wire('b-jmiro-back', function(){ var embed=document.getElementById('journal-miro-embed'); if(embed) embed.src=''; nav('s-journal',false); });
+  wire('b-jmiro-back', function(){ var embed=document.getElementById('journal-miro-embed'); if(embed) embed.src=''; nav('s-journal-view-hub',false); });
   wire('b-jmiro-mg', goMG);
   wire('b-jmiro-full', function(){
     var embed=document.getElementById('journal-miro-embed'); if(!embed) return;
@@ -1410,10 +1437,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   // 💎 GEMS
   wire('b-gems-back', function(){ if(mgOrigin){ nav(mgOrigin,false); } goMG(); }); wire('b-gems-mg', goMG);
   wire('b-add-gem', function(){ nav('s-gems'); }); // placeholder until Add Gem screen is built
-  wire('b-gems-list', function(){ nav('s-gems-list'); renderGemsView(); });
-  wire('b-gems-miro', openGemsMiro);
+  wire('b-view-gems', function(){ nav('s-gems-view-hub'); });
+  wire('b-gvhub-back', function(){ nav('s-gems'); }); wire('b-gvhub-mg', goMG);
+  wire('b-gview-list', function(){ nav('s-gems-list'); renderGemsView(); });
+  wire('b-gview-miro', openGemsMiro);
   wire('b-glist-back', function(){ nav('s-gems'); }); wire('b-glist-mg', goMG);
-  wire('b-gmiro-back', function(){ var embed=document.getElementById('gems-miro-embed'); if(embed) embed.src=''; nav('s-gems',false); });
+  wire('b-gmiro-back', function(){ var embed=document.getElementById('gems-miro-embed'); if(embed) embed.src=''; nav('s-gems-view-hub',false); });
   wire('b-gmiro-mg', goMG);
   wire('b-gmiro-full', function(){
     var embed=document.getElementById('gems-miro-embed'); if(!embed) return;
