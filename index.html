@@ -179,6 +179,22 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .je-nav-btn.dim{opacity:.2;cursor:default;pointer-events:none}
 .je-nav-btn svg{width:14px;height:14px;fill:#ffffff}
 .je-nav-count{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#A87C4A;min-width:56px;text-align:center}
+/* ── GEMS ── */
+.ghw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:0;background:#F5F3FF}
+.gb{width:220px;padding:14px 0;font-size:15px;font-weight:600;border-radius:10px;cursor:pointer;border:2px solid #111;background:#ffffff;color:#5B21B6;margin-bottom:14px;transition:all .15s;display:block;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14)}
+.gb:hover{border-color:#7c3aed;box-shadow:0 4px 12px rgba(0,0,0,.30);transform:translateY(-1px)}
+.gb:active{transform:scale(.97)}
+.gvw{flex:1;display:flex;flex-direction:column;padding:18px 24px;background:#F5F3FF;min-height:0}
+.gvh{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#5B21B6;margin-bottom:2px}
+.gvs{font-size:12px;font-style:italic;color:#7c3aed;margin-bottom:12px}
+.gvr{border:none;border-top:1px solid #C9A87C;margin-bottom:14px}
+#gv-entries-list{flex:1;overflow-y:auto;padding-right:4px;min-height:0}
+.gv-empty{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#7c3aed;text-align:center;padding:32px 0;line-height:1.8}
+.gcard{background:#fff;border:1px solid #C9A87C;border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.gcard:hover{border-color:#7c3aed}
+.gcard-num{font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#C9A87C;margin-bottom:5px}
+.gcard-text{font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#5B21B6;line-height:1.55;margin-bottom:8px}
+.gcard-attr{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed}
 .gew{flex:1;display:flex;flex-direction:column;background:#1A1A2E}
 .gem-mhead{width:100%;padding:20px 24px 14px;background:#1A1A2E;border-bottom:3px solid #C9A87C}
 .gem-mh{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:#C9A87C;margin-bottom:4px}
@@ -611,7 +627,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;width:100%"></div>
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="jb" id="b-add-note">Add Note to Journal</button>
-      <button class="jb" id="b-view-journal">View Journal</button>
+      <button class="jb" id="b-view-journal">LIST</button>
+      <button class="jb" id="b-journal-miro">MIRO</button>
     </div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-journal-back">⬅️</button><button class="tb" id="b-journal-mg">🔍</button></div>
@@ -681,15 +698,67 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2"><button class="tb" id="b-jentry-back">⬅️</button><button class="tb" id="b-jentry-mg">🔍</button></div>
 </div>
 
-<!-- 💎 GEMS -->
+<!-- ✏️ JOURNAL MIRO -->
+<div class="sc" id="s-journal-miro">
+  <div class="card" style="min-height:440px;background:#FDF6E8;display:flex;flex-direction:column">
+    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C;flex-shrink:0">
+      <div class="mg-mh" style="color:#3B2510">✏️ Journal Board</div>
+      <div class="mg-mt" style="color:#7A5C3A">Your journal entries, live on the board.</div>
+    </div>
+    <iframe id="journal-miro-embed" src="" style="flex:1;border:none;min-height:360px" allowfullscreen></iframe>
+  </div>
+  <div class="bar2" style="gap:6px">
+    <button class="tb" id="b-jmiro-back">⬅️</button>
+    <button class="tb" id="b-jmiro-mg">🔍</button>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="tb" id="b-jmiro-full">⛶</button>
+      <span style="font-size:10px;color:#9FE1CB;letter-spacing:1px;white-space:nowrap">esc to exit</span>
+    </div>
+  </div>
+</div>
+
+<!-- 💎 GEMS HUB -->
 <div class="sc" id="s-gems">
-  <div class="card"><div class="gew">
-    <div class="gem-mhead"><div class="gem-mh">💎 Gems</div><div class="gem-mt">Wisdom discovered along the way.</div></div>
-    <div class="gem-band"></div>
-    <div id="gems-list"><div class="gem-empty">No Gems found yet.<br>They surface when you're ready.</div></div>
-    <div class="sp"></div>
+  <div class="card"><div class="ghw">
+    <div class="mg-mhead" style="background:#F5F3FF;border-bottom:3px solid #7c3aed"><div class="mg-mh" style="color:#5B21B6;font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">💎 Gems</div><div class="mg-mt" style="color:#7c3aed">Wisdom and values discovered along the way.</div></div>
+    <div style="background:#ede9fe;padding:7px 24px 6px;border-bottom:.5px solid #c4b5fd;width:100%"></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
+      <button class="gb" id="b-add-gem">Add a Gem</button>
+      <button class="gb" id="b-gems-list">LIST</button>
+      <button class="gb" id="b-gems-miro">MIRO</button>
+    </div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-gems-back">⬅️</button><button class="tb" id="b-gems-mg">🔍</button></div>
+</div>
+
+<!-- 💎 GEMS LIST -->
+<div class="sc" id="s-gems-list">
+  <div class="card" style="height:440px;max-height:440px;min-height:0;overflow:hidden;flex:none"><div class="gvw">
+    <div class="gvh">💎 Gems</div>
+    <div class="gvs" id="gv-count">Your gems</div>
+    <hr class="gvr">
+    <div id="gv-entries-list"><div class="gv-empty">No Gems yet.<br>They surface when you're ready.</div></div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-glist-back">⬅️</button><button class="tb" id="b-glist-mg">🔍</button></div>
+</div>
+
+<!-- 💎 GEMS MIRO -->
+<div class="sc" id="s-gems-miro">
+  <div class="card" style="min-height:440px;background:#F5F3FF;display:flex;flex-direction:column">
+    <div class="mg-mhead" style="background:#F5F3FF;border-bottom:3px solid #7c3aed;flex-shrink:0">
+      <div class="mg-mh" style="color:#5B21B6">💎 Gems Board</div>
+      <div class="mg-mt" style="color:#7c3aed">Your gems, live on the board.</div>
+    </div>
+    <iframe id="gems-miro-embed" src="" style="flex:1;border:none;min-height:360px" allowfullscreen></iframe>
+  </div>
+  <div class="bar2" style="gap:6px">
+    <button class="tb" id="b-gmiro-back">⬅️</button>
+    <button class="tb" id="b-gmiro-mg">🔍</button>
+    <div style="display:flex;align-items:center;gap:4px">
+      <button class="tb" id="b-gmiro-full">⛶</button>
+      <span style="font-size:10px;color:#9FE1CB;letter-spacing:1px;white-space:nowrap">esc to exit</span>
+    </div>
+  </div>
 </div>
 
 <!-- 🌸 TRIVIA -->
@@ -771,7 +840,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   const SB_KEY = 'sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh';
   const _sb = supabase.createClient(SB_URL, SB_KEY);
 
-  var _member = { user_id:null, email:null, display_name:null, miro_board_id:null };
+  var _member = { user_id:null, email:null, display_name:null, miro_board_id:null, journal_board_id:null, gems_board_id:null, briefing_board_id:null };
 
   async function loadMemberProfile(userId) {
     try {
@@ -780,6 +849,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
         _member.user_id = userId;
         _member.display_name = res.data.display_name || '';
         _member.miro_board_id = res.data.miro_board_id || null;
+        _member.journal_board_id = res.data.journal_board_id || null;
+        _member.gems_board_id = res.data.gems_board_id || null;
+        _member.briefing_board_id = res.data.briefing_board_id || null;
         var nameEl = document.getElementById('jcov-member-name');
         if (nameEl && _member.display_name) nameEl.textContent = _member.display_name.toUpperCase();
       }
@@ -817,6 +889,62 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     } catch(e) {
       if (statusEl) statusEl.textContent = '';
     }
+  }
+
+  async function postGemToMiro(text, attr) {
+    var boardId = _member.gems_board_id;
+    if (!boardId) return;
+    if (!boardId.endsWith('=')) boardId = boardId + '=';
+    try {
+      await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/cards', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer ' + MIRO_TOKEN},
+        body: JSON.stringify({
+          data:{ title: attr || 'Gem', description: text },
+          style:{ cardTheme:'violet' },
+          geometry:{ width:260 },
+          position:{ x:Math.floor(Math.random()*1200)-600, y:Math.floor(Math.random()*800)-400, origin:'center' }
+        })
+      });
+    } catch(e) { console.warn('Gem Miro post failed:', e); }
+  }
+
+  async function postJournalToMiro(text, topic, ctx) {
+    var boardId = _member.journal_board_id;
+    if (!boardId) return;
+    if (!boardId.endsWith('=')) boardId = boardId + '=';
+    var memberTag = _member.display_name ? '[' + _member.display_name + '] ' : '';
+    var noteContent = '<p>✏️ <strong>' + memberTag + '</strong></p><p>' + text + '</p>' + (ctx ? '<p><em>— ' + ctx + '</em></p>' : '');
+    try {
+      await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/sticky_notes', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer ' + MIRO_TOKEN},
+        body: JSON.stringify({
+          data:{ content: noteContent, shape:'rectangle' },
+          style:{ fillColor:'light_yellow', textAlign:'left', textAlignVertical:'top' },
+          geometry:{ width:260 },
+          position:{ x:Math.floor(Math.random()*1200)-600, y:Math.floor(Math.random()*800)-400, origin:'center' }
+        })
+      });
+    } catch(e) { console.warn('Journal Miro post failed:', e); }
+  }
+
+  function openGemsMiro() {
+    var boardId = _member.gems_board_id;
+    if (!boardId) { alert('No Gems board connected yet. Contact your facilitator.'); return; }
+    if (!boardId.endsWith('=')) boardId = boardId + '=';
+    var embed = document.getElementById('gems-miro-embed');
+    if (embed) embed.src = 'https://miro.com/app/live-embed/' + boardId + '/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
+    nav('s-gems-miro');
+  }
+
+  function openJournalMiro() {
+    var boardId = _member.journal_board_id;
+    if (!boardId) { alert('No Journal board connected yet. Contact your facilitator.'); return; }
+    if (!boardId.endsWith('=')) boardId = boardId + '=';
+    var embed = document.getElementById('journal-miro-embed');
+    if (embed) embed.src = 'https://miro.com/app/live-embed/' + boardId + '/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
+    nav('s-journal-miro');
   }
 
   function openSeaOfIdeas() {
@@ -928,7 +1056,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var pn=pageNums[id]; if(pn) addVisited(pn);
     if(id==='s-journal-view') renderJournalView();
     if(id==='s-journal-cover') initJournalCover();
-    if(id==='s-gems') renderGems();
+    if(id==='s-gems-list') renderGemsView();
     if(id==='s-change-password') initChangePassword();
     window.scrollTo(0,0);
   }
@@ -939,7 +1067,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(stack.length>0){ var d=stack.pop(); nav(d,false); }
   }
   function goMG(){
-    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-journal-miro','s-gems','s-gems-list','s-gems-miro','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
     if(utilScreens.indexOf(cur)===-1) mgOrigin=cur;
     var ov=document.getElementById("mg-overlay");
     if(ov) ov.classList.add("active");
@@ -1071,11 +1199,26 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     try{ var s=sessionStorage.getItem('jstarted'); if(!s){ s=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); sessionStorage.setItem('jstarted',s); } var el=document.getElementById('jcov-start'); if(el) el.textContent='Started '+s; }catch(e){}
   }
 
-  function loadGems(){ try{ var r=sessionStorage.getItem('gems'); return r?JSON.parse(r):[]; }catch(e){ return []; } }
-  function renderGems(){
-    var gems=loadGems(),list=document.getElementById('gems-list'); if(!list) return;
-    if(!gems.length){ list.innerHTML='<div class="gem-empty">No Gems found yet.<br>They surface when you\'re ready.</div>'; return; }
-    list.innerHTML=''; gems.forEach(function(g){ var c=document.createElement('div'); c.className='gem-card'; c.innerHTML='<div class="gem-quote">'+g.text+'</div><div class="gem-attr">'+g.attr+'</div>'; list.appendChild(c); });
+  async function renderGemsView(){
+    var list=document.getElementById('gv-entries-list'), count=document.getElementById('gv-count');
+    if(!list) return;
+    list.innerHTML='<div class="gv-empty" style="opacity:.5">Loading…</div>';
+    try{
+      var user=await _sb.auth.getUser();
+      if(!user||!user.data||!user.data.user){ list.innerHTML='<div class="gv-empty">Sign in to see your Gems.</div>'; return; }
+      var res=await _sb.from('gems').select('*').eq('user_id',user.data.user.id).order('created_at',{ascending:false});
+      var gems=(res.data)||[];
+      if(!gems.length){ list.innerHTML='<div class="gv-empty">No Gems yet.<br>They surface when you\'re ready.</div>'; if(count) count.textContent='Your gems'; return; }
+      if(count) count.textContent=gems.length+' '+(gems.length===1?'gem':'gems');
+      list.innerHTML='';
+      gems.forEach(function(g,i){
+        var card=document.createElement('div'); card.className='gcard';
+        var text=g.gem_text||''; var attr=g.attribution||'';
+        var preview=text.length>120?text.substring(0,120)+'…':text;
+        card.innerHTML='<div class="gcard-num">'+String(i+1).padStart(3,'0')+'</div><div class="gcard-text">'+preview+'</div>'+(attr?'<div class="gcard-attr">'+attr+'</div>':'');
+        list.appendChild(card);
+      });
+    }catch(e){ list.innerHTML='<div class="gv-empty">Could not load Gems.</div>'; }
   }
 
   function initChangePassword(){
@@ -1101,7 +1244,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var mgOv=document.getElementById("mg-overlay");
   if(mgOv) mgOv.addEventListener("click",function(e){ if(e.target===mgOv) closeMG(); });
   wire("b-mg-ret", function(){
-    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-gems','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
+    var utilScreens=['s-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more','s-what-is-t2t','s-t2t-goals','s-authors','s-thoughts-1','s-thoughts-2','s-thoughts-3','s-idea','s-idea-capture','s-journal','s-journal-capture','s-journal-cover','s-journal-view','s-journal-entry','s-journal-miro','s-gems','s-gems-list','s-gems-miro','s-tools','s-question','s-create','s-shape','s-share','s-dare','s-configure','s-change-password'];
     var behind=utilScreens.indexOf(cur)!==-1;
     closeMG();
     if(behind && mgOrigin){ nav(mgOrigin,false); mgOrigin=null; }
@@ -1246,13 +1389,38 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     var noteId=await saveEntryToSupabase(text,ctx,topic);
     if(noteId){ if(!topic) suggestTopic(noteId,text); }
     else { saveEntryLocal({text:text,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),page:ctx,topic:topic}); }
+    postJournalToMiro(text, topic, ctx);
     t.value=''; if(topicEl) topicEl.value='';
     var btn=document.getElementById('b-save-journal'); if(btn) btn.classList.remove('active');
   });
   var journalTA=document.getElementById('journal-text');
   if(journalTA) journalTA.addEventListener('input',function(){ var b=document.getElementById('b-save-journal'); if(b) b.classList.toggle('active',this.value.trim().length>0); });
 
+  // ✏️ JOURNAL MIRO
+  wire('b-journal-miro', openJournalMiro);
+  wire('b-jmiro-back', function(){ var embed=document.getElementById('journal-miro-embed'); if(embed) embed.src=''; nav('s-journal',false); });
+  wire('b-jmiro-mg', goMG);
+  wire('b-jmiro-full', function(){
+    var embed=document.getElementById('journal-miro-embed'); if(!embed) return;
+    if(embed.requestFullscreen) embed.requestFullscreen();
+    else if(embed.webkitRequestFullscreen) embed.webkitRequestFullscreen();
+    else if(embed.mozRequestFullScreen) embed.mozRequestFullScreen();
+  });
+
+  // 💎 GEMS
   wire('b-gems-back', function(){ if(mgOrigin){ nav(mgOrigin,false); } goMG(); }); wire('b-gems-mg', goMG);
+  wire('b-add-gem', function(){ nav('s-gems'); }); // placeholder until Add Gem screen is built
+  wire('b-gems-list', function(){ nav('s-gems-list'); renderGemsView(); });
+  wire('b-gems-miro', openGemsMiro);
+  wire('b-glist-back', function(){ nav('s-gems'); }); wire('b-glist-mg', goMG);
+  wire('b-gmiro-back', function(){ var embed=document.getElementById('gems-miro-embed'); if(embed) embed.src=''; nav('s-gems',false); });
+  wire('b-gmiro-mg', goMG);
+  wire('b-gmiro-full', function(){
+    var embed=document.getElementById('gems-miro-embed'); if(!embed) return;
+    if(embed.requestFullscreen) embed.requestFullscreen();
+    else if(embed.webkitRequestFullscreen) embed.webkitRequestFullscreen();
+    else if(embed.mozRequestFullScreen) embed.mozRequestFullScreen();
+  });
 
   wire('b-trivia-back', goMG); wire('b-trivia-mg', goMG);
   wire('b-authors', function(){ nav('s-authors'); }); wire('b-aut-back', goBack); wire('b-aut-mg', goMG);
