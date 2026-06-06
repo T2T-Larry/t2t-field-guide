@@ -154,8 +154,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .jcov-rule{width:60px;border:none;border-top:1px solid #111;margin:0 auto 12px}
 .jcov-sub{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#555}
 .jcov-dates{display:flex;gap:10px;align-items:center;justify-content:center;background:#fff;border:1.5px solid #C9A87C;border-radius:20px;padding:6px 16px;font-size:11px;color:#7A5C3A;letter-spacing:2px;width:100%;max-width:260px;box-sizing:border-box}
-.jvw{flex:1;display:flex;flex-direction:column;padding:18px 24px;background:#FDF6E8;overflow:hidden}
-#jv-entries-list{flex:1;overflow-y:auto;padding-right:4px}
+.jvw{flex:1;display:flex;flex-direction:column;padding:18px 24px;background:#FDF6E8;min-height:0}
+#jv-entries-list{flex:1;overflow-y:auto;padding-right:4px;min-height:0}
 .jvh{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#3B2510;margin-bottom:2px}
 .jvs{font-size:12px;font-style:italic;color:#7A5C3A;margin-bottom:12px}
 .jvr{border:none;border-top:1px solid #C9A87C;margin-bottom:14px}
@@ -1229,7 +1229,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     if(_jeEntries.length > 0){ showEntryAt(_jeEntries, 0); nav('s-journal-entry'); }
   });
   wire('b-jview-back', goBack); wire('b-jview-mg', goMG);
-  wire('b-jentry-back', goBack); wire('b-jentry-mg', goMG);
+  wire('b-jentry-back', function(){ nav('s-journal-view'); }); wire('b-jentry-mg', goMG);
   wire('b-je-back', function(){ nav('s-journal-view'); });
 
   wire('b-je-prev', function(){
