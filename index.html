@@ -439,6 +439,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="reader-line small">The other <strong>2%</strong> are new thoughts.</div>
       <div class="reader-spacer"></div>
       <div class="reader-line accent" style="font-size:24px">🔹 Thoughts with imagination.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line small" style="font-style:italic;color:#888">Walt Disney was fired from his first newspaper job for &ldquo;lacking imagination and having no original ideas.&rdquo;</div>
     </div>
     <div class="paging-strip">
       <button class="pg-btn" id="b-thoughts-prev-3"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
@@ -763,7 +765,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="more-link-left"><div class="more-link-icon">👤</div><div><div class="more-link-label">Meet the authors</div><div class="more-link-sub">A revolution that started with a conversation.</div></div></div>
       <div class="more-link-arrow"></div>
     </div>
-    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;padding:10px 2px 0;line-height:1.7">Walt Disney was fired from his first newspaper job for &ldquo;lacking imagination and having no original ideas.&rdquo;</div>
     <div class="sp"></div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-trivia-back">⬅️</button><button class="tb" id="b-trivia-mg">🔍</button></div>
@@ -880,13 +881,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     {text:'Thoughts happen. We are constantly thinking \u2014 consciously and subconsciously.', attr:'T2T Field Guide'}
   ]);
   T.registerGems('s-thoughts-3', [
-    {text:'Thoughts with imagination.', attr:'T2T Field Guide'}
+    {text:'Thoughts with imagination.', attr:'T2T Field Guide'},
+    {text:'Walt Disney was fired from his first newspaper job for “lacking imagination and having no original ideas.”', attr:'T2T Trivia'}
   ]);
   T.registerGems('s-dream-intro', [
     {text:'You are about to discover what you want \u2014 maybe for the first time.', attr:'T2T Field Guide'}
-  ]);
-  T.registerGems('s-trivia', [
-    {text:'Walt Disney was fired from his first newspaper job for \u201clacking imagination and having no original ideas.\u201d', attr:'T2T Trivia'}
   ]);
 
   /* ── SIGN-IN / AUTH ── */
@@ -958,11 +957,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   (function(){
     var orig = T.nav;
     T.nav = function(id){
-      orig(id);
       if(id === 's-trivia'){
         var fromCover = (T.getCtx() === 'Field Guide');
         document.getElementById('b-authors').style.display = fromCover ? '' : 'none';
       }
+      orig(id);
     };
   })();
   T.wire('b-authors', function(){T.nav('s-authors');});
