@@ -75,12 +75,8 @@
     _gemsRegistry[screenId] = candidates || [];
   }
 
-  function getGemCandidates() {
-    if (_gemsRegistry[cur] && _gemsRegistry[cur].length) return _gemsRegistry[cur];
-    for (var i = stack.length - 1; i >= 0; i--) {
-      if (_gemsRegistry[stack[i]] && _gemsRegistry[stack[i]].length) return _gemsRegistry[stack[i]];
-    }
-    return [];
+function getGemCandidates() {
+  return _gemsRegistry[cur] || [];
   }
 
   /* ── CONTEXT MAP ── */
