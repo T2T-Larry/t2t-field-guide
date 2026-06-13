@@ -608,7 +608,7 @@
   /* ── BACKPACK SCREEN WIRING ── */
   function wireBackpack(){
     /* MAP */
-    wire('b-map-back',function(){if(mgOrigin){nav(mgOrigin,false);}goMG();});
+    wire('b-map-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
     wire('b-map-mg',goMG);
     wire('tog-map-dream',  function(){togglePh('map-dream');});
     wire('tog-map-believe',function(){togglePh('map-believe');});
@@ -616,7 +616,7 @@
     wire('tog-map-journey',function(){togglePh('map-journey');});
 
     /* IDEA HUB */
-    wire('b-idea-back',function(){if(mgOrigin){nav(mgOrigin,false);}goMG();});
+    wire('b-idea-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
     wire('b-idea-mg',goMG);
     wire('b-capture-idea',function(){
       nav('s-idea-capture');
@@ -649,7 +649,7 @@
     });
 
     /* JOURNAL HUB */
-    wire('b-journal-back',function(){if(mgOrigin){nav(mgOrigin,false);}goMG();});
+    wire('b-journal-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
     wire('b-journal-mg',goMG);
     wire('b-add-note',function(){
       nav('s-journal-capture');
@@ -688,7 +688,7 @@
     wire('b-jmiro-full',function(){var e=document.getElementById('journal-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
     /* GEMS HUB */
-    wire('b-gems-back',function(){if(mgOrigin){nav(mgOrigin,false);}goMG();});
+    wire('b-gems-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
     wire('b-gems-mg',goMG);
     wire('b-add-gem',openGemAdd);
     wire('b-gadd-back',function(){nav('s-gems');}); wire('b-gadd-mg',goMG);
@@ -725,7 +725,7 @@
     wire('b-gmiro-full',function(){var e=document.getElementById('gems-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
     /* TOOLS */
-    wire('b-tools-back',function(){if(mgOrigin){nav(mgOrigin,false);}goMG();}); wire('b-tools-mg',goMG);
+    wire('b-tools-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}}); wire('b-tools-mg',goMG);
     wire('pb-question',function(){nav('s-question');}); wire('pb-create',function(){nav('s-create');});
     wire('pb-shape',function(){nav('s-shape');}); wire('pb-share',function(){nav('s-share');});
     wire('pb-dare',function(){nav('s-dare');}); wire('btn-configure',function(){nav('s-configure');});

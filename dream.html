@@ -759,6 +759,9 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-dream-back', function(){ T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
   T.wire('b-dream-fwd',  function(){ /* 1100 CREATE coming soon */ });
+
+  /* Tell backpack cur screen on startup so mgOrigin works correctly */
+  T.nav('s-dream', false);
 });
 </script>
 </body>
