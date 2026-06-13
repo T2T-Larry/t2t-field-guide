@@ -593,13 +593,15 @@
     wire('b-mg-ret',function(){
       var behind=_utilScreens.indexOf(cur)!==-1;
       closeMG();
-      if(behind&&mgOrigin){nav(mgOrigin,false);mgOrigin=null;}
+      if(behind&&mgOrigin){nav(mgOrigin,false);}
     });
     wire('b-mg-map',goMap);
     wire('b-mg-idea',   function(){closeMG();nav('s-idea',   false);});
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
     wire('b-mg-gems',   function(){closeMG();nav('s-gems',   false);});
     wire('b-mg-trivia', function(){closeMG();nav('s-trivia', false);});
+    wire('b-trivia-back', function(){ if(mgOrigin){nav(mgOrigin,false);}else{goBack();} });
+    wire('b-trivia-mg',   goMG);
     wire('b-mg-tools',  function(){closeMG();nav('s-tools',  false);});
   }
 
