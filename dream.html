@@ -1,0 +1,599 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Playfair Display', Georgia, serif;
+    background: #e4e0d8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #e4e0d8;
+    position: relative;
+  }
+
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  /* ── TOOLBARS ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 8px 12px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Dream Phase PP toolbar — deep dream blue */
+  .toolbar.dream-pp {
+    background: #1a3a5c;
+  }
+  .toolbar.dream-pp button {
+    background: #d6eaf8 !important;
+    border: 1px solid #a9cce3;
+    color: #1a3a5c;
+    font-size: 18px;
+    border-radius: 8px;
+    padding: 6px 18px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .toolbar.dream-pp button:hover { background: #5b9bd5 !important; color: #fff; }
+
+  /* Dream Phase MG/backpack toolbar — soft sky blue */
+  .toolbar.dream-mg {
+    background: #d6eaf8;
+  }
+  .toolbar.dream-mg button {
+    background: #eaf4fc !important;
+    border: 1px solid #a9cce3;
+    color: #1a3a5c;
+    font-size: 18px;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    flex: 1;
+    transition: background 0.15s;
+  }
+  .toolbar.dream-mg button:hover { background: #5b9bd5 !important; color: #fff; }
+
+  /* ── SCREEN CONTAINERS ── */
+  .sw {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 20px 20px 12px;
+  }
+
+  .xw {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 16px 16px 12px;
+    background: #FDF6E8;
+  }
+
+  /* ── 1000 TITLE PAGE ── */
+  .frame-stage {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    position: relative;
+  }
+
+  .frame-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .frame-wrap img {
+    width: 100%;
+    display: block;
+  }
+
+  .frame-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 65%;
+    pointer-events: none;
+  }
+
+  .frame-text .phase-label {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    color: #4a3520;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 6px;
+  }
+
+  .frame-text .the {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 400;
+    font-style: italic;
+    color: #2a1f0e;
+    line-height: 1.1;
+  }
+
+  .frame-text .dream {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 54px;
+    font-weight: 700;
+    color: #1a3a5c;
+    line-height: 1.0;
+    letter-spacing: -1px;
+  }
+
+  .frame-text .phase {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 400;
+    font-style: italic;
+    color: #2a1f0e;
+    line-height: 1.1;
+  }
+
+  .frame-text .sub-phases {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    color: #4a3520;
+    opacity: 0.6;
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+
+  /* ── MG SCREEN ── */
+  .mg-header {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1a3a5c;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #a9cce3;
+  }
+
+  .mg-item {
+    margin-bottom: 20px;
+  }
+
+  .mg-item h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a3a5c;
+    margin-bottom: 6px;
+  }
+
+  .mg-item p {
+    font-size: 14px;
+    color: #3b3020;
+    line-height: 1.6;
+  }
+
+  /* ── MAP SCREEN ── */
+  .map-container {
+    padding: 12px 0;
+  }
+
+  .map-phase {
+    margin-bottom: 20px;
+  }
+
+  .map-phase-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #1a3a5c;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #a9cce3;
+  }
+
+  .map-stop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  .map-stop.visited {
+    background: #c8e8df;
+    color: #0F6E56;
+    font-weight: 500;
+  }
+
+  .map-stop.current {
+    background: #d6eaf8;
+    color: #1a3a5c;
+    font-weight: 700;
+    border: 1px solid #a9cce3;
+  }
+
+  .map-stop.unvisited {
+    background: #f0ede8;
+    color: #888;
+  }
+
+  /* ── UTILITY SCREENS ── */
+  .util-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #3B2510;
+    margin-bottom: 12px;
+  }
+
+  .util-body {
+    font-size: 14px;
+    color: #3b3020;
+    line-height: 1.7;
+  }
+
+  .idea-btn, .journal-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    border: 1px solid #a9cce3;
+    background: #eaf4fc;
+    color: #1a3a5c;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+  }
+
+  .idea-btn:hover, .journal-btn:hover { background: #5b9bd5; color: #fff; }
+
+  textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #C9A87C;
+    background: #fff;
+    font-family: 'Caveat', cursive;
+    font-size: 17px;
+    color: #3B2510;
+    resize: vertical;
+    margin-top: 10px;
+  }
+
+  .submit-btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #a9cce3;
+    background: #1a3a5c;
+    color: #d6eaf8;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .submit-btn:hover { background: #5b9bd5; }
+</style>
+
+<div id="app">
+
+  <!-- ════════════════════════════════════════
+       1000 · DREAM PHASE GATEWAY
+  ════════════════════════════════════════ -->
+  <div id="pp-dream" class="screen active">
+    <div class="frame-stage">
+      <div class="frame-wrap">
+        <img src="assets/Victorian-Frame.svg" alt="Ornate Victorian border">
+        <div class="frame-text">
+          <div class="phase-label">· Phase One ·</div>
+          <div class="the">The</div>
+          <div class="dream">Dream</div>
+          <div class="phase">Phase</div>
+          <div class="sub-phases">Create &nbsp;·&nbsp; Shape &nbsp;·&nbsp; Share</div>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar dream-pp">
+      <button id="pp-dream-back">⬅️</button>
+      <button id="pp-dream-mg">🔍</button>
+      <button id="pp-dream-fwd">➡️</button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       1000 · MG — THE DREAM PHASE
+  ════════════════════════════════════════ -->
+  <div id="mg-dream" class="screen">
+    <div class="sw">
+      <div class="mg-header">🌈 The Dream Phase</div>
+
+      <div class="mg-item">
+        <h3>What is the Dream Phase?</h3>
+        <p>The Dream Phase is where possibility lives before it becomes a plan. Here, you're not solving problems yet — you're opening space. You give yourself permission to imagine without limits, to generate ideas freely, and to discover what genuinely excites you.</p>
+      </div>
+
+      <div class="mg-item">
+        <h3>What happens in this phase?</h3>
+        <p>You'll move through three creative territories: <strong>CREATE</strong> — where you let ideas flow freely and build your Sea of Ideas. <strong>SHAPE</strong> — where you cluster, sort, and find what resonates. <strong>SHARE</strong> — where your dream takes form as a vision others can see.</p>
+      </div>
+
+      <div class="mg-item">
+        <h3>Why does it matter?</h3>
+        <p>Most great inventions began as a thought someone wasn't sure they were allowed to have. The Dream Phase gives you that permission — officially, and in writing.</p>
+      </div>
+    </div>
+    <div class="toolbar dream-mg">
+      <button id="mg-dream-return">⬅️</button>
+      <button id="mg-dream-map">🗺️</button>
+      <button id="mg-dream-idea">💡</button>
+      <button id="mg-dream-journal">✏️</button>
+      <button id="mg-dream-egg">🌸</button>
+      <button id="mg-dream-tools">🛠️</button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       MAP — DREAM PHASE
+  ════════════════════════════════════════ -->
+  <div id="map-dream" class="screen">
+    <div class="sw">
+      <div class="mg-header">🗺️ Your Journey</div>
+      <div class="map-container">
+
+        <div class="map-phase">
+          <div class="map-phase-label">🚪 Introduction</div>
+          <div class="map-stop visited"><span>✓</span> What is T2T?</div>
+          <div class="map-stop visited"><span>✓</span> Every great invention...</div>
+          <div class="map-stop visited"><span>✓</span> What do you want?</div>
+          <div class="map-stop visited"><span>✓</span> Do you know what you want?</div>
+        </div>
+
+        <div class="map-phase">
+          <div class="map-phase-label">🌈 Dream Phase</div>
+          <div class="map-stop current"><span>📍</span> The Dream Phase</div>
+          <div class="map-stop unvisited"><span>○</span> Creative License</div>
+          <div class="map-stop unvisited"><span>○</span> Sea of Ideas</div>
+          <div class="map-stop unvisited"><span>○</span> PLUSing</div>
+          <div class="map-stop unvisited"><span>○</span> Cluster</div>
+          <div class="map-stop unvisited"><span>○</span> Resonance</div>
+          <div class="map-stop unvisited"><span>○</span> Sort to Simplicity</div>
+          <div class="map-stop unvisited"><span>○</span> Finding Your Passion</div>
+          <div class="map-stop unvisited"><span>○</span> Vision</div>
+          <div class="map-stop unvisited"><span>○</span> Vision Align</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="toolbar dream-mg">
+      <button id="map-dream-return">⬅️</button>
+      <button id="map-dream-map">🗺️</button>
+      <button id="map-dream-idea">💡</button>
+      <button id="map-dream-journal">✏️</button>
+      <button id="map-dream-egg">🌸</button>
+      <button id="map-dream-tools">🛠️</button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       IDEA — DREAM PHASE
+  ════════════════════════════════════════ -->
+  <div id="idea-dream" class="screen">
+    <div class="xw">
+      <div class="util-title">💡 Capture an Idea</div>
+      <button class="idea-btn" id="idea-dream-add">Add an idea</button>
+      <button class="idea-btn" id="idea-dream-see">See my ideas</button>
+    </div>
+    <div class="toolbar dream-mg">
+      <button id="idea-dream-return">⬅️</button>
+      <button id="idea-dream-map">🗺️</button>
+      <button id="idea-dream-idea">💡</button>
+      <button id="idea-dream-journal">✏️</button>
+      <button id="idea-dream-egg">🌸</button>
+      <button id="idea-dream-tools">🛠️</button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       JOURNAL — DREAM PHASE
+  ════════════════════════════════════════ -->
+  <div id="journal-dream" class="screen">
+    <div class="xw">
+      <div class="util-title">✏️ Journal</div>
+      <button class="journal-btn" id="journal-dream-add">Write an entry</button>
+      <button class="journal-btn" id="journal-dream-view">View my journal</button>
+    </div>
+    <div class="toolbar dream-mg">
+      <button id="journal-dream-return">⬅️</button>
+      <button id="journal-dream-map">🗺️</button>
+      <button id="journal-dream-idea">💡</button>
+      <button id="journal-dream-journal">✏️</button>
+      <button id="journal-dream-egg">🌸</button>
+      <button id="journal-dream-tools">🛠️</button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       MISC — DREAM PHASE
+  ════════════════════════════════════════ -->
+  <div id="misc-dream" class="screen">
+    <div class="xw">
+      <div class="util-title">🌸 You noticed something.</div>
+      <p class="util-body">That's the beginning of everything. Jot it down before it disappears.</p>
+      <textarea id="misc-dream-text" placeholder="What caught your attention?"></textarea>
+      <button class="submit-btn" id="misc-dream-submit">Capture it ✓</button>
+    </div>
+    <div class="toolbar dream-mg">
+      <button id="misc-dream-return">⬅️</button>
+      <button id="misc-dream-map">🗺️</button>
+      <button id="misc-dream-idea">💡</button>
+      <button id="misc-dream-journal">✏️</button>
+      <button id="misc-dream-egg">🌸</button>
+      <button id="misc-dream-tools">🛠️</button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════
+       TOOLS — DREAM PHASE
+  ════════════════════════════════════════ -->
+  <div id="tools-dream" class="screen">
+    <div class="xw">
+      <div class="util-title">🛠️ Dream Phase Tools</div>
+      <p class="util-body">Tools introduced in this phase will appear here as you encounter them.</p>
+      <br>
+      <p class="util-body" style="opacity:0.5; font-style:italic;">🎫 Wishing License<br>🌊 Sea of Ideas<br>✨ Lightning Bug</p>
+    </div>
+    <div class="toolbar dream-mg">
+      <button id="tools-dream-return">⬅️</button>
+      <button id="tools-dream-map">🗺️</button>
+      <button id="tools-dream-idea">💡</button>
+      <button id="tools-dream-journal">✏️</button>
+      <button id="tools-dream-egg">🌸</button>
+      <button id="tools-dream-tools">🛠️</button>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<script>
+  let cur = 'pp-dream';
+  let prev = 'pp-dream';
+  let mgOrigin = '';
+
+  function nav(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id)?.classList.add('active');
+    cur = id;
+  }
+
+  function wire(id, fn) {
+    document.getElementById(id)?.addEventListener('click', fn);
+  }
+
+  // ── PP-DREAM TOOLBAR ──
+  wire('pp-dream-back', () => {
+    // Return to Introduction — cross-file nav
+    if (window.T && T.goPhase) {
+      T.goPhase('index.html');
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+  wire('pp-dream-mg', () => {
+    mgOrigin = 'mg-dream';
+    prev = cur;
+    nav('mg-dream');
+  });
+  wire('pp-dream-fwd', () => {
+    // Forward to 1100 CREATE — placeholder until built
+    nav('pp-dream'); // stays for now
+  });
+
+  // ── MG-DREAM BACKPACK ──
+  wire('mg-dream-return', () => nav(prev || 'pp-dream'));
+  wire('mg-dream-map', () => { mgOrigin = 'mg-dream'; nav('map-dream'); });
+  wire('mg-dream-idea', () => { mgOrigin = 'mg-dream'; nav('idea-dream'); });
+  wire('mg-dream-journal', () => { mgOrigin = 'mg-dream'; nav('journal-dream'); });
+  wire('mg-dream-egg', () => {
+    sendPrompt('🌸 [on: The Dream Phase]');
+    mgOrigin = 'mg-dream';
+    nav('misc-dream');
+  });
+  wire('mg-dream-tools', () => {
+    sendPrompt('🛠️ [on: The Dream Phase]');
+    mgOrigin = 'mg-dream';
+    nav('tools-dream');
+  });
+
+  // ── MAP-DREAM BACKPACK ──
+  wire('map-dream-return', () => nav(mgOrigin || 'mg-dream'));
+  wire('map-dream-map', () => nav('map-dream'));
+  wire('map-dream-idea', () => nav('idea-dream'));
+  wire('map-dream-journal', () => nav('journal-dream'));
+  wire('map-dream-egg', () => { sendPrompt('🌸 [on: The Dream Phase]'); nav('misc-dream'); });
+  wire('map-dream-tools', () => { sendPrompt('🛠️ [on: The Dream Phase]'); nav('tools-dream'); });
+
+  // ── IDEA-DREAM BACKPACK ──
+  wire('idea-dream-return', () => nav(mgOrigin || 'mg-dream'));
+  wire('idea-dream-map', () => nav('map-dream'));
+  wire('idea-dream-idea', () => nav('idea-dream'));
+  wire('idea-dream-journal', () => nav('journal-dream'));
+  wire('idea-dream-egg', () => { sendPrompt('🌸 [on: The Dream Phase]'); nav('misc-dream'); });
+  wire('idea-dream-tools', () => { sendPrompt('🛠️ [on: The Dream Phase]'); nav('tools-dream'); });
+  wire('idea-dream-add', () => sendPrompt('💡 [on: The Dream Phase] Add an idea'));
+  wire('idea-dream-see', () => sendPrompt('💡 [on: The Dream Phase] See my ideas'));
+
+  // ── JOURNAL-DREAM BACKPACK ──
+  wire('journal-dream-return', () => nav(mgOrigin || 'mg-dream'));
+  wire('journal-dream-map', () => nav('map-dream'));
+  wire('journal-dream-idea', () => nav('idea-dream'));
+  wire('journal-dream-journal', () => nav('journal-dream'));
+  wire('journal-dream-egg', () => { sendPrompt('🌸 [on: The Dream Phase]'); nav('misc-dream'); });
+  wire('journal-dream-tools', () => { sendPrompt('🛠️ [on: The Dream Phase]'); nav('tools-dream'); });
+  wire('journal-dream-add', () => sendPrompt('✏️ [on: The Dream Phase] Write an entry'));
+  wire('journal-dream-view', () => sendPrompt('✏️ [on: The Dream Phase] View my journal'));
+
+  // ── MISC-DREAM BACKPACK ──
+  wire('misc-dream-return', () => nav(mgOrigin || 'mg-dream'));
+  wire('misc-dream-map', () => nav('map-dream'));
+  wire('misc-dream-idea', () => nav('idea-dream'));
+  wire('misc-dream-journal', () => nav('journal-dream'));
+  wire('misc-dream-egg', () => { sendPrompt('🌸 [on: The Dream Phase]'); nav('misc-dream'); });
+  wire('misc-dream-tools', () => { sendPrompt('🛠️ [on: The Dream Phase]'); nav('tools-dream'); });
+  wire('misc-dream-submit', () => {
+    const txt = document.getElementById('misc-dream-text')?.value?.trim();
+    if (txt) sendPrompt('🌸 [on: The Dream Phase] ' + txt);
+  });
+
+  // ── TOOLS-DREAM BACKPACK ──
+  wire('tools-dream-return', () => nav(mgOrigin || 'mg-dream'));
+  wire('tools-dream-map', () => nav('map-dream'));
+  wire('tools-dream-idea', () => nav('idea-dream'));
+  wire('tools-dream-journal', () => nav('journal-dream'));
+  wire('tools-dream-egg', () => { sendPrompt('🌸 [on: The Dream Phase]'); nav('misc-dream'); });
+  wire('tools-dream-tools', () => { sendPrompt('🛠️ [on: The Dream Phase]'); nav('tools-dream'); });
+
+  function sendPrompt(text) {
+    console.log('sendPrompt:', text);
+  }
+</script>
