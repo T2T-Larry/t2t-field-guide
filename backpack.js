@@ -167,6 +167,9 @@
   /* ── CORE NAV ── */
   function nav(id, push) {
     var t=document.getElementById(id); if(!t) return;
+    var fg=document.getElementById('fg-root');
+    var pool=document.getElementById('bp-util-pool');
+    if(pool&&fg&&t.parentNode===pool){ fg.appendChild(t); }
     document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
     t.classList.add('active');
     if (push!==false) stack.push(cur);
@@ -737,8 +740,10 @@
     html+='<div class="sc" id="s-configure"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Settings</div><div class="cat-title">⚙️</div><div class="cat-desc">Set conditions for your session.</div><button class="tool-row">Session Setup <span class="arr">→</span></button><button class="tool-row" id="b-go-change-pw">Change Password <span class="arr">→</span></button><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-cfg-back">⬅️</button><button class="tb" id="b-cfg-mg">🔍</button></div></div>';
     html+='<div class="sc" id="s-change-password"><div class="card"><div class="cpw"><div class="cp-eyebrow">Settings</div><div class="cp-title">Change Password</div><div class="cp-desc">Enter a new password for your account.</div><label class="cp-lbl">New Password</label><input class="cp-input" type="password" id="cp-new-password" placeholder="at least 6 characters"><button class="cp-btn active" id="b-cp-save">Save Password</button><div class="cp-msg" id="cp-msg"></div></div></div><div class="bar2"><button class="tb" id="b-cp-back">⬅️</button><button class="tb" id="b-cp-mg">🔍</button></div></div>';
     var wrap=document.createElement('div');
+    wrap.id='bp-util-pool';
+    wrap.style.cssText='position:absolute;top:0;left:0;width:100%;height:0;overflow:hidden;pointer-events:none;z-index:-1';
     wrap.innerHTML=html;
-    while(wrap.firstChild) fg.appendChild(wrap.firstChild);
+    fg.appendChild(wrap);
   }
 
   document.addEventListener('DOMContentLoaded',function(){
