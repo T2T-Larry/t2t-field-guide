@@ -86,13 +86,8 @@
     var el = document.getElementById('trivia-links');
     if (!el) return;
     el.innerHTML = '';
-    // Find links for current primary page or walk stack
+    // Only show trivia registered for the exact primary page or mgOrigin — no stack walk
     var links = _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
-    if (!links.length) {
-      for (var i = stack.length - 1; i >= 0; i--) {
-        if (_triviaRegistry[stack[i]]) { links = _triviaRegistry[stack[i]]; break; }
-      }
-    }
     if (!links.length) {
       el.innerHTML = '<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-style:italic;color:#aaa;padding:16px 0">Nothing here yet.</div>';
       return;
