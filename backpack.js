@@ -64,19 +64,52 @@
     } catch(e) {}
   }
 
-  /* ── GEMS REGISTRY ──
-     registerGems(screenId, candidates) called by each page.
-     Discovery: cur screen first, then walk stack backward.
-     "Write your own" zone always present — no candidates needed.
-  */
+  /* ── GEMS REGISTRY ── */
   var _gemsRegistry = {};
 
   function registerGems(screenId, candidates) {
     _gemsRegistry[screenId] = candidates || [];
   }
 
-function getGemCandidates() {
-  return _gemsRegistry[cur] || [];
+  function getGemCandidates() {
+    return _gemsRegistry[cur] || [];
+  }
+
+  /* ── TRIVIA REGISTRY ── */
+  var _triviaRegistry = {};
+
+  function registerTrivia(screenId, links) {
+    _triviaRegistry[screenId] = links || [];
+  }
+
+  function renderTrivia() {
+    var el = document.getElementById('trivia-links');
+    if (!el) return;
+    el.innerHTML = '';
+    // Find links for current primary page or walk stack
+    var links = _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
+    if (!links.length) {
+      for (var i = stack.length - 1; i >= 0; i--) {
+        if (_triviaRegistry[stack[i]]) { links = _triviaRegistry[stack[i]]; break; }
+      }
+    }
+    if (!links.length) {
+      el.innerHTML = '<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-style:italic;color:#aaa;padding:16px 0">Nothing here yet.</div>';
+      return;
+    }
+    links.forEach(function(link) {
+      var div = document.createElement('div');
+      div.className = 'more-link';
+      div.innerHTML =
+        '<div class="more-link-left">' +
+          '<div class="more-link-icon">' + link.icon + '</div>' +
+          '<div><div class="more-link-label">' + link.label + '</div>' +
+          (link.sub ? '<div class="more-link-sub">' + link.sub + '</div>' : '') +
+          '</div></div>' +
+        '<div class="more-link-arrow"></div>';
+      div.addEventListener('click', function() { nav(link.target); });
+      el.appendChild(div);
+    });
   }
 
   /* ── CONTEXT MAP ── */
@@ -145,6 +178,7 @@ function getGemCandidates() {
     cur=id;
     if (_primaryPages.indexOf(id)!==-1) primaryPage=id;
     var pn=_pageNums[id]; if(pn) addVisited(pn);
+    if (id==='s-trivia')          renderTrivia();
     if (id==='s-journal-view')    renderJournalView();
     if (id==='s-journal-cover')   initJournalCover();
     if (id==='s-gems-list')       renderGemsView();
@@ -670,6 +704,7 @@ function getGemCandidates() {
     registerGems:registerGems, registerCtx:registerCtx,
     registerMap:registerMap, registerMore:registerMore,
     registerPageNum:registerPageNum, registerUtilScreen:registerUtilScreen,
+    registerTrivia:registerTrivia,
     setPrimaryPages:function(arr){_primaryPages=arr;},
     loadMemberProfile:loadMemberProfile,
     loadVisitedFromSupabase:loadVisitedFromSupabase,
