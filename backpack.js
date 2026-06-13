@@ -77,9 +77,15 @@
 
   /* ── TRIVIA REGISTRY ── */
   var _triviaRegistry = {};
+  var _triviaScreens = [];   /* all screen IDs registered as trivia targets */
 
   function registerTrivia(screenId, links) {
     _triviaRegistry[screenId] = links || [];
+    /* track the target screen IDs so goBack() can identify trivia pages */
+    (links||[]).forEach(function(link){
+      if(link.target && _triviaScreens.indexOf(link.target)===-1)
+        _triviaScreens.push(link.target);
+    });
   }
 
   function renderTrivia() {
@@ -187,7 +193,55 @@
   function goBack() {
     var ov=document.getElementById('mg-overlay');
     if (ov&&ov.classList.contains('active')){ ov.classList.remove('active'); return; }
-    if (stack.length>0){ var d=stack.pop(); nav(d,false); }
+    /* trivia content page → always return to trivia hub */
+    if (_triviaScreens.indexOf(cur)!==-1){ nav('s-trivia',false); return; }
+    /* utility hub → reopen MG overlay */
+    if (_utilScreens.indexOf(cur)!==-1){ goMG(); return; }
+    /* PP → go to previous PP by page number */
+    goBackByNum();
+  }
+
+  /* ── NUMERIC BACK NAV ── */
+  function currentFile() {
+    var path = window.location.pathname;
+    return path.substring(path.lastIndexOf('/')+1) || 'index.html';
+  }
+
+  async function navToPageNum(num) {
+    try {
+      var res = await _sb.from('pages').select('*').eq('page_num',num).single();
+      if (!res.data) return;
+      var page = res.data;
+      if (page.phase_file === currentFile()) {
+        nav(page.screen_id, false);
+      } else {
+        sessionStorage.setItem('bp_target', num);
+        goPhase(page.phase_file);
+      }
+    } catch(e) { console.warn('navToPageNum failed:', e); }
+  }
+
+  async function goBackByNum() {
+    var curNum = _pageNums[cur];
+    if (!curNum) { if(stack.length>0) nav(stack.pop(),false); return; }
+    try {
+      /* find the nearest registered page_num below current in the pages table */
+      var res = await _sb.from('pages')
+        .select('*')
+        .in('page_type', ['pp','phase'])
+        .lt('page_num', curNum)
+        .order('page_num', {ascending:false})
+        .limit(1)
+        .single();
+      if (!res.data) return;
+      var page = res.data;
+      if (page.phase_file === currentFile()) {
+        nav(page.screen_id, false);
+      } else {
+        sessionStorage.setItem('bp_target', page.page_num);
+        goPhase(page.phase_file);
+      }
+    } catch(e) { if(stack.length>0) nav(stack.pop(),false); }
   }
 
   function goMG() {
@@ -243,6 +297,11 @@
       var isCur=(step.num===curNum), isVis=visited.indexOf(step.num)!==-1&&!isCur;
       div.className='st'+(isCur?' here':isVis?' vis':' unv');
       div.innerHTML='<span class="sn">'+(isCur?'📍':isVis?'👣':step.num)+'</span><span class="sl">'+step.label+'</span>';
+      /* visited and current stops are tappable — navigate there */
+      if (isCur||isVis) {
+        div.style.cursor='pointer';
+        div.addEventListener('click',(function(n){ return function(){ closeMG(); navToPageNum(n); }; })(step.num));
+      }
       el.appendChild(div);
     });
   }
@@ -709,12 +768,19 @@
     getCtx:getCtx, renderMap:renderMap,
     openSeaOfIdeas:openSeaOfIdeas, openJournalMiro:openJournalMiro,
     openGemsMiro:openGemsMiro, openGemAdd:openGemAdd,
-    openJournalView:openJournalView
+    openJournalView:openJournalView,
+    navToPageNum:navToPageNum, currentFile:currentFile
   };
 
   document.addEventListener('DOMContentLoaded',function(){
     injectMGOverlay();
     wireBackpack();
+    /* cross-file landing — check if we were sent here to a specific page */
+    var bpTarget = sessionStorage.getItem('bp_target');
+    if (bpTarget) {
+      sessionStorage.removeItem('bp_target');
+      navToPageNum(bpTarget);
+    }
   });
 
 })();
