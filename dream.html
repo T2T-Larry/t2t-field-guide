@@ -16,22 +16,14 @@
   .sc{display:none!important;pointer-events:none}
   .sc.active{display:flex!important;flex-direction:column;pointer-events:auto}
   .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
-  /* Toolbar base — overridden per phase below */
   .bar2{display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid rgba(255,255,255,.15)}
   .tb{width:80px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s,background .15s}
   .tb:hover:not(.dim){border-color:#5b9bd5}
   .tb.dim{opacity:.32;cursor:default;pointer-events:none}
-  /* Dream Phase PP toolbar — deep dream blue */
   .bar-dream-pp{background:#1a3a5c;border:2px solid #14305a;border-top:1px solid #2a5080}
   .bar-dream-pp .tb{background:#d6eaf8!important;border:1px solid #a9cce3;color:#1a3a5c}
   .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5;color:#fff}
-  /* Dream Phase MG/backpack toolbar — soft sky blue */
-  .bar-dream-mg{background:#d6eaf8;border:2px solid #a9cce3;border-top:1px solid #c0dff5}
-  .bar-dream-mg .tb{background:#eaf4fc!important;border:1px solid #a9cce3;color:#1a3a5c}
-  .bar-dream-mg .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5;color:#fff}
-  /* Content containers */
   .sw{flex:1;display:flex;flex-direction:column;padding:28px 32px;background:#ffffff;overflow-y:auto}
-  /* Title page */
   .title-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 20px;background:#e4e0d8;text-align:center}
   .phase-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#7a6040;margin-bottom:24px}
   .phase-the{font-size:24px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.1}
@@ -45,9 +37,6 @@
 <body>
 <div class="fg" id="fg-root">
 
-  <!-- ══════════════════════════════════════
-       1000 · THE DREAM PHASE — Title Page
-  ══════════════════════════════════════ -->
   <div class="sc card active" id="s-dream">
     <div class="title-stage">
       <div class="phase-eyebrow">· Phase One ·</div>
@@ -66,14 +55,13 @@
 </div><!-- .fg -->
 
 <script>
-(function(){
+document.addEventListener('DOMContentLoaded', function(){
+  var T = window.T2T;
 
-  /* ── REGISTER PAGES ── */
   T.setPrimaryPages(['s-dream']);
   T.registerPageNum('s-dream', '1000');
   T.registerCtx('s-dream', 'The Dream Phase');
 
-  /* ── TRIVIA LINKS for 🌸 ── */
   T.registerTrivia('s-dream', [
     {text:'Walt Disney described dreaming as "a kind of pleasant madness." T2T calls it the beginning of everything.', attr:'T2T Trivia'},
     {text:'Every great invention started as a thought someone wasn\'t sure they were allowed to have.', attr:'T2T Field Guide'},
@@ -81,12 +69,10 @@
     {text:'Einstein said imagination is more important than knowledge. The Dream Phase gives you permission to imagine first.', attr:'T2T Trivia'}
   ]);
 
-  /* ── WIRE PP TOOLBAR ── */
   T.wire('b-dream-back', function(){ T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
   T.wire('b-dream-fwd',  function(){ /* wire to 1100 CREATE when built */ });
-
-})();
+});
 </script>
 </body>
 </html>
