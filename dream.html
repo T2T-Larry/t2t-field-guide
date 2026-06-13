@@ -20,11 +20,11 @@
   .tb{width:80px;height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
   .tb:hover:not(.dim){border-color:#378ADD}
   .tb.dim{opacity:.32;cursor:default;pointer-events:none}
-  /* Dream Phase PP toolbar */
+  /* Dream Phase PP toolbar — deep blue */
   .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}
   .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}
   .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}
-  /* Title page */
+  /* Title page body */
   .title-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 20px;background:#e4e0d8;text-align:center}
   .phase-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#7a6040;margin-bottom:24px}
   .phase-the{font-size:24px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.1}
@@ -38,8 +38,8 @@
 <body>
 <div class="fg" id="fg-root">
 
-<!-- 1000 · THE DREAM PHASE — Title Page -->
-<div class="sc card active" id="s-dream">
+<!-- ══ 1000 · THE DREAM PHASE ══ -->
+<div class="sc card" id="s-dream">
   <div class="title-stage">
     <div class="phase-eyebrow">· Phase One ·</div>
     <div class="phase-the">The</div>
@@ -530,6 +530,7 @@
   <div class="cp-msg" id="cp-msg"></div>
 </div></div><div class="bar2"><button class="tb" id="b-cp-back">⬅️</button><button class="tb" id="b-cp-mg">🔍</button></div></div>
 
+
 </div><!-- /.fg -->
 
 <script>
@@ -540,16 +541,16 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerPageNum('s-dream', '1000');
   T.registerCtx('s-dream', 'The Dream Phase');
 
-  T.registerTrivia('s-dream', [
-    {text:'Walt Disney described dreaming as "a kind of pleasant madness." T2T calls it the beginning of everything.', attr:'T2T Trivia'},
-    {text:'Every great invention started as a thought someone wasn't sure they were allowed to have.', attr:'T2T Field Guide'},
-    {text:'The word "dream" comes from the Old English dr\u0113am — which originally meant joy, music, and noise. Dreams were never meant to be quiet.', attr:'Etymology Trivia'},
-    {text:'Einstein said imagination is more important than knowledge. The Dream Phase gives you permission to imagine first.', attr:'T2T Trivia'}
+  T.registerGems('s-dream', [
+    {text:'You are about to discover what you really want — maybe for the first time.', attr:'T2T Field Guide'}
   ]);
 
   T.wire('b-dream-back', function(){ T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
-  T.wire('b-dream-fwd',  function(){ /* wire to 1100 CREATE when built */ });
+  T.wire('b-dream-fwd',  function(){ /* 1100 CREATE — coming soon */ });
+
+  /* Activate the dream screen */
+  T.nav('s-dream', false);
 });
 </script>
 </body>
