@@ -890,7 +890,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   T.wire('b-want-back', function(){T.nav('s-invention');}); T.wire('b-want-mg', T.goMG);
   T.wire('b-want-next', function(){T.nav('s-know');});
   T.wire('b-know-back', function(){T.nav('s-want');}); T.wire('b-know-mg', T.goMG);
-  T.wire('b-know-no',    function(){T.nav('s-dream-intro');});
+  T.wire('b-know-no',    function(){window.location.href='dream.html';});
   T.wire('b-know-sortof',function(){if(typeof sendPrompt!=='undefined') sendPrompt('Sort of [on: Do you know what you want?]');});
   T.wire('b-know-yes',   function(){if(typeof sendPrompt!=='undefined') sendPrompt('Yes [on: Do you know what you want?]');});
 
