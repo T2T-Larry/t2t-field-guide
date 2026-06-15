@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
-<style>@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;margin:0!important;transform:scale(0.5);transform-origin:top left}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important}.bar2{display:none!important}button[onclick]{display:none!important}#cl-print-area{overflow:visible!important;max-height:none!important}.reader-wrap{overflow:visible!important;max-height:none!important}}</style>
+<style>@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;margin:0!important}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important}.bar2{display:none!important}button[onclick]{display:none!important}#cl-print-area{overflow:visible!important;max-height:none!important}.reader-wrap{overflow:visible!important;max-height:none!important}#cl-print-area>div{transform:scale(0.5)!important;transform-origin:top left!important}}</style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#d0d0d0}
@@ -269,24 +269,16 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- ══ 1100 · CREATE ══ -->
 <div class="sc card" id="s-create-hub">
   <div class="reader-wrap">
-    <div class="reader-body" style="gap:16px">
+    <div class="reader-body" style="gap:20px">
       <div class="reader-eyebrow">🌈 Dream · CREATE</div>
       <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38">CREATE</div>
-      <div class="reader-line italic" style="font-size:15px;color:#555;margin-top:-8px;line-height:1.7">Fill your Sea of Ideas.<br>No commitment. No explanation. No wrong answers.</div>
-      <div style="width:100%;max-width:420px;margin-top:4px;display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:#f0faf6;border-left:3px solid #0F6E56;border-radius:0 8px 8px 0">
-          <div style="font-size:18px;flex-shrink:0;margin-top:1px">📜</div>
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#0F6E56;letter-spacing:1px;margin-bottom:3px;font-family:'Playfair Display',serif">Your Creative License</div>
-            <div style="font-size:12px;color:#3a5a4a;line-height:1.5;font-style:italic;font-family:'Playfair Display',serif">Permission to want freely and follow what catches you — without knowing why.</div>
-          </div>
+      <div style="text-align:left;width:100%;max-width:380px">
+        <div style="font-family:'Playfair Display',serif;font-size:15px;color:#111;line-height:2.0">
+          <div>📜 &nbsp;Creative License</div>
+          <div>💭 &nbsp;What I Might Want</div>
         </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:#f0faf6;border-left:3px solid #0F6E56;border-radius:0 8px 8px 0">
-          <div style="font-size:18px;flex-shrink:0;margin-top:1px">💭</div>
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#0F6E56;letter-spacing:1px;margin-bottom:3px;font-family:'Playfair Display',serif">What I Might Want</div>
-            <div style="font-size:12px;color:#3a5a4a;line-height:1.5;font-style:italic;font-family:'Playfair Display',serif">Open doors into everything you might want to Do, Be, Have, Go, Make, Feel, and more.</div>
-          </div>
+        <div style="margin-top:16px;font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.7">
+          Sea of Ideas.<br>No commitment. No explanation. No wrong answers.
         </div>
       </div>
     </div>
@@ -376,7 +368,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 5: Certificate + Print ══ -->
 <div class="sc card" id="s-cl-5">
   <div class="reader-wrap" style="background:#fdf8f0;overflow-y:auto" id="cl-print-area">
-    <div style="padding:12px 24px 4px;text-align:center">
+    <div style="transform:scale(0.72);transform-origin:top center;padding:12px 24px 4px;text-align:center">
       <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#5a3e0a;letter-spacing:3px;text-transform:uppercase">Creative License</div>
       <div style="font-size:9px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;margin-top:2px;font-family:'Playfair Display',serif;font-style:italic">Permission to Think Creatively</div>
     </div>
@@ -1078,20 +1070,31 @@ document.addEventListener('DOMContentLoaded', function(){
     function setName(name){
       var n1 = document.getElementById('cl-member-name');
       var n2 = document.getElementById('cl-cert-name');
-      if(n1) n1.textContent = name || 'Traveler';
-      if(n2) n2.textContent = name || 'Traveler';
+      if(n1) n1.textContent = name;
+      if(n2) n2.textContent = name;
     }
-    /* Poll until profile loaded (user_id set), then use display_name or email */
+    /* Try display_name from profiles first, fall back to auth email */
     var attempts = 0;
     function tryName(){
       var m = T.getMember && T.getMember();
       if(m && m.user_id){
-        setName(m.display_name || m.email || 'Traveler');
+        if(m.display_name){
+          setName(m.display_name);
+        } else {
+          /* display_name empty — get email from auth */
+          var sb = T.sb;
+          if(sb){
+            sb.auth.getUser().then(function(res){
+              var u = res && res.data && res.data.user;
+              var email = (u && u.email) || '';
+              var name = email ? email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) : 'Traveler';
+              setName(name);
+            }).catch(function(){ setName('Traveler'); });
+          } else { setName('Traveler'); }
+        }
       } else if(attempts++ < 30){
         setTimeout(tryName, 250);
-      } else {
-        setName('Traveler');
-      }
+      } else { setName('Traveler'); }
     }
     tryName();
   })();
