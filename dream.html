@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
-<style>@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;margin:0!important}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important}.bar2{display:none!important}button[onclick]{display:none!important}#cl-print-area{overflow:visible!important;max-height:none!important}.reader-wrap{overflow:visible!important;max-height:none!important}#cl-print-area>div{transform:scale(0.5)!important;transform-origin:top left!important}}</style>
+<style>@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;width:100%!important;max-width:100%!important;margin:0!important}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important}.bar2{display:none!important}button[onclick]{display:none!important}#cl-print-area{overflow:visible!important;max-height:none!important}.reader-wrap{overflow:visible!important;max-height:none!important}#cl-cert-wrap{transform:none!important;width:100%!important;margin-left:0!important}}</style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#d0d0d0}
@@ -269,15 +269,15 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- ══ 1100 · CREATE ══ -->
 <div class="sc card" id="s-create-hub">
   <div class="reader-wrap">
-    <div class="reader-body" style="gap:20px">
+    <div class="reader-body" style="gap:24px">
       <div class="reader-eyebrow">🌈 Dream · CREATE</div>
       <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38">CREATE</div>
-      <div style="text-align:left;width:100%;max-width:380px">
-        <div style="font-family:'Playfair Display',serif;font-size:15px;color:#111;line-height:2.0">
+      <div style="text-align:left;width:100%;max-width:340px">
+        <div style="font-family:'Playfair Display',serif;font-size:18px;color:#111;line-height:2.4">
           <div>📜 &nbsp;Creative License</div>
           <div>💭 &nbsp;What I Might Want</div>
         </div>
-        <div style="margin-top:16px;font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.7">
+        <div style="margin-top:18px;font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.8">
           Sea of Ideas.<br>No commitment. No explanation. No wrong answers.
         </div>
       </div>
@@ -368,7 +368,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 5: Certificate + Print ══ -->
 <div class="sc card" id="s-cl-5">
   <div class="reader-wrap" style="background:#fdf8f0;overflow-y:auto" id="cl-print-area">
-    <div style="transform:scale(0.72);transform-origin:top center;padding:12px 24px 4px;text-align:center">
+    <div id="cl-cert-wrap" style="transform:scale(0.65);transform-origin:top center;width:154%;margin-left:-27%">
+    <div style="padding:12px 24px 4px;text-align:center">
       <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#5a3e0a;letter-spacing:3px;text-transform:uppercase">Creative License</div>
       <div style="font-size:9px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;margin-top:2px;font-family:'Playfair Display',serif;font-style:italic">Permission to Think Creatively</div>
     </div>
@@ -403,6 +404,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       </div>
       <div id="cl-date" style="font-size:8px;letter-spacing:3px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif;margin-top:2px"></div>
     </div>
+    </div><!-- /cl-cert-wrap -->
     <div style="text-align:center;padding:8px 0 16px">
       <button onclick="window.print()" style="background:#8B6914;border:none;color:#fdf8f0;font-family:'Playfair Display',serif;font-size:13px;font-style:italic;padding:8px 28px;border-radius:20px;cursor:pointer;letter-spacing:1px">Print</button>
     </div>
@@ -1063,41 +1065,40 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-aut-back',    T.goMG);
   T.wire('b-aut-mg',      T.goMG);
 
-  /* ── CREATIVE LICENSE — populate member name + date ── */
+  /* ── CREATIVE LICENSE — name + date ── */
   (function(){
     var dateEl = document.getElementById('cl-date');
-    if(dateEl){ dateEl.textContent = 'Issued ' + new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}); }
-    function setName(name){
-      var n1 = document.getElementById('cl-member-name');
-      var n2 = document.getElementById('cl-cert-name');
-      if(n1) n1.textContent = name;
-      if(n2) n2.textContent = name;
+    if(dateEl) dateEl.textContent = 'Issued ' + new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    function setName(n){
+      ['cl-member-name','cl-cert-name'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.textContent=n||'Traveler';
+      });
     }
-    /* Try display_name from profiles first, fall back to auth email */
-    var attempts = 0;
-    function tryName(){
-      var m = T.getMember && T.getMember();
-      if(m && m.user_id){
-        if(m.display_name){
-          setName(m.display_name);
-        } else {
-          /* display_name empty — get email from auth */
-          var sb = T.sb;
-          if(sb){
-            sb.auth.getUser().then(function(res){
-              var u = res && res.data && res.data.user;
-              var email = (u && u.email) || '';
-              var name = email ? email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}) : 'Traveler';
-              setName(name);
-            }).catch(function(){ setName('Traveler'); });
-          } else { setName('Traveler'); }
-        }
-      } else if(attempts++ < 30){
-        setTimeout(tryName, 250);
-      } else { setName('Traveler'); }
-    }
-    tryName();
+    var sb=T.sb;
+    if(!sb){setName('Traveler');return;}
+    sb.auth.getUser().then(function(res){
+      var user=res&&res.data&&res.data.user;
+      if(!user){setName('Traveler');return;}
+      /* Try members table first, then profiles, then email */
+      sb.from('members').select('name,display_name,first_name').eq('user_id',user.id).single()
+        .then(function(r){
+          var d=r&&r.data;
+          var name=(d&&(d.name||d.display_name||d.first_name))||null;
+          if(name){setName(name);return;}
+          /* fall back to profiles */
+          sb.from('profiles').select('display_name').eq('user_id',user.id).single()
+            .then(function(r2){
+              var name2=(r2&&r2.data&&r2.data.display_name)||null;
+              setName(name2||user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
+            }).catch(function(){
+              setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
+            });
+        }).catch(function(){
+          setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
+        });
+    }).catch(function(){setName('Traveler');});
   })();
+
 
   /* Tell backpack cur screen on startup so mgOrigin works correctly */
   T.nav('s-dream', false);
