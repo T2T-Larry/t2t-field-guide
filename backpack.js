@@ -305,7 +305,7 @@
       });
     }
     document.addEventListener('click', function(e){
-      if (e.target.closest('button, a, input, textarea, select, [role="button"]')) return;
+      if (e.target.closest('button, a, input, textarea, select, [role="button"], .mg-btn, .mg-ret, .spark-door, .ib, .jb, .gb, .tb, .more-link, .tool-row, .save-btn, .jsave-btn, .gsave-btn')) return;
       _tapCount++;
       clearTimeout(_tapTimer);
       _tapTimer = setTimeout(function(){ _tapCount = 0; }, 500);
