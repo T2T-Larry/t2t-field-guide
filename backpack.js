@@ -232,8 +232,21 @@
   async function goBackByNum() {
     var curNum = _pageNums[cur];
     if (!curNum) { if(stack.length>0) nav(stack.pop(),false); return; }
+    // Find nearest lower page number in local registry first
+    var nums = Object.keys(_pageNumsReverse).sort();
+    var lower = null;
+    for (var i = nums.length-1; i >= 0; i--) {
+      if (nums[i] < curNum) { lower = nums[i]; break; }
+    }
+    if (lower) {
+      var localId = _pageNumsReverse[lower];
+      if (localId && document.getElementById(localId)) {
+        nav(localId, false);
+        return;
+      }
+    }
+    // Not found locally — try Supabase for cross-file back nav
     try {
-      /* find the nearest registered page_num below current in the pages table */
       var res = await _sb.from('pages')
         .select('*')
         .in('page_type', ['pp','phase'])
@@ -241,7 +254,7 @@
         .order('page_num', {ascending:false})
         .limit(1)
         .single();
-      if (!res.data) return;
+      if (!res.data) { if(stack.length>0) nav(stack.pop(),false); return; }
       var page = res.data;
       if (page.phase_file === currentFile()) {
         nav(page.screen_id, false);
