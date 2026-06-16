@@ -254,10 +254,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- SIGN-IN -->
 <div class="sc card" id="s-signin" style="min-height:0">
-  <div class="siw" style="padding:28px 40px 20px">
+  <div class="siw" style="padding:20px 40px 16px">
     <div class="si-t2t">T2T</div>
     <div class="si-sub">Thoughts to Things</div>
-    <div class="si-rule"></div>
+    <div class="si-rule" style="margin-bottom:20px"></div>
     <div class="si-fields">
       <label class="si-lbl">Email</label>
       <input class="si-input" type="email" id="si-email" placeholder="your@email.com">
@@ -267,6 +267,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     </div>
   </div>
   <div class="bar2">
+    <button class="tb" id="b-signin-reset">↺</button>
     <span id="b-forgot" style="font-size:12px;color:#9FE1CB;cursor:pointer;letter-spacing:1px">Forgot password?</span>
   </div>
 </div>
@@ -870,6 +871,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   /* ── SIGN-IN / AUTH ── */
   var _sb = T.sb;
 
+  T.wire('b-signin-reset', function(){
+    document.getElementById('si-email').value='';
+    document.getElementById('si-password').value='';
+    var btn=document.getElementById('b-signin');
+    btn.textContent='Sign In'; btn.disabled=false;
+  });
   T.wire('b-forgot', async function(){
     var email=document.getElementById('si-email').value.trim();
     if(!email){alert('Enter your email address first, then tap Forgot password.');return;}
