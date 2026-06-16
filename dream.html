@@ -274,14 +274,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- ══ 1100 · CREATE ══ -->
 <div class="sc card" id="s-create-hub">
   <div class="reader-wrap">
-    <div class="reader-body" style="gap:6px">
-      <div class="reader-eyebrow">🌈 Dream · CREATE</div>
-      <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38;margin-bottom:2px">CREATE</div>
-      <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.8;text-align:center;margin-bottom:16px">Sea of Ideas.<br>No commitment. No explanation. No wrong answers.</div>
-      <div style="text-align:left;width:100%;max-width:300px">
-        <div style="font-family:'Playfair Display',serif;font-size:17px;color:#111;line-height:2.6">
-          <div><span style="color:#8B6914;font-size:14px">✦</span> &nbsp;Creative License</div>
-          <div><span style="color:#8B6914;font-size:14px">✦</span> &nbsp;Creative Spark</div>
+    <div class="reader-body" style="gap:0px">
+      <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38;margin-bottom:6px">🌈 DREAM</div>
+      <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.8;text-align:center;margin-bottom:10px">Sea of Ideas. No commitment. No explanation. No wrong answers.</div>
+      <div style="width:60px;height:0.5px;background:#C9A87C;margin:0 auto 20px"></div>
+      <div style="text-align:center;width:100%;max-width:300px">
+        <div style="font-family:'Playfair Display',serif;font-size:17px;color:#111;line-height:2.8">
+          <div id="b-hub-cl" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">✦</span> &nbsp;Creative License</div>
+          <div id="b-hub-spark" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">✦</span> &nbsp;Creative Spark</div>
         </div>
       </div>
     </div>
@@ -1103,6 +1103,8 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-create-hub-back', function(){ T.nav('s-dream'); });
   T.wire('b-create-hub-mg',   T.goMG);
   T.wire('b-create-hub-fwd',  function(){ T.nav('s-creative-license'); });
+  document.getElementById('b-hub-cl')    && document.getElementById('b-hub-cl').addEventListener('click',    function(){ T.nav('s-creative-license'); });
+  document.getElementById('b-hub-spark') && document.getElementById('b-hub-spark').addEventListener('click', function(){ T.nav('s-creative-spark'); });
 
   /* ── 1110 · CREATIVE LICENSE ── */
   T.registerPageNum('s-creative-license', '1110');
