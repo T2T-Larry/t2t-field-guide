@@ -305,7 +305,7 @@
       });
     }
     document.addEventListener('click', function(e){
-      if (e.target.tagName === 'BUTTON') return;
+      if (e.target.closest('button, a, input, textarea, select, [role="button"]')) return;
       _tapCount++;
       clearTimeout(_tapTimer);
       _tapTimer = setTimeout(function(){ _tapCount = 0; }, 500);
