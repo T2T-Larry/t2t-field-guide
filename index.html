@@ -451,6 +451,23 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
+<!-- ══ 0990 · NO PATH TRANSITION ══ -->
+<div class="sc card" id="s-no-transition">
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:24px">
+      <div class="reader-line italic" style="font-size:22px;color:#2a1f0e;line-height:1.6">That's completely fine.</div>
+      <div class="reader-line italic" style="font-size:22px;color:#2a1f0e;line-height:1.6">Most people don't — not yet.</div>
+      <div style="width:60px;height:0.5px;background:#C9A87C;margin:4px auto"></div>
+      <div class="reader-line italic" style="font-size:20px;color:#7a6040;line-height:1.6">It is time to dream a little...</div>
+    </div>
+  </div>
+  <div class="bar2">
+    <button class="tb" id="b-no-transition-back">⬅️</button>
+    <button class="tb dim" id="b-no-transition-mg">🔍</button>
+    <button class="tb" id="b-no-transition-fwd">➡️</button>
+  </div>
+</div>
+
 <!-- DREAM INTRO -->
 <div class="sc" id="s-dream-intro">
   <div class="card"><div class="sw">
@@ -772,7 +789,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   var T = window.T2T;
 
   /* ── PRIMARY PAGES ── */
-  T.setPrimaryPages(['s-cover','s-invention','s-want','s-know','s-dream-intro']);
+  T.setPrimaryPages(['s-cover','s-invention','s-want','s-know','s-no-transition','s-dream-intro']);
 
   /* ── PAGE NUMBERS ── */
   T.registerPageNum('s-cover',         '0100'); T.registerPageNum('s-cover-map',  '0100');
@@ -890,9 +907,15 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   T.wire('b-want-back', function(){T.nav('s-invention');}); T.wire('b-want-mg', T.goMG);
   T.wire('b-want-next', function(){T.nav('s-know');});
   T.wire('b-know-back', function(){T.nav('s-want');}); T.wire('b-know-mg', T.goMG);
-  T.wire('b-know-no',    function(){window.location.href='dream.html';});
+  T.wire('b-know-no',    function(){ T.nav('s-no-transition'); });
   T.wire('b-know-sortof',function(){if(typeof sendPrompt!=='undefined') sendPrompt('Sort of [on: Do you know what you want?]');});
   T.wire('b-know-yes',   function(){if(typeof sendPrompt!=='undefined') sendPrompt('Yes [on: Do you know what you want?]');});
+
+  /* ── 0990 · NO PATH TRANSITION ── */
+  T.registerPageNum('s-no-transition', '0990');
+  T.registerCtx('s-no-transition', 'On Your Way');
+  T.wire('b-no-transition-back', function(){ T.nav('s-know'); });
+  T.wire('b-no-transition-fwd',  function(){ T.goPhase('dream.html'); });
 
   /* ── DREAM INTRO ── */
   T.wire('b-dream-intro-back', T.goBack); T.wire('b-dream-intro-mg', T.goMG);
