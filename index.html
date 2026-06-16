@@ -16,7 +16,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .sc{display:none!important;pointer-events:none}
 .sc.active{display:flex!important;flex-direction:column;pointer-events:auto}
 .card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
-.card.rnd{border-radius:12px;min-height:0}
+.card.rnd{border-radius:12px;min-height:0;flex:0 0 auto}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .tb{width:80px;height:36px;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
@@ -40,7 +40,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .mg-ret{display:flex;align-items:center;justify-content:center;width:46px;height:34px;background:#ffffff;border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-size:18px;box-shadow:0 3px 8px rgba(0,0,0,.35),0 1px 3px rgba(0,0,0,.2);transition:all .15s}
 .mg-ret:hover{background:#e8f5f2;box-shadow:0 4px 12px rgba(0,0,0,.4);transform:translateY(-1px)}
 .mg-ret:active{transform:scale(.97)}
-.siw{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#0F6E56;text-align:center}
+.siw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#0F6E56;text-align:center}
 .si-t2t{font-family:'Playfair Display',serif;font-size:96px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:8px}
 .si-sub{font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#C9A87C;letter-spacing:2px;margin-bottom:28px;text-shadow:2px 3px 0 #07402F}
 .si-rule{width:80px;height:.5px;background:#5DCAA5;margin:0 auto 28px}
@@ -253,8 +253,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <!-- SIGN-IN -->
-<div class="sc card rnd" id="s-signin">
-  <div class="siw">
+<div class="sc" id="s-signin">
+  <div class="card rnd"><div class="siw">
     <div class="si-t2t">T2T</div>
     <div class="si-sub">Thoughts to Things</div>
     <div class="si-rule"></div>
@@ -269,7 +269,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
         <span id="b-forgot" style="font-size:12px;color:#9FE1CB;cursor:pointer;letter-spacing:1px">Forgot password?</span>
       </div>
     </div>
-  </div>
+  </div></div>
 </div>
 
 <!-- 0.10 COVER -->
