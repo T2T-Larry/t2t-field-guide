@@ -275,7 +275,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc card" id="s-create-hub">
   <div class="reader-wrap">
     <div class="reader-body" style="gap:0px">
-      <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38;margin-bottom:6px">🌈 DREAM</div>
+      <div class="reader-eyebrow">🌈 DREAM</div>
+      <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38;margin-bottom:6px">CREATE</div>
       <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.8;text-align:center;margin-bottom:10px">Sea of Ideas. No commitment. No explanation. No wrong answers.</div>
       <div style="width:60px;height:0.5px;background:#C9A87C;margin:0 auto 20px"></div>
       <div style="text-align:center;width:100%;max-width:300px">
@@ -1134,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerGems('s-creative-spark', [
     {text:'If it catches your attention even slightly — it belongs in the Sea. No commitment. No explanation. No judgment.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-creative-spark-back', function(){ T.nav('s-cl-5'); });
+  T.wire('b-creative-spark-back', function(){ T.goBack(); });
   T.wire('b-creative-spark-mg',   T.goMG);
   T.wire('b-creative-spark-fwd',  function(){ T.nav('s-what-i-want'); });
   T.registerTrivia('s-creative-spark', [
