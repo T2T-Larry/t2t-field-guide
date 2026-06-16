@@ -130,7 +130,8 @@
 
   /* ── PAGE NUMBERS ── */
   var _pageNums = {};
-  function registerPageNum(screenId, num) { _pageNums[screenId] = num; }
+  var _pageNumsReverse = {};
+  function registerPageNum(screenId, num) { _pageNums[screenId] = num; _pageNumsReverse[num] = screenId; }
 
   /* ── UTILITY SCREENS ── */
   var _utilScreens = [
@@ -208,6 +209,13 @@
   }
 
   async function navToPageNum(num) {
+    // Local registry first — no Supabase needed if screen is in this file
+    var localId = _pageNumsReverse[num];
+    if (localId && document.getElementById(localId)) {
+      nav(localId, false);
+      return;
+    }
+    // Not found locally — cross-file nav via Supabase
     try {
       var res = await _sb.from('pages').select('*').eq('page_num',num).single();
       if (!res.data) return;

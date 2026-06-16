@@ -1090,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'You are about to discover what you really want — maybe for the first time.', attr:'T2T Field Guide'}
   ]);
 
-  T.wire('b-dream-back', function(){ T.goPhase('index.html'); });
+  T.wire('b-dream-back', function(){ sessionStorage.setItem('bp_target','0990'); T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
   T.wire('b-dream-fwd',  function(){ T.nav('s-create-hub'); });
 
