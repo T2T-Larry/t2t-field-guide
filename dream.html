@@ -1290,6 +1290,8 @@ document.addEventListener('DOMContentLoaded', function(){
     function setName(n){
       var el=document.getElementById('cl-cert-name');
       if(el) el.textContent=n||'Traveler';
+      var el2=document.getElementById('cl-member-name');
+      if(el2) el2.textContent=n||'Traveler';
     }
     var sb=T.sb;
     if(!sb){setName('Traveler');return;}
