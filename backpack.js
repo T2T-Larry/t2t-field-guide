@@ -278,7 +278,44 @@
 
   function goPhase(url) { persistNavState(); window.location.href=url; }
 
-  function wire(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
+  /* ── HIDDEN MICKEY — triple-tap reveals page number ── */
+  (function(){
+    var _tapCount = 0, _tapTimer = null;
+    function showPageToast(num) {
+      var existing = document.getElementById('hm-toast');
+      if (existing) existing.remove();
+      var toast = document.createElement('div');
+      toast.id = 'hm-toast';
+      toast.textContent = '📍 ' + num;
+      toast.style.cssText = [
+        'position:fixed','bottom:72px','left:50%','transform:translateX(-50%)',
+        'background:rgba(10,74,56,0.92)','color:#C9A87C',
+        'font-family:Playfair Display,serif','font-size:13px','font-weight:700',
+        'letter-spacing:4px','padding:8px 20px','border-radius:20px',
+        'box-shadow:0 4px 16px rgba(0,0,0,0.35)','z-index:9999',
+        'pointer-events:none','opacity:0','transition:opacity 0.2s'
+      ].join(';');
+      document.body.appendChild(toast);
+      requestAnimationFrame(function(){
+        toast.style.opacity = '1';
+        setTimeout(function(){
+          toast.style.opacity = '0';
+          setTimeout(function(){ toast.remove(); }, 220);
+        }, 1800);
+      });
+    }
+    document.addEventListener('click', function(e){
+      if (e.target.tagName === 'BUTTON') return;
+      _tapCount++;
+      clearTimeout(_tapTimer);
+      _tapTimer = setTimeout(function(){ _tapCount = 0; }, 500);
+      if (_tapCount >= 3){
+        _tapCount = 0;
+        var num = _pageNums[cur] || '—';
+        showPageToast(num);
+      }
+    });
+  })();
 
   function togglePh(id){
     var el=document.getElementById(id),tog=document.getElementById(id+'-tog'); if(!el) return;
