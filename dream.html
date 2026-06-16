@@ -233,6 +233,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .cp-msg.err{color:#A32D2D}
 .idea-status{font-size:12px;font-style:italic;color:#3A6080;text-align:center;padding:6px 0;min-height:22px;transition:opacity .3s}
 
+  /* ── SPARK DOORS ── */
+  .spark-door{padding:10px 4px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:1.5px solid #b0a898;background:#f0ede8;color:#1a3a5c;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12);transition:all .15s;text-align:center}
+  .spark-door:hover{background:#e8e4dc;box-shadow:0 0 8px 2px rgba(0,0,0,.18),0 3px 6px rgba(0,0,0,.15);transform:translateY(-1px)}
+  .spark-door:active{transform:scale(.97)}
+
   /* ── DREAM PHASE OVERRIDES ── */
   .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}
   .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}
@@ -436,49 +441,127 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1120 · CREATIVE VS ANALYTICAL THINKING ══ -->
-<div class="sc card" id="s-creative-vs-analytical">
+<!-- ══ 1120 · CREATIVE SPARK ══ -->
+<div class="sc card" id="s-creative-spark">
   <div class="reader-wrap">
-    <div class="reader-body">
-      <div class="reader-eyebrow">CREATE · Two Ways of Thinking</div>
-      <div class="reader-line bold">Your brain has two gears.</div>
+    <div class="reader-body" style="gap:18px">
+      <div class="reader-eyebrow">CREATE · Creative Spark</div>
+      <div class="reader-line bold" style="font-size:26px">Here are some doors.</div>
       <div class="reader-spacer"></div>
-      <div class="reader-line small">Creative thinking generates. Analytical thinking evaluates. Right now, we only want one of them.</div>
+      <div class="reader-line small" style="line-height:1.9">Touch one. See what's inside.<br>Nothing you enter is a commitment.<br>If it catches your attention even slightly —<br>it belongs in the Sea.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-creative-vs-analytical-back">⬅️</button>
-    <button class="tb" id="b-creative-vs-analytical-mg">🔍</button>
-    <button class="tb" id="b-creative-vs-analytical-fwd">➡️</button>
+    <button class="tb" id="b-creative-spark-back">⬅️</button>
+    <button class="tb" id="b-creative-spark-mg">🔍</button>
+    <button class="tb" id="b-creative-spark-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1130 · RULES OF CREATIVE THINKING ══ -->
-<div class="sc card" id="s-creative-rules">
-  <div class="reader-wrap">
-    <div class="reader-body">
-      <div class="reader-eyebrow">CREATE · The Rules</div>
-      <div class="reader-line bold">Creative thinking has only one rule.</div>
-      <div class="reader-spacer"></div>
-      <div class="reader-line small">No criticism. Not of others' ideas. Not of your own. Not even a raised eyebrow. Everything gets a green light.</div>
+<!-- ══ 1121 · TWO WAYS OF THINKING (trivia off 1120) ══ -->
+<div class="sc" id="s-two-ways">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE SPARK · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1121 · Two Ways of Thinking</div>
+      <div class="sh">Your brain has two gears.</div>
+      <div class="sb">Creative thinking generates without judgment. Analytical thinking evaluates what was generated. Both are essential — but they cannot run at the same time.</div>
+      <div class="sb" style="margin-top:12px">A creative session has one rule: generation only. The moment you evaluate an idea — even silently — the creative gear disengages. Walt Disney called these two modes the Dreamer and the Critic. He never let them in the same room.</div>
+      <div class="sb" style="margin-top:12px;font-style:italic;color:#888">Right now, we only want the Dreamer.</div>
+      <div class="sp"></div>
     </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-two-ways-back">⬅️</button>
+    <button class="tb" id="b-two-ways-mg">🔍</button>
   </div>
-  <div class="bar2 bar-dream-pp">
+</div>
+
+<!-- ══ 1122 · RULES OF CREATIVE THINKING (trivia off 1120) ══ -->
+<div class="sc" id="s-creative-rules">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE SPARK · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1122 · Rules of Creative Thinking</div>
+      <div class="sh">Creative thinking has only one rule.</div>
+      <div class="sb">No criticism. Not of others' ideas. Not of your own. Not even a raised eyebrow. Not even the subtle internal wince that says <em>that's a dumb idea.</em></div>
+      <div class="sb" style="margin-top:12px">Everything gets a green light in the creative session. Quantity over quality. Wild over safe. The Sea doesn't care how good an idea is — it only cares that you caught it before it vanished.</div>
+      <div class="sb" style="margin-top:12px;font-style:italic;color:#888">Evaluation comes later. Much later. That's SHAPE's job — not CREATE's.</div>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
     <button class="tb" id="b-creative-rules-back">⬅️</button>
     <button class="tb" id="b-creative-rules-mg">🔍</button>
-    <button class="tb" id="b-creative-rules-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1140 · SEA OF IDEAS ══ -->
-<div class="sc card" id="s-sea-of-ideas">
-  <div class="reader-wrap">
-    <div class="reader-body">
-      <div class="reader-eyebrow">CREATE · Sea of Ideas</div>
-      <div class="reader-line bold">What are you drawn to?</div>
-      <div class="reader-spacer"></div>
-      <div class="reader-line small">Don't filter. Don't evaluate. Just notice what catches your attention and put it in.</div>
+<!-- ══ 1130 · WHAT I MIGHT WANT ══ -->
+<div class="sc card" id="s-what-i-want">
+  <div class="sw" style="padding:20px 24px 12px;align-items:center">
+    <div class="se" style="margin-bottom:6px">CREATE · What I Might Want</div>
+    <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-bottom:18px;text-align:center">Touch a door. See what's inside.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:320px">
+      <button class="spark-door" id="b-door-do"   data-prompt="What might you want to do? Experiences, activities, adventures…">DO</button>
+      <button class="spark-door" id="b-door-be"   data-prompt="Who might you want to become? Qualities, identities, ways of moving through the world…">BE</button>
+      <button class="spark-door" id="b-door-have" data-prompt="What might you want to have? Objects, spaces, resources, relationships…">HAVE</button>
+      <button class="spark-door" id="b-door-go"   data-prompt="Where might you want to go? Places, landscapes, cultures, coordinates on a map…">GO</button>
+      <button class="spark-door" id="b-door-make" data-prompt="What might you want to make or build? Something you create with your hands, your mind, your time…">MAKE</button>
+      <button class="spark-door" id="b-door-give" data-prompt="What might you want to give or leave behind? A contribution, a legacy, something offered…">GIVE</button>
+      <button class="spark-door" id="b-door-feel" data-prompt="What might you want to feel more of? A quality of experience, an emotional texture, a way of being…">FEEL</button>
+      <button class="spark-door" id="b-door-songs" data-prompt="What songs stop you? What plays when you're most alive? Name them — or just describe the feeling they carry…">SONGS</button>
+      <button class="spark-door" id="b-door-images" data-prompt="What images make you linger? What do you keep coming back to? Drop them here — a scene, a moment, a visual that pulls…">IMAGES</button>
+      <button class="spark-door" id="b-door-people" data-prompt="Who catches your attention? Who do you admire without fully knowing why? Name them — or describe what you see in them…">PEOPLE</button>
+      <button class="spark-door" id="b-door-moments" data-prompt="When did time disappear? When were you completely absorbed? Describe the moment — when were you most alive?">MOMENTS</button>
     </div>
+    <div class="sp"></div>
+    <div style="font-size:11px;font-style:italic;color:#bbb;text-align:center;padding-bottom:4px">You can return here as many times as you like.</div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-what-i-want-back">⬅️</button>
+    <button class="tb" id="b-what-i-want-mg">🔍</button>
+    <button class="tb" id="b-what-i-want-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ SPARK CAPTURE (shared input — prompt changes per door) ══ -->
+<div class="sc" id="s-spark-capture">
+  <div class="card"><div class="icw">
+    <div class="icit" id="spark-cap-title">✨ Spark</div>
+    <hr class="icr">
+    <div class="icq" id="spark-cap-prompt">What might you want?</div>
+    <textarea class="ict" id="spark-text" placeholder="Anything that catches your attention…"></textarea>
+    <div class="sp"></div>
+    <div class="idea-status" id="spark-status"></div>
+    <div id="spark-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+      <div style="font-size:52px">🌊</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#1A3A5C">In the Sea.</div>
+      <div style="font-size:13px;font-style:italic;color:#3A6080">What else might you want?</div>
+    </div>
+  </div></div>
+  <div class="bar2" style="gap:10px">
+    <button class="tb" id="b-spark-cap-back">⬅️</button>
+    <button class="tb" id="b-spark-cap-mg">🔍</button>
+    <button class="save-btn" id="b-save-spark">SAVE</button>
+  </div>
+</div>
+
+<!-- ══ 1140 · SEA OF IDEAS — First Crossing ══ -->
+<div class="sc card" id="s-sea-of-ideas">
+  <div class="sw" style="padding:28px 32px;align-items:center;text-align:center">
+    <div class="se">CREATE · Sea of Ideas</div>
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:#111;line-height:1.5;margin-bottom:8px">Look what you made.</div>
+    <div style="font-size:13px;font-style:italic;color:#888;margin-bottom:20px;line-height:1.7">Everything you captured is floating here.<br>No judgment. No order. Just your ideas.</div>
+    <div id="sea-miro-frame" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;overflow:hidden;margin-bottom:18px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:200px">
+      <div id="sea-miro-inner" style="width:100%;height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
+        <div style="font-size:36px">🌊</div>
+        <div style="font-size:12px;font-style:italic;color:#999">Loading your Sea of Ideas…</div>
+      </div>
+    </div>
+    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:20px">Is there anything else?</div>
+    <button id="b-sea-more-sparks" style="padding:10px 28px;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#f0ede8;color:#1a3a5c;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12);margin-bottom:8px">Yes — add more sparks</button>
+    <button id="b-sea-ready" style="padding:10px 28px;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#f0ede8;color:#555;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12)">No — my Sea is ready</button>
+    <div class="sp"></div>
   </div>
   <div class="bar2 bar-dream-pp">
     <button class="tb" id="b-sea-of-ideas-back">⬅️</button>
@@ -516,8 +599,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="st"><span class="sn">1000</span><span class="sl">The Dream Phase</span></div>
       <div class="st"><span class="sn">1100</span><span class="sl">CREATE</span></div>
       <div class="st"><span class="sn">1110</span><span class="sl">Creative License</span></div>
-      <div class="st"><span class="sn">1120</span><span class="sl">Creative vs Analytical Thinking</span></div>
-      <div class="st"><span class="sn">1130</span><span class="sl">Rules of Creative Thinking</span></div>
+      <div class="st"><span class="sn">1120</span><span class="sl">Creative Spark</span></div>
+      <div class="st"><span class="sn">1121</span><span class="sl">Two Ways of Thinking</span></div>
+      <div class="st"><span class="sn">1122</span><span class="sl">Rules of Creative Thinking</span></div>
+      <div class="st"><span class="sn">1130</span><span class="sl">What I Might Want</span></div>
       <div class="st"><span class="sn">1140</span><span class="sl">Sea of Ideas</span></div>
       <div class="st"><span class="sn">1150</span><span class="sl">PLUSing</span></div>
     </div>
@@ -685,8 +770,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1000</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Dream Phase</span></div>
       <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1100</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">CREATE</span></div>
       <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1110</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative License</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1120</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative vs Analytical Thinking</span></div>
-      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1130</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Rules of Creative Thinking</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1120</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Creative Spark</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1121</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Two Ways of Thinking</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1122</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Rules of Creative Thinking</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1130</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">What I Might Want</span></div>
       <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1140</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">Sea of Ideas</span></div>
       <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1150</span><span style="font-family:'Playfair Display',serif;font-size:14px;color:#111">PLUSing</span></div>
       <div style="display:flex;align-items:baseline;gap:10px;padding:8px 12px;background:#faf5ff;border-radius:8px;border-left:3px solid #7c3aed"><span style="font-size:11px;font-weight:700;letter-spacing:2px;color:#7c3aed;min-width:36px">1400</span><span style="font-size:14px;color:#111;font-family:'Playfair Display',serif">SHAPE</span></div>
@@ -1037,37 +1124,145 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-cl-4-fwd',  function(){ T.nav('s-cl-5'); });
   T.wire('b-cl-5-back', function(){ T.nav('s-cl-4'); });
   T.wire('b-cl-5-mg',   T.goMG);
-  T.wire('b-cl-5-fwd',  function(){ T.nav('s-creative-vs-analytical'); });
+  T.wire('b-cl-5-fwd',  function(){ T.nav('s-creative-spark'); });
 
-  /* ── 1120 · CREATIVE VS ANALYTICAL ── */
-  T.registerPageNum('s-creative-vs-analytical', '1120');
-  T.registerCtx('s-creative-vs-analytical', 'Two Ways of Thinking');
-  T.registerGems('s-creative-vs-analytical', [
-    {text:'Creative thinking generates. Analytical thinking evaluates. Never mix them in the same session.', attr:'T2T Field Guide'}
+  /* ── 1120 · CREATIVE SPARK ── */
+  T.registerPageNum('s-creative-spark', '1120');
+  T.registerCtx('s-creative-spark', 'Creative Spark');
+  T.registerGems('s-creative-spark', [
+    {text:'If it catches your attention even slightly — it belongs in the Sea. No commitment. No explanation. No judgment.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-creative-vs-analytical-back', function(){ T.nav('s-creative-license'); });
-  T.wire('b-creative-vs-analytical-mg',   T.goMG);
-  T.wire('b-creative-vs-analytical-fwd',  function(){ T.nav('s-creative-rules'); });
+  T.wire('b-creative-spark-back', function(){ T.nav('s-cl-5'); });
+  T.wire('b-creative-spark-mg',   T.goMG);
+  T.wire('b-creative-spark-fwd',  function(){ T.nav('s-what-i-want'); });
+  T.registerTrivia('s-creative-spark', [
+    { label: 'Two Ways of Thinking', id: 's-two-ways' },
+    { label: 'Rules of Creative Thinking', id: 's-creative-rules' }
+  ]);
 
-  /* ── 1130 · RULES OF CREATIVE THINKING ── */
-  T.registerPageNum('s-creative-rules', '1130');
-  T.registerCtx('s-creative-rules', 'Rules of Creative Thinking');
-  T.registerGems('s-creative-rules', [
-    {text:'No criticism. Not of others. Not of yourself. Not even a raised eyebrow.', attr:'T2T Field Guide'}
-  ]);
-  T.wire('b-creative-rules-back', function(){ T.nav('s-creative-vs-analytical'); });
+  /* ── 1121 · TWO WAYS OF THINKING (trivia) ── */
+  T.registerPageNum('s-two-ways', '1121');
+  T.wire('b-two-ways-back', function(){ T.nav('s-creative-spark'); });
+  T.wire('b-two-ways-mg',   T.goMG);
+
+  /* ── 1122 · RULES OF CREATIVE THINKING (trivia) ── */
+  T.registerPageNum('s-creative-rules', '1122');
+  T.wire('b-creative-rules-back', function(){ T.nav('s-creative-spark'); });
   T.wire('b-creative-rules-mg',   T.goMG);
-  T.wire('b-creative-rules-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+
+  /* ── 1130 · WHAT I MIGHT WANT ── */
+  T.registerPageNum('s-what-i-want', '1130');
+  T.registerCtx('s-what-i-want', 'What I Might Want');
+  T.registerGems('s-what-i-want', [
+    {text:'Anything that catches your attention belongs in the Sea.', attr:'T2T Field Guide · CREATE'}
+  ]);
+  T.wire('b-what-i-want-back', function(){ T.nav('s-creative-spark'); });
+  T.wire('b-what-i-want-mg',   T.goMG);
+  T.wire('b-what-i-want-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+
+  /* ── SPARK DOORS → CAPTURE ── */
+  (function(){
+    var doors = ['do','be','have','go','make','give','feel','songs','images','people','moments'];
+    var labels = {do:'DO',be:'BE',have:'HAVE',go:'GO',make:'MAKE',give:'GIVE',feel:'FEEL',songs:'SONGS',images:'IMAGES',people:'PEOPLE',moments:'MOMENTS'};
+    doors.forEach(function(d){
+      T.wire('b-door-'+d, function(){
+        var btn = document.getElementById('b-door-'+d);
+        document.getElementById('spark-cap-title').textContent = '✨ ' + labels[d];
+        document.getElementById('spark-cap-prompt').textContent = btn.getAttribute('data-prompt');
+        var ta = document.getElementById('spark-text');
+        ta.value = '';
+        document.getElementById('spark-status').textContent = '';
+        document.getElementById('spark-posted').style.display = 'none';
+        document.getElementById('b-save-spark').classList.remove('active');
+        T.nav('s-spark-capture');
+      });
+    });
+  })();
+
+  /* ── SPARK CAPTURE ── */
+  T.wire('b-spark-cap-back', function(){ T.nav('s-what-i-want'); });
+  T.wire('b-spark-cap-mg',   T.goMG);
+
+  (function(){
+    var ta = document.getElementById('spark-text');
+    var sb = document.getElementById('b-save-spark');
+    if(ta && sb){
+      ta.addEventListener('input', function(){
+        if(ta.value.trim().length > 0){ sb.classList.add('active'); } else { sb.classList.remove('active'); }
+      });
+    }
+  })();
+
+  T.wire('b-save-spark', async function(){
+    var ta = document.getElementById('spark-text');
+    var statusEl = document.getElementById('spark-status');
+    var postedEl = document.getElementById('spark-posted');
+    var text = ta.value.trim();
+    if(!text) return;
+    var label = document.getElementById('spark-cap-title').textContent.replace('✨ ','');
+    statusEl.textContent = 'Posting to your Sea of Ideas…';
+    try {
+      var member = T.getMember && T.getMember();
+      var boardId = (member && member.miro_board_id) ? member.miro_board_id : 'uXjVNVoFoec=';
+      if(!boardId.endsWith('=')) boardId = boardId + '=';
+      var MIRO_TOKEN = window.MIRO_TOKEN || '';
+      var noteText = '[' + label + '] ' + text;
+      var r = await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/sticky_notes', {
+        method:'POST',
+        headers:{'Authorization':'Bearer '+MIRO_TOKEN,'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({ data:{ content: noteText, shape:'square' }, style:{ fillColor:'light_yellow', textAlign:'left', textAlignVertical:'top' }, geometry:{ width:220 } })
+      });
+      if(r.ok){
+        if(T.sb){
+          var user = (await T.sb.auth.getUser()).data.user;
+          if(user){ await T.sb.from('ideas').insert({ user_id:user.id, idea_text:noteText, page_context:'What I Might Want · '+label, created_at:new Date().toISOString() }); }
+        }
+        statusEl.textContent = '';
+        ta.value = '';
+        document.getElementById('b-save-spark').classList.remove('active');
+        postedEl.style.display = 'flex';
+        setTimeout(function(){ postedEl.style.display='none'; }, 2200);
+      } else { statusEl.textContent = 'Could not post — check your connection.'; }
+    } catch(e){ statusEl.textContent = 'Error: ' + e.message; }
+  });
 
   /* ── 1140 · SEA OF IDEAS ── */
   T.registerPageNum('s-sea-of-ideas', '1140');
   T.registerCtx('s-sea-of-ideas', 'Sea of Ideas');
   T.registerGems('s-sea-of-ideas', [
-    {text:'Everything you notice is data. Put it in.', attr:'T2T Field Guide'}
+    {text:'The Sea of Ideas holds everything you\'ve captured — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-creative-rules'); });
+  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-what-i-want'); });
   T.wire('b-sea-of-ideas-mg',   T.goMG);
   T.wire('b-sea-of-ideas-fwd',  function(){ T.nav('s-plusing'); });
+  T.wire('b-sea-more-sparks',   function(){ T.nav('s-what-i-want'); });
+  T.wire('b-sea-ready',         function(){ T.nav('s-plusing'); });
+
+  (function(){
+    var seaLoaded = false;
+    var _orig = T.nav;
+    T.nav = function(id){
+      _orig(id);
+      if(id === 's-sea-of-ideas' && !seaLoaded){
+        seaLoaded = true;
+        setTimeout(function(){
+          var member = T.getMember && T.getMember();
+          var boardId = (member && member.miro_board_id) ? member.miro_board_id : 'uXjVNVoFoec=';
+          if(!boardId.endsWith('=')) boardId = boardId + '=';
+          var inner = document.getElementById('sea-miro-inner');
+          if(inner){
+            inner.innerHTML = '';
+            var fr = document.createElement('iframe');
+            fr.src = 'https://miro.com/app/live-embed/' + boardId;
+            fr.style.cssText = 'width:100%;height:200px;border:none;border-radius:10px';
+            fr.allow = 'fullscreen; clipboard-read; clipboard-write';
+            inner.style.cssText = 'width:100%;height:200px;display:block';
+            inner.appendChild(fr);
+          }
+        }, 100);
+      }
+    };
+  })();
 
   /* ── 1150 · PLUSing ── */
   T.registerPageNum('s-plusing', '1150');
