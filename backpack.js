@@ -330,6 +330,8 @@
     });
   })();
 
+  function wire(id,fn){ var el=document.getElementById(id); if(el) el.addEventListener('click',fn); }
+
   function togglePh(id){
     var el=document.getElementById(id),tog=document.getElementById(id+'-tog'); if(!el) return;
     var hidden=el.classList.contains('phd')||el.style.display==='none';
