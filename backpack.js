@@ -398,8 +398,7 @@
     if(statusEl) statusEl.textContent='Sending to Sea of Ideas\u2026';
     var COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
     var color=COLORS[Math.floor(Math.random()*COLORS.length)];
-    var tag=_member.display_name?'['+_member.display_name+'] ':'';
-    var content='<p>\uD83D\uDCA1 <strong>'+tag+'</strong></p><p>'+text+'</p><p><em>\u2014 '+ctx+'</em></p>';
+    var content='<p>\uD83D\uDCA1</p><p>'+text+'</p>';
     try {
       var res=await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
         method:'POST',
@@ -417,7 +416,7 @@
 
   async function postGemToMiro(text,attr) {
     var boardId=_bid(_member.gems_board_id); if(!boardId) return;
-    var attrLine=(attr&&attr!==_member.display_name)?'<p><em>\u2014 '+attr+'</em></p>':'';
+    var attrLine=(attr&&attr!==_member.display_name&&attr!=='T2T Field Guide')?'<p><em>\u2014 '+attr+'</em></p>':'';
     var content='<p>\uD83D\uDC8E</p><p>'+text+'</p>'+attrLine;
     try {
       await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
