@@ -435,11 +435,11 @@
   }
 
   async function postJournalToMiro(text,topic) {
-    var boardId=_bid(_member.journal_board_id); if(!boardId) return;
-    var topicLine=topic?'<p><em>'+topic+'</em></p>':'';
-    var content='<p>\u270F\uFE0F</p><p>'+text+'</p>'+topicLine;
+    var boardId=_bid(_member.journal_board_id); if(!boardId) return null;
+    var topicLine=topic?'<p><strong>'+topic.toUpperCase()+'</strong></p>':'';
+    var content=topicLine+'<p>'+text+'</p>';
     try {
-      await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
+      var res=await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
         body:JSON.stringify({
@@ -449,13 +449,17 @@
           position:{x:Math.floor(Math.random()*1200)-600,y:Math.floor(Math.random()*800)-400,origin:'center'}
         })
       });
+      if(res.ok){ var saved=await res.json(); return saved&&saved.id||null; }
     } catch(e){}
+    return null;
   }
 
   /* ── ESC REMINDER CARD ── black/white sticky, posted once per board.
      Checks for an existing one first so repeat visits (and multiple
-     embeds of the same board) never duplicate it. */
+     embeds of the same board) never duplicate it — and repositions an
+     existing card if it's drifted from the visible spot. */
   var _reminderChecked = {};
+  var _reminderPos = {x:0,y:-560,origin:'center'};
   async function ensureMiroReminder(boardId) {
     if (!boardId || _reminderChecked[boardId]) return;
     _reminderChecked[boardId] = true;
@@ -464,13 +468,23 @@
       var res = await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes?limit=50',{
         headers:{'Authorization':'Bearer '+MIRO_TOKEN}
       });
-      if (!res.ok) return;
-      var listed = await res.json();
-      var items = (listed && listed.data) || [];
-      var exists = items.some(function(item){
-        return item.data && item.data.content && item.data.content.indexOf(marker)!==-1;
-      });
-      if (exists) return;
+      if (res.ok) {
+        var listed = await res.json();
+        var items = (listed && listed.data) || [];
+        var existing = items.find(function(item){
+          return item.data && item.data.content && item.data.content.indexOf(marker)!==-1;
+        });
+        if (existing) {
+          try {
+            await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes/'+existing.id,{
+              method:'PATCH',
+              headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
+              body:JSON.stringify({position:_reminderPos})
+            });
+          } catch(e){}
+          return;
+        }
+      }
     } catch(e){ return; }
     try {
       await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
@@ -480,7 +494,7 @@
           data:{content:'<p>\u238B <strong>'+marker+'</strong></p>',shape:'rectangle'},
           style:{fillColor:'black',textAlign:'center',textAlignVertical:'middle'},
           geometry:{width:260},
-          position:{x:-1700,y:-800,origin:'center'}
+          position:_reminderPos
         })
       });
     } catch(e){}
