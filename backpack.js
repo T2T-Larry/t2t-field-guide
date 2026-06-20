@@ -184,6 +184,8 @@
     if (_primaryPages.indexOf(id)!==-1) primaryPage=id;
     var pn=_pageNums[id]; if(pn) addVisited(pn);
     if (id==='s-trivia')          renderTrivia();
+    if (id==='s-journal')         { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
+    if (id==='s-gems')            { var gc=document.getElementById('gems-view-choices');    if(gc) gc.style.display='none'; }
     if (id==='s-journal-view')    renderJournalView();
     if (id==='s-journal-cover')   initJournalCover();
     if (id==='s-gems-list')       renderGemsView();
@@ -450,12 +452,47 @@
     } catch(e){}
   }
 
+  /* ── ESC REMINDER CARD ── black/white sticky, posted once per board.
+     Checks for an existing one first so repeat visits (and multiple
+     embeds of the same board) never duplicate it. */
+  var _reminderChecked = {};
+  async function ensureMiroReminder(boardId) {
+    if (!boardId || _reminderChecked[boardId]) return;
+    _reminderChecked[boardId] = true;
+    var marker = 'Press ESC to exit fullscreen';
+    try {
+      var res = await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes?limit=50',{
+        headers:{'Authorization':'Bearer '+MIRO_TOKEN}
+      });
+      if (!res.ok) return;
+      var listed = await res.json();
+      var items = (listed && listed.data) || [];
+      var exists = items.some(function(item){
+        return item.data && item.data.content && item.data.content.indexOf(marker)!==-1;
+      });
+      if (exists) return;
+    } catch(e){ return; }
+    try {
+      await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
+        body:JSON.stringify({
+          data:{content:'<p>\u238B <strong>'+marker+'</strong></p>',shape:'rectangle'},
+          style:{fillColor:'black',textAlign:'center',textAlignVertical:'middle'},
+          geometry:{width:260},
+          position:{x:-1700,y:-800,origin:'center'}
+        })
+      });
+    } catch(e){}
+  }
+
   /* ── MIRO EMBED OPENERS ── */
   function openSeaOfIdeas() {
     var boardId=_bid(_member.miro_board_id);
     if(!boardId){alert('No Sea of Ideas board connected yet. Contact your facilitator.');return;}
     var embed=document.getElementById('miro-embed');
     if(embed) embed.src='https://miro.com/app/live-embed/'+boardId+'/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
+    ensureMiroReminder(boardId);
     nav('s-sea-ideas');
   }
   function openJournalMiro() {
@@ -463,6 +500,7 @@
     if(!boardId){alert('No Journal board connected yet. Contact your facilitator.');return;}
     var embed=document.getElementById('journal-miro-embed');
     if(embed) embed.src='https://miro.com/app/live-embed/'+boardId+'/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
+    ensureMiroReminder(boardId);
     nav('s-journal-miro');
   }
   function openGemsMiro() {
@@ -470,8 +508,10 @@
     if(!boardId){alert('No Gems board connected yet. Contact your facilitator.');return;}
     var embed=document.getElementById('gems-miro-embed');
     if(embed) embed.src='https://miro.com/app/live-embed/'+boardId+'/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
+    ensureMiroReminder(boardId);
     nav('s-gems-miro');
   }
+
 
   /* ── JOURNAL ── */
   var _jeEntries=[],_jeIndex=0;
@@ -852,6 +892,7 @@
     getCtx:getCtx, renderMap:renderMap,
     openSeaOfIdeas:openSeaOfIdeas, openJournalMiro:openJournalMiro,
     openGemsMiro:openGemsMiro, openGemAdd:openGemAdd,
+    ensureMiroReminder:ensureMiroReminder,
     openJournalView:openJournalView,
     navToPageNum:navToPageNum, currentFile:currentFile
   };
