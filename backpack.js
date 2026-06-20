@@ -360,11 +360,11 @@
   var _dreamSteps = [
     {num:'1000',label:'The Dream Phase',   id:'s-dream'},
     {num:'1100',label:'CREATE',            id:'s-create-hub'},
-    {num:'1110',label:'Creative License',  id:'s-creative-license'},
-    {num:'1120',label:'Creative Spark',    id:'s-creative-spark'},
-    {num:'1130',label:'What I Might Want', id:'s-what-i-want'},
-    {num:'1140',label:'Sea of Ideas',      id:'s-sea-of-ideas'},
-    {num:'1150',label:'PLUSing',           id:'s-plusing'}
+    {num:'1110',label:'Creative License',  id:'s-cl-intro'},
+    {num:'1130',label:'Inklings',          id:'s-what-i-want'},
+    {num:'1140',label:'Creative Sparks',   id:'s-lightning-bug'},
+    {num:'1150',label:'Sea of Ideas',      id:'s-sea-of-ideas'},
+    {num:'1160',label:'PLUSing',           id:'s-plusing'}
   ];
 
   function renderStepList(containerId, steps, curNum, visited) {
@@ -395,7 +395,7 @@
   function _bid(id){ if(!id) return null; return id.endsWith('=')?id:id+'='; }
 
   async function postIdeaToMiro(text,ctx) {
-    var boardId=_bid(_member.miro_board_id); if(!boardId) return;
+    var boardId=_bid(_member.miro_board_id); if(!boardId) return false;
     var statusEl=document.getElementById('idea-status');
     if(statusEl) statusEl.textContent='Sending to Sea of Ideas\u2026';
     var COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
@@ -413,7 +413,37 @@
         })
       });
       if(statusEl){ statusEl.textContent=res.ok?'\uD83C\uDF0A In your Sea of Ideas!':''; if(res.ok) setTimeout(function(){if(statusEl)statusEl.textContent='';},3000); }
-    } catch(e){ if(statusEl) statusEl.textContent=''; }
+      return res.ok;
+    } catch(e){ if(statusEl) statusEl.textContent=''; return false; }
+  }
+
+  async function postImageToMiro(imageUrl,credit) {
+    var boardId=_bid(_member.miro_board_id); if(!boardId) return false;
+    var x=Math.floor(Math.random()*1200)-600, y=Math.floor(Math.random()*800)-400;
+    try {
+      var res=await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/images',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
+        body:JSON.stringify({
+          data:{url:imageUrl},
+          position:{x:x,y:y,origin:'center'},
+          geometry:{width:300}
+        })
+      });
+      if(res.ok && credit){
+        await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/texts',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
+          body:JSON.stringify({
+            data:{content:'<p>'+credit+'</p>'},
+            style:{fontSize:'10',color:'#888888'},
+            position:{x:x,y:y+170,origin:'center'},
+            geometry:{width:300}
+          })
+        });
+      }
+      return res.ok;
+    } catch(e){ return false; }
   }
 
   async function postGemToMiro(text,attr) {
@@ -908,6 +938,7 @@
     openGemsMiro:openGemsMiro, openGemAdd:openGemAdd,
     ensureMiroReminder:ensureMiroReminder,
     openJournalView:openJournalView,
+    postIdeaToMiro:postIdeaToMiro, postImageToMiro:postImageToMiro,
     navToPageNum:navToPageNum, currentFile:currentFile
   };
 

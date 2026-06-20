@@ -83,6 +83,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .more-link.visited .more-link-arrow::before{content:'👣'}
 .more-link:not(.visited) .more-link-arrow::before{content:'›'}
 .reader-wrap{flex:1;display:flex;flex-direction:column;background:#ffffff}
+.phase-header{background:#fdf8f0;padding:12px 16px 10px;text-align:center;border-bottom:2px solid #5b9bd5;flex-shrink:0}
+.ph-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6040}
+.ph-chapter{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#8B6914;letter-spacing:1px;margin-top:3px}
 .reader-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 44px;text-align:center}
 .reader-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#888;margin-bottom:20px}
 .reader-line{font-family:'Playfair Display',serif;font-size:22px;font-weight:400;color:#111;line-height:1.8;margin-bottom:0}
@@ -234,7 +237,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .idea-status{font-size:12px;font-style:italic;color:#3A6080;text-align:center;padding:6px 0;min-height:22px;transition:opacity .3s}
 
   /* ── SPARK DOORS ── */
-  .spark-door{padding:10px 4px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:1.5px solid #b0a898;background:#f0ede8;color:#1a3a5c;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12);transition:all .15s;text-align:center}
+  .spark-door{padding:16px 6px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid #111;background:#faf6ee;color:#1a3a5c;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14);transition:all .15s;text-align:center;display:flex;align-items:center;justify-content:center}
   .spark-door:hover{background:#e8e4dc;box-shadow:0 0 8px 2px rgba(0,0,0,.18),0 3px 6px rgba(0,0,0,.15);transform:translateY(-1px)}
   .spark-door:active{transform:scale(.97)}
 
@@ -242,7 +245,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}
   .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}
   .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}
-  .title-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 20px;background:#e4e0d8;text-align:center}
+  .title-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 20px;background:#ffffff;text-align:center}
   .phase-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#7a6040;margin-bottom:24px}
   .phase-the{font-size:24px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.1}
   .phase-name{font-size:72px;font-weight:700;color:#1a3a5c;line-height:1.0;letter-spacing:-2px}
@@ -273,16 +276,19 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1100 · CREATE ══ -->
 <div class="sc card" id="s-create-hub">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:0px">
-      <div class="reader-eyebrow">🌈 DREAM</div>
-      <div class="reader-line bold" style="font-size:38px;letter-spacing:2px;color:#0a4a38;margin-bottom:6px">CREATE</div>
       <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;line-height:1.8;text-align:center;margin-bottom:10px">Sea of Ideas. No commitment. No explanation. No wrong answers.</div>
       <div style="width:60px;height:0.5px;background:#C9A87C;margin:0 auto 20px"></div>
       <div style="text-align:center;width:100%;max-width:300px">
         <div style="font-family:'Playfair Display',serif;font-size:17px;color:#111;line-height:2.8">
-          <div id="b-hub-cl" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">✦</span> &nbsp;Creative License</div>
-          <div id="b-hub-spark" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">✦</span> &nbsp;Creative Spark</div>
+          <div id="b-hub-cl" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">1</span> &nbsp;Creative License</div>
+          <div id="b-hub-inklings" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">2</span> &nbsp;Inklings</div>
+          <div id="b-hub-spark" style="cursor:pointer"><span style="color:#8B6914;font-size:14px">3</span> &nbsp;Creative Sparks</div>
         </div>
       </div>
     </div>
@@ -294,9 +300,34 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
+<!-- ══ 1110 · CREATIVE LICENSE — Intro: What & Why ══ -->
+<div class="sc card" id="s-cl-intro">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:18px">
+      <div class="reader-eyebrow">Creative License</div>
+      <div class="reader-line bold" style="font-size:26px">Permission, officially granted.</div>
+      <div class="reader-spacer"></div>
+      <div class="reader-line small" style="line-height:1.9">Most of us learned to wait — for the right idea, the right time, someone else's approval.<br><br>A Creative License removes that. It's permission to imagine freely, follow what catches your attention, and explore without needing to explain why.<br><br>Not reckless. Just unguarded.</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-cl-intro-back">⬅️</button>
+    <button class="tb" id="b-cl-intro-mg">🔍</button>
+    <button class="tb" id="b-cl-intro-fwd">➡️</button>
+  </div>
+</div>
+
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 1: Authority ══ -->
 <div class="sc card" id="s-creative-license">
-  <div class="reader-wrap" style="background:#fdf8f0">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="reader-wrap">
     <div class="reader-body" style="gap:20px">
       <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Creative License · 1 of 5</div>
       <div style="display:flex;align-items:center;gap:10px;width:80%"><div style="flex:1;height:0.5px;background:#8B6914"></div><div style="color:#8B6914;font-size:16px">✦</div><div style="flex:1;height:0.5px;background:#8B6914"></div></div>
@@ -313,7 +344,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 2: Name ══ -->
 <div class="sc card" id="s-cl-2">
-  <div class="reader-wrap" style="background:#fdf8f0">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="reader-wrap">
     <div class="reader-body" style="gap:16px">
       <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Creative License · 2 of 5</div>
       <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#8B6914;text-align:center">Be it known to all that</div>
@@ -331,7 +366,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 3: Rights ══ -->
 <div class="sc card" id="s-cl-3">
-  <div class="reader-wrap" style="background:#fdf8f0">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="reader-wrap">
     <div class="reader-body" style="gap:14px;align-items:flex-start;padding:36px 52px">
       <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif;width:100%;text-align:center">Creative License · 3 of 5</div>
       <div style="font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2a1f0e;font-family:'Playfair Display',serif;width:100%;text-align:center;margin-bottom:4px">The bearer reserves the right to</div>
@@ -353,7 +392,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 4: Interference + Closing ══ -->
 <div class="sc card" id="s-cl-4">
-  <div class="reader-wrap" style="background:#fdf8f0">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="reader-wrap">
     <div class="reader-body" style="gap:20px">
       <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Creative License · 4 of 5</div>
       <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#2a1f0e;line-height:1.8;text-align:center">And that any interference with this natural Creative License represents an offense against all that makes life worth living and shall hereby be disregarded entirely.</div>
@@ -371,7 +414,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1110 · CREATIVE LICENSE — Screen 5: Certificate + Print ══ -->
 <div class="sc card" id="s-cl-5">
-  <div style="flex:1;background:#fdf8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px 4px" id="cl-print-area">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div style="flex:1;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px 4px" id="cl-print-area">
     <svg id="cl-cert-svg" viewBox="0 0 560 370" width="100%" style="max-height:330px;display:block" xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width="560" height="370" fill="#fdf8f0"/>
       <rect x="4" y="4" width="552" height="362" fill="none" stroke="#8B6914" stroke-width="2"/>
@@ -442,27 +489,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1120 · CREATIVE SPARK ══ -->
-<div class="sc card" id="s-creative-spark">
-  <div class="reader-wrap">
-    <div class="reader-body" style="gap:18px">
-      <div class="reader-eyebrow">CREATE · Creative Spark</div>
-      <div class="reader-line bold" style="font-size:26px">Here are some doors.</div>
-      <div class="reader-spacer"></div>
-      <div class="reader-line small" style="line-height:1.9">Touch one. See what's inside.<br>Nothing you enter is a commitment.<br>If it catches your attention even slightly —<br>it belongs in the Sea.</div>
-    </div>
-  </div>
-  <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-creative-spark-back">⬅️</button>
-    <button class="tb" id="b-creative-spark-mg">🔍</button>
-    <button class="tb" id="b-creative-spark-fwd">➡️</button>
-  </div>
-</div>
-
-<!-- ══ 1121 · TWO WAYS OF THINKING (trivia off 1120) ══ -->
+<!-- ══ 1121 · TWO WAYS OF THINKING (trivia off Inklings) ══ -->
 <div class="sc" id="s-two-ways">
   <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE SPARK · TRIVIA</span></div>
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">INKLINGS · TRIVIA</span></div>
     <div class="sw" style="padding:28px 32px">
       <div class="se">1121 · Two Ways of Thinking</div>
       <div class="sh">Your brain has two gears.</div>
@@ -478,10 +508,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1122 · RULES OF CREATIVE THINKING (trivia off 1120) ══ -->
+<!-- ══ 1122 · RULES OF CREATIVE THINKING (trivia off Inklings) ══ -->
 <div class="sc" id="s-creative-rules">
   <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE SPARK · TRIVIA</span></div>
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">INKLINGS · TRIVIA</span></div>
     <div class="sw" style="padding:28px 32px">
       <div class="se">1122 · Rules of Creative Thinking</div>
       <div class="sh">Creative thinking has only one rule.</div>
@@ -499,10 +529,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1130 · WHAT I MIGHT WANT ══ -->
 <div class="sc card" id="s-what-i-want">
-  <div class="sw" style="padding:20px 24px 12px;align-items:center">
-    <div class="se" style="margin-bottom:6px">CREATE · What I Might Want</div>
-    <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-bottom:18px;text-align:center">Touch a door. See what's inside.</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;width:100%;max-width:320px">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="sw" style="padding:14px 24px 12px;align-items:center">
+    <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Inklings</div>
+    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#444;margin-bottom:16px;text-align:center;max-width:300px;line-height:1.5">Thoughts about what you might want:</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-auto-rows:1fr;gap:10px;width:100%;max-width:340px;flex:1">
       <button class="spark-door" id="b-door-do"   data-prompt="What might you want to do? Experiences, activities, adventures…">DO</button>
       <button class="spark-door" id="b-door-be"   data-prompt="Who might you want to become? Qualities, identities, ways of moving through the world…">BE</button>
       <button class="spark-door" id="b-door-have" data-prompt="What might you want to have? Objects, spaces, resources, relationships…">HAVE</button>
@@ -514,9 +548,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <button class="spark-door" id="b-door-images" data-prompt="What images make you linger? What do you keep coming back to? Drop them here — a scene, a moment, a visual that pulls…">IMAGES</button>
       <button class="spark-door" id="b-door-people" data-prompt="Who catches your attention? Who do you admire without fully knowing why? Name them — or describe what you see in them…">PEOPLE</button>
       <button class="spark-door" id="b-door-moments" data-prompt="When did time disappear? When were you completely absorbed? Describe the moment — when were you most alive?">MOMENTS</button>
+      <button class="spark-door" id="b-door-other" data-prompt="What didn't fit anywhere else? Anything counts.">OTHER</button>
     </div>
-    <div class="sp"></div>
-    <div style="font-size:11px;font-style:italic;color:#bbb;text-align:center;padding-bottom:4px">You can return here as many times as you like.</div>
+    <div style="font-size:11px;font-style:italic;color:#bbb;text-align:center;padding-top:10px">You can return here as many times as you like.</div>
   </div>
   <div class="bar2 bar-dream-pp">
     <button class="tb" id="b-what-i-want-back">⬅️</button>
@@ -547,10 +581,38 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1140 · SEA OF IDEAS — First Crossing ══ -->
+<!-- ══ 1140 · LIGHTNING BUG ══ -->
+<div class="sc card" id="s-lightning-bug">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div style="flex:1;display:flex;flex-direction:column;background:#ffffff">
+    <div class="reader-eyebrow" style="padding:16px 16px 0;text-align:center">Creative Sparks</div>
+    <div id="lb-img" style="flex:1;margin:12px 16px;border-radius:10px;background:#e4e0d8 center/cover no-repeat"></div>
+    <div class="paging-strip">
+      <button class="pg-btn" id="b-lb-prev"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
+      <button id="b-lb-heart" style="width:48px;height:48px;background:#111;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#ffffff"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.2 2 4.5 5.6 4.5c2 0 3.4 1 4.4 2.6 1-1.6 2.4-2.6 4.4-2.6C18 4.5 19.6 8.2 18 11.7 16.5 16.4 12 21 12 21z"/></svg>
+      </button>
+      <button class="pg-btn" id="b-lb-next"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-lb-back">⬅️</button>
+    <button class="tb" id="b-lb-mg">🔍</button>
+    <button class="tb" id="b-lb-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1150 · SEA OF IDEAS — First Crossing ══ -->
 <div class="sc card" id="s-sea-of-ideas">
-  <div class="sw" style="padding:28px 32px;align-items:center;text-align:center">
-    <div class="se">CREATE · Sea of Ideas</div>
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
+  <div class="sw" style="padding:16px 32px;align-items:center;text-align:center">
+    <div class="se">Sea of Ideas</div>
     <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:#111;line-height:1.5;margin-bottom:8px">Look what you made.</div>
     <div style="font-size:13px;font-style:italic;color:#888;margin-bottom:20px;line-height:1.7">Everything you captured is floating here.<br>No judgment. No order. Just your ideas.</div>
     <div id="sea-miro-frame" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;overflow:hidden;margin-bottom:18px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:200px">
@@ -573,9 +635,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- ══ 1150 · PLUSing ══ -->
 <div class="sc card" id="s-plusing">
+  <div class="phase-header">
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
+    <div class="ph-chapter">Part 1: CREATE</div>
+  </div>
   <div class="reader-wrap">
     <div class="reader-body">
-      <div class="reader-eyebrow">CREATE · PLUSing</div>
+      <div class="reader-eyebrow">PLUSing</div>
       <div class="reader-line bold">Good enough is never good enough.</div>
       <div class="reader-spacer"></div>
       <div class="reader-line small">PLUSing means making something better than it needs to be. Walt Disney called it the secret to everything worth building.</div>
@@ -1084,17 +1150,27 @@ document.addEventListener('DOMContentLoaded', function(){
   ]);
   T.wire('b-create-hub-back', function(){ T.nav('s-dream'); });
   T.wire('b-create-hub-mg',   T.goMG);
-  T.wire('b-create-hub-fwd',  function(){ T.nav('s-creative-license'); });
-  document.getElementById('b-hub-cl')    && document.getElementById('b-hub-cl').addEventListener('click',    function(){ T.nav('s-creative-license'); });
-  document.getElementById('b-hub-spark') && document.getElementById('b-hub-spark').addEventListener('click', function(){ T.nav('s-creative-spark'); });
+  T.wire('b-create-hub-fwd',  function(){ T.nav('s-cl-intro'); });
+  document.getElementById('b-hub-cl')       && document.getElementById('b-hub-cl').addEventListener('click',       function(){ T.nav('s-cl-intro'); });
+  document.getElementById('b-hub-inklings') && document.getElementById('b-hub-inklings').addEventListener('click', function(){ T.nav('s-what-i-want'); });
+  document.getElementById('b-hub-spark')    && document.getElementById('b-hub-spark').addEventListener('click',    function(){ T.nav('s-lightning-bug'); });
 
-  /* ── 1110 · CREATIVE LICENSE ── */
-  T.registerPageNum('s-creative-license', '1110');
+  /* ── 1110 · CREATIVE LICENSE — Intro ── */
+  T.registerPageNum('s-cl-intro', '1110');
+  T.registerCtx('s-cl-intro', 'Creative License');
+  T.registerGems('s-cl-intro', [
+    {text:'You have always had permission to want freely. This just makes it official.', attr:'T2T Field Guide'}
+  ]);
+  T.wire('b-cl-intro-back', function(){ T.nav('s-create-hub'); });
+  T.wire('b-cl-intro-mg',   T.goMG);
+  T.wire('b-cl-intro-fwd',  function(){ T.nav('s-creative-license'); });
+
+  /* ── 1110 · CREATIVE LICENSE — Ceremony ── */
   T.registerCtx('s-creative-license', 'Creative License');
   T.registerGems('s-creative-license', [
     {text:'You have always had permission to want freely. This just makes it official.', attr:'T2T Field Guide'}
   ]);
-  T.wire('b-creative-license-back', function(){ T.nav('s-create-hub'); });
+  T.wire('b-creative-license-back', function(){ T.nav('s-cl-intro'); });
   T.wire('b-creative-license-mg',   T.goMG);
   T.wire('b-cl-1-fwd',  function(){ T.nav('s-cl-2'); });
   T.wire('b-cl-2-back', function(){ T.nav('s-creative-license'); });
@@ -1108,46 +1184,36 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-cl-4-fwd',  function(){ T.nav('s-cl-5'); });
   T.wire('b-cl-5-back', function(){ T.nav('s-cl-4'); });
   T.wire('b-cl-5-mg',   T.goMG);
-  T.wire('b-cl-5-fwd',  function(){ T.nav('s-creative-spark'); });
+  T.wire('b-cl-5-fwd',  function(){ T.nav('s-what-i-want'); });
 
-  /* ── 1120 · CREATIVE SPARK ── */
-  T.registerPageNum('s-creative-spark', '1120');
-  T.registerCtx('s-creative-spark', 'Creative Spark');
-  T.registerGems('s-creative-spark', [
-    {text:'If it catches your attention even slightly — it belongs in the Sea. No commitment. No explanation. No judgment.', attr:'T2T Field Guide · CREATE'}
-  ]);
-  T.wire('b-creative-spark-back', function(){ T.goBack(); });
-  T.wire('b-creative-spark-mg',   T.goMG);
-  T.wire('b-creative-spark-fwd',  function(){ T.nav('s-what-i-want'); });
-  T.registerTrivia('s-creative-spark', [
-    { label: 'Two Ways of Thinking', id: 's-two-ways' },
-    { label: 'Rules of Creative Thinking', id: 's-creative-rules' }
-  ]);
-
-  /* ── 1121 · TWO WAYS OF THINKING (trivia) ── */
+  /* ── 1121 · TWO WAYS OF THINKING (trivia off Inklings) ── */
   T.registerPageNum('s-two-ways', '1121');
-  T.wire('b-two-ways-back', function(){ T.nav('s-creative-spark'); });
+  T.wire('b-two-ways-back', function(){ T.nav('s-what-i-want'); });
   T.wire('b-two-ways-mg',   T.goMG);
 
-  /* ── 1122 · RULES OF CREATIVE THINKING (trivia) ── */
+  /* ── 1122 · RULES OF CREATIVE THINKING (trivia off Inklings) ── */
   T.registerPageNum('s-creative-rules', '1122');
-  T.wire('b-creative-rules-back', function(){ T.nav('s-creative-spark'); });
+  T.wire('b-creative-rules-back', function(){ T.nav('s-what-i-want'); });
   T.wire('b-creative-rules-mg',   T.goMG);
 
-  /* ── 1130 · WHAT I MIGHT WANT ── */
+  /* ── 1130 · INKLINGS ── */
   T.registerPageNum('s-what-i-want', '1130');
-  T.registerCtx('s-what-i-want', 'What I Might Want');
+  T.registerCtx('s-what-i-want', 'Inklings');
   T.registerGems('s-what-i-want', [
     {text:'Anything that catches your attention belongs in the Sea.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-what-i-want-back', function(){ T.nav('s-creative-spark'); });
+  T.registerTrivia('s-what-i-want', [
+    { label: 'Two Ways of Thinking', id: 's-two-ways' },
+    { label: 'Rules of Creative Thinking', id: 's-creative-rules' }
+  ]);
+  T.wire('b-what-i-want-back', function(){ T.goBack(); });
   T.wire('b-what-i-want-mg',   T.goMG);
-  T.wire('b-what-i-want-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+  T.wire('b-what-i-want-fwd',  function(){ T.nav('s-lightning-bug'); });
 
   /* ── SPARK DOORS → CAPTURE ── */
   (function(){
-    var doors = ['do','be','have','go','make','give','feel','songs','images','people','moments'];
-    var labels = {do:'DO',be:'BE',have:'HAVE',go:'GO',make:'MAKE',give:'GIVE',feel:'FEEL',songs:'SONGS',images:'IMAGES',people:'PEOPLE',moments:'MOMENTS'};
+    var doors = ['do','be','have','go','make','give','feel','songs','images','people','moments','other'];
+    var labels = {do:'DO',be:'BE',have:'HAVE',go:'GO',make:'MAKE',give:'GIVE',feel:'FEEL',songs:'SONGS',images:'IMAGES',people:'PEOPLE',moments:'MOMENTS',other:'OTHER'};
     doors.forEach(function(d){
       T.wire('b-door-'+d, function(){
         var btn = document.getElementById('b-door-'+d);
@@ -1186,17 +1252,9 @@ document.addEventListener('DOMContentLoaded', function(){
     var label = document.getElementById('spark-cap-title').textContent.replace('✨ ','');
     statusEl.textContent = 'Posting to your Sea of Ideas…';
     try {
-      var member = T.getMember && T.getMember();
-      var boardId = (member && member.miro_board_id) ? member.miro_board_id : 'uXjVNVoFoec=';
-      if(!boardId.endsWith('=')) boardId = boardId + '=';
-      var MIRO_TOKEN = window.MIRO_TOKEN || '';
       var noteText = '[' + label + '] ' + text;
-      var r = await fetch('https://api.miro.com/v2/boards/' + encodeURIComponent(boardId) + '/sticky_notes', {
-        method:'POST',
-        headers:{'Authorization':'Bearer '+MIRO_TOKEN,'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify({ data:{ content: noteText, shape:'square' }, style:{ fillColor:'light_yellow', textAlign:'left', textAlignVertical:'top' }, geometry:{ width:220 } })
-      });
-      if(r.ok){
+      var ok = await T.postIdeaToMiro(noteText, 'What I Might Want · '+label);
+      if(ok){
         if(T.sb){
           var user = (await T.sb.auth.getUser()).data.user;
           if(user){ await T.sb.from('ideas').insert({ user_id:user.id, idea_text:noteText, page_context:'What I Might Want · '+label, created_at:new Date().toISOString() }); }
@@ -1210,13 +1268,92 @@ document.addEventListener('DOMContentLoaded', function(){
     } catch(e){ statusEl.textContent = 'Error: ' + e.message; }
   });
 
-  /* ── 1140 · SEA OF IDEAS ── */
-  T.registerPageNum('s-sea-of-ideas', '1140');
+  /* ── 1140 · LIGHTNING BUG ──
+     Catch first, evaluate never. Button-driven only — no timers, no dwell detection.
+     History array lets ◀ walk back through images already seen (no new fetch);
+     ▶ walks forward through that same history if you've stepped back, or pulls
+     a fresh random image once you're caught up to the front. Black heart = CREATE
+     catch (no relative value yet — that's SHAPE's red hearts, later). */
+  T.registerPageNum('s-lightning-bug', '1140');
+  T.registerCtx('s-lightning-bug', 'Creative Sparks');
+  T.registerGems('s-lightning-bug', [
+    {text:'If your attention stopped, catch it. No justification required.', attr:'T2T Field Guide · Lightning Bug'}
+  ]);
+  T.wire('b-lb-back', function(){ T.nav('s-what-i-want'); });
+  T.wire('b-lb-mg',   T.goMG);
+  T.wire('b-lb-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+
+  (function(){
+    var UNSPLASH_KEY = ''; // TODO Larry: add your free Unsplash Access Key here (unsplash.com/developers)
+    var FALLBACK = [
+      {url:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800',credit:'Unsplash'},
+      {url:'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800',credit:'Unsplash'},
+      {url:'https://images.unsplash.com/photo-1500964757637-c85e8a162699?w=800',credit:'Unsplash'},
+      {url:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',credit:'Unsplash'},
+      {url:'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800',credit:'Unsplash'},
+      {url:'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800',credit:'Unsplash'}
+    ];
+    var history = [];
+    var pos = -1;
+    var imgEl = document.getElementById('lb-img');
+
+    async function fetchRandom(){
+      if(UNSPLASH_KEY){
+        try{
+          var r = await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
+          if(r.ok){
+            var d = await r.json();
+            return {url:d.urls.regular, credit:(d.user&&d.user.name?d.user.name:'Unsplash')+' \u00b7 Unsplash'};
+          }
+        }catch(e){}
+      }
+      return FALLBACK[Math.floor(Math.random()*FALLBACK.length)];
+    }
+
+    function render(){
+      var item = history[pos];
+      if(item && imgEl) imgEl.style.backgroundImage = "url('"+item.url+"')";
+    }
+
+    async function showNext(){
+      if(pos < history.length - 1){
+        pos++;
+      } else {
+        var item = await fetchRandom();
+        history.push(item);
+        if(history.length > 40){ history.shift(); pos = history.length - 2; }
+        pos = history.length - 1;
+      }
+      render();
+    }
+
+    function showPrev(){
+      if(pos > 0){ pos--; render(); }
+    }
+
+    T.wire('b-lb-next', showNext);
+    T.wire('b-lb-prev', showPrev);
+    T.wire('b-lb-heart', async function(){
+      var item = history[pos];
+      if(!item) return;
+      if(T.postImageToMiro) await T.postImageToMiro(item.url, item.credit);
+      showNext();
+    });
+
+    var _origLBNav = T.nav;
+    T.nav = function(id){
+      _origLBNav(id);
+      if(id === 's-lightning-bug' && history.length === 0){ showNext(); }
+    };
+  })();
+
+  /* ── 1150 · SEA OF IDEAS ── */
+  T.registerPageNum('s-sea-of-ideas', '1150');
   T.registerCtx('s-sea-of-ideas', 'Sea of Ideas');
   T.registerGems('s-sea-of-ideas', [
     {text:'The Sea of Ideas holds everything you\'ve captured — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-what-i-want'); });
+  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-lightning-bug'); });
   T.wire('b-sea-of-ideas-mg',   T.goMG);
   T.wire('b-sea-of-ideas-fwd',  function(){ T.nav('s-plusing'); });
   T.wire('b-sea-more-sparks',   function(){ T.nav('s-what-i-want'); });
@@ -1249,8 +1386,8 @@ document.addEventListener('DOMContentLoaded', function(){
     };
   })();
 
-  /* ── 1150 · PLUSing ── */
-  T.registerPageNum('s-plusing', '1150');
+  /* ── 1160 · PLUSing ── */
+  T.registerPageNum('s-plusing', '1160');
   T.registerCtx('s-plusing', 'PLUSing');
   T.registerGems('s-plusing', [
     {text:'Good enough is never good enough.', attr:'Walt Disney / T2T'},
