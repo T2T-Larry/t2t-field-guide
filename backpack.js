@@ -768,7 +768,7 @@
     wire('b-sea-back',function(){var e=document.getElementById('miro-embed');if(e)e.src='';nav('s-idea',false);});
     wire('b-sea-mg',goMG);
     wire('b-sea-full',function(){var e=document.getElementById('miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
-    wire('b-icap-back',goBack); wire('b-icap-mg',goMG);
+    wire('b-icap-back',function(){nav('s-idea');}); wire('b-icap-mg',goMG);
     var ideaTA=document.getElementById('idea-text');
     if(ideaTA) ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
     wire('b-save-idea',async function(){
@@ -797,8 +797,8 @@
     });
     wire('b-view-journal',function(){var choices=document.getElementById('journal-view-choices');if(!choices)return;choices.style.display=choices.style.display==='flex'?'none':'flex';});
     wire('b-jview-list',openJournalView); wire('b-jview-miro',openJournalMiro);
-    wire('b-jcap-back',goBack); wire('b-jcap-mg',goMG);
-    wire('b-jcov-back',goBack); wire('b-jcov-mg',goMG);
+    wire('b-jcap-back',function(){nav('s-journal');}); wire('b-jcap-mg',goMG);
+    wire('b-jcov-back',function(){nav('s-journal');}); wire('b-jcov-mg',goMG);
     wire('b-jcov-next',function(){if(_jeEntries.length>0){showEntryAt(_jeEntries,0);nav('s-journal-entry');}});
     wire('b-jview-back',function(){nav('s-journal');}); wire('b-jview-mg',goMG);
     wire('b-jentry-back',function(){nav('s-journal-view');}); wire('b-jentry-mg',goMG);
@@ -865,16 +865,16 @@
     wire('pb-question',function(){nav('s-question');}); wire('pb-create',function(){nav('s-create');});
     wire('pb-shape',function(){nav('s-shape');}); wire('pb-share',function(){nav('s-share');});
     wire('pb-dare',function(){nav('s-dare');}); wire('btn-configure',function(){nav('s-configure');});
-    wire('b-q-back',goBack);  wire('b-q-mg',goMG);
-    wire('b-c-back',goBack);  wire('b-c-mg',goMG);
-    wire('b-sh-back',goBack); wire('b-sh-mg',goMG);
-    wire('b-sr-back',goBack); wire('b-sr-mg',goMG);
-    wire('b-d-back',goBack);  wire('b-d-mg',goMG);
-    wire('b-cfg-back',goBack); wire('b-cfg-mg',goMG);
+    wire('b-q-back',function(){nav('s-tools');});  wire('b-q-mg',goMG);
+    wire('b-c-back',function(){nav('s-tools');});  wire('b-c-mg',goMG);
+    wire('b-sh-back',function(){nav('s-tools');}); wire('b-sh-mg',goMG);
+    wire('b-sr-back',function(){nav('s-tools');}); wire('b-sr-mg',goMG);
+    wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
+    wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
     wire('b-go-change-pw',function(){nav('s-change-password');});
 
     /* CHANGE PASSWORD */
-    wire('b-cp-back',goBack); wire('b-cp-mg',goMG);
+    wire('b-cp-back',function(){nav('s-configure');}); wire('b-cp-mg',goMG);
     var cpInput=document.getElementById('cp-new-password');
     if(cpInput) cpInput.addEventListener('input',function(){var btn=document.getElementById('b-cp-save');if(btn)btn.classList.toggle('active',this.value.trim().length>=6);});
     wire('b-cp-save',async function(){

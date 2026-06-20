@@ -15,7 +15,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .fg input,.fg textarea{user-select:text;-webkit-user-select:text;cursor:text}
 .sc{display:none!important;pointer-events:none}
 .sc.active{display:flex!important;flex-direction:column;pointer-events:auto}
-.card{min-height:440px;border-radius:12px 12px 0 0;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.card{height:520px;border-radius:12px 12px 0 0;overflow-x:hidden;overflow-y:auto;flex:1;display:flex;flex-direction:column}
 .card.rnd{border-radius:12px;min-height:0;flex:0 0 auto}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
@@ -543,7 +543,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- 🌊 SEA OF IDEAS -->
 <div class="sc" id="s-sea-ideas">
-  <div class="card" style="min-height:440px;background:#EBF4FF;display:flex;flex-direction:column">
+  <div class="card" style="background:#EBF4FF">
     <div class="mg-mhead" style="background:#EBF4FF;border-bottom:3px solid #378ADD;flex-shrink:0">
       <div class="mg-mh" style="color:#1A3A5C">🌊 Sea of Ideas</div>
       <div class="mg-mt" style="color:#3A6080">Your ideas, live on the board.</div>
@@ -610,7 +610,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- JOURNAL VIEW -->
 <div class="sc" id="s-journal-view">
-  <div class="card" style="height:440px;max-height:440px;min-height:0;overflow:hidden;flex:none"><div class="jvw">
+  <div class="card" ><div class="jvw">
     <div class="jvh">Field Guide Journal</div>
     <div class="jvs" id="jv-count">Your entries</div>
     <hr class="jvr">
@@ -640,7 +640,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- JOURNAL MIRO -->
 <div class="sc" id="s-journal-miro">
-  <div class="card" style="min-height:440px;background:#FDF6E8;display:flex;flex-direction:column">
+  <div class="card" style="background:#FDF6E8">
     <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C;flex-shrink:0">
       <div class="mg-mh" style="color:#3B2510">✏️ Journal Board</div>
       <div class="mg-mt" style="color:#7A5C3A">Your journal entries, live on the board.</div>
@@ -673,7 +673,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- 💎 ADD A GEM -->
 <div class="sc" id="s-gem-add">
-  <div class="card" style="min-height:0;overflow:hidden;flex:1">
+  <div class="card">
     <div class="gcw">
       <div class="gc-title">💎 Add a Gem</div>
       <div class="gc-ctx" id="gc-ctx-label"></div>
@@ -694,7 +694,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- 💎 GEMS LIST -->
 <div class="sc" id="s-gems-list">
-  <div class="card" style="height:440px;max-height:440px;min-height:0;overflow:hidden;flex:none"><div class="gvw">
+  <div class="card" ><div class="gvw">
     <div class="gvh">💎 Gems</div>
     <div class="gvs" id="gv-count">Your gems</div>
     <hr class="gvr">
@@ -705,7 +705,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 <!-- 💎 GEMS MIRO -->
 <div class="sc" id="s-gems-miro">
-  <div class="card" style="min-height:440px;background:#F5F3FF;display:flex;flex-direction:column">
+  <div class="card" style="background:#F5F3FF">
     <div class="mg-mhead" style="background:#F5F3FF;border-bottom:3px solid #7c3aed;flex-shrink:0">
       <div class="mg-mh" style="color:#5B21B6">💎 Gems Board</div>
       <div class="mg-mt" style="color:#7c3aed">Your gems, live on the board.</div>
