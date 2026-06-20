@@ -355,12 +355,20 @@
     {num:'0400',label:'Do you know what you want?',                   id:'s-know'}
   ];
 
-  function renderMap(curNum) {
-    var visited=getVisited();
-    if(curNum===undefined) curNum=_pageNums[cur]||null;
-    var el=document.getElementById('map-intro-steps'); if(!el) return;
+  var _dreamSteps = [
+    {num:'1000',label:'The Dream Phase',   id:'s-dream'},
+    {num:'1100',label:'CREATE',            id:'s-create-hub'},
+    {num:'1110',label:'Creative License',  id:'s-creative-license'},
+    {num:'1120',label:'Creative Spark',    id:'s-creative-spark'},
+    {num:'1130',label:'What I Might Want', id:'s-what-i-want'},
+    {num:'1140',label:'Sea of Ideas',      id:'s-sea-of-ideas'},
+    {num:'1150',label:'PLUSing',           id:'s-plusing'}
+  ];
+
+  function renderStepList(containerId, steps, curNum, visited) {
+    var el=document.getElementById(containerId); if(!el) return;
     el.innerHTML='';
-    _introSteps.forEach(function(step){
+    steps.forEach(function(step){
       var div=document.createElement('div');
       var isCur=(step.num===curNum), isVis=visited.indexOf(step.num)!==-1&&!isCur;
       div.className='st'+(isCur?' here':isVis?' vis':' unv');
@@ -372,6 +380,13 @@
       }
       el.appendChild(div);
     });
+  }
+
+  function renderMap(curNum) {
+    var visited=getVisited();
+    if(curNum===undefined) curNum=_pageNums[cur]||null;
+    renderStepList('map-intro-steps', _introSteps, curNum, visited);
+    renderStepList('map-dream',       _dreamSteps, curNum, visited);
   }
 
   /* ── MIRO HELPERS ── */
