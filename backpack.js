@@ -273,6 +273,14 @@
 
   function closeMG(){ var ov=document.getElementById('mg-overlay'); if(ov) ov.classList.remove('active'); }
 
+  /* ── RETURN TO MG ── used by every backpack screen's ⬅️ (Map, Idea, Journal,
+     Gems, Tools, Trivia). Goes back to the origin page AND reopens the MG
+     overlay on top of it, restoring exactly the state the traveler left. */
+  function returnToMG(){
+    if (mgOrigin){ nav(mgOrigin,false); goMG(); }
+    else { goBack(); }
+  }
+
   function goMap() {
     closeMG();
     var srcNum=_pageNums[cur]||null;
@@ -660,7 +668,7 @@
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
     wire('b-mg-gems',   function(){closeMG();nav('s-gems',   false);});
     wire('b-mg-trivia', function(){closeMG();nav('s-trivia', false);});
-    wire('b-trivia-back', function(){ if(mgOrigin){nav(mgOrigin,false);}else{goBack();} });
+    wire('b-trivia-back', returnToMG);
     wire('b-trivia-mg',   goMG);
     wire('b-mg-tools',  function(){closeMG();nav('s-tools',  false);});
   }
@@ -668,7 +676,7 @@
   /* ── BACKPACK SCREEN WIRING ── */
   function wireBackpack(){
     /* MAP */
-    wire('b-map-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
+    wire('b-map-back',returnToMG);
     wire('b-map-mg',goMG);
     wire('tog-map-dream',  function(){togglePh('map-dream');});
     wire('tog-map-believe',function(){togglePh('map-believe');});
@@ -676,7 +684,7 @@
     wire('tog-map-journey',function(){togglePh('map-journey');});
 
     /* IDEA HUB */
-    wire('b-idea-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
+    wire('b-idea-back',returnToMG);
     wire('b-idea-mg',goMG);
     wire('b-capture-idea',function(){
       nav('s-idea-capture');
@@ -709,7 +717,7 @@
     });
 
     /* JOURNAL HUB */
-    wire('b-journal-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
+    wire('b-journal-back',returnToMG);
     wire('b-journal-mg',goMG);
     wire('b-add-note',function(){
       nav('s-journal-capture');
@@ -748,7 +756,7 @@
     wire('b-jmiro-full',function(){var e=document.getElementById('journal-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
     /* GEMS HUB */
-    wire('b-gems-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}});
+    wire('b-gems-back',returnToMG);
     wire('b-gems-mg',goMG);
     wire('b-add-gem',openGemAdd);
     wire('b-gadd-back',function(){nav('s-gems');}); wire('b-gadd-mg',goMG);
@@ -785,7 +793,7 @@
     wire('b-gmiro-full',function(){var e=document.getElementById('gems-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
     /* TOOLS */
-    wire('b-tools-back',function(){if(mgOrigin){nav(mgOrigin,false);}else{goBack();}}); wire('b-tools-mg',goMG);
+    wire('b-tools-back',returnToMG); wire('b-tools-mg',goMG);
     wire('pb-question',function(){nav('s-question');}); wire('pb-create',function(){nav('s-create');});
     wire('pb-shape',function(){nav('s-shape');}); wire('pb-share',function(){nav('s-share');});
     wire('pb-dare',function(){nav('s-dare');}); wire('btn-configure',function(){nav('s-configure');});
@@ -817,7 +825,7 @@
 
   /* ── PUBLIC API on window.T2T ── */
   window.T2T = {
-    nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG,
+    nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
     registerGems:registerGems, registerCtx:registerCtx,
     registerMap:registerMap, registerMore:registerMore,
