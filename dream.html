@@ -377,8 +377,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:10px;padding:28px 40px">
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Creative License</div>
-      <div style="font-family:'Playfair Display',serif;font-size:15px;color:#333;line-height:1.7">Permission, officially granted. Most of us learned to wait — for the right idea, the right time, someone else's approval.<br><br>A Creative License removes that. It's permission to imagine freely, follow what catches your attention, and explore without needing to explain why.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Creative License</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#1a3a5c;line-height:1.6">Creative License is the permission to think creatively — to imagine, bend the rules, and take bold leaps without asking for approval.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
@@ -388,6 +388,56 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
+
+<!-- ══ 1112 · WHAT IT MEANS (trivia off Creative License) ══ -->
+<div class="sc" id="s-cl-what-it-means">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE LICENSE · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1112 · What It Means</div>
+      <div class="sh">Three freedoms, granted at once.</div>
+      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li>Freedom to explore ideas that don't follow conventional logic</li>
+        <li>Authority to experiment — even if it gets messy</li>
+        <li>Space to express your unique vision, even if it breaks a few "rules"</li>
+      </ul>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-cl-what-it-means-back">⬅️</button>
+    <button class="tb" id="b-cl-what-it-means-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ══ 1113 · WHY DO WE NEED A CREATIVE LICENSE (trivia off Creative License) ══ -->
+<div class="sc" id="s-cl-why-license">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE LICENSE · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1113 · Why Do We Need a Creative License?</div>
+      <div class="sh">Permission rarely shows up on its own.</div>
+      <ul style="margin:8px 0 16px;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li>The lack of creative thinking emphasis in education</li>
+        <li>The suppressive effect of expecting correctness over exploration</li>
+        <li>The reality of changing conditions in life</li>
+        <li>The need to practice creative thinking — and permit it</li>
+        <li>The value of giving yourself emotional and psychological freedom from judgment</li>
+      </ul>
+      <div class="sb" style="font-weight:700;color:#111;margin-bottom:6px">Why it matters</div>
+      <ul style="margin:0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li>Many people wait for permission to be creative. This says: you already have it.</li>
+        <li>It removes fear of "doing it wrong."</li>
+        <li>It unlocks play, risk, originality, and joy.</li>
+      </ul>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-cl-why-license-back">⬅️</button>
+    <button class="tb" id="b-cl-why-license-mg">🔍</button>
+  </div>
+</div>
 
 <!-- ══ 1111 · NO MEETINGS (prelude to the License ceremony) ══ -->
 <div class="sc card" id="s-cl-no-meetings">
@@ -1304,11 +1354,25 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerPageNum('s-cl-intro', '1110');
   T.registerCtx('s-cl-intro', 'Creative License');
   T.registerGems('s-cl-intro', [
-    {text:'You have always had permission to want freely. This just makes it official.', attr:'T2T Field Guide'}
+    {text:'Creative License is the permission to think creatively — to imagine, bend the rules, and take bold leaps without asking for approval.', attr:'T2T Field Guide · CREATE'}
+  ]);
+  T.registerTrivia('s-cl-intro', [
+    { label: 'What It Means', id: 's-cl-what-it-means' },
+    { label: 'Why Do We Need a Creative License?', id: 's-cl-why-license' }
   ]);
   T.wire('b-cl-intro-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-cl-intro-mg',   T.goMG);
   T.wire('b-cl-intro-fwd',  function(){ T.nav('s-cl-no-meetings'); });
+
+  /* ── 1112 · WHAT IT MEANS (trivia off Creative License) ── */
+  T.registerPageNum('s-cl-what-it-means', '1112');
+  T.wire('b-cl-what-it-means-back', function(){ T.nav('s-cl-intro'); });
+  T.wire('b-cl-what-it-means-mg',   T.goMG);
+
+  /* ── 1113 · WHY DO WE NEED A CREATIVE LICENSE (trivia off Creative License) ── */
+  T.registerPageNum('s-cl-why-license', '1113');
+  T.wire('b-cl-why-license-back', function(){ T.nav('s-cl-intro'); });
+  T.wire('b-cl-why-license-mg',   T.goMG);
 
   /* ── 1111 · NO MEETINGS (prelude to the License ceremony) ── */
   T.registerPageNum('s-cl-no-meetings', '1111');
