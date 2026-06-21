@@ -78,6 +78,9 @@
   /* ── TRIVIA REGISTRY ── */
   var _triviaRegistry = {};
   var _triviaScreens = [];   /* all screen IDs registered as trivia targets */
+  var _triviaOverride = null; /* one-shot: forces renderTrivia() to use this screen's registry,
+                                  for hub screens (Idea/Journal/Gems) whose trivia should show
+                                  regardless of which primary page launched the MG */
 
   function registerTrivia(screenId, links) {
     _triviaRegistry[screenId] = links || [];
@@ -94,8 +97,9 @@
     el.innerHTML = '';
     var ctxLbl = document.getElementById('trivia-ctx-label');
     if (ctxLbl) ctxLbl.textContent = getCtx() + ' · TRIVIA';
-    // Only show trivia registered for the exact primary page or mgOrigin — no stack walk
-    var links = _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
+    // Hub trivia (Idea/Journal/Gems) takes priority when set; otherwise primary page or mgOrigin — no stack walk
+    var links = (_triviaOverride && _triviaRegistry[_triviaOverride]) || _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
+    _triviaOverride = null;
     if (!links.length) {
       el.innerHTML = '<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-style:italic;color:#aaa;padding:16px 0">Nothing here yet.</div>';
       return;
@@ -787,6 +791,7 @@
     /* IDEA HUB */
     wire('b-idea-back',returnToMG);
     wire('b-idea-mg',goMG);
+    wire('b-idea-trivia',function(){ _triviaOverride='s-idea'; mgOrigin='s-idea'; nav('s-trivia',false); });
     wire('b-capture-idea',function(){
       nav('s-idea-capture');
       setTimeout(function(){
