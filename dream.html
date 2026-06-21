@@ -246,11 +246,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}
   .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}
   .title-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 20px;background:#ffffff;text-align:center}
-  .phase-eyebrow{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#7a6040;margin-bottom:24px}
-  .phase-the{font-size:24px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.1}
-  .phase-name{font-size:72px;font-weight:700;color:#1a3a5c;line-height:1.0;letter-spacing:-2px}
-  .phase-word{font-size:24px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.2}
-  .phase-sub{font-size:12px;letter-spacing:4px;color:#5a4628;margin-top:28px;text-transform:uppercase}
+  .phase-eyebrow{font-size:12px;letter-spacing:5px;text-transform:uppercase;color:#3B2510;margin-bottom:28px}
+  .phase-the{font-size:28px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.1}
+  .phase-name{font-size:82px;font-weight:700;color:#1a3a5c;line-height:1.0;letter-spacing:-2px}
+  .phase-word{font-size:28px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.2}
+  .phase-sub{font-size:14px;letter-spacing:4px;color:#3B2510;margin-top:32px;text-transform:uppercase}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="backpack.js"></script>
@@ -317,8 +317,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc card" id="s-create-toc">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span style="color:#b0a898">—</span>
-    <span class="ph-chapter" style="margin-top:0">PART 1: CREATE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">PART 1: CREATE</span>
   </div>
   <div class="reader-wrap">
     <div class="sw" style="padding:24px 28px 8px">
@@ -333,14 +333,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div id="toc-inklings" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">2</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Inklings</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Noticing what catches you</div></div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Inklings</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Ideas already on your back burner</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
       <div id="toc-spark" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">3</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Creative Sparks</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Chasing what catches your eye</div></div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Creative Sparks</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">What catches your eye</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
@@ -372,8 +372,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <div class="sc card" id="s-cl-intro">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span style="color:#b0a898">—</span>
-    <span class="ph-chapter" style="margin-top:0">PART 1: CREATE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">PART 1: CREATE</span>
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:10px;padding:28px 40px">
@@ -1290,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', function(){
     { label: 'Two Ways of Thinking', id: 's-two-ways' },
     { label: 'Rules of Creative Thinking', id: 's-creative-rules' }
   ]);
-  T.wire('b-what-i-want-back', function(){ T.goBack(); });
+  T.wire('b-what-i-want-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-what-i-want-mg',   T.goMG);
   T.wire('b-what-i-want-fwd',  function(){ T.nav('s-lightning-bug'); });
 
