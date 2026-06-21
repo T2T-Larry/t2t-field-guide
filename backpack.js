@@ -102,7 +102,8 @@
     }
     links.forEach(function(link) {
       var div = document.createElement('div');
-      div.className = 'more-link';
+      var pn = _pageNums[link.id];
+      div.className = 'more-link' + (pn && getVisited().indexOf(pn)!==-1 ? ' visited' : '');
       div.innerHTML =
         '<div class="more-link-left">' +
           '<div class="more-link-icon">' + (link.icon || '✦') + '</div>' +

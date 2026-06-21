@@ -1335,7 +1335,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   /* ── 1101 · WHY CREATIVITY MATTERS (trivia off CREATE hook) ── */
   T.registerPageNum('s-why-creativity', '1101');
-  T.wire('b-why-creativity-back', function(){ T.nav('s-create-hub'); });
+  T.wire('b-why-creativity-back', function(){ T.goBack(); });
   T.wire('b-why-creativity-mg',   T.goMG);
 
   /* ── 1120 · CREATE — Table of Contents ── */
@@ -1366,12 +1366,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
   /* ── 1112 · WHAT IT MEANS (trivia off Creative License) ── */
   T.registerPageNum('s-cl-what-it-means', '1112');
-  T.wire('b-cl-what-it-means-back', function(){ T.nav('s-cl-intro'); });
+  T.wire('b-cl-what-it-means-back', function(){ T.goBack(); });
   T.wire('b-cl-what-it-means-mg',   T.goMG);
 
   /* ── 1113 · WHY DO WE NEED A CREATIVE LICENSE (trivia off Creative License) ── */
   T.registerPageNum('s-cl-why-license', '1113');
-  T.wire('b-cl-why-license-back', function(){ T.nav('s-cl-intro'); });
+  T.wire('b-cl-why-license-back', function(){ T.goBack(); });
   T.wire('b-cl-why-license-mg',   T.goMG);
 
   /* ── 1111 · NO MEETINGS (prelude to the License ceremony) ── */
@@ -1410,12 +1410,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
   /* ── 1121 · TWO WAYS OF THINKING (trivia off Inklings) ── */
   T.registerPageNum('s-two-ways', '1121');
-  T.wire('b-two-ways-back', function(){ T.nav('s-what-i-want'); });
+  T.wire('b-two-ways-back', function(){ T.goBack(); });
   T.wire('b-two-ways-mg',   T.goMG);
 
   /* ── 1122 · RULES OF CREATIVE THINKING (trivia off Inklings) ── */
   T.registerPageNum('s-creative-rules', '1122');
-  T.wire('b-creative-rules-back', function(){ T.nav('s-what-i-want'); });
+  T.wire('b-creative-rules-back', function(){ T.goBack(); });
   T.wire('b-creative-rules-mg',   T.goMG);
 
   /* ── 1130 · INKLINGS ── */
