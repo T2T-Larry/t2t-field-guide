@@ -83,8 +83,8 @@
     _triviaRegistry[screenId] = links || [];
     /* track the target screen IDs so goBack() can identify trivia pages */
     (links||[]).forEach(function(link){
-      if(link.target && _triviaScreens.indexOf(link.target)===-1)
-        _triviaScreens.push(link.target);
+      if(link.id && _triviaScreens.indexOf(link.id)===-1)
+        _triviaScreens.push(link.id);
     });
   }
 
@@ -92,6 +92,8 @@
     var el = document.getElementById('trivia-links');
     if (!el) return;
     el.innerHTML = '';
+    var ctxLbl = document.getElementById('trivia-ctx-label');
+    if (ctxLbl) ctxLbl.textContent = getCtx() + ' · TRIVIA';
     // Only show trivia registered for the exact primary page or mgOrigin — no stack walk
     var links = _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
     if (!links.length) {
@@ -103,12 +105,12 @@
       div.className = 'more-link';
       div.innerHTML =
         '<div class="more-link-left">' +
-          '<div class="more-link-icon">' + link.icon + '</div>' +
+          '<div class="more-link-icon">' + (link.icon || '✦') + '</div>' +
           '<div><div class="more-link-label">' + link.label + '</div>' +
           (link.sub ? '<div class="more-link-sub">' + link.sub + '</div>' : '') +
           '</div></div>' +
         '<div class="more-link-arrow"></div>';
-      div.addEventListener('click', function() { nav(link.target); });
+      div.addEventListener('click', function() { nav(link.id); });
       el.appendChild(div);
     });
   }
