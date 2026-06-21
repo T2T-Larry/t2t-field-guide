@@ -740,7 +740,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1150 · PLUSing ══ -->
+<!-- ══ 1160 · PLUSing ══ -->
 <div class="sc card" id="s-plusing">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
@@ -759,6 +759,24 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <button class="tb" id="b-plusing-back">⬅️</button>
     <button class="tb" id="b-plusing-mg">🔍</button>
     <button class="tb" id="b-plusing-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1190 · CREATE → SHAPE transition (placeholder) ══ -->
+<div class="sc card" id="s-shape-soon">
+  <div class="phase-header" style="text-align:left">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body">
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;font-style:italic;color:#0a4a38;margin-bottom:10px">SHAPE is next.</div>
+      <div style="font-size:14px;font-style:italic;color:#888">Not built yet — come back soon.</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-shape-soon-back">⬅️</button>
+    <button class="tb dim" id="b-shape-soon-mg">🔍</button>
+    <button class="tb dim" id="b-shape-soon-fwd">➡️</button>
   </div>
 </div>
 
@@ -1417,7 +1435,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerGems('s-lightning-bug', [
     {text:'If your attention stopped, catch it. No justification required.', attr:'T2T Field Guide · Lightning Bug'}
   ]);
-  T.wire('b-lb-back', function(){ T.nav('s-what-i-want'); });
+  T.wire('b-lb-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-lb-mg',   T.goMG);
   T.wire('b-lb-fwd',  function(){ T.nav('s-sea-of-ideas'); });
 
@@ -1491,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerGems('s-sea-of-ideas', [
     {text:'The Sea of Ideas holds everything you\'ve captured — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-lightning-bug'); });
+  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-sea-of-ideas-mg',   T.goMG);
   T.wire('b-sea-of-ideas-fwd',  function(){ T.nav('s-plusing'); });
   T.wire('b-sea-more-sparks',   function(){ T.nav('s-what-i-want'); });
@@ -1531,9 +1549,13 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'Good enough is never good enough.', attr:'Walt Disney / T2T'},
     {text:'PLUSing: always make it better than it needs to be.', attr:'T2T Field Guide'}
   ]);
-  T.wire('b-plusing-back', function(){ T.nav('s-sea-of-ideas'); });
+  T.wire('b-plusing-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-plusing-mg',   T.goMG);
-  T.wire('b-plusing-fwd',  function(){ /* 1200 SHAPE coming soon */ });
+  T.wire('b-plusing-fwd',  function(){ T.nav('s-shape-soon'); });
+
+  /* ── 1190 · CREATE → SHAPE transition (placeholder) ── */
+  T.registerPageNum('s-shape-soon', '1190');
+  T.wire('b-shape-soon-back', function(){ T.nav('s-plusing'); });
 
   T.wire('b-aut-back',    T.goMG);
   T.wire('b-aut-mg',      T.goMG);
