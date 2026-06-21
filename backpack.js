@@ -78,9 +78,12 @@
   /* ── TRIVIA REGISTRY ── */
   var _triviaRegistry = {};
   var _triviaScreens = [];   /* all screen IDs registered as trivia targets */
-  var _triviaOverride = null; /* one-shot: forces renderTrivia() to use this screen's registry,
-                                  for hub screens (Idea/Journal/Gems) whose trivia should show
-                                  regardless of which primary page launched the MG */
+  var _triviaOverride = null; /* forces renderTrivia() to use this screen's registry instead of
+                                  primaryPage/mgOrigin — for hub screens (Idea/Journal/Gems) whose
+                                  own trivia should show regardless of which primary page launched
+                                  the MG. Persists across repeat visits to the Trivia hub while
+                                  browsing that hub's cards; cleared in goMG() the moment the MG is
+                                  genuinely opened from a real (non-utility) primary page. */
 
   function registerTrivia(screenId, links) {
     _triviaRegistry[screenId] = links || [];
@@ -99,7 +102,6 @@
     if (ctxLbl) ctxLbl.textContent = getCtx() + ' · TRIVIA';
     // Hub trivia (Idea/Journal/Gems) takes priority when set; otherwise primary page or mgOrigin — no stack walk
     var links = (_triviaOverride && _triviaRegistry[_triviaOverride]) || _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
-    _triviaOverride = null;
     if (!links.length) {
       el.innerHTML = '<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-style:italic;color:#aaa;padding:16px 0">Nothing here yet.</div>';
       return;
@@ -275,7 +277,7 @@
   }
 
   function goMG() {
-    if (_utilScreens.indexOf(cur)===-1) mgOrigin=cur;
+    if (_utilScreens.indexOf(cur)===-1) { mgOrigin=cur; _triviaOverride=null; }
     var ov=document.getElementById('mg-overlay');
     if (ov) ov.classList.add('active');
   }
@@ -791,7 +793,7 @@
     /* IDEA HUB */
     wire('b-idea-back',returnToMG);
     wire('b-idea-mg',goMG);
-    wire('b-idea-trivia',function(){ _triviaOverride='s-idea'; mgOrigin='s-idea'; nav('s-trivia',false); });
+    wire('b-idea-trivia',function(){ _triviaOverride='s-idea'; nav('s-trivia',false); });
     wire('b-capture-idea',function(){
       nav('s-idea-capture');
       setTimeout(function(){
