@@ -671,32 +671,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div></div><div class="bar2"><button class="tb" id="b-nm-drift-back">⬅️</button><button class="tb" id="b-nm-drift-mg">🔍</button></div></div>
 
-<!-- ══ 1113 · EVERY LICENSE HAS RULES ══ -->
-<div class="sc card" id="s-wl-rules">
-  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
-    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">WISHING LICENSE</span>
-  </div>
-  <div class="reader-wrap">
-    <div class="reader-body" style="gap:14px;padding:28px 40px">
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#1a3a5c;margin-bottom:8px">To get any license, you need to know the rules.</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">There's only one rule for a Wishing License:</div>
-      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0a4a38;text-align:center;margin:12px 0">No judgment.</div>
-      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;line-height:1.7">Not of others' ideas. Not of your own. Not even a raised eyebrow. Everything is allowed here.</div>
-    </div>
-  </div>
-  <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-wl-rules-back">⬅️</button>
-    <button class="tb" id="b-wl-rules-mg">🔍</button>
-    <button class="tb" id="b-wl-rules-fwd">➡️</button>
-  </div>
-</div>
-
-<!-- ══ 1114 · RULES OF CREATIVE THINKING ══ -->
-<div class="sc card" id="s-creative-rules">
+<!-- ══ 1113 · RULES OF CREATIVE THINKING ══ -->
+<div class="sc card" id="s-rules-ct">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
@@ -706,7 +682,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
   <div class="sw" style="padding:24px 32px">
     <div class="se">Rules of Creative Thinking</div>
-    <div class="sh">Easy to remember. Hard to apply.</div>
+    <div class="sh">To acquire any license, you need to know the rules.</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
       <div style="display:flex;align-items:baseline;gap:14px;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px">
         <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#8B6914;min-width:28px">1</div>
@@ -726,6 +702,29 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       </div>
     </div>
     <div class="sp"></div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-rules-ct-back">⬅️</button>
+    <button class="tb" id="b-rules-ct-mg">🔍</button>
+    <button class="tb" id="b-rules-ct-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1114 · NOW LET'S MAKE IT OFFICIAL ══ -->
+<div class="sc card" id="s-creative-rules">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">CREATE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:20px;padding:40px 44px">
+      <div style="display:flex;align-items:center;gap:10px;width:80%"><div style="flex:1;height:0.5px;background:#8B6914"></div><div style="color:#8B6914;font-size:16px">✦</div><div style="flex:1;height:0.5px;background:#8B6914"></div></div>
+      <div style="font-family:'Playfair Display',serif;font-size:32px;font-style:italic;color:#2a1f0e;text-align:center;line-height:1.5">Now let's make it official.</div>
+      <div style="display:flex;align-items:center;gap:10px;width:80%"><div style="flex:1;height:0.5px;background:#8B6914"></div><div style="color:#8B6914;font-size:16px">✦</div><div style="flex:1;height:0.5px;background:#8B6914"></div></div>
+    </div>
   </div>
   <div class="bar2 bar-dream-pp">
     <button class="tb" id="b-creative-rules-back">⬅️</button>
@@ -1990,12 +1989,12 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('toc-sparks')   && document.getElementById('toc-sparks').addEventListener('click',   function(){ T.nav('s-sparks'); });
   document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ T.nav('s-sea-of-ideas'); });
 
-  T.registerPageNum('s-what-if', '1101T');
+  T.registerPageNum('s-what-if', '1102T');
   T.wire('b-what-if-back', function(){ T.goBack(); });
   T.wire('b-what-if-mg',   T.goMG);
 
   /* ── 1101 · WHAT IF — PP ── */
-  T.registerPageNum('s-what-if-pp', '1101');
+  T.registerPageNum('s-what-if-pp', '1102');
   T.registerCtx('s-what-if-pp', 'What If?');
   T.registerTrivia('s-what-if-pp', [
     { label: 'What If?', id: 's-what-if' }
@@ -2057,35 +2056,35 @@ document.addEventListener('DOMContentLoaded', function(){
   ]);
   T.wire('b-no-meetings-back', function(){ T.nav('s-wl-educated'); });
   T.wire('b-no-meetings-mg',   T.goMG);
-  T.wire('b-no-meetings-fwd',  function(){ T.nav('s-wl-rules'); });
+  T.wire('b-no-meetings-fwd',  function(){ T.nav('s-rules-ct'); });
 
   ['nm-why','nm-modes','nm-separate','nm-safety','nm-meeting','nm-sessions','nm-drift'].forEach(function(s){
     T.wire('b-'+s+'-back', function(){ T.goBack(); });
     T.wire('b-'+s+'-mg',   T.goMG);
   });
 
-  /* ── 1113 · EVERY LICENSE HAS RULES ── */
-  T.registerPageNum('s-wl-rules', '1113');
-  T.registerCtx('s-wl-rules', 'Wishing License');
-  T.wire('b-wl-rules-back', function(){ T.nav('s-no-meetings'); });
-  T.wire('b-wl-rules-mg',   T.goMG);
-  T.wire('b-wl-rules-fwd',  function(){ T.nav('s-creative-rules'); });
-
-  /* ── 1114 · RULES OF CREATIVE THINKING ── */
-  T.registerPageNum('s-creative-rules', '1114');
-  T.registerCtx('s-creative-rules', 'Rules of Creative Thinking');
-  T.registerGems('s-creative-rules', [
+  /* ── 1113 · RULES OF CREATIVE THINKING ── */
+  T.registerPageNum('s-rules-ct', '1113');
+  T.registerCtx('s-rules-ct', 'Rules of Creative Thinking');
+  T.registerGems('s-rules-ct', [
     {text:'No Criticism. The more ideas, the better. The wilder the ideas, the better. Hitch-hike off other ideas.', attr:'T2T Field Guide · Rules of Creative Thinking'}
   ]);
-  T.registerTrivia('s-creative-rules', [
-    { label: 'Purpose', id: 's-cr-purpose' },
+  T.registerTrivia('s-rules-ct', [
+    { label: 'Rules of Creative Thinking', id: 's-cr-purpose' },
     { label: 'Rule 1 · No Criticism', id: 's-cr-rule1' },
     { label: 'Rule 2 · The More the Better', id: 's-cr-rule2' },
     { label: 'Rule 3 · The Wilder the Better', id: 's-cr-rule3' },
     { label: 'Rule 4 · Hitchhike', id: 's-cr-rule4' },
     { label: 'Honor Ideas', id: 's-cr-honor' }
   ]);
-  T.wire('b-creative-rules-back', function(){ T.nav('s-wl-rules'); });
+  T.wire('b-rules-ct-back', function(){ T.nav('s-no-meetings'); });
+  T.wire('b-rules-ct-mg',   T.goMG);
+  T.wire('b-rules-ct-fwd',  function(){ T.nav('s-creative-rules'); });
+
+  /* ── 1114 · NOW LET'S MAKE IT OFFICIAL ── */
+  T.registerPageNum('s-creative-rules', '1114');
+  T.registerCtx('s-creative-rules', 'Wishing License');
+  T.wire('b-creative-rules-back', function(){ T.nav('s-rules-ct'); });
   T.wire('b-creative-rules-mg',   T.goMG);
   T.wire('b-creative-rules-fwd',  function(){ T.nav('s-wl-1'); });
 
@@ -2126,10 +2125,17 @@ document.addEventListener('DOMContentLoaded', function(){
     var sb = T.sb; if(!sb){ setName('Traveler'); return; }
     sb.auth.getUser().then(function(res){
       var user = res&&res.data&&res.data.user; if(!user){ setName('Traveler'); return; }
-      sb.from('members').select('name,display_name,first_name').eq('user_id',user.id).single()
+      sb.from('members').select('name,display_name,first_name,last_name').eq('user_id',user.id).single()
         .then(function(r){
           var d = r&&r.data;
-          var name = (d&&(d.name||d.display_name||d.first_name))||null;
+          var name = null;
+          if(d){
+            if(d.name){ name = d.name; }
+            else if(d.display_name){ name = d.display_name; }
+            else if(d.first_name){
+              name = d.last_name ? d.first_name + ' ' + d.last_name : d.first_name;
+            }
+          }
           if(name){ setName(name); return; }
           setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
         }).catch(function(){ setName('Traveler'); });
