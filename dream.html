@@ -274,7 +274,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1100 · CREATE ══ -->
+<!-- ══ 1100 · CREATE — Hook ══ -->
 <div class="sc card" id="s-create-hub">
   <div class="phase-header" style="text-align:left">
     <div class="ph-eyebrow">🌈 DREAM PHASE</div>
@@ -294,26 +294,26 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1101 · WHY CREATIVITY MATTERS (trivia off CREATE hook) ══ -->
-<div class="sc" id="s-why-creativity">
+<!-- ══ 1100.T · CREATE Trivia ══ -->
+<div class="sc" id="s-create-trivia">
   <div class="card"><div class="xw">
     <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATE · TRIVIA</span></div>
     <div class="sw" style="padding:28px 32px">
-      <div class="se">1101 · Why Creativity Matters</div>
-      <div class="sh">Most ideas are old ideas wearing new clothes.</div>
-      <div class="sb">Nobody invents from nothing. Every idea you've ever loved was built from parts that already existed — turned, combined, or seen from an angle nobody had tried yet.</div>
-      <div class="sb" style="margin-top:12px">That's good news. It means you don't need a lightning bolt. You need permission to play with what's already in front of you — and the patience to notice when two things suddenly fit together.</div>
-      <div class="sb" style="margin-top:12px;font-style:italic;color:#888">The skill isn't inventing. It's noticing.</div>
+      <div class="se">CREATE</div>
+      <div class="sh">Walt Disney called it the art of making the impossible possible.</div>
+      <div class="sb">It always began the same way: with a blank wall and no rules.</div>
+      <div class="sb" style="margin-top:12px">Creativity is rearranging ideas in a new way. But that presumes you have something to rearrange. You can't shuffle an empty deck.</div>
+      <div class="sb" style="margin-top:12px">CREATE is where we collect the raw material. Ideas, images, hunches, half-thoughts, wild leaps. None of them judged. None of them rejected. Just gathered.</div>
       <div class="sp"></div>
     </div>
   </div></div>
   <div class="bar2">
-    <button class="tb" id="b-why-creativity-back">⬅️</button>
-    <button class="tb" id="b-why-creativity-mg">🔍</button>
+    <button class="tb" id="b-create-trivia-back">⬅️</button>
+    <button class="tb" id="b-create-trivia-mg">🔍</button>
   </div>
 </div>
 
-<!-- ══ 1120 · CREATE — Table of Contents ══ -->
+<!-- ══ 1101 · TOC — What's Ahead ══ -->
 <div class="sc card" id="s-create-toc">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
@@ -323,38 +323,45 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="reader-wrap">
     <div class="sw" style="padding:24px 28px 8px">
       <div class="se">What's ahead</div>
-      <div id="toc-cl" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
+      <div id="toc-wl" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">1</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Creative License</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Permission, granted</div></div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Wishing License</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Give yourself permission</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+      <div id="toc-ftf" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">2</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Flip the Friction</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">If not that, then what?</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
       <div id="toc-inklings" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">2</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Inklings</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Ideas already on your back burner</div></div>
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">3</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Inklings</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Seeds already in the back of your mind</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
-      <div id="toc-spark" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
+      <div id="toc-bluesky" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">3</div>
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">4</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Blue Sky</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">As if there were no limitations</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+      <div id="toc-sparks" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">5</div>
           <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Creative Sparks</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">What catches your eye</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
       <div id="toc-sea" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">4</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Sea of Ideas</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Collecting without judgment</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
-      </div>
-      <div id="toc-plusing" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:8px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">5</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">PLUSing</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Building on what's strongest</div></div>
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">6</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Sea of Ideas</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">The goal of CREATE</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
@@ -368,283 +375,233 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1110 · CREATIVE LICENSE — Intro: What & Why ══ -->
-<div class="sc card" id="s-cl-intro">
-  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+<!-- ══ 1101.T · WHAT IF? (trivia off CREATE TOC) ══ -->
+<div class="sc" id="s-what-if">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATE · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1101 · What If?</div>
+      <div class="sh">The primary question of creativity.</div>
+      <div class="sb">"What if" often precedes an idea. It suggests something different — but doesn't imply value. No judgment. No commitment. Just a signal that something worth capturing is about to arrive.</div>
+      <div class="sb" style="margin-top:12px">When someone offers <em>"What if…?"</em> — we may want to write it down before it disappears.</div>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-what-if-back">⬅️</button>
+    <button class="tb" id="b-what-if-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ══ 1110 · WISHING LICENSE — Hook ══ -->
+<div class="sc card" id="s-wl-intro">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
     <span class="ph-eyebrow">PART 1: CREATE</span>
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:10px;padding:28px 40px">
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Creative License</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#1a3a5c;line-height:1.6">Creative License is the permission to think creatively — to imagine, bend the rules, and take bold leaps without asking for approval.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Wishing License</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#1a3a5c;line-height:1.6">Permission to think creatively — to imagine, bend the rules, and take bold mental leaps without asking for approval.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-cl-intro-back">⬅️</button>
-    <button class="tb" id="b-cl-intro-mg">🔍</button>
-    <button class="tb" id="b-cl-intro-fwd">➡️</button>
+    <button class="tb" id="b-wl-intro-back">⬅️</button>
+    <button class="tb" id="b-wl-intro-mg">🔍</button>
+    <button class="tb" id="b-wl-intro-fwd">➡️</button>
   </div>
 </div>
 
-
-<!-- ══ 1112 · WHAT IT MEANS (trivia off Creative License) ══ -->
-<div class="sc" id="s-cl-what-it-means">
+<!-- ══ 1110.1 · PURPOSE (trivia) ══ -->
+<div class="sc" id="s-wl-purpose">
   <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE LICENSE · TRIVIA</span></div>
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">WISHING LICENSE · TRIVIA</span></div>
     <div class="sw" style="padding:28px 32px">
-      <div class="se">1112 · What It Means</div>
-      <div class="sh">Three freedoms, granted at once.</div>
+      <div class="se">1110.1 · Purpose</div>
+      <div class="sh">You already have it.</div>
       <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>Freedom to explore ideas that don't follow conventional logic</li>
-        <li>Authority to experiment — even if it gets messy</li>
-        <li>Space to express your unique vision, even if it breaks a few "rules"</li>
-      </ul>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-cl-what-it-means-back">⬅️</button>
-    <button class="tb" id="b-cl-what-it-means-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1113 · WHY DO WE NEED A CREATIVE LICENSE (trivia off Creative License) ══ -->
-<div class="sc" id="s-cl-why-license">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">CREATIVE LICENSE · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1113 · Why Do We Need a Creative License?</div>
-      <div class="sh">Permission rarely shows up on its own.</div>
-      <ul style="margin:8px 0 16px;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>The lack of creative thinking emphasis in education</li>
-        <li>The suppressive effect of expecting correctness over exploration</li>
-        <li>The reality of changing conditions in life</li>
-        <li>The need to practice creative thinking — and permit it</li>
-        <li>The value of giving yourself emotional and psychological freedom from judgment</li>
-      </ul>
-      <div class="sb" style="font-weight:700;color:#111;margin-bottom:6px">Why it matters</div>
-      <ul style="margin:0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>Many people wait for permission to be creative. This says: you already have it.</li>
-        <li>It removes fear of "doing it wrong."</li>
+        <li>Many people wait for permission to be creative. This says: <em>you already have it.</em></li>
+        <li>It removes the fear of "doing it wrong."</li>
         <li>It unlocks play, risk, originality, and joy.</li>
       </ul>
       <div class="sp"></div>
     </div>
   </div></div>
   <div class="bar2">
-    <button class="tb" id="b-cl-why-license-back">⬅️</button>
-    <button class="tb" id="b-cl-why-license-mg">🔍</button>
+    <button class="tb" id="b-wl-purpose-back">⬅️</button>
+    <button class="tb" id="b-wl-purpose-mg">🔍</button>
   </div>
 </div>
 
-<!-- ══ 1111 · NO MEETINGS (prelude to the License ceremony) ══ -->
-<div class="sc card" id="s-cl-no-meetings">
+<!-- ══ 1110.2 · WHAT IT MEANS (trivia) ══ -->
+<div class="sc" id="s-wl-what-it-means">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">WISHING LICENSE · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1110.2 · What It Means</div>
+      <div class="sh">Three freedoms, granted at once.</div>
+      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li><strong>Freedom to explore</strong> ideas that don't follow conventional logic</li>
+        <li><strong>Authority to experiment</strong> — even if it gets messy</li>
+        <li><strong>Space to express</strong> your unique vision, even if it breaks a few "rules"</li>
+      </ul>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-wl-what-back">⬅️</button>
+    <button class="tb" id="b-wl-what-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ══ 1110.3 · WHY PERMISSION DOESN'T COME NATURALLY (trivia) ══ -->
+<div class="sc" id="s-wl-why">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">WISHING LICENSE · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1110.3 · Why Permission Doesn't Come Naturally</div>
+      <div class="sh">Permission rarely shows up on its own.</div>
+      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li>The lack of creative thinking emphasis in education</li>
+        <li>The suppressive effect of expecting correctness over exploration</li>
+        <li>The reality of changing conditions in life</li>
+        <li>The need to practice creative thinking — and permit it</li>
+        <li>The value of giving yourself emotional and psychological freedom from judgment</li>
+      </ul>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-wl-why-back">⬅️</button>
+    <button class="tb" id="b-wl-why-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ══ 1110.4 · CREATIVE BLOCKS (trivia) ══ -->
+<div class="sc" id="s-wl-blocks">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">WISHING LICENSE · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">1110.4 · Creative Blocks</div>
+      <div class="sh">Creativity thrives where there is safety, freedom, and space to explore.</div>
+      <div class="sb" style="font-weight:700;color:#111;margin-bottom:6px">To unblock, try:</div>
+      <ul style="margin:0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li>Change your environment — new surroundings trigger fresh thoughts</li>
+        <li>Play without a purpose — experiment freely</li>
+        <li>Switch modes — separate creative time from analysis or critique</li>
+        <li>Lower the stakes — make something <em>bad</em> on purpose</li>
+        <li>Use prompts or constraints — limits can spark creativity</li>
+        <li>Reframe fear — failure is feedback, not final judgment</li>
+      </ul>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-wl-blocks-back">⬅️</button>
+    <button class="tb" id="b-wl-blocks-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ══ 1111 · EDUCATED OUT OF US ══ -->
+<div class="sc card" id="s-wl-educated">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATIVE LICENSE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
   </div>
   <div class="reader-wrap">
-    <div class="reader-body" style="gap:8px;padding:28px 40px">
-      <svg width="120" height="120" viewBox="0 0 200 200" style="display:block;margin:0 auto 14px" aria-label="No Meetings symbol">
-        <circle cx="100" cy="100" r="84" fill="none" stroke="#C0392B" stroke-width="16"/>
-        <line x1="41" y1="41" x2="159" y2="159" stroke="#C0392B" stroke-width="16" stroke-linecap="round"/>
-        <text x="100" y="108" text-anchor="middle" font-family="'Playfair Display',serif" font-weight="700" font-size="23" letter-spacing="1" fill="#0a4a38">MEETINGS</text>
-      </svg>
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#0a4a38;margin-bottom:4px">No Meetings Principle</div>
-      <div style="font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#8B6914;letter-spacing:1px;margin-bottom:8px">First Principle of Creative Thinking</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#1a3a5c;line-height:1.6">Creative Thinking and Analytical Thinking are very different modes of thinking. They require different types of thinking approaches and mindsets.</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#1a3a5c;line-height:1.6;margin-top:10px">Trying to do both at once creates confusion, stifles creativity, and undermines decision-making.</div>
+    <div class="reader-body" style="gap:14px;padding:28px 40px">
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Most of us were taught to get the right answer — not to find new ones.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;line-height:1.7">Creative thinking was educated out of us. School rewarded correctness. Work rewarded efficiency. Neither left much room for <em>what if</em> or <em>I wonder</em> or <em>wouldn't it be wild if.</em></div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;line-height:1.7">Over time, the free-flowing, idea-generating mind we were born with got quieter and quieter. Not broken. Just waiting for permission to come back out.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#1a3a5c;margin-top:4px">A Wishing License changes that.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-cl-no-meetings-back">⬅️</button>
-    <button class="tb" id="b-cl-no-meetings-mg">🔍</button>
-    <button class="tb" id="b-cl-no-meetings-fwd">➡️</button>
+    <button class="tb" id="b-wl-educated-back">⬅️</button>
+    <button class="tb" id="b-wl-educated-mg">🔍</button>
+    <button class="tb" id="b-wl-educated-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1114 · CREATIVE MODE vs ANALYTICAL MODE (trivia off No Meetings Principle) ══ -->
-<div class="sc" id="s-nm-modes">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">NO MEETINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1114 · Creative Mode vs Analytical Mode</div>
-      <div class="sh">Two different gears.</div>
-      <div class="sb" style="font-weight:700;color:#111;margin:6px 0 4px">Creative Mode</div>
-      <ul style="margin:0 0 16px;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>Divergent thinking</li>
-        <li>Exploration</li>
-        <li>Playfulness</li>
-        <li>"What if?" thinking</li>
-        <li>Quantity over judgment</li>
-      </ul>
-      <div class="sb" style="font-weight:700;color:#111;margin:0 0 4px">Analytical Mode</div>
-      <ul style="margin:0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>Convergent thinking</li>
-        <li>Evaluation</li>
-        <li>Logic and structure</li>
-        <li>"Does it work?" thinking</li>
-        <li>Quality control</li>
-      </ul>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-nm-modes-back">⬅️</button>
-    <button class="tb" id="b-nm-modes-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1115 · WHY SEPARATE CREATIVE FROM ANALYTICAL THINKING (trivia off No Meetings Principle) ══ -->
-<div class="sc" id="s-nm-why-separate">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">NO MEETINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1115 · Why Separate Creative From Analytical Thinking?</div>
-      <div class="sh">Before diving into studies, it helps to see why this distinction arises and why many researchers find it useful.</div>
-      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li><strong>Different cognitive modes:</strong> Creative thinking (especially idea generation, divergence) is often thought to rely more on associative, diffuse, or spontaneous processes, whereas analytical thinking (e.g. evaluation, logical reasoning, converging to a single solution) relies on slower, controlled, deliberative processing.</li>
-        <li style="margin-top:10px"><strong>Different brain systems and neural dynamics:</strong> Some neuroimaging or EEG studies suggest that during highly creative states, less executive control (i.e. "hypofrontality") or greater engagement of associative networks may occur.</li>
-        <li style="margin-top:10px"><strong>Process phases require switching:</strong> In many models of creative problem solving, one first generates many ideas (a divergent, less constrained mode) then later selects, refines, and judges them (a more constrained, analytic mode). So distinguishing the modes helps explain why you can't just "be analytical all the time" or "be creative all the time."</li>
-        <li style="margin-top:10px"><strong>Optimizing performance:</strong> In education, design, or business, knowing when to encourage free idea generation and when to enforce critical evaluation is practically useful.</li>
-        <li style="margin-top:10px"><strong>Understanding interference and tradeoffs:</strong> The modes can sometimes interfere with one another (e.g. overanalysis kills creativity), so separating them helps explain when and how interference occurs, and how to schedule or design workflows to avoid those pitfalls.</li>
-      </ul>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-nm-why-separate-back">⬅️</button>
-    <button class="tb" id="b-nm-why-separate-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1116 · WHY SEPARATION CREATES SAFETY (trivia off No Meetings Principle) ══ -->
-<div class="sc" id="s-nm-safety">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">NO MEETINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1116 · Why Separation Creates Safety</div>
-      <div class="sh">Imagination needs a sandbox.</div>
-      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>Many people don't allow themselves to imagine because analysis instantly says: "That's unrealistic. That'll never work."</li>
-        <li style="margin-top:10px">By separating the two, we give imagination a safe sandbox where it can grow without being crushed.</li>
-        <li style="margin-top:10px">Later, analysis is re-introduced to shape, refine, and test — but by then the spark of imagination is strong enough to withstand critique.</li>
-      </ul>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-nm-safety-back">⬅️</button>
-    <button class="tb" id="b-nm-safety-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1117 · WHAT HAPPENS IN A MEETING (trivia off No Meetings Principle) ══ -->
-<div class="sc" id="s-nm-what-happens">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">NO MEETINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1117 · What Happens in a Meeting?</div>
-      <div class="sh">The moment someone offers an idea, it becomes everyone's job to explain why it's not good.</div>
-      <div class="sb">As the meeting continues, fewer and fewer ideas come out — because rather than participating, everyone is busy analyzing their own idea to see what's wrong with it.</div>
-      <div class="sb" style="margin-top:14px;font-style:italic;color:#888">Avoid meetings whenever possible. Hold sessions focused on one mode of thinking at a time.</div>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-nm-what-happens-back">⬅️</button>
-    <button class="tb" id="b-nm-what-happens-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1118 · FOUR TYPES OF SESSIONS (trivia off No Meetings Principle) ══ -->
-<div class="sc" id="s-nm-four-sessions">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">NO MEETINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1118 · Four Types of Sessions</div>
-      <div class="sh">The reasons for gathering.</div>
-      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
-        <li>Create</li>
-        <li>Shape</li>
-        <li>Share</li>
-        <li>Celebrate</li>
-      </ul>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-nm-four-sessions-back">⬅️</button>
-    <button class="tb" id="b-nm-four-sessions-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1110 · CREATIVE LICENSE — Screen 1: Authority ══ -->
-<div class="sc card" id="s-creative-license">
+<!-- ══ 1113 · EVERY LICENSE HAS RULES ══ -->
+<div class="sc card" id="s-wl-rules">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:14px;padding:28px 40px">
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#1a3a5c;margin-bottom:8px">To get any license, you need to know the rules.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">There's only one rule for a Wishing License:</div>
+      <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#0a4a38;text-align:center;margin:12px 0">No judgment.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;line-height:1.7">Not of others' ideas. Not of your own. Not even a raised eyebrow. Everything is allowed here.</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-wl-rules-back">⬅️</button>
+    <button class="tb" id="b-wl-rules-mg">🔍</button>
+    <button class="tb" id="b-wl-rules-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1115 · WISHING LICENSE 1 of 5 ══ -->
+<div class="sc card" id="s-wl-1">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATIVE LICENSE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:20px">
-      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Creative License · 1 of 5</div>
+      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Wishing License · 1 of 5</div>
       <div style="display:flex;align-items:center;gap:10px;width:80%"><div style="flex:1;height:0.5px;background:#8B6914"></div><div style="color:#8B6914;font-size:16px">✦</div><div style="flex:1;height:0.5px;background:#8B6914"></div></div>
       <div style="font-family:'Playfair Display',serif;font-size:20px;font-style:italic;color:#4a3520;line-height:1.7;text-align:center">By the authority vested in the<br>creative spirit of the universe<br>and the natural laws governing<br>all human imagination —</div>
       <div style="display:flex;align-items:center;gap:10px;width:80%"><div style="flex:1;height:0.5px;background:#8B6914"></div><div style="color:#8B6914;font-size:16px">✦</div><div style="flex:1;height:0.5px;background:#8B6914"></div></div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-creative-license-back">⬅️</button>
-    <button class="tb" id="b-creative-license-mg">🔍</button>
-    <button class="tb" id="b-cl-1-fwd">➡️</button>
+    <button class="tb" id="b-wl-1-back">⬅️</button>
+    <button class="tb" id="b-wl-1-mg">🔍</button>
+    <button class="tb" id="b-wl-1-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1110 · CREATIVE LICENSE — Screen 2: Name ══ -->
-<div class="sc card" id="s-cl-2">
+<!-- ══ 1116 · WISHING LICENSE 2 of 5 ══ -->
+<div class="sc card" id="s-wl-2">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATIVE LICENSE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:16px">
-      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Creative License · 2 of 5</div>
+      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Wishing License · 2 of 5</div>
       <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#8B6914;text-align:center">Be it known to all that</div>
-      <div id="cl-member-name" style="font-family:'Playfair Display',serif;font-size:42px;font-style:italic;color:#2a1f0e;font-weight:400;text-align:center;line-height:1.2"></div>
+      <div id="wl-member-name" style="font-family:'Playfair Display',serif;font-size:42px;font-style:italic;color:#2a1f0e;font-weight:400;text-align:center;line-height:1.2"></div>
       <div style="width:60%;height:0.5px;background:#8B6914"></div>
       <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#4a3520;text-align:center;line-height:1.6">is now, has always been,<br>and will ever be endowed with<br>the inherent ability to create<br>whatever the heck they darn well please.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-cl-2-back">⬅️</button>
-    <button class="tb" id="b-cl-2-mg">🔍</button>
-    <button class="tb" id="b-cl-2-fwd">➡️</button>
+    <button class="tb" id="b-wl-2-back">⬅️</button>
+    <button class="tb" id="b-wl-2-mg">🔍</button>
+    <button class="tb" id="b-wl-2-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1110 · CREATIVE LICENSE — Screen 3: Rights ══ -->
-<div class="sc card" id="s-cl-3">
+<!-- ══ 1117 · WISHING LICENSE 3 of 5 ══ -->
+<div class="sc card" id="s-wl-3">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATIVE LICENSE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:14px;align-items:flex-start;padding:36px 52px">
-      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif;width:100%;text-align:center">Creative License · 3 of 5</div>
+      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif;width:100%;text-align:center">Wishing License · 3 of 5</div>
       <div style="font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2a1f0e;font-family:'Playfair Display',serif;width:100%;text-align:center;margin-bottom:4px">The bearer reserves the right to</div>
       <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#2a1f0e;line-height:2.1;width:100%">
         · Want without explanation<br>
@@ -656,236 +613,444 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-cl-3-back">⬅️</button>
-    <button class="tb" id="b-cl-3-mg">🔍</button>
-    <button class="tb" id="b-cl-3-fwd">➡️</button>
+    <button class="tb" id="b-wl-3-back">⬅️</button>
+    <button class="tb" id="b-wl-3-mg">🔍</button>
+    <button class="tb" id="b-wl-3-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1110 · CREATIVE LICENSE — Screen 4: Interference + Closing ══ -->
-<div class="sc card" id="s-cl-4">
+<!-- ══ 1118 · WISHING LICENSE 4 of 5 ══ -->
+<div class="sc card" id="s-wl-4">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATIVE LICENSE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:20px">
-      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Creative License · 4 of 5</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#2a1f0e;line-height:1.8;text-align:center">And that any interference with this natural Creative License represents an offense against all that makes life worth living and shall hereby be disregarded entirely.</div>
+      <div style="font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#8B6914;font-family:'Playfair Display',serif">Wishing License · 4 of 5</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#2a1f0e;line-height:1.8;text-align:center">And that any interference with this natural Wishing License represents an offense against all that makes life worth living and shall hereby be disregarded entirely.</div>
       <div style="display:flex;align-items:center;gap:10px;width:70%"><div style="flex:1;height:0.5px;background:#8B6914"></div><div style="color:#8B6914;font-size:14px">❧</div><div style="flex:1;height:0.5px;background:#8B6914"></div></div>
       <div style="font-family:'Playfair Display',serif;font-size:15px;color:#2a1f0e;line-height:1.8;text-align:center">This License carries no expiration date, requires no renewal, and cannot be revoked by any authority other than the bearer themselves.</div>
       <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#8B6914;text-align:center">And even then — we'd argue.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-cl-4-back">⬅️</button>
-    <button class="tb" id="b-cl-4-mg">🔍</button>
-    <button class="tb" id="b-cl-4-fwd">➡️</button>
+    <button class="tb" id="b-wl-4-back">⬅️</button>
+    <button class="tb" id="b-wl-4-mg">🔍</button>
+    <button class="tb" id="b-wl-4-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1110 · CREATIVE LICENSE — Screen 5: Certificate + Print ══ -->
-<div class="sc card" id="s-cl-5">
+<!-- ══ 1119 · WISHING LICENSE 5 of 5 — Certificate ══ -->
+<div class="sc card" id="s-wl-5">
   <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATIVE LICENSE</span>
+    <span class="ph-eyebrow">WISHING LICENSE</span>
   </div>
-  <div style="flex:1;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px 4px" id="cl-print-area">
-    <svg id="cl-cert-svg" viewBox="0 0 560 370" width="100%" style="max-height:330px;display:block" xmlns="http://www.w3.org/2000/svg">
+  <div style="flex:1;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 16px 4px" id="wl-print-area">
+    <svg id="wl-cert-svg" viewBox="0 0 560 370" width="100%" style="max-height:330px;display:block" xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width="560" height="370" fill="#fdf8f0"/>
       <rect x="4" y="4" width="552" height="362" fill="none" stroke="#8B6914" stroke-width="2"/>
       <rect x="9" y="9" width="542" height="352" fill="none" stroke="#8B6914" stroke-width="0.5"/>
-      <!-- Title -->
-      <text x="280" y="34" text-anchor="middle" font-family="Playfair Display,serif" font-size="18" font-weight="700" fill="#5a3e0a" letter-spacing="4">CREATIVE LICENSE</text>
-      <text x="280" y="48" text-anchor="middle" font-family="Playfair Display,serif" font-size="8" font-style="italic" fill="#8B6914" letter-spacing="3">Permission to Think Creatively</text>
-      <!-- Rule -->
+      <text x="280" y="34" text-anchor="middle" font-family="Playfair Display,serif" font-size="18" font-weight="700" fill="#5a3e0a" letter-spacing="4">WISHING LICENSE</text>
+      <text x="280" y="48" text-anchor="middle" font-family="Playfair Display,serif" font-size="8" font-style="italic" fill="#8B6914" letter-spacing="3">Permission to Want Freely</text>
       <line x1="60" y1="57" x2="246" y2="57" stroke="#8B6914" stroke-width="0.5"/>
       <text x="280" y="61" text-anchor="middle" fill="#8B6914" font-size="10">✦</text>
       <line x1="314" y1="57" x2="500" y2="57" stroke="#8B6914" stroke-width="0.5"/>
-      <!-- Authority -->
       <text x="280" y="78" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#4a3520">By the authority vested in the creative spirit of the universe</text>
       <text x="280" y="90" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#4a3520">and the natural laws governing all human imagination —</text>
-      <!-- Be it known -->
       <text x="280" y="106" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="2">BE IT KNOWN TO ALL THAT</text>
-      <!-- Member name placeholder — JS fills this -->
-      <text id="cl-cert-name" x="280" y="128" text-anchor="middle" font-family="Playfair Display,serif" font-size="22" font-style="italic" fill="#2a1f0e"></text>
+      <text id="wl-cert-name" x="280" y="128" text-anchor="middle" font-family="Playfair Display,serif" font-size="22" font-style="italic" fill="#2a1f0e"></text>
       <line x1="160" y1="135" x2="400" y2="135" stroke="#8B6914" stroke-width="0.5"/>
-      <!-- Endowment -->
       <text x="280" y="150" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" fill="#2a1f0e">is now, has always been, and will ever be endowed with the inherent ability to</text>
       <text x="280" y="162" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" fill="#2a1f0e">imagine freely, want boldly, explore without permission, and create</text>
       <text x="280" y="174" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" fill="#2a1f0e">whatever the heck they darn well please.</text>
-      <!-- Rule -->
       <line x1="60" y1="182" x2="246" y2="182" stroke="#8B6914" stroke-width="0.5"/>
       <text x="280" y="186" text-anchor="middle" fill="#8B6914" font-size="9">❧</text>
       <line x1="314" y1="182" x2="500" y2="182" stroke="#8B6914" stroke-width="0.5"/>
-      <!-- Rights -->
       <text x="280" y="198" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="2">THE BEARER RESERVES THE RIGHT TO</text>
       <text x="280" y="212" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#3a2c14">· Want without explanation  · Dream without commitment  · Follow what catches</text>
       <text x="280" y="224" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#3a2c14">their attention without knowing why  · Change their mind freely</text>
       <text x="280" y="236" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#3a2c14">· Begin without knowing the ending</text>
-      <!-- Rule -->
       <line x1="60" y1="244" x2="246" y2="244" stroke="#8B6914" stroke-width="0.5"/>
       <text x="280" y="248" text-anchor="middle" fill="#8B6914" font-size="10">✦</text>
       <line x1="314" y1="244" x2="500" y2="244" stroke="#8B6914" stroke-width="0.5"/>
-      <!-- Interference -->
-      <text x="280" y="261" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#2a1f0e">And that any interference with this natural Creative License represents</text>
+      <text x="280" y="261" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#2a1f0e">And that any interference with this natural Wishing License represents</text>
       <text x="280" y="273" text-anchor="middle" font-family="Playfair Display,serif" font-size="9" font-style="italic" fill="#2a1f0e">an offense against all that makes life worth living and shall hereby be disregarded entirely.</text>
-      <!-- Closing -->
       <text x="280" y="288" text-anchor="middle" font-family="Playfair Display,serif" font-size="8" fill="#2a1f0e">This License carries no expiration date, requires no renewal, and cannot be revoked</text>
       <text x="280" y="298" text-anchor="middle" font-family="Playfair Display,serif" font-size="8" fill="#2a1f0e">by any authority other than the bearer themselves.</text>
       <text x="280" y="310" text-anchor="middle" font-family="Playfair Display,serif" font-size="8" font-style="italic" fill="#8B6914">And even then — we'd argue.</text>
-      <!-- Signatures -->
       <line x1="80" y1="334" x2="220" y2="334" stroke="#8B6914" stroke-width="0.5"/>
       <text x="150" y="328" text-anchor="middle" font-family="Playfair Display,serif" font-size="11" font-style="italic" fill="#2a1f0e">Larry Smithers</text>
       <text x="150" y="342" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="1">CO-FOUNDER · T2T</text>
-      <!-- Seal -->
       <circle cx="280" cy="334" r="18" fill="none" stroke="#8B6914" stroke-width="0.75"/>
       <circle cx="280" cy="334" r="13" fill="none" stroke="#8B6914" stroke-width="0.4"/>
       <text x="280" y="332" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="1">T2T</text>
       <text x="280" y="341" text-anchor="middle" font-family="Playfair Display,serif" font-size="4" fill="#8B6914">THOUGHTS · THINGS</text>
-      <!-- Bill -->
       <line x1="340" y1="334" x2="480" y2="334" stroke="#8B6914" stroke-width="0.5"/>
       <text x="410" y="328" text-anchor="middle" font-family="Playfair Display,serif" font-size="11" font-style="italic" fill="#2a1f0e">Bill Fritsch</text>
       <text x="410" y="342" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="1">CO-FOUNDER · T2T</text>
-      <!-- Date -->
-      <text id="cl-date" x="280" y="358" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="1"></text>
+      <text id="wl-date" x="280" y="358" text-anchor="middle" font-family="Playfair Display,serif" font-size="7" fill="#8B6914" letter-spacing="1"></text>
     </svg>
     <div style="text-align:center;padding:4px 0 2px">
       <button onclick="window.print()" style="background:#8B6914;border:none;color:#fdf8f0;font-family:'Playfair Display',serif;font-size:11px;font-style:italic;padding:5px 18px;border-radius:14px;cursor:pointer;letter-spacing:1px">Print</button>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-cl-5-back">⬅️</button>
-    <button class="tb" id="b-cl-5-mg">🔍</button>
-    <button class="tb" id="b-cl-5-fwd">➡️</button>
+    <button class="tb" id="b-wl-5-back">⬅️</button>
+    <button class="tb" id="b-wl-5-mg">🔍</button>
+    <button class="tb" id="b-wl-5-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1121 · TWO WAYS OF THINKING (trivia off Inklings) ══ -->
-<div class="sc" id="s-two-ways">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">INKLINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1121 · Two Ways of Thinking</div>
-      <div class="sh">Your brain has two gears.</div>
-      <div class="sb">Creative thinking generates without judgment. Analytical thinking evaluates what was generated. Both are essential — but they cannot run at the same time.</div>
-      <div class="sb" style="margin-top:12px">A creative session has one rule: generation only. The moment you evaluate an idea — even silently — the creative gear disengages. Walt Disney called these two modes the Dreamer and the Critic. He never let them in the same room.</div>
-      <div class="sb" style="margin-top:12px;font-style:italic;color:#888">Right now, we only want the Dreamer.</div>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-two-ways-back">⬅️</button>
-    <button class="tb" id="b-two-ways-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1122 · RULES OF CREATIVE THINKING (trivia off Inklings) ══ -->
-<div class="sc" id="s-creative-rules">
-  <div class="card"><div class="xw">
-    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">INKLINGS · TRIVIA</span></div>
-    <div class="sw" style="padding:28px 32px">
-      <div class="se">1122 · Rules of Creative Thinking</div>
-      <div class="sh">Creative thinking has only one rule.</div>
-      <div class="sb">No criticism. Not of others' ideas. Not of your own. Not even a raised eyebrow. Not even the subtle internal wince that says <em>that's a dumb idea.</em></div>
-      <div class="sb" style="margin-top:12px">Everything gets a green light in the creative session. Quantity over quality. Wild over safe. The Sea doesn't care how good an idea is — it only cares that you caught it before it vanished.</div>
-      <div class="sb" style="margin-top:12px;font-style:italic;color:#888">Evaluation comes later. Much later. That's SHAPE's job — not CREATE's.</div>
-      <div class="sp"></div>
-    </div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-creative-rules-back">⬅️</button>
-    <button class="tb" id="b-creative-rules-mg">🔍</button>
-  </div>
-</div>
-
-<!-- ══ 1130 · WHAT I MIGHT WANT ══ -->
-<div class="sc card" id="s-what-i-want">
+<!-- ══ 1120 · FLIP THE FRICTION — Hook ══ -->
+<div class="sc card" id="s-ftf-intro">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
     <span class="ph-eyebrow">PART 1: CREATE</span>
   </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:14px;padding:28px 40px">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Flip the Friction</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">When you don't know what you want, sometimes it's easier to start by identifying what you <em>don't</em> want.</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-ftf-intro-back">⬅️</button>
+    <button class="tb" id="b-ftf-intro-mg">🔍</button>
+    <button class="tb" id="b-ftf-intro-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1121 · COMBUSTION POINT ══ -->
+<div class="sc card" id="s-ftf-combustion">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">FLIP THE FRICTION</span>
+  </div>
+  <div class="sw" style="padding:24px 32px">
+    <div class="se">Combustion Point</div>
+    <div class="sh">The moment when too much becomes too much.</div>
+    <div class="sb" style="font-weight:700;color:#111;margin-top:10px">The Accumulation</div>
+    <div class="sb">You've been holding it together for weeks. Then something small — a comment, a delay, a mess — and suddenly you're not holding it together at all.</div>
+    <div class="sb" style="font-weight:700;color:#111;margin-top:10px">The Shutdown</div>
+    <div class="sb">You stop responding. Stop engaging. A door closes and you're not sure when it will open again.</div>
+    <div class="sb" style="font-weight:700;color:#111;margin-top:10px">The Spiral</div>
+    <div class="sb">One thing goes wrong and suddenly everything is wrong. The small thing wasn't the problem. It was just the last thing.</div>
+    <div class="sp"></div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-ftf-comb-back">⬅️</button>
+    <button class="tb" id="b-ftf-comb-mg">🔍</button>
+    <button class="tb" id="b-ftf-comb-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1122 · ANGER LIST ══ -->
+<div class="sc card" id="s-ftf-anger">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">FLIP THE FRICTION</span>
+  </div>
+  <div class="sw" style="padding:24px 32px;align-items:stretch">
+    <div class="se">Anger List</div>
+    <div class="sh">Anger is a loud signal that something is wrong.</div>
+    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:16px;line-height:1.6">What makes you angry?</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="anger-input" placeholder="Something that makes you angry…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+      <button id="b-anger-add" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
+    </div>
+    <div id="anger-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
+    <div class="sp"></div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-ftf-anger-back">⬅️</button>
+    <button class="tb" id="b-ftf-anger-mg">🔍</button>
+    <button class="tb" id="b-ftf-anger-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1123 · PAIN POINT ══ -->
+<div class="sc card" id="s-ftf-pain">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">FLIP THE FRICTION</span>
+  </div>
+  <div class="sw" style="padding:24px 32px">
+    <div class="se">Pain Point</div>
+    <div class="sh">A specific, everyday frustration that causes friction or stress.</div>
+    <div class="sb" style="font-weight:700;color:#111;margin-top:8px">Financial</div>
+    <div class="sb">The pain of paying. Budget strain. Saving for goals that keep moving.</div>
+    <div class="sb" style="font-weight:700;color:#111;margin-top:8px">Productivity</div>
+    <div class="sb">The hate of the wait. Never enough time. Too much to do.</div>
+    <div class="sb" style="font-weight:700;color:#111;margin-top:8px">Emotional</div>
+    <div class="sb">Things that irritate you. The weight you carry quietly. Stress, family, connection — or the lack of it.</div>
+    <div class="sp"></div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-ftf-pain-back">⬅️</button>
+    <button class="tb" id="b-ftf-pain-mg">🔍</button>
+    <button class="tb" id="b-ftf-pain-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1124 · PAIN POINTS LIST ══ -->
+<div class="sc card" id="s-ftf-painlist">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">FLIP THE FRICTION</span>
+  </div>
+  <div class="sw" style="padding:24px 32px;align-items:stretch">
+    <div class="se">Pain Points</div>
+    <div class="sh">What is going on in your life that upsets you?</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="pain-input" placeholder="Something that upsets you…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+      <button id="b-pain-add" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
+    </div>
+    <div id="pain-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
+    <div class="sp"></div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-ftf-painlist-back">⬅️</button>
+    <button class="tb" id="b-ftf-painlist-mg">🔍</button>
+    <button class="tb" id="b-ftf-painlist-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1125 · FLIPPING THE FRICTION ══ -->
+<div class="sc card" id="s-ftf-flip">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">FLIP THE FRICTION</span>
+  </div>
+  <div class="sw" style="padding:24px 32px;align-items:stretch">
+    <div class="se">Flipping the Friction</div>
+    <div class="sh">How would you prefer it to be?</div>
+    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#888;margin-bottom:14px">Take each frustration, one by one. First thought that comes to mind.</div>
+    <div id="ftf-frustration-box" style="background:#fdf6e8;border:1.5px solid #C9A87C;border-radius:10px;padding:14px 16px;margin-bottom:14px;font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#3B2510;min-height:44px"></div>
+    <input type="text" id="ftf-flip-input" placeholder="How would you prefer it to be?" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111;margin-bottom:12px">
+    <div style="display:flex;gap:10px">
+      <button id="b-ftf-post" style="flex:1;padding:12px 0;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#C9A87C;color:#111;opacity:.4;pointer-events:none;transition:opacity .2s" disabled>→ Sea of Ideas</button>
+      <button id="b-ftf-skip" style="padding:12px 16px;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer;border:2px solid #ddd;background:#f9f9f7;color:#888">Skip</button>
+    </div>
+    <div id="ftf-status" style="font-size:12px;font-style:italic;color:#3B6D11;text-align:center;margin-top:10px;min-height:18px"></div>
+    <div class="sp"></div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-ftf-flip-back">⬅️</button>
+    <button class="tb" id="b-ftf-flip-mg">🔍</button>
+    <button class="tb" id="b-ftf-flip-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1130 · INKLINGS — Hook ══ -->
+<div class="sc card" id="s-inklings-intro">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">PART 1: CREATE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:14px;padding:28px 40px">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Inklings</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">An inkling is a slight, vague sense of something — a whisper, barely formed.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">These are the seeds of ideas already hiding in the back of your mind.</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-inklings-intro-back">⬅️</button>
+    <button class="tb" id="b-inklings-intro-mg">🔍</button>
+    <button class="tb" id="b-inklings-intro-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1130 · INKLINGS — 8 Doors ══ -->
+<div class="sc card" id="s-inklings-doors">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">INKLINGS</span>
+  </div>
   <div class="sw" style="padding:14px 24px 12px;align-items:center">
-    <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Inklings</div>
     <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#444;margin-bottom:16px;text-align:center;max-width:300px;line-height:1.5">Thoughts about what you might want:</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-auto-rows:1fr;gap:10px;width:100%;max-width:340px;flex:1">
-      <button class="spark-door" id="b-door-do"   data-prompt="What might you want to do? Experiences, activities, adventures…">DO</button>
-      <button class="spark-door" id="b-door-be"   data-prompt="Who might you want to become? Qualities, identities, ways of moving through the world…">BE</button>
-      <button class="spark-door" id="b-door-have" data-prompt="What might you want to have? Objects, spaces, resources, relationships…">HAVE</button>
-      <button class="spark-door" id="b-door-go"   data-prompt="Where might you want to go? Places, landscapes, cultures, coordinates on a map…">GO</button>
-      <button class="spark-door" id="b-door-make" data-prompt="What might you want to make or build? Something you create with your hands, your mind, your time…">MAKE</button>
-      <button class="spark-door" id="b-door-give" data-prompt="What might you want to give or leave behind? A contribution, a legacy, something offered…">GIVE</button>
-      <button class="spark-door" id="b-door-feel" data-prompt="What might you want to feel more of? A quality of experience, an emotional texture, a way of being…">FEEL</button>
-      <button class="spark-door" id="b-door-songs" data-prompt="What songs stop you? What plays when you're most alive? Name them — or just describe the feeling they carry…">SONGS</button>
-      <button class="spark-door" id="b-door-images" data-prompt="What images make you linger? What do you keep coming back to? Drop them here — a scene, a moment, a visual that pulls…">IMAGES</button>
-      <button class="spark-door" id="b-door-people" data-prompt="Who catches your attention? Who do you admire without fully knowing why? Name them — or describe what you see in them…">PEOPLE</button>
-      <button class="spark-door" id="b-door-moments" data-prompt="When did time disappear? When were you completely absorbed? Describe the moment — when were you most alive?">MOMENTS</button>
-      <button class="spark-door" id="b-door-other" data-prompt="What didn't fit anywhere else? Anything counts.">OTHER</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;width:100%;max-width:300px;flex:1">
+      <button class="spark-door" id="b-ink-have" data-door="HAVE" data-prompt="What might you want to have someday?">HAVE</button>
+      <button class="spark-door" id="b-ink-do"   data-door="DO"   data-prompt="What might you want to do someday?">DO</button>
+      <button class="spark-door" id="b-ink-go"   data-door="GO"   data-prompt="Where might you want to travel someday?">GO</button>
+      <button class="spark-door" id="b-ink-make" data-door="MAKE" data-prompt="What might you want to create someday?">MAKE</button>
+      <button class="spark-door" id="b-ink-be"   data-door="BE"   data-prompt="What might you want to be someday?">BE</button>
+      <button class="spark-door" id="b-ink-give" data-door="GIVE" data-prompt="What might you want to give someone someday?">GIVE</button>
+      <button class="spark-door" id="b-ink-feel" data-door="FEEL" data-prompt="What might you want to feel?">FEEL</button>
+      <button class="spark-door" id="b-ink-other" data-door="OTHER" data-prompt="What else might you want?">OTHER</button>
     </div>
     <div style="font-size:11px;font-style:italic;color:#bbb;text-align:center;padding-top:10px">You can return here as many times as you like.</div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-what-i-want-back">⬅️</button>
-    <button class="tb" id="b-what-i-want-mg">🔍</button>
-    <button class="tb" id="b-what-i-want-fwd">➡️</button>
+    <button class="tb" id="b-inklings-doors-back">⬅️</button>
+    <button class="tb" id="b-inklings-doors-mg">🔍</button>
+    <button class="tb" id="b-inklings-doors-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ SPARK CAPTURE (shared input — prompt changes per door) ══ -->
-<div class="sc" id="s-spark-capture">
+<!-- ══ INKLINGS CAPTURE (shared — label + prompt change per door) ══ -->
+<div class="sc" id="s-ink-capture">
   <div class="card"><div class="icw">
-    <div class="icit" id="spark-cap-title">✨ Spark</div>
+    <div class="icit" id="ink-cap-title">💠 HAVE</div>
     <hr class="icr">
-    <div class="icq" id="spark-cap-prompt">What might you want?</div>
-    <textarea class="ict" id="spark-text" placeholder="Anything that catches your attention…"></textarea>
+    <div class="icq" id="ink-cap-prompt">What might you want to have someday?</div>
+    <textarea class="ict" id="ink-text" placeholder="Anything you might want…"></textarea>
     <div class="sp"></div>
-    <div class="idea-status" id="spark-status"></div>
-    <div id="spark-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+    <div class="idea-status" id="ink-status"></div>
+    <div id="ink-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px">
       <div style="font-size:52px">🌊</div>
       <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#1A3A5C">In the Sea.</div>
       <div style="font-size:13px;font-style:italic;color:#3A6080">What else might you want?</div>
     </div>
   </div></div>
   <div class="bar2" style="gap:10px">
-    <button class="tb" id="b-spark-cap-back">⬅️</button>
-    <button class="tb" id="b-spark-cap-mg">🔍</button>
-    <button class="save-btn" id="b-save-spark">SAVE</button>
+    <button class="tb" id="b-ink-cap-back">⬅️</button>
+    <button class="tb" id="b-ink-cap-mg">🔍</button>
+    <button class="save-btn" id="b-save-ink">SAVE</button>
   </div>
 </div>
 
-<!-- ══ 1140 · LIGHTNING BUG ══ -->
-<div class="sc card" id="s-lightning-bug">
+<!-- ══ 1140 · BLUE SKY — Hook ══ -->
+<div class="sc card" id="s-bluesky-intro">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">PART 1: CREATE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:14px;padding:28px 40px">
+      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Blue Sky</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7"><em>What if there were no limitations?</em></div>
+      <div style="font-family:'Playfair Display',serif;font-size:15px;color:#555;line-height:1.7;margin-top:4px">Blue Sky thinking is how Disney Imagineers begin every project. No budgets. No logic. No "that's not realistic." Just: what would be amazing?</div>
+      <div style="font-family:'Playfair Display',serif;font-size:15px;color:#555;line-height:1.7">The wildest ideas are often the best springboards. Even if you don't reach the full sky, you'll land somewhere higher than you started.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:#1a3a5c;margin-top:8px">What might you dare to want?</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-bluesky-intro-back">⬅️</button>
+    <button class="tb" id="b-bluesky-intro-mg">🔍</button>
+    <button class="tb" id="b-bluesky-intro-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1140.T · BLUE SKY Trivia ══ -->
+<div class="sc" id="s-bluesky-trivia">
+  <div class="card"><div class="xw">
+    <div class="mg-band"><span style="font-size:10px;letter-spacing:4px;text-transform:uppercase;color:#555;font-weight:700">BLUE SKY · TRIVIA</span></div>
+    <div class="sw" style="padding:28px 32px">
+      <div class="se">Why Blue Sky Is Vital</div>
+      <div class="sh">That's where breakthroughs happen.</div>
+      <ul style="margin:8px 0 0;padding-left:20px;color:#555;font-size:15px;line-height:1.85">
+        <li>It inspires others to dream when you show you're not afraid to.</li>
+        <li>Even if you don't reach the full sky, you'll land somewhere higher than you started.</li>
+        <li>"It's where the impossible starts becoming inevitable."</li>
+        <li>"Stretching for the blue sky is giving your biggest ideas room to breathe."</li>
+      </ul>
+      <div class="sp"></div>
+    </div>
+  </div></div>
+  <div class="bar2">
+    <button class="tb" id="b-bluesky-trivia-back">⬅️</button>
+    <button class="tb" id="b-bluesky-trivia-mg">🔍</button>
+  </div>
+</div>
+
+<!-- ══ 1141 · BLUE SKY IDEAS — 8 Doors ══ -->
+<div class="sc card" id="s-bluesky-doors">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">BLUE SKY</span>
+  </div>
+  <div class="sw" style="padding:14px 24px 12px;align-items:center">
+    <div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#1a3a5c;letter-spacing:1px;margin-bottom:4px;text-align:center">NO LIMITATIONS</div>
+    <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-bottom:14px;text-align:center">Money is no object. All the time in the world.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;width:100%;max-width:300px;flex:1">
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-have" data-door="HAVE" data-prompt="What wild thing might you want to have someday?">🌟 HAVE</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-do"   data-door="DO"   data-prompt="What amazing thing might you want to do someday?">🌟 DO</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-go"   data-door="GO"   data-prompt="Where in the universe might you want to go someday?">🌟 GO</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-make" data-door="MAKE" data-prompt="What crazy thing might you want to create someday?">🌟 MAKE</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-be"   data-door="BE"   data-prompt="If you could be anything or anyone, what might that be?">🌟 BE</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-give" data-door="GIVE" data-prompt="If you had it, what might you want to give someone someday?">🌟 GIVE</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-feel" data-door="FEEL" data-prompt="What impossible feeling might you want to feel?">🌟 FEEL</button>
+      <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-other" data-door="OTHER" data-prompt="What other amazing things might you want in your life?">🌟 OTHER</button>
+    </div>
+    <div style="font-size:11px;font-style:italic;color:#bbb;text-align:center;padding-top:10px">Nothing is too big. Nothing is too small.</div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-bluesky-doors-back">⬅️</button>
+    <button class="tb" id="b-bluesky-doors-mg">🔍</button>
+    <button class="tb" id="b-bluesky-doors-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ BLUE SKY CAPTURE (shared — label + prompt change per door) ══ -->
+<div class="sc" id="s-bs-capture">
+  <div class="card"><div class="icw" style="background:#EBF4FF">
+    <div class="icit" id="bs-cap-title" style="color:#1a3a5c">🌟 HAVE</div>
+    <hr class="icr">
+    <div class="icq" id="bs-cap-prompt">What wild thing might you want to have someday?</div>
+    <textarea class="ict" id="bs-text" placeholder="No limits. No judgment. Anything…"></textarea>
+    <div class="sp"></div>
+    <div class="idea-status" id="bs-status"></div>
+    <div id="bs-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+      <div style="font-size:52px">🌊</div>
+      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#1A3A5C">In the Sea.</div>
+      <div style="font-size:13px;font-style:italic;color:#3A6080">What else might you dare to want?</div>
+    </div>
+  </div></div>
+  <div class="bar2" style="gap:10px">
+    <button class="tb" id="b-bs-cap-back">⬅️</button>
+    <button class="tb" id="b-bs-cap-mg">🔍</button>
+    <button class="save-btn" id="b-save-bs">SAVE</button>
+  </div>
+</div>
+
+<!-- ══ 1150 · CREATIVE SPARKS ══ -->
+<div class="sc card" id="s-sparks">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
     <span class="ph-eyebrow">PART 1: CREATE</span>
   </div>
   <div style="flex:1;display:flex;flex-direction:column;background:#ffffff">
-    <div class="reader-eyebrow" style="padding:16px 16px 0;text-align:center">Creative Sparks</div>
-    <div id="lb-img" style="flex:1;margin:12px 16px;border-radius:10px;background:#e4e0d8 center/cover no-repeat"></div>
+    <div style="padding:10px 16px 4px;text-align:center">
+      <div class="reader-eyebrow">Creative Sparks</div>
+      <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-top:2px">If you linger on an image, press the heart.</div>
+    </div>
+    <div style="padding:4px 16px 6px;display:flex;gap:8px;align-items:center">
+      <input type="text" id="spark-focus" placeholder="Focus topic (optional)…" style="flex:1;padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+      <button id="b-spark-focus-go" style="padding:7px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">FOCUS</button>
+    </div>
+    <div id="spark-img" style="flex:1;margin:4px 16px;border-radius:10px;background:#e4e0d8 center/cover no-repeat"></div>
     <div class="paging-strip">
-      <button class="pg-btn" id="b-lb-prev"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
-      <button id="b-lb-heart" style="width:48px;height:48px;background:#111;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">
+      <button class="pg-btn" id="b-spark-prev"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
+      <button id="b-spark-heart" style="width:48px;height:48px;background:#111;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="#ffffff"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.2 2 4.5 5.6 4.5c2 0 3.4 1 4.4 2.6 1-1.6 2.4-2.6 4.4-2.6C18 4.5 19.6 8.2 18 11.7 16.5 16.4 12 21 12 21z"/></svg>
       </button>
-      <button class="pg-btn" id="b-lb-next"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
+      <button class="pg-btn" id="b-spark-next"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-lb-back">⬅️</button>
-    <button class="tb" id="b-lb-mg">🔍</button>
-    <button class="tb" id="b-lb-fwd">➡️</button>
+    <button class="tb" id="b-sparks-back">⬅️</button>
+    <button class="tb" id="b-sparks-mg">🔍</button>
+    <button class="tb" id="b-sparks-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1150 · SEA OF IDEAS — First Crossing ══ -->
+<!-- ══ 1160 · SEA OF IDEAS ══ -->
 <div class="sc card" id="s-sea-of-ideas">
   <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
@@ -894,63 +1059,64 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
   <div class="sw" style="padding:16px 32px;align-items:center;text-align:center">
     <div class="se">Sea of Ideas</div>
-    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:#111;line-height:1.5;margin-bottom:8px">Look what you made.</div>
-    <div style="font-size:13px;font-style:italic;color:#888;margin-bottom:20px;line-height:1.7">Everything you captured is floating here.<br>No judgment. No order. Just your ideas.</div>
-    <div id="sea-miro-frame" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;overflow:hidden;margin-bottom:18px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:200px">
-      <div id="sea-miro-inner" style="width:100%;height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px">
-        <div style="font-size:36px">🌊</div>
-        <div style="font-size:12px;font-style:italic;color:#999">Loading your Sea of Ideas…</div>
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:#111;line-height:1.5;margin-bottom:8px">A collection of ideas.</div>
+    <div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div>
+    <div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:140px">
+      <div style="text-align:center;padding:16px">
+        <div style="font-size:36px;margin-bottom:6px">🌊</div>
+        <div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div>
       </div>
     </div>
-    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:20px">Is there anything else?</div>
-    <button id="b-sea-more-sparks" style="padding:10px 28px;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#f0ede8;color:#1a3a5c;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12);margin-bottom:8px">Yes — add more sparks</button>
-    <button id="b-sea-ready" style="padding:10px 28px;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#f0ede8;color:#555;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12)">No — my Sea is ready</button>
+    <a id="sea-miro-link" href="#" target="_blank" style="display:inline-block;margin-bottom:14px;padding:9px 22px;background:#1a3a5c;color:#fff;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;letter-spacing:1px">Open in Miro →</a>
+    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:14px">Is there anything else?</div>
+    <button id="b-sea-add-idea" style="padding:10px 28px;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#f0ede8;color:#1a3a5c;box-shadow:0 0 6px 1px rgba(0,0,0,.15),0 2px 4px rgba(0,0,0,.12);margin-bottom:8px">💡 Add an Idea</button>
     <div class="sp"></div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-sea-of-ideas-back">⬅️</button>
-    <button class="tb" id="b-sea-of-ideas-mg">🔍</button>
-    <button class="tb" id="b-sea-of-ideas-fwd">➡️</button>
+    <button class="tb" id="b-sea-back">⬅️</button>
+    <button class="tb" id="b-sea-mg">🔍</button>
+    <button class="tb" id="b-sea-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1160 · PLUSing ══ -->
-<div class="sc card" id="s-plusing">
-  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+<!-- ══ 1161 · IDEA BUTTON ══ -->
+<div class="sc card" id="s-idea-button">
+  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
     <span class="ph-eyebrow">🌈 DREAM PHASE</span>
     <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">PART 1: CREATE</span>
+    <span class="ph-eyebrow">SEA OF IDEAS</span>
   </div>
   <div class="reader-wrap">
-    <div class="reader-body">
-      <div class="reader-eyebrow">PLUSing</div>
-      <div class="reader-line bold">Good enough is never good enough.</div>
-      <div class="reader-spacer"></div>
-      <div class="reader-line small">PLUSing means making something better than it needs to be. Walt Disney called it the secret to everything worth building.</div>
+    <div class="reader-body" style="gap:14px;padding:28px 40px">
+      <div style="font-size:52px;margin-bottom:8px">💡</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Ideas come when they want to.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;line-height:1.7">When you think of something later — and you will — there is a 💡 button in the 🔍 backpack, found on every page, which is always ready to capture a passing idea on any subject.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-plusing-back">⬅️</button>
-    <button class="tb" id="b-plusing-mg">🔍</button>
-    <button class="tb" id="b-plusing-fwd">➡️</button>
+    <button class="tb" id="b-ib-back">⬅️</button>
+    <button class="tb" id="b-ib-mg">🔍</button>
+    <button class="tb" id="b-ib-fwd">➡️</button>
   </div>
 </div>
 
-<!-- ══ 1190 · CREATE → SHAPE transition (placeholder) ══ -->
-<div class="sc card" id="s-shape-soon">
+<!-- ══ 1200 · SHAPE ══ -->
+<div class="sc card" id="s-shape">
   <div class="phase-header" style="text-align:left">
-    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <div class="ph-eyebrow">🌈 DREAM PHASE</div>
   </div>
   <div class="reader-wrap">
-    <div class="reader-body">
-      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;font-style:italic;color:#0a4a38;margin-bottom:10px">SHAPE is next.</div>
-      <div style="font-size:14px;font-style:italic;color:#888">Not built yet — come back soon.</div>
+    <div class="reader-body" style="gap:0px">
+      <div style="font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#8B6914;letter-spacing:1px">Part 2:</div>
+      <div style="font-family:'Playfair Display',serif;font-size:38px;font-weight:700;letter-spacing:2px;color:#0a4a38;margin-bottom:16px">SHAPE</div>
+      <div style="width:50px;height:0.5px;background:#C9A87C;margin:0 auto 20px"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:#1a3a5c;line-height:1.6;max-width:300px;margin:0 auto">Turn your ideas into what you really want.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-shape-soon-back">⬅️</button>
-    <button class="tb dim" id="b-shape-soon-mg">🔍</button>
-    <button class="tb dim" id="b-shape-soon-fwd">➡️</button>
+    <button class="tb" id="b-shape-back">⬅️</button>
+    <button class="tb" id="b-shape-mg">🔍</button>
+    <button class="tb dim" id="b-shape-fwd">➡️</button>
   </div>
 </div>
 
@@ -1278,8 +1444,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <iframe id="miro-embed" src="" style="flex:1;border:none;min-height:360px" allowfullscreen></iframe>
   </div>
   <div class="bar2" style="gap:6px">
-    <button class="tb" id="b-sea-back">⬅️</button>
-    <button class="tb" id="b-sea-mg">🔍</button>
+    <button class="tb" id="b-seaview-back">⬅️</button>
+    <button class="tb" id="b-seaview-mg">🔍</button>
     <button class="tb" id="b-sea-full"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
   </div>
 </div>
@@ -1494,7 +1660,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 <!-- TOOLS SUB-SCREENS -->
 <div class="sc" id="s-question"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Tools</div><div class="cat-title">❓</div><div class="cat-desc">Spans all phases — the question is always present.</div><button class="tool-row">Clarifying Questions <span class="arr">→</span></button><button class="tool-row">Reality Check <span class="arr">→</span></button><div class="soon">More tools coming.</div><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-q-back">⬅️</button><button class="tb" id="b-q-mg">🔍</button></div></div>
 <div class="sc" id="s-create"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Tools</div><div class="cat-title">💡</div><div class="cat-desc">Dream Phase. The spark that starts everything.</div><button class="tool-row">Wishing Well <span class="arr">→</span></button><button class="tool-row">Vision Board <span class="arr">→</span></button><div class="soon">More tools coming.</div><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-c-back">⬅️</button><button class="tb" id="b-c-mg">🔍</button></div></div>
-<div class="sc" id="s-shape"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Tools</div><div class="cat-title">🔬</div><div class="cat-desc">Believe Phase. Turning imagination into a plan.</div><button class="tool-row">Design Canvas <span class="arr">→</span></button><button class="tool-row">Prototype Kit <span class="arr">→</span></button><div class="soon">More tools coming.</div><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-sh-back">⬅️</button><button class="tb" id="b-sh-mg">🔍</button></div></div>
+<div class="sc" id="s-shape-tools"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Tools</div><div class="cat-title">🔬</div><div class="cat-desc">Believe Phase. Turning imagination into a plan.</div><button class="tool-row">Design Canvas <span class="arr">→</span></button><button class="tool-row">Prototype Kit <span class="arr">→</span></button><div class="soon">More tools coming.</div><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-sh-back">⬅️</button><button class="tb" id="b-sh-mg">🔍</button></div></div>
 <div class="sc" id="s-share"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Tools</div><div class="cat-title">🗣️</div><div class="cat-desc">Dare Phase. Putting it out into the world.</div><button class="tool-row">Briefing Board <span class="arr">→</span></button><button class="tool-row">Pitch Builder <span class="arr">→</span></button><div class="soon">More tools coming.</div><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-sr-back">⬅️</button><button class="tb" id="b-sr-mg">🔍</button></div></div>
 <div class="sc" id="s-dare"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Tools</div><div class="cat-title">⚖️</div><div class="cat-desc">Journey Phase. Committing and doing.</div><button class="tool-row">Briefing Board <span class="arr">→</span></button><button class="tool-row">Planning Tools <span class="arr">→</span></button><div class="soon">More tools coming.</div><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-d-back">⬅️</button><button class="tb" id="b-d-mg">🔍</button></div></div>
 <div class="sc" id="s-configure"><div class="card"><div class="cat-body"><div class="cat-eyebrow">Settings</div><div class="cat-title">⚙️</div><div class="cat-desc">Set conditions for your session.</div><button class="tool-row">Session Setup <span class="arr">→</span></button><button class="tool-row" id="b-go-change-pw">Change Password <span class="arr">→</span></button><div class="sp"></div></div></div><div class="bar2"><button class="tb" id="b-cfg-back">⬅️</button><button class="tb" id="b-cfg-mg">🔍</button></div></div>
@@ -1511,18 +1677,18 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
 </div><!-- /.fg -->
 
+
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   var T = window.T2T;
 
+  /* ── 1000 · THE DREAM PHASE ── */
   T.setPrimaryPages(['s-dream']);
   T.registerPageNum('s-dream', '1000');
   T.registerCtx('s-dream', 'The Dream Phase');
-
   T.registerGems('s-dream', [
     {text:'You are about to discover what you really want — maybe for the first time.', attr:'T2T Field Guide'}
   ]);
-
   T.wire('b-dream-back', function(){ sessionStorage.setItem('bp_target','0990'); T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
   T.wire('b-dream-fwd',  function(){ T.nav('s-create-hub'); });
@@ -1534,240 +1700,383 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'Creativity = making something new by rearranging the old in a new way.', attr:'T2T Field Guide · CREATE'}
   ]);
   T.registerTrivia('s-create-hub', [
-    { label: 'Why Creativity Matters', id: 's-why-creativity' }
+    { label: 'CREATE', id: 's-create-trivia' }
   ]);
   T.wire('b-create-hub-back', function(){ T.nav('s-dream'); });
   T.wire('b-create-hub-mg',   T.goMG);
   T.wire('b-create-hub-fwd',  function(){ T.nav('s-create-toc'); });
 
-  /* ── 1101 · WHY CREATIVITY MATTERS (trivia off CREATE hook) ── */
-  T.registerPageNum('s-why-creativity', '1101');
-  T.wire('b-why-creativity-back', function(){ T.goBack(); });
-  T.wire('b-why-creativity-mg',   T.goMG);
+  T.registerPageNum('s-create-trivia', '1100T');
+  T.wire('b-create-trivia-back', function(){ T.goBack(); });
+  T.wire('b-create-trivia-mg',   T.goMG);
 
-  /* ── 1120 · CREATE — Table of Contents ── */
-  T.registerPageNum('s-create-toc', '1120');
+  /* ── 1101 · TOC ── */
+  T.registerPageNum('s-create-toc', '1101');
   T.registerCtx('s-create-toc', 'CREATE');
+  T.registerTrivia('s-create-toc', [
+    { label: 'What If?', id: 's-what-if' }
+  ]);
   T.wire('b-create-toc-back', function(){ T.nav('s-create-hub'); });
   T.wire('b-create-toc-mg',   T.goMG);
-  T.wire('b-create-toc-fwd',  function(){ T.nav('s-cl-intro'); });
-  document.getElementById('toc-cl')       && document.getElementById('toc-cl').addEventListener('click',       function(){ T.nav('s-cl-intro'); });
-  document.getElementById('toc-inklings') && document.getElementById('toc-inklings').addEventListener('click', function(){ T.nav('s-what-i-want'); });
-  document.getElementById('toc-spark')    && document.getElementById('toc-spark').addEventListener('click',    function(){ T.nav('s-lightning-bug'); });
+  T.wire('b-create-toc-fwd',  function(){ T.nav('s-wl-intro'); });
+  document.getElementById('toc-wl')       && document.getElementById('toc-wl').addEventListener('click',       function(){ T.nav('s-wl-intro'); });
+  document.getElementById('toc-ftf')      && document.getElementById('toc-ftf').addEventListener('click',      function(){ T.nav('s-ftf-intro'); });
+  document.getElementById('toc-inklings') && document.getElementById('toc-inklings').addEventListener('click', function(){ T.nav('s-inklings-intro'); });
+  document.getElementById('toc-bluesky')  && document.getElementById('toc-bluesky').addEventListener('click',  function(){ T.nav('s-bluesky-intro'); });
+  document.getElementById('toc-sparks')   && document.getElementById('toc-sparks').addEventListener('click',   function(){ T.nav('s-sparks'); });
   document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ T.nav('s-sea-of-ideas'); });
-  document.getElementById('toc-plusing')  && document.getElementById('toc-plusing').addEventListener('click',  function(){ T.nav('s-plusing'); });
 
-  /* ── 1110 · CREATIVE LICENSE — Intro ── */
-  T.registerPageNum('s-cl-intro', '1110');
-  T.registerCtx('s-cl-intro', 'Creative License');
-  T.registerGems('s-cl-intro', [
-    {text:'Creative License is the permission to think creatively — to imagine, bend the rules, and take bold leaps without asking for approval.', attr:'T2T Field Guide · CREATE'}
+  T.registerPageNum('s-what-if', '1101T');
+  T.wire('b-what-if-back', function(){ T.goBack(); });
+  T.wire('b-what-if-mg',   T.goMG);
+
+  /* ── 1110 · WISHING LICENSE — Intro ── */
+  T.registerPageNum('s-wl-intro', '1110');
+  T.registerCtx('s-wl-intro', 'Wishing License');
+  T.registerGems('s-wl-intro', [
+    {text:'You are allowed to want this. No justification required. No guarantee needed. Just — you are allowed.', attr:'T2T Field Guide · Wishing License'}
   ]);
-  T.registerTrivia('s-cl-intro', [
-    { label: 'What It Means', id: 's-cl-what-it-means' },
-    { label: 'Why Do We Need a Creative License?', id: 's-cl-why-license' }
+  T.registerTrivia('s-wl-intro', [
+    { label: 'Purpose', id: 's-wl-purpose' },
+    { label: 'What It Means', id: 's-wl-what-it-means' },
+    { label: 'Why Permission Doesn\'t Come Naturally', id: 's-wl-why' },
+    { label: 'Creative Blocks', id: 's-wl-blocks' }
   ]);
-  T.wire('b-cl-intro-back', function(){ T.nav('s-create-toc'); });
-  T.wire('b-cl-intro-mg',   T.goMG);
-  T.wire('b-cl-intro-fwd',  function(){ T.nav('s-cl-no-meetings'); });
+  T.wire('b-wl-intro-back', function(){ T.nav('s-create-toc'); });
+  T.wire('b-wl-intro-mg',   T.goMG);
+  T.wire('b-wl-intro-fwd',  function(){ T.nav('s-wl-educated'); });
 
-  /* ── 1112 · WHAT IT MEANS (trivia off Creative License) ── */
-  T.registerPageNum('s-cl-what-it-means', '1112');
-  T.wire('b-cl-what-it-means-back', function(){ T.goBack(); });
-  T.wire('b-cl-what-it-means-mg',   T.goMG);
+  T.registerPageNum('s-wl-purpose', '1110.1');
+  T.wire('b-wl-purpose-back', function(){ T.goBack(); });
+  T.wire('b-wl-purpose-mg',   T.goMG);
+  T.registerPageNum('s-wl-what-it-means', '1110.2');
+  T.wire('b-wl-what-back', function(){ T.goBack(); });
+  T.wire('b-wl-what-mg',   T.goMG);
+  T.registerPageNum('s-wl-why', '1110.3');
+  T.wire('b-wl-why-back', function(){ T.goBack(); });
+  T.wire('b-wl-why-mg',   T.goMG);
+  T.registerPageNum('s-wl-blocks', '1110.4');
+  T.wire('b-wl-blocks-back', function(){ T.goBack(); });
+  T.wire('b-wl-blocks-mg',   T.goMG);
 
-  /* ── 1113 · WHY DO WE NEED A CREATIVE LICENSE (trivia off Creative License) ── */
-  T.registerPageNum('s-cl-why-license', '1113');
-  T.wire('b-cl-why-license-back', function(){ T.goBack(); });
-  T.wire('b-cl-why-license-mg',   T.goMG);
+  /* ── 1111 · EDUCATED OUT OF US ── */
+  T.registerPageNum('s-wl-educated', '1111');
+  T.registerCtx('s-wl-educated', 'Wishing License');
+  T.wire('b-wl-educated-back', function(){ T.nav('s-wl-intro'); });
+  T.wire('b-wl-educated-mg',   T.goMG);
+  T.wire('b-wl-educated-fwd',  function(){ T.nav('s-wl-rules'); });
 
-  /* ── 1111 · NO MEETINGS (prelude to the License ceremony) ── */
-  T.registerPageNum('s-cl-no-meetings', '1111');
-  T.registerCtx('s-cl-no-meetings', 'Creative License');
-  T.registerGems('s-cl-no-meetings', [
-    {text:'No Meetings. Hold Sessions.', attr:'T2T Field Guide · CREATE'}
+  /* ── 1113 · EVERY LICENSE HAS RULES ── */
+  T.registerPageNum('s-wl-rules', '1113');
+  T.registerCtx('s-wl-rules', 'Wishing License');
+  T.wire('b-wl-rules-back', function(){ T.nav('s-wl-educated'); });
+  T.wire('b-wl-rules-mg',   T.goMG);
+  T.wire('b-wl-rules-fwd',  function(){ T.nav('s-wl-1'); });
+
+  /* ── 1115–1119 · WISHING LICENSE CEREMONY ── */
+  T.registerCtx('s-wl-1', 'Wishing License');
+  T.registerGems('s-wl-1', [
+    {text:'By the authority vested in the creative spirit of the universe…', attr:'T2T Wishing License'}
   ]);
-  T.registerTrivia('s-cl-no-meetings', [
-    { label: 'Creative Mode vs Analytical Mode', id: 's-nm-modes' },
-    { label: 'Why Separate Creative From Analytical Thinking?', id: 's-nm-why-separate' },
-    { label: 'Why Separation Creates Safety', id: 's-nm-safety' },
-    { label: 'What Happens in a Meeting?', id: 's-nm-what-happens' },
-    { label: 'Four Types of Sessions', id: 's-nm-four-sessions' }
-  ]);
-  T.wire('b-cl-no-meetings-back', function(){ T.nav('s-cl-intro'); });
-  T.wire('b-cl-no-meetings-mg',   T.goMG);
-  T.wire('b-cl-no-meetings-fwd',  function(){ T.nav('s-creative-license'); });
+  T.wire('b-wl-1-back', function(){ T.nav('s-wl-rules'); });
+  T.wire('b-wl-1-mg',   T.goMG);
+  T.wire('b-wl-1-fwd',  function(){ T.nav('s-wl-2'); });
+  T.wire('b-wl-2-back', function(){ T.nav('s-wl-1'); });
+  T.wire('b-wl-2-mg',   T.goMG);
+  T.wire('b-wl-2-fwd',  function(){ T.nav('s-wl-3'); });
+  T.wire('b-wl-3-back', function(){ T.nav('s-wl-2'); });
+  T.wire('b-wl-3-mg',   T.goMG);
+  T.wire('b-wl-3-fwd',  function(){ T.nav('s-wl-4'); });
+  T.wire('b-wl-4-back', function(){ T.nav('s-wl-3'); });
+  T.wire('b-wl-4-mg',   T.goMG);
+  T.wire('b-wl-4-fwd',  function(){ T.nav('s-wl-5'); });
+  T.wire('b-wl-5-back', function(){ T.nav('s-wl-4'); });
+  T.wire('b-wl-5-mg',   T.goMG);
+  T.wire('b-wl-5-fwd',  function(){ T.nav('s-ftf-intro'); });
 
-  /* ── 1114 · CREATIVE MODE vs ANALYTICAL MODE (trivia off No Meetings) ── */
-  T.registerPageNum('s-nm-modes', '1114');
-  T.wire('b-nm-modes-back', function(){ T.goBack(); });
-  T.wire('b-nm-modes-mg',   T.goMG);
-
-  /* ── 1115 · WHY SEPARATE CREATIVE FROM ANALYTICAL THINKING (trivia off No Meetings) ── */
-  T.registerPageNum('s-nm-why-separate', '1115');
-  T.wire('b-nm-why-separate-back', function(){ T.goBack(); });
-  T.wire('b-nm-why-separate-mg',   T.goMG);
-
-  /* ── 1116 · WHY SEPARATION CREATES SAFETY (trivia off No Meetings) ── */
-  T.registerPageNum('s-nm-safety', '1116');
-  T.wire('b-nm-safety-back', function(){ T.goBack(); });
-  T.wire('b-nm-safety-mg',   T.goMG);
-
-  /* ── 1117 · WHAT HAPPENS IN A MEETING (trivia off No Meetings) ── */
-  T.registerPageNum('s-nm-what-happens', '1117');
-  T.wire('b-nm-what-happens-back', function(){ T.goBack(); });
-  T.wire('b-nm-what-happens-mg',   T.goMG);
-
-  /* ── 1118 · FOUR TYPES OF SESSIONS (trivia off No Meetings) ── */
-  T.registerPageNum('s-nm-four-sessions', '1118');
-  T.wire('b-nm-four-sessions-back', function(){ T.goBack(); });
-  T.wire('b-nm-four-sessions-mg',   T.goMG);
-
-  /* ── 1110 · CREATIVE LICENSE — Ceremony ── */
-  T.registerCtx('s-creative-license', 'Creative License');
-  T.registerGems('s-creative-license', [
-    {text:'You have always had permission to want freely. This just makes it official.', attr:'T2T Field Guide'}
-  ]);
-  T.wire('b-creative-license-back', function(){ T.nav('s-cl-no-meetings'); });
-  T.wire('b-creative-license-mg',   T.goMG);
-  T.wire('b-cl-1-fwd',  function(){ T.nav('s-cl-2'); });
-  T.wire('b-cl-2-back', function(){ T.nav('s-creative-license'); });
-  T.wire('b-cl-2-mg',   T.goMG);
-  T.wire('b-cl-2-fwd',  function(){ T.nav('s-cl-3'); });
-  T.wire('b-cl-3-back', function(){ T.nav('s-cl-2'); });
-  T.wire('b-cl-3-mg',   T.goMG);
-  T.wire('b-cl-3-fwd',  function(){ T.nav('s-cl-4'); });
-  T.wire('b-cl-4-back', function(){ T.nav('s-cl-3'); });
-  T.wire('b-cl-4-mg',   T.goMG);
-  T.wire('b-cl-4-fwd',  function(){ T.nav('s-cl-5'); });
-  T.wire('b-cl-5-back', function(){ T.nav('s-cl-4'); });
-  T.wire('b-cl-5-mg',   T.goMG);
-  T.wire('b-cl-5-fwd',  function(){ T.nav('s-what-i-want'); });
-
-  /* ── 1121 · TWO WAYS OF THINKING (trivia off Inklings) ── */
-  T.registerPageNum('s-two-ways', '1121');
-  T.wire('b-two-ways-back', function(){ T.goBack(); });
-  T.wire('b-two-ways-mg',   T.goMG);
-
-  /* ── 1122 · RULES OF CREATIVE THINKING (trivia off Inklings) ── */
-  T.registerPageNum('s-creative-rules', '1122');
-  T.wire('b-creative-rules-back', function(){ T.goBack(); });
-  T.wire('b-creative-rules-mg',   T.goMG);
-
-  /* ── 1130 · INKLINGS ── */
-  T.registerPageNum('s-what-i-want', '1130');
-  T.registerCtx('s-what-i-want', 'Inklings');
-  T.registerGems('s-what-i-want', [
-    {text:'Anything that catches your attention belongs in the Sea.', attr:'T2T Field Guide · CREATE'}
-  ]);
-  T.registerTrivia('s-what-i-want', [
-    { label: 'Two Ways of Thinking', id: 's-two-ways' },
-    { label: 'Rules of Creative Thinking', id: 's-creative-rules' }
-  ]);
-  T.wire('b-what-i-want-back', function(){ T.nav('s-create-toc'); });
-  T.wire('b-what-i-want-mg',   T.goMG);
-  T.wire('b-what-i-want-fwd',  function(){ T.nav('s-lightning-bug'); });
-
-  /* ── 9100 · IDEA HUB — Trivia (registered once, available from every MG via 🌸 on the Idea Hub itself) ── */
-  T.registerPageNum('s-idea', '9100');
-  T.registerTrivia('s-idea', [
-    { label: 'Where Do Ideas Come From?', id: 's-idea-origin' },
-    { label: 'The 2% That Matters', id: 's-idea-two-percent' },
-    { label: "Your Subconscious Can't Tell the Difference", id: 's-idea-subconscious' },
-    { label: 'An Idea Carries No Promise of Value', id: 's-idea-no-promise' },
-    { label: 'Blue Sky Thinking', id: 's-idea-blue-sky' }
-  ]);
-  T.registerPageNum('s-idea-origin', '9101');
-  T.wire('b-idea-origin-back', function(){ T.goBack(); });
-  T.wire('b-idea-origin-mg',   T.goMG);
-  T.registerPageNum('s-idea-two-percent', '9102');
-  T.wire('b-idea-two-percent-back', function(){ T.goBack(); });
-  T.wire('b-idea-two-percent-mg',   T.goMG);
-  T.registerPageNum('s-idea-subconscious', '9103');
-  T.wire('b-idea-subconscious-back', function(){ T.goBack(); });
-  T.wire('b-idea-subconscious-mg',   T.goMG);
-  T.registerPageNum('s-idea-no-promise', '9104');
-  T.wire('b-idea-no-promise-back', function(){ T.goBack(); });
-  T.wire('b-idea-no-promise-mg',   T.goMG);
-  T.registerPageNum('s-idea-blue-sky', '9105');
-  T.wire('b-idea-blue-sky-back', function(){ T.goBack(); });
-  T.wire('b-idea-blue-sky-mg',   T.goMG);
-
-  /* ── SPARK DOORS → CAPTURE ── */
+  /* Name + date on certificate */
   (function(){
-    var doors = ['do','be','have','go','make','give','feel','songs','images','people','moments','other'];
-    var labels = {do:'DO',be:'BE',have:'HAVE',go:'GO',make:'MAKE',give:'GIVE',feel:'FEEL',songs:'SONGS',images:'IMAGES',people:'PEOPLE',moments:'MOMENTS',other:'OTHER'};
-    doors.forEach(function(d){
-      T.wire('b-door-'+d, function(){
-        var btn = document.getElementById('b-door-'+d);
-        document.getElementById('spark-cap-title').textContent = '✨ ' + labels[d];
-        document.getElementById('spark-cap-prompt').textContent = btn.getAttribute('data-prompt');
-        var ta = document.getElementById('spark-text');
-        ta.value = '';
-        document.getElementById('spark-status').textContent = '';
-        document.getElementById('spark-posted').style.display = 'none';
-        document.getElementById('b-save-spark').classList.remove('active');
-        T.nav('s-spark-capture');
-      });
-    });
+    var dateEl = document.getElementById('wl-date');
+    if(dateEl) dateEl.textContent = 'Issued ' + new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    function setName(n){
+      var el = document.getElementById('wl-cert-name'); if(el) el.textContent = n||'Traveler';
+      var el2 = document.getElementById('wl-member-name'); if(el2) el2.textContent = n||'Traveler';
+    }
+    var sb = T.sb; if(!sb){ setName('Traveler'); return; }
+    sb.auth.getUser().then(function(res){
+      var user = res&&res.data&&res.data.user; if(!user){ setName('Traveler'); return; }
+      sb.from('members').select('name,display_name,first_name').eq('user_id',user.id).single()
+        .then(function(r){
+          var d = r&&r.data;
+          var name = (d&&(d.name||d.display_name||d.first_name))||null;
+          if(name){ setName(name); return; }
+          setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
+        }).catch(function(){ setName('Traveler'); });
+    }).catch(function(){ setName('Traveler'); });
   })();
 
-  /* ── SPARK CAPTURE ── */
-  T.wire('b-spark-cap-back', function(){ T.nav('s-what-i-want'); });
-  T.wire('b-spark-cap-mg',   T.goMG);
+  /* ── 1120 · FLIP THE FRICTION ── */
+  T.registerPageNum('s-ftf-intro', '1120');
+  T.registerCtx('s-ftf-intro', 'Flip the Friction');
+  T.registerGems('s-ftf-intro', [
+    {text:'What you don\'t want is a map to what you do.', attr:'T2T Field Guide · Flip the Friction'}
+  ]);
+  T.wire('b-ftf-intro-back', function(){ T.nav('s-create-toc'); });
+  T.wire('b-ftf-intro-mg',   T.goMG);
+  T.wire('b-ftf-intro-fwd',  function(){ T.nav('s-ftf-combustion'); });
 
+  T.registerPageNum('s-ftf-combustion', '1121');
+  T.registerCtx('s-ftf-combustion', 'Flip the Friction');
+  T.wire('b-ftf-comb-back', function(){ T.nav('s-ftf-intro'); });
+  T.wire('b-ftf-comb-mg',   T.goMG);
+  T.wire('b-ftf-comb-fwd',  function(){ T.nav('s-ftf-anger'); });
+
+  T.registerPageNum('s-ftf-anger', '1122');
+  T.registerCtx('s-ftf-anger', 'Flip the Friction');
+  T.wire('b-ftf-anger-back', function(){ T.nav('s-ftf-combustion'); });
+  T.wire('b-ftf-anger-mg',   T.goMG);
+  T.wire('b-ftf-anger-fwd',  function(){ T.nav('s-ftf-pain'); });
+
+  T.registerPageNum('s-ftf-pain', '1123');
+  T.registerCtx('s-ftf-pain', 'Flip the Friction');
+  T.wire('b-ftf-pain-back', function(){ T.nav('s-ftf-anger'); });
+  T.wire('b-ftf-pain-mg',   T.goMG);
+  T.wire('b-ftf-pain-fwd',  function(){ T.nav('s-ftf-painlist'); });
+
+  T.registerPageNum('s-ftf-painlist', '1124');
+  T.registerCtx('s-ftf-painlist', 'Flip the Friction');
+  T.wire('b-ftf-painlist-back', function(){ T.nav('s-ftf-pain'); });
+  T.wire('b-ftf-painlist-mg',   T.goMG);
+  T.wire('b-ftf-painlist-fwd',  function(){ T.nav('s-ftf-flip'); });
+
+  T.registerPageNum('s-ftf-flip', '1125');
+  T.registerCtx('s-ftf-flip', 'Flip the Friction');
+  T.wire('b-ftf-flip-back', function(){ T.nav('s-ftf-painlist'); });
+  T.wire('b-ftf-flip-mg',   T.goMG);
+  T.wire('b-ftf-flip-fwd',  function(){ T.nav('s-inklings-intro'); });
+
+  /* Anger + Pain list input */
   (function(){
-    var ta = document.getElementById('spark-text');
-    var sb = document.getElementById('b-save-spark');
-    if(ta && sb){
-      ta.addEventListener('input', function(){
-        if(ta.value.trim().length > 0){ sb.classList.add('active'); } else { sb.classList.remove('active'); }
+    function makeListItem(text, listEl){
+      var d = document.createElement('div');
+      d.style.cssText = 'padding:9px 12px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:8px;font-family:Playfair Display,serif;font-size:14px;font-style:italic;color:#111';
+      d.textContent = text; listEl.appendChild(d);
+    }
+    var ai = document.getElementById('anger-input');
+    var ab = document.getElementById('b-anger-add');
+    var al = document.getElementById('anger-list');
+    if(ab && ai && al){
+      ab.addEventListener('click', function(){
+        var v = ai.value.trim(); if(!v) return;
+        makeListItem(v, al); ai.value = '';
+        /* store for flip */
+        if(!window._ftfAnger) window._ftfAnger = [];
+        window._ftfAnger.push(v);
+      });
+    }
+    var pi = document.getElementById('pain-input');
+    var pb = document.getElementById('b-pain-add');
+    var pl = document.getElementById('pain-list');
+    if(pb && pi && pl){
+      pb.addEventListener('click', function(){
+        var v = pi.value.trim(); if(!v) return;
+        makeListItem(v, pl); pi.value = '';
+        if(!window._ftfPain) window._ftfPain = [];
+        window._ftfPain.push(v);
       });
     }
   })();
 
-  T.wire('b-save-spark', async function(){
-    var ta = document.getElementById('spark-text');
-    var statusEl = document.getElementById('spark-status');
-    var postedEl = document.getElementById('spark-posted');
-    var text = ta.value.trim();
-    if(!text) return;
-    var label = document.getElementById('spark-cap-title').textContent.replace('✨ ','');
-    statusEl.textContent = 'Posting to your Sea of Ideas…';
-    try {
-      var noteText = '[' + label + '] ' + text;
-      var ok = await T.postIdeaToMiro(noteText, 'What I Might Want · '+label);
-      if(ok){
-        if(T.sb){
-          var user = (await T.sb.auth.getUser()).data.user;
-          if(user){ await T.sb.from('ideas').insert({ user_id:user.id, idea_text:noteText, page_context:'What I Might Want · '+label, created_at:new Date().toISOString() }); }
-        }
-        statusEl.textContent = '';
-        ta.value = '';
-        document.getElementById('b-save-spark').classList.remove('active');
-        postedEl.style.display = 'flex';
-        setTimeout(function(){ postedEl.style.display='none'; }, 2200);
-      } else { statusEl.textContent = 'Could not post — check your connection.'; }
-    } catch(e){ statusEl.textContent = 'Error: ' + e.message; }
-  });
+  /* Flip the Friction engine */
+  (function(){
+    var _idx = 0;
+    var _items = [];
+    var frustBox = document.getElementById('ftf-frustration-box');
+    var flipInput = document.getElementById('ftf-flip-input');
+    var postBtn = document.getElementById('b-ftf-post');
+    var skipBtn = document.getElementById('b-ftf-skip');
+    var statusEl = document.getElementById('ftf-status');
 
-  /* ── 1140 · LIGHTNING BUG ──
-     Catch first, evaluate never. Button-driven only — no timers, no dwell detection.
-     History array lets ◀ walk back through images already seen (no new fetch);
-     ▶ walks forward through that same history if you've stepped back, or pulls
-     a fresh random image once you're caught up to the front. Black heart = CREATE
-     catch (no relative value yet — that's SHAPE's red hearts, later). */
-  T.registerPageNum('s-lightning-bug', '1140');
-  T.registerCtx('s-lightning-bug', 'Creative Sparks');
-  T.registerGems('s-lightning-bug', [
-    {text:'If your attention stopped, catch it. No justification required.', attr:'T2T Field Guide · Lightning Bug'}
+    function loadItems(){
+      _items = [].concat(window._ftfAnger||[], window._ftfPain||[]);
+      _idx = 0; showCurrent();
+    }
+    function showCurrent(){
+      if(!frustBox) return;
+      if(_items.length === 0){ frustBox.textContent = 'Add some frustrations first — go back and fill the Anger or Pain lists.'; return; }
+      if(_idx >= _items.length){ frustBox.textContent = 'All done! Your flips are in the Sea of Ideas.'; if(postBtn) postBtn.style.display='none'; if(skipBtn) skipBtn.style.display='none'; return; }
+      frustBox.textContent = _items[_idx];
+      if(flipInput) flipInput.value = '';
+    }
+    if(flipInput && postBtn){
+      flipInput.addEventListener('input', function(){
+        if(flipInput.value.trim().length > 0){ postBtn.style.opacity='1'; postBtn.style.pointerEvents='auto'; postBtn.disabled=false; }
+        else { postBtn.style.opacity='.4'; postBtn.style.pointerEvents='none'; postBtn.disabled=true; }
+      });
+    }
+    if(postBtn){
+      postBtn.addEventListener('click', async function(){
+        var frustration = _items[_idx];
+        var flip = flipInput ? flipInput.value.trim() : '';
+        if(!flip) return;
+        var note = '🔄 Flip: "' + frustration + '" → "' + flip + '"';
+        if(statusEl) statusEl.textContent = 'Posting to Sea of Ideas…';
+        try {
+          var ok = await T.postIdeaToMiro(note, 'Flip the Friction');
+          if(ok){ statusEl.textContent = '✓ In the Sea'; _idx++; setTimeout(function(){ if(statusEl) statusEl.textContent=''; showCurrent(); }, 1000); }
+          else { if(statusEl) statusEl.textContent = 'Could not post — check connection.'; }
+        } catch(e){ if(statusEl) statusEl.textContent = 'Error: ' + e.message; }
+      });
+    }
+    if(skipBtn) skipBtn.addEventListener('click', function(){ _idx++; showCurrent(); });
+
+    /* Load when navigating to the flip screen */
+    var _origNav = T.nav;
+    T.nav = function(id){
+      _origNav(id);
+      if(id === 's-ftf-flip'){ loadItems(); }
+    };
+  })();
+
+  /* ── 1130 · INKLINGS ── */
+  T.registerPageNum('s-inklings-intro', '1130');
+  T.registerCtx('s-inklings-intro', 'Inklings');
+  T.registerGems('s-inklings-intro', [
+    {text:'An inkling is a slight, vague sense of something — a whisper, barely formed.', attr:'T2T Field Guide · Inklings'}
   ]);
-  T.wire('b-lb-back', function(){ T.nav('s-create-toc'); });
-  T.wire('b-lb-mg',   T.goMG);
-  T.wire('b-lb-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+  T.wire('b-inklings-intro-back', function(){ T.nav('s-create-toc'); });
+  T.wire('b-inklings-intro-mg',   T.goMG);
+  T.wire('b-inklings-intro-fwd',  function(){ T.nav('s-inklings-doors'); });
+
+  T.registerPageNum('s-inklings-doors', '1130D');
+  T.registerCtx('s-inklings-doors', 'Inklings');
+  T.wire('b-inklings-doors-back', function(){ T.nav('s-inklings-intro'); });
+  T.wire('b-inklings-doors-mg',   T.goMG);
+  T.wire('b-inklings-doors-fwd',  function(){ T.nav('s-bluesky-intro'); });
+
+  /* Inklings doors → capture */
+  (function(){
+    var doors = ['have','do','go','make','be','give','feel','other'];
+    doors.forEach(function(d){
+      T.wire('b-ink-'+d, function(){
+        var btn = document.getElementById('b-ink-'+d);
+        document.getElementById('ink-cap-title').textContent = '💠 ' + btn.getAttribute('data-door');
+        document.getElementById('ink-cap-prompt').textContent = btn.getAttribute('data-prompt');
+        var ta = document.getElementById('ink-text');
+        ta.value = ''; document.getElementById('ink-status').textContent = '';
+        document.getElementById('ink-posted').style.display = 'none';
+        document.getElementById('b-save-ink').classList.remove('active');
+        T.nav('s-ink-capture');
+      });
+    });
+  })();
+
+  T.wire('b-ink-cap-back', function(){ T.nav('s-inklings-doors'); });
+  T.wire('b-ink-cap-mg',   T.goMG);
 
   (function(){
-    var UNSPLASH_KEY = ''; // TODO Larry: add your free Unsplash Access Key here (unsplash.com/developers)
+    var ta = document.getElementById('ink-text');
+    var sb = document.getElementById('b-save-ink');
+    if(ta && sb) ta.addEventListener('input', function(){ ta.value.trim().length > 0 ? sb.classList.add('active') : sb.classList.remove('active'); });
+  })();
+
+  T.wire('b-save-ink', async function(){
+    var ta = document.getElementById('ink-text');
+    var statusEl = document.getElementById('ink-status');
+    var postedEl = document.getElementById('ink-posted');
+    var text = ta.value.trim(); if(!text) return;
+    var label = document.getElementById('ink-cap-title').textContent.replace('💠 ','');
+    statusEl.textContent = 'Posting to Sea of Ideas…';
+    try {
+      var note = '[Inkling · ' + label + '] ' + text;
+      var ok = await T.postIdeaToMiro(note, 'Inklings · ' + label);
+      if(ok){
+        if(T.sb){ var u=(await T.sb.auth.getUser()).data.user; if(u) await T.sb.from('ideas').insert({user_id:u.id,idea_text:note,page_context:'Inklings · '+label,created_at:new Date().toISOString()}); }
+        statusEl.textContent=''; ta.value=''; document.getElementById('b-save-ink').classList.remove('active');
+        postedEl.style.display='flex'; setTimeout(function(){ postedEl.style.display='none'; },2200);
+      } else { statusEl.textContent='Could not post — check connection.'; }
+    } catch(e){ statusEl.textContent='Error: '+e.message; }
+  });
+
+  /* ── 1140 · BLUE SKY ── */
+  T.registerPageNum('s-bluesky-intro', '1140');
+  T.registerCtx('s-bluesky-intro', 'Blue Sky');
+  T.registerGems('s-bluesky-intro', [
+    {text:'Even if you don\'t reach the full sky, you\'ll land somewhere higher than you started.', attr:'T2T Field Guide · Blue Sky'}
+  ]);
+  T.registerTrivia('s-bluesky-intro', [
+    { label: 'Why Blue Sky Is Vital', id: 's-bluesky-trivia' }
+  ]);
+  T.wire('b-bluesky-intro-back', function(){ T.nav('s-create-toc'); });
+  T.wire('b-bluesky-intro-mg',   T.goMG);
+  T.wire('b-bluesky-intro-fwd',  function(){ T.nav('s-bluesky-doors'); });
+
+  T.registerPageNum('s-bluesky-trivia', '1140T');
+  T.wire('b-bluesky-trivia-back', function(){ T.goBack(); });
+  T.wire('b-bluesky-trivia-mg',   T.goMG);
+
+  T.registerPageNum('s-bluesky-doors', '1141');
+  T.registerCtx('s-bluesky-doors', 'Blue Sky');
+  T.wire('b-bluesky-doors-back', function(){ T.nav('s-bluesky-intro'); });
+  T.wire('b-bluesky-doors-mg',   T.goMG);
+  T.wire('b-bluesky-doors-fwd',  function(){ T.nav('s-sparks'); });
+
+  /* Blue Sky doors → capture */
+  (function(){
+    var doors = ['have','do','go','make','be','give','feel','other'];
+    doors.forEach(function(d){
+      T.wire('b-bs-'+d, function(){
+        var btn = document.getElementById('b-bs-'+d);
+        document.getElementById('bs-cap-title').textContent = '🌟 ' + btn.getAttribute('data-door');
+        document.getElementById('bs-cap-prompt').textContent = btn.getAttribute('data-prompt');
+        var ta = document.getElementById('bs-text');
+        ta.value = ''; document.getElementById('bs-status').textContent = '';
+        document.getElementById('bs-posted').style.display = 'none';
+        document.getElementById('b-save-bs').classList.remove('active');
+        T.nav('s-bs-capture');
+      });
+    });
+  })();
+
+  T.wire('b-bs-cap-back', function(){ T.nav('s-bluesky-doors'); });
+  T.wire('b-bs-cap-mg',   T.goMG);
+
+  (function(){
+    var ta = document.getElementById('bs-text');
+    var sb = document.getElementById('b-save-bs');
+    if(ta && sb) ta.addEventListener('input', function(){ ta.value.trim().length > 0 ? sb.classList.add('active') : sb.classList.remove('active'); });
+  })();
+
+  T.wire('b-save-bs', async function(){
+    var ta = document.getElementById('bs-text');
+    var statusEl = document.getElementById('bs-status');
+    var postedEl = document.getElementById('bs-posted');
+    var text = ta.value.trim(); if(!text) return;
+    var label = document.getElementById('bs-cap-title').textContent.replace('🌟 ','');
+    statusEl.textContent = 'Posting to Sea of Ideas…';
+    try {
+      var note = '[Blue Sky · ' + label + '] ' + text;
+      var ok = await T.postIdeaToMiro(note, 'Blue Sky · ' + label);
+      if(ok){
+        if(T.sb){ var u=(await T.sb.auth.getUser()).data.user; if(u) await T.sb.from('ideas').insert({user_id:u.id,idea_text:note,page_context:'Blue Sky · '+label,created_at:new Date().toISOString()}); }
+        statusEl.textContent=''; ta.value=''; document.getElementById('b-save-bs').classList.remove('active');
+        postedEl.style.display='flex'; setTimeout(function(){ postedEl.style.display='none'; },2200);
+      } else { statusEl.textContent='Could not post — check connection.'; }
+    } catch(e){ statusEl.textContent='Error: '+e.message; }
+  });
+
+  /* ── 1150 · CREATIVE SPARKS ── */
+  T.registerPageNum('s-sparks', '1150');
+  T.registerCtx('s-sparks', 'Creative Sparks');
+  T.registerGems('s-sparks', [
+    {text:'If your attention stopped, catch it. No justification required.', attr:'T2T Field Guide · Creative Sparks'}
+  ]);
+  T.wire('b-sparks-back', function(){ T.nav('s-create-toc'); });
+  T.wire('b-sparks-mg',   T.goMG);
+  T.wire('b-sparks-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+
+  (function(){
+    var UNSPLASH_KEY = '';
     var FALLBACK = [
       {url:'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800',credit:'Unsplash'},
       {url:'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800',credit:'Unsplash'},
@@ -1776,154 +2085,100 @@ document.addEventListener('DOMContentLoaded', function(){
       {url:'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=800',credit:'Unsplash'},
       {url:'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=800',credit:'Unsplash'}
     ];
-    var history = [];
-    var pos = -1;
-    var imgEl = document.getElementById('lb-img');
+    var history = []; var pos = -1;
+    var imgEl = document.getElementById('spark-img');
+    var focusInput = document.getElementById('spark-focus');
 
     async function fetchRandom(){
+      var query = focusInput ? focusInput.value.trim() : '';
       if(UNSPLASH_KEY){
         try{
-          var r = await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
-          if(r.ok){
-            var d = await r.json();
-            return {url:d.urls.regular, credit:(d.user&&d.user.name?d.user.name:'Unsplash')+' \u00b7 Unsplash'};
-          }
+          var url = 'https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY;
+          if(query) url += '&query=' + encodeURIComponent(query);
+          var r = await fetch(url);
+          if(r.ok){ var d = await r.json(); return {url:d.urls.regular, credit:(d.user&&d.user.name?d.user.name:'Unsplash')+' · Unsplash'}; }
         }catch(e){}
       }
       return FALLBACK[Math.floor(Math.random()*FALLBACK.length)];
     }
-
-    function render(){
-      var item = history[pos];
-      if(item && imgEl) imgEl.style.backgroundImage = "url('"+item.url+"')";
-    }
-
+    function render(){ var item=history[pos]; if(item&&imgEl) imgEl.style.backgroundImage="url('"+item.url+"')"; }
     async function showNext(){
-      if(pos < history.length - 1){
-        pos++;
-      } else {
-        var item = await fetchRandom();
-        history.push(item);
-        if(history.length > 40){ history.shift(); pos = history.length - 2; }
-        pos = history.length - 1;
-      }
+      if(pos < history.length-1){ pos++; } else { var item=await fetchRandom(); history.push(item); if(history.length>40){history.shift();pos=history.length-2;} pos=history.length-1; }
       render();
     }
+    function showPrev(){ if(pos>0){pos--;render();} }
 
-    function showPrev(){
-      if(pos > 0){ pos--; render(); }
-    }
-
-    T.wire('b-lb-next', showNext);
-    T.wire('b-lb-prev', showPrev);
-    T.wire('b-lb-heart', async function(){
-      var item = history[pos];
-      if(!item) return;
+    T.wire('b-spark-next', showNext);
+    T.wire('b-spark-prev', showPrev);
+    T.wire('b-spark-heart', async function(){
+      var item=history[pos]; if(!item) return;
       if(T.postImageToMiro) await T.postImageToMiro(item.url, item.credit);
       showNext();
     });
+    T.wire('b-spark-focus-go', function(){ history=[]; pos=-1; showNext(); });
 
-    var _origLBNav = T.nav;
+    var _origSparkNav = T.nav;
     T.nav = function(id){
-      _origLBNav(id);
-      if(id === 's-lightning-bug' && history.length === 0){ showNext(); }
+      _origSparkNav(id);
+      if(id==='s-sparks' && history.length===0){ showNext(); }
     };
   })();
 
-  /* ── 1150 · SEA OF IDEAS ── */
-  T.registerPageNum('s-sea-of-ideas', '1150');
+  /* ── 1160 · SEA OF IDEAS ── */
+  T.registerPageNum('s-sea-of-ideas', '1160');
   T.registerCtx('s-sea-of-ideas', 'Sea of Ideas');
   T.registerGems('s-sea-of-ideas', [
-    {text:'The Sea of Ideas holds everything you\'ve captured — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
+    {text:'The Sea of Ideas holds everything — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
   ]);
-  T.wire('b-sea-of-ideas-back', function(){ T.nav('s-create-toc'); });
-  T.wire('b-sea-of-ideas-mg',   T.goMG);
-  T.wire('b-sea-of-ideas-fwd',  function(){ T.nav('s-plusing'); });
-  T.wire('b-sea-more-sparks',   function(){ T.nav('s-what-i-want'); });
-  T.wire('b-sea-ready',         function(){ T.nav('s-plusing'); });
+  T.registerTrivia('s-sea-of-ideas', [
+    { label: 'Purpose', id: 's-sea-trivia-purpose' },
+    { label: 'Types of Seas of Ideas', id: 's-sea-trivia-types' }
+  ]);
+  T.wire('b-sea-back', function(){ T.nav('s-create-toc'); });
+  T.wire('b-sea-mg',   T.goMG);
+  T.wire('b-sea-fwd',  function(){ T.nav('s-idea-button'); });
+  T.wire('b-sea-add-idea', function(){ T.nav('s-idea-capture'); });
 
+  /* Set Miro link on Sea of Ideas */
   (function(){
-    var seaLoaded = false;
-    var _orig = T.nav;
+    var _origSeaNav = T.nav;
     T.nav = function(id){
-      _orig(id);
-      if(id === 's-sea-of-ideas' && !seaLoaded){
-        seaLoaded = true;
-        setTimeout(function(){
-          var member = T.getMember && T.getMember();
-          var boardId = (member && member.miro_board_id) ? member.miro_board_id : 'uXjVNVoFoec=';
-          if(!boardId.endsWith('=')) boardId = boardId + '=';
-          if(T.ensureMiroReminder) T.ensureMiroReminder(boardId);
-          var inner = document.getElementById('sea-miro-inner');
-          if(inner){
-            inner.innerHTML = '';
-            var fr = document.createElement('iframe');
-            fr.src = 'https://miro.com/app/live-embed/' + boardId;
-            fr.style.cssText = 'width:100%;height:200px;border:none;border-radius:10px';
-            fr.allow = 'fullscreen; clipboard-read; clipboard-write';
-            inner.style.cssText = 'width:100%;height:200px;display:block';
-            inner.appendChild(fr);
-          }
-        }, 100);
+      _origSeaNav(id);
+      if(id==='s-sea-of-ideas'){
+        var member = T.getMember && T.getMember();
+        var boardId = (member&&member.miro_board_id) ? member.miro_board_id : 'uXjVNVoFoec=';
+        if(!boardId.endsWith('=')) boardId = boardId+'=';
+        var link = document.getElementById('sea-miro-link');
+        if(link) link.href = 'https://miro.com/app/board/'+boardId;
       }
     };
   })();
 
-  /* ── 1160 · PLUSing ── */
-  T.registerPageNum('s-plusing', '1160');
-  T.registerCtx('s-plusing', 'PLUSing');
-  T.registerGems('s-plusing', [
-    {text:'Good enough is never good enough.', attr:'Walt Disney / T2T'},
-    {text:'PLUSing: always make it better than it needs to be.', attr:'T2T Field Guide'}
+  /* ── 1161 · IDEA BUTTON ── */
+  T.registerPageNum('s-idea-button', '1161');
+  T.registerCtx('s-idea-button', 'Sea of Ideas');
+  T.wire('b-ib-back', function(){ T.nav('s-sea-of-ideas'); });
+  T.wire('b-ib-mg',   T.goMG);
+  T.wire('b-ib-fwd',  function(){ T.nav('s-shape'); });
+
+  /* ── 1200 · SHAPE ── */
+  T.registerPageNum('s-shape', '1200');
+  T.registerCtx('s-shape', 'SHAPE');
+  T.registerGems('s-shape', [
+    {text:'Turn your ideas into what you really want.', attr:'T2T Field Guide · SHAPE'}
   ]);
-  T.wire('b-plusing-back', function(){ T.nav('s-create-toc'); });
-  T.wire('b-plusing-mg',   T.goMG);
-  T.wire('b-plusing-fwd',  function(){ T.nav('s-shape-soon'); });
+  T.wire('b-shape-back', function(){ T.nav('s-idea-button'); });
+  T.wire('b-shape-mg',   T.goMG);
 
-  /* ── 1190 · CREATE → SHAPE transition (placeholder) ── */
-  T.registerPageNum('s-shape-soon', '1190');
-  T.wire('b-shape-soon-back', function(){ T.nav('s-plusing'); });
+  /* ── SHARED INFRASTRUCTURE (authors, etc.) ── */
+  T.wire('b-aut-back', T.goMG);
+  T.wire('b-aut-mg',   T.goMG);
 
-  T.wire('b-aut-back',    T.goMG);
-  T.wire('b-aut-mg',      T.goMG);
+  /* ── Backpack Sea of Ideas iframe view ── */
+  T.wire('b-seaview-back', T.goMG);
+  T.wire('b-seaview-mg',   T.goMG);
 
-  /* ── CREATIVE LICENSE — name + date ── */
-  (function(){
-    var dateEl = document.getElementById('cl-date');
-    if(dateEl) dateEl.textContent = 'Issued ' + new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-    function setName(n){
-      var el=document.getElementById('cl-cert-name');
-      if(el) el.textContent=n||'Traveler';
-      var el2=document.getElementById('cl-member-name');
-      if(el2) el2.textContent=n||'Traveler';
-    }
-    var sb=T.sb;
-    if(!sb){setName('Traveler');return;}
-    sb.auth.getUser().then(function(res){
-      var user=res&&res.data&&res.data.user;
-      if(!user){setName('Traveler');return;}
-      /* Try members table first, then profiles, then email */
-      sb.from('members').select('name,display_name,first_name').eq('user_id',user.id).single()
-        .then(function(r){
-          var d=r&&r.data;
-          var name=(d&&(d.name||d.display_name||d.first_name))||null;
-          if(name){setName(name);return;}
-          /* fall back to profiles */
-          sb.from('profiles').select('display_name').eq('user_id',user.id).single()
-            .then(function(r2){
-              var name2=(r2&&r2.data&&r2.data.display_name)||null;
-              setName(name2||user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
-            }).catch(function(){
-              setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
-            });
-        }).catch(function(){
-          setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
-        });
-    }).catch(function(){setName('Traveler');});
-  })();
-
-
-  /* Tell backpack cur screen on startup so mgOrigin works correctly */
+  /* Tell backpack current screen on startup */
   T.nav('s-dream', false);
 });
 </script>
