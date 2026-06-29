@@ -1023,31 +1023,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1122 · ANGER ══ -->
-<div class="sc card" id="s-ftf-anger">
-  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
-    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">FRICTION</span>
-  </div>
-  <div class="sw" style="padding:24px 32px;align-items:stretch">
-    <div style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Anger</div>
-    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:16px;line-height:1.6">A loud signal that something is wrong. Keep going — what else?</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input type="text" id="anger-input-more" placeholder="Something that makes you angry…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
-      <button id="b-anger-add-more" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
-    </div>
-    <div id="anger-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
-    <div class="sp"></div>
-  </div>
-  <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-ftf-anger-back">⬅️</button>
-    <button class="tb" id="b-ftf-anger-mg">🔍</button>
-    <button class="tb" id="b-ftf-anger-fwd">➡️</button>
-  </div>
-</div>
 
 <!-- ══ 1123 · PAIN POINT ══ -->
 <div class="sc card" id="s-ftf-pain">
@@ -1066,6 +1041,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <li>The hate of the wait. Never enough time. Too much to do.</li>
       <li>Things that irritate you. The weight you carry quietly. Stress, family, connection — or the lack of it.</li>
     </ul>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee">
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:10px">What is going on in your life that upsets you?</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="pain-input" placeholder="Something that upsets you…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+        <button id="b-pain-add" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
+      </div>
+      <div id="pain-list" style="margin-top:10px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;max-height:120px"></div>
+    </div>
     <div class="sp"></div>
   </div>
   <div class="bar2 bar-dream-pp">
@@ -1075,31 +1058,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1124 · PAIN POINTS LIST ══ -->
-<div class="sc card" id="s-ftf-painlist">
-  <div class="phase-header" style="text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px">
-    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">FRICTION</span>
-  </div>
-  <div class="sw" style="padding:24px 32px;align-items:stretch">
-    <div style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Pain Points</div>
-    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:16px;line-height:1.6">What is going on in your life that upsets you?</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input type="text" id="pain-input" placeholder="Something that upsets you…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
-      <button id="b-pain-add" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
-    </div>
-    <div id="pain-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
-    <div class="sp"></div>
-  </div>
-  <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-ftf-painlist-back">⬅️</button>
-    <button class="tb" id="b-ftf-painlist-mg">🔍</button>
-    <button class="tb" id="b-ftf-painlist-fwd">➡️</button>
-  </div>
-</div>
 
 <!-- ══ 1125 · FLIPPING THE FRICTION ══ -->
 <div class="sc card" id="s-ftf-flip">
@@ -1129,76 +1087,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
 </div>
 
-<!-- ══ 1130 · INKLINGS — Hook ══ -->
-<div class="sc card" id="s-inklings-intro">
-  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
-    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">CREATE</span>
-  </div>
-  <div class="reader-wrap">
-    <div class="reader-body" style="gap:14px;padding:28px 40px">
-      <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Inklings</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">An inkling is a slight, vague sense of something — a whisper, barely formed.</div>
-      <div style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#555;line-height:1.7">These are the seeds of ideas already hiding in the back of your mind.</div>
-    </div>
-  </div>
-  <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-inklings-intro-back">⬅️</button>
-    <button class="tb" id="b-inklings-intro-mg">🔍</button>
-    <button class="tb" id="b-inklings-intro-fwd">➡️</button>
-  </div>
-</div>
-
-<!-- ══ 1130 · INKLINGS — 8 Doors ══ -->
-<div class="sc card" id="s-inklings-doors">
-  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
-    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
-    <span class="ph-eyebrow">·</span>
-    <span class="ph-eyebrow">INKLINGS</span>
-  </div>
-  <div class="sw" style="padding:14px 24px 12px;align-items:center">
-    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#444;margin-bottom:16px;text-align:center;max-width:300px;line-height:1.5">Thoughts about what you might want:</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;width:100%;max-width:300px;flex:1">
-      <button class="spark-door" id="b-ink-have" data-door="HAVE" data-prompt="What might you want to have someday?">HAVE</button>
-      <button class="spark-door" id="b-ink-do"   data-door="DO"   data-prompt="What might you want to do someday?">DO</button>
-      <button class="spark-door" id="b-ink-go"   data-door="GO"   data-prompt="Where might you want to travel someday?">GO</button>
-      <button class="spark-door" id="b-ink-make" data-door="MAKE" data-prompt="What might you want to create someday?">MAKE</button>
-      <button class="spark-door" id="b-ink-be"   data-door="BE"   data-prompt="What might you want to be someday?">BE</button>
-      <button class="spark-door" id="b-ink-give" data-door="GIVE" data-prompt="What might you want to give someone someday?">GIVE</button>
-      <button class="spark-door" id="b-ink-feel" data-door="FEEL" data-prompt="What might you want to feel?">FEEL</button>
-      <button class="spark-door" id="b-ink-other" data-door="OTHER" data-prompt="What else might you want?">OTHER</button>
-    </div>
-    <div style="font-size:11px;font-style:italic;color:#bbb;text-align:center;padding-top:10px">You can return here as many times as you like.</div>
-  </div>
-  <div class="bar2 bar-dream-pp">
-    <button class="tb" id="b-inklings-doors-back">⬅️</button>
-    <button class="tb" id="b-inklings-doors-mg">🔍</button>
-    <button class="tb" id="b-inklings-doors-fwd">➡️</button>
-  </div>
-</div>
-
-<!-- ══ INKLINGS CAPTURE (shared — label + prompt change per door) ══ -->
-<div class="sc" id="s-ink-capture">
-  <div class="card"><div class="icw">
-    <div class="icit" id="ink-cap-title">💠 HAVE</div>
-    <hr class="icr">
-    <div class="icq" id="ink-cap-prompt">What might you want to have someday?</div>
-    <textarea class="ict" id="ink-text" placeholder="Anything you might want…"></textarea>
-    <div class="sp"></div>
-    <div class="idea-status" id="ink-status"></div>
-    <div id="ink-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px">
-      <div style="font-size:52px">🌊</div>
-      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#1A3A5C">In the Sea.</div>
-      <div style="font-size:13px;font-style:italic;color:#3A6080">What else might you want?</div>
-    </div>
-  </div></div>
-  <div class="bar2" style="gap:10px">
-    <button class="tb" id="b-ink-cap-back">⬅️</button>
-    <button class="tb" id="b-ink-cap-mg">🔍</button>
-    <button class="save-btn" id="b-save-ink">SAVE</button>
-  </div>
-</div>
 
 <!-- ══ 1140 · BLUE SKY — Hook ══ -->
 <div class="sc card" id="s-bluesky-intro">
@@ -1999,7 +1887,6 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-create-toc-fwd',  function(){ T.nav('s-what-if-pp'); });
   document.getElementById('toc-wl')       && document.getElementById('toc-wl').addEventListener('click',       function(){ T.nav('s-wl-intro'); });
   document.getElementById('toc-ftf')      && document.getElementById('toc-ftf').addEventListener('click',      function(){ T.nav('s-ftf-intro'); });
-  document.getElementById('toc-inklings') && document.getElementById('toc-inklings').addEventListener('click', function(){ T.nav('s-inklings-intro'); });
   document.getElementById('toc-bluesky')  && document.getElementById('toc-bluesky').addEventListener('click',  function(){ T.nav('s-bluesky-intro'); });
   document.getElementById('toc-sparks')   && document.getElementById('toc-sparks').addEventListener('click',   function(){ T.nav('s-sparks'); });
   document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ T.nav('s-sea-of-ideas'); });
@@ -2175,31 +2062,21 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerCtx('s-ftf-combustion', 'Flip the Friction');
   T.wire('b-ftf-comb-back', function(){ T.nav('s-ftf-intro'); });
   T.wire('b-ftf-comb-mg',   T.goMG);
-  T.wire('b-ftf-comb-fwd',  function(){ T.nav('s-ftf-anger'); });
+  T.wire('b-ftf-comb-fwd',  function(){ T.nav('s-ftf-pain'); });
 
-  T.registerPageNum('s-ftf-anger', '1122');
-  T.registerCtx('s-ftf-anger', 'Flip the Friction');
-  T.wire('b-ftf-anger-back', function(){ T.nav('s-ftf-combustion'); });
-  T.wire('b-ftf-anger-mg',   T.goMG);
-  T.wire('b-ftf-anger-fwd',  function(){ T.nav('s-ftf-pain'); });
 
   T.registerPageNum('s-ftf-pain', '1123');
   T.registerCtx('s-ftf-pain', 'Flip the Friction');
-  T.wire('b-ftf-pain-back', function(){ T.nav('s-ftf-anger'); });
+  T.wire('b-ftf-pain-back', function(){ T.nav('s-ftf-combustion'); });
   T.wire('b-ftf-pain-mg',   T.goMG);
-  T.wire('b-ftf-pain-fwd',  function(){ T.nav('s-ftf-painlist'); });
+  T.wire('b-ftf-pain-fwd',  function(){ T.nav('s-ftf-flip'); });
 
-  T.registerPageNum('s-ftf-painlist', '1124');
-  T.registerCtx('s-ftf-painlist', 'Flip the Friction');
-  T.wire('b-ftf-painlist-back', function(){ T.nav('s-ftf-pain'); });
-  T.wire('b-ftf-painlist-mg',   T.goMG);
-  T.wire('b-ftf-painlist-fwd',  function(){ T.nav('s-ftf-flip'); });
 
   T.registerPageNum('s-ftf-flip', '1125');
   T.registerCtx('s-ftf-flip', 'Flip the Friction');
-  T.wire('b-ftf-flip-back', function(){ T.nav('s-ftf-painlist'); });
+  T.wire('b-ftf-flip-back', function(){ T.nav('s-ftf-pain'); });
   T.wire('b-ftf-flip-mg',   T.goMG);
-  T.wire('b-ftf-flip-fwd',  function(){ T.nav('s-inklings-intro'); });
+  T.wire('b-ftf-flip-fwd',  function(){ T.nav('s-bluesky-intro'); });
 
   /* Anger + Pain list input */
   (function(){
@@ -2296,65 +2173,6 @@ document.addEventListener('DOMContentLoaded', function(){
   })();
 
   /* ── 1130 · INKLINGS ── */
-  T.registerPageNum('s-inklings-intro', '1130');
-  T.registerCtx('s-inklings-intro', 'Inklings');
-  T.registerGems('s-inklings-intro', [
-    {text:'An inkling is a slight, vague sense of something — a whisper, barely formed.', attr:'T2T Field Guide · Inklings'}
-  ]);
-  T.wire('b-inklings-intro-back', function(){ T.nav('s-create-toc'); });
-  T.wire('b-inklings-intro-mg',   T.goMG);
-  T.wire('b-inklings-intro-fwd',  function(){ T.nav('s-inklings-doors'); });
-
-  T.registerPageNum('s-inklings-doors', '1130D');
-  T.registerCtx('s-inklings-doors', 'Inklings');
-  T.wire('b-inklings-doors-back', function(){ T.nav('s-inklings-intro'); });
-  T.wire('b-inklings-doors-mg',   T.goMG);
-  T.wire('b-inklings-doors-fwd',  function(){ T.nav('s-bluesky-intro'); });
-
-  /* Inklings doors → capture */
-  (function(){
-    var doors = ['have','do','go','make','be','give','feel','other'];
-    doors.forEach(function(d){
-      T.wire('b-ink-'+d, function(){
-        var btn = document.getElementById('b-ink-'+d);
-        document.getElementById('ink-cap-title').textContent = '💠 ' + btn.getAttribute('data-door');
-        document.getElementById('ink-cap-prompt').textContent = btn.getAttribute('data-prompt');
-        var ta = document.getElementById('ink-text');
-        ta.value = ''; document.getElementById('ink-status').textContent = '';
-        document.getElementById('ink-posted').style.display = 'none';
-        document.getElementById('b-save-ink').classList.remove('active');
-        T.nav('s-ink-capture');
-      });
-    });
-  })();
-
-  T.wire('b-ink-cap-back', function(){ T.nav('s-inklings-doors'); });
-  T.wire('b-ink-cap-mg',   T.goMG);
-
-  (function(){
-    var ta = document.getElementById('ink-text');
-    var sb = document.getElementById('b-save-ink');
-    if(ta && sb) ta.addEventListener('input', function(){ ta.value.trim().length > 0 ? sb.classList.add('active') : sb.classList.remove('active'); });
-  })();
-
-  T.wire('b-save-ink', async function(){
-    var ta = document.getElementById('ink-text');
-    var statusEl = document.getElementById('ink-status');
-    var postedEl = document.getElementById('ink-posted');
-    var text = ta.value.trim(); if(!text) return;
-    var label = document.getElementById('ink-cap-title').textContent.replace('💠 ','');
-    statusEl.textContent = 'Posting to Sea of Ideas…';
-    try {
-      var note = '[Inkling · ' + label + '] ' + text;
-      var ok = await T.postIdeaToMiro(note, 'Inklings · ' + label);
-      if(ok){
-        if(T.sb){ var u=(await T.sb.auth.getUser()).data.user; if(u) await T.sb.from('ideas').insert({user_id:u.id,idea_text:note,page_context:'Inklings · '+label,created_at:new Date().toISOString()}); }
-        statusEl.textContent=''; ta.value=''; document.getElementById('b-save-ink').classList.remove('active');
-        postedEl.style.display='flex'; setTimeout(function(){ postedEl.style.display='none'; },2200);
-      } else { statusEl.textContent='Could not post — check connection.'; }
-    } catch(e){ statusEl.textContent='Error: '+e.message; }
-  });
-
   /* ── 1140 · BLUE SKY ── */
   T.registerPageNum('s-bluesky-intro', '1140');
   T.registerCtx('s-bluesky-intro', 'Blue Sky');
