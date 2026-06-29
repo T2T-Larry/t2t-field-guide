@@ -11,7 +11,7 @@
   const SB_KEY = 'sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh';
   const _sb = supabase.createClient(SB_URL, SB_KEY);
 
-  const MIRO_TOKEN = "eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_kDvch8cD8LvE03N3iIkzust4bjo";
+  const MIRO_TOKEN = "7l3tpzsCid9fCMOgCxh4Oy5EdL64KgwO";
 
   /* ── MEMBER PROFILE ── */
   var _member = {
