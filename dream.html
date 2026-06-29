@@ -2369,20 +2369,12 @@ document.addEventListener('DOMContentLoaded', function(){
       var btn=document.getElementById('b-spark-heart');
       var heartFilled='<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.2 2 4.5 5.6 4.5c2 0 3.4 1 4.4 2.6 1-1.6 2.4-2.6 4.4-2.6C18 4.5 19.6 8.2 18 11.7 16.5 16.4 12 21 12 21z"/></svg>';
       if(btn){ btn.style.background='#e91e63'; btn.style.transform='scale(1.2)'; }
-      /* try image first — then sticky note fallback */
       var statusEl = document.getElementById('spark-status');
       if(statusEl) statusEl.textContent = 'Saving…';
-      var posted = false;
-      if(T.postImageToMiro){ posted = await T.postImageToMiro(item.url, item.credit); }
-      if(posted){
-        if(statusEl){ statusEl.textContent = '♥ In your Sea of Ideas!'; setTimeout(function(){ statusEl.textContent=''; },3000); }
-      } else {
-        /* image post failed — fall back to sticky note */
-        if(T.postIdeaToMiro){
-          var note = '🖼️ Creative Spark: ' + item.url;
-          var ok2 = await T.postIdeaToMiro(note, 'Creative Sparks');
-          if(statusEl){ statusEl.textContent = ok2 ? '♥ In your Sea of Ideas!' : '⚠️ Could not connect to Miro'; setTimeout(function(){ statusEl.textContent=''; },3000); }
-        }
+      if(T.postIdeaToMiro){
+        var note = '🖼️ ' + item.url;
+        var ok = await T.postIdeaToMiro(note, 'Creative Sparks');
+        if(statusEl){ statusEl.textContent = ok ? '♥ In your Sea of Ideas!' : '⚠️ Could not connect to Miro'; setTimeout(function(){ statusEl.textContent=''; },3000); }
       }
       setTimeout(function(){
         if(btn){ btn.style.background='#111'; btn.style.transform='scale(1)'; }
