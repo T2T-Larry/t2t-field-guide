@@ -1951,6 +1951,16 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-wl-educated-mg',   T.goMG);
   T.wire('b-wl-educated-fwd',  function(){ T.nav('s-no-meetings'); });
 
+  /* ── WIRE ALL TRIVIA + CONTENT SUB-SCREEN BACK BUTTONS ── */
+  ['nm-why','nm-modes','nm-separate','nm-safety','nm-meeting','nm-sessions','nm-drift',
+   'cr-purpose','cr-rule1','cr-rule2','cr-rule3','cr-rule4','cr-honor',
+   'idea-origin','idea-two-percent','idea-subconscious','idea-no-promise','idea-blue-sky',
+   'dream-intro'
+  ].forEach(function(id){
+    T.wire('b-'+id+'-back', T.goBack);
+    T.wire('b-'+id+'-mg',   T.goMG);
+  });
+
   /* ── 1112 · NO MEETINGS PRINCIPLE ── */
   T.registerPageNum('s-no-meetings', '1112');
   T.registerCtx('s-no-meetings', 'No Meetings Principle');
