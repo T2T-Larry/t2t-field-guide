@@ -1007,6 +1007,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <li>You stop responding. Stop engaging. A door closes and you're not sure when it will open again.</li>
       <li>One thing goes wrong and suddenly everything is wrong. The small thing wasn't the problem. It was just the last thing.</li>
     </ul>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee">
+      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:10px">What makes you angry?</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="anger-input" placeholder="Something that makes you angry…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+        <button id="b-anger-add" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
+      </div>
+    </div>
     <div class="sp"></div>
   </div>
   <div class="bar2 bar-dream-pp">
@@ -1027,10 +1034,10 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
   <div class="sw" style="padding:24px 32px;align-items:stretch">
     <div style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Anger</div>
-    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:16px;line-height:1.6">A loud signal that something is wrong. What makes you angry?</div>
+    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:16px;line-height:1.6">A loud signal that something is wrong. Keep going — what else?</div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input type="text" id="anger-input" placeholder="Something that makes you angry…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
-      <button id="b-anger-add" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
+      <input type="text" id="anger-input-more" placeholder="Something that makes you angry…" style="flex:1;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+      <button id="b-anger-add-more" style="padding:0 16px;background:#1a3a5c;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:700">Add</button>
     </div>
     <div id="anger-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:80px"></div>
     <div class="sp"></div>
@@ -2143,9 +2150,9 @@ document.addEventListener('DOMContentLoaded', function(){
           var d = r&&r.data;
           var name = null;
           if(d){
-            if(d.name){ name = d.name; }
-            else if(d.first_name && d.last_name){ name = d.first_name + ' ' + d.last_name; }
+            if(d.first_name && d.last_name){ name = d.first_name + ' ' + d.last_name; }
             else if(d.first_name){ name = d.first_name; }
+            else if(d.name){ name = d.name; }
             else if(d.display_name){ name = d.display_name; }
           }
           if(name){ setName(name); return; }
@@ -2209,6 +2216,17 @@ document.addEventListener('DOMContentLoaded', function(){
         var v = ai.value.trim(); if(!v) return;
         makeListItem(v, al); ai.value = '';
         /* store for flip */
+        if(!window._ftfAnger) window._ftfAnger = [];
+        window._ftfAnger.push(v);
+      });
+    }
+    /* 1122 screen — additional anger input feeds same list */
+    var aim = document.getElementById('anger-input-more');
+    var abm = document.getElementById('b-anger-add-more');
+    if(abm && aim && al){
+      abm.addEventListener('click', function(){
+        var v = aim.value.trim(); if(!v) return;
+        makeListItem(v, al); aim.value = '';
         if(!window._ftfAnger) window._ftfAnger = [];
         window._ftfAnger.push(v);
       });
