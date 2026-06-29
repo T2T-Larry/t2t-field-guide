@@ -69,18 +69,6 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
 /* ── CEREMONY SCREENS ── */
 .ceremony-text{font-size:20px;font-style:italic;line-height:1.6;color:#2a1f0e;text-align:center;padding:20px 0}
 .ceremony-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#8B6914;text-align:center;margin-bottom:8px}
-/* ── MG OVERLAY (duplicated from index for standalone) ── */
-#mg-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;flex-direction:column;justify-content:flex-end}
-#mg-overlay.active{display:flex}
-.mg-panel{background:#fff;border-radius:14px 14px 0 0;max-height:78%;overflow-y:auto;padding:16px 18px 24px}
-.mg-close-row{display:flex;justify-content:flex-end;margin-bottom:6px}
-.mg-close-btn{background:none;border:none;font-size:22px;cursor:pointer;color:#555}
-.mg-section{margin-bottom:14px}
-.mg-section h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8B6914;margin-bottom:8px}
-.mg-gem{background:#f5f0e8;border-radius:6px;padding:8px 10px;font-size:13px;color:#222;margin-bottom:6px;border-left:3px solid #8B6914}
-.mg-gem .gem-attr{font-size:10px;color:#888;margin-top:3px}
-.mg-trivia-btn{display:block;width:100%;padding:9px 12px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:left;margin-bottom:6px}
-.mg-trivia-btn:hover{background:#2c5282}
 /* ── TRIVIA SCREEN ── */
 .trivia-hub{display:flex;flex-direction:column;gap:10px}
 .trivia-item-btn{padding:10px 14px;background:#f0ece0;border-radius:8px;font-family:inherit;font-size:14px;font-weight:700;color:#1a3a5c;border:none;cursor:pointer;text-align:left;border-left:3px solid #8B6914}
@@ -92,7 +80,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
 </style>
 </head>
 <body>
-<div class="fg" id="fg">
+<div class="fg" id="fg-root">
 
 <!-- ════════════════════════════════════════
      DREAM PHASE INTRO  (0990 → gateway)
@@ -881,20 +869,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   </div>
 </div>
 
-<!-- MG Overlay -->
-<div id="mg-overlay">
-  <div class="mg-panel">
-    <div class="mg-close-row"><button class="mg-close-btn" id="b-mg-close">✕</button></div>
-    <div class="mg-section" id="mg-gems-section">
-      <h3>💎 Gems</h3>
-      <div id="mg-gems"></div>
-    </div>
-    <div class="mg-section">
-      <h3>📖 Explore More</h3>
-      <div id="mg-trivia-btns"></div>
-    </div>
-  </div>
-</div>
+<!-- MG overlay injected by backpack.js -->
 
 <script>
 (function(){
@@ -906,7 +881,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
 
   /* ── WIRING HELPERS ── */
   function bp(id){ return ['map','backpack','home'].forEach(function(k){
-    T.wire('b-'+id+'-'+k, k==='map'?function(){T.nav('s-sea');}:k==='backpack'?T.goBackpack:function(){T.nav('s-dream');});
+    T.wire('b-'+id+'-'+k, k==='map'?function(){T.nav('s-sea');}:k==='backpack'?T.goMG:function(){T.nav('s-dream');});
   });}
 
   /* ── DREAM PHASE INTRO ── */
@@ -916,7 +891,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-dream-mg',    T.goMG);
   T.wire('b-dream-create',function(){ T.nav('s-create-intro'); });
   T.wire('b-dream-map',   function(){ T.nav('s-sea'); });
-  T.wire('b-dream-backpack', T.goBackpack);
+  T.wire('b-dream-backpack', T.goMG);
   T.wire('b-dream-home',  function(){ T.nav('s-dream'); });
 
   /* ── 1100 CREATE ── */
@@ -926,7 +901,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-create-back', function(){ T.nav('s-dream'); });
   T.wire('b-create-mg',   T.goMG);
   T.wire('b-create-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-create-backpack', T.goBackpack);
+  T.wire('b-create-backpack', T.goMG);
   T.wire('b-create-home', function(){ T.nav('s-dream'); });
 
   /* ── 1101 TOC ── */
@@ -941,7 +916,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-toc-sparks',  function(e){ e.preventDefault(); T.nav('s-sparks'); });
   T.wire('b-toc-sea',     function(e){ e.preventDefault(); T.nav('s-sea'); });
   T.wire('b-toc-map',     function(){ T.nav('s-sea'); });
-  T.wire('b-toc-backpack',T.goBackpack);
+  T.wire('b-toc-backpack',T.goMG);
   T.wire('b-toc-home',    function(){ T.nav('s-dream'); });
 
   /* ── 1102 WHAT IF ── */
@@ -950,7 +925,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-what-if-back', function(){ T.goBack(); });
   T.wire('b-what-if-mg',   T.goMG);
   T.wire('b-what-if-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-what-if-backpack', T.goBackpack);
+  T.wire('b-what-if-backpack', T.goMG);
   T.wire('b-what-if-home', function(){ T.nav('s-dream'); });
 
   /* ════════════════════════════════
@@ -972,7 +947,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-back', function(){ T.nav('s-create-intro'); });
   T.wire('b-wl-mg',   T.goMG);
   T.wire('b-wl-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-backpack', T.goBackpack);
+  T.wire('b-wl-backpack', T.goMG);
   T.wire('b-wl-home', function(){ T.nav('s-dream'); });
 
   /* ── 1111 ── */
@@ -982,7 +957,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-educated-back', function(){ T.nav('s-wishing-license'); });
   T.wire('b-wl-educated-mg',   T.goMG);
   T.wire('b-wl-educated-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-educated-backpack', T.goBackpack);
+  T.wire('b-wl-educated-backpack', T.goMG);
   T.wire('b-wl-educated-home', function(){ T.nav('s-dream'); });
 
   /* ── 1112 ── */
@@ -992,7 +967,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-no-meetings-back', function(){ T.nav('s-wl-educated'); });
   T.wire('b-no-meetings-mg',   T.goMG);
   T.wire('b-no-meetings-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-no-meetings-backpack', T.goBackpack);
+  T.wire('b-no-meetings-backpack', T.goMG);
   T.wire('b-no-meetings-home', function(){ T.nav('s-dream'); });
 
   /* ── 1113 ── */
@@ -1002,7 +977,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-rules-back', function(){ T.nav('s-no-meetings'); });
   T.wire('b-wl-rules-mg',   T.goMG);
   T.wire('b-wl-rules-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-rules-backpack', T.goBackpack);
+  T.wire('b-wl-rules-backpack', T.goMG);
   T.wire('b-wl-rules-home', function(){ T.nav('s-dream'); });
 
   /* ── 1114 ── */
@@ -1015,7 +990,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-creative-rules-back', function(){ T.nav('s-wl-rules'); });
   T.wire('b-creative-rules-mg',   T.goMG);
   T.wire('b-creative-rules-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-creative-rules-backpack', T.goBackpack);
+  T.wire('b-creative-rules-backpack', T.goMG);
   T.wire('b-creative-rules-home', function(){ T.nav('s-dream'); });
 
   /* ── 1115 ── */
@@ -1025,7 +1000,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-1-back', function(){ T.nav('s-creative-rules'); });
   T.wire('b-wl-1-mg',   T.goMG);
   T.wire('b-wl-1-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-1-backpack', T.goBackpack);
+  T.wire('b-wl-1-backpack', T.goMG);
   T.wire('b-wl-1-home', function(){ T.nav('s-dream'); });
 
   /* ── 1116 ── */
@@ -1035,7 +1010,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-2-back', function(){ T.nav('s-wl-1'); });
   T.wire('b-wl-2-mg',   T.goMG);
   T.wire('b-wl-2-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-2-backpack', T.goBackpack);
+  T.wire('b-wl-2-backpack', T.goMG);
   T.wire('b-wl-2-home', function(){ T.nav('s-dream'); });
 
   /* ── 1117 ── */
@@ -1045,7 +1020,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-3-back', function(){ T.nav('s-wl-2'); });
   T.wire('b-wl-3-mg',   T.goMG);
   T.wire('b-wl-3-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-3-backpack', T.goBackpack);
+  T.wire('b-wl-3-backpack', T.goMG);
   T.wire('b-wl-3-home', function(){ T.nav('s-dream'); });
 
   /* ── 1118 ── */
@@ -1055,7 +1030,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-4-back', function(){ T.nav('s-wl-3'); });
   T.wire('b-wl-4-mg',   T.goMG);
   T.wire('b-wl-4-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-4-backpack', T.goBackpack);
+  T.wire('b-wl-4-backpack', T.goMG);
   T.wire('b-wl-4-home', function(){ T.nav('s-dream'); });
 
   /* ── 1119 ── */
@@ -1065,7 +1040,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-wl-5-back', function(){ T.nav('s-wl-4'); });
   T.wire('b-wl-5-mg',   T.goMG);
   T.wire('b-wl-5-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-wl-5-backpack', T.goBackpack);
+  T.wire('b-wl-5-backpack', T.goMG);
   T.wire('b-wl-5-home', function(){ T.nav('s-dream'); });
 
   /* ── Member name + date on certificate ── */
@@ -1104,7 +1079,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-ftf-back', function(){ T.nav('s-wl-5'); });
   T.wire('b-ftf-mg',   T.goMG);
   T.wire('b-ftf-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-ftf-backpack', T.goBackpack);
+  T.wire('b-ftf-backpack', T.goMG);
   T.wire('b-ftf-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-combustion','1121');
@@ -1112,7 +1087,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-combustion-back', function(){ T.nav('s-ftf-intro'); });
   T.wire('b-combustion-mg',   T.goMG);
   T.wire('b-combustion-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-combustion-backpack', T.goBackpack);
+  T.wire('b-combustion-backpack', T.goMG);
   T.wire('b-combustion-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-anger','1122');
@@ -1120,7 +1095,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-anger-back', function(){ T.nav('s-combustion'); });
   T.wire('b-anger-mg',   T.goMG);
   T.wire('b-anger-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-anger-backpack', T.goBackpack);
+  T.wire('b-anger-backpack', T.goMG);
   T.wire('b-anger-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-pain-point','1123');
@@ -1128,7 +1103,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-pain-point-back', function(){ T.nav('s-anger'); });
   T.wire('b-pain-point-mg',   T.goMG);
   T.wire('b-pain-point-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-pain-point-backpack', T.goBackpack);
+  T.wire('b-pain-point-backpack', T.goMG);
   T.wire('b-pain-point-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-pain-list','1124');
@@ -1136,7 +1111,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-pain-list-back', function(){ T.nav('s-pain-point'); });
   T.wire('b-pain-list-mg',   T.goMG);
   T.wire('b-pain-list-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-pain-list-backpack', T.goBackpack);
+  T.wire('b-pain-list-backpack', T.goMG);
   T.wire('b-pain-list-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-flip','1125');
@@ -1144,7 +1119,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-flip-back', function(){ T.nav('s-pain-list'); });
   T.wire('b-flip-mg',   T.goMG);
   T.wire('b-flip-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-flip-backpack', T.goBackpack);
+  T.wire('b-flip-backpack', T.goMG);
   T.wire('b-flip-home', function(){ T.nav('s-dream'); });
 
   /* anger/pain list logic */
@@ -1188,7 +1163,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-inklings-back', function(){ T.nav('s-flip'); });
   T.wire('b-inklings-mg',   T.goMG);
   T.wire('b-inklings-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-inklings-backpack', T.goBackpack);
+  T.wire('b-inklings-backpack', T.goMG);
   T.wire('b-inklings-home', function(){ T.nav('s-dream'); });
 
   var ikDoors=[
@@ -1203,7 +1178,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
     T.wire('b-ik-'+d.id+'-back', function(){ T.nav('s-inklings'); });
     T.wire('b-ik-'+d.id+'-mg',   T.goMG);
     T.wire('b-ik-'+d.id+'-map',  function(){ T.nav('s-sea'); });
-    T.wire('b-ik-'+d.id+'-backpack', T.goBackpack);
+    T.wire('b-ik-'+d.id+'-backpack', T.goMG);
     T.wire('b-ik-'+d.id+'-home', function(){ T.nav('s-dream'); });
     T.wire('b-ik-'+d.id+'-post',(function(did){ return function(){
       var txt=document.getElementById('ik-'+did+'-txt'), val=(txt&&txt.value||'').trim();
@@ -1224,7 +1199,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-bs-back', function(){ T.nav('s-inklings'); });
   T.wire('b-bs-mg',   T.goMG);
   T.wire('b-bs-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-bs-backpack', T.goBackpack);
+  T.wire('b-bs-backpack', T.goMG);
   T.wire('b-bs-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-bs-menu','1141');
@@ -1232,7 +1207,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-bs-menu-back', function(){ T.nav('s-blue-sky'); });
   T.wire('b-bs-menu-mg',   T.goMG);
   T.wire('b-bs-menu-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-bs-menu-backpack', T.goBackpack);
+  T.wire('b-bs-menu-backpack', T.goMG);
   T.wire('b-bs-menu-home', function(){ T.nav('s-dream'); });
 
   var bsDoors=[
@@ -1247,7 +1222,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
     T.wire('b-bs-'+d.id+'-back', function(){ T.nav('s-bs-menu'); });
     T.wire('b-bs-'+d.id+'-mg',   T.goMG);
     T.wire('b-bs-'+d.id+'-map',  function(){ T.nav('s-sea'); });
-    T.wire('b-bs-'+d.id+'-backpack', T.goBackpack);
+    T.wire('b-bs-'+d.id+'-backpack', T.goMG);
     T.wire('b-bs-'+d.id+'-home', function(){ T.nav('s-dream'); });
     T.wire('b-bs-'+d.id+'-post',(function(did){ return function(){
       var txt=document.getElementById('bs-'+did+'-txt'), val=(txt&&txt.value||'').trim();
@@ -1267,7 +1242,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-sparks-back', function(){ T.nav('s-blue-sky'); });
   T.wire('b-sparks-mg',   T.goMG);
   T.wire('b-sparks-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-sparks-backpack', T.goBackpack);
+  T.wire('b-sparks-backpack', T.goMG);
   T.wire('b-sparks-home', function(){ T.nav('s-dream'); });
 
   function loadSparks(){
@@ -1296,7 +1271,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-sea-back', function(){ T.goBack(); });
   T.wire('b-sea-mg',   T.goMG);
   T.wire('b-sea-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-sea-backpack', T.goBackpack);
+  T.wire('b-sea-backpack', T.goMG);
   T.wire('b-sea-home', function(){ T.nav('s-dream'); });
 
   T.registerPageNum('s-idea-btn','1161');
@@ -1304,7 +1279,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-idea-btn-back', function(){ T.nav('s-sea'); });
   T.wire('b-idea-btn-mg',   T.goMG);
   T.wire('b-idea-btn-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-idea-btn-backpack', T.goBackpack);
+  T.wire('b-idea-btn-backpack', T.goMG);
   T.wire('b-idea-btn-home', function(){ T.nav('s-dream'); });
   T.wire('b-idea-btn-post', function(){
     var txt=document.getElementById('idea-btn-txt'), val=(txt&&txt.value||'').trim();
@@ -1319,7 +1294,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-shape-back', function(){ T.nav('s-sea'); });
   T.wire('b-shape-mg',   T.goMG);
   T.wire('b-shape-map',  function(){ T.nav('s-sea'); });
-  T.wire('b-shape-backpack', T.goBackpack);
+  T.wire('b-shape-backpack', T.goMG);
   T.wire('b-shape-home', function(){ T.nav('s-dream'); });
 
   /* ── TRIVIA HUB ── */
@@ -1327,7 +1302,7 @@ body{font-family:'Playfair Display',Georgia,serif;background:#0a0a0a;display:fle
   T.wire('b-trivia-mg',   T.goMG);
 
   /* ── MG OVERLAY ── */
-  T.wire('b-mg-close', T.closeMG);
+
 
   /* ── wireBackpack ── */
   if(T.wireBackpack) T.wireBackpack();
