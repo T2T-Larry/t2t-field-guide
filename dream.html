@@ -1068,16 +1068,26 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <span class="ph-eyebrow">·</span>
     <span class="ph-eyebrow">FRICTION</span>
   </div>
-  <div class="sw" style="padding:24px 32px;align-items:stretch">
-    <div style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Flipping the Friction</div>
-    <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;margin-bottom:14px;line-height:1.6">How would you prefer it to be? Take each frustration, one by one.</div>
-    <div id="ftf-frustration-box" style="background:#fdf6e8;border:1.5px solid #C9A87C;border-radius:10px;padding:14px 16px;margin-bottom:14px;font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#3B2510;min-height:44px"></div>
-    <input type="text" id="ftf-flip-input" placeholder="How would you prefer it to be?" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111;margin-bottom:12px">
-    <div style="display:flex;gap:10px">
-      <button id="b-ftf-post" style="flex:1;padding:12px 0;font-size:13px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#C9A87C;color:#111;opacity:.4;pointer-events:none;transition:opacity .2s" disabled>→ Sea of Ideas</button>
-      <button id="b-ftf-skip" style="padding:12px 16px;font-size:13px;font-weight:700;border-radius:10px;cursor:pointer;border:2px solid #ddd;background:#f9f9f7;color:#888">Skip</button>
+  <div class="sw" style="padding:20px 28px;align-items:stretch">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#1a3a5c">Flip the Friction</div>
+      <div id="ftf-counter" style="font-size:11px;font-weight:700;letter-spacing:2px;color:#aaa;text-transform:uppercase"></div>
     </div>
-    <div id="ftf-status" style="font-size:12px;font-style:italic;color:#3B6D11;text-align:center;margin-top:10px;min-height:18px"></div>
+    <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#888;margin-bottom:16px">How would you prefer it to be?</div>
+    <!-- The frustration card -->
+    <div id="ftf-card" style="background:#fdf6e8;border:2px solid #C9A87C;border-radius:12px;padding:18px 20px;margin-bottom:16px;position:relative;min-height:80px;display:flex;flex-direction:column;gap:6px">
+      <div id="ftf-card-label" style="font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#C9A87C"></div>
+      <div id="ftf-frustration-box" style="font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:#3B2510;line-height:1.5"></div>
+    </div>
+    <!-- Response input -->
+    <div id="ftf-input-wrap">
+      <input type="text" id="ftf-flip-input" placeholder="How would you prefer it to be?" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111;margin-bottom:10px">
+      <div style="display:flex;gap:8px">
+        <button id="b-ftf-post" style="flex:1;padding:11px 0;font-size:12px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#C9A87C;color:#111;opacity:.4;pointer-events:none;transition:opacity .2s" disabled>→ SEA OF IDEAS</button>
+        <button id="b-ftf-skip" style="padding:11px 16px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;border:2px solid #ddd;background:#f9f9f7;color:#aaa">SKIP</button>
+      </div>
+    </div>
+    <div id="ftf-status" style="font-size:12px;font-style:italic;color:#3B6D11;text-align:center;margin-top:8px;min-height:18px"></div>
     <div class="sp"></div>
   </div>
   <div class="bar2 bar-dream-pp">
@@ -1193,12 +1203,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
   <div style="flex:1;display:flex;flex-direction:column;background:#ffffff">
     <div style="padding:10px 16px 4px;text-align:center">
-      <div class="reader-eyebrow">Creative Sparks</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Creative Sparks</div>
       <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-top:2px">If you linger on an image, press the heart.</div>
     </div>
     <div style="padding:4px 16px 6px;display:flex;gap:8px;align-items:center">
-      <input type="text" id="spark-focus" placeholder="Focus topic (optional)…" style="flex:1;padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
-      <button id="b-spark-focus-go" style="padding:7px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">FOCUS</button>
+      <input type="text" id="spark-focus" placeholder="Random — or type a topic…" style="flex:1;padding:8px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:13px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111">
+      <button id="b-spark-focus-go" style="padding:7px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700">GO</button>
     </div>
     <div id="spark-img" style="flex:1;margin:4px 16px;border-radius:10px;background:#e4e0d8 center/cover no-repeat"></div>
     <div class="paging-strip">
@@ -2125,22 +2135,46 @@ document.addEventListener('DOMContentLoaded', function(){
   (function(){
     var _idx = 0;
     var _items = [];
-    var frustBox = document.getElementById('ftf-frustration-box');
+    var _labels = [];  /* 'anger' or 'pain' per item */
+    var frustBox  = document.getElementById('ftf-frustration-box');
+    var cardLabel = document.getElementById('ftf-card-label');
+    var counterEl = document.getElementById('ftf-counter');
     var flipInput = document.getElementById('ftf-flip-input');
-    var postBtn = document.getElementById('b-ftf-post');
-    var skipBtn = document.getElementById('b-ftf-skip');
-    var statusEl = document.getElementById('ftf-status');
+    var inputWrap = document.getElementById('ftf-input-wrap');
+    var postBtn   = document.getElementById('b-ftf-post');
+    var skipBtn   = document.getElementById('b-ftf-skip');
+    var statusEl  = document.getElementById('ftf-status');
 
     function loadItems(){
-      _items = [].concat(window._ftfAnger||[], window._ftfPain||[]);
+      var anger = window._ftfAnger||[];
+      var pain  = window._ftfPain||[];
+      _items  = anger.map(function(x){return x;}).concat(pain.map(function(x){return x;}));
+      _labels = anger.map(function(){return 'anger';}).concat(pain.map(function(){return 'pain';}));
       _idx = 0; showCurrent();
     }
     function showCurrent(){
       if(!frustBox) return;
-      if(_items.length === 0){ frustBox.textContent = 'Add some frustrations first — go back and fill the Anger or Pain lists.'; return; }
-      if(_idx >= _items.length){ frustBox.textContent = 'All done! Your flips are in the Sea of Ideas.'; if(postBtn) postBtn.style.display='none'; if(skipBtn) skipBtn.style.display='none'; return; }
+      if(_items.length === 0){
+        frustBox.textContent = 'Go back and add some frustrations first.';
+        if(cardLabel) cardLabel.textContent = '';
+        if(counterEl) counterEl.textContent = '';
+        if(inputWrap) inputWrap.style.display = 'none';
+        return;
+      }
+      if(_idx >= _items.length){
+        frustBox.textContent = 'All done. Every flip is in the Sea of Ideas.';
+        if(cardLabel) cardLabel.textContent = '✓ COMPLETE';
+        if(counterEl) counterEl.textContent = '';
+        if(inputWrap) inputWrap.style.display = 'none';
+        return;
+      }
+      if(inputWrap) inputWrap.style.display = 'block';
+      if(counterEl) counterEl.textContent = (_idx+1) + ' of ' + _items.length;
+      var lbl = _labels[_idx] === 'anger' ? '🔥 ANGER' : '😤 PAIN POINT';
+      if(cardLabel) cardLabel.textContent = lbl;
       frustBox.textContent = _items[_idx];
-      if(flipInput) flipInput.value = '';
+      if(flipInput){ flipInput.value = ''; flipInput.focus(); }
+      if(postBtn){ postBtn.style.opacity='.4'; postBtn.style.pointerEvents='none'; postBtn.disabled=true; }
     }
     if(flipInput && postBtn){
       flipInput.addEventListener('input', function(){
@@ -2154,12 +2188,16 @@ document.addEventListener('DOMContentLoaded', function(){
         var flip = flipInput ? flipInput.value.trim() : '';
         if(!flip) return;
         var note = '🔄 Flip: "' + frustration + '" → "' + flip + '"';
-        if(statusEl) statusEl.textContent = 'Posting to Sea of Ideas…';
+        if(statusEl) statusEl.textContent = 'Sending to Sea of Ideas…';
+        postBtn.style.opacity='.4'; postBtn.style.pointerEvents='none'; postBtn.disabled=true;
         try {
           var ok = await T.postIdeaToMiro(note, 'Flip the Friction');
-          if(ok){ statusEl.textContent = '✓ In the Sea'; _idx++; setTimeout(function(){ if(statusEl) statusEl.textContent=''; showCurrent(); }, 1000); }
-          else { if(statusEl) statusEl.textContent = 'Could not post — check connection.'; }
-        } catch(e){ if(statusEl) statusEl.textContent = 'Error: ' + e.message; }
+          if(ok){
+            statusEl.textContent = '✓ In the Sea';
+            _idx++;
+            setTimeout(function(){ if(statusEl) statusEl.textContent=''; showCurrent(); }, 900);
+          } else { statusEl.textContent = 'Could not post — check connection.'; }
+        } catch(e){ statusEl.textContent = 'Error posting.'; }
       });
     }
     if(skipBtn) skipBtn.addEventListener('click', function(){ _idx++; showCurrent(); });
@@ -2167,7 +2205,7 @@ document.addEventListener('DOMContentLoaded', function(){
     /* Load when navigating to the flip screen */
     var _origNav = T.nav;
     T.nav = function(id){
-      _origNav(id);
+      _origNav.apply(T, arguments);
       if(id === 's-ftf-flip'){ loadItems(); }
     };
   })();
