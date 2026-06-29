@@ -1083,7 +1083,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div id="ftf-input-wrap">
       <input type="text" id="ftf-flip-input" placeholder="How would you prefer it to be?" style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #ddd;font-size:14px;font-family:'Playfair Display',serif;font-style:italic;outline:none;color:#111;margin-bottom:10px">
       <div style="display:flex;gap:8px">
-        <button id="b-ftf-post" style="flex:1;padding:11px 0;font-size:12px;font-weight:700;letter-spacing:2px;border-radius:10px;cursor:pointer;border:2px solid #111;background:#C9A87C;color:#111;opacity:.4;pointer-events:none;transition:opacity .2s" disabled>→ SEA OF IDEAS</button>
+        <button id="b-ftf-post" class="save-btn" style="flex:1;letter-spacing:2px" disabled>SAVE</button>
         <button id="b-ftf-skip" style="padding:11px 16px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;border:2px solid #ddd;background:#f9f9f7;color:#aaa">SKIP</button>
       </div>
     </div>
@@ -2042,17 +2042,10 @@ document.addEventListener('DOMContentLoaded', function(){
     var sb = T.sb; if(!sb){ setName('Traveler'); return; }
     sb.auth.getUser().then(function(res){
       var user = res&&res.data&&res.data.user; if(!user){ setName('Traveler'); return; }
-      sb.from('members').select('name,display_name,first_name,last_name').eq('user_id',user.id).single()
+      sb.from('members').select('name').eq('user_id',user.id).single()
         .then(function(r){
           var d = r&&r.data;
-          var name = null;
-          if(d){
-            if(d.first_name && d.last_name){ name = d.first_name + ' ' + d.last_name; }
-            else if(d.first_name){ name = d.first_name; }
-            else if(d.name){ name = d.name; }
-            else if(d.display_name){ name = d.display_name; }
-          }
-          if(name){ setName(name); return; }
+          if(d&&d.name){ setName(d.name); return; }
           setName(user.email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();}));
         }).catch(function(){ setName('Traveler'); });
     }).catch(function(){ setName('Traveler'); });
@@ -2178,8 +2171,8 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     if(flipInput && postBtn){
       flipInput.addEventListener('input', function(){
-        if(flipInput.value.trim().length > 0){ postBtn.style.opacity='1'; postBtn.style.pointerEvents='auto'; postBtn.disabled=false; }
-        else { postBtn.style.opacity='.4'; postBtn.style.pointerEvents='none'; postBtn.disabled=true; }
+        if(flipInput.value.trim().length > 0){ postBtn.classList.add('active'); postBtn.disabled=false; }
+        else { postBtn.classList.remove('active'); postBtn.disabled=true; }
       });
     }
     if(postBtn){
@@ -2189,7 +2182,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if(!flip) return;
         var note = '🔄 Flip: "' + frustration + '" → "' + flip + '"';
         if(statusEl) statusEl.textContent = 'Sending to Sea of Ideas…';
-        postBtn.style.opacity='.4'; postBtn.style.pointerEvents='none'; postBtn.disabled=true;
+        postBtn.classList.remove('active'); postBtn.disabled=true;
         try {
           var ok = await T.postIdeaToMiro(note, 'Flip the Friction');
           if(ok){
