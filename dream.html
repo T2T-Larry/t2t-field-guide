@@ -1238,8 +1238,9 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     <div class="se">Sea of Ideas</div>
     <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:500;font-style:italic;color:#111;line-height:1.5;margin-bottom:8px">A collection of ideas.</div>
     <div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div>
-    <div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:140px">
-      <div style="text-align:center;padding:16px">
+    <div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#f5f5f5;min-height:140px;padding:6px">
+      <div id="sea-grid" style="column-count:3;column-gap:6px"></div>
+      <div id="sea-empty" style="text-align:center;padding:16px;display:none">
         <div style="font-size:36px;margin-bottom:6px">🌊</div>
         <div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div>
       </div>
@@ -2379,10 +2380,10 @@ document.addEventListener('DOMContentLoaded', function(){
               image_url: item.url,
               unsplash_description_raw: item.desc || null,
               header_used: item.header || null,
-              resonance_level: 1,
+              resonance_level: null,
               created_at: new Date().toISOString()
             });
-            if(statusEl) statusEl.textContent = ins.error ? '⚠️ Could not save' : '♥ In your Wish Tank!';
+            if(statusEl) statusEl.textContent = ins.error ? '⚠️ Could not save' : '♥ Added to your Sea of Ideas!';
           } else if(statusEl){ statusEl.textContent = '⚠️ Sign in to save'; }
         } else if(statusEl){ statusEl.textContent = '⚠️ Could not connect'; }
       } catch(e){ if(statusEl) statusEl.textContent = '⚠️ Could not save'; }
@@ -2427,8 +2428,29 @@ document.addEventListener('DOMContentLoaded', function(){
         if(!boardId.endsWith('=')) boardId = boardId+'=';
         var link = document.getElementById('sea-miro-link');
         if(link) link.href = 'https://miro.com/app/board/'+boardId;
+        renderSeaGrid();
       }
     };
+    async function renderSeaGrid(){
+      var grid = document.getElementById('sea-grid');
+      var empty = document.getElementById('sea-empty');
+      if(!grid || !T.sb) return;
+      grid.innerHTML = '';
+      try{
+        var u = (await T.sb.auth.getUser()).data.user;
+        if(!u) return;
+        var res = await T.sb.from('sparks').select('image_url').eq('user_id', u.id).order('created_at', {ascending:false});
+        var rows = res.data || [];
+        if(rows.length === 0){ if(empty) empty.style.display='block'; return; }
+        if(empty) empty.style.display='none';
+        rows.forEach(function(row){
+          var img = document.createElement('img');
+          img.src = row.image_url;
+          img.style.cssText = 'width:100%;display:block;border-radius:6px;margin-bottom:6px;break-inside:avoid';
+          grid.appendChild(img);
+        });
+      }catch(e){}
+    }
   })();
 
   /* ── 1161 · IDEA BUTTON ── */
