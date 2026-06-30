@@ -1856,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('toc-ftf')      && document.getElementById('toc-ftf').addEventListener('click',      function(){ T.nav('s-ftf-intro'); });
   document.getElementById('toc-sparks')   && document.getElementById('toc-sparks').addEventListener('click',   function(){ T.nav('s-sparks'); });
   document.getElementById('toc-bluesky')  && document.getElementById('toc-bluesky').addEventListener('click',  function(){ T.nav('s-bluesky-intro'); });
-  document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ T.nav('s-sea-of-ideas'); });
+  document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ T.markSeaChapterEntry(); T.nav('s-sea-of-ideas'); });
 
   T.registerPageNum('s-what-if', '1102T');
   T.wire('b-what-if-back', function(){ T.goBack(); });
@@ -2259,7 +2259,7 @@ document.addEventListener('DOMContentLoaded', function(){
   ]);
   T.wire('b-sparks-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-sparks-mg',   T.goMG);
-  T.wire('b-sparks-fwd',  function(){ T.nav('s-sea-of-ideas'); });
+  T.wire('b-sparks-fwd',  function(){ T.markSeaChapterEntry(); T.nav('s-sea-of-ideas'); });
 
   (function(){
     var UNSPLASH_KEY = 'ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
@@ -2373,7 +2373,7 @@ document.addEventListener('DOMContentLoaded', function(){
   /* ── 1161 · IDEA BUTTON ── */
   T.registerPageNum('s-idea-button', '1151');
   T.registerCtx('s-idea-button', 'Sea of Ideas');
-  T.wire('b-ib-back', function(){ T.nav('s-sea-of-ideas'); });
+  T.wire('b-ib-back', function(){ T.markSeaChapterEntry(); T.nav('s-sea-of-ideas'); });
   T.wire('b-ib-mg',   T.goMG);
   T.wire('b-ib-fwd',  function(){ T.nav('s-shape'); });
 

@@ -41,6 +41,7 @@
   var stack       = [];
   var primaryPage = null;
   var mgOrigin    = null;
+  var seaChapterEntry = false; /* true only when Sea of Ideas was entered via the normal CREATE chapter flow (not via the 🔍 backpack) */
   var _primaryPages = [];
 
   (function restoreNavState(){
@@ -791,7 +792,8 @@
       { label: 'Add an Idea', id: 's-idea-capture' }
     ]);
     wire('b-sea-back', function(){
-      if(currentFile()==='dream.html' && document.getElementById('s-create-toc') && !mgOrigin){ nav('s-create-toc'); }
+      var viaChapter = seaChapterEntry; seaChapterEntry = false;
+      if(currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ nav('s-create-toc'); }
       else { returnToMG(); }
     });
     wire('b-sea-mg', goMG);
@@ -804,7 +806,7 @@
   async function renderSeaOfIdeas(){
     var fwdBtn = document.getElementById('b-sea-fwd');
     if(fwdBtn){
-      var inChapterFlow = (currentFile()==='dream.html' && document.getElementById('s-idea-button') && !mgOrigin);
+      var inChapterFlow = (currentFile()==='dream.html' && document.getElementById('s-idea-button') && seaChapterEntry);
       fwdBtn.style.opacity = inChapterFlow ? '1' : '0.3';
       fwdBtn.style.pointerEvents = inChapterFlow ? 'auto' : 'none';
     }
@@ -913,7 +915,7 @@
         var ta=document.getElementById('idea-text');if(ta)ta.style.display='block';
       },50);
     });
-    wire('b-sea-ideas',function(){nav('s-sea-of-ideas');});
+    wire('b-sea-ideas',function(){ seaChapterEntry = false; nav('s-sea-of-ideas'); });
     wire('b-icap-back',function(){nav('s-idea');}); wire('b-icap-mg',goMG);
     var ideaTA=document.getElementById('idea-text');
     if(ideaTA) ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
@@ -1041,6 +1043,7 @@
   window.T2T = {
     nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
+    markSeaChapterEntry:function(){ seaChapterEntry = true; },
     registerGems:registerGems, registerCtx:registerCtx,
     registerMap:registerMap, registerMore:registerMore,
     registerPageNum:registerPageNum, registerUtilScreen:registerUtilScreen,
