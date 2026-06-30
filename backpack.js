@@ -152,7 +152,7 @@
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
     's-tools','s-question','s-create','s-shape','s-share','s-dare',
-    's-configure','s-change-password'
+    's-configure','s-change-password','s-sea-of-ideas'
   ];
   function registerUtilScreen(screenId) {
     if (_utilScreens.indexOf(screenId) === -1) _utilScreens.push(screenId);
@@ -198,6 +198,7 @@
     if (id==='s-journal-view')    renderJournalView();
     if (id==='s-journal-cover')   initJournalCover();
     if (id==='s-gems-list')       renderGemsView();
+    if (id==='s-sea-of-ideas')    renderSeaOfIdeas();
     if (id==='s-change-password') initChangePassword();
     window.scrollTo(0,0);
   }
@@ -745,6 +746,67 @@
   }
 
   /* ── MG OVERLAY INJECTION ── */
+  function injectSeaOfIdeas(){
+    var fg=document.getElementById('fg-root'); if(!fg) return;
+    if(document.getElementById('s-sea-of-ideas')) return;
+    var div=document.createElement('div');
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button></div></div>';
+    fg.appendChild(div.firstChild);
+    registerPageNum('s-sea-of-ideas', '1150');
+    registerCtx('s-sea-of-ideas', 'Sea of Ideas');
+    registerGems('s-sea-of-ideas', [
+      {text:'The Sea of Ideas holds everything — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
+    ]);
+    registerTrivia('s-sea-of-ideas', [
+      { label: 'Purpose', id: 's-sea-trivia-purpose' },
+      { label: 'Types of Seas of Ideas', id: 's-sea-trivia-types' },
+      { label: 'Add an Idea', id: 's-idea-capture' }
+    ]);
+    wire('b-sea-back', function(){
+      if(currentFile()==='dream.html' && document.getElementById('s-create-toc') && !mgOrigin){ nav('s-create-toc'); }
+      else { returnToMG(); }
+    });
+    wire('b-sea-mg', goMG);
+    wire('b-sea-fwd', function(){
+      if(currentFile()==='dream.html' && document.getElementById('s-idea-button')){ nav('s-idea-button'); }
+      else { closeMG(); returnToMG(); }
+    });
+  }
+
+  async function renderSeaOfIdeas(){
+    var grid = document.getElementById('sea-grid');
+    var empty = document.getElementById('sea-empty');
+    if(!grid || !_sb) return;
+    grid.innerHTML = '';
+    try{
+      var u = (await _sb.auth.getUser()).data.user;
+      if(!u) return;
+      var res = await _sb.from('ideas').select('content_type,image_url,text_content').eq('user_id', u.id).order('created_at', {ascending:false});
+      var rows = res.data || [];
+      if(rows.length === 0){ if(empty) empty.style.display='block'; return; }
+      if(empty) empty.style.display='none';
+      rows.forEach(function(row){
+        if(row.content_type === 'image' && row.image_url){
+          var tile = document.createElement('div');
+          tile.style.cssText = 'aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:#eee';
+          var img = document.createElement('img');
+          img.src = row.image_url;
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+          tile.appendChild(img);
+          grid.appendChild(tile);
+        } else if(row.text_content){
+          var tile = document.createElement('div');
+          tile.style.cssText = 'aspect-ratio:1/1;border-radius:6px;background:#fff;border:1px solid #ddd;padding:10px;display:flex;align-items:center;justify-content:center;overflow:hidden';
+          var card = document.createElement('div');
+          card.style.cssText = 'font-family:Playfair Display,serif;font-style:italic;font-size:12px;color:#333;line-height:1.4;text-align:center';
+          card.textContent = row.text_content;
+          tile.appendChild(card);
+          grid.appendChild(tile);
+        }
+      });
+    }catch(e){}
+  }
+
   function injectMGOverlay(){
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('mg-overlay')) return;
@@ -943,6 +1005,7 @@
 
   document.addEventListener('DOMContentLoaded',function(){
     injectMGOverlay();
+    injectSeaOfIdeas();
     wireBackpack();
     /* cross-file landing — check if we were sent here to a specific page */
     var bpTarget = sessionStorage.getItem('bp_target');
