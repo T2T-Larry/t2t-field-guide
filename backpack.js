@@ -361,6 +361,25 @@
     else      { el.classList.add('phd');    el.style.display='none'; if(tog) tog.textContent='▼'; }
   }
 
+  function setPhOpen(id, open){
+    var el=document.getElementById(id),tog=document.getElementById(id+'-tog'); if(!el) return;
+    if(open){ el.classList.remove('phd'); el.style.display='flex'; if(tog) tog.textContent='▲'; }
+    else     { el.classList.add('phd');    el.style.display='none'; if(tog) tog.textContent='▼'; }
+  }
+
+  function autoOpenMapPhase(curNum){
+    var allSections = ['map-intro-steps','map-dream','map-believe','map-dare','map-journey'];
+    var target = 'map-intro-steps';
+    if(curNum){
+      var lead=curNum.charAt(0);
+      if(lead==='1') target='map-dream';
+      else if(lead==='2') target='map-believe';
+      else if(lead==='3') target='map-dare';
+      else if(lead==='4') target='map-journey';
+    }
+    allSections.forEach(function(id){ setPhOpen(id, id===target); });
+  }
+
   /* ── MAP RENDER ── */
   var _introSteps = [
     {num:'0100',label:'Field Guide',                                  id:'s-cover'},
@@ -401,6 +420,7 @@
     if(curNum===undefined) curNum=_pageNums[cur]||null;
     renderStepList('map-intro-steps', _introSteps, curNum, visited);
     renderStepList('map-dream',       _dreamSteps, curNum, visited);
+    autoOpenMapPhase(curNum);
   }
 
   /* ── MIRO HELPERS ── */
@@ -873,6 +893,7 @@
     /* MAP */
     wire('b-map-back',returnToMG);
     wire('b-map-mg',goMG);
+    wire('tog-map-intro',   function(){togglePh('map-intro-steps');});
     wire('tog-map-dream',  function(){togglePh('map-dream');});
     wire('tog-map-believe',function(){togglePh('map-believe');});
     wire('tog-map-dare',   function(){togglePh('map-dare');});
@@ -920,7 +941,7 @@
         var b=document.getElementById('b-save-journal');if(b)b.classList.remove('active');
       },50);
     });
-    wire('b-view-journal',function(){var choices=document.getElementById('journal-view-choices');if(!choices)return;choices.style.display=choices.style.display==='flex'?'none':'flex';});
+    wire('b-view-journal',openJournalView);
     wire('b-jview-list',openJournalView); wire('b-jview-miro',openJournalMiro);
     wire('b-jcap-back',function(){nav('s-journal');}); wire('b-jcap-mg',goMG);
     wire('b-jcov-back',function(){nav('s-journal');}); wire('b-jcov-mg',goMG);
@@ -977,7 +998,7 @@
         updateGemSaveBtn();
       },2000);
     });
-    wire('b-view-gems',function(){var choices=document.getElementById('gems-view-choices');if(!choices)return;choices.style.display=choices.style.display==='flex'?'none':'flex';});
+    wire('b-view-gems',function(){nav('s-gems-list');renderGemsView();});
     wire('b-gview-list',function(){nav('s-gems-list');renderGemsView();});
     wire('b-gview-miro',openGemsMiro);
     wire('b-glist-back',function(){nav('s-gems');}); wire('b-glist-mg',goMG);
