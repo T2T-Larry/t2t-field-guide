@@ -2350,10 +2350,10 @@ document.addEventListener('DOMContentLoaded', function(){
           var url = 'https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY;
           if(query) url += '&query=' + encodeURIComponent(query);
           var r = await fetch(url);
-          if(r.ok){ var d = await r.json(); return {url:d.urls.regular, credit:(d.user&&d.user.name?d.user.name:'Unsplash')+' · Unsplash'}; }
+          if(r.ok){ var d = await r.json(); return {url:d.urls.regular, credit:(d.user&&d.user.name?d.user.name:'Unsplash')+' · Unsplash', desc:(d.alt_description||d.description||''), header:query}; }
         }catch(e){}
       }
-      var _fbIdx = (pos+1) % FALLBACK.length; return FALLBACK[_fbIdx];
+      var _fbIdx = (pos+1) % FALLBACK.length; var _fb = FALLBACK[_fbIdx]; return {url:_fb.url, credit:_fb.credit, desc:'', header:query};
     }
     function render(){ var item=history[pos]; if(item&&imgEl) imgEl.style.backgroundImage="url('"+item.url+"')"; }
     async function showNext(){
@@ -2367,15 +2367,26 @@ document.addEventListener('DOMContentLoaded', function(){
     T.wire('b-spark-heart', async function(){
       var item=history[pos]; if(!item) return;
       var btn=document.getElementById('b-spark-heart');
-      var heartFilled='<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.2 2 4.5 5.6 4.5c2 0 3.4 1 4.4 2.6 1-1.6 2.4-2.6 4.4-2.6C18 4.5 19.6 8.2 18 11.7 16.5 16.4 12 21 12 21z"/></svg>';
       if(btn){ btn.style.background='#e91e63'; btn.style.transform='scale(1.2)'; }
       var statusEl = document.getElementById('spark-status');
       if(statusEl) statusEl.textContent = 'Saving…';
-      if(T.postIdeaToMiro){
-        var note = '🖼️ ' + item.url;
-        var ok = await T.postIdeaToMiro(note, 'Creative Sparks');
-        if(statusEl){ statusEl.textContent = ok ? '♥ In your Sea of Ideas!' : '⚠️ Could not connect to Miro'; setTimeout(function(){ statusEl.textContent=''; },3000); }
-      }
+      try {
+        if(T.sb){
+          var u = (await T.sb.auth.getUser()).data.user;
+          if(u){
+            var ins = await T.sb.from('sparks').insert({
+              user_id: u.id,
+              image_url: item.url,
+              unsplash_description_raw: item.desc || null,
+              header_used: item.header || null,
+              resonance_level: 1,
+              created_at: new Date().toISOString()
+            });
+            if(statusEl) statusEl.textContent = ins.error ? '⚠️ Could not save' : '♥ In your Wish Tank!';
+          } else if(statusEl){ statusEl.textContent = '⚠️ Sign in to save'; }
+        } else if(statusEl){ statusEl.textContent = '⚠️ Could not connect'; }
+      } catch(e){ if(statusEl) statusEl.textContent = '⚠️ Could not save'; }
+      setTimeout(function(){ if(statusEl) statusEl.textContent=''; }, 3000);
       setTimeout(function(){
         if(btn){ btn.style.background='#111'; btn.style.transform='scale(1)'; }
         showNext();
