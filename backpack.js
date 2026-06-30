@@ -151,7 +151,7 @@
     's-journal','s-journal-capture','s-journal-cover',
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
-    's-tools','s-question','s-create','s-shape','s-share','s-dare',
+    's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
     's-configure','s-change-password','s-sea-of-ideas'
   ];
   function registerUtilScreen(screenId) {
@@ -848,6 +848,26 @@
 
   /* ── BACKPACK SCREEN WIRING ── */
   function wireBackpack(){
+    /* ── BACKPACK PAGE NUMBERS (per Notion 9000 series) ── */
+    registerPageNum('s-cover-map',   '9100');
+    registerPageNum('s-idea',        '9200');
+    registerPageNum('s-idea-capture','9210');
+    registerPageNum('s-journal',        '9300');
+    registerPageNum('s-journal-capture','9310');
+    registerPageNum('s-journal-view',   '9320');
+    registerPageNum('s-journal-miro',   '9330');
+    registerPageNum('s-gems',      '9400');
+    registerPageNum('s-gem-add',   '9410');
+    registerPageNum('s-gems-list', '9420');
+    registerPageNum('s-gems-miro', '9430');
+    registerPageNum('s-trivia', '9500');
+    registerPageNum('s-tools',  '9600');
+    registerPageNum('s-question', '9610');
+    registerPageNum('s-create',   '9620');
+    registerPageNum('s-shape-tools', '9630');
+    registerPageNum('s-share', '9640');
+    /* s-dare has no Notion page number assigned yet */
+
     /* MAP */
     wire('b-map-back',returnToMG);
     wire('b-map-mg',goMG);
@@ -880,7 +900,7 @@
       var ctx=getCtx();
       var btn=document.getElementById('b-save-idea');
       btn.classList.remove('active');btn.textContent='SAVING\u2026';
-      try{var user=await _sb.auth.getUser();if(user&&user.data&&user.data.user){await _sb.from('ideas').insert({user_id:user.data.user.id,idea_text:text,page_context:ctx,created_at:new Date().toISOString()});}}catch(e){}
+      try{var user=await _sb.auth.getUser();if(user&&user.data&&user.data.user){await _sb.from('ideas').insert({user_id:user.data.user.id,content_type:'text',text_content:text,page_context:ctx,created_at:new Date().toISOString()});}}catch(e){}
       await postIdeaToMiro(text,ctx);
       t.value='';t.style.display='none';btn.textContent='SAVE';
       var posted=document.getElementById('idea-posted');if(posted)posted.style.display='flex';
@@ -966,7 +986,7 @@
     /* TOOLS */
     wire('b-tools-back',returnToMG); wire('b-tools-mg',goMG);
     wire('pb-question',function(){nav('s-question');}); wire('pb-create',function(){nav('s-create');});
-    wire('pb-shape',function(){nav('s-shape');}); wire('pb-share',function(){nav('s-share');});
+    wire('pb-shape',function(){nav('s-shape-tools');}); wire('pb-share',function(){nav('s-share');});
     wire('pb-dare',function(){nav('s-dare');}); wire('btn-configure',function(){nav('s-configure');});
     wire('b-q-back',function(){nav('s-tools');});  wire('b-q-mg',goMG);
     wire('b-c-back',function(){nav('s-tools');});  wire('b-c-mg',goMG);
