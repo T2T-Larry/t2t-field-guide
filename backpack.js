@@ -752,7 +752,7 @@
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button></div></div>';
     fg.appendChild(div.firstChild);
-    registerPageNum('s-sea-of-ideas', '1150');
+    registerPageNum('s-sea-of-ideas', '9220');
     registerCtx('s-sea-of-ideas', 'Sea of Ideas');
     registerGems('s-sea-of-ideas', [
       {text:'The Sea of Ideas holds everything — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
@@ -774,6 +774,12 @@
   }
 
   async function renderSeaOfIdeas(){
+    var fwdBtn = document.getElementById('b-sea-fwd');
+    if(fwdBtn){
+      var inChapterFlow = (currentFile()==='dream.html' && document.getElementById('s-idea-button') && !mgOrigin);
+      fwdBtn.style.opacity = inChapterFlow ? '1' : '0.3';
+      fwdBtn.style.pointerEvents = inChapterFlow ? 'auto' : 'none';
+    }
     var grid = document.getElementById('sea-grid');
     var empty = document.getElementById('sea-empty');
     if(!grid || !_sb) return;
@@ -822,7 +828,7 @@
     wire('b-mg-ret',function(){
       var behind=_utilScreens.indexOf(cur)!==-1;
       closeMG();
-      if(behind&&mgOrigin){nav(mgOrigin,false);}
+      if(behind){ if(mgOrigin){ nav(mgOrigin,false); } else { goBack(); } }
     });
     wire('b-mg-map',goMap);
     wire('b-mg-idea',   function(){closeMG();nav('s-idea',   false);});
