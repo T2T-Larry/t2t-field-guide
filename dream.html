@@ -1236,9 +1236,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   </div>
   <div class="reader-wrap">
     <div class="reader-body" style="gap:14px;padding:28px 40px">
-      <div style="font-size:52px;margin-bottom:8px">🌊→🛠️</div>
-      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Your Sea is gathering.</div>
-      <div style="font-family:'Playfair Display',serif;font-size:16px;font-style:italic;color:#555;line-height:1.7">You can always add more ideas through the 🔍 backpack — but now it's time to SHAPE some of these into what you really want.</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;color:#555;line-height:1.7">You can always add more ideas through the 🔍 backpack —<br>but now it's time to SHAPE some of these into what you really want.</div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
@@ -1264,7 +1262,55 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2 bar-dream-pp">
     <button class="tb" id="b-shape-back">⬅️</button>
     <button class="tb" id="b-shape-mg">🔍</button>
-    <button class="tb dim" id="b-shape-fwd">➡️</button>
+    <button class="tb" id="b-shape-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1201 · SHAPE TOC ══ -->
+<div class="sc card" id="s-shape-toc">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">SHAPE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="sw" style="padding:16px 28px 8px;overflow-y:auto;max-height:420px">
+      <div class="se">What's ahead</div>
+      <div id="toc-cluster" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">1</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Cluster</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Group ideas that belong together</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+      <div id="toc-moosepoop" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">2</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Moose Poop</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Clear out what isn't really it</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+      <div id="toc-resonance" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">3</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Resonance</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Which ideas feel true</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+      <div id="toc-sort-simplicity" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">4</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Sort to Simplicity</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Find the one idea you really want</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+      <div class="sp"></div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-shape-toc-back">⬅️</button>
+    <button class="tb" id="b-shape-toc-mg">🔍</button>
+    <button class="tb dim" id="b-shape-toc-fwd">➡️</button>
   </div>
 </div>
 
@@ -2385,6 +2431,16 @@ document.addEventListener('DOMContentLoaded', function(){
   ]);
   T.wire('b-shape-back', function(){ T.nav('s-idea-button'); });
   T.wire('b-shape-mg',   T.goMG);
+  T.wire('b-shape-fwd',  function(){ T.nav('s-shape-toc'); });
+
+  /* ── 1201 · SHAPE TOC ── */
+  T.registerPageNum('s-shape-toc', '1201');
+  T.registerCtx('s-shape-toc', 'SHAPE');
+  T.wire('b-shape-toc-back', function(){ T.nav('s-shape'); });
+  T.wire('b-shape-toc-mg',   T.goMG);
+  /* b-shape-toc-fwd stays dim — first SHAPE section page isn't built yet.
+     TOC rows below aren't wired to nav yet either, for the same reason:
+     wiring to screens that don't exist yet would just silently fail. */
 
   /* ── SHARED INFRASTRUCTURE (authors, etc.) ── */
   T.wire('b-aut-back', T.goMG);
