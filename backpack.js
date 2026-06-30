@@ -344,7 +344,9 @@
       _tapTimer = setTimeout(function(){ _tapCount = 0; }, 500);
       if (_tapCount >= 3){
         _tapCount = 0;
-        var num = _pageNums[cur] || '—';
+        var ov=document.getElementById('mg-overlay');
+        var mgOpen = ov && ov.classList.contains('active');
+        var num = mgOpen ? '9000' : (_pageNums[cur] || '—');
         showPageToast(num);
       }
     });
