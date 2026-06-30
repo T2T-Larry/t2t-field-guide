@@ -2197,13 +2197,20 @@ document.addEventListener('DOMContentLoaded', function(){
         if(statusEl) statusEl.textContent = 'Sending to Sea of Ideas…';
         postBtn.classList.remove('active'); postBtn.disabled=true;
         try {
-          var ok = await T.postIdeaToMiro(note, 'Flip the Friction');
+          var ok = false;
+          if(T.sb){
+            var u = (await T.sb.auth.getUser()).data.user;
+            if(u){
+              var ins = await T.sb.from('ideas').insert({user_id:u.id, content_type:'text', text_content:note, page_context:'Flip the Friction', created_at:new Date().toISOString()});
+              ok = !ins.error;
+            }
+          }
           if(ok){
             statusEl.textContent = '✓ In the Sea';
             _idx++;
             setTimeout(function(){ if(statusEl) statusEl.textContent=''; showCurrent(); }, 900);
-          } else { statusEl.textContent = 'Could not post — check connection.'; }
-        } catch(e){ statusEl.textContent = 'Error posting.'; }
+          } else { statusEl.textContent = 'Could not save — check connection.'; }
+        } catch(e){ statusEl.textContent = 'Error saving.'; }
       });
     }
     if(skipBtn) skipBtn.addEventListener('click', function(){ _idx++; showCurrent(); });
@@ -2272,15 +2279,21 @@ document.addEventListener('DOMContentLoaded', function(){
     var postedEl = document.getElementById('bs-posted');
     var text = ta.value.trim(); if(!text) return;
     var label = document.getElementById('bs-cap-title').textContent.replace('🌟 ','');
-    statusEl.textContent = 'Posting to Sea of Ideas…';
+    statusEl.textContent = 'Saving to Sea of Ideas…';
     try {
       var note = '[Blue Sky · ' + label + '] ' + text;
-      var ok = await T.postIdeaToMiro(note, 'Blue Sky · ' + label);
+      var ok = false;
+      if(T.sb){
+        var u = (await T.sb.auth.getUser()).data.user;
+        if(u){
+          var ins = await T.sb.from('ideas').insert({user_id:u.id, content_type:'text', text_content:note, page_context:'Blue Sky · '+label, created_at:new Date().toISOString()});
+          ok = !ins.error;
+        }
+      }
       if(ok){
-        if(T.sb){ var u=(await T.sb.auth.getUser()).data.user; if(u) await T.sb.from('ideas').insert({user_id:u.id,idea_text:note,page_context:'Blue Sky · '+label,created_at:new Date().toISOString()}); }
         statusEl.textContent=''; ta.value=''; document.getElementById('b-save-bs').classList.remove('active');
         postedEl.style.display='flex'; setTimeout(function(){ postedEl.style.display='none'; },2200);
-      } else { statusEl.textContent='Could not post — check connection.'; }
+      } else { statusEl.textContent='Could not save — check connection.'; }
     } catch(e){ statusEl.textContent='Error: '+e.message; }
   });
 
@@ -2375,12 +2388,12 @@ document.addEventListener('DOMContentLoaded', function(){
         if(T.sb){
           var u = (await T.sb.auth.getUser()).data.user;
           if(u){
-            var ins = await T.sb.from('sparks').insert({
+            var ins = await T.sb.from('ideas').insert({
               user_id: u.id,
+              content_type: 'image',
               image_url: item.url,
               unsplash_description_raw: item.desc || null,
               header_used: item.header || null,
-              resonance_level: null,
               created_at: new Date().toISOString()
             });
             if(statusEl) statusEl.textContent = ins.error ? '⚠️ Could not save' : '♥ Added to your Sea of Ideas!';
@@ -2439,15 +2452,22 @@ document.addEventListener('DOMContentLoaded', function(){
       try{
         var u = (await T.sb.auth.getUser()).data.user;
         if(!u) return;
-        var res = await T.sb.from('sparks').select('image_url').eq('user_id', u.id).order('created_at', {ascending:false});
+        var res = await T.sb.from('ideas').select('content_type,image_url,text_content').eq('user_id', u.id).order('created_at', {ascending:false});
         var rows = res.data || [];
         if(rows.length === 0){ if(empty) empty.style.display='block'; return; }
         if(empty) empty.style.display='none';
         rows.forEach(function(row){
-          var img = document.createElement('img');
-          img.src = row.image_url;
-          img.style.cssText = 'width:100%;display:block;border-radius:6px;margin-bottom:6px;break-inside:avoid';
-          grid.appendChild(img);
+          if(row.content_type === 'image' && row.image_url){
+            var img = document.createElement('img');
+            img.src = row.image_url;
+            img.style.cssText = 'width:100%;display:block;border-radius:6px;margin-bottom:6px;break-inside:avoid';
+            grid.appendChild(img);
+          } else if(row.text_content){
+            var card = document.createElement('div');
+            card.style.cssText = 'width:100%;display:block;border-radius:6px;margin-bottom:6px;break-inside:avoid;background:#fff;border:1px solid #ddd;padding:10px;font-family:Playfair Display,serif;font-style:italic;font-size:13px;color:#333;line-height:1.5';
+            card.textContent = row.text_content;
+            grid.appendChild(card);
+          }
         });
       }catch(e){}
     }
