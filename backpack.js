@@ -147,7 +147,7 @@
     's-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more',
     's-what-is-t2t','s-t2t-goals','s-authors',
     's-thoughts-1','s-thoughts-2','s-thoughts-3',
-    's-idea','s-idea-capture','s-sea-ideas',
+    's-idea','s-idea-capture',
     's-journal','s-journal-capture','s-journal-cover',
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
@@ -540,14 +540,6 @@
   }
 
   /* ── MIRO EMBED OPENERS ── */
-  function openSeaOfIdeas() {
-    var boardId=_bid(_member.miro_board_id);
-    if(!boardId){alert('No Sea of Ideas board connected yet. Contact your facilitator.');return;}
-    var embed=document.getElementById('miro-embed');
-    if(embed) embed.src='https://miro.com/app/live-embed/'+boardId+'/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
-    ensureMiroReminder(boardId);
-    nav('s-sea-ideas');
-  }
   function openJournalMiro() {
     var boardId=_bid(_member.journal_board_id);
     if(!boardId){alert('No Journal board connected yet. Contact your facilitator.');return;}
@@ -804,10 +796,7 @@
         var ta=document.getElementById('idea-text');if(ta)ta.style.display='block';
       },50);
     });
-    wire('b-sea-ideas',openSeaOfIdeas);
-    wire('b-sea-back',function(){var e=document.getElementById('miro-embed');if(e)e.src='';nav('s-idea',false);});
-    wire('b-sea-mg',goMG);
-    wire('b-sea-full',function(){var e=document.getElementById('miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
+    wire('b-sea-ideas',function(){nav('s-sea-of-ideas');});
     wire('b-icap-back',function(){nav('s-idea');}); wire('b-icap-mg',goMG);
     var ideaTA=document.getElementById('idea-text');
     if(ideaTA) ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
@@ -944,7 +933,7 @@
     loadVisitedFromSupabase:loadVisitedFromSupabase,
     sb:_sb, getMember:function(){return _member;},
     getCtx:getCtx, renderMap:renderMap,
-    openSeaOfIdeas:openSeaOfIdeas, openJournalMiro:openJournalMiro,
+    openJournalMiro:openJournalMiro,
     openGemsMiro:openGemsMiro, openGemAdd:openGemAdd,
     ensureMiroReminder:ensureMiroReminder,
     openJournalView:openJournalView,
