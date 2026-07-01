@@ -153,7 +153,7 @@
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
     's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
-    's-configure','s-change-password','s-sea-of-ideas'
+    's-configure','s-change-password','s-sea-of-ideas','s-sea-of-ideas-cluster'
   ];
   function registerUtilScreen(screenId) {
     if (_utilScreens.indexOf(screenId) === -1) _utilScreens.push(screenId);
@@ -200,6 +200,7 @@
     if (id==='s-journal-cover')   initJournalCover();
     if (id==='s-gems-list')       renderGemsView();
     if (id==='s-sea-of-ideas')    renderSeaOfIdeas();
+    if (id==='s-sea-of-ideas-cluster') renderSeaOfIdeasCluster();
     if (id==='s-change-password') initChangePassword();
     window.scrollTo(0,0);
   }
@@ -779,7 +780,7 @@
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
-    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button></div></div>';
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div id="b-sea-to-cluster" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button></div></div>';
     fg.appendChild(div.firstChild);
     registerPageNum('s-sea-of-ideas', '9220');
     registerCtx('s-sea-of-ideas', 'Sea of Ideas');
@@ -797,6 +798,7 @@
       else { returnToMG(); }
     });
     wire('b-sea-mg', goMG);
+    wire('b-sea-to-cluster', function(){ nav('s-sea-of-ideas-cluster'); });
     wire('b-sea-fwd', function(){
       if(currentFile()==='dream.html' && document.getElementById('s-idea-button')){ nav('s-idea-button'); }
       else { closeMG(); returnToMG(); }
@@ -841,6 +843,216 @@
         }
       });
     }catch(e){}
+  }
+
+  /* ── SEA OF IDEAS: CLUSTER (9221) ──
+     Lightweight freeform drag-canvas. Proximity is the cluster — nothing to
+     name until the traveler taps "+ name this" on a settled group. Naming
+     writes a real `header` idea row and stamps cluster_id on the group,
+     same table as everything else in the Sea of Ideas. */
+  function injectSeaOfIdeasCluster(){
+    var fg=document.getElementById('fg-root'); if(!fg) return;
+    if(document.getElementById('s-sea-of-ideas-cluster')) return;
+    if(!document.getElementById('sea-cluster-style')){
+      var style=document.createElement('style');
+      style.id='sea-cluster-style';
+      style.textContent='#s-sea-of-ideas-cluster .phase-header{background:#fdf8f0;padding:12px 16px 10px;text-align:center;border-bottom:2px solid #5b9bd5;flex-shrink:0}#s-sea-of-ideas-cluster .ph-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6040}#s-sea-of-ideas-cluster .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}#s-sea-of-ideas-cluster .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}#s-sea-of-ideas-cluster .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}'
+        +'#sc-canvas{position:relative;width:100%;height:330px;border:1.5px solid #b0a898;border-radius:10px;background:#f0f7fc;background-image:radial-gradient(circle,rgba(91,155,213,0.18) 1px,transparent 1px);background-size:22px 22px;overflow:hidden;touch-action:none}'
+        +'.sc-tile{position:absolute;width:64px;height:64px;border-radius:10px;background:#fff;border:1px solid #cfe4f2;box-shadow:0 3px 8px rgba(26,58,92,0.15);overflow:hidden;cursor:grab;user-select:none}'
+        +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(26,58,92,0.28);z-index:50}'
+        +'.sc-tile img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}'
+        +'.sc-tile.text{padding:5px;display:flex;align-items:center;justify-content:center}'
+        +'.sc-tile.text p{margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none}'
+        +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
+        +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:10px;font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-pill.named{background:#fff;color:#1a3a5c;border:1px solid #a9cce3}'
+        +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
+        +'#sc-status.err{color:#b8562f}'
+        +'.sc-overlay{position:absolute;inset:0;z-index:100;background:rgba(26,58,92,0.4);display:none;align-items:center;justify-content:center}'
+        +'.sc-overlay.active{display:flex}'
+        +'.sc-overlay-card{background:#fff;border-radius:14px;padding:16px;width:min(260px,84%);box-shadow:0 10px 24px rgba(0,0,0,0.3)}'
+        +'.sc-overlay-card label{display:block;font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:6px}'
+        +'.sc-overlay-card input{width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1a3a5c;margin-bottom:10px;box-sizing:border-box}'
+        +'.sc-overlay-actions{display:flex;gap:8px;justify-content:flex-end}'
+        +'.sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 12px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#5b9bd5}'
+        +'.sc-ov-btn.save{background:#5b9bd5;color:#fff;border-color:#5b9bd5}';
+      document.head.appendChild(style);
+    }
+    var div=document.createElement('div');
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 20px;align-items:center;text-align:center;position:relative">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:22px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas — Cluster</div>'
+      +'<div style="font-size:12px;font-style:italic;color:#888;margin-bottom:10px;line-height:1.6">Drag what feels connected together. Name it once it settles.</div>'
+      +'<div id="sc-status">Loading…</div>'
+      +'<div id="sc-canvas"><div class="sc-overlay" id="sc-overlay"><div class="sc-overlay-card"><label for="sc-name-input">What do you see here?</label><input id="sc-name-input" type="text" maxlength="60" placeholder="e.g. Time with people I love"><div class="sc-overlay-actions"><button class="sc-ov-btn" id="sc-name-cancel">Cancel</button><button class="sc-ov-btn save" id="sc-name-save">Save</button></div></div></div></div>'
+      +'<div id="b-sc-shuffle" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-top:10px">↻ New batch</div>'
+      +'<div class="sp"></div></div>'
+      +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-fwd" style="opacity:.3;pointer-events:none">➡️</button></div></div>';
+    fg.appendChild(div.firstChild);
+    registerPageNum('s-sea-of-ideas-cluster', '9221');
+    registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
+    wire('b-sc-back', function(){ nav('s-sea-of-ideas'); });
+    wire('b-sc-mg', goMG);
+    wire('b-sc-shuffle', function(){ renderSeaOfIdeasCluster(true); });
+
+    var overlay=document.getElementById('sc-overlay');
+    var nameInput=document.getElementById('sc-name-input');
+    var activeGroupIds=null;
+    function openNameOverlay(groupIds, existingText){
+      activeGroupIds=groupIds;
+      nameInput.value=existingText||'';
+      overlay.classList.add('active');
+      setTimeout(function(){ nameInput.focus(); },50);
+    }
+    function closeNameOverlay(){ overlay.classList.remove('active'); activeGroupIds=null; }
+    wire('sc-name-cancel', closeNameOverlay);
+    wire('sc-name-save', async function(){
+      var text=nameInput.value.trim();
+      if(!text||!activeGroupIds){ closeNameOverlay(); return; }
+      var groupIds=activeGroupIds; closeNameOverlay();
+      var statusEl=document.getElementById('sc-status');
+      if(statusEl){ statusEl.textContent='Saving header…'; statusEl.classList.remove('err'); }
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:text,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw new Error('Header insert failed: '+ins.error.message);
+        var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).in('id',groupIds);
+        if(upd.error) throw new Error('cluster_id update failed: '+upd.error.message+' — the `cluster_id` column may still need to be added to `ideas`.');
+        groupIds.forEach(function(gid){
+          var item=_scCurrentBatch.find(function(i){ return String(i.id)===String(gid); });
+          if(item) item._headerText=text;
+        });
+        if(statusEl) statusEl.textContent=_scCurrentBatch.length+' ideas · header saved ✓';
+        _scUpdateGlows();
+      }catch(err){
+        if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+      }
+    });
+    window._scOpenNameOverlay = openNameOverlay;
+  }
+
+  var _scPositions = {};
+  var _scCurrentBatch = [];
+  var _scTileSize = 64;
+  var _scClusterRadius = 90;
+
+  function _scRandomStart(w, h){
+    var margin = 8;
+    return {
+      x: margin + Math.random() * (w - _scTileSize - margin*2),
+      y: margin + Math.random() * (h - _scTileSize - margin*2)
+    };
+  }
+
+  function _scUpdateGlows(){
+    var canvas=document.getElementById('sc-canvas'); if(!canvas) return;
+    canvas.querySelectorAll('.sc-glow,.sc-pill').forEach(function(el){ el.remove(); });
+    var ids=Object.keys(_scPositions).filter(function(id){
+      return _scCurrentBatch.some(function(item){ return String(item.id)===id; });
+    });
+    var visited={};
+    ids.forEach(function(id){
+      if(visited[id]) return;
+      var group=[id];
+      var p1=_scPositions[id];
+      ids.forEach(function(otherId){
+        if(otherId===id||visited[otherId]) return;
+        var p2=_scPositions[otherId];
+        var dx=p1.x-p2.x, dy=p1.y-p2.y;
+        if(Math.sqrt(dx*dx+dy*dy) < _scClusterRadius) group.push(otherId);
+      });
+      if(group.length>1){
+        group.forEach(function(gid){ visited[gid]=true; });
+        var xs=group.map(function(g){ return _scPositions[g].x + _scTileSize/2; });
+        var ys=group.map(function(g){ return _scPositions[g].y + _scTileSize/2; });
+        var cx=xs.reduce(function(a,b){return a+b;},0)/xs.length;
+        var cy=ys.reduce(function(a,b){return a+b;},0)/ys.length;
+        var spread=Math.max.apply(null, group.map(function(g){
+          var dx=_scPositions[g].x+_scTileSize/2-cx, dy=_scPositions[g].y+_scTileSize/2-cy;
+          return Math.sqrt(dx*dx+dy*dy);
+        })) + _scTileSize*0.8;
+        var glow=document.createElement('div');
+        glow.className='sc-glow';
+        glow.style.width=glow.style.height=(spread*2)+'px';
+        glow.style.left=(cx-spread)+'px';
+        glow.style.top=(cy-spread)+'px';
+        canvas.insertBefore(glow, canvas.firstChild);
+        var namedItem=group.map(function(g){ return _scCurrentBatch.find(function(i){ return String(i.id)===g; }); }).find(function(item){ return item && item._headerText; });
+        var pill=document.createElement('button');
+        pill.className='sc-pill'+(namedItem?' named':'');
+        pill.textContent=namedItem?namedItem._headerText:'+ name this';
+        pill.style.left=cx+'px';
+        pill.style.top=Math.max(12,(cy-spread-10))+'px';
+        pill.addEventListener('click', function(){ if(window._scOpenNameOverlay) window._scOpenNameOverlay(group, namedItem?namedItem._headerText:''); });
+        canvas.appendChild(pill);
+      } else {
+        visited[id]=true;
+      }
+    });
+  }
+
+  function _scMakeDraggable(tile, canvas){
+    var offsetX=0, offsetY=0, dragging=false;
+    tile.addEventListener('pointerdown', function(e){
+      dragging=true; tile.classList.add('dragging');
+      var r=tile.getBoundingClientRect();
+      offsetX=e.clientX-r.left; offsetY=e.clientY-r.top;
+      tile.setPointerCapture(e.pointerId);
+    });
+    tile.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var cr=canvas.getBoundingClientRect();
+      var x=e.clientX-cr.left-offsetX, y=e.clientY-cr.top-offsetY;
+      x=Math.max(2, Math.min(canvas.clientWidth-_scTileSize-2, x));
+      y=Math.max(2, Math.min(canvas.clientHeight-_scTileSize-2, y));
+      tile.style.left=x+'px'; tile.style.top=y+'px';
+      _scPositions[tile.dataset.id]={x:x,y:y};
+      _scUpdateGlows();
+    });
+    function up(e){ dragging=false; tile.classList.remove('dragging'); try{ tile.releasePointerCapture(e.pointerId); }catch(err){} }
+    tile.addEventListener('pointerup', up);
+    tile.addEventListener('pointercancel', up);
+  }
+
+  async function renderSeaOfIdeasCluster(reshuffle){
+    var canvas=document.getElementById('sc-canvas');
+    var statusEl=document.getElementById('sc-status');
+    if(!canvas||!_sb) return;
+    if(statusEl){ statusEl.textContent='Loading…'; statusEl.classList.remove('err'); }
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id')
+        .eq('user_id', user.id).in('content_type',['image','text'])
+        .order('created_at',{ascending:false}).limit(80);
+      if(res.error) throw new Error(res.error.message);
+      var pool=res.data||[];
+      if(pool.length===0){ if(statusEl) statusEl.textContent='No ideas saved yet — add a few first.'; return; }
+      var shuffled=pool.slice().sort(function(){ return Math.random()-0.5; });
+      _scCurrentBatch=shuffled.slice(0, Math.min(9,shuffled.length));
+      if(reshuffle) _scPositions={};
+      canvas.querySelectorAll('.sc-tile,.sc-glow,.sc-pill').forEach(function(el){ el.remove(); });
+      var w=canvas.clientWidth, h=canvas.clientHeight;
+      _scCurrentBatch.forEach(function(item){
+        var pos=_scPositions[item.id] || _scRandomStart(w,h);
+        _scPositions[item.id]=pos;
+        var tile=document.createElement('div');
+        tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+        tile.dataset.id=item.id;
+        tile.style.left=pos.x+'px'; tile.style.top=pos.y+'px';
+        if(item.content_type==='image' && item.image_url){
+          var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
+        } else {
+          var p=document.createElement('p'); p.textContent=item.text_content||'(untitled)'; tile.appendChild(p);
+        }
+        canvas.appendChild(tile);
+        _scMakeDraggable(tile, canvas);
+      });
+      _scUpdateGlows();
+      if(statusEl) statusEl.textContent=_scCurrentBatch.length+' ideas';
+    }catch(err){
+      if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+    }
   }
 
   function injectMGOverlay(){
@@ -1064,6 +1276,7 @@
   document.addEventListener('DOMContentLoaded',function(){
     injectMGOverlay();
     injectSeaOfIdeas();
+    injectSeaOfIdeasCluster();
     wireBackpack();
     /* cross-file landing — check if we were sent here to a specific page */
     var bpTarget = sessionStorage.getItem('bp_target');
