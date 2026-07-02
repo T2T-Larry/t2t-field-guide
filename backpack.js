@@ -926,6 +926,8 @@
       +'<button class="sc-ov-btn" id="b-sc-filterback" style="display:none">⬅ All clusters</button>'
       +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
       +'<button class="sc-ov-btn" id="b-sc-newcluster">✋ Cluster new ideas</button>'
+      +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
+      +'<input type="file" id="sc-upload-input" accept="image/*" multiple style="display:none">'
       +'</div>'
       +'<div class="sp"></div></div>'
       +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
@@ -958,6 +960,9 @@
     });
     wire('b-sc-filterback', function(){ _sboardFilter=null; renderSeaBoard(); });
     wire('b-sc-purpose', openPurposeEditor);
+    wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
+    var uploadInput=document.getElementById('sc-upload-input');
+    if(uploadInput) uploadInput.addEventListener('change', function(e){ _sboardBatchUpload(e.target.files); e.target.value=''; });
 
     (function(){
       var clicks=0, timer=null;
@@ -1197,6 +1202,39 @@
       if(statusEl) statusEl.textContent='';
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+    }
+  }
+
+  async function _sboardBatchUpload(fileList){
+    var statusEl=document.getElementById('sc-status');
+    var files=Array.prototype.slice.call(fileList||[]).filter(function(f){ return f.type && f.type.indexOf('image/')===0; });
+    if(!files.length) return;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var ok=0, failed=0;
+      for(var i=0;i<files.length;i++){
+        var f=files[i];
+        if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent='Uploading '+(i+1)+' of '+files.length+'…'; }
+        try{
+          var path=user.id+'/'+Date.now()+'-'+i+'-'+f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          var up=await _sb.storage.from('sea-of-ideas').upload(path, f);
+          if(up.error) throw up.error;
+          var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+          var url=pub.data && pub.data.publicUrl;
+          if(!url) throw new Error('No public URL returned.');
+          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'image',image_url:url,created_at:new Date().toISOString()});
+          if(ins.error) throw ins.error;
+          ok++;
+        }catch(fileErr){ failed++; }
+      }
+      if(statusEl){
+        statusEl.textContent = failed ? (ok+' uploaded, '+failed+' failed.') : '';
+        if(failed) statusEl.classList.add('err');
+      }
+      renderSeaBoard();
+    }catch(err){
+      if(statusEl){ statusEl.textContent='Upload needs the sea-of-ideas Storage bucket set up in Supabase first: '+err.message; statusEl.classList.add('err'); }
     }
   }
 
