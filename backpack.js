@@ -872,7 +872,7 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:left;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#1a3a5c;flex:1}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px}'
         +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:8px 0 4px}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
         +'#sc-status.err{color:#b8562f}'
@@ -896,9 +896,10 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:center;text-align:center;position:relative">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">'
-      +'<div id="sc-topic-box">TOPIC: What do you want?</div>'
-      +'<button class="sc-ov-btn" id="b-sc-purpose" style="white-space:nowrap;flex-shrink:0">🎯 Purpose</button>'
+      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px;margin-bottom:8px">'
+      +'<div></div>'
+      +'<div id="sc-topic-box"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:2px">Topic</div><div style="font-size:13px;font-weight:700;color:#1a3a5c">What do you want?</div></div>'
+      +'<div style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
       +'</div>'
       +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
@@ -1012,6 +1013,7 @@
   var _sboardTrashId = null;
   var _sboardMiscId = null;
   var _sboardPurposeId = null;
+  var _sboardNewAdditionsId = null;
   var _sboardActiveId = null;
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
@@ -1062,7 +1064,7 @@
     var jitter=(Math.random()*10-5).toFixed(0);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
-    tile.style.cssText='position:static;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg) translateY('+jitter+'px);transition:transform .15s';
+    tile.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg) translateY('+jitter+'px);transition:transform .15s';
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) translateY(0px) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg) translateY('+jitter+'px)'; tile.style.zIndex='1'; });
     if(item.content_type==='image' && item.image_url){
@@ -1072,6 +1074,12 @@
       p.textContent=item.text_content||'(untitled)';
       p.style.fontSize=_sboardDesktop?'10.5px':'8.5px';
       tile.appendChild(p);
+    }
+    if(item.heart_count){
+      var hb=document.createElement('div');
+      hb.style.cssText='position:absolute;bottom:-2px;right:-2px;background:#fff;border:1px solid #f0c2c2;border-radius:8px;padding:0 4px;font-size:8px;line-height:14px;color:#d33;box-shadow:0 1px 3px rgba(0,0,0,0.15);pointer-events:none';
+      hb.textContent='❤️'+item.heart_count;
+      tile.appendChild(hb);
     }
     tile.addEventListener('dblclick', function(){ openSbDetail(item); });
     return tile;
@@ -1085,6 +1093,9 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
+      var newAdditionsId=await _sboardEnsureNewAdditionsHeader();
+      _sboardNewAdditionsId=newAdditionsId;
+
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes')
         .eq('user_id', user.id).in('content_type',['image','text','header'])
         .order('created_at',{ascending:true}).limit(300);
@@ -1095,15 +1106,16 @@
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
       var miscRow=headerRows.find(function(r){ return r.text_content==='MISC'; });
       var purposeRow=headerRows.find(function(r){ return r.text_content==='Purpose'; });
+      var newAdditionsRow=headerRows.find(function(r){ return String(r.id)===String(newAdditionsId); });
       _sboardTrashId = trashRow ? trashRow.id : null;
       _sboardMiscId = miscRow ? miscRow.id : null;
       _sboardPurposeId = purposeRow ? purposeRow.id : null;
       var purposeBtn=document.getElementById('b-sc-purpose');
       if(purposeBtn) purposeBtn.title = (purposeRow && purposeRow.notes) ? purposeRow.notes : 'Why are we doing this?';
 
-      var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId].filter(Boolean).map(String);
+      var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
       var contentHeaders=headerRows.filter(function(r){ return reservedIds.indexOf(String(r.id))===-1; });
-      _sboardHeaderList=contentHeaders;
+      _sboardHeaderList=contentHeaders.concat(newAdditionsRow?[newAdditionsRow]:[]);
 
       var ideaRows=rows.filter(function(r){ return r.content_type==='image'||r.content_type==='text'; });
       wrap.innerHTML='';
@@ -1117,6 +1129,9 @@
       ideaRows.forEach(function(r){
         if(r.cluster_id){ (childrenOfHeader[r.cluster_id]=childrenOfHeader[r.cluster_id]||[]).push(r); }
       });
+      if(newAdditionsRow){
+        childrenOfHeader[newAdditionsRow.id]=(childrenOfHeader[newAdditionsRow.id]||[]).concat(ideaRows.filter(function(r){ return !r.cluster_id; }));
+      }
       var subHeadersOf={};
       contentHeaders.forEach(function(h){
         if(h.cluster_id){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }
@@ -1138,14 +1153,15 @@
 
       function renderSection(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
+        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
         var section=document.createElement('div');
         section.style.cssText='margin-bottom:14px;margin-left:'+(depth*18)+'px';
         var hd=document.createElement('button');
         hd.className='sc-pill named';
-        hd.style.cssText='position:static;transform:none;display:inline-block;min-width:'+(_sboardDesktop?'220px':'150px')+';max-width:none;margin-bottom:6px;padding:7px 16px;font-size:'+(_sboardDesktop?'13px':'11px')+';text-align:center';
+        hd.style.cssText='position:static;transform:none;display:inline-block;min-width:'+(_sboardDesktop?'220px':'150px')+';max-width:none;margin-bottom:6px;padding:7px 16px;font-size:'+(_sboardDesktop?'13px':'11px')+';text-align:center'+(name==='New Additions'?';color:#7a6040':'');
         hd.textContent=name;
         hd.addEventListener('click', function(){ _sboardFilter=(String(_sboardFilter)===String(headerRow.id))?null:headerRow.id; renderSeaBoard(); });
-        hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(headerRow); });
+        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(headerRow); });
         section.appendChild(hd);
         var row=document.createElement('div');
         row.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
@@ -1160,23 +1176,7 @@
         if(filterRow) renderSection(filterRow, 0);
       } else {
         orderedTop.forEach(function(h){ renderSection(h, 0); });
-      }
-
-      if(!_sboardFilter){
-        var newAdditions=ideaRows.filter(function(r){ return !r.cluster_id; });
-        if(newAdditions.length){
-          var usec=document.createElement('div');
-          usec.style.cssText='margin-bottom:6px';
-          var uh=document.createElement('div');
-          uh.style.cssText='font-size:10px;font-weight:700;color:#7a6040;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px';
-          uh.textContent='New Additions';
-          usec.appendChild(uh);
-          var urow=document.createElement('div');
-          urow.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
-          newAdditions.forEach(function(item){ urow.appendChild(_sboardMakeTile(item)); });
-          usec.appendChild(urow);
-          wrap.appendChild(usec);
-        }
+        if(newAdditionsRow && (childrenOfHeader[newAdditionsRow.id]||[]).length){ renderSection(newAdditionsRow, 0); }
       }
 
       document.getElementById('b-sc-filterback').style.display=_sboardFilter?'inline-block':'none';
@@ -1262,6 +1262,18 @@
     return _sboardPurposeId;
   }
 
+  async function _sboardEnsureNewAdditionsHeader(){
+    if(_sboardNewAdditionsId) return _sboardNewAdditionsId;
+    var user=(await _sb.auth.getUser()).data.user;
+    if(!user) throw new Error('Not signed in.');
+    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','New Additions').limit(1);
+    if(!existing.error && existing.data && existing.data.length){ _sboardNewAdditionsId=existing.data[0].id; return _sboardNewAdditionsId; }
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'New Additions',created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('New Additions setup failed: '+ins.error.message);
+    _sboardNewAdditionsId=ins.data.id;
+    return _sboardNewAdditionsId;
+  }
+
   async function _sboardEnsureTrashHeader(){
     if(_sboardTrashId) return _sboardTrashId;
     var user=(await _sb.auth.getUser()).data.user;
@@ -1285,6 +1297,7 @@
     var heartCount = item.heart_count||0;
 
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px">Cluster</div>'
       + '<div id="sb-header-field" style="font-size:11px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:10px;padding:4px 10px;border:1px dashed #a9cce3;border-radius:6px;display:inline-block">'+headerLabel+' ✎</div>'
       + '<div id="sb-header-edit" style="display:none;margin-bottom:10px">'
       + '<input id="sb-header-input" list="sb-header-options" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px">'
