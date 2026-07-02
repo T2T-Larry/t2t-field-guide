@@ -898,11 +898,11 @@
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:center;text-align:center;position:relative">'
       +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px;margin-bottom:8px">'
       +'<div></div>'
-      +'<div id="sc-topic-box"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:2px">Topic</div><div style="font-size:13px;font-weight:700;color:#1a3a5c">What do you want?</div></div>'
+      +'<div id="sc-topic-box"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:2px">Topic</div><div style="font-size:18px;font-weight:700;color:#1a3a5c">What do you want?</div></div>'
       +'<div style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
       +'</div>'
       +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
       +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:2px">An idea storyboard</div>'
       +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#a9cce3;height:12px;opacity:0;transition:opacity .3s">9221</div>'
       +'</div>'
@@ -1064,6 +1064,8 @@
     var jitter=(Math.random()*10-5).toFixed(0);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+    tile.draggable=true;
+    tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
     tile.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg) translateY('+jitter+'px);transition:transform .15s';
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) translateY(0px) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg) translateY('+jitter+'px)'; tile.style.zIndex='1'; });
@@ -1151,36 +1153,64 @@
       topLevelHeaders.forEach(function(h){ if(!seen[h.id]){ seen[h.id]=true; order.push(String(h.id)); } });
       var orderedTop=order.map(function(id){ return topLevelHeaders.find(function(h){ return String(h.id)===String(id); }); }).filter(Boolean);
 
-      function renderSection(headerRow, depth){
-        var name=headerRow.text_content||'(untitled cluster)';
-        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
+      function renderCardsOnly(headerRow, depth){
         var section=document.createElement('div');
-        section.style.cssText='margin-bottom:14px;margin-left:'+(depth*18)+'px';
-        var hd=document.createElement('button');
-        hd.className='sc-pill named';
-        hd.style.cssText='position:static;transform:none;display:inline-block;min-width:'+(_sboardDesktop?'220px':'150px')+';max-width:none;margin-bottom:6px;padding:7px 16px;font-size:'+(_sboardDesktop?'13px':'11px')+';text-align:center'+(name==='New Additions'?';color:#7a6040':'');
-        hd.textContent=name;
-        hd.addEventListener('click', function(){ _sboardFilter=(String(_sboardFilter)===String(headerRow.id))?null:headerRow.id; renderSeaBoard(); });
-        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(headerRow); });
-        section.appendChild(hd);
+        section.style.cssText='margin-bottom:10px;margin-left:'+(depth*18)+'px';
         var row=document.createElement('div');
         row.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
         (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ row.appendChild(_sboardMakeTile(item)); });
         section.appendChild(row);
         wrap.appendChild(section);
-        (subHeadersOf[headerRow.id]||[]).forEach(function(sub){ renderSection(sub, depth+1); });
+        (subHeadersOf[headerRow.id]||[]).forEach(function(sub){
+          var label=document.createElement('div');
+          label.style.cssText='font-size:10px;font-weight:700;color:#7a6040;margin:2px 0 4px '+((depth+1)*18)+'px;text-transform:uppercase;letter-spacing:1px;cursor:pointer';
+          label.textContent='↳ '+sub.text_content;
+          label.addEventListener('dblclick', function(){ openSbHeaderDetail(sub); });
+          wrap.appendChild(label);
+          renderCardsOnly(sub, depth+1);
+        });
       }
 
-      if(_sboardFilter){
-        var filterRow=headerRows.find(function(h){ return String(h.id)===String(_sboardFilter); });
-        if(filterRow) renderSection(filterRow, 0);
-      } else {
-        orderedTop.forEach(function(h){ renderSection(h, 0); });
-        if(newAdditionsRow && (childrenOfHeader[newAdditionsRow.id]||[]).length){ renderSection(newAdditionsRow, 0); }
-      }
+      if(!_sboardFilter && newAdditionsRow) _sboardFilter=newAdditionsRow.id;
 
-      document.getElementById('b-sc-filterback').style.display=_sboardFilter?'inline-block':'none';
+      var tabRow=document.createElement('div');
+      tabRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px';
+      var tabList=[newAdditionsRow].concat(orderedTop.filter(function(h){ return String(h.id)!==String(newAdditionsRow?newAdditionsRow.id:''); })).filter(Boolean);
+      tabList.forEach(function(h){
+        var active=String(_sboardFilter)===String(h.id);
+        var t=document.createElement('button');
+        t.className='sc-pill named';
+        t.style.cssText='position:static;transform:none;padding:6px 14px;font-size:11px;cursor:pointer'+(active?';background:#5b9bd5;color:#fff;border-color:#5b9bd5':'');
+        t.textContent=h.text_content;
+        t.addEventListener('click', function(){ _sboardFilter=h.id; renderSeaBoard(); });
+        if(h.text_content!=='New Additions') t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(h); });
+        t.addEventListener('dragover', function(e){ e.preventDefault(); t.style.outline='2px solid #5b9bd5'; });
+        t.addEventListener('dragleave', function(){ t.style.outline='none'; });
+        t.addEventListener('drop', function(e){
+          e.preventDefault(); t.style.outline='none';
+          var itemId=e.dataTransfer.getData('text/plain');
+          if(itemId) _sboardMoveCard(itemId, h.id);
+        });
+        tabRow.appendChild(t);
+      });
+      wrap.appendChild(tabRow);
+
+      var activeHeader=headerRows.find(function(h){ return String(h.id)===String(_sboardFilter); });
+      if(activeHeader) renderCardsOnly(activeHeader, 0);
+
+      document.getElementById('b-sc-filterback').style.display='none';
       if(statusEl) statusEl.textContent=ideaRows.length+' ideas';
+    }catch(err){
+      if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+    }
+  }
+
+  async function _sboardMoveCard(itemId, headerId){
+    var statusEl=document.getElementById('sc-status');
+    try{
+      var upd=await _sb.from('ideas').update({cluster_id:headerId}).eq('id',itemId);
+      if(upd.error) throw upd.error;
+      renderSeaBoard();
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
