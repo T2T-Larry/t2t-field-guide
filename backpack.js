@@ -872,8 +872,9 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px}'
-        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:8px 0 4px}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c}'
+        +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
+        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:8px 0 12px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
         +'#sc-status.err{color:#b8562f}'
         +'.sc-overlay{position:absolute;inset:0;z-index:100;background:rgba(26,58,92,0.4);display:none;align-items:center;justify-content:center}'
@@ -895,16 +896,18 @@
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
-    div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:center;text-align:center;position:relative">'
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
       +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px;margin-bottom:8px">'
-      +'<div></div>'
-      +'<div id="sc-topic-box"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:2px">Topic</div><div style="font-size:18px;font-weight:700;color:#1a3a5c">What do you want?</div></div>'
-      +'<div style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
-      +'</div>'
       +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
       +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:2px">An idea storyboard</div>'
       +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#a9cce3;height:12px;opacity:0;transition:opacity .3s">9221</div>'
+      +'</div>'
+      +'<div style="text-align:center">'
+      +'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px">Topic</div>'
+      +'<div id="sc-topic-box">What do you want?</div>'
+      +'</div>'
+      +'<div style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
@@ -1059,16 +1062,14 @@
   }
 
   function _sboardMakeTile(item){
-    var size=_sboardDesktop?86:64;
-    var rot=(Math.random()*12-6).toFixed(1);
-    var jitter=(Math.random()*10-5).toFixed(0);
+    var rot=(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg) translateY('+jitter+'px);transition:transform .15s';
-    tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) translateY(0px) scale(1.05)'; tile.style.zIndex='10'; });
-    tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg) translateY('+jitter+'px)'; tile.style.zIndex='1'; });
+    tile.style.cssText='position:relative;width:100%;aspect-ratio:1/1;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s';
+    tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
+    tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
     if(item.content_type==='image' && item.image_url){
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
     } else {
@@ -1079,8 +1080,8 @@
     }
     if(item.heart_count){
       var hb=document.createElement('div');
-      hb.style.cssText='position:absolute;bottom:-2px;right:-2px;background:#fff;border:1px solid #f0c2c2;border-radius:8px;padding:0 4px;font-size:8px;line-height:14px;color:#d33;box-shadow:0 1px 3px rgba(0,0,0,0.15);pointer-events:none';
-      hb.textContent='❤️'+item.heart_count;
+      hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:14px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
+      hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
       tile.appendChild(hb);
     }
     tile.addEventListener('dblclick', function(){ openSbDetail(item); });
@@ -1157,7 +1158,7 @@
         var section=document.createElement('div');
         section.style.cssText='margin-bottom:10px;margin-left:'+(depth*18)+'px';
         var row=document.createElement('div');
-        row.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
+        row.style.cssText='display:grid;grid-template-columns:repeat('+(_sboardDesktop?4:3)+',1fr);gap:10px;padding:6px 4px 10px';
         (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ row.appendChild(_sboardMakeTile(item)); });
         section.appendChild(row);
         wrap.appendChild(section);
@@ -1199,7 +1200,7 @@
       if(activeHeader) renderCardsOnly(activeHeader, 0);
 
       document.getElementById('b-sc-filterback').style.display='none';
-      if(statusEl) statusEl.textContent=ideaRows.length+' ideas';
+      if(statusEl) statusEl.textContent='';
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
