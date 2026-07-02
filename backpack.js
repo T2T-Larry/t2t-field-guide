@@ -868,7 +868,12 @@
         +'.sc-tile.text p{margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none}'
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
         +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:10px;font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
-        +'.sc-pill.named{background:#fff;color:#1a3a5c;border:1px solid #a9cce3}'
+        +'.sc-pill.named{background:#fff;color:#1a3a5c;border:1px solid #a9cce3;border-radius:4px}'
+        +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
+        +'.sb-icon-btn:active{transform:scale(0.93)}'
+        +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
+        +'#sc-topic-box{text-align:left;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;color:#1a3a5c;flex:1}'
+        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:8px 0 4px}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
         +'#sc-status.err{color:#b8562f}'
         +'.sc-overlay{position:absolute;inset:0;z-index:100;background:rgba(26,58,92,0.4);display:none;align-items:center;justify-content:center}'
@@ -891,11 +896,16 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:center;text-align:center;position:relative">'
-      +'<div id="sc-title-hit" style="cursor:default;user-select:none">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">'
+      +'<div id="sc-topic-box">TOPIC: What do you want?</div>'
+      +'<button class="sc-ov-btn" id="b-sc-purpose" style="white-space:nowrap;flex-shrink:0">🎯 Purpose</button>'
+      +'</div>'
+      +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
       +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:2px">An idea storyboard</div>'
       +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#a9cce3;height:12px;opacity:0;transition:opacity .3s">9221</div>'
       +'</div>'
+      +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sc-canvas-wrap" style="display:none">'
@@ -941,6 +951,7 @@
       renderSeaBoard();
     });
     wire('b-sc-filterback', function(){ _sboardFilter=null; renderSeaBoard(); });
+    wire('b-sc-purpose', openPurposeEditor);
 
     (function(){
       var clicks=0, timer=null;
@@ -999,7 +1010,28 @@
   var _sboardDesktop = false;
   var _sboardFilter = null;
   var _sboardTrashId = null;
+  var _sboardMiscId = null;
+  var _sboardPurposeId = null;
   var _sboardActiveId = null;
+  var _sboardHeadersById = {};
+  var _sboardHeaderList = [];
+
+  function _sboardTopAncestor(h, headerRows){
+    var cur=h, guard=0;
+    while(cur.cluster_id && guard<20){
+      var parent=headerRows.find(function(x){ return String(x.id)===String(cur.cluster_id); });
+      if(!parent) break;
+      cur=parent; guard++;
+    }
+    return cur.id;
+  }
+  function _sboardHeartsHTML(count){
+    if(!count) return '';
+    var shown=Math.min(count,8), s='';
+    for(var i=0;i<shown;i++) s+='❤️';
+    if(count>8) s+=' +'+(count-8);
+    return s;
+  }
 
   async function renderSeaOfIdeasCluster(reshuffle){
     var boardWrap=document.getElementById('sc-board-wrap');
@@ -1053,15 +1085,25 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes')
         .eq('user_id', user.id).in('content_type',['image','text','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
-      var headers={};
-      rows.forEach(function(r){ if(r.content_type==='header') headers[r.id]=r.text_content; });
-      var trashRow=rows.find(function(r){ return r.content_type==='header' && r.text_content==='Trash'; });
+      var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
+      _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
+      var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
+      var miscRow=headerRows.find(function(r){ return r.text_content==='MISC'; });
+      var purposeRow=headerRows.find(function(r){ return r.text_content==='Purpose'; });
       _sboardTrashId = trashRow ? trashRow.id : null;
+      _sboardMiscId = miscRow ? miscRow.id : null;
+      _sboardPurposeId = purposeRow ? purposeRow.id : null;
+      var purposeBtn=document.getElementById('b-sc-purpose');
+      if(purposeBtn) purposeBtn.title = (purposeRow && purposeRow.notes) ? purposeRow.notes : 'Why are we doing this?';
+
+      var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId].filter(Boolean).map(String);
+      var contentHeaders=headerRows.filter(function(r){ return reservedIds.indexOf(String(r.id))===-1; });
+      _sboardHeaderList=contentHeaders;
 
       var ideaRows=rows.filter(function(r){ return r.content_type==='image'||r.content_type==='text'; });
       wrap.innerHTML='';
@@ -1071,45 +1113,67 @@
         return;
       }
 
+      var childrenOfHeader={};
+      ideaRows.forEach(function(r){
+        if(r.cluster_id){ (childrenOfHeader[r.cluster_id]=childrenOfHeader[r.cluster_id]||[]).push(r); }
+      });
+      var subHeadersOf={};
+      contentHeaders.forEach(function(h){
+        if(h.cluster_id){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }
+      });
+      var topLevelHeaders=contentHeaders.filter(function(h){ return !h.cluster_id; });
+
       var order=[]; var seen={};
       ideaRows.forEach(function(r){
-        if(r.cluster_id && !seen[r.cluster_id]){ seen[r.cluster_id]=true; order.push(r.cluster_id); }
+        if(r.cluster_id){
+          var hRow=headerRows.find(function(h){ return String(h.id)===String(r.cluster_id); });
+          if(hRow){
+            var topId=String(_sboardTopAncestor(hRow, headerRows));
+            if(!seen[topId]){ seen[topId]=true; order.push(topId); }
+          }
+        }
       });
-      var shown=order.filter(function(cid){ return String(cid)!==String(_sboardTrashId) || String(cid)===String(_sboardFilter); });
-      if(_sboardFilter) shown=shown.filter(function(cid){ return String(cid)===String(_sboardFilter); });
+      topLevelHeaders.forEach(function(h){ if(!seen[h.id]){ seen[h.id]=true; order.push(String(h.id)); } });
+      var orderedTop=order.map(function(id){ return topLevelHeaders.find(function(h){ return String(h.id)===String(id); }); }).filter(Boolean);
 
-      shown.forEach(function(cid){
-        var isTrash=String(cid)===String(_sboardTrashId);
-        var name=headers[cid]||'(untitled cluster)';
+      function renderSection(headerRow, depth){
+        var name=headerRow.text_content||'(untitled cluster)';
         var section=document.createElement('div');
-        section.style.cssText='margin-bottom:14px';
+        section.style.cssText='margin-bottom:14px;margin-left:'+(depth*18)+'px';
         var hd=document.createElement('button');
         hd.className='sc-pill named';
-        hd.style.cssText='position:static;transform:none;display:inline-block;min-width:'+(_sboardDesktop?'220px':'150px')+';max-width:none;margin-bottom:6px;padding:7px 16px;font-size:'+(_sboardDesktop?'13px':'11px')+';text-align:center'+(isTrash?';background:#fff;color:#a3907a;border:1px solid #d8cdb8':'');
-        hd.textContent=(isTrash?'🗑 ':'')+name;
-        hd.addEventListener('click', function(){ _sboardFilter=(String(_sboardFilter)===String(cid))?null:cid; renderSeaBoard(); });
+        hd.style.cssText='position:static;transform:none;display:inline-block;min-width:'+(_sboardDesktop?'220px':'150px')+';max-width:none;margin-bottom:6px;padding:7px 16px;font-size:'+(_sboardDesktop?'13px':'11px')+';text-align:center';
+        hd.textContent=name;
+        hd.addEventListener('click', function(){ _sboardFilter=(String(_sboardFilter)===String(headerRow.id))?null:headerRow.id; renderSeaBoard(); });
+        hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(headerRow); });
         section.appendChild(hd);
         var row=document.createElement('div');
         row.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
-        ideaRows.filter(function(r){ return String(r.cluster_id)===String(cid); }).forEach(function(item){
-          row.appendChild(_sboardMakeTile(item));
-        });
+        (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ row.appendChild(_sboardMakeTile(item)); });
         section.appendChild(row);
         wrap.appendChild(section);
-      });
+        (subHeadersOf[headerRow.id]||[]).forEach(function(sub){ renderSection(sub, depth+1); });
+      }
+
+      if(_sboardFilter){
+        var filterRow=headerRows.find(function(h){ return String(h.id)===String(_sboardFilter); });
+        if(filterRow) renderSection(filterRow, 0);
+      } else {
+        orderedTop.forEach(function(h){ renderSection(h, 0); });
+      }
 
       if(!_sboardFilter){
-        var unsorted=ideaRows.filter(function(r){ return !r.cluster_id; });
-        if(unsorted.length){
+        var newAdditions=ideaRows.filter(function(r){ return !r.cluster_id; });
+        if(newAdditions.length){
           var usec=document.createElement('div');
           usec.style.cssText='margin-bottom:6px';
           var uh=document.createElement('div');
           uh.style.cssText='font-size:10px;font-weight:700;color:#7a6040;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px';
-          uh.textContent='Unsorted';
+          uh.textContent='New Additions';
           usec.appendChild(uh);
           var urow=document.createElement('div');
           urow.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
-          unsorted.forEach(function(item){ urow.appendChild(_sboardMakeTile(item)); });
+          newAdditions.forEach(function(item){ urow.appendChild(_sboardMakeTile(item)); });
           usec.appendChild(urow);
           wrap.appendChild(usec);
         }
@@ -1120,6 +1184,82 @@
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
+  }
+
+  function openSbHeaderDetail(headerRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var options='<option value="">— Top level —</option>'+_sboardHeaderList
+      .filter(function(h){ return String(h.id)!==String(headerRow.id); })
+      .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+headerRow.text_content+'</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Nest under</label>'
+      +'<select id="sb-h-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-h-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-h-close" style="flex:1">Close</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    var sel=document.getElementById('sb-h-parent');
+    if(sel) sel.value=headerRow.cluster_id||'';
+    wire('sb-h-save', async function(){
+      try{
+        var newParent=sel.value||null;
+        var upd=await _sb.from('ideas').update({cluster_id:newParent}).eq('id',headerRow.id);
+        if(upd.error) throw upd.error;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){}
+    });
+    wire('sb-h-close', closeSbDetail);
+  }
+
+  async function openPurposeEditor(){
+    var ov=document.getElementById('sb-detail-overlay');
+    var statusEl=document.getElementById('sc-status');
+    try{
+      var id=await _sboardEnsurePurposeHeader();
+      var row=await _sb.from('ideas').select('notes').eq('id',id).single();
+      var curText=(row.data && row.data.notes) || '';
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Purpose</div>'
+        +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px">Why are we doing this?</div>'
+        +'<textarea id="sb-purpose-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;min-height:70px">'+curText+'</textarea>'
+        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-purpose-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-purpose-close" style="flex:1">Close</button></div>'
+        +'</div>';
+      ov.classList.add('active');
+      wire('sb-purpose-save', async function(){
+        var val=document.getElementById('sb-purpose-box').value;
+        var upd=await _sb.from('ideas').update({notes:val}).eq('id',id);
+        if(!upd.error){ var btn=document.getElementById('b-sc-purpose'); if(btn) btn.title=val; }
+        closeSbDetail();
+      });
+      wire('sb-purpose-close', closeSbDetail);
+    }catch(err){
+      if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+    }
+  }
+
+  async function _sboardEnsureMiscHeader(){
+    if(_sboardMiscId) return _sboardMiscId;
+    var user=(await _sb.auth.getUser()).data.user;
+    if(!user) throw new Error('Not signed in.');
+    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','MISC').limit(1);
+    if(!existing.error && existing.data && existing.data.length){ _sboardMiscId=existing.data[0].id; return _sboardMiscId; }
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'MISC',created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('MISC setup failed: '+ins.error.message);
+    _sboardMiscId=ins.data.id;
+    return _sboardMiscId;
+  }
+
+  async function _sboardEnsurePurposeHeader(){
+    if(_sboardPurposeId) return _sboardPurposeId;
+    var user=(await _sb.auth.getUser()).data.user;
+    if(!user) throw new Error('Not signed in.');
+    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Purpose').limit(1);
+    if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
+    _sboardPurposeId=ins.data.id;
+    return _sboardPurposeId;
   }
 
   async function _sboardEnsureTrashHeader(){
@@ -1138,27 +1278,75 @@
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
     var isTrashed=String(item.cluster_id)===String(_sboardTrashId) && _sboardTrashId;
+    var isMisc=String(item.cluster_id)===String(_sboardMiscId) && _sboardMiscId;
+    var curHeaderRow = item.cluster_id ? _sboardHeadersById[item.cluster_id] : null;
+    var curHeaderText = curHeaderRow ? curHeaderRow.text_content : '';
+    var headerLabel = curHeaderText || 'New Additions';
+    var heartCount = item.heart_count||0;
+
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      + '<div id="sb-header-field" style="font-size:11px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:10px;padding:4px 10px;border:1px dashed #a9cce3;border-radius:6px;display:inline-block">'+headerLabel+' ✎</div>'
+      + '<div id="sb-header-edit" style="display:none;margin-bottom:10px">'
+      + '<input id="sb-header-input" list="sb-header-options" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px">'
+      + '<datalist id="sb-header-options">'+_sboardHeaderList.map(function(h){ return '<option value="'+h.text_content+'">'; }).join('')+'</datalist>'
+      + '<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-header-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-header-cancel" style="flex:1">Cancel</button></div>'
+      + '</div>'
       + (item.content_type==='image' && item.image_url
           ? '<img src="'+item.image_url+'" style="width:100%;border-radius:10px;margin-bottom:10px">'
           : '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(item.text_content||'(untitled)')+'</div>')
+      + '<div id="sb-hearts-row" style="font-size:14px;min-height:18px;margin-bottom:6px">'+_sboardHeartsHTML(heartCount)+'</div>'
       + '<div style="display:flex;gap:6px;margin-bottom:8px">'
-      + '<button class="sc-ov-btn" id="sb-heart" style="flex:1">❤ Heart</button>'
-      + '<button class="sc-ov-btn" id="sb-notes" style="flex:1">📝 Notes</button>'
-      + '<button class="sc-ov-btn" id="sb-trash" style="flex:1">🗑 '+(isTrashed?'Restore':'Trash')+'</button>'
+      + '<button class="sb-icon-btn" id="sb-heart" title="Heart">❤️</button>'
+      + '<button class="sb-icon-btn" id="sb-notes" title="Notes">✏️</button>'
+      + '<button class="sb-icon-btn misc" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
+      + '<button class="sb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
       + '</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:6px;min-height:11px"></div>'
       + '<button class="sc-ov-btn" id="sb-close" style="width:100%">Close</button>'
       + '</div>';
     ov.classList.add('active');
+
+    wire('sb-header-field', function(){
+      document.getElementById('sb-header-edit').style.display='block';
+      var inp=document.getElementById('sb-header-input'); inp.value=curHeaderText; inp.focus();
+    });
+    wire('sb-header-cancel', function(){ document.getElementById('sb-header-edit').style.display='none'; });
+    wire('sb-header-save', async function(){
+      var name=document.getElementById('sb-header-input').value.trim();
+      var statusBox=document.getElementById('sb-note-status');
+      try{
+        var targetId=null;
+        if(name){
+          var existing=_sboardHeaderList.find(function(h){ return h.text_content.toLowerCase()===name.toLowerCase(); });
+          if(existing){ targetId=existing.id; }
+          else {
+            var user=(await _sb.auth.getUser()).data.user;
+            if(!user) throw new Error('Not signed in.');
+            var parentId=_sboardFilter||null;
+            var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
+            if(ins.error) throw new Error(ins.error.message);
+            targetId=ins.data.id;
+          }
+        }
+        var upd=await _sb.from('ideas').update({cluster_id:targetId}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.cluster_id=targetId;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){
+        if(statusBox) statusBox.textContent=err.message;
+      }
+    });
     wire('sb-heart', async function(){
       try{
-        var upd=await _sb.from('ideas').update({hearted:true}).eq('id',item.id);
+        var newCount=(item.heart_count||0)+1;
+        var upd=await _sb.from('ideas').update({heart_count:newCount}).eq('id',item.id);
         if(upd.error) throw upd.error;
-        document.getElementById('sb-heart').textContent='❤ Hearted';
+        item.heart_count=newCount;
+        var hr=document.getElementById('sb-hearts-row'); if(hr) hr.innerHTML=_sboardHeartsHTML(newCount);
       }catch(err){
-        document.getElementById('sb-note-status').textContent='Heart needs a quick one-time setup step in Supabase first.';
+        document.getElementById('sb-note-status').textContent='Heart needs the heart_count Supabase column.';
       }
     });
     wire('sb-notes', function(){
@@ -1169,8 +1357,23 @@
       try{
         var upd=await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id);
         if(upd.error) throw upd.error;
+        item.notes=e.target.value;
       }catch(err){
-        document.getElementById('sb-note-status').textContent='Notes need a quick one-time setup step in Supabase first.';
+        document.getElementById('sb-note-status').textContent='Notes need the notes Supabase column.';
+      }
+    });
+    wire('sb-misc', async function(){
+      var statusBox=document.getElementById('sb-note-status');
+      try{
+        var targetId=await _sboardEnsureMiscHeader();
+        var newCluster=isMisc?null:targetId;
+        var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.cluster_id=newCluster;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){
+        if(statusBox) statusBox.textContent=err.message;
       }
     });
     wire('sb-trash', async function(){
@@ -1180,6 +1383,7 @@
         var newCluster=isTrashed?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
+        item.cluster_id=newCluster;
         closeSbDetail();
         renderSeaBoard();
       }catch(err){
