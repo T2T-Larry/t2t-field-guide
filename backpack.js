@@ -1061,13 +1061,14 @@
     }
   }
 
-  function _sboardMakeTile(item){
+  function _sboardMakeTile(item, size){
+    size=size||(_sboardDesktop?76:70);
     var rot=(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;width:100%;aspect-ratio:1/1;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s';
+    tile.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s';
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
     if(item.content_type==='image' && item.image_url){
@@ -1154,50 +1155,40 @@
       topLevelHeaders.forEach(function(h){ if(!seen[h.id]){ seen[h.id]=true; order.push(String(h.id)); } });
       var orderedTop=order.map(function(id){ return topLevelHeaders.find(function(h){ return String(h.id)===String(id); }); }).filter(Boolean);
 
-      function renderCardsOnly(headerRow, depth){
-        var section=document.createElement('div');
-        section.style.cssText='margin-bottom:10px;margin-left:'+(depth*18)+'px';
-        var row=document.createElement('div');
-        row.style.cssText='display:grid;grid-template-columns:repeat('+(_sboardDesktop?4:3)+',1fr);gap:10px;padding:6px 4px 10px';
-        (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ row.appendChild(_sboardMakeTile(item)); });
-        section.appendChild(row);
-        wrap.appendChild(section);
-        (subHeadersOf[headerRow.id]||[]).forEach(function(sub){
-          var label=document.createElement('div');
-          label.style.cssText='font-size:10px;font-weight:700;color:#7a6040;margin:2px 0 4px '+((depth+1)*18)+'px;text-transform:uppercase;letter-spacing:1px;cursor:pointer';
-          label.textContent='↳ '+sub.text_content;
-          label.addEventListener('dblclick', function(){ openSbHeaderDetail(sub); });
-          wrap.appendChild(label);
-          renderCardsOnly(sub, depth+1);
+      var cellSize=_sboardDesktop?76:70;
+      var cols=_sboardDesktop?4:3;
+
+      function renderGroup(headerRow, depth){
+        var name=headerRow.text_content||'(untitled cluster)';
+        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
+        var block=document.createElement('div');
+        block.style.cssText='flex:0 0 auto;margin-left:'+(depth*14)+'px';
+        var hd=document.createElement('button');
+        hd.className='sc-pill named';
+        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:6px 10px;font-size:11px;margin-bottom:6px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        hd.textContent=name;
+        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(headerRow); });
+        hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
+        hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
+        hd.addEventListener('drop', function(e){
+          e.preventDefault(); hd.style.outline='none';
+          var itemId=e.dataTransfer.getData('text/plain');
+          if(itemId) _sboardMoveCard(itemId, headerRow.id);
         });
+        block.appendChild(hd);
+        var grid=document.createElement('div');
+        grid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
+        (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize)); });
+        block.appendChild(grid);
+        groupsWrap.appendChild(block);
+        (subHeadersOf[headerRow.id]||[]).forEach(function(sub){ renderGroup(sub, depth+1); });
       }
 
-      if(!_sboardFilter && newAdditionsRow) _sboardFilter=newAdditionsRow.id;
-
-      var tabRow=document.createElement('div');
-      tabRow.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px';
-      var tabList=[newAdditionsRow].concat(orderedTop.filter(function(h){ return String(h.id)!==String(newAdditionsRow?newAdditionsRow.id:''); })).filter(Boolean);
-      tabList.forEach(function(h){
-        var active=String(_sboardFilter)===String(h.id);
-        var t=document.createElement('button');
-        t.className='sc-pill named';
-        t.style.cssText='position:static;transform:none;padding:6px 14px;font-size:11px;cursor:pointer'+(active?';background:#5b9bd5;color:#fff;border-color:#5b9bd5':'');
-        t.textContent=h.text_content;
-        t.addEventListener('click', function(){ _sboardFilter=h.id; renderSeaBoard(); });
-        if(h.text_content!=='New Additions') t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(h); });
-        t.addEventListener('dragover', function(e){ e.preventDefault(); t.style.outline='2px solid #5b9bd5'; });
-        t.addEventListener('dragleave', function(){ t.style.outline='none'; });
-        t.addEventListener('drop', function(e){
-          e.preventDefault(); t.style.outline='none';
-          var itemId=e.dataTransfer.getData('text/plain');
-          if(itemId) _sboardMoveCard(itemId, h.id);
-        });
-        tabRow.appendChild(t);
-      });
-      wrap.appendChild(tabRow);
-
-      var activeHeader=headerRows.find(function(h){ return String(h.id)===String(_sboardFilter); });
-      if(activeHeader) renderCardsOnly(activeHeader, 0);
+      var groupsWrap=document.createElement('div');
+      groupsWrap.style.cssText='display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start';
+      if(newAdditionsRow) renderGroup(newAdditionsRow, 0);
+      orderedTop.forEach(function(h){ renderGroup(h, 0); });
+      wrap.appendChild(groupsWrap);
 
       document.getElementById('b-sc-filterback').style.display='none';
       if(statusEl) statusEl.textContent='';
