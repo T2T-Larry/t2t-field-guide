@@ -882,8 +882,11 @@
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left}'
-        +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:6px 0 10px}'
-        +'#sc-controls .sc-ov-btn{padding:5px 11px}';
+        +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:10px 0 2px}'
+        +'#sc-controls .sc-ov-btn{padding:5px 11px}'
+        +'#fg-root.sb-wide{max-width:1200px!important}'
+        +'#fg-root.sb-wide #sc-board-wrap{display:flex;flex-wrap:wrap;gap:22px}'
+        +'#fg-root.sb-wide #sc-board-wrap>div{flex:0 0 auto}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -892,12 +895,6 @@
       +'<div style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
       +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:2px">An idea storyboard</div>'
       +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#a9cce3;height:12px;opacity:0;transition:opacity .3s">9221</div>'
-      +'</div>'
-      +'<div id="sc-controls">'
-      +'<button class="sc-ov-btn" id="b-sc-filterback" style="display:none">⬅ All clusters</button>'
-      +'<button class="sc-ov-btn" id="b-sc-trash-toggle">👁 Show trash</button>'
-      +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
-      +'<button class="sc-ov-btn" id="b-sc-newcluster">✋ Cluster new ideas</button>'
       +'</div>'
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
@@ -909,24 +906,38 @@
       +'</div>'
       +'</div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
+      +'<div id="sc-controls">'
+      +'<button class="sc-ov-btn" id="b-sc-filterback" style="display:none">⬅ All clusters</button>'
+      +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
+      +'<button class="sc-ov-btn" id="b-sc-newcluster">✋ Cluster new ideas</button>'
+      +'</div>'
       +'<div class="sp"></div></div>'
-      +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-fwd" style="opacity:.3;pointer-events:none">➡️</button></div></div>';
+      +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
     fg.appendChild(div.firstChild);
     registerPageNum('s-sea-of-ideas-cluster', '9221');
     registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
-    wire('b-sc-back', function(){ nav('s-sea-of-ideas'); });
-    wire('b-sc-mg', goMG);
+    wire('b-sc-back', function(){
+      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
+      var viaChapter = seaChapterEntry; seaChapterEntry = false;
+      if(currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ nav('s-create-toc'); }
+      else { returnToMG(); }
+    });
+    wire('b-sc-mg', function(){
+      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
+      goMG();
+    });
+    wire('b-sc-fwd', function(){
+      if(currentFile()==='dream.html' && document.getElementById('s-idea-button')){ nav('s-idea-button'); }
+      else { closeMG(); returnToMG(); }
+    });
     wire('b-sc-shuffle', function(){ renderSeaCanvas(true); });
     wire('b-sc-back-to-board', function(){ _sboardMode='board'; renderSeaOfIdeasCluster(); });
     wire('b-sc-newcluster', function(){ _sboardMode='canvas'; renderSeaOfIdeasCluster(); });
     wire('b-sc-mode-toggle', function(){
       _sboardDesktop=!_sboardDesktop;
       document.getElementById('b-sc-mode-toggle').innerHTML=_sboardDesktop?'↩ Back to mobile size':'⛶ Desktop size';
-      renderSeaBoard();
-    });
-    wire('b-sc-trash-toggle', function(){
-      _sboardShowTrash=!_sboardShowTrash;
-      document.getElementById('b-sc-trash-toggle').textContent=_sboardShowTrash?'🙈 Hide trash':'👁 Show trash';
+      var fgr=document.getElementById('fg-root');
+      if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop && _sboardMode==='board');
       renderSeaBoard();
     });
     wire('b-sc-filterback', function(){ _sboardFilter=null; renderSeaBoard(); });
@@ -987,7 +998,6 @@
   var _sboardMode = 'board';
   var _sboardDesktop = false;
   var _sboardFilter = null;
-  var _sboardShowTrash = false;
   var _sboardTrashId = null;
   var _sboardActiveId = null;
 
@@ -995,6 +1005,14 @@
     var boardWrap=document.getElementById('sc-board-wrap');
     var canvasWrap=document.getElementById('sc-canvas-wrap');
     if(!boardWrap||!canvasWrap) return;
+    var fwdBtn=document.getElementById('b-sc-fwd');
+    if(fwdBtn){
+      var inChapterFlow=(currentFile()==='dream.html' && document.getElementById('s-idea-button') && seaChapterEntry);
+      fwdBtn.style.opacity=inChapterFlow?'1':'.3';
+      fwdBtn.style.pointerEvents=inChapterFlow?'auto':'none';
+    }
+    var fgr=document.getElementById('fg-root');
+    if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop && _sboardMode==='board');
     if(_sboardMode==='canvas'){
       boardWrap.style.display='none';
       canvasWrap.style.display='block';
@@ -1008,9 +1026,13 @@
 
   function _sboardMakeTile(item){
     var size=_sboardDesktop?86:64;
+    var rot=(Math.random()*12-6).toFixed(1);
+    var jitter=(Math.random()*10-5).toFixed(0);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
-    tile.style.cssText='position:static;width:'+size+'px;height:'+size+'px;cursor:pointer';
+    tile.style.cssText='position:static;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg) translateY('+jitter+'px);transition:transform .15s';
+    tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) translateY(0px) scale(1.05)'; tile.style.zIndex='10'; });
+    tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg) translateY('+jitter+'px)'; tile.style.zIndex='1'; });
     if(item.content_type==='image' && item.image_url){
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
     } else {
@@ -1053,7 +1075,7 @@
       ideaRows.forEach(function(r){
         if(r.cluster_id && !seen[r.cluster_id]){ seen[r.cluster_id]=true; order.push(r.cluster_id); }
       });
-      var shown=order.filter(function(cid){ return String(cid)!==String(_sboardTrashId) || _sboardShowTrash; });
+      var shown=order.filter(function(cid){ return String(cid)!==String(_sboardTrashId) || String(cid)===String(_sboardFilter); });
       if(_sboardFilter) shown=shown.filter(function(cid){ return String(cid)===String(_sboardFilter); });
 
       shown.forEach(function(cid){
@@ -1068,7 +1090,7 @@
         hd.addEventListener('click', function(){ _sboardFilter=(String(_sboardFilter)===String(cid))?null:cid; renderSeaBoard(); });
         section.appendChild(hd);
         var row=document.createElement('div');
-        row.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+        row.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
         ideaRows.filter(function(r){ return String(r.cluster_id)===String(cid); }).forEach(function(item){
           row.appendChild(_sboardMakeTile(item));
         });
@@ -1086,7 +1108,7 @@
           uh.textContent='Unsorted';
           usec.appendChild(uh);
           var urow=document.createElement('div');
-          urow.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+          urow.style.cssText='display:flex;flex-wrap:wrap;gap:14px 12px;padding:6px 4px 10px';
           unsorted.forEach(function(item){ urow.appendChild(_sboardMakeTile(item)); });
           usec.appendChild(urow);
           wrap.appendChild(usec);
@@ -1104,6 +1126,8 @@
     if(_sboardTrashId) return _sboardTrashId;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
+    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Trash').limit(1);
+    if(!existing.error && existing.data && existing.data.length){ _sboardTrashId=existing.data[0].id; return _sboardTrashId; }
     var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Trash',created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('Trash setup failed: '+ins.error.message);
     _sboardTrashId=ins.data.id;
@@ -1367,7 +1391,7 @@
         var ta=document.getElementById('idea-text');if(ta)ta.style.display='block';
       },50);
     });
-    wire('b-sea-ideas',function(){ seaChapterEntry = false; nav('s-sea-of-ideas'); });
+    wire('b-sea-ideas',function(){ seaChapterEntry = false; nav('s-sea-of-ideas-cluster'); });
     wire('b-icap-back',function(){nav('s-idea');}); wire('b-icap-mg',goMG);
     var ideaTA=document.getElementById('idea-text');
     if(ideaTA) ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
@@ -1471,6 +1495,11 @@
     wire('b-sr-back',function(){nav('s-tools');}); wire('b-sr-mg',goMG);
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
+    wire('b-tools-trash', async function(){
+      _sboardMode='board';
+      try{ var tid=await _sboardEnsureTrashHeader(); _sboardFilter=tid; }catch(e){ _sboardFilter=null; }
+      nav('s-sea-of-ideas-cluster');
+    });
     wire('b-go-change-pw',function(){nav('s-change-password');});
 
     /* CHANGE PASSWORD */
@@ -1496,6 +1525,14 @@
     nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
     markSeaChapterEntry:function(){ seaChapterEntry = true; },
+    openSeaTrash:async function(){
+      _sboardMode='board';
+      try{
+        var trashId=await _sboardEnsureTrashHeader();
+        _sboardFilter=trashId;
+      }catch(e){ _sboardFilter=null; }
+      nav('s-sea-of-ideas-cluster');
+    },
     registerGems:registerGems, registerCtx:registerCtx,
     registerMap:registerMap, registerMore:registerMore,
     registerPageNum:registerPageNum, registerUtilScreen:registerUtilScreen,
