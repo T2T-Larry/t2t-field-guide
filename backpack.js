@@ -874,7 +874,7 @@
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
         +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
-        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:8px 0 12px;width:100%}'
+        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:0 0 12px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
         +'#sc-status.err{color:#b8562f}'
         +'.sc-overlay{position:absolute;inset:0;z-index:100;background:rgba(26,58,92,0.4);display:none;align-items:center;justify-content:center}'
@@ -897,17 +897,19 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:8px;margin-bottom:8px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:12px 16px 10px;margin-bottom:6px">'
+      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px">'
       +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:1px">Sea of Ideas</div>'
-      +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:2px">An idea storyboard</div>'
-      +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#a9cce3;height:12px;opacity:0;transition:opacity .3s">9221</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:1px">Sea of Ideas</div>'
+      +'<div style="font-size:11px;font-style:italic;color:#b8d2ea;margin-bottom:2px">An idea storyboard</div>'
+      +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#7fa8cc;height:12px;opacity:0;transition:opacity .3s">9221</div>'
       +'</div>'
       +'<div style="text-align:center">'
       +'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px">Topic</div>'
       +'<div id="sc-topic-box">What do you want?</div>'
       +'</div>'
       +'<div style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
+      +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
@@ -1061,9 +1063,9 @@
     }
   }
 
-  function _sboardMakeTile(item, size){
+  function _sboardMakeTile(item, size, straight){
     size=size||(_sboardDesktop?76:70);
-    var rot=(Math.random()*8-4).toFixed(1);
+    var rot=straight?0:(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
     tile.draggable=true;
@@ -1155,12 +1157,13 @@
       topLevelHeaders.forEach(function(h){ if(!seen[h.id]){ seen[h.id]=true; order.push(String(h.id)); } });
       var orderedTop=order.map(function(id){ return topLevelHeaders.find(function(h){ return String(h.id)===String(id); }); }).filter(Boolean);
 
-      var cellSize=_sboardDesktop?76:70;
-      var cols=_sboardDesktop?4:3;
+      var cellSize=_sboardDesktop?92:78;
+      var cols=2;
 
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
         var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
+        var straight=(name!=='New Additions');
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;margin-left:'+(depth*14)+'px';
         var hd=document.createElement('button');
@@ -1178,7 +1181,7 @@
         block.appendChild(hd);
         var grid=document.createElement('div');
         grid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
-        (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize)); });
+        (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize, straight)); });
         block.appendChild(grid);
         groupsWrap.appendChild(block);
         (subHeadersOf[headerRow.id]||[]).forEach(function(sub){ renderGroup(sub, depth+1); });
