@@ -114,7 +114,7 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;cursor:pointer}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:0 0 12px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
@@ -140,7 +140,7 @@
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:12px 16px 10px;margin-bottom:6px">'
       +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px">'
       +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
-      +'<div id="sc-title-main" style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:1px;cursor:pointer">Sea of Ideas</div>'
+      +'<div id="sc-title-main" style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:1px">What do you want?</div>'
       +'<div id="sc-title-sub" style="font-size:11px;font-style:italic;color:#b8d2ea;margin-bottom:2px">An idea storyboard</div>'
       +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#7fa8cc;height:12px;opacity:0;transition:opacity .3s">9221</div>'
       +'</div>'
@@ -197,7 +197,7 @@
     var uploadInput=document.getElementById('sc-upload-input');
     if(uploadInput) uploadInput.addEventListener('change', function(e){ _sboardBatchUpload(e.target.files); e.target.value=''; });
 
-    T().wire('sc-title-main', function(e){
+    T().wire('sc-topic-box', function(e){
       e.stopPropagation();
       if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
         openSbHeaderDetail(_sboardHeadersById[_sboardCurrentTopicId]);
@@ -220,6 +220,22 @@
     })();
 
     T().registerScreenActivate('s-sea-of-ideas-cluster', renderSeaOfIdeasCluster);
+
+    document.addEventListener('paste', function(e){
+      var screen=document.getElementById('s-sea-of-ideas-cluster');
+      if(!screen || !screen.classList.contains('active')) return;
+      var active=document.activeElement;
+      if(active && (active.tagName==='TEXTAREA' || active.tagName==='INPUT')) return;
+      var items=(e.clipboardData && e.clipboardData.items) || [];
+      var imageItem=null;
+      for(var i=0;i<items.length;i++){
+        if(items[i].type && items[i].type.indexOf('image/')===0){ imageItem=items[i]; break; }
+      }
+      if(!imageItem) return;
+      e.preventDefault();
+      var file=imageItem.getAsFile();
+      if(file) _sboardBatchUpload([file]);
+    });
   }
 
   /* ── Board (storyboard) state + rendering ── */
@@ -467,13 +483,14 @@
         var f=files[i];
         if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent='Uploading '+(i+1)+' of '+files.length+'…'; }
         try{
-          var path=user.id+'/'+Date.now()+'-'+i+'-'+f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+          var fname=f.name||('pasted-image-'+Date.now()+'.png');
+          var path=user.id+'/'+Date.now()+'-'+i+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
           var up=await _sb.storage.from('sea-of-ideas').upload(path, f);
           if(up.error) throw up.error;
           var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
           var url=pub.data && pub.data.publicUrl;
           if(!url) throw new Error('No public URL returned.');
-          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'image',image_url:url,created_at:new Date().toISOString()});
+          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'image',image_url:url,cluster_id:_sboardFilter||null,created_at:new Date().toISOString()});
           if(ins.error) throw ins.error;
           ok++;
         }catch(fileErr){ failed++; }
@@ -505,12 +522,14 @@
   function _sboardUpdateHeaderChrome(){
     var titleEl=document.getElementById('sc-title-main');
     var subEl=document.getElementById('sc-title-sub');
+    var topicBox=document.getElementById('sc-topic-box');
     var areaEl=document.getElementById('sc-header-area');
     var backBtn=document.getElementById('b-sc-filterback');
+    if(titleEl) titleEl.textContent='What do you want?';
     if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
       var topicRow=_sboardHeadersById[_sboardCurrentTopicId];
-      if(titleEl) titleEl.textContent=topicRow.text_content||'(untitled)';
       if(subEl) subEl.textContent='Idea Board';
+      if(topicBox) topicBox.textContent=topicRow.text_content||'(untitled)';
       if(areaEl) areaEl.style.background='#3a2564';
       if(backBtn){
         backBtn.style.display='inline-block';
@@ -519,8 +538,8 @@
         backBtn.textContent='⬅ '+(parentRow?parentRow.text_content:'Sea of Ideas');
       }
     } else {
-      if(titleEl) titleEl.textContent='Sea of Ideas';
       if(subEl) subEl.textContent='An idea storyboard';
+      if(topicBox) topicBox.textContent='Sea of Ideas';
       if(areaEl) areaEl.style.background='#1a3a5c';
       if(backBtn) backBtn.style.display='none';
     }
@@ -597,12 +616,17 @@
     T().wire('sb-h-close', closeSbDetail);
   }
 
+  function _sboardIsAutoHeaderText(text){
+    return /[:?]\s*$/.test(text);
+  }
+
   function openQuickAddIdea(){
     var ov=document.getElementById('sb-detail-overlay');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Add an idea</div>'
       +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">'+(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId] ? 'Goes under '+_sboardHeadersById[_sboardCurrentTopicId].text_content : 'Goes into New Additions')+'</div>'
-      +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px;min-height:70px"></textarea>'
+      +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:4px;min-height:70px"></textarea>'
+      +'<div style="font-size:9px;font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? to make it a Header automatically</div>'
       +'<div id="qa-idea-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="qa-idea-save" style="flex:1">Save</button><button class="sc-ov-btn" id="qa-idea-close" style="flex:1">Close</button></div>'
       +'</div>';
@@ -619,7 +643,8 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'text',text_content:text,cluster_id:_sboardFilter||null,created_at:new Date().toISOString()});
+        var contentType=_sboardIsAutoHeaderText(text)?'header':'text';
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:contentType,text_content:text,cluster_id:_sboardFilter||null,created_at:new Date().toISOString()});
         if(ins.error) throw ins.error;
         closeSbDetail();
         renderSeaBoard();
