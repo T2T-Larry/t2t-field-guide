@@ -132,23 +132,32 @@
         +'#sc-controls .sc-ov-btn{padding:5px 11px}'
         +'#fg-root.sb-wide{max-width:1200px!important}'
         +'#fg-root.sb-wide #sc-board-wrap{display:flex;flex-wrap:wrap;gap:22px}'
-        +'#fg-root.sb-wide #sc-board-wrap>div{flex:0 0 auto}';
+        +'#fg-root.sb-wide #sc-board-wrap>div{flex:0 0 auto}'
+        +'.sc-hdr-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
+        +'.sc-hdr-side{min-width:80px;min-height:46px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end}'
+        +'#sc-parent-hit{cursor:pointer}'
+        +'#sc-parent-hit.inert{cursor:default}'
+        +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#fff;line-height:1.2}'
+        +'#b-sc-purpose{width:100%;box-sizing:border-box}'
+        +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
+        +'.sc-count-badge{position:absolute;top:-7px;right:-7px;background:#e8542f;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;box-shadow:0 1px 3px rgba(0,0,0,0.3);pointer-events:none}'
+        +'.sc-subheaders-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:12px 16px 10px;margin-bottom:6px">'
-      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px">'
-      +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
-      +'<div id="sc-title-main" style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:1px">What do you want?</div>'
-      +'<div id="sc-title-sub" style="font-size:11px;font-style:italic;color:#b8d2ea;margin-bottom:2px">An idea storyboard</div>'
-      +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#7fa8cc;height:12px;opacity:0;transition:opacity .3s">9221</div>'
+      +'<div style="display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:10px">'
+      +'<div id="sc-parent-hit" class="sc-hdr-side" style="text-align:left">'
+      +'<div class="sc-hdr-eyebrow">Parent</div>'
+      +'<div id="sc-parent-label">Sea of Ideas</div>'
+      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9221</div>'
       +'</div>'
       +'<div style="text-align:center">'
-      +'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px">Topic</div>'
+      +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box">What do you want?</div>'
       +'</div>'
-      +'<div style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
+      +'<div class="sc-hdr-side" style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -156,7 +165,6 @@
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
       +'<div id="sc-controls">'
-      +'<button class="sc-ov-btn" id="b-sc-filterback" style="display:none">⬅ All clusters</button>'
       +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
       +'<button class="sc-ov-btn" id="b-sc-quickadd">+ Add idea</button>'
       +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
@@ -190,7 +198,6 @@
       if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
       renderSeaBoard();
     });
-    T().wire('b-sc-filterback', function(){ _sboardGoUpOneLevel(); });
     T().wire('b-sc-purpose', openPurposeEditor);
     T().wire('b-sc-quickadd', openQuickAddIdea);
     T().wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
@@ -204,9 +211,13 @@
       }
     });
 
+    T().wire('sc-parent-hit', function(){
+      if(_sboardCurrentTopicId){ _sboardGoUpOneLevel(); }
+    });
+
     (function(){
       var clicks=0, timer=null;
-      var hit=document.getElementById('sc-title-hit');
+      var hit=document.getElementById('sc-parent-hit');
       if(hit) hit.addEventListener('click', function(){
         clicks++;
         if(timer) clearTimeout(timer);
@@ -399,11 +410,16 @@
         var name=headerRow.text_content||'(untitled cluster)';
         var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
         var straight=(name!=='New Additions');
+        var subs=subHeadersOf[headerRow.id]||[];
+        var directItems=childrenOfHeader[headerRow.id]||[];
+        var childCount=directItems.length+subs.length;
         var block=document.createElement('div');
-        block.style.cssText='flex:0 0 auto;margin-left:'+(depth*14)+'px';
+        block.style.cssText='flex:0 0 auto';
+        var hdWrap=document.createElement('div');
+        hdWrap.style.cssText='position:relative;margin-bottom:6px';
         var hd=document.createElement('button');
-        hd.className='sc-pill named';
-        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:6px 10px;font-size:11px;margin-bottom:6px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        hd.className='sc-pill named'+(childCount>0 && !isReserved ? ' has-children':'');
+        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:6px 10px;font-size:11px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         hd.textContent=name;
         if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
         if(!isReserved && depth===0){
@@ -422,17 +438,31 @@
             _sboardMoveCard(raw, headerRow.id);
           }
         });
-        block.appendChild(hd);
-        var grid=document.createElement('div');
-        grid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
-        (childrenOfHeader[headerRow.id]||[]).forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize, straight)); });
-        block.appendChild(grid);
-        groupsWrap.appendChild(block);
-        (subHeadersOf[headerRow.id]||[]).forEach(function(sub){ renderGroup(sub, depth+1); });
+        hdWrap.appendChild(hd);
+        if(childCount>0 && !isReserved){
+          var badge=document.createElement('span');
+          badge.className='sc-count-badge';
+          badge.textContent=childCount>99?'99+':String(childCount);
+          hdWrap.appendChild(badge);
+        }
+        block.appendChild(hdWrap);
+        if(directItems.length){
+          var grid=document.createElement('div');
+          grid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
+          directItems.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize, straight)); });
+          block.appendChild(grid);
+        }
+        if(subs.length){
+          var subsGrid=document.createElement('div');
+          subsGrid.className='sc-subheaders-grid';
+          subs.forEach(function(sub){ subsGrid.appendChild(renderGroup(sub, depth+1)); });
+          block.appendChild(subsGrid);
+        }
+        return block;
       }
 
       var groupsWrap=document.createElement('div');
-      groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:18px;align-items:flex-start';
+      groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:12px;align-items:flex-start';
 
       if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
         var directIdeas=childrenOfHeader[_sboardCurrentTopicId]||[];
@@ -455,12 +485,12 @@
             return ao-bo;
           });
           _sboardTopLevelOrder=childHeadersSorted.map(function(h){ return h.id; });
-          childHeadersSorted.forEach(function(h){ renderGroup(h, 0); });
+          childHeadersSorted.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
           if(statusEl) statusEl.textContent='';
         }
       } else {
-        if(newAdditionsRow) renderGroup(newAdditionsRow, 0);
-        orderedTop.forEach(function(h){ renderGroup(h, 0); });
+        if(newAdditionsRow) groupsWrap.appendChild(renderGroup(newAdditionsRow, 0));
+        orderedTop.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
         if(statusEl) statusEl.textContent='';
       }
       wrap.appendChild(groupsWrap);
@@ -567,28 +597,24 @@
   }
 
   function _sboardUpdateHeaderChrome(){
-    var titleEl=document.getElementById('sc-title-main');
-    var subEl=document.getElementById('sc-title-sub');
     var topicBox=document.getElementById('sc-topic-box');
     var areaEl=document.getElementById('sc-header-area');
-    var backBtn=document.getElementById('b-sc-filterback');
-    if(titleEl) titleEl.textContent='What do you want?';
+    var parentHit=document.getElementById('sc-parent-hit');
+    var parentLabel=document.getElementById('sc-parent-label');
+    // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
       var topicRow=_sboardHeadersById[_sboardCurrentTopicId];
-      if(subEl) subEl.textContent='Idea Board';
       if(topicBox) topicBox.textContent=topicRow.text_content||'(untitled)';
       if(areaEl) areaEl.style.background='#3a2564';
-      if(backBtn){
-        backBtn.style.display='inline-block';
-        var parentId=_sboardBoardStack[_sboardBoardStack.length-1];
-        var parentRow=parentId?_sboardHeadersById[parentId]:null;
-        backBtn.textContent='⬅ '+(parentRow?parentRow.text_content:'Sea of Ideas');
-      }
+      var parentId=_sboardBoardStack[_sboardBoardStack.length-1];
+      var parentRow=parentId?_sboardHeadersById[parentId]:null;
+      if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:'Sea of Ideas';
+      if(parentHit) parentHit.classList.remove('inert');
     } else {
-      if(subEl) subEl.textContent='An idea storyboard';
-      if(topicBox) topicBox.textContent='Sea of Ideas';
+      if(topicBox) topicBox.textContent='What do you want?';
       if(areaEl) areaEl.style.background='#1a3a5c';
-      if(backBtn) backBtn.style.display='none';
+      if(parentLabel) parentLabel.textContent='Sea of Ideas';
+      if(parentHit) parentHit.classList.add('inert');
     }
   }
 
