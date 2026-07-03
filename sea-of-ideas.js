@@ -169,6 +169,7 @@
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
       +'<div id="sc-controls">'
+      +'<button class="sc-ov-btn" id="b-sc-promote">🔧 Fix old headers</button>'
       +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
       +'<button class="sc-ov-btn" id="b-sc-quickadd">+ Add idea</button>'
       +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
@@ -203,6 +204,7 @@
       renderSeaBoard();
     });
     T().wire('b-sc-purpose', openPurposeEditor);
+    T().wire('b-sc-promote', openSbPromoteConfirm);
     T().wire('b-sc-quickadd', openQuickAddIdea);
     T().wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
     var uploadInput=document.getElementById('sc-upload-input');
@@ -755,6 +757,56 @@
 
   function _sboardIsAutoHeaderText(text){
     return /[:?]\s*$/.test(text);
+  }
+
+  async function openSbPromoteConfirm(){
+    var ov=document.getElementById('sb-detail-overlay');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">Checking for old ideas ending in : or ?…</div>';
+    ov.classList.add('active');
+    var _sb=T().sb;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var res=await _sb.from('ideas').select('id,text_content')
+        .eq('user_id',user.id).eq('content_type','text');
+      if(res.error) throw new Error(res.error.message);
+      var matches=(res.data||[]).filter(function(r){ return _sboardIsAutoHeaderText(r.text_content||''); });
+      if(!matches.length){
+        ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+          +'<div style="font-size:12px;color:#7a6040;margin-bottom:10px">No old ideas ending in : or ? found — nothing to fix.</div>'
+          +'<button class="sc-ov-btn" id="sb-promote-close">Close</button></div>';
+        T().wire('sb-promote-close', closeSbDetail);
+        return;
+      }
+      var list=matches.slice(0,8).map(function(r){ return '<div style="font-size:11px;color:#1a3a5c;text-align:left;padding:2px 0">• '+(r.text_content||'').replace(/</g,'&lt;')+'</div>'; }).join('');
+      var more=matches.length>8?'<div style="font-size:10px;color:#999;margin-top:4px">…and '+(matches.length-8)+' more</div>':'';
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Turn these into Headers?</div>'
+        +'<div style="max-height:160px;overflow-y:auto;margin-bottom:10px">'+list+more+'</div>'
+        +'<div style="font-size:10px;font-style:italic;color:#a3907a;margin-bottom:10px">'+matches.length+' idea'+(matches.length===1?'':'s')+' ending in : or ? — this changes them everywhere, in every cluster.</div>'
+        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-promote-go" style="flex:1">Yes, fix them</button><button class="sc-ov-btn" id="sb-promote-cancel" style="flex:1">Cancel</button></div>'
+        +'</div>';
+      T().wire('sb-promote-cancel', closeSbDetail);
+      T().wire('sb-promote-go', async function(){
+        var goBtn=document.getElementById('sb-promote-go');
+        if(goBtn){ goBtn.disabled=true; goBtn.textContent='Fixing…'; }
+        var failCount=0;
+        for(var i=0;i<matches.length;i++){
+          var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',matches[i].id);
+          if(upd.error) failCount++;
+        }
+        closeSbDetail();
+        renderSeaBoard();
+        var statusEl=document.getElementById('sc-status');
+        if(statusEl){
+          statusEl.textContent=failCount?('Fixed '+(matches.length-failCount)+', '+failCount+' failed.'):('Fixed '+matches.length+' header'+(matches.length===1?'':'s')+'.');
+          statusEl.classList.toggle('err', !!failCount);
+        }
+      });
+    }catch(err){
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center"><div style="color:#b8562f;font-size:11px;margin-bottom:10px">'+err.message+'</div><button class="sc-ov-btn" id="sb-promote-close">Close</button></div>';
+      T().wire('sb-promote-close', closeSbDetail);
+    }
   }
 
   function openQuickAddIdea(){
