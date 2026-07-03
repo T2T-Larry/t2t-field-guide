@@ -127,21 +127,20 @@
         +'.sc-ov-btn.save{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
-        +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:8px}'
-        +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:10px 0 2px}'
-        +'#sc-controls .sc-ov-btn{padding:5px 11px}'
+        +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
+        +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
+        +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:10px}'
         +'#fg-root.sb-wide{max-width:1200px!important}'
         +'#fg-root.sb-wide #sc-board-wrap{display:flex;flex-wrap:wrap;gap:22px}'
         +'#fg-root.sb-wide #sc-board-wrap>div{flex:0 0 auto}'
         +'.sc-hdr-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
-        +'.sc-hdr-side{min-width:80px;min-height:46px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end}'
+        +'.sc-hdr-side{min-width:104px;min-height:46px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end}'
         +'#sc-parent-hit{cursor:pointer}'
         +'#sc-parent-hit.inert{cursor:default}'
-        +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#fff;line-height:1.2}'
+        +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
-        +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
-        +'.sc-count-badge{position:absolute;top:-7px;right:-7px;background:#e8542f;color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;box-shadow:0 1px 3px rgba(0,0,0,0.3);pointer-events:none}'
-        +'.sc-subheaders-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}';
+        +'#sc-topic-box{max-width:150px;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -170,7 +169,7 @@
       +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
       +'<input type="file" id="sc-upload-input" accept="image/*" multiple style="display:none">'
       +'</div>'
-      +'<div class="sp"></div></div>'
+      +'</div>'
       +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
     fg.appendChild(div.firstChild);
     T().registerPageNum('s-sea-of-ideas-cluster', '9221');
@@ -331,6 +330,39 @@
     return tile;
   }
 
+  function _sboardMakeHeaderStackTile(headerRow, size, straight){
+    size=size||(_sboardDesktop?76:70);
+    var rot=straight?0:(Math.random()*6-3).toFixed(1);
+    var wrap=document.createElement('div');
+    wrap.className='sc-stack-tile';
+    wrap.draggable=true;
+    wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
+    wrap.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg)';
+    var back2=document.createElement('div');
+    back2.className='sc-stack-layer';
+    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:#fff;border:1px solid #cfe4f2;border-radius:10px';
+    var back1=document.createElement('div');
+    back1.className='sc-stack-layer';
+    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:#fff;border:1px solid #cfe4f2;border-radius:10px';
+    var front=document.createElement('div');
+    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;border:1.5px solid #a9cce3;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center';
+    var p=document.createElement('p');
+    p.textContent=headerRow.text_content||'(untitled)';
+    p.style.cssText='margin:0;font-weight:700;line-height:1.2;color:#1a3a5c;font-size:'+(size>=90?'12px':'10.5px');
+    front.appendChild(p);
+    wrap.appendChild(back2); wrap.appendChild(back1); wrap.appendChild(front);
+    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
+    wrap.addEventListener('dragover', function(e){ e.preventDefault(); front.style.outline='2px solid #5b9bd5'; });
+    wrap.addEventListener('dragleave', function(){ front.style.outline='none'; });
+    wrap.addEventListener('drop', function(e){
+      e.preventDefault(); front.style.outline='none';
+      var raw=e.dataTransfer.getData('text/plain');
+      if(!raw||raw.indexOf('header:')===0) return;
+      _sboardMoveCard(raw, headerRow.id);
+    });
+    return wrap;
+  }
+
   async function renderSeaBoard(){
     var wrap=document.getElementById('sc-board-wrap');
     var statusEl=document.getElementById('sc-status');
@@ -412,14 +444,11 @@
         var straight=(name!=='New Additions');
         var subs=subHeadersOf[headerRow.id]||[];
         var directItems=childrenOfHeader[headerRow.id]||[];
-        var childCount=directItems.length+subs.length;
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto';
-        var hdWrap=document.createElement('div');
-        hdWrap.style.cssText='position:relative;margin-bottom:6px';
         var hd=document.createElement('button');
-        hd.className='sc-pill named'+(childCount>0 && !isReserved ? ' has-children':'');
-        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:6px 10px;font-size:11px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
+        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:7px 10px;font-size:14px;font-weight:700;margin-bottom:6px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         hd.textContent=name;
         if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
         if(!isReserved && depth===0){
@@ -438,25 +467,13 @@
             _sboardMoveCard(raw, headerRow.id);
           }
         });
-        hdWrap.appendChild(hd);
-        if(childCount>0 && !isReserved){
-          var badge=document.createElement('span');
-          badge.className='sc-count-badge';
-          badge.textContent=childCount>99?'99+':String(childCount);
-          hdWrap.appendChild(badge);
-        }
-        block.appendChild(hdWrap);
-        if(directItems.length){
+        block.appendChild(hd);
+        if(directItems.length || subs.length){
           var grid=document.createElement('div');
           grid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
+          subs.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, cellSize, straight)); });
           directItems.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize, straight)); });
           block.appendChild(grid);
-        }
-        if(subs.length){
-          var subsGrid=document.createElement('div');
-          subsGrid.className='sc-subheaders-grid';
-          subs.forEach(function(sub){ subsGrid.appendChild(renderGroup(sub, depth+1)); });
-          block.appendChild(subsGrid);
         }
         return block;
       }
