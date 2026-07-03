@@ -505,13 +505,23 @@
     }
   }
 
+  function _sboardTopicOptionsHTML(excludeId){
+    var currentLabel=(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]) ? _sboardHeadersById[_sboardCurrentTopicId].text_content : 'Sea of Ideas';
+    var currentValue=_sboardCurrentTopicId||'';
+    var opts='<option value="'+currentValue+'">Topic ('+currentLabel+')</option>';
+    opts+=_sboardHeaderList
+      .filter(function(h){ return String(h.id)!==String(excludeId) && String(h.id)!==String(currentValue); })
+      .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
+    return opts;
+  }
+
   function _sboardHeaderQuickMenu(headerRow){
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
-    var options='<option value="">— Top level —</option>'+_sboardHeaderList
-      .filter(function(h){ return String(h.id)!==String(headerRow.id); })
-      .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
+    var options=_sboardTopicOptionsHTML(headerRow.id);
+    var apexTag=(!headerRow.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +apexTag
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+headerRow.text_content+'</div>'
       +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move under</label>'
       +'<select id="sb-hq-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
@@ -521,13 +531,14 @@
       +'</div>';
     ov.classList.add('active');
     var sel=document.getElementById('sb-hq-parent');
-    if(sel) sel.value=_sboardCurrentTopicId||'';
     T().wire('sb-hq-move', async function(){
       var errEl=document.getElementById('sb-hq-err');
       var newParent=sel.value||null;
+      if(String(newParent)===String(headerRow.cluster_id||'')){ closeSbDetail(); return; }
       try{
-        var upd=await _sb.from('ideas').update({cluster_id:newParent}).eq('id',headerRow.id);
+        var upd=await _sb.from('ideas').update({cluster_id:newParent}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
+        if(!upd.data || !upd.data.length) throw new Error('Nothing changed — the header may not have matched.');
         closeSbDetail();
         renderSeaBoard();
       }catch(err){
@@ -623,7 +634,9 @@
       .filter(function(h){ return String(h.id)!==String(headerRow.id); })
       .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
     var safeName=(headerRow.text_content||'').replace(/"/g,'&quot;');
+    var apexTag=(!headerRow.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +apexTag
       +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Name</label>'
       +'<input id="sb-h-name" type="text" value="'+safeName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:\'Playfair Display\',serif;font-size:14px;color:#1a3a5c;font-weight:700;margin-bottom:10px;box-sizing:border-box">'
       +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Nest under</label>'
@@ -641,8 +654,9 @@
       if(!newName){ if(errEl) errEl.textContent='Name can\'t be empty.'; return; }
       try{
         var newParent=sel.value||null;
-        var upd=await _sb.from('ideas').update({cluster_id:newParent,text_content:newName}).eq('id',headerRow.id);
+        var upd=await _sb.from('ideas').update({cluster_id:newParent,text_content:newName}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
+        if(!upd.data || !upd.data.length) throw new Error('Nothing changed — the header may not have matched.');
         closeSbDetail();
         renderSeaBoard();
       }catch(err){
