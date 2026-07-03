@@ -287,6 +287,13 @@
     return max+1;
   }
 
+  function _sboardFitFontSize(text, base, min){
+    var len=(text||'').length;
+    if(len<=14) return base;
+    var reduced=base-Math.floor((len-14)/5);
+    return Math.max(min, reduced);
+  }
+
   function _sboardHeartsHTML(count){
     if(!count) return '';
     var shown=Math.min(count,8), s='';
@@ -355,7 +362,8 @@
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;border:1.5px solid #111;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
-    p.style.cssText='margin:0;font-weight:700;line-height:1.2;color:#1a3a5c;font-size:'+(size>=90?'15px':'13px');
+    var fitSize=_sboardFitFontSize(headerRow.text_content, size>=90?15:13, 8);
+    p.style.cssText='margin:0;font-weight:700;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
     wrap.appendChild(back2); wrap.appendChild(back1); wrap.appendChild(front);
     wrap.addEventListener('click', function(e){ e.stopPropagation(); openSbHeaderPeek(headerRow); });
@@ -456,7 +464,8 @@
         block.style.cssText='flex:0 0 auto';
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
-        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:7px 10px;font-size:14px;font-weight:700;margin-bottom:6px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        var hdFitSize=_sboardFitFontSize(name, 14, 9);
+        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:7px 10px;font-size:'+hdFitSize+'px;font-weight:700;margin-bottom:6px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2';
         hd.textContent=name;
         if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
         if(!isReserved && depth===0){
@@ -582,6 +591,7 @@
       +'<select id="sb-hq-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
       +'<div id="sb-hq-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px;margin-bottom:6px"><button class="sc-ov-btn save" id="sb-hq-move" style="flex:1">Move here</button><button class="sc-ov-btn" id="sb-hq-open" style="flex:1">Open board</button></div>'
+      +'<button class="sc-ov-btn" id="sb-hq-trash" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">🗑 Trash this header</button>'
       +'<button class="sc-ov-btn" id="sb-hq-cancel" style="width:100%">Cancel</button>'
       +'</div>';
     ov.classList.add('active');
@@ -604,7 +614,33 @@
       closeSbDetail();
       _sboardDrillInto(headerRow);
     });
+    T().wire('sb-hq-trash', function(){ _sboardConfirmTrashHeader(headerRow); });
     T().wire('sb-hq-cancel', closeSbDetail);
+  }
+
+  function _sboardConfirmTrashHeader(headerRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash "'+safeName+'"?</div>'
+      +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Anything still nested under it moves to Trash too — you can pull it back out later from Trash.</div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-trash-go" style="flex:1;background:#b8562f;border-color:#b8562f">Trash it</button><button class="sc-ov-btn" id="sb-trash-cancel" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-trash-cancel', closeSbDetail);
+    T().wire('sb-trash-go', async function(){
+      var _sb=T().sb;
+      try{
+        var trashId=await _sboardEnsureTrashHeader();
+        var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',headerRow.id).select();
+        if(upd.error) throw upd.error;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){
+        var errBox=document.querySelector('.sc-overlay-card');
+        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+      }
+    });
   }
 
   function _sboardDrillInto(headerRow){
