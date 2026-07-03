@@ -143,8 +143,8 @@
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:12px 16px 10px;margin-bottom:6px">'
       +'<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px">'
       +'<div id="sc-title-hit" style="cursor:default;user-select:none;text-align:left">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:1px">Sea of Ideas</div>'
-      +'<div style="font-size:11px;font-style:italic;color:#b8d2ea;margin-bottom:2px">An idea storyboard</div>'
+      +'<div id="sc-title-main" style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#fff;margin-bottom:1px;cursor:pointer">Sea of Ideas</div>'
+      +'<div id="sc-title-sub" style="font-size:11px;font-style:italic;color:#b8d2ea;margin-bottom:2px">An idea storyboard</div>'
       +'<div id="sc-pagenum" style="font-size:9px;letter-spacing:2px;color:#7fa8cc;height:12px;opacity:0;transition:opacity .3s">9221</div>'
       +'</div>'
       +'<div style="text-align:center">'
@@ -179,6 +179,7 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
     T().wire('b-sc-back', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
+      _sboardCurrentTopicId=null; _sboardBoardStack=[]; _sboardFilter=null;
       var viaChapter = T().consumeSeaChapterEntry();
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
       else { T().returnToMG(); }
@@ -188,6 +189,7 @@
       T().goMG();
     });
     T().wire('b-sc-fwd', function(){
+      _sboardCurrentTopicId=null; _sboardBoardStack=[]; _sboardFilter=null;
       if(T().currentFile()==='dream.html' && document.getElementById('s-idea-button')){ T().nav('s-idea-button'); }
       else { T().closeMG(); T().returnToMG(); }
     });
@@ -201,11 +203,18 @@
       if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop && _sboardMode==='board');
       renderSeaBoard();
     });
-    T().wire('b-sc-filterback', function(){ _sboardFilter=null; renderSeaBoard(); });
+    T().wire('b-sc-filterback', function(){ _sboardGoUpOneLevel(); });
     T().wire('b-sc-purpose', openPurposeEditor);
     T().wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
     var uploadInput=document.getElementById('sc-upload-input');
     if(uploadInput) uploadInput.addEventListener('change', function(e){ _sboardBatchUpload(e.target.files); e.target.value=''; });
+
+    T().wire('sc-title-main', function(e){
+      e.stopPropagation();
+      if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
+        openSbHeaderDetail(_sboardHeadersById[_sboardCurrentTopicId]);
+      }
+    });
 
     (function(){
       var clicks=0, timer=null;
@@ -265,6 +274,8 @@
   var _sboardMode = 'board';
   var _sboardDesktop = false;
   var _sboardFilter = null;
+  var _sboardCurrentTopicId = null;
+  var _sboardBoardStack = [];
   var _sboardTrashId = null;
   var _sboardMiscId = null;
   var _sboardPurposeId = null;
@@ -379,7 +390,7 @@
       wrap.innerHTML='';
       if(ideaRows.length===0){
         if(statusEl) statusEl.textContent='No ideas saved yet — add a few first.';
-        document.getElementById('b-sc-filterback').style.display='none';
+        _sboardUpdateHeaderChrome();
         return;
       }
 
@@ -427,7 +438,7 @@
         hd.className='sc-pill named';
         hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:6px 10px;font-size:11px;margin-bottom:6px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         hd.textContent=name;
-        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbHeaderDetail(headerRow); });
+        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
         if(!isReserved && depth===0){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -455,12 +466,38 @@
 
       var groupsWrap=document.createElement('div');
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:18px;align-items:flex-start';
-      if(newAdditionsRow) renderGroup(newAdditionsRow, 0);
-      orderedTop.forEach(function(h){ renderGroup(h, 0); });
-      wrap.appendChild(groupsWrap);
 
-      document.getElementById('b-sc-filterback').style.display='none';
-      if(statusEl) statusEl.textContent='';
+      if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
+        var directIdeas=childrenOfHeader[_sboardCurrentTopicId]||[];
+        var childHeaders=subHeadersOf[_sboardCurrentTopicId]||[];
+        if(directIdeas.length===0 && childHeaders.length===0){
+          if(statusEl) statusEl.textContent='Nothing under this Header yet.';
+        } else {
+          if(directIdeas.length){
+            var directBlock=document.createElement('div');
+            directBlock.style.cssText='flex:0 0 auto';
+            var directGrid=document.createElement('div');
+            directGrid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
+            directIdeas.forEach(function(item){ directGrid.appendChild(_sboardMakeTile(item, cellSize, true)); });
+            directBlock.appendChild(directGrid);
+            groupsWrap.appendChild(directBlock);
+          }
+          var childHeadersSorted=childHeaders.slice().sort(function(a,b){
+            var ao=(a.sort_order===null||a.sort_order===undefined)?Infinity:a.sort_order;
+            var bo=(b.sort_order===null||b.sort_order===undefined)?Infinity:b.sort_order;
+            return ao-bo;
+          });
+          _sboardTopLevelOrder=childHeadersSorted.map(function(h){ return h.id; });
+          childHeadersSorted.forEach(function(h){ renderGroup(h, 0); });
+          if(statusEl) statusEl.textContent='';
+        }
+      } else {
+        if(newAdditionsRow) renderGroup(newAdditionsRow, 0);
+        orderedTop.forEach(function(h){ renderGroup(h, 0); });
+        if(statusEl) statusEl.textContent='';
+      }
+      wrap.appendChild(groupsWrap);
+      _sboardUpdateHeaderChrome();
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
@@ -497,6 +534,44 @@
       renderSeaBoard();
     }catch(err){
       if(statusEl){ statusEl.textContent='Upload needs the sea-of-ideas Storage bucket set up in Supabase first: '+err.message; statusEl.classList.add('err'); }
+    }
+  }
+
+  function _sboardDrillInto(headerRow){
+    _sboardBoardStack.push(_sboardCurrentTopicId);
+    _sboardCurrentTopicId=headerRow.id;
+    _sboardFilter=headerRow.id;
+    renderSeaBoard();
+  }
+
+  function _sboardGoUpOneLevel(){
+    var parentId=_sboardBoardStack.length?_sboardBoardStack.pop():null;
+    _sboardCurrentTopicId=parentId;
+    _sboardFilter=parentId;
+    renderSeaBoard();
+  }
+
+  function _sboardUpdateHeaderChrome(){
+    var titleEl=document.getElementById('sc-title-main');
+    var subEl=document.getElementById('sc-title-sub');
+    var areaEl=document.getElementById('sc-header-area');
+    var backBtn=document.getElementById('b-sc-filterback');
+    if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
+      var topicRow=_sboardHeadersById[_sboardCurrentTopicId];
+      if(titleEl) titleEl.textContent=topicRow.text_content||'(untitled)';
+      if(subEl) subEl.textContent='Idea Board';
+      if(areaEl) areaEl.style.background='#3a2564';
+      if(backBtn){
+        backBtn.style.display='inline-block';
+        var parentId=_sboardBoardStack[_sboardBoardStack.length-1];
+        var parentRow=parentId?_sboardHeadersById[parentId]:null;
+        backBtn.textContent='⬅ '+(parentRow?parentRow.text_content:'Sea of Ideas');
+      }
+    } else {
+      if(titleEl) titleEl.textContent='Sea of Ideas';
+      if(subEl) subEl.textContent='An idea storyboard';
+      if(areaEl) areaEl.style.background='#1a3a5c';
+      if(backBtn) backBtn.style.display='none';
     }
   }
 
