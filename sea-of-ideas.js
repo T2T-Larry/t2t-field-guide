@@ -405,7 +405,7 @@
         hd.className='sc-pill named';
         hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:6px 10px;font-size:11px;margin-bottom:6px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         hd.textContent=name;
-        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
+        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
         if(!isReserved && depth===0){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -503,6 +503,42 @@
     }catch(err){
       if(statusEl){ statusEl.textContent='Upload needs the sea-of-ideas Storage bucket set up in Supabase first: '+err.message; statusEl.classList.add('err'); }
     }
+  }
+
+  function _sboardHeaderQuickMenu(headerRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var _sb=T().sb;
+    var options='<option value="">— Top level —</option>'+_sboardHeaderList
+      .filter(function(h){ return String(h.id)!==String(headerRow.id); })
+      .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+headerRow.text_content+'</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move under</label>'
+      +'<select id="sb-hq-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
+      +'<div id="sb-hq-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="display:flex;gap:6px;margin-bottom:6px"><button class="sc-ov-btn save" id="sb-hq-move" style="flex:1">Move here</button><button class="sc-ov-btn" id="sb-hq-open" style="flex:1">Open board</button></div>'
+      +'<button class="sc-ov-btn" id="sb-hq-cancel" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.classList.add('active');
+    var sel=document.getElementById('sb-hq-parent');
+    if(sel) sel.value=_sboardCurrentTopicId||'';
+    T().wire('sb-hq-move', async function(){
+      var errEl=document.getElementById('sb-hq-err');
+      var newParent=sel.value||null;
+      try{
+        var upd=await _sb.from('ideas').update({cluster_id:newParent}).eq('id',headerRow.id);
+        if(upd.error) throw upd.error;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){
+        if(errEl) errEl.textContent=err.message;
+      }
+    });
+    T().wire('sb-hq-open', function(){
+      closeSbDetail();
+      _sboardDrillInto(headerRow);
+    });
+    T().wire('sb-hq-cancel', closeSbDetail);
   }
 
   function _sboardDrillInto(headerRow){
@@ -794,19 +830,21 @@
     T().wire('sb-header-save', async function(){
       var name=document.getElementById('sb-header-input').value.trim();
       var statusBox=document.getElementById('sb-note-status');
+      if(!name){
+        document.getElementById('sb-header-edit').style.display='none';
+        return;
+      }
       try{
         var targetId=null;
-        if(name){
-          var existing=_sboardHeaderList.find(function(h){ return h.text_content.toLowerCase()===name.toLowerCase(); });
-          if(existing){ targetId=existing.id; }
-          else {
-            var user=(await _sb.auth.getUser()).data.user;
-            if(!user) throw new Error('Not signed in.');
-            var parentId=_sboardFilter||null;
-            var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
-            if(ins.error) throw new Error(ins.error.message);
-            targetId=ins.data.id;
-          }
+        var existing=_sboardHeaderList.find(function(h){ return h.text_content.toLowerCase()===name.toLowerCase(); });
+        if(existing){ targetId=existing.id; }
+        else {
+          var user=(await _sb.auth.getUser()).data.user;
+          if(!user) throw new Error('Not signed in.');
+          var parentId=_sboardFilter||null;
+          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
+          if(ins.error) throw new Error(ins.error.message);
+          targetId=ins.data.id;
         }
         var upd=await _sb.from('ideas').update({cluster_id:targetId}).eq('id',item.id);
         if(upd.error) throw upd.error;
