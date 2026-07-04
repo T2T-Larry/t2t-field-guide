@@ -212,8 +212,8 @@
 
     T().wire('sc-topic-box', function(e){
       e.stopPropagation();
-      if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
-        openSbHeaderDetail(_sboardHeadersById[_sboardCurrentTopicId]);
+      if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
+        openSbDetail(_sboardAllRowsById[_sboardCurrentTopicId]);
       }
     });
 
@@ -268,6 +268,8 @@
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
+  var _sboardAllRowsById = {};
+  var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
 
   function _sboardTopAncestor(h, headerRows){
     var cur=h, guard=0;
@@ -323,7 +325,7 @@
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s';
+    tile.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
     if(item.content_type==='image' && item.image_url){
@@ -352,14 +354,15 @@
     wrap.draggable=true;
     wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
     wrap.style.cssText='position:relative;width:'+size+'px;height:'+size+'px;cursor:pointer;transform:rotate('+rot+'deg)';
+    var bg=headerRow.color||'#fff';
     var back2=document.createElement('div');
     back2.className='sc-stack-layer';
-    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:#fff;border:1.5px solid #111;border-radius:10px';
+    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #111;border-radius:10px';
     var back1=document.createElement('div');
     back1.className='sc-stack-layer';
-    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:#fff;border:1.5px solid #111;border-radius:10px';
+    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #111;border-radius:10px';
     var front=document.createElement('div');
-    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;border:1.5px solid #111;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
+    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:1.5px solid #111;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
     var fitSize=_sboardFitFontSize(headerRow.text_content, size>=90?15:13, 8);
@@ -367,7 +370,7 @@
     front.appendChild(p);
     wrap.appendChild(back2); wrap.appendChild(back1); wrap.appendChild(front);
     wrap.addEventListener('click', function(e){ e.stopPropagation(); openSbHeaderPeek(headerRow); });
-    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
+    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
     wrap.addEventListener('dragover', function(e){ e.preventDefault(); front.style.outline='2px solid #5b9bd5'; });
     wrap.addEventListener('dragleave', function(){ front.style.outline='none'; });
     wrap.addEventListener('drop', function(e){
@@ -391,11 +394,12 @@
       var newAdditionsId=await _sboardEnsureNewAdditionsHeader();
       _sboardNewAdditionsId=newAdditionsId;
 
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
         .eq('user_id', user.id).in('content_type',['image','text','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
+      _sboardAllRowsById={}; rows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
@@ -467,7 +471,7 @@
         var hdFitSize=_sboardFitFontSize(name, 14, 9);
         hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:7px 10px;font-size:'+hdFitSize+'px;font-weight:700;margin-bottom:6px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2';
         hd.textContent=name;
-        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardHeaderQuickMenu(headerRow); });
+        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
         if(!isReserved && depth===0){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -498,7 +502,7 @@
       var groupsWrap=document.createElement('div');
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:12px;align-items:flex-start';
 
-      if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
+      if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         var directIdeas=childrenOfHeader[_sboardCurrentTopicId]||[];
         var childHeaders=subHeadersOf[_sboardCurrentTopicId]||[];
         if(directIdeas.length===0 && childHeaders.length===0){
@@ -663,12 +667,12 @@
     var parentHit=document.getElementById('sc-parent-hit');
     var parentLabel=document.getElementById('sc-parent-label');
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
-    if(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]){
-      var topicRow=_sboardHeadersById[_sboardCurrentTopicId];
+    if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
+      var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
       if(topicBox) topicBox.textContent=topicRow.text_content||'(untitled)';
       if(areaEl) areaEl.style.background='#3a2564';
       var parentId=_sboardBoardStack[_sboardBoardStack.length-1];
-      var parentRow=parentId?_sboardHeadersById[parentId]:null;
+      var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:'Sea of Ideas';
       if(parentHit) parentHit.classList.remove('inert');
     } else {
@@ -767,7 +771,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
         .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -958,92 +962,129 @@
     return _sboardTrashId;
   }
 
+  function _sboardMoveOptionsHTML(excludeId, currentClusterId){
+    var opts='<option value=""'+(!currentClusterId?' selected':'')+'>New Additions</option>';
+    opts+=_sboardHeaderList.filter(function(h){ return String(h.id)!==String(excludeId); })
+      .map(function(h){ var sel=(currentClusterId && String(h.id)===String(currentClusterId))?' selected':''; return '<option value="'+h.id+'"'+sel+'>'+(h.text_content||'(untitled)')+'</option>'; }).join('');
+    opts+='<option value="__new__">+ Create new header…</option>';
+    return opts;
+  }
+
+  // Unified SHAPING card — same overlay, same buttons, regardless of whether
+  // the card double-clicked is an idea, a header, or a sub-header. Type is a
+  // state (has children / ends in : or ?), not a different kind of object.
   function openSbDetail(item){
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
+    var isHeaderType=item.content_type==='header';
+    var reservedNames=['Trash','MISC','Purpose','New Additions'];
+    var isReservedItem=isHeaderType && reservedNames.indexOf(item.text_content)!==-1;
+
+    if(isReservedItem){
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        + '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
+        + '<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
+        + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
+        + '<button class="sc-ov-btn" id="sb-close" style="width:100%">Close</button>'
+        + '</div>';
+      ov.classList.add('active');
+      var rNotes=document.getElementById('sb-notes-box');
+      if(rNotes) rNotes.addEventListener('blur', async function(e){
+        try{ await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id); item.notes=e.target.value; }catch(err){}
+      });
+      T().wire('sb-close', closeSbDetail);
+      return;
+    }
+
     var isTrashed=String(item.cluster_id)===String(_sboardTrashId) && _sboardTrashId;
     var isMisc=String(item.cluster_id)===String(_sboardMiscId) && _sboardMiscId;
-    var curHeaderRow = item.cluster_id ? _sboardHeadersById[item.cluster_id] : null;
-    var curHeaderText = curHeaderRow ? curHeaderRow.text_content : '';
-    var headerLabel = curHeaderText || 'New Additions';
-    var heartCount = item.heart_count||0;
+    var heartCount=item.heart_count||0;
+    var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
+    var swatches=_sboardColorPalette.map(function(c){
+      var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
+      return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
+    }).join('');
 
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      + '<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px">Cluster</div>'
-      + '<div id="sb-header-field" style="font-size:11px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:10px;padding:4px 10px;border:1px dashed #a9cce3;border-radius:6px;display:inline-block">'+headerLabel+' ✎</div>'
-      + '<div id="sb-header-edit" style="display:none;margin-bottom:10px">'
-      + '<input id="sb-header-input" list="sb-header-options" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px">'
-      + '<datalist id="sb-header-options">'+_sboardHeaderList.map(function(h){ return '<option value="'+h.text_content+'">'; }).join('')+'</datalist>'
-      + '<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-header-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-header-newcluster" style="flex:1">+ New cluster</button><button class="sc-ov-btn" id="sb-header-cancel" style="flex:1">Cancel</button></div>'
-      + '</div>'
+      + apexTag
       + (item.content_type==='image' && item.image_url
-          ? '<img src="'+item.image_url+'" style="width:100%;border-radius:10px;margin-bottom:10px">'
-          : '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(item.text_content||'(untitled)')+'</div>')
+          ? '<div style="position:relative;margin-bottom:10px"><img id="sb-img-preview" src="'+item.image_url+'" style="width:100%;border-radius:10px;display:block">'
+            + '<button class="sc-ov-btn" id="sb-img-swap" style="position:absolute;bottom:6px;right:6px">📷 Replace</button>'
+            + '<input type="file" id="sb-img-input" accept="image/*" style="display:none"></div>'
+          : '<div id="sb-text-display" style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px;cursor:pointer;padding:4px;border:1px dashed transparent;border-radius:6px" title="Tap to edit">'+(item.text_content||'(untitled)')+' ✎</div>'
+            + '<div id="sb-text-edit" style="display:none;margin-bottom:10px">'
+            + '<textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
+            + '<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-text-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-text-cancel" style="flex:1">Cancel</button></div>'
+            + '</div>')
       + '<div id="sb-hearts-row" style="font-size:14px;min-height:18px;margin-bottom:6px">'+_sboardHeartsHTML(heartCount)+'</div>'
       + '<div style="display:flex;gap:6px;margin-bottom:8px">'
       + '<button class="sb-icon-btn" id="sb-heart" title="Heart">❤️</button>'
       + '<button class="sb-icon-btn" id="sb-notes" title="Notes">✏️</button>'
       + '<button class="sb-icon-btn misc" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
-      + '<button class="sb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
+      + (isMisc ? '<button class="sb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
+      + '<button class="sb-icon-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '</div>'
+      + '<div id="sb-swatch-row" style="display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px">'+swatches+'</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
+      + '<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move to</label>'
+      + '<select id="sb-move-select" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;box-sizing:border-box">'+_sboardMoveOptionsHTML(item.id, item.cluster_id)+'</select>'
+      + '<div id="sb-newheader-row" style="display:none;margin-bottom:8px"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sc-ov-btn save" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:6px;min-height:11px"></div>'
+      + '<button class="sc-ov-btn" id="sb-open-board" style="width:100%;margin-bottom:6px">🔭 Open board</button>'
       + '<button class="sc-ov-btn" id="sb-close" style="width:100%">Close</button>'
       + '</div>';
     ov.classList.add('active');
 
-    T().wire('sb-header-field', function(){
-      document.getElementById('sb-header-edit').style.display='block';
-      var inp=document.getElementById('sb-header-input'); inp.value=curHeaderText; inp.focus();
+    var statusBox=document.getElementById('sb-note-status');
+
+    // Text editing (auto-promotes to header if punctuation says so)
+    var textDisplay=document.getElementById('sb-text-display');
+    if(textDisplay) textDisplay.addEventListener('click', function(){
+      document.getElementById('sb-text-edit').style.display='block';
+      textDisplay.style.display='none';
+      var ta=document.getElementById('sb-text-input'); ta.focus();
     });
-    T().wire('sb-header-cancel', function(){ document.getElementById('sb-header-edit').style.display='none'; });
-    T().wire('sb-header-newcluster', async function(){
-      var statusBox=document.getElementById('sb-note-status');
+    T().wire('sb-text-cancel', function(){
+      document.getElementById('sb-text-edit').style.display='none';
+      if(textDisplay) textDisplay.style.display='block';
+    });
+    T().wire('sb-text-save', async function(){
+      var newText=document.getElementById('sb-text-input').value.trim();
+      if(!newText){ if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
+      try{
+        var patch={text_content:newText};
+        if(!isHeaderType && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
+        var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.text_content=newText;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
+
+    // Image swap
+    T().wire('sb-img-swap', function(){ document.getElementById('sb-img-input').click(); });
+    var imgInput=document.getElementById('sb-img-input');
+    if(imgInput) imgInput.addEventListener('change', async function(e){
+      var f=e.target.files && e.target.files[0]; if(!f) return;
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var name='Cluster '+_sboardNextClusterNumber();
-        var parentId=_sboardFilter||null;
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
-        if(ins.error) throw new Error(ins.error.message);
-        var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
+        var path=user.id+'/'+Date.now()+'-'+(f.name||'replace.png').replace(/[^a-zA-Z0-9._-]/g,'_');
+        var up=await _sb.storage.from('sea-of-ideas').upload(path, f);
+        if(up.error) throw up.error;
+        var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+        var url=pub.data && pub.data.publicUrl;
+        if(!url) throw new Error('No public URL returned.');
+        var upd=await _sb.from('ideas').update({image_url:url}).eq('id',item.id);
         if(upd.error) throw upd.error;
-        item.cluster_id=ins.data.id;
-        closeSbDetail();
+        item.image_url=url;
+        var prev=document.getElementById('sb-img-preview'); if(prev) prev.src=url;
         renderSeaBoard();
-      }catch(err){
-        if(statusBox) statusBox.textContent=err.message;
-      }
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
-    T().wire('sb-header-save', async function(){
-      var name=document.getElementById('sb-header-input').value.trim();
-      var statusBox=document.getElementById('sb-note-status');
-      if(!name){
-        document.getElementById('sb-header-edit').style.display='none';
-        return;
-      }
-      try{
-        var targetId=null;
-        var existing=_sboardHeaderList.find(function(h){ return h.text_content.toLowerCase()===name.toLowerCase(); });
-        if(existing){ targetId=existing.id; }
-        else {
-          var user=(await _sb.auth.getUser()).data.user;
-          if(!user) throw new Error('Not signed in.');
-          var parentId=_sboardFilter||null;
-          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
-          if(ins.error) throw new Error(ins.error.message);
-          targetId=ins.data.id;
-        }
-        var upd=await _sb.from('ideas').update({cluster_id:targetId}).eq('id',item.id);
-        if(upd.error) throw upd.error;
-        item.cluster_id=targetId;
-        closeSbDetail();
-        renderSeaBoard();
-      }catch(err){
-        if(statusBox) statusBox.textContent=err.message;
-      }
-    });
+
     T().wire('sb-heart', async function(){
       try{
         var newCount=(item.heart_count||0)+1;
@@ -1051,25 +1092,19 @@
         if(upd.error) throw upd.error;
         item.heart_count=newCount;
         var hr=document.getElementById('sb-hearts-row'); if(hr) hr.innerHTML=_sboardHeartsHTML(newCount);
-      }catch(err){
-        document.getElementById('sb-note-status').textContent='Heart needs the heart_count Supabase column.';
-      }
+      }catch(err){ if(statusBox) statusBox.textContent='Heart needs the heart_count Supabase column.'; }
     });
-    T().wire('sb-notes', function(){
-      document.getElementById('sb-notes-box').style.display='block';
-    });
+    T().wire('sb-notes', function(){ document.getElementById('sb-notes-box').style.display='block'; });
     var notesBox=document.getElementById('sb-notes-box');
     if(notesBox) notesBox.addEventListener('blur', async function(e){
       try{
         var upd=await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.notes=e.target.value;
-      }catch(err){
-        document.getElementById('sb-note-status').textContent='Notes need the notes Supabase column.';
-      }
+      }catch(err){ if(statusBox) statusBox.textContent='Notes need the notes Supabase column.'; }
     });
+
     T().wire('sb-misc', async function(){
-      var statusBox=document.getElementById('sb-note-status');
       try{
         var targetId=await _sboardEnsureMiscHeader();
         var newCluster=isMisc?null:targetId;
@@ -1078,24 +1113,77 @@
         item.cluster_id=newCluster;
         closeSbDetail();
         renderSeaBoard();
-      }catch(err){
-        if(statusBox) statusBox.textContent=err.message;
-      }
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
-    T().wire('sb-trash', async function(){
-      var statusBox=document.getElementById('sb-note-status');
+
+    if(isMisc){
+      T().wire('sb-trash', async function(){
+        if(isHeaderType){ closeSbDetail(); _sboardConfirmTrashHeader(item); return; }
+        try{
+          var targetId=await _sboardEnsureTrashHeader();
+          var newCluster=isTrashed?null:targetId;
+          var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.cluster_id=newCluster;
+          closeSbDetail();
+          renderSeaBoard();
+        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+      });
+    }
+
+    // Gear → color swatches
+    T().wire('sb-gear', function(){
+      var row=document.getElementById('sb-swatch-row');
+      row.style.display=(row.style.display==='none')?'flex':'none';
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.sb-swatch'), function(btn){
+      btn.addEventListener('click', async function(){
+        var c=btn.getAttribute('data-c');
+        try{
+          var upd=await _sb.from('ideas').update({color:c}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.color=c;
+          try{ localStorage.setItem('t2t_seaOfIdeas_'+(isHeaderType?'header':'subber')+'Color', c); }catch(e){}
+          renderSeaBoard();
+        }catch(err){ if(statusBox) statusBox.textContent='Color needs the color Supabase column: '+err.message; }
+      });
+    });
+
+    // Move to a different header, or create one
+    var moveSel=document.getElementById('sb-move-select');
+    if(moveSel) moveSel.addEventListener('change', async function(){
+      if(moveSel.value==='__new__'){
+        document.getElementById('sb-newheader-row').style.display='block';
+        return;
+      }
+      var newCluster=moveSel.value||null;
+      if(String(newCluster||'')===String(item.cluster_id||'')) return;
       try{
-        var targetId=await _sboardEnsureTrashHeader();
-        var newCluster=isTrashed?null:targetId;
-        var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
+        var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.cluster_id=newCluster;
         closeSbDetail();
         renderSeaBoard();
-      }catch(err){
-        if(statusBox) statusBox.textContent=err.message;
-      }
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
+    T().wire('sb-newheader-go', async function(){
+      var name=(document.getElementById('sb-newheader-input')||{}).value||'';
+      name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var parentId=_sboardFilter||null;
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw new Error(ins.error.message);
+        var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.cluster_id=ins.data.id;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
+
+    T().wire('sb-open-board', function(){ closeSbDetail(); _sboardDrillInto(item); });
     T().wire('sb-close', closeSbDetail);
   }
   function closeSbDetail(){
