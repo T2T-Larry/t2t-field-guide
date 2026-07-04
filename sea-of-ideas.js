@@ -160,10 +160,16 @@
         +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:cover}'
         +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#1a3a5c;font-weight:700;cursor:pointer;word-break:break-word}'
         +'.sb-blue-row{display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
-        +'.sb-blue-btn{background:#5b9bd5;color:#fff;border:none;border-radius:12px;padding:10px 12px;font-size:15px;cursor:pointer;box-shadow:0 0 0 6px rgba(91,155,213,0.18),0 4px 10px rgba(26,58,92,0.28);flex:1 1 auto;min-width:40px}'
+        +'.sb-blue-btn{background:#a9d8f5;color:#1a3a5c;border:none;border-radius:12px;padding:10px 12px;font-size:15px;cursor:pointer;box-shadow:0 0 0 6px rgba(169,216,245,0.28),0 4px 10px rgba(26,58,92,0.22);flex:1 1 auto;min-width:40px}'
         +'.sb-blue-btn:active{transform:scale(0.95)}'
-        +'.sb-blue-btn.misc-on{background:#3a7ab8}'
-        +'.sb-close-btn{background:#5b9bd5;color:#000;font-weight:700;border:none;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(91,155,213,0.18),0 4px 10px rgba(26,58,92,0.28);flex-shrink:0}'
+        +'.sb-blue-btn.misc-on{background:#7ec1ea}'
+        +'.sb-blue-row-sm{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
+        +'.sb-blue-btn-sm{background:#a9d8f5;color:#1a3a5c;border:none;border-radius:10px;padding:6px 9px;font-size:11px;cursor:pointer;box-shadow:0 0 0 4px rgba(169,216,245,0.25),0 3px 7px rgba(26,58,92,0.2);flex:1 1 auto}'
+        +'.sb-blue-btn-sm:active{transform:scale(0.95)}'
+        +'.sb-close-btn{background:#a9d8f5;color:#000;font-weight:700;border:none;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(169,216,245,0.28),0 4px 10px rgba(26,58,92,0.22);flex-shrink:0}'
+        +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#7a6040;margin-bottom:8px}'
+        +'.sb-topic-value{display:inline-block;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;font-family:\'Playfair Display\',serif;margin-bottom:10px}'
+        +'.sb-hdr-current{font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:6px;padding:6px 10px;border:1px dashed #a9cce3;border-radius:6px;text-align:left}'
         +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
         +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}';
       document.head.appendChild(style);
@@ -506,7 +512,7 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         var hdFitSize=_sboardFitFontSize(name, 14, 9);
-        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:7px 10px;font-size:'+hdFitSize+'px;font-weight:700;margin-bottom:6px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2';
+        hd.style.cssText='position:static;transform:none;display:block;width:100%;box-sizing:border-box;padding:7px 10px;font-size:'+hdFitSize+'px;font-weight:700;margin-bottom:6px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
         if(!isReserved && depth===0){
@@ -1070,22 +1076,23 @@
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
     }).join('');
 
-    // Screen-header crumbs: PARENT (small) then TOPIC (larger) — the same
-    // orientation the board itself shows, so you never lose your place while shaping.
+    // PARENT / TOPIC eyebrows — computed exactly the way the board's own
+    // chrome computes them, so the SHAPING card always agrees with the board.
     var topicRow=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
-    var topicLabel=topicRow?(topicRow.text_content||'(untitled)'):'Sea of Ideas';
+    var topicLabel=(_sboardCurrentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):'What do you want?';
     var parentIdCrumb=_sboardBoardStack[_sboardBoardStack.length-1];
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
-    var parentLabelCrumb=_sboardCurrentTopicId?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):'Sea of Ideas'):'';
-    var crumbsHTML='<div class="sb-crumbs">'
-      + (parentLabelCrumb?'<span class="sb-crumb-parent">'+parentLabelCrumb+'</span><span class="sb-crumb-sep">›</span>':'')
-      + '<span class="sb-crumb-topic">'+topicLabel+'</span></div>';
+    var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):'Sea of Ideas'):'Sea of Ideas';
+    var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
+      + '<div class="sb-hdr-eyebrow2">Topic</div><div class="sb-topic-value">'+topicLabel+'</div>';
 
-    // HEADER eyebrow: vertical list of only the headers actually visible in
-    // this context (the same ones shown across the top of the board right
-    // now) — tap one to move the card there immediately.
+    // HEADER eyebrow: collapsed by default, showing only the current header —
+    // tap to reveal the same option list as before (visible-headers-in-context).
+    var curHeaderRow=item.cluster_id?_sboardAllRowsById[item.cluster_id]:null;
+    var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'New Additions';
     var headerListHTML='<div class="sb-hdr-eyebrow2">Header</div>'
-      + '<div class="sb-hdr-vlist">'
+      + '<div class="sb-hdr-current" id="sb-hdr-current">'+curHeaderLabel+' ▾</div>'
+      + '<div class="sb-hdr-vlist" id="sb-hdr-vlist" style="display:none">'
       + '<div class="sb-hdr-vitem'+(!item.cluster_id?' current':'')+'" data-hid="">New Additions</div>'
       + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='New Additions'; })
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
@@ -1122,13 +1129,24 @@
       + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
       + (isMisc ? '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
-      + '<button class="sb-blue-btn" id="sb-open-board" title="Open board">🔭</button>'
+      + '</div>'
+      + '<div class="sb-blue-row-sm">'
+      + '<button class="sb-blue-btn-sm" id="sb-peek" title="Peek">👁 Peek</button>'
+      + '<button class="sb-blue-btn-sm" id="sb-open-topic" title="Open as Topic">🔭 Open as Topic</button>'
+      + '<button class="sb-blue-btn-sm" id="sb-open-header" title="Open as Header"'+(item.cluster_id?'':' disabled style="opacity:.4"')+'>📍 Open as Header</button>'
       + '</div>'
       + '<button class="sb-close-btn" id="sb-close">Close</button>'
       + '</div>';
     ov.classList.add('active');
 
     var statusBox=document.getElementById('sb-note-status');
+
+    // Header field: collapsed by default, expands to the option list on tap
+    T().wire('sb-hdr-current', function(){
+      var vlist=document.getElementById('sb-hdr-vlist');
+      vlist.style.display=(vlist.style.display==='none')?'flex':'none';
+      vlist.style.flexDirection='column';
+    });
 
     // Header list: tap to reassign immediately
     Array.prototype.forEach.call(document.querySelectorAll('.sb-hdr-vitem[data-hid]'), function(row){
@@ -1275,7 +1293,13 @@
       });
     });
 
-    T().wire('sb-open-board', function(){ closeSbDetail(); _sboardDrillInto(item); });
+    T().wire('sb-peek', function(){ openSbHeaderPeek(item); });
+    T().wire('sb-open-topic', function(){ closeSbDetail(); _sboardDrillInto(item); });
+    T().wire('sb-open-header', function(){
+      if(!item.cluster_id){ closeSbDetail(); return; }
+      closeSbDetail();
+      _sboardDrillInto({id:item.cluster_id});
+    });
     T().wire('sb-close', closeSbDetail);
   }
   function closeSbDetail(){
