@@ -145,7 +145,27 @@
         +'.sc-peek-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1.5px solid #cfe4f2}'
         +'.sc-peek-topbar button{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:0 0 auto}'
         +'.sc-peek-title{font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;text-align:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-        +'.sc-peek-spacer{width:32px;flex:0 0 auto}';
+        +'.sc-peek-spacer{width:32px;flex:0 0 auto}'
+        +'.sb-shape-card{background:#fff;border-radius:16px;padding:16px;width:min(300px,88%);min-height:500px;box-shadow:0 10px 24px rgba(0,0,0,0.3);display:flex;flex-direction:column;box-sizing:border-box}'
+        +'.sb-crumbs{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;min-height:20px}'
+        +'.sb-crumb-parent{font-size:10px;color:#7a6040;font-weight:600;opacity:.8}'
+        +'.sb-crumb-sep{font-size:10px;color:#cfc3ae}'
+        +'.sb-crumb-topic{font-size:16px;color:#1a3a5c;font-weight:700;font-family:\'Playfair Display\',serif}'
+        +'.sb-hdr-eyebrow2{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:6px;text-align:left}'
+        +'.sb-hdr-vlist{display:flex;flex-direction:column;gap:3px;max-height:112px;overflow-y:auto;margin-bottom:10px;border:1px solid #eef2f6;border-radius:8px;padding:6px;flex-shrink:0}'
+        +'.sb-hdr-vitem{padding:6px 10px;border-radius:8px;font-size:12px;text-align:left;cursor:pointer;color:#1a3a5c;background:transparent}'
+        +'.sb-hdr-vitem.current{background:#eaf3fb;font-weight:700}'
+        +'.sb-hdr-vitem.newh{color:#5b9bd5;font-weight:700;border-top:1px dashed #cfe4f2;margin-top:2px;padding-top:8px}'
+        +'.sb-body-box{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:170px;border-radius:10px;background:#f7f9fb;padding:14px;box-sizing:border-box;margin-bottom:10px;overflow:hidden;position:relative}'
+        +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:cover}'
+        +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#1a3a5c;font-weight:700;cursor:pointer;word-break:break-word}'
+        +'.sb-blue-row{display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
+        +'.sb-blue-btn{background:#5b9bd5;color:#fff;border:none;border-radius:12px;padding:10px 12px;font-size:15px;cursor:pointer;box-shadow:0 0 0 6px rgba(91,155,213,0.18),0 4px 10px rgba(26,58,92,0.28);flex:1 1 auto;min-width:40px}'
+        +'.sb-blue-btn:active{transform:scale(0.95)}'
+        +'.sb-blue-btn.misc-on{background:#3a7ab8}'
+        +'.sb-close-btn{background:#5b9bd5;color:#000;font-weight:700;border:none;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(91,155,213,0.18),0 4px 10px rgba(26,58,92,0.28);flex-shrink:0}'
+        +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
+        +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -269,6 +289,8 @@
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
   var _sboardAllRowsById = {};
+  var _sboardVisibleHeaders = [];
+  var _sboardIdeaOrderByParent = {};
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
 
   function _sboardTopAncestor(h, headerRows){
@@ -287,6 +309,12 @@
       if(m){ var n=parseInt(m[1],10); if(n>max) max=n; }
     });
     return max+1;
+  }
+
+  function _sboardBySortOrder(a,b){
+    var ao=(a.sort_order===null||a.sort_order===undefined)?Infinity:a.sort_order;
+    var bo=(b.sort_order===null||b.sort_order===undefined)?Infinity:b.sort_order;
+    return ao-bo;
   }
 
   function _sboardFitFontSize(text, base, min){
@@ -318,7 +346,7 @@
     return renderSeaBoard();
   }
 
-  function _sboardMakeTile(item, size, straight){
+  function _sboardMakeTile(item, size, straight, groupParentId){
     size=size||(_sboardDesktop?76:70);
     var rot=straight?0:(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
@@ -343,6 +371,14 @@
       tile.appendChild(hb);
     }
     tile.addEventListener('dblclick', function(){ openSbDetail(item); });
+    tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
+    tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });
+    tile.addEventListener('drop', function(e){
+      e.preventDefault(); tile.style.outline='none';
+      var raw=e.dataTransfer.getData('text/plain');
+      if(!raw || raw.indexOf('header:')===0) return;
+      _sboardReorderOrMoveIdea(raw, item.id, groupParentId!==undefined?groupParentId:(item.cluster_id||null));
+    });
     return tile;
   }
 
@@ -463,7 +499,8 @@
         var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
         var straight=(name!=='New Additions');
         var subs=subHeadersOf[headerRow.id]||[];
-        var directItems=childrenOfHeader[headerRow.id]||[];
+        var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
+        _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto';
         var hd=document.createElement('button');
@@ -493,7 +530,7 @@
           var grid=document.createElement('div');
           grid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
           subs.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, cellSize, straight)); });
-          directItems.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize, straight)); });
+          directItems.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, cellSize, straight, headerRow.id)); });
           block.appendChild(grid);
         }
         return block;
@@ -503,32 +540,32 @@
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:12px;align-items:flex-start';
 
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
-        var directIdeas=childrenOfHeader[_sboardCurrentTopicId]||[];
+        var directIdeas=(childrenOfHeader[_sboardCurrentTopicId]||[]).slice().sort(_sboardBySortOrder);
+        _sboardIdeaOrderByParent[_sboardCurrentTopicId]=directIdeas.map(function(r){ return r.id; });
         var childHeaders=subHeadersOf[_sboardCurrentTopicId]||[];
         if(directIdeas.length===0 && childHeaders.length===0){
           if(statusEl) statusEl.textContent='Nothing under this Header yet.';
+          _sboardVisibleHeaders=[];
         } else {
           if(directIdeas.length){
             var directBlock=document.createElement('div');
             directBlock.style.cssText='flex:0 0 auto';
             var directGrid=document.createElement('div');
             directGrid.style.cssText='display:grid;grid-template-columns:repeat('+cols+','+cellSize+'px);gap:8px';
-            directIdeas.forEach(function(item){ directGrid.appendChild(_sboardMakeTile(item, cellSize, true)); });
+            directIdeas.forEach(function(item){ directGrid.appendChild(_sboardMakeTile(item, cellSize, true, _sboardCurrentTopicId)); });
             directBlock.appendChild(directGrid);
             groupsWrap.appendChild(directBlock);
           }
-          var childHeadersSorted=childHeaders.slice().sort(function(a,b){
-            var ao=(a.sort_order===null||a.sort_order===undefined)?Infinity:a.sort_order;
-            var bo=(b.sort_order===null||b.sort_order===undefined)?Infinity:b.sort_order;
-            return ao-bo;
-          });
+          var childHeadersSorted=childHeaders.slice().sort(_sboardBySortOrder);
           _sboardTopLevelOrder=childHeadersSorted.map(function(h){ return h.id; });
+          _sboardVisibleHeaders=childHeadersSorted;
           childHeadersSorted.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
           if(statusEl) statusEl.textContent='';
         }
       } else {
         if(newAdditionsRow) groupsWrap.appendChild(renderGroup(newAdditionsRow, 0));
         orderedTop.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
+        _sboardVisibleHeaders=(newAdditionsRow?[newAdditionsRow]:[]).concat(orderedTop);
         if(statusEl) statusEl.textContent='';
       }
       wrap.appendChild(groupsWrap);
@@ -687,11 +724,38 @@
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     try{
-      var upd=await _sb.from('ideas').update({cluster_id:headerId}).eq('id',itemId);
+      var siblingCount=(_sboardIdeaOrderByParent[headerId]||[]).length;
+      var upd=await _sb.from('ideas').update({cluster_id:headerId, sort_order:siblingCount}).eq('id',itemId);
       if(upd.error) throw upd.error;
       renderSeaBoard();
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+    }
+  }
+
+  // Drop an idea onto another idea tile: reorders among siblings if already
+  // in the same header, or moves + inserts at that position if dragged in
+  // from somewhere else — one gesture covers both cases.
+  async function _sboardReorderOrMoveIdea(draggedId, targetId, parentId){
+    if(String(draggedId)===String(targetId)) return;
+    var statusEl=document.getElementById('sc-status');
+    var _sb=T().sb;
+    var ids=(_sboardIdeaOrderByParent[parentId]||[]).slice();
+    var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
+    if(fromIdx!==-1) ids.splice(fromIdx,1);
+    var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
+    ids.splice(toIdx===-1?ids.length:toIdx, 0, draggedId);
+    if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
+    try{
+      var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId);
+      if(updCluster.error) throw updCluster.error;
+      for(var i=0;i<ids.length;i++){
+        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
+        if(upd.error) throw upd.error;
+      }
+      renderSeaBoard();
+    }catch(err){
+      if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
     }
   }
 
@@ -982,17 +1046,17 @@
     var isReservedItem=isHeaderType && reservedNames.indexOf(item.text_content)!==-1;
 
     if(isReservedItem){
-      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
         + '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
         + '<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
-        + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
-        + '<button class="sc-ov-btn" id="sb-close" style="width:100%">Close</button>'
+        + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;flex:1"></textarea>'
+        + '<button class="sb-close-btn" id="sb-close">Close</button>'
         + '</div>';
       ov.classList.add('active');
       var rNotes=document.getElementById('sb-notes-box');
-      if(rNotes) rNotes.addEventListener('blur', async function(e){
+      if(rNotes){ rNotes.value=item.notes||''; rNotes.addEventListener('blur', async function(e){
         try{ await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id); item.notes=e.target.value; }catch(err){}
-      });
+      }); }
       T().wire('sb-close', closeSbDetail);
       return;
     }
@@ -1006,37 +1070,99 @@
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
     }).join('');
 
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      + apexTag
-      + (item.content_type==='image' && item.image_url
-          ? '<div style="position:relative;margin-bottom:10px"><img id="sb-img-preview" src="'+item.image_url+'" style="width:100%;border-radius:10px;display:block">'
-            + '<button class="sc-ov-btn" id="sb-img-swap" style="position:absolute;bottom:6px;right:6px">📷 Replace</button>'
-            + '<input type="file" id="sb-img-input" accept="image/*" style="display:none"></div>'
-          : '<div id="sb-text-display" style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px;cursor:pointer;padding:4px;border:1px dashed transparent;border-radius:6px" title="Tap to edit">'+(item.text_content||'(untitled)')+' ✎</div>'
-            + '<div id="sb-text-edit" style="display:none;margin-bottom:10px">'
-            + '<textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
-            + '<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-text-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-text-cancel" style="flex:1">Cancel</button></div>'
-            + '</div>')
-      + '<div id="sb-hearts-row" style="font-size:14px;min-height:18px;margin-bottom:6px">'+_sboardHeartsHTML(heartCount)+'</div>'
-      + '<div style="display:flex;gap:6px;margin-bottom:8px">'
-      + '<button class="sb-icon-btn" id="sb-heart" title="Heart">❤️</button>'
-      + '<button class="sb-icon-btn" id="sb-notes" title="Notes">✏️</button>'
-      + '<button class="sb-icon-btn misc" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
-      + (isMisc ? '<button class="sb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
-      + '<button class="sb-icon-btn" id="sb-gear" title="Appearance">⚙️</button>'
+    // Screen-header crumbs: PARENT (small) then TOPIC (larger) — the same
+    // orientation the board itself shows, so you never lose your place while shaping.
+    var topicRow=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
+    var topicLabel=topicRow?(topicRow.text_content||'(untitled)'):'Sea of Ideas';
+    var parentIdCrumb=_sboardBoardStack[_sboardBoardStack.length-1];
+    var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
+    var parentLabelCrumb=_sboardCurrentTopicId?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):'Sea of Ideas'):'';
+    var crumbsHTML='<div class="sb-crumbs">'
+      + (parentLabelCrumb?'<span class="sb-crumb-parent">'+parentLabelCrumb+'</span><span class="sb-crumb-sep">›</span>':'')
+      + '<span class="sb-crumb-topic">'+topicLabel+'</span></div>';
+
+    // HEADER eyebrow: vertical list of only the headers actually visible in
+    // this context (the same ones shown across the top of the board right
+    // now) — tap one to move the card there immediately.
+    var headerListHTML='<div class="sb-hdr-eyebrow2">Header</div>'
+      + '<div class="sb-hdr-vlist">'
+      + '<div class="sb-hdr-vitem'+(!item.cluster_id?' current':'')+'" data-hid="">New Additions</div>'
+      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='New Additions'; })
+          .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
+      + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
       + '</div>'
-      + '<div id="sb-swatch-row" style="display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px">'+swatches+'</div>'
+      + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>';
+
+    // Body: always the same fixed size and shape, whether it holds an image
+    // or a single word.
+    var bodyHTML;
+    if(item.content_type==='image' && item.image_url){
+      bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'">'
+        + '<button class="sb-blue-btn" id="sb-img-swap" style="position:absolute;bottom:8px;right:8px;flex:0 0 auto;padding:6px 10px;font-size:12px">📷</button>'
+        + '<input type="file" id="sb-img-input" accept="image/*" style="display:none"></div>';
+    } else {
+      var fitSize=_sboardFitFontSize(item.text_content||'', 18, 11);
+      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text" style="font-size:'+fitSize+'px" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
+        + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
+    }
+
+    ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
+      + apexTag
+      + crumbsHTML
+      + headerListHTML
+      + bodyHTML
+      + '<div id="sb-hearts-row" style="font-size:14px;min-height:18px;margin:6px 0">'+_sboardHeartsHTML(heartCount)+'</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
-      + '<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move to</label>'
-      + '<select id="sb-move-select" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;box-sizing:border-box">'+_sboardMoveOptionsHTML(item.id, item.cluster_id)+'</select>'
-      + '<div id="sb-newheader-row" style="display:none;margin-bottom:8px"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sc-ov-btn save" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
-      + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:6px;min-height:11px"></div>'
-      + '<button class="sc-ov-btn" id="sb-open-board" style="width:100%;margin-bottom:6px">🔭 Open board</button>'
-      + '<button class="sc-ov-btn" id="sb-close" style="width:100%">Close</button>'
+      + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
+      + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
+      + '<div class="sb-blue-row">'
+      + '<button class="sb-blue-btn" id="sb-heart" title="Heart">❤️</button>'
+      + '<button class="sb-blue-btn" id="sb-notes" title="Notes">✏️</button>'
+      + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
+      + (isMisc ? '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
+      + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
+      + '<button class="sb-blue-btn" id="sb-open-board" title="Open board">🔭</button>'
+      + '</div>'
+      + '<button class="sb-close-btn" id="sb-close">Close</button>'
       + '</div>';
     ov.classList.add('active');
 
     var statusBox=document.getElementById('sb-note-status');
+
+    // Header list: tap to reassign immediately
+    Array.prototype.forEach.call(document.querySelectorAll('.sb-hdr-vitem[data-hid]'), function(row){
+      row.addEventListener('click', async function(){
+        var newCluster=row.getAttribute('data-hid')||null;
+        if(String(newCluster||'')===String(item.cluster_id||'')) return;
+        try{
+          var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id).select();
+          if(upd.error) throw upd.error;
+          item.cluster_id=newCluster;
+          closeSbDetail();
+          renderSeaBoard();
+        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+      });
+    });
+    T().wire('sb-hdr-newh', function(){
+      document.getElementById('sb-newheader-row').style.display='block';
+    });
+    T().wire('sb-newheader-go', async function(){
+      var name=(document.getElementById('sb-newheader-input')||{}).value||'';
+      name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var parentId=_sboardFilter||null;
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw new Error(ins.error.message);
+        var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.cluster_id=ins.data.id;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
 
     // Text editing (auto-promotes to header if punctuation says so)
     var textDisplay=document.getElementById('sb-text-display');
@@ -1134,7 +1260,7 @@
     // Gear → color swatches
     T().wire('sb-gear', function(){
       var row=document.getElementById('sb-swatch-row');
-      row.style.display=(row.style.display==='none')?'flex':'none';
+      row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
     });
     Array.prototype.forEach.call(document.querySelectorAll('.sb-swatch'), function(btn){
       btn.addEventListener('click', async function(){
@@ -1147,40 +1273,6 @@
           renderSeaBoard();
         }catch(err){ if(statusBox) statusBox.textContent='Color needs the color Supabase column: '+err.message; }
       });
-    });
-
-    // Move to a different header, or create one
-    var moveSel=document.getElementById('sb-move-select');
-    if(moveSel) moveSel.addEventListener('change', async function(){
-      if(moveSel.value==='__new__'){
-        document.getElementById('sb-newheader-row').style.display='block';
-        return;
-      }
-      var newCluster=moveSel.value||null;
-      if(String(newCluster||'')===String(item.cluster_id||'')) return;
-      try{
-        var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id).select();
-        if(upd.error) throw upd.error;
-        item.cluster_id=newCluster;
-        closeSbDetail();
-        renderSeaBoard();
-      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-    });
-    T().wire('sb-newheader-go', async function(){
-      var name=(document.getElementById('sb-newheader-input')||{}).value||'';
-      name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
-      try{
-        var user=(await _sb.auth.getUser()).data.user;
-        if(!user) throw new Error('Not signed in.');
-        var parentId=_sboardFilter||null;
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
-        if(ins.error) throw new Error(ins.error.message);
-        var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
-        if(upd.error) throw upd.error;
-        item.cluster_id=ins.data.id;
-        closeSbDetail();
-        renderSeaBoard();
-      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
     T().wire('sb-open-board', function(){ closeSbDetail(); _sboardDrillInto(item); });
