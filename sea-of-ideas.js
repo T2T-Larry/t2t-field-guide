@@ -160,16 +160,19 @@
         +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:cover}'
         +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#1a3a5c;font-weight:700;cursor:pointer;word-break:break-word}'
         +'.sb-blue-row{display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
-        +'.sb-blue-btn{background:#a9d8f5;color:#1a3a5c;border:none;border-radius:12px;padding:10px 12px;font-size:15px;cursor:pointer;box-shadow:0 0 0 6px rgba(169,216,245,0.28),0 4px 10px rgba(26,58,92,0.22);flex:1 1 auto;min-width:40px}'
+        +'.sb-blue-btn{background:#eaf3fb;color:#1a3a5c;border:none;border-radius:12px;padding:10px 12px;font-size:15px;cursor:pointer;box-shadow:0 0 0 6px rgba(234,243,251,0.6),0 4px 10px rgba(26,58,92,0.22);flex:1 1 auto;min-width:40px}'
         +'.sb-blue-btn:active{transform:scale(0.95)}'
-        +'.sb-blue-btn.misc-on{background:#7ec1ea}'
+        +'.sb-blue-btn.misc-on{background:#cfe4f7}'
         +'.sb-blue-row-sm{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
-        +'.sb-blue-btn-sm{background:#a9d8f5;color:#1a3a5c;border:none;border-radius:10px;padding:6px 9px;font-size:11px;cursor:pointer;box-shadow:0 0 0 4px rgba(169,216,245,0.25),0 3px 7px rgba(26,58,92,0.2);flex:1 1 auto}'
+        +'.sb-blue-btn-sm{background:#eaf3fb;color:#1a3a5c;border:none;border-radius:11px;padding:8px 11px;font-size:12px;cursor:pointer;box-shadow:0 0 0 5px rgba(234,243,251,0.55),0 3px 8px rgba(26,58,92,0.2);flex:1 1 auto}'
         +'.sb-blue-btn-sm:active{transform:scale(0.95)}'
-        +'.sb-close-btn{background:#a9d8f5;color:#000;font-weight:700;border:none;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(169,216,245,0.28),0 4px 10px rgba(26,58,92,0.22);flex-shrink:0}'
-        +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#7a6040;margin-bottom:8px}'
+        +'.sb-blue-row-md{display:flex;gap:7px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
+        +'.sb-blue-btn-md{background:#eaf3fb;color:#1a3a5c;border:none;border-radius:11px;padding:9px 10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 0 0 5px rgba(234,243,251,0.55),0 3px 9px rgba(26,58,92,0.2);flex:1 1 auto}'
+        +'.sb-blue-btn-md:active{transform:scale(0.95)}'
+        +'.sb-close-btn{background:#eaf3fb;color:#000;font-weight:700;border:none;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(234,243,251,0.6),0 4px 10px rgba(26,58,92,0.22);flex-shrink:0}'
+        +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#666;margin-bottom:8px}'
         +'.sb-topic-value{display:inline-block;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;font-family:\'Playfair Display\',serif;margin-bottom:10px}'
-        +'.sb-hdr-current{font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:6px;padding:6px 10px;border:1px dashed #a9cce3;border-radius:6px;text-align:left}'
+        +'.sb-hdr-current{font-size:12px;color:#000;font-weight:600;cursor:pointer;margin-bottom:6px;padding:6px 10px;border:1px dashed #a9cce3;border-radius:6px;text-align:left}'
         +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
         +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}';
       document.head.appendChild(style);
@@ -1104,9 +1107,7 @@
     // or a single word.
     var bodyHTML;
     if(item.content_type==='image' && item.image_url){
-      bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'">'
-        + '<button class="sb-blue-btn" id="sb-img-swap" style="position:absolute;bottom:8px;right:8px;flex:0 0 auto;padding:6px 10px;font-size:12px">📷</button>'
-        + '<input type="file" id="sb-img-input" accept="image/*" style="display:none"></div>';
+      bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'"></div>';
     } else {
       var fitSize=_sboardFitFontSize(item.text_content||'', 18, 11);
       bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text" style="font-size:'+fitSize+'px" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
@@ -1123,17 +1124,19 @@
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
+      + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
+      + '<div class="sb-blue-row-md">'
+      + '<button class="sb-blue-btn-md" id="sb-peek" title="Peek">👁</button>'
+      + '<button class="sb-blue-btn-md" id="sb-img-swap" title="Photo">📷</button>'
+      + '<button class="sb-blue-btn-md" id="sb-open-topic" title="Make it the TOPIC">Make it the TOPIC</button>'
+      + '<button class="sb-blue-btn-md" id="sb-open-header" title="Make it a HEADER"'+(item.cluster_id?'':' disabled style="opacity:.4"')+'>Make it a HEADER</button>'
+      + '</div>'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-heart" title="Heart">❤️</button>'
       + '<button class="sb-blue-btn" id="sb-notes" title="Notes">✏️</button>'
       + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
       + (isMisc ? '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
-      + '</div>'
-      + '<div class="sb-blue-row-sm">'
-      + '<button class="sb-blue-btn-sm" id="sb-peek" title="Peek">👁 Peek</button>'
-      + '<button class="sb-blue-btn-sm" id="sb-open-topic" title="Open as Topic">🔭 Open as Topic</button>'
-      + '<button class="sb-blue-btn-sm" id="sb-open-header" title="Open as Header"'+(item.cluster_id?'':' disabled style="opacity:.4"')+'>📍 Open as Header</button>'
       + '</div>'
       + '<button class="sb-close-btn" id="sb-close">Close</button>'
       + '</div>';
@@ -1207,7 +1210,8 @@
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
-    // Image swap
+    // Photo — works from any card type; attaching a photo to a text idea
+    // converts it to an image card, an image card just gets a new photo.
     T().wire('sb-img-swap', function(){ document.getElementById('sb-img-input').click(); });
     var imgInput=document.getElementById('sb-img-input');
     if(imgInput) imgInput.addEventListener('change', async function(e){
@@ -1215,16 +1219,19 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var path=user.id+'/'+Date.now()+'-'+(f.name||'replace.png').replace(/[^a-zA-Z0-9._-]/g,'_');
+        var path=user.id+'/'+Date.now()+'-'+(f.name||'photo.png').replace(/[^a-zA-Z0-9._-]/g,'_');
         var up=await _sb.storage.from('sea-of-ideas').upload(path, f);
         if(up.error) throw up.error;
         var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
         var url=pub.data && pub.data.publicUrl;
         if(!url) throw new Error('No public URL returned.');
-        var upd=await _sb.from('ideas').update({image_url:url}).eq('id',item.id);
+        var patch={image_url:url};
+        if(!isHeaderType && item.content_type!=='image') patch.content_type='image';
+        var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.image_url=url;
-        var prev=document.getElementById('sb-img-preview'); if(prev) prev.src=url;
+        if(patch.content_type) item.content_type=patch.content_type;
+        closeSbDetail();
         renderSeaBoard();
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
