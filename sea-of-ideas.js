@@ -193,7 +193,7 @@
       +'</div>'
       +'<div style="text-align:center">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
-      +'<div id="sc-topic-box">What do you want?</div>'
+      +'<div id="sc-topic-box"></div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="text-align:right"><button class="sc-ov-btn" id="b-sc-mode-toggle" title="Desktop size">⛶</button></div>'
       +'</div>'
@@ -249,6 +249,8 @@
       e.stopPropagation();
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         openSbDetail(_sboardAllRowsById[_sboardCurrentTopicId]);
+      } else {
+        openRootPromptEditor();
       }
     });
 
@@ -315,6 +317,32 @@
   ];
   function _sboardGetBoardBg(){
     try{ return localStorage.getItem('t2t_seaOfIdeas_boardBg')||''; }catch(e){ return ''; }
+  }
+  function _sboardGetRootPrompt(){
+    try{ return localStorage.getItem('t2t_seaOfIdeas_rootPrompt')||'What do you want?'; }catch(e){ return 'What do you want?'; }
+  }
+  function _sboardSetRootPrompt(text){
+    try{ localStorage.setItem('t2t_seaOfIdeas_rootPrompt', text||'What do you want?'); }catch(e){}
+  }
+  function openRootPromptEditor(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var cur=_sboardGetRootPrompt();
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div class="sb-card-title">Shape</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Root prompt</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px">Shown when no Topic is selected yet.</div>'
+      +'<textarea id="sb-rootprompt-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;min-height:50px">'+cur+'</textarea>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-rootprompt-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-rootprompt-close" style="flex:1">Close</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-rootprompt-save', function(){
+      var val=(document.getElementById('sb-rootprompt-box')||{}).value||'';
+      _sboardSetRootPrompt(val.trim());
+      closeSbDetail();
+      _sboardUpdateHeaderChrome();
+    });
+    T().wire('sb-rootprompt-close', closeSbDetail);
   }
   function _sboardApplyBoardBg(){
     var w=document.getElementById('sc-board-wrap');
@@ -785,11 +813,11 @@
       if(areaEl) areaEl.style.background='#3a2564';
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
-      var parentFallback=(topicRow.content_type==='header')?'What do you want?':(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
+      var parentFallback=(topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
       if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:parentFallback;
       if(parentHit) parentHit.classList.remove('inert');
     } else {
-      if(topicBox) topicBox.textContent='What do you want?';
+      if(topicBox) topicBox.textContent=_sboardGetRootPrompt();
       if(areaEl) areaEl.style.background='#1a3a5c';
       if(parentLabel) parentLabel.textContent='Sea of Ideas';
       if(parentHit) parentHit.classList.add('inert');
@@ -1100,10 +1128,10 @@
     // PARENT / TOPIC eyebrows — computed exactly the way the board's own
     // chrome computes them, so the SHAPING card always agrees with the board.
     var topicRow=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
-    var topicLabel=(_sboardCurrentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):'What do you want?';
+    var topicLabel=(_sboardCurrentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
     var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
-    var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?'What do you want?':(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
+    var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
     var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Sea of Ideas';
     var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
       + '<div class="sb-hdr-eyebrow2">Topic</div><div class="sb-topic-value">'+topicLabel+'</div>';

@@ -949,6 +949,7 @@
     wire('b-sr-back',function(){nav('s-tools');}); wire('b-sr-mg',goMG);
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
+    wire('b-tools-sea-ideas', function(){ nav('s-sea-of-ideas-cluster'); });
     wire('b-tools-trash', function(){
       if (window.T2TSea) window.T2TSea.openTrash();
     });
