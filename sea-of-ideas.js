@@ -402,12 +402,12 @@
     var bg=headerRow.color||'#fff';
     var back2=document.createElement('div');
     back2.className='sc-stack-layer';
-    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #111;border-radius:10px';
+    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #4a4a4a;border-radius:10px';
     var back1=document.createElement('div');
     back1.className='sc-stack-layer';
-    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #111;border-radius:10px';
+    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #4a4a4a;border-radius:10px';
     var front=document.createElement('div');
-    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:1.5px solid #111;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
+    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:1.5px solid #4a4a4a;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
     var fitSize=_sboardFitFontSize(headerRow.text_content, size>=90?15:13, 8);
