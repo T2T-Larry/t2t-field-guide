@@ -190,7 +190,7 @@
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box">What do you want?</div>'
       +'</div>'
-      +'<div class="sc-hdr-side" style="text-align:right"></div>'
+      +'<div class="sc-hdr-side" style="text-align:right"><button class="sc-ov-btn" id="b-sc-mode-toggle" title="Desktop size">⛶</button></div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -198,7 +198,6 @@
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
       +'<div id="sc-controls">'
-      +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
       +'<button class="sc-ov-btn" id="b-sc-quickadd">+ Add idea</button>'
       +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
       +'<input type="file" id="sc-upload-input" accept="image/*" multiple style="display:none">'
@@ -226,7 +225,8 @@
     });
     T().wire('b-sc-mode-toggle', function(){
       _sboardDesktop=!_sboardDesktop;
-      document.getElementById('b-sc-mode-toggle').innerHTML=_sboardDesktop?'↩ Back to mobile size':'⛶ Desktop size';
+      var btn=document.getElementById('b-sc-mode-toggle');
+      if(btn){ btn.innerHTML=_sboardDesktop?'↩':'⛶'; btn.title=_sboardDesktop?'Back to mobile size':'Desktop size'; }
       var fgr=document.getElementById('fg-root');
       if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
       renderSeaBoard();
@@ -539,7 +539,7 @@
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
         var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
-        var straight=(name!=='New Additions');
+        var straight=true;
         var subs=subHeadersOf[headerRow.id]||[];
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
@@ -548,7 +548,7 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         var hdFitSize=_sboardFitFontSize(name, 15, 10);
-        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:6px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(headerRow.color?';background:'+headerRow.color:'');
+        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         if(name==='Purpose'){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openPurposeEditor(); }); }
         else if(!isReserved){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); }); }
@@ -571,7 +571,7 @@
         block.appendChild(hd);
         if(directItems.length || subs.length){
           var scroll=document.createElement('div');
-          scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+          scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
           subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
           block.appendChild(scroll);
@@ -588,7 +588,7 @@
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('div');
         hd.className='sc-pill named';
-        hd.style.cssText='display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('New Additions',15,10)+'px;font-weight:800;margin-bottom:6px;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px';
+        hd.style.cssText='display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('New Additions',15,10)+'px;font-weight:800;margin-bottom:2px;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px';
         hd.textContent='New Additions';
         hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
         hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
@@ -601,7 +601,7 @@
         block.appendChild(hd);
         if(directItems.length){
           var scroll=document.createElement('div');
-          scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+          scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, parentIdForDrop, SUBBER_H)); });
           block.appendChild(scroll);
         }
