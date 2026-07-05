@@ -190,7 +190,7 @@
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box">What do you want?</div>'
       +'</div>'
-      +'<div class="sc-hdr-side" style="text-align:right"><button class="sc-ov-btn" id="b-sc-purpose">Purpose</button></div>'
+      +'<div class="sc-hdr-side" style="text-align:right"></div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -231,7 +231,6 @@
       if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
       renderSeaBoard();
     });
-    T().wire('b-sc-purpose', openPurposeEditor);
     T().wire('b-sc-quickadd', openQuickAddIdea);
     T().wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
@@ -475,6 +474,8 @@
       if(!user) throw new Error('Not signed in.');
       var newAdditionsId=await _sboardEnsureNewAdditionsHeader();
       _sboardNewAdditionsId=newAdditionsId;
+      var purposeId=await _sboardEnsurePurposeHeader();
+      var miscId=await _sboardEnsureMiscHeader();
 
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
         .eq('user_id', user.id).in('content_type',['image','text','header'])
@@ -485,14 +486,12 @@
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
-      var miscRow=headerRows.find(function(r){ return r.text_content==='MISC'; });
-      var purposeRow=headerRows.find(function(r){ return r.text_content==='Purpose'; });
+      var miscRow=headerRows.find(function(r){ return String(r.id)===String(miscId); });
+      var purposeRow=headerRows.find(function(r){ return String(r.id)===String(purposeId); });
       var newAdditionsRow=headerRows.find(function(r){ return String(r.id)===String(newAdditionsId); });
       _sboardTrashId = trashRow ? trashRow.id : null;
       _sboardMiscId = miscRow ? miscRow.id : null;
       _sboardPurposeId = purposeRow ? purposeRow.id : null;
-      var purposeBtn=document.getElementById('b-sc-purpose');
-      if(purposeBtn) purposeBtn.title = (purposeRow && purposeRow.notes) ? purposeRow.notes : 'Why are we doing this?';
 
       var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
       var contentHeaders=headerRows.filter(function(r){ return reservedIds.indexOf(String(r.id))===-1; });
@@ -500,11 +499,6 @@
 
       var ideaRows=rows.filter(function(r){ return r.content_type==='image'||r.content_type==='text'; });
       wrap.innerHTML='';
-      if(ideaRows.length===0){
-        if(statusEl) statusEl.textContent='No ideas saved yet — add a few first.';
-        _sboardUpdateHeaderChrome();
-        return;
-      }
 
       var childrenOfHeader={};
       ideaRows.forEach(function(r){
@@ -556,7 +550,8 @@
         var hdFitSize=_sboardFitFontSize(name, 15, 10);
         hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:6px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
-        if(!isReserved) hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
+        if(name==='Purpose'){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openPurposeEditor(); }); }
+        else if(!isReserved){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); }); }
         if(!isReserved && depth===0){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -584,27 +579,50 @@
         return block;
       }
 
+      // Local "New Additions" column for a nested (fractal) board — same visual
+      // treatment as renderGroup, but backed by directItems only (no sub-headers,
+      // since this bucket is specifically the uncategorized-items catch-all for
+      // whichever board is currently open), and with no real DB row of its own.
+      function renderLocalNewAdditions(directItems, parentIdForDrop){
+        var block=document.createElement('div');
+        block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
+        var hd=document.createElement('div');
+        hd.className='sc-pill named';
+        hd.style.cssText='display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('New Additions',15,10)+'px;font-weight:800;margin-bottom:6px;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px';
+        hd.textContent='New Additions';
+        hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
+        hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
+        hd.addEventListener('drop', function(e){
+          e.preventDefault(); hd.style.outline='none';
+          var raw=e.dataTransfer.getData('text/plain');
+          if(!raw||raw.indexOf('header:')===0) return;
+          _sboardMoveCard(raw, parentIdForDrop);
+        });
+        block.appendChild(hd);
+        if(directItems.length){
+          var scroll=document.createElement('div');
+          scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+          directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, parentIdForDrop, SUBBER_H)); });
+          block.appendChild(scroll);
+        }
+        return block;
+      }
+
       var groupsWrap=document.createElement('div');
       groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
+
+      if(purposeRow) groupsWrap.appendChild(renderGroup(purposeRow, 0));
 
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         var directIdeas=(childrenOfHeader[_sboardCurrentTopicId]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[_sboardCurrentTopicId]=directIdeas.map(function(r){ return r.id; });
         var childHeaders=subHeadersOf[_sboardCurrentTopicId]||[];
+        groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, _sboardCurrentTopicId));
         if(directIdeas.length===0 && childHeaders.length===0){
           if(statusEl) statusEl.textContent='Nothing under this Header yet.';
           _sboardVisibleHeaders=[];
         } else {
-          if(directIdeas.length){
-            var directBlock=document.createElement('div');
-            directBlock.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+SUBBER_W+'px';
-            var directScroll=document.createElement('div');
-            directScroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
-            directIdeas.forEach(function(item){ directScroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, _sboardCurrentTopicId, SUBBER_H)); });
-            directBlock.appendChild(directScroll);
-            groupsWrap.appendChild(directBlock);
-          }
           var childHeadersSorted=childHeaders.slice().sort(_sboardBySortOrder);
           _sboardTopLevelOrder=childHeadersSorted.map(function(h){ return h.id; });
           _sboardVisibleHeaders=childHeadersSorted;
@@ -617,6 +635,9 @@
         _sboardVisibleHeaders=(newAdditionsRow?[newAdditionsRow]:[]).concat(orderedTop);
         if(statusEl) statusEl.textContent='';
       }
+
+      if(miscRow) groupsWrap.appendChild(renderGroup(miscRow, 0));
+
       wrap.appendChild(groupsWrap);
       _sboardUpdateHeaderChrome();
     }catch(err){
@@ -1081,12 +1102,17 @@
 
     // HEADER eyebrow: collapsed by default, showing only the current header —
     // tap to reveal the same option list as before (visible-headers-in-context).
-    var curHeaderRow=item.cluster_id?_sboardAllRowsById[item.cluster_id]:null;
+    // "New Additions" here means whichever board's own uncategorized bucket is
+    // active: null at the root Sea of Ideas, or the current topic id when
+    // working inside a nested (fractal) board.
+    var localNewAdditionsTarget=_sboardCurrentTopicId||'';
+    var isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
+    var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
     var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'New Additions';
     var headerListHTML='<div class="sb-hdr-eyebrow2">Header</div>'
       + '<div class="sb-hdr-current" id="sb-hdr-current">'+curHeaderLabel+' ▾</div>'
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist" style="display:none">'
-      + '<div class="sb-hdr-vitem'+(!item.cluster_id?' current':'')+'" data-hid="">New Additions</div>'
+      + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">New Additions</div>'
       + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='New Additions'; })
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
