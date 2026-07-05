@@ -170,6 +170,9 @@
         +'.sb-blue-row-md{display:flex;gap:7px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
         +'.sb-blue-btn-md{box-sizing:border-box;background:#eaf3fb;color:#1a3a5c;border:1px solid #b0a898;border-radius:11px;padding:9px 10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 0 0 5px rgba(90,90,90,0.14),0 3px 9px rgba(26,58,92,0.2);flex:1 1 auto}'
         +'.sb-blue-btn-md:active{transform:scale(0.95)}'
+        +'.sb-viewas-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a3907a;text-align:center;margin-bottom:4px}'
+        +'.sb-viewas-btn{box-sizing:border-box;background:#efe6d8;color:#7a6040;border:1px solid #cbb99a;border-radius:9px;padding:5px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;flex:1 1 auto}'
+        +'.sb-viewas-btn:active{transform:scale(0.95)}'
         +'.sb-close-btn{box-sizing:border-box;background:#eaf3fb;color:#000;font-weight:700;border:1px solid #b0a898;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(90,90,90,0.16),0 4px 10px rgba(26,58,92,0.22);flex-shrink:0}'
         +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#666;margin-bottom:8px}'
         +'.sb-topic-value{display:inline-block;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;font-family:\'Playfair Display\',serif;margin-bottom:10px}'
@@ -1143,11 +1146,10 @@
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
+      + '<div class="sb-viewas-eyebrow">View as:</div>'
       + '<div class="sb-blue-row-md">'
-      + '<button class="sb-blue-btn-md" id="sb-peek" title="Peek">👁</button>'
-      + '<button class="sb-blue-btn-md" id="sb-img-swap" title="Photo">📷</button>'
-      + '<button class="sb-blue-btn-md" id="sb-open-topic" title="Make it the TOPIC">🔭</button>'
-      + '<button class="sb-blue-btn-md" id="sb-open-header" title="Make it a HEADER"'+(item.cluster_id?'':' disabled style="opacity:.4"')+'>📌</button>'
+      + '<button class="sb-viewas-btn" id="sb-view-topic">TOPIC</button>'
+      + '<button class="sb-viewas-btn" id="sb-view-header">HEADER</button>'
       + '</div>'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-heart" title="Heart">❤️</button>'
@@ -1318,13 +1320,8 @@
       });
     });
 
-    T().wire('sb-peek', function(){ openSbHeaderPeek(item, function(){ openSbDetail(item); }); });
-    T().wire('sb-open-topic', function(){ closeSbDetail(); _sboardDrillInto(item); });
-    T().wire('sb-open-header', function(){
-      if(!item.cluster_id){ closeSbDetail(); return; }
-      closeSbDetail();
-      _sboardDrillInto({id:item.cluster_id});
-    });
+    T().wire('sb-view-header', function(){ openSbHeaderPeek(item, function(){ openSbDetail(item); }); });
+    T().wire('sb-view-topic', function(){ closeSbDetail(); _sboardDrillInto(item); });
     T().wire('sb-close', closeSbDetail);
   }
   function closeSbDetail(){
