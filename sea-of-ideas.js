@@ -116,8 +116,8 @@
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
         +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;cursor:pointer}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
-        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:0 0 12px;width:100%}'
-        +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:6px}'
+        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:0 0 6px;width:100%}'
+        +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
         +'#sc-status.err{color:#b8562f}'
         +'.sc-overlay-card{background:#fff;border-radius:14px;padding:16px;width:min(260px,84%);box-shadow:0 10px 24px rgba(0,0,0,0.3)}'
         +'.sc-overlay-card label{display:block;font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:6px}'
@@ -131,6 +131,7 @@
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
         +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:10px}'
         +'#fg-root.sb-wide{max-width:1200px!important}'
+        +'#fg-root.sb-wide #s-sea-of-ideas-cluster{min-height:0!important;max-height:calc(100vh - 24px)!important}'
         +'#fg-root.sb-wide #sc-board-wrap{display:flex;flex-wrap:nowrap;gap:22px}'
         +'#fg-root.sb-wide #sc-board-wrap>div{flex:0 0 auto}'
         +'.sc-hdr-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
@@ -179,7 +180,7 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:12px 16px 10px;margin-bottom:6px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:8px 16px 6px;margin-bottom:4px">'
       +'<div style="display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:10px">'
       +'<div id="sc-parent-hit" class="sc-hdr-side" style="text-align:left">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
@@ -239,7 +240,8 @@
     var uploadInput=document.getElementById('sc-upload-input');
     if(uploadInput) uploadInput.addEventListener('change', function(e){ _sboardBatchUpload(e.target.files); e.target.value=''; });
 
-    T().wire('sc-topic-box', function(e){
+    var topicBoxEl=document.getElementById('sc-topic-box');
+    if(topicBoxEl) topicBoxEl.addEventListener('dblclick', function(e){
       e.stopPropagation();
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         openSbDetail(_sboardAllRowsById[_sboardCurrentTopicId]);
