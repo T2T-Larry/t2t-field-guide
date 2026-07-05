@@ -785,7 +785,8 @@
       if(areaEl) areaEl.style.background='#3a2564';
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
-      if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:'What do you want?';
+      var parentFallback=(topicRow.content_type==='header')?'What do you want?':(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
+      if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:parentFallback;
       if(parentHit) parentHit.classList.remove('inert');
     } else {
       if(topicBox) topicBox.textContent='What do you want?';
@@ -1102,7 +1103,8 @@
     var topicLabel=(_sboardCurrentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):'What do you want?';
     var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
-    var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):'What do you want?'):'Sea of Ideas';
+    var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?'What do you want?':(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
+    var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Sea of Ideas';
     var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
       + '<div class="sb-hdr-eyebrow2">Topic</div><div class="sb-topic-value">'+topicLabel+'</div>';
 
@@ -1127,10 +1129,14 @@
       + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>';
 
     // Body: always the same fixed size and shape, whether it holds an image
-    // or a single word.
+    // or a single word. Images get an editable caption/title underneath —
+    // this is what becomes the card's name (and Topic label, if drilled into).
     var bodyHTML;
     if(item.content_type==='image' && item.image_url){
-      bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'"></div>';
+      bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'"></div>'
+        + '<div id="sb-text-display" class="sb-body-text" style="font-size:13px;margin-bottom:8px;color:'+(item.text_content?'#1a3a5c':'#a3907a')+'" title="Tap to add a title">'+(item.text_content||'+ Add a title')+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
+        + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div>';
     } else {
       var fitSize=_sboardFitFontSize(item.text_content||'', 18, 11);
       bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text" style="font-size:'+fitSize+'px" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
@@ -1224,7 +1230,7 @@
       if(!newText){ if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
       try{
         var patch={text_content:newText};
-        if(!isHeaderType && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
+        if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.text_content=newText;
