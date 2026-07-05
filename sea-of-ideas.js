@@ -533,9 +533,9 @@
       var orderedTop=fallbackTop.concat(explicitTop);
       _sboardTopLevelOrder=orderedTop.map(function(h){ return h.id; });
 
-      var SUBBER_W=128;
-      var SUBBER_H=78;
-      var HEADER_W=180;
+      var SUBBER_W=104;
+      var SUBBER_H=64;
+      var HEADER_W=152;
       var HEADER_H=SUBBER_H;
 
       function renderGroup(headerRow, depth){
