@@ -198,7 +198,6 @@
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
       +'<div id="sc-controls">'
-      +'<button class="sc-ov-btn" id="b-sc-promote">🔧 Fix old headers</button>'
       +'<button class="sc-ov-btn" id="b-sc-mode-toggle">⛶ Desktop size</button>'
       +'<button class="sc-ov-btn" id="b-sc-quickadd">+ Add idea</button>'
       +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
@@ -233,9 +232,11 @@
       renderSeaBoard();
     });
     T().wire('b-sc-purpose', openPurposeEditor);
-    T().wire('b-sc-promote', openSbPromoteConfirm);
     T().wire('b-sc-quickadd', openQuickAddIdea);
     T().wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
+    var boardWrapBgEl=document.getElementById('sc-board-wrap');
+    if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
+    _sboardApplyBoardBg();
     var uploadInput=document.getElementById('sc-upload-input');
     if(uploadInput) uploadInput.addEventListener('change', function(e){ _sboardBatchUpload(e.target.files); e.target.value=''; });
 
@@ -301,6 +302,41 @@
   var _sboardVisibleHeaders = [];
   var _sboardIdeaOrderByParent = {};
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
+  var _sboardBoardBgPalette = [
+    {n:'White', c:'#ffffff'},
+    {n:'Cork', c:'#c9a876'},
+    {n:'Dark Green', c:'#1e4d3a'},
+    {n:'Dark Blue', c:'#16324f'},
+    {n:'Purple', c:'#4a2f5e'}
+  ];
+  function _sboardGetBoardBg(){
+    try{ return localStorage.getItem('t2t_seaOfIdeas_boardBg')||''; }catch(e){ return ''; }
+  }
+  function _sboardApplyBoardBg(){
+    var w=document.getElementById('sc-board-wrap');
+    if(w) w.style.background=_sboardGetBoardBg()||'transparent';
+  }
+  function _sboardSetBoardBg(c){
+    try{ localStorage.setItem('t2t_seaOfIdeas_boardBg', c); }catch(e){}
+    _sboardApplyBoardBg();
+  }
+  function openBoardBgPicker(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var swHTML=_sboardBoardBgPalette.map(function(p){
+      return '<button class="sb-bg-swatch" data-c="'+p.c+'" title="'+p.n+'" style="width:40px;height:40px;border-radius:8px;background:'+p.c+';border:1.5px solid #cfe4f2;cursor:pointer;margin:4px"></button>';
+    }).join('');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Board background</div>'
+      +'<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:12px">'+swHTML+'</div>'
+      +'<button class="sc-ov-btn" id="sb-bg-close">Close</button>'
+      +'</div>';
+    ov.classList.add('active');
+    Array.prototype.forEach.call(ov.querySelectorAll('.sb-bg-swatch'), function(btn){
+      btn.addEventListener('click', function(){ _sboardSetBoardBg(btn.getAttribute('data-c')); closeSbDetail(); });
+    });
+    T().wire('sb-bg-close', closeSbDetail);
+  }
 
   function _sboardTopAncestor(h, headerRows){
     var cur=h, guard=0;
@@ -380,7 +416,7 @@
       hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
       tile.appendChild(hb);
     }
-    tile.addEventListener('dblclick', function(){ openSbDetail(item); });
+    tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
     tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
     tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });
     tile.addEventListener('drop', function(e){
@@ -505,7 +541,6 @@
       var SUBBER_H=_sboardDesktop?78:64;
       var HEADER_W=_sboardDesktop?180:152;
       var HEADER_H=SUBBER_H;
-      var COLUMN_H=_sboardDesktop?520:440;
 
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
@@ -515,7 +550,7 @@
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
         var block=document.createElement('div');
-        block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px;height:'+COLUMN_H+'px';
+        block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         var hdFitSize=_sboardFitFontSize(name, 15, 10);
@@ -541,7 +576,7 @@
         block.appendChild(hd);
         if(directItems.length || subs.length){
           var scroll=document.createElement('div');
-          scroll.style.cssText='flex:1;overflow-y:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+          scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
           subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
           block.appendChild(scroll);
@@ -550,6 +585,7 @@
       }
 
       var groupsWrap=document.createElement('div');
+      groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
 
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
@@ -562,9 +598,9 @@
         } else {
           if(directIdeas.length){
             var directBlock=document.createElement('div');
-            directBlock.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+SUBBER_W+'px;height:'+COLUMN_H+'px';
+            directBlock.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+SUBBER_W+'px';
             var directScroll=document.createElement('div');
-            directScroll.style.cssText='flex:1;overflow-y:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+            directScroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
             directIdeas.forEach(function(item){ directScroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, _sboardCurrentTopicId, SUBBER_H)); });
             directBlock.appendChild(directScroll);
             groupsWrap.appendChild(directBlock);
@@ -874,56 +910,6 @@
 
   function _sboardIsAutoHeaderText(text){
     return /[:?]\s*$/.test(text);
-  }
-
-  async function openSbPromoteConfirm(){
-    var ov=document.getElementById('sb-detail-overlay');
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">Checking for old ideas ending in : or ?…</div>';
-    ov.classList.add('active');
-    var _sb=T().sb;
-    try{
-      var user=(await _sb.auth.getUser()).data.user;
-      if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,text_content')
-        .eq('user_id',user.id).eq('content_type','text');
-      if(res.error) throw new Error(res.error.message);
-      var matches=(res.data||[]).filter(function(r){ return _sboardIsAutoHeaderText(r.text_content||''); });
-      if(!matches.length){
-        ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-          +'<div style="font-size:12px;color:#7a6040;margin-bottom:10px">No old ideas ending in : or ? found — nothing to fix.</div>'
-          +'<button class="sc-ov-btn" id="sb-promote-close">Close</button></div>';
-        T().wire('sb-promote-close', closeSbDetail);
-        return;
-      }
-      var list=matches.slice(0,8).map(function(r){ return '<div style="font-size:11px;color:#1a3a5c;text-align:left;padding:2px 0">• '+(r.text_content||'').replace(/</g,'&lt;')+'</div>'; }).join('');
-      var more=matches.length>8?'<div style="font-size:10px;color:#999;margin-top:4px">…and '+(matches.length-8)+' more</div>':'';
-      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Turn these into Headers?</div>'
-        +'<div style="max-height:160px;overflow-y:auto;margin-bottom:10px">'+list+more+'</div>'
-        +'<div style="font-size:10px;font-style:italic;color:#a3907a;margin-bottom:10px">'+matches.length+' idea'+(matches.length===1?'':'s')+' ending in : or ? — this changes them everywhere, in every cluster.</div>'
-        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-promote-go" style="flex:1">Yes, fix them</button><button class="sc-ov-btn" id="sb-promote-cancel" style="flex:1">Cancel</button></div>'
-        +'</div>';
-      T().wire('sb-promote-cancel', closeSbDetail);
-      T().wire('sb-promote-go', async function(){
-        var goBtn=document.getElementById('sb-promote-go');
-        if(goBtn){ goBtn.disabled=true; goBtn.textContent='Fixing…'; }
-        var failCount=0;
-        for(var i=0;i<matches.length;i++){
-          var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',matches[i].id);
-          if(upd.error) failCount++;
-        }
-        closeSbDetail();
-        renderSeaBoard();
-        var statusEl=document.getElementById('sc-status');
-        if(statusEl){
-          statusEl.textContent=failCount?('Fixed '+(matches.length-failCount)+', '+failCount+' failed.'):('Fixed '+matches.length+' header'+(matches.length===1?'':'s')+'.');
-          statusEl.classList.toggle('err', !!failCount);
-        }
-      });
-    }catch(err){
-      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center"><div style="color:#b8562f;font-size:11px;margin-bottom:10px">'+err.message+'</div><button class="sc-ov-btn" id="sb-promote-close">Close</button></div>';
-      T().wire('sb-promote-close', closeSbDetail);
-    }
   }
 
   function openQuickAddIdea(){
