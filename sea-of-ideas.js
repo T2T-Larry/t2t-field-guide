@@ -173,6 +173,7 @@
         +'.sb-viewas-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a3907a;text-align:center;margin-bottom:4px}'
         +'.sb-viewas-btn{box-sizing:border-box;background:#efe6d8;color:#7a6040;border:1px solid #cbb99a;border-radius:9px;padding:5px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;flex:1 1 auto}'
         +'.sb-viewas-btn:active{transform:scale(0.95)}'
+        +'.sb-card-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#a9cce3;text-align:center;margin-bottom:6px}'
         +'.sb-close-btn{box-sizing:border-box;background:#eaf3fb;color:#000;font-weight:700;border:1px solid #b0a898;border-radius:12px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;box-shadow:0 0 0 6px rgba(90,90,90,0.16),0 4px 10px rgba(26,58,92,0.22);flex-shrink:0}'
         +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:13px;font-weight:700;color:#666;margin-bottom:8px}'
         +'.sb-topic-value{display:inline-block;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;font-family:\'Playfair Display\',serif;margin-bottom:10px}'
@@ -593,7 +594,7 @@
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('div');
         hd.className='sc-pill named';
-        hd.style.cssText='display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('New Additions',15,10)+'px;font-weight:800;margin-bottom:2px;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px';
+        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('New Additions',15,10)+'px;font-weight:800;margin-bottom:2px;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px';
         hd.textContent='New Additions';
         hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
         hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
@@ -1072,6 +1073,7 @@
 
     if(isReservedItem){
       ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
+        + '<div class="sb-card-title">Shape</div>'
         + '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
         + '<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
         + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;flex:1"></textarea>'
@@ -1137,6 +1139,7 @@
     }
 
     ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
+      + '<div class="sb-card-title">Shape</div>'
       + apexTag
       + crumbsHTML
       + headerListHTML
