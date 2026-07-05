@@ -214,7 +214,7 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
     T().wire('b-sc-back', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
-      _sboardCurrentTopicId=null; _sboardBoardStack=[]; _sboardFilter=null;
+      _sboardCurrentTopicId=null; _sboardFilter=null;
       var viaChapter = T().consumeSeaChapterEntry();
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
       else { T().returnToMG(); }
@@ -224,7 +224,7 @@
       T().goMG();
     });
     T().wire('b-sc-fwd', function(){
-      _sboardCurrentTopicId=null; _sboardBoardStack=[]; _sboardFilter=null;
+      _sboardCurrentTopicId=null; _sboardFilter=null;
       if(T().currentFile()==='dream.html' && document.getElementById('s-idea-button')){ T().nav('s-idea-button'); }
       else { T().closeMG(); T().returnToMG(); }
     });
@@ -294,7 +294,6 @@
   var _sboardDesktop = false;
   var _sboardFilter = null;
   var _sboardCurrentTopicId = null;
-  var _sboardBoardStack = [];
   var _sboardTrashId = null;
   var _sboardMiscId = null;
   var _sboardPurposeId = null;
@@ -761,14 +760,14 @@
   }
 
   function _sboardDrillInto(headerRow){
-    _sboardBoardStack.push(_sboardCurrentTopicId);
     _sboardCurrentTopicId=headerRow.id;
     _sboardFilter=headerRow.id;
     renderSeaBoard();
   }
 
   function _sboardGoUpOneLevel(){
-    var parentId=_sboardBoardStack.length?_sboardBoardStack.pop():null;
+    var curRow=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
+    var parentId=curRow?(curRow.cluster_id||null):null;
     _sboardCurrentTopicId=parentId;
     _sboardFilter=parentId;
     renderSeaBoard();
@@ -784,7 +783,7 @@
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
       if(topicBox) topicBox.textContent=topicRow.text_content||'(untitled)';
       if(areaEl) areaEl.style.background='#3a2564';
-      var parentId=_sboardBoardStack[_sboardBoardStack.length-1];
+      var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:'What do you want?';
       if(parentHit) parentHit.classList.remove('inert');
@@ -1101,7 +1100,7 @@
     // chrome computes them, so the SHAPING card always agrees with the board.
     var topicRow=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
     var topicLabel=(_sboardCurrentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):'What do you want?';
-    var parentIdCrumb=_sboardBoardStack[_sboardBoardStack.length-1];
+    var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
     var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):'What do you want?'):'Sea of Ideas';
     var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
