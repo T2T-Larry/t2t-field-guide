@@ -501,9 +501,9 @@
       var orderedTop=fallbackTop.concat(explicitTop);
       _sboardTopLevelOrder=orderedTop.map(function(h){ return h.id; });
 
-      var SUBBER_W=_sboardDesktop?100:84;
-      var SUBBER_H=_sboardDesktop?62:52;
-      var HEADER_W=_sboardDesktop?160:136;
+      var SUBBER_W=_sboardDesktop?128:104;
+      var SUBBER_H=_sboardDesktop?78:64;
+      var HEADER_W=_sboardDesktop?180:152;
       var HEADER_H=SUBBER_H;
       var COLUMN_H=_sboardDesktop?520:440;
 
