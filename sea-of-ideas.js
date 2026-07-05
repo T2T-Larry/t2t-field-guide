@@ -541,7 +541,7 @@
         block.appendChild(hd);
         if(directItems.length || subs.length){
           var scroll=document.createElement('div');
-          scroll.style.cssText='flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+          scroll.style.cssText='flex:1;overflow-y:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
           subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
           block.appendChild(scroll);
@@ -550,7 +550,7 @@
       }
 
       var groupsWrap=document.createElement('div');
-      groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:12px;align-items:flex-start';
+      groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:6px;align-items:flex-start';
 
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         var directIdeas=(childrenOfHeader[_sboardCurrentTopicId]||[]).slice().sort(_sboardBySortOrder);
@@ -564,7 +564,7 @@
             var directBlock=document.createElement('div');
             directBlock.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+SUBBER_W+'px;height:'+COLUMN_H+'px';
             var directScroll=document.createElement('div');
-            directScroll.style.cssText='flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
+            directScroll.style.cssText='flex:1;overflow-y:auto;scrollbar-gutter:stable;display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0 8px';
             directIdeas.forEach(function(item){ directScroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, _sboardCurrentTopicId, SUBBER_H)); });
             directBlock.appendChild(directScroll);
             groupsWrap.appendChild(directBlock);
