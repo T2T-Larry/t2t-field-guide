@@ -1379,26 +1379,36 @@
   var _customWired = false;
 
   async function _sboardEnsureHeaderNamed(name, parentId){
-    var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return null;
-    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content',name);
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
-    if(existing.data && existing.data.length) return existing.data[0].id;
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    return ins.data?ins.data.id:null;
+    try{
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return null;
+      var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content',name);
+      q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+      var existing=await q.limit(1);
+      if(existing.error) console.warn('_sboardEnsureHeaderNamed select error:', existing.error);
+      if(existing.data && existing.data.length) return existing.data[0].id;
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      if(ins.error) console.warn('_sboardEnsureHeaderNamed insert error:', ins.error);
+      return ins.data?ins.data.id:null;
+    }catch(e){ console.warn('_sboardEnsureHeaderNamed exception:', e); return null; }
   }
 
   async function _sboardTopLevelBoards(){
-    var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return [];
-    var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null);
-    return (res.data||[]).filter(function(r){ return r.text_content!=='Trash'; });
+    try{
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return [];
+      var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null);
+      if(res.error){ console.warn('_sboardTopLevelBoards error:', res.error); return []; }
+      return (res.data||[]).filter(function(r){ return r.text_content!=='Trash'; });
+    }catch(e){ console.warn('_sboardTopLevelBoards exception:', e); return []; }
   }
 
   async function _sboardChildHeaders(parentId){
     if(!parentId) return [];
-    var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return [];
-    var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').eq('cluster_id',parentId);
-    return res.data||[];
+    try{
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return [];
+      var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').eq('cluster_id',parentId);
+      if(res.error){ console.warn('_sboardChildHeaders error:', res.error); return []; }
+      return res.data||[];
+    }catch(e){ console.warn('_sboardChildHeaders exception:', e); return []; }
   }
 
   function _ideaOpenBoard(boardId){
@@ -1437,26 +1447,39 @@
     var headerSel=document.getElementById('ic-header');
     if(!boardSel||!headerSel) return;
 
-    var wishTankId=await _sboardEnsureHeaderNamed('Wish Tank', null);
-    var boards=await _sboardTopLevelBoards();
+    var wishTankId=null, boards=[];
+    try{
+      wishTankId=await _sboardEnsureHeaderNamed('Wish Tank', null);
+      boards=await _sboardTopLevelBoards();
+    }catch(e){ console.warn('renderIdeaCapture board load failed:', e); }
+
+    if(wishTankId && !boards.some(function(b){return String(b.id)===String(wishTankId);})){
+      boards.push({id:wishTankId, text_content:'Wish Tank'});
+    }
     boardSel.innerHTML=boards.map(function(b){ return '<option value="'+b.id+'">'+b.text_content+'</option>'; }).join('')
       +'<option value="__new__">+ Create new board</option>';
 
     var defaultBoardId=(_ideaCaptureCtx&&_ideaCaptureCtx.boardId)?_ideaCaptureCtx.boardId:wishTankId;
-    boardSel.value=defaultBoardId;
-    if(boardSel.value!==String(defaultBoardId)) boardSel.value=wishTankId;
+    if(defaultBoardId) boardSel.value=defaultBoardId;
+    if(boardSel.selectedIndex===-1 && boardSel.options.length>1) boardSel.selectedIndex=0;
 
     async function refreshHeaders(){
       var boardId=boardSel.value;
-      if(boardId==='__new__') return;
-      var naId=await _sboardEnsureHeaderNamed('New Additions', boardId);
-      var children=await _sboardChildHeaders(boardId);
+      if(boardId==='__new__' || !boardId) return;
+      var naId=null, children=[];
+      try{
+        naId=await _sboardEnsureHeaderNamed('New Additions', boardId);
+        children=await _sboardChildHeaders(boardId);
+      }catch(e){ console.warn('refreshHeaders failed:', e); }
       var others=children.filter(function(c){ return c.id!==naId; });
-      headerSel.innerHTML='<option value="'+naId+'">New Additions</option>'
-        +others.map(function(c){ return '<option value="'+c.id+'">'+c.text_content+'</option>'; }).join('')
-        +'<option value="__new__">+ Create new header</option>';
+      var opts='';
+      if(naId) opts+='<option value="'+naId+'">New Additions</option>';
+      opts+=others.map(function(c){ return '<option value="'+c.id+'">'+c.text_content+'</option>'; }).join('');
+      opts+='<option value="__new__">+ Create new header</option>';
+      headerSel.innerHTML=opts;
       var defaultHeaderId=(_ideaCaptureCtx&&String(_ideaCaptureCtx.boardId)===String(boardId)&&_ideaCaptureCtx.headerId)?_ideaCaptureCtx.headerId:naId;
-      headerSel.value=defaultHeaderId;
+      if(defaultHeaderId) headerSel.value=defaultHeaderId;
+      if(headerSel.selectedIndex===-1 && headerSel.options.length>1) headerSel.selectedIndex=0;
     }
     await refreshHeaders();
     _ideaCaptureCtx=null;
