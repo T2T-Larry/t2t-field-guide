@@ -220,7 +220,7 @@
       T().goMG();
     });
     T().wire('b-sc-idea', function(){
-      if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId});
+      if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, returnToBoard:true});
     });
     T().wire('b-sc-fwd', function(){
       _sboardCurrentTopicId=null; _sboardFilter=null;
@@ -1364,6 +1364,8 @@
 
   /* ── 9210-9214 · Idea capture family ── */
   var _ideaCaptureCtx = null;
+  var _ideaReturnToBoard = false;
+  var _ideaReturnBoardId = null;
   var _ideaWired = false;
   var _ideaDraftText = '';
   var _themeWired = false;
@@ -1375,12 +1377,13 @@
 
   async function _ideaEnsureWishTank(){
     try{
-      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return null;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user) return {id:null, error:'Not signed in'};
       var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Wish Tank').is('cluster_id',null).limit(1);
-      if(existing.error){ console.warn('_ideaEnsureWishTank select error:', existing.error); return null; }
-      if(existing.data && existing.data.length) return existing.data[0].id;
+      if(existing.error) return {id:null, error:'Select failed: '+existing.error.message};
+      if(existing.data && existing.data.length) return {id:existing.data[0].id, error:null};
       var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Wish Tank',cluster_id:null,created_at:new Date().toISOString()}).select().single();
-      if(ins.error || !ins.data){ console.warn('_ideaEnsureWishTank insert error:', ins.error); return null; }
+      if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
       var wishTankId=ins.data.id;
       /* One-time migration, only reached on first-ever creation for this member: every
          pre-existing root-level row (their whole original "What do you want?" Sea of
@@ -1394,8 +1397,8 @@
           .neq('id',wishTankId).neq('text_content','Trash');
         if(mig.error) console.warn('Wish Tank migration error:', mig.error);
       }catch(migErr){ console.warn('Wish Tank migration exception:', migErr); }
-      return wishTankId;
-    }catch(e){ console.warn('_ideaEnsureWishTank exception:', e); return null; }
+      return {id:wishTankId, error:null};
+    }catch(e){ return {id:null, error:'Exception: '+(e&&e.message?e.message:String(e))}; }
   }
 
   async function _sboardEnsureHeaderNamed(name, parentId){
@@ -1472,16 +1475,17 @@
     var headerSel=document.getElementById('ic-header');
     if(!boardSel||!headerSel) return;
 
-    var wishTankId=null, boards=[], loadError=false;
+    var wishTankId=null, boards=[], loadError=false, errorDetail='';
     try{
-      wishTankId=await _ideaEnsureWishTank();
+      var wtResult=await _ideaEnsureWishTank();
+      wishTankId=wtResult.id;
+      if(wtResult.error){ loadError=true; errorDetail=wtResult.error; }
       boards=await _sboardTopLevelBoards();
-    }catch(e){ console.warn('renderIdeaCapture board load failed:', e); loadError=true; }
-    if(!wishTankId) loadError=true;
+    }catch(e){ console.warn('renderIdeaCapture board load failed:', e); loadError=true; errorDetail=(e&&e.message)?e.message:String(e); }
 
     var statusEl=document.getElementById('ic-board-status');
     if(statusEl) statusEl.textContent = loadError
-      ? "Couldn't load your boards — tap the eye to see your existing Sea of Ideas."
+      ? ("Couldn't load boards: " + errorDetail)
       : '';
 
     if(wishTankId && !boards.some(function(b){return String(b.id)===String(wishTankId);})){
@@ -1546,7 +1550,15 @@
           } else { await refreshHeaders(); }
         }
       });
-      T().wire('b-icap-close', function(){ T().returnToMG(); });
+      T().wire('b-icap-close', function(){
+        if(_ideaReturnToBoard){
+          _sboardCurrentTopicId=_ideaReturnBoardId; _sboardFilter=_ideaReturnBoardId;
+          _ideaReturnToBoard=false;
+          T().nav('s-sea-of-ideas-cluster');
+        } else {
+          T().returnToMG();
+        }
+      });
       T().wire('ic-peek-board', function(){
         if(boardSel.value && boardSel.value!=='__new__') _ideaOpenBoard(boardSel.value);
         else _ideaOpenRoot();
@@ -1661,9 +1673,9 @@
   }
 
   async function _ideaGetDefaultHeaderId(){
-    var wishTankId=await _ideaEnsureWishTank();
-    if(!wishTankId) return null;
-    return await _sboardEnsureHeaderNamed('New Additions', wishTankId);
+    var result=await _ideaEnsureWishTank();
+    if(!result || !result.id) return null;
+    return await _sboardEnsureHeaderNamed('New Additions', result.id);
   }
 
   window.T2TSea = {
@@ -1675,7 +1687,12 @@
       T().nav('s-sea-of-ideas-cluster');
     },
     openBoard: function(boardId){ _ideaOpenBoard(boardId); },
-    openIdeaCapture: function(ctx){ _ideaCaptureCtx=ctx||null; T().nav('s-idea-capture'); },
+    openIdeaCapture: function(ctx){
+      _ideaCaptureCtx=ctx||null;
+      _ideaReturnToBoard=!!(ctx&&ctx.returnToBoard);
+      _ideaReturnBoardId=(ctx&&ctx.boardId!==undefined)?ctx.boardId:null;
+      T().nav('s-idea-capture');
+    },
     getCurrentBoardContext: function(){ return _sboardCurrentTopicId?{boardId:_sboardCurrentTopicId}:null; },
     getDefaultHeaderId: _ideaGetDefaultHeaderId
   };
