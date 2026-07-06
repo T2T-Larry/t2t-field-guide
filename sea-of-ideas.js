@@ -1378,6 +1378,31 @@
   var _linkPendingUrl = null;
   var _customWired = false;
 
+  async function _ideaEnsureWishTank(){
+    try{
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return null;
+      var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Wish Tank').is('cluster_id',null).limit(1);
+      if(existing.error){ console.warn('_ideaEnsureWishTank select error:', existing.error); return null; }
+      if(existing.data && existing.data.length) return existing.data[0].id;
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Wish Tank',cluster_id:null,created_at:new Date().toISOString()}).select().single();
+      if(ins.error || !ins.data){ console.warn('_ideaEnsureWishTank insert error:', ins.error); return null; }
+      var wishTankId=ins.data.id;
+      /* One-time migration, only reached on first-ever creation for this member: every
+         pre-existing root-level row (their whole original "What do you want?" Sea of
+         Ideas) gets pulled into the new Wish Tank, since Wish Tank IS that root question —
+         not a sibling of it. Reserved Trash header is left alone. Runs exactly once per
+         member, at the moment Wish Tank is born, so it never sweeps up legitimate boards
+         created afterward. */
+      try{
+        var mig=await _sb.from('ideas').update({cluster_id:wishTankId})
+          .eq('user_id',user.id).is('cluster_id',null)
+          .neq('id',wishTankId).neq('text_content','Trash');
+        if(mig.error) console.warn('Wish Tank migration error:', mig.error);
+      }catch(migErr){ console.warn('Wish Tank migration exception:', migErr); }
+      return wishTankId;
+    }catch(e){ console.warn('_ideaEnsureWishTank exception:', e); return null; }
+  }
+
   async function _sboardEnsureHeaderNamed(name, parentId){
     try{
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return null;
@@ -1416,6 +1441,11 @@
     T().nav('s-sea-of-ideas-cluster');
   }
 
+  function _ideaOpenRoot(){
+    _sboardCurrentTopicId=null; _sboardFilter=null;
+    T().nav('s-sea-of-ideas-cluster');
+  }
+
   async function _ideaSaveCard(imageUrl){
     var headerSel=document.getElementById('ic-header');
     var headerId=headerSel?headerSel.value:null;
@@ -1447,11 +1477,17 @@
     var headerSel=document.getElementById('ic-header');
     if(!boardSel||!headerSel) return;
 
-    var wishTankId=null, boards=[];
+    var wishTankId=null, boards=[], loadError=false;
     try{
-      wishTankId=await _sboardEnsureHeaderNamed('Wish Tank', null);
+      wishTankId=await _ideaEnsureWishTank();
       boards=await _sboardTopLevelBoards();
-    }catch(e){ console.warn('renderIdeaCapture board load failed:', e); }
+    }catch(e){ console.warn('renderIdeaCapture board load failed:', e); loadError=true; }
+    if(!wishTankId) loadError=true;
+
+    var statusEl=document.getElementById('ic-board-status');
+    if(statusEl) statusEl.textContent = loadError
+      ? "Couldn't load your boards — tap the eye to see your existing Sea of Ideas."
+      : '';
 
     if(wishTankId && !boards.some(function(b){return String(b.id)===String(wishTankId);})){
       boards.push({id:wishTankId, text_content:'Wish Tank'});
@@ -1516,8 +1552,14 @@
         }
       });
       T().wire('b-icap-close', function(){ T().returnToMG(); });
-      T().wire('ic-peek-board', function(){ if(boardSel.value&&boardSel.value!=='__new__') _ideaOpenBoard(boardSel.value); });
-      T().wire('ic-peek-header', function(){ if(boardSel.value&&boardSel.value!=='__new__') _ideaOpenBoard(boardSel.value); });
+      T().wire('ic-peek-board', function(){
+        if(boardSel.value && boardSel.value!=='__new__') _ideaOpenBoard(boardSel.value);
+        else _ideaOpenRoot();
+      });
+      T().wire('ic-peek-header', function(){
+        if(boardSel.value && boardSel.value!=='__new__') _ideaOpenBoard(boardSel.value);
+        else _ideaOpenRoot();
+      });
       T().wire('ic-btn-theme', function(){ T().nav('s-idea-theme'); });
       T().wire('ic-btn-paste', function(){ T().nav('s-idea-paste'); });
       T().wire('ic-btn-link', function(){ T().nav('s-idea-link'); });
@@ -1623,6 +1665,12 @@
     T().registerScreenActivate('s-idea-custom', renderIdeaCustom);
   }
 
+  async function _ideaGetDefaultHeaderId(){
+    var wishTankId=await _ideaEnsureWishTank();
+    if(!wishTankId) return null;
+    return await _sboardEnsureHeaderNamed('New Additions', wishTankId);
+  }
+
   window.T2TSea = {
     openTrash: async function(){
       try{
@@ -1633,7 +1681,8 @@
     },
     openBoard: function(boardId){ _ideaOpenBoard(boardId); },
     openIdeaCapture: function(ctx){ _ideaCaptureCtx=ctx||null; T().nav('s-idea-capture'); },
-    getCurrentBoardContext: function(){ return _sboardCurrentTopicId?{boardId:_sboardCurrentTopicId}:null; }
+    getCurrentBoardContext: function(){ return _sboardCurrentTopicId?{boardId:_sboardCurrentTopicId}:null; },
+    getDefaultHeaderId: _ideaGetDefaultHeaderId
   };
 
   document.addEventListener('DOMContentLoaded', function(){

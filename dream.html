@@ -264,8 +264,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .phase-sub{font-size:14px;letter-spacing:4px;color:#3B2510;margin-top:32px;text-transform:uppercase}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="backpack.js?v=20260706f"></script>
-<script src="sea-of-ideas.js?v=20260706f"></script>
+<script src="backpack.js?v=20260706g"></script>
+<script src="sea-of-ideas.js?v=20260706g"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">
@@ -2290,7 +2290,8 @@ document.addEventListener('DOMContentLoaded', function(){
           if(T.sb){
             var u = (await T.sb.auth.getUser()).data.user;
             if(u){
-              var ins = await T.sb.from('ideas').insert({user_id:u.id, content_type:'text', text_content:note, page_context:'Flip the Friction', created_at:new Date().toISOString()});
+              var defHdr = window.T2TSea ? await window.T2TSea.getDefaultHeaderId() : null;
+              var ins = await T.sb.from('ideas').insert({user_id:u.id, content_type:'text', text_content:note, cluster_id:defHdr||null, page_context:'Flip the Friction', created_at:new Date().toISOString()});
               ok = !ins.error;
             }
           }
@@ -2375,7 +2376,8 @@ document.addEventListener('DOMContentLoaded', function(){
       if(T.sb){
         var u = (await T.sb.auth.getUser()).data.user;
         if(u){
-          var ins = await T.sb.from('ideas').insert({user_id:u.id, content_type:'text', text_content:note, page_context:'Blue Sky · '+label, created_at:new Date().toISOString()});
+          var defHdr = window.T2TSea ? await window.T2TSea.getDefaultHeaderId() : null;
+          var ins = await T.sb.from('ideas').insert({user_id:u.id, content_type:'text', text_content:note, cluster_id:defHdr||null, page_context:'Blue Sky · '+label, created_at:new Date().toISOString()});
           ok = !ins.error;
         }
       }
@@ -2477,10 +2479,12 @@ document.addEventListener('DOMContentLoaded', function(){
         if(T.sb){
           var u = (await T.sb.auth.getUser()).data.user;
           if(u){
+            var defHdr = window.T2TSea ? await window.T2TSea.getDefaultHeaderId() : null;
             var ins = await T.sb.from('ideas').insert({
               user_id: u.id,
               content_type: 'image',
               image_url: item.url,
+              cluster_id: defHdr||null,
               unsplash_description_raw: item.desc || null,
               header_used: item.header || null,
               created_at: new Date().toISOString()
