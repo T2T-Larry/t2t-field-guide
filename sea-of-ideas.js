@@ -1456,6 +1456,11 @@
     if(wishTankId && !boards.some(function(b){return String(b.id)===String(wishTankId);})){
       boards.push({id:wishTankId, text_content:'Wish Tank'});
     }
+    boards.sort(function(a,b){
+      if(String(a.id)===String(wishTankId)) return -1;
+      if(String(b.id)===String(wishTankId)) return 1;
+      return (a.text_content||'').localeCompare(b.text_content||'');
+    });
     boardSel.innerHTML=boards.map(function(b){ return '<option value="'+b.id+'">'+b.text_content+'</option>'; }).join('')
       +'<option value="__new__">+ Create new board</option>';
 
@@ -1472,6 +1477,7 @@
         children=await _sboardChildHeaders(boardId);
       }catch(e){ console.warn('refreshHeaders failed:', e); }
       var others=children.filter(function(c){ return c.id!==naId; });
+      others.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
       var opts='';
       if(naId) opts+='<option value="'+naId+'">New Additions</option>';
       opts+=others.map(function(c){ return '<option value="'+c.id+'">'+c.text_content+'</option>'; }).join('');
