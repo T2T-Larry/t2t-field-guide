@@ -791,7 +791,12 @@
       if(behind){ if(mgOrigin){ nav(mgOrigin,false); } else { goBack(); } }
     });
     wire('b-mg-map',goMap);
-    wire('b-mg-idea',   function(){closeMG();nav('s-idea',   false);});
+    wire('b-mg-idea',   function(){
+      var ctx=(window.T2TSea&&window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
+      closeMG();
+      if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(ctx);
+      else nav('s-idea-capture', false);
+    });
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
     wire('b-mg-gems',   function(){closeMG();nav('s-gems',   false);});
     wire('b-mg-trivia', function(){closeMG();nav('s-trivia', false);});
@@ -806,6 +811,10 @@
     registerPageNum('s-cover-map',   '9100');
     registerPageNum('s-idea',        '9200');
     registerPageNum('s-idea-capture','9210');
+    registerPageNum('s-idea-theme',  '9211');
+    registerPageNum('s-idea-paste',  '9212');
+    registerPageNum('s-idea-link',   '9213');
+    registerPageNum('s-idea-custom', '9214');
     registerPageNum('s-journal',        '9300');
     registerPageNum('s-journal-capture','9310');
     registerPageNum('s-journal-view',   '9320');
@@ -835,32 +844,18 @@
     wire('b-idea-back',returnToMG);
     wire('b-idea-mg',goMG);
     wire('b-idea-trivia',function(){ _triviaOverride='s-idea'; nav('s-trivia',false); });
+    /* NOTE: 9210 capture flow (selects, close, save, image buttons) is now wired
+       entirely inside sea-of-ideas.js via renderIdeaCapture() — registered against
+       's-idea-capture' through registerScreenActivate. This keeps all Idea/board
+       schema logic (boards, headers, cluster_id) in one file. The 9200 hub screen
+       ('s-idea') is no longer the default entry point (💡 now opens 9210 directly,
+       see b-mg-idea above) but is left in place and still reachable; its "Capture
+       an Idea" button below just forwards into the same 9210 flow. */
     wire('b-capture-idea',function(){
-      nav('s-idea-capture');
-      setTimeout(function(){
-        var t=document.getElementById('idea-text');if(t)t.value='';
-        var b=document.getElementById('b-save-idea');if(b)b.classList.remove('active');
-        var s=document.getElementById('idea-status');if(s)s.textContent='';
-        var p=document.getElementById('idea-posted');if(p)p.style.display='none';
-        var ta=document.getElementById('idea-text');if(ta)ta.style.display='block';
-      },50);
+      if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
+      else nav('s-idea-capture');
     });
     wire('b-sea-ideas',function(){ seaChapterEntry = false; nav('s-sea-of-ideas-cluster'); });
-    wire('b-icap-back',function(){nav('s-idea');}); wire('b-icap-mg',goMG);
-    var ideaTA=document.getElementById('idea-text');
-    if(ideaTA) ideaTA.addEventListener('input',function(){var b=document.getElementById('b-save-idea');if(b)b.classList.toggle('active',this.value.trim().length>0);});
-    wire('b-save-idea',async function(){
-      var t=document.getElementById('idea-text');if(!t)return;
-      var text=t.value.trim();if(!text)return;
-      var ctx=getCtx();
-      var btn=document.getElementById('b-save-idea');
-      btn.classList.remove('active');btn.textContent='SAVING\u2026';
-      try{var user=await _sb.auth.getUser();if(user&&user.data&&user.data.user){await _sb.from('ideas').insert({user_id:user.data.user.id,content_type:'text',text_content:text,page_context:ctx,created_at:new Date().toISOString()});}}catch(e){}
-      await postIdeaToMiro(text,ctx);
-      t.value='';t.style.display='none';btn.textContent='SAVE';
-      var posted=document.getElementById('idea-posted');if(posted)posted.style.display='flex';
-      setTimeout(function(){if(posted)posted.style.display='none';t.style.display='block';btn.classList.remove('active');},2000);
-    });
 
     /* JOURNAL HUB */
     wire('b-journal-back',returnToMG);

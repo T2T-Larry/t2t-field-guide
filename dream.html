@@ -235,6 +235,17 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .cp-msg{font-size:13px;font-style:italic;text-align:center;margin-top:14px;min-height:20px;color:#3B6D11}
 .cp-msg.err{color:#A32D2D}
 .idea-status{font-size:12px;font-style:italic;color:#3A6080;text-align:center;padding:6px 0;min-height:22px;transition:opacity .3s}
+.icw-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ic-close{width:30px;height:30px;flex-shrink:0;background:#ffffff;border:2px solid #111;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;color:#000;display:flex;align-items:center;justify-content:center;margin-top:4px}
+.ic-field-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ic-field-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#3A6080;margin-bottom:3px}
+.ic-select{width:100%;font-size:13px;padding:7px;background:#ffffff;border:1px solid #A8CAFE;border-radius:8px;font-family:'Playfair Display',serif;color:#1A3A5C}
+.ic-peek{width:34px;height:34px;flex-shrink:0;background:#ffffff;border:1px solid #A8CAFE;border-radius:8px;cursor:pointer;font-size:15px;margin-top:14px}
+.ic-input-card{width:230px;height:142px;margin:0 auto 16px;background:#ffffff;border:2px solid #111;border-radius:10px;box-shadow:0 3px 8px rgba(0,0,0,.22);padding:12px;box-sizing:border-box;overflow:hidden}
+.ic-input-card textarea{width:100%;height:100%;border:none;resize:none;font-family:'Playfair Display',serif;font-style:italic;font-size:14px;color:#1A3A5C;outline:none;background:transparent}
+.ic-image-row{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.ic-image-btn{width:42px;height:42px;background:#ffffff;border:2px solid #111;border-radius:10px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
+.ic-placeholder{background:#ffffff;border:2px solid #111;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#3A6080;text-align:center;box-sizing:border-box;font-size:12px}
 
   /* ── SPARK DOORS ── */
   .spark-door{padding:16px 6px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid #111;background:#faf6ee;color:#1a3a5c;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14);transition:all .15s;text-align:center;display:flex;align-items:center;justify-content:center}
@@ -1522,26 +1533,101 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div class="bar2"><button class="tb" id="b-idea-back">⬅️</button><button class="tb" id="b-idea-trivia">🌸</button><button class="tb" id="b-idea-mg">🔍</button></div>
 </div>
 
-<!-- 💡 IDEA CAPTURE -->
+<!-- 💡 IDEA CAPTURE — 9210 -->
 <div class="sc" id="s-idea-capture">
   <div class="card"><div class="icw">
-    <div class="icit">💡 Idea</div>
-    <hr class="icr">
+    <div class="icw-head">
+      <div class="icit">💡 Idea</div>
+      <button class="ic-close" id="b-icap-close" title="Close">✕</button>
+    </div>
     <div class="icq">Ideas are so fragile. Write this one down before it's gone.</div>
-    <textarea class="ict" id="idea-text" placeholder="What if…?"></textarea>
-    <div class="sp"></div>
+    <hr class="icr">
+    <div class="ic-field-row">
+      <div style="flex:1">
+        <div class="ic-field-label">Storyboard</div>
+        <select class="ic-select" id="ic-storyboard"></select>
+      </div>
+      <button class="ic-peek" id="ic-peek-board" title="Open this board">👁</button>
+    </div>
+    <div class="ic-field-row">
+      <div style="flex:1">
+        <div class="ic-field-label">Header</div>
+        <select class="ic-select" id="ic-header"></select>
+      </div>
+      <button class="ic-peek" id="ic-peek-header" title="Open this board">👁</button>
+    </div>
+    <div class="ic-input-card"><textarea id="idea-text" placeholder="What if…?"></textarea></div>
+    <div class="ic-image-row">
+      <button class="ic-image-btn" id="ic-btn-theme" title="Theme — browse Unsplash">📷</button>
+      <button class="ic-image-btn" id="ic-btn-paste" title="Paste an image">📋</button>
+      <button class="ic-image-btn" id="ic-btn-link" title="Link an image">🔗</button>
+      <button class="ic-image-btn" id="ic-btn-custom" title="Custom AI image">✨</button>
+    </div>
     <div class="idea-status" id="idea-status"></div>
-    <div id="idea-posted" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px">
-      <div style="font-size:52px">🌊</div>
-      <div style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:#1A3A5C">Posted!</div>
-      <div style="font-size:13px;font-style:italic;color:#3A6080">Your idea is in the Sea of Ideas.</div>
+    <button class="save-btn active" id="b-save-idea" style="width:100%">SAVE</button>
+  </div></div>
+</div>
+
+<!-- 📷 IDEA · THEME — 9211 -->
+<div class="sc" id="s-idea-theme">
+  <div class="card"><div class="icw">
+    <div class="icw-head">
+      <div class="icit" style="font-size:32px">📷 Theme</div>
+      <button class="ic-close" id="b-itheme-close" title="Close">✕</button>
+    </div>
+    <div class="icq">Let an image find the feeling.</div>
+    <hr class="icr">
+    <div id="itheme-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:230px;margin:0 auto 14px"></div>
+    <div style="font-size:11px;color:#3A6080;margin-bottom:14px">Tap the black heart to catch one — same gesture as Creative Sparks.</div>
+    <button class="save-btn active" id="b-itheme-catch" style="width:100%">♥ CATCH THIS IMAGE</button>
+  </div></div>
+</div>
+
+<!-- 📋 IDEA · PASTE — 9212 -->
+<div class="sc" id="s-idea-paste">
+  <div class="card"><div class="icw">
+    <div class="icw-head">
+      <div class="icit" style="font-size:32px">📋 Paste</div>
+      <button class="ic-close" id="b-ipaste-close" title="Close">✕</button>
+    </div>
+    <div class="icq">Already have the picture? Bring it in.</div>
+    <hr class="icr">
+    <div id="ipaste-drop" class="ic-placeholder" style="width:230px;height:142px;margin:0 auto 16px;border-style:dashed;padding:10px">Paste an image here<br>(Ctrl/Cmd + V)</div>
+    <button class="save-btn active" id="b-ipaste-attach" style="width:100%">ATTACH IMAGE</button>
+  </div></div>
+</div>
+
+<!-- 🔗 IDEA · LINK — 9213 -->
+<div class="sc" id="s-idea-link">
+  <div class="card"><div class="icw">
+    <div class="icw-head">
+      <div class="icit" style="font-size:32px">🔗 Link</div>
+      <button class="ic-close" id="b-ilink-close" title="Close">✕</button>
+    </div>
+    <div class="icq">Point us to it.</div>
+    <hr class="icr">
+    <input type="text" id="ilink-url" placeholder="Paste a URL…" style="width:230px;display:block;margin:0 auto 10px;font-size:13px;padding:8px;background:#ffffff;border:1px solid #A8CAFE;border-radius:8px;font-family:'Playfair Display',serif;box-sizing:border-box">
+    <div id="ilink-preview" class="ic-placeholder" style="width:230px;height:108px;margin:0 auto 16px;padding:8px">Preview appears here once the link resolves</div>
+    <button class="save-btn active" id="b-ilink-attach" style="width:100%">ATTACH LINK</button>
+  </div></div>
+</div>
+
+<!-- ✨ IDEA · CUSTOM — 9214 -->
+<div class="sc" id="s-idea-custom">
+  <div class="card"><div class="icw">
+    <div class="icw-head">
+      <div class="icit" style="font-size:32px">✨ Custom</div>
+      <button class="ic-close" id="b-icustom-close" title="Close">✕</button>
+    </div>
+    <div class="icq">Describe what you see. We'll bring it into view.</div>
+    <hr class="icr">
+    <textarea id="icustom-prompt" placeholder="A lighthouse on a quiet shore at dawn…" style="width:230px;height:60px;display:block;margin:0 auto 10px;font-size:13px;padding:8px;background:#ffffff;border:1px solid #A8CAFE;border-radius:8px;font-family:'Playfair Display',serif;box-sizing:border-box;resize:none"></textarea>
+    <div id="icustom-preview" class="ic-placeholder" style="width:230px;height:108px;margin:0 auto 16px;padding:8px">Generated image appears here</div>
+    <div style="display:flex;gap:8px">
+      <button class="save-btn active" id="b-icustom-generate" style="flex:1">GENERATE</button>
+      <button class="save-btn active" id="b-icustom-use" style="flex:1">USE THIS IMAGE</button>
     </div>
   </div></div>
-  <div class="bar2" style="gap:10px">
-    <button class="tb" id="b-icap-back">⬅️</button>
-    <button class="tb" id="b-icap-mg">🔍</button>
-    <button class="save-btn" id="b-save-idea">SAVE</button>
-  </div>
 </div>
 
 <!-- ══ 9101 · WHERE DO IDEAS COME FROM? (trivia off Idea Hub) ══ -->
