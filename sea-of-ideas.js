@@ -202,13 +202,9 @@
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
-      +'<div id="sc-controls">'
-      +'<button class="sc-ov-btn" id="b-sc-quickadd">+ Add idea</button>'
-      +'<button class="sc-ov-btn" id="b-sc-upload">📤 Add your photos</button>'
-      +'<input type="file" id="sc-upload-input" accept="image/*" multiple style="display:none">'
+      +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
       +'</div>'
-      +'</div>'
-      +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
+      +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-idea">💡</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
     fg.appendChild(div.firstChild);
     T().registerPageNum('s-sea-of-ideas-cluster', '9221');
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
@@ -223,6 +219,9 @@
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
       T().goMG();
     });
+    T().wire('b-sc-idea', function(){
+      if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId});
+    });
     T().wire('b-sc-fwd', function(){
       _sboardCurrentTopicId=null; _sboardFilter=null;
       if(T().currentFile()==='dream.html' && document.getElementById('s-idea-button')){ T().nav('s-idea-button'); }
@@ -236,13 +235,9 @@
       if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
       renderSeaBoard();
     });
-    T().wire('b-sc-quickadd', openQuickAddIdea);
-    T().wire('b-sc-upload', function(){ document.getElementById('sc-upload-input').click(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     _sboardApplyBoardBg();
-    var uploadInput=document.getElementById('sc-upload-input');
-    if(uploadInput) uploadInput.addEventListener('change', function(e){ _sboardBatchUpload(e.target.files); e.target.value=''; });
 
     var topicBoxEl=document.getElementById('sc-topic-box');
     if(topicBoxEl) topicBoxEl.addEventListener('dblclick', function(e){
