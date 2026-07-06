@@ -1377,6 +1377,7 @@
 
   async function _ideaEnsureWishTank(){
     try{
+      var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) return {id:null, error:'Not signed in'};
       var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Wish Tank').is('cluster_id',null).limit(1);
@@ -1403,6 +1404,7 @@
 
   async function _sboardEnsureHeaderNamed(name, parentId){
     try{
+      var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return null;
       var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content',name);
       q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
@@ -1417,6 +1419,7 @@
 
   async function _sboardTopLevelBoards(){
     try{
+      var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return [];
       var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null);
       if(res.error){ console.warn('_sboardTopLevelBoards error:', res.error); return []; }
@@ -1427,6 +1430,7 @@
   async function _sboardChildHeaders(parentId){
     if(!parentId) return [];
     try{
+      var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user; if(!user) return [];
       var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').eq('cluster_id',parentId);
       if(res.error){ console.warn('_sboardChildHeaders error:', res.error); return []; }
@@ -1451,6 +1455,7 @@
     var text=(ta?ta.value:_ideaDraftText).trim();
     if(!text && !imageUrl) return;
     try{
+      var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(user){
         await _sb.from('ideas').insert({
@@ -1531,6 +1536,7 @@
         if(this.value==='__new__'){
           var name=prompt('Name your new storyboard:');
           if(name){
+            var _sb=T().sb;
             var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
             var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,created_at:new Date().toISOString()}).select().single();
             await renderIdeaCapture();
@@ -1543,6 +1549,7 @@
         if(this.value==='__new__'){
           var name=prompt('Name your new header:');
           if(name){
+            var _sb=T().sb;
             var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
             var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:boardSel.value,created_at:new Date().toISOString()}).select().single();
             await refreshHeaders();
