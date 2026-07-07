@@ -192,20 +192,34 @@
         +'.cl-topbar-btns{display:flex;gap:6px;flex-shrink:0}'
         +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0}'
         +'.cl-hint{font-size:10px;font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
-        +'.cl-starburst{flex:1;position:relative;overflow-y:auto;overflow-x:hidden;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
+        /* cl-body holds the shelf + starburst together so their arrangement can
+           flip from stacked (shelf below, mobile/normal) to side-by-side (shelf
+           column on the left, wide/desktop) without touching the topbar/hint
+           above them. Tied to the same ⛶ toggle that already means "desktop." */
+        +'.cl-body{flex:1;display:flex;flex-direction:column;min-height:0}'
+        +'.cl-card.cl-wide .cl-body{flex-direction:row;gap:10px}'
+        +'.cl-starburst{order:1;flex:1;position:relative;overflow-y:auto;overflow-x:hidden;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
         +'.cl-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:80%}'
         +'.cl-canvas{position:relative;width:100%}'
+        +'.cl-shelf-col{order:2;flex-shrink:0;display:flex;flex-direction:column;min-height:0}'
+        +'.cl-card.cl-wide .cl-shelf-col{order:0;width:118px;border-right:1.5px solid #cfe4f2;padding-right:8px}'
         +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
-        +'.cl-shelf{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0;align-items:flex-start}'
+        +'.cl-card.cl-wide .cl-shelf-label{text-align:left;margin:0 0 6px}'
+        +'.cl-shelf{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0;align-items:flex-start}'
+        +'.cl-card.cl-wide .cl-shelf{flex-direction:column;overflow-x:hidden;overflow-y:auto;border-top:none;flex:1;align-items:stretch}'
         /* Fixed height + 2-line clamp — a long header name used to stretch every
            pill (and the whole shelf row) taller, squeezing the starburst above
            it down to almost nothing. Height is capped no matter how long the
-           name is; full text is still available via the title tooltip. */
-        +'.cl-bucket{flex:0 0 auto;width:92px;height:46px;padding:5px 8px;border-radius:10px;background:#fff;border:1.5px solid #a9cce3;font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;box-sizing:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.15;word-break:break-word;align-items:center;justify-content:center}'
-        +'.cl-card.cl-wide .cl-bucket{width:120px;height:52px;font-size:12px}'
+           name is; full text is still available via the title tooltip. Made
+           smaller overall per Larry's request — these are wayfinding chips,
+           not the main content, and were taking up more room than they earned. */
+        +'.cl-bucket{flex:0 0 auto;width:72px;height:36px;padding:3px 6px;border-radius:8px;background:#fff;border:1.5px solid #a9cce3;font-size:9.5px;font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;box-sizing:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.1;word-break:break-word;align-items:center;justify-content:center}'
+        +'.cl-card.cl-wide .cl-bucket{width:100%;height:34px;font-size:10px}'
         +'.cl-bucket.dragover{outline:2px solid #5b9bd5}'
-        +'.cl-newbucket{flex:0 0 auto;min-width:44px;height:46px;padding:0 14px;border-radius:10px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:16px;line-height:46px;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
-        +'.cl-newbucket-input{flex:0 0 auto;width:110px;height:46px;padding:0 8px;border-radius:10px;border:1.5px solid #a9cce3;font-size:11px;font-family:inherit;box-sizing:border-box}';
+        +'.cl-newbucket{flex:0 0 auto;min-width:36px;height:36px;padding:0 10px;border-radius:8px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:14px;line-height:36px;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
+        +'.cl-card.cl-wide .cl-newbucket{width:100%;box-sizing:border-box}'
+        +'.cl-newbucket-input{flex:0 0 auto;width:90px;height:36px;padding:0 8px;border-radius:8px;border:1.5px solid #a9cce3;font-size:10px;font-family:inherit;box-sizing:border-box}'
+        +'.cl-card.cl-wide .cl-newbucket-input{width:100%}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -332,6 +346,13 @@
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
   var _clusterWide = false;
+  // Positions a traveler has manually dragged a loose card to, this CLUSTER
+  // session only — keyed by idea id. Not written to Supabase; this is a
+  // reading/arranging aid, not committed data. Lets someone spread cards out
+  // to read them, or nudge related ones near each other, without that being
+  // mistaken for an actual cluster — dropping directly ONTO another card is
+  // still the only thing that asks to name and commit a real bucket.
+  var _clusterManualPos = {};
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
   var _sboardBoardBgPalette = [
     {n:'White', c:'#ffffff'},
@@ -1433,13 +1454,15 @@
     _clusterOpenHeaderId=headerRow.id;
     _clusterReturnFn=onClose || function(){ openSbDetail(headerRow); };
     _clusterWide=false;
+    _clusterManualPos={};
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="cl-card">'
       +'<div class="cl-topbar"><div class="cl-title">'+safeName+'</div><div class="cl-topbar-btns"><button class="cl-close" id="cl-full" title="Full screen">⛶</button><button class="cl-close" id="cl-close">✕</button></div></div>'
-      +'<div class="cl-hint">Loose ideas float free until you drag one into a bucket below.</div>'
+      +'<div class="cl-hint">Loose ideas float free — drag one onto a bucket to sort it in, or just drag it anywhere else on the board to arrange things for yourself.</div>'
+      +'<div class="cl-body">'
+      +'<div class="cl-shelf-col"><div class="cl-shelf-label">Buckets — A–Z</div><div class="cl-shelf" id="cl-shelf"></div></div>'
       +'<div class="cl-starburst" id="cl-starburst"><div class="cl-empty">Loading…</div></div>'
-      +'<div class="cl-shelf-label">Buckets — A–Z</div>'
-      +'<div class="cl-shelf" id="cl-shelf"></div>'
+      +'</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('cl-close', closeClusterView);
@@ -1528,12 +1551,29 @@
         var maxX=Math.max(0, canvasW-tileSize);
         var maxY=Math.max(0, canvasH-tileSize);
         var placedCenters=[];
+
+        // Anything the traveler has already manually dragged this session
+        // keeps its spot — placed first so the random scatter below can try
+        // to avoid landing right on top of a card someone deliberately
+        // positioned.
+        var manualItems=[], autoItems=[];
+        shuffledCards.forEach(function(item){
+          if(_clusterManualPos[item.id]) manualItems.push(item); else autoItems.push(item);
+        });
+        manualItems.forEach(function(item){
+          var pos=_clusterManualPos[item.id];
+          var x=Math.max(0,Math.min(maxX,pos.x)), y=Math.max(0,Math.min(maxY,pos.y));
+          _clusterManualPos[item.id]={x:x,y:y};
+          placedCenters.push([x+tileSize/2, y+tileSize/2]);
+          canvas.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize, Math.round(x), Math.round(y)));
+        });
+
         // Uses its own tile factory, not the shared _sboardMakeTile — dropping
         // one loose idea onto another here means "form a new cluster," not
         // "reorder," which is what the same drop already means on the main
         // storyboard. Two different meanings for the same gesture would be
         // ambiguous on one screen, so CLUSTER gets its own drop behavior.
-        shuffledCards.forEach(function(item){
+        autoItems.forEach(function(item){
           var best=null, bestMinDist=-1;
           for(var attempt=0; attempt<10; attempt++){
             var x=Math.random()*maxX, y=Math.random()*maxY;
@@ -1550,6 +1590,27 @@
           }
           placedCenters.push([best.cx,best.cy]);
           canvas.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize, Math.round(best.x), Math.round(best.y)));
+        });
+
+        // Dropping onto empty canvas space (not onto another card) just moves
+        // the card there and remembers it — lets a traveler spread cards out
+        // to read them, or nudge related ones near each other to think about
+        // grouping them, without that being mistaken for actually forming a
+        // cluster. Only a direct drop ONTO another card (tile's own drop
+        // handler, which stops propagation) asks to name and commit one.
+        canvas.addEventListener('dragover', function(e){ e.preventDefault(); });
+        canvas.addEventListener('drop', function(e){
+          e.preventDefault();
+          var raw=e.dataTransfer.getData('text/plain');
+          if(!raw || raw.indexOf('header:')===0) return;
+          var tileEl=canvas.querySelector('[data-idea-id="'+raw+'"]');
+          if(!tileEl) return;
+          var canvasRect=canvas.getBoundingClientRect();
+          var x=Math.max(0, Math.min(maxX, e.clientX-canvasRect.left-tileSize/2));
+          var y=Math.max(0, Math.min(maxY, e.clientY-canvasRect.top-tileSize/2));
+          _clusterManualPos[raw]={x:Math.round(x), y:Math.round(y)};
+          tileEl.style.left=Math.round(x)+'px';
+          tileEl.style.top=Math.round(y)+'px';
         });
       }
 
@@ -1610,6 +1671,7 @@
     var baseZ=1+Math.floor(Math.random()*30);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+    tile.setAttribute('data-idea-id', String(item.id));
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain', String(item.id)); });
     tile.style.cssText='position:absolute;left:'+left+'px;top:'+top+'px;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:'+restTransform+';transition:transform .15s;z-index:'+baseZ+(item.color?';background:'+item.color:'');

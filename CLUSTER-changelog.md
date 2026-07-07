@@ -22,12 +22,19 @@ One more visual fix, on top of the last one:
 
 5. **Cards no longer line up in rows at all.** The previous pass widened tilt and added jitter, but the tiles were still flowing through a flex-wrap layout underneath — so no matter how much per-tile wobble was added, they were still fundamentally arranged left-to-right in rows, just with a wobble on top. Fixed properly this time: loose cards now sit on a free-positioned canvas and land at genuinely random (x, y) coordinates, not a row or a grid cell. A light collision check nudges cards away from directly overlapping their nearest neighbor where there's room to, but doesn't force any alignment — so the result reads as an actual scattered pile, not rows-with-noise. When there are enough cards to need more room than the visible area, the canvas grows taller and the view scrolls, same as before.
 
+## Update — July 7, 2026 (sixth pass)
+Three changes, all from the same message:
+
+6. **Vertical bucket list on desktop.** Tapping ⛶ (full screen) now also flips the shelf from a row across the bottom to a column down the left side — buckets stay reachable without cutting into the starburst's width the way a bottom row does on a wide screen. Tied to the same ⛶ toggle rather than a separate control, since that's already the app's existing "this is desktop mode" signal.
+7. **Buckets are smaller.** Shelf pills shrank from 92×46 down to 72×36 (100×34 in the wide/vertical layout) — they're a wayfinding aid, not the main content, and were taking up more visual weight than they earned.
+8. **Manual repositioning — read and arrange before committing.** Dragging a loose card onto *empty* space in the starburst now just moves it there and remembers that position for the rest of the session — nothing is written to Supabase, it's purely a reading/arranging aid. This lets a traveler spread cards out to read them, or nudge related-feeling ones near each other to think about grouping, without that being mistaken for actually forming a cluster. **Only a direct drop onto another card** still pops the naming prompt and commits a real bucket — so proximity ("these feel related") and commitment ("this is now a named thing") stay two separate, deliberate actions instead of one.
+
 ## What it does
 - Adds **CLUSTER** as a third VIEW AS option on the SHAPING card (alongside TOPIC and HEADER) — only appears when the card you're shaping is a bucket (a named header with something underneath it, at any depth). A lone card never shows it.
 - Tapping CLUSTER opens a full-screen-capable view scoped to that one bucket:
-  - **Center** — the bucket's own loose, uncategorized ideas, genuinely scattered (random position, tilt, and size, reshuffled every render, no row or grid alignment) — same visual language as New Additions but pushed further, since this screen is meant to read as a state of mind, not a list. Drag one onto another to stack-and-name a new cluster on the spot.
-  - **Bottom shelf** — the bucket's existing sub-headers, always alphabetical, plus a **+** to spawn a new one. Tap a bucket to peek inside; drag a loose idea onto it to sort in; drag one bucket onto another to nest it.
-  - **⛶** toggles full-screen size. **✕** closes CLUSTER and returns to the SHAPING card you opened it from.
+  - **Center** — the bucket's own loose, uncategorized ideas, genuinely scattered (random position, tilt, and size, reshuffled every render, no row or grid alignment) — same visual language as New Additions but pushed further, since this screen is meant to read as a state of mind, not a list. Drag one card onto empty space to arrange things for yourself; drag one card directly onto another to stack-and-name a new cluster on the spot.
+  - **Shelf** — the bucket's existing sub-headers, always alphabetical, plus a **+** to spawn a new one. Sits along the bottom normally; flips to a column on the left in full-screen (⛶) mode. Tap a bucket to peek inside; drag a loose idea onto it to sort in; drag one bucket onto another to nest it.
+  - **⛶** toggles full-screen size (and the shelf's layout with it). **✕** closes CLUSTER and returns to the SHAPING card you opened it from.
 - Fixed a small pre-existing bug along the way: the board markup had two elements both with `id="sb-detail-overlay"` (harmless duplicate, but invalid HTML) — the second one is now `id="sb-cluster-overlay"`, which CLUSTER uses.
 
 ## What it does NOT do yet (scoped out of this pass)
@@ -49,5 +56,8 @@ One more visual fix, on top of the last one:
 7. From the main "Add an idea" screen, save something → confirm the status line names the destination header and "View it →" jumps to the right board with the new card visible.
 8. Double-click a starburst card → confirm SHAPING opens on top of CLUSTER, and closing it returns cleanly, refreshed.
 9. Open CLUSTER on a bucket with several loose cards → confirm they read as a genuine scatter (no visible rows or grid lines, varied position/tilt/size), and re-opening the same bucket gives a different arrangement each time.
+10. Tap ⛶ → confirm buckets move from a bottom row to a left-hand column, and toggling back returns them to the bottom.
+11. Drag a loose card onto empty starburst space → confirm it stays exactly where you dropped it, and stays there through other actions (creating a bucket, sorting another card in) for the rest of the session — but resets to scattered next time you close and reopen CLUSTER on that bucket.
+12. Drag one loose card directly onto another → confirm the naming popup still appears (unchanged from the earlier pass) — manual repositioning and stacking should feel like two clearly different gestures.
 
 
