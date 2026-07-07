@@ -157,8 +157,8 @@
         +'.sb-hdr-vitem{padding:6px 10px;border-radius:8px;font-size:12px;text-align:left;cursor:pointer;color:#1a3a5c;background:transparent}'
         +'.sb-hdr-vitem.current{background:#eaf3fb;font-weight:700}'
         +'.sb-hdr-vitem.newh{color:#5b9bd5;font-weight:700;border-top:1px dashed #cfe4f2;margin-top:2px;padding-top:8px}'
-        +'.sb-body-box{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:170px;border-radius:10px;background:#f7f9fb;border:1.5px solid #b0a898;padding:14px;box-sizing:border-box;margin-bottom:10px;overflow:hidden;position:relative}'
-        +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain}'
+        +'.sb-body-box{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:170px;max-height:50vh;border-radius:10px;background:#f7f9fb;border:1.5px solid #b0a898;padding:14px;box-sizing:border-box;margin-bottom:10px;overflow:hidden;position:relative}'
+        +'.sb-body-box img{max-width:100%;max-height:50vh;border-radius:8px;object-fit:contain}'
         +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#1a3a5c;font-weight:700;cursor:pointer;word-break:break-word}'
         +'.sb-blue-row{display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
         +'.sb-blue-btn{box-sizing:border-box;background:#eaf3fb;color:#1a3a5c;border:1px solid #b0a898;border-radius:12px;padding:10px 12px;font-size:15px;cursor:pointer;flex:1 1 auto;min-width:40px}'
@@ -758,8 +758,10 @@
         if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent='Uploading '+(i+1)+' of '+files.length+'…'; }
         try{
           var fname=f.name||('pasted-image-'+Date.now()+'.png');
-          var path=user.id+'/'+Date.now()+'-'+i+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
-          var up=await _sb.storage.from('sea-of-ideas').upload(path, f);
+          var toUpload=await _compressImageFile(f);
+          var uploadName=toUpload.name||fname;
+          var path=user.id+'/'+Date.now()+'-'+i+'-'+uploadName.replace(/[^a-zA-Z0-9._-]/g,'_');
+          var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
           if(up.error) throw up.error;
           var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
           var url=pub.data && pub.data.publicUrl;
@@ -2023,15 +2025,57 @@
     T().nav('s-sea-of-ideas-cluster');
   }
 
+  // Shrinks any pasted/uploaded image down to a sane max dimension and
+  // re-encodes as JPEG before it ever touches Storage. Clipboard pastes in
+  // particular tend to be uncompressed PNGs (multi-MB for a single
+  // screenshot), and none of our tiles ever show more than a few hundred
+  // px across, so there's no reason to store full-resolution originals.
+  function _compressImageFile(file, maxDim, quality){
+    maxDim=maxDim||1600; quality=quality||0.82;
+    return new Promise(function(resolve){
+      try{
+        var url=URL.createObjectURL(file);
+        var img=new Image();
+        img.onload=function(){
+          try{
+            var w=img.naturalWidth, h=img.naturalHeight;
+            if(w<=0||h<=0){ URL.revokeObjectURL(url); resolve(file); return; }
+            var scale=Math.min(1, maxDim/Math.max(w,h));
+            var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+            var canvas=document.createElement('canvas');
+            canvas.width=cw; canvas.height=ch;
+            var ctx=canvas.getContext('2d');
+            ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch); // flattens transparency
+            ctx.drawImage(img,0,0,cw,ch);
+            canvas.toBlob(function(blob){
+              URL.revokeObjectURL(url);
+              if(!blob){ resolve(file); return; }
+              // Only use the compressed version if it's actually smaller —
+              // tiny/simple images can sometimes grow slightly as JPEG.
+              if(blob.size>=file.size && scale===1){ resolve(file); return; }
+              var newName=(file.name||'image').replace(/\.[^.]+$/,'')+'.jpg';
+              resolve(new File([blob], newName, {type:'image/jpeg'}));
+            }, 'image/jpeg', quality);
+          }catch(e){ URL.revokeObjectURL(url); resolve(file); }
+        };
+        img.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
+        img.src=url;
+      }catch(e){ resolve(file); }
+    });
+  }
+
   async function _ideaSaveImageFile(file){
     var box=document.getElementById('ipaste-drop');
     try{
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) throw new Error('Not signed in.');
-      var fname=file.name||('pasted-image-'+Date.now()+'.png');
+      if(box) box.innerHTML='Compressing\u2026';
+      var toUpload=await _compressImageFile(file);
+      if(box) box.innerHTML='Uploading\u2026';
+      var fname=toUpload.name||file.name||('pasted-image-'+Date.now()+'.jpg');
       var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
-      var up=await _sb.storage.from('sea-of-ideas').upload(path, file);
+      var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
       if(up.error) throw up.error;
       var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
       var url=pub.data && pub.data.publicUrl;
