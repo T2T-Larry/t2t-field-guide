@@ -200,7 +200,9 @@
         +'.cl-card.cl-wide .cl-body{flex-direction:row;gap:10px}'
         +'.cl-starburst{order:1;flex:1;position:relative;overflow-y:auto;overflow-x:hidden;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
         +'.cl-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:80%}'
-        +'.cl-canvas{position:relative;width:100%}'
+        +'.cl-canvas{position:relative;width:100%;cursor:crosshair}'
+        +'.cl-lasso{position:absolute;border:1.5px dashed #5b9bd5;background:rgba(91,155,213,0.15);pointer-events:none;z-index:900}'
+        +'.sc-tile.cl-selected{box-shadow:0 0 0 3px #5b9bd5}'
         +'.cl-shelf-col{order:2;flex-shrink:0;display:flex;flex-direction:column;min-height:0}'
         +'.cl-card.cl-wide .cl-shelf-col{order:0;width:118px;border-right:1.5px solid #cfe4f2;padding-right:8px}'
         +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
@@ -352,7 +354,15 @@
   // to read them, or nudge related ones near each other, without that being
   // mistaken for an actual cluster — dropping directly ONTO another card is
   // still the only thing that asks to name and commit a real bucket.
-  var _clusterManualPos = {};
+  // Every loose card's position on the starburst canvas, once computed —
+  // whether it was the initial random scatter placement or a traveler's own
+  // drag. Cached for the life of this CLUSTER session so a bucket action
+  // (creating a bucket, sorting a card in, renaming) never reshuffles cards
+  // that are already sitting somewhere. Only a card CLUSTER has never shown
+  // before gets a fresh random placement; after that, it's remembered too.
+  var _clusterCardPos = {};
+  // Ids currently lasso-selected on the starburst, this session only.
+  var _clusterSelected = {};
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
   var _sboardBoardBgPalette = [
     {n:'White', c:'#ffffff'},
@@ -1454,11 +1464,12 @@
     _clusterOpenHeaderId=headerRow.id;
     _clusterReturnFn=onClose || function(){ openSbDetail(headerRow); };
     _clusterWide=false;
-    _clusterManualPos={};
+    _clusterCardPos={};
+    _clusterSelected={};
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="cl-card">'
       +'<div class="cl-topbar"><div class="cl-title">'+safeName+'</div><div class="cl-topbar-btns"><button class="cl-close" id="cl-full" title="Full screen">⛶</button><button class="cl-close" id="cl-close">✕</button></div></div>'
-      +'<div class="cl-hint">Loose ideas float free — drag one onto a bucket to sort it in, or just drag it anywhere else on the board to arrange things for yourself.</div>'
+      +'<div class="cl-hint">Drag one card onto a bucket to sort it in. Drag on empty space to lasso-select several, then move them together. Positions stay put once set.</div>'
       +'<div class="cl-body">'
       +'<div class="cl-shelf-col"><div class="cl-shelf-label">Buckets — A–Z</div><div class="cl-shelf" id="cl-shelf"></div></div>'
       +'<div class="cl-starburst" id="cl-starburst"><div class="cl-empty">Loading…</div></div>'
@@ -1517,16 +1528,6 @@
 
       _sboardIdeaOrderByParent[headerRow.id]=looseCards.map(function(r){ return r.id; });
 
-      // Display order only — shuffled fresh each render so the starburst
-      // doesn't visually settle into the same tidy arrangement every time.
-      // The real sort_order (used above for _sboardIdeaOrderByParent and any
-      // future ordering feature) is untouched.
-      var shuffledCards=looseCards.slice();
-      for(var _i=shuffledCards.length-1;_i>0;_i--){
-        var _j=Math.floor(Math.random()*(_i+1));
-        var _tmp=shuffledCards[_i]; shuffledCards[_i]=shuffledCards[_j]; shuffledCards[_j]=_tmp;
-      }
-
       var tileSize=_clusterWide?92:66;
       burst.innerHTML='';
       if(!looseCards.length){
@@ -1536,13 +1537,12 @@
         // visible viewport when there are enough cards to need it (scrolls),
         // then drop each tile at a randomized (x, y) — not a grid cell, not
         // a row — with light rejection sampling so cards don't all pile on
-        // top of each other. This is what actually answers "put them on
-        // random lines too," not just varying each tile's own tilt.
+        // top of each other.
         var canvas=document.createElement('div');
         var canvasW=Math.max(220, burst.clientWidth-4);
         var viewportH=Math.max(220, burst.clientHeight-4);
         var areaPerCard=tileSize*tileSize*2.5; // breathing room per card
-        var neededH=Math.ceil((shuffledCards.length*areaPerCard)/canvasW);
+        var neededH=Math.ceil((looseCards.length*areaPerCard)/canvasW);
         var canvasH=Math.max(viewportH, neededH);
         canvas.className='cl-canvas';
         canvas.style.height=canvasH+'px';
@@ -1552,18 +1552,19 @@
         var maxY=Math.max(0, canvasH-tileSize);
         var placedCenters=[];
 
-        // Anything the traveler has already manually dragged this session
-        // keeps its spot — placed first so the random scatter below can try
-        // to avoid landing right on top of a card someone deliberately
-        // positioned.
-        var manualItems=[], autoItems=[];
-        shuffledCards.forEach(function(item){
-          if(_clusterManualPos[item.id]) manualItems.push(item); else autoItems.push(item);
+        // Anything CLUSTER has already placed this session — either the
+        // random spot it got the first time it appeared, or somewhere a
+        // traveler dragged it — keeps that exact spot. Nothing reshuffles on
+        // a re-render; only a card CLUSTER has genuinely never shown before
+        // gets a fresh random placement.
+        var knownItems=[], newItems=[];
+        looseCards.forEach(function(item){
+          if(_clusterCardPos[item.id]) knownItems.push(item); else newItems.push(item);
         });
-        manualItems.forEach(function(item){
-          var pos=_clusterManualPos[item.id];
+        knownItems.forEach(function(item){
+          var pos=_clusterCardPos[item.id];
           var x=Math.max(0,Math.min(maxX,pos.x)), y=Math.max(0,Math.min(maxY,pos.y));
-          _clusterManualPos[item.id]={x:x,y:y};
+          _clusterCardPos[item.id]={x:x,y:y};
           placedCenters.push([x+tileSize/2, y+tileSize/2]);
           canvas.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize, Math.round(x), Math.round(y)));
         });
@@ -1573,7 +1574,7 @@
         // "reorder," which is what the same drop already means on the main
         // storyboard. Two different meanings for the same gesture would be
         // ambiguous on one screen, so CLUSTER gets its own drop behavior.
-        autoItems.forEach(function(item){
+        newItems.forEach(function(item){
           var best=null, bestMinDist=-1;
           for(var attempt=0; attempt<10; attempt++){
             var x=Math.random()*maxX, y=Math.random()*maxY;
@@ -1589,28 +1590,87 @@
             if(minDist>=tileSize*0.6) break;
           }
           placedCenters.push([best.cx,best.cy]);
+          _clusterCardPos[item.id]={x:Math.round(best.x), y:Math.round(best.y)};
           canvas.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize, Math.round(best.x), Math.round(best.y)));
         });
 
+        // Lasso select: mousedown on empty canvas (not on a tile) starts a
+        // drag-select rectangle. Releasing selects every tile it overlaps.
+        // A click with no real movement just clears the current selection.
+        canvas.addEventListener('mousedown', function(e){
+          if(e.target!==canvas) return;
+          e.preventDefault();
+          var startRect=canvas.getBoundingClientRect();
+          var start={x:e.clientX-startRect.left, y:e.clientY-startRect.top};
+          var moved=false;
+          var lasso=document.createElement('div');
+          lasso.className='cl-lasso';
+          lasso.style.left=start.x+'px'; lasso.style.top=start.y+'px';
+          lasso.style.width='0px'; lasso.style.height='0px';
+          canvas.appendChild(lasso);
+          function onMove(e2){
+            var r=canvas.getBoundingClientRect();
+            var cx=e2.clientX-r.left, cy=e2.clientY-r.top;
+            if(Math.abs(cx-start.x)>3 || Math.abs(cy-start.y)>3) moved=true;
+            var x=Math.min(cx,start.x), y=Math.min(cy,start.y);
+            lasso.style.left=x+'px'; lasso.style.top=y+'px';
+            lasso.style.width=Math.abs(cx-start.x)+'px';
+            lasso.style.height=Math.abs(cy-start.y)+'px';
+          }
+          function onUp(){
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            var lb={left:parseFloat(lasso.style.left), top:parseFloat(lasso.style.top), width:parseFloat(lasso.style.width), height:parseFloat(lasso.style.height)};
+            if(lasso.parentNode) lasso.parentNode.removeChild(lasso);
+            _clusterSelected={};
+            if(moved){
+              Array.prototype.forEach.call(canvas.querySelectorAll('.sc-tile'), function(t){
+                var tx=parseFloat(t.style.left), ty=parseFloat(t.style.top);
+                var overlaps = tx<lb.left+lb.width && tx+tileSize>lb.left && ty<lb.top+lb.height && ty+tileSize>lb.top;
+                if(overlaps) _clusterSelected[t.getAttribute('data-idea-id')]=true;
+              });
+            }
+            Array.prototype.forEach.call(canvas.querySelectorAll('.sc-tile'), function(t){
+              t.classList.toggle('cl-selected', !!_clusterSelected[t.getAttribute('data-idea-id')]);
+            });
+          }
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        });
+
         // Dropping onto empty canvas space (not onto another card) just moves
-        // the card there and remembers it — lets a traveler spread cards out
-        // to read them, or nudge related ones near each other to think about
-        // grouping them, without that being mistaken for actually forming a
-        // cluster. Only a direct drop ONTO another card (tile's own drop
-        // handler, which stops propagation) asks to name and commit one.
+        // the card(s) there and remembers the position(s) — lets a traveler
+        // spread cards out to read them, or nudge related ones near each
+        // other to think about grouping them, without that being mistaken
+        // for actually forming a cluster. If several cards are lasso-selected
+        // and one of them is dragged, the whole group moves together,
+        // keeping their relative arrangement. Only a direct drop ONTO
+        // another card (tile's own drop handler, which stops propagation)
+        // asks to name and commit a real bucket.
         canvas.addEventListener('dragover', function(e){ e.preventDefault(); });
         canvas.addEventListener('drop', function(e){
           e.preventDefault();
           var raw=e.dataTransfer.getData('text/plain');
-          if(!raw || raw.indexOf('header:')===0) return;
-          var tileEl=canvas.querySelector('[data-idea-id="'+raw+'"]');
-          if(!tileEl) return;
+          var ids=_clusterParseDragIds(raw);
+          if(!ids.length) return;
+          var anchorId=ids[0];
+          var anchorTile=canvas.querySelector('[data-idea-id="'+anchorId+'"]');
+          if(!anchorTile) return;
           var canvasRect=canvas.getBoundingClientRect();
-          var x=Math.max(0, Math.min(maxX, e.clientX-canvasRect.left-tileSize/2));
-          var y=Math.max(0, Math.min(maxY, e.clientY-canvasRect.top-tileSize/2));
-          _clusterManualPos[raw]={x:Math.round(x), y:Math.round(y)};
-          tileEl.style.left=Math.round(x)+'px';
-          tileEl.style.top=Math.round(y)+'px';
+          var dropX=Math.max(0, Math.min(maxX, e.clientX-canvasRect.left-tileSize/2));
+          var dropY=Math.max(0, Math.min(maxY, e.clientY-canvasRect.top-tileSize/2));
+          var anchorOld=_clusterCardPos[anchorId]||{x:parseFloat(anchorTile.style.left), y:parseFloat(anchorTile.style.top)};
+          var dx=dropX-anchorOld.x, dy=dropY-anchorOld.y;
+          ids.forEach(function(id){
+            var tileEl=canvas.querySelector('[data-idea-id="'+id+'"]');
+            if(!tileEl) return;
+            var cur=_clusterCardPos[id]||{x:parseFloat(tileEl.style.left), y:parseFloat(tileEl.style.top)};
+            var nx=Math.max(0, Math.min(maxX, cur.x+dx));
+            var ny=Math.max(0, Math.min(maxY, cur.y+dy));
+            _clusterCardPos[id]={x:Math.round(nx), y:Math.round(ny)};
+            tileEl.style.left=Math.round(nx)+'px';
+            tileEl.style.top=Math.round(ny)+'px';
+          });
         });
       }
 
@@ -1670,10 +1730,22 @@
     var restTransform='rotate('+rot+'deg) scale('+scale+')';
     var baseZ=1+Math.floor(Math.random()*30);
     var tile=document.createElement('div');
-    tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+    tile.className='sc-tile'+(item.content_type==='text'?' text':'')+(_clusterSelected[item.id]?' cl-selected':'');
     tile.setAttribute('data-idea-id', String(item.id));
     tile.draggable=true;
-    tile.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain', String(item.id)); });
+    // Dragging a lasso-selected card carries the whole selection with it —
+    // dragging any other card (selected or not part of a multi-selection)
+    // behaves exactly as before, just that one card.
+    tile.addEventListener('dragstart', function(e){
+      e.stopPropagation();
+      var selectedIds=Object.keys(_clusterSelected);
+      if(selectedIds.length>1 && _clusterSelected[item.id]){
+        var rest=selectedIds.filter(function(id){ return String(id)!==String(item.id); });
+        e.dataTransfer.setData('text/plain', 'group:'+[item.id].concat(rest).join(','));
+      } else {
+        e.dataTransfer.setData('text/plain', String(item.id));
+      }
+    });
     tile.style.cssText='position:absolute;left:'+left+'px;top:'+top+'px;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:'+restTransform+';transition:transform .15s;z-index:'+baseZ+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.18)'; tile.style.zIndex='999'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform=restTransform; tile.style.zIndex=String(baseZ); });
@@ -1700,21 +1772,35 @@
     tile.addEventListener('drop', function(e){
       e.preventDefault(); e.stopPropagation(); tile.style.outline='none';
       var raw=e.dataTransfer.getData('text/plain');
-      if(!raw || raw.indexOf('header:')===0 || String(raw)===String(item.id)) return;
-      _clusterOfferStack(raw, item.id, headerRow);
+      var ids=_clusterParseDragIds(raw).filter(function(id){ return String(id)!==String(item.id); });
+      if(!ids.length) return;
+      _clusterOfferStack(ids, item.id, headerRow);
     });
     return tile;
   }
 
-  // Drop one loose idea onto another — forces a name before anything is
-  // created. Cancel, or leave it blank, and both ideas stay exactly as they
-  // were: loose, unstacked, nothing written. There is no unnamed-stack state.
-  function _clusterOfferStack(draggedId, targetId, headerRow){
+  // Reads a drop payload set by dragstart above: a plain idea id, or
+  // "group:id1,id2,id3" when a multi-card lasso selection was dragged.
+  // Header drags ("header:"-prefixed) are never groups and are handled by
+  // their own callers, so this returns nothing for those.
+  function _clusterParseDragIds(raw){
+    if(!raw) return [];
+    if(raw.indexOf('header:')===0) return [];
+    if(raw.indexOf('group:')===0) return raw.slice(6).split(',').filter(Boolean);
+    return [raw];
+  }
+
+  // Drop one or more loose ideas onto another — forces a name before
+  // anything is created. Cancel, or leave it blank, and every card stays
+  // exactly as it was: loose, unstacked, nothing written. There is no
+  // unnamed-stack state.
+  function _clusterOfferStack(draggedIds, targetId, headerRow){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    var count=draggedIds.length+1;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
-      +'<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">Stacking these two ideas together — cancel to leave them loose instead.</div>'
+      +'<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">Stacking these '+count+' ideas together — cancel to leave them loose instead.</div>'
       +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
       +'<input id="cl-stack-name" type="text" placeholder="Name it…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="cl-stack-save" style="flex:1">Save</button><button class="sc-ov-btn" id="cl-stack-cancel" style="flex:1">Cancel</button></div>'
@@ -1726,7 +1812,7 @@
     T().wire('cl-stack-save', function(){
       var name=((document.getElementById('cl-stack-name')||{}).value||'').trim();
       if(!name){ closeSbDetail(); return; } // no entry = cancel, nothing written
-      _clusterCommitStack(draggedId, targetId, name, headerRow);
+      _clusterCommitStack(draggedIds, targetId, name, headerRow);
     });
     if(input) input.addEventListener('keydown', function(e){
       if(e.key==='Enter'){ document.getElementById('cl-stack-save').click(); }
@@ -1734,36 +1820,41 @@
     });
   }
 
-  async function _clusterCommitStack(draggedId, targetId, name, headerRow){
+  async function _clusterCommitStack(draggedIds, targetId, name, headerRow){
     var _sb=T().sb;
+    var allIds=draggedIds.concat([targetId]);
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
       var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString()}).select().single();
       if(ins.error) throw ins.error;
       var newHeaderId=ins.data.id;
-      var upd1=await _sb.from('ideas').update({cluster_id:newHeaderId}).eq('id',draggedId);
-      if(upd1.error) throw upd1.error;
-      var upd2=await _sb.from('ideas').update({cluster_id:newHeaderId}).eq('id',targetId);
-      if(upd2.error) throw upd2.error;
+      for(var i=0;i<allIds.length;i++){
+        var upd=await _sb.from('ideas').update({cluster_id:newHeaderId}).eq('id',allIds[i]);
+        if(upd.error) throw upd.error;
+      }
     }catch(err){}
+    allIds.forEach(function(id){ delete _clusterCardPos[id]; delete _clusterSelected[id]; });
     closeSbDetail();
     renderSeaBoard();
   }
 
-  // Router for anything dropped onto a shelf bucket — a loose idea (plain id)
-  // sorts in; another bucket ("header:"-prefixed id) nests under it. Previously
-  // only the idea case was handled, so dragging one bucket onto another did
-  // nothing — the drop silently no-op'd. Fixed July 7, 2026.
+  // Router for anything dropped onto a shelf bucket — a loose idea (plain id
+  // or "group:" of several) sorts in; another bucket ("header:"-prefixed id)
+  // nests under it. Previously only the single-idea case was handled, so
+  // dragging one bucket onto another did nothing — the drop silently
+  // no-op'd. Fixed July 7, 2026.
   function _clusterHandleDrop(raw, targetBucketId, headerRow){
     if(!raw) return;
     if(raw.indexOf('header:')===0){
       var draggedId=raw.slice(7);
       if(String(draggedId)===String(targetBucketId)) return;
       _clusterNestHeader(draggedId, targetBucketId, headerRow);
-    } else {
-      _clusterMoveCard(raw, targetBucketId, headerRow);
+      return;
     }
+    var ids=_clusterParseDragIds(raw);
+    if(!ids.length) return;
+    _clusterMoveCards(ids, targetBucketId, headerRow);
   }
 
   // Nest one bucket under another — the drag-a-header-onto-a-header gesture.
@@ -1780,16 +1871,21 @@
     renderSeaBoard();
   }
 
-  // Drag a loose idea onto a shelf bucket — the one drag gesture CLUSTER
-  // offers. Re-renders CLUSTER (so the card leaves the starburst) and the
-  // board underneath stays in sync for whenever the traveler exits.
-  async function _clusterMoveCard(itemId, bucketId, headerRow){
+  // Drag one or more loose ideas onto a shelf bucket — re-renders CLUSTER (so
+  // the card(s) leave the starburst) and the board underneath stays in sync
+  // for whenever the traveler exits. Position cache and selection are
+  // cleared for anything that moved, since it no longer lives in this
+  // starburst.
+  async function _clusterMoveCards(ids, bucketId, headerRow){
     var _sb=T().sb;
     try{
       var siblingCount=(_sboardIdeaOrderByParent[bucketId]||[]).length;
-      var upd=await _sb.from('ideas').update({cluster_id:bucketId, sort_order:siblingCount}).eq('id',itemId);
-      if(upd.error) throw upd.error;
+      for(var i=0;i<ids.length;i++){
+        var upd=await _sb.from('ideas').update({cluster_id:bucketId, sort_order:siblingCount+i}).eq('id',ids[i]);
+        if(upd.error) throw upd.error;
+      }
     }catch(err){}
+    ids.forEach(function(id){ delete _clusterCardPos[id]; delete _clusterSelected[id]; });
     renderClusterView(headerRow);
     renderSeaBoard();
   }
