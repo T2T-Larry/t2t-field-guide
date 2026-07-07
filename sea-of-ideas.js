@@ -192,8 +192,9 @@
         +'.cl-topbar-btns{display:flex;gap:6px;flex-shrink:0}'
         +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0}'
         +'.cl-hint{font-size:10px;font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
-        +'.cl-starburst{flex:1;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:18px;overflow-y:auto;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
-        +'.cl-empty{font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:100%}'
+        +'.cl-starburst{flex:1;position:relative;overflow-y:auto;overflow-x:hidden;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
+        +'.cl-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:80%}'
+        +'.cl-canvas{position:relative;width:100%}'
         +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
         +'.cl-shelf{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0;align-items:flex-start}'
         /* Fixed height + 2-line clamp — a long header name used to stretch every
@@ -1508,13 +1509,47 @@
       if(!looseCards.length){
         burst.innerHTML='<div class="cl-empty">Nothing loose here — every idea has found a bucket.</div>';
       } else {
+        // Genuine scatter, not a wrapped row: build a canvas taller than the
+        // visible viewport when there are enough cards to need it (scrolls),
+        // then drop each tile at a randomized (x, y) — not a grid cell, not
+        // a row — with light rejection sampling so cards don't all pile on
+        // top of each other. This is what actually answers "put them on
+        // random lines too," not just varying each tile's own tilt.
+        var canvas=document.createElement('div');
+        var canvasW=Math.max(220, burst.clientWidth-4);
+        var viewportH=Math.max(220, burst.clientHeight-4);
+        var areaPerCard=tileSize*tileSize*2.5; // breathing room per card
+        var neededH=Math.ceil((shuffledCards.length*areaPerCard)/canvasW);
+        var canvasH=Math.max(viewportH, neededH);
+        canvas.className='cl-canvas';
+        canvas.style.height=canvasH+'px';
+        burst.appendChild(canvas);
+
+        var maxX=Math.max(0, canvasW-tileSize);
+        var maxY=Math.max(0, canvasH-tileSize);
+        var placedCenters=[];
         // Uses its own tile factory, not the shared _sboardMakeTile — dropping
         // one loose idea onto another here means "form a new cluster," not
         // "reorder," which is what the same drop already means on the main
         // storyboard. Two different meanings for the same gesture would be
         // ambiguous on one screen, so CLUSTER gets its own drop behavior.
         shuffledCards.forEach(function(item){
-          burst.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize));
+          var best=null, bestMinDist=-1;
+          for(var attempt=0; attempt<10; attempt++){
+            var x=Math.random()*maxX, y=Math.random()*maxY;
+            var cx=x+tileSize/2, cy=y+tileSize/2;
+            if(!placedCenters.length){ best={x:x,y:y,cx:cx,cy:cy}; break; }
+            var minDist=Infinity;
+            for(var k=0;k<placedCenters.length;k++){
+              var dx=cx-placedCenters[k][0], dy=cy-placedCenters[k][1];
+              var d=Math.sqrt(dx*dx+dy*dy);
+              if(d<minDist) minDist=d;
+            }
+            if(minDist>bestMinDist){ bestMinDist=minDist; best={x:x,y:y,cx:cx,cy:cy}; }
+            if(minDist>=tileSize*0.6) break;
+          }
+          placedCenters.push([best.cx,best.cy]);
+          canvas.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize, Math.round(best.x), Math.round(best.y)));
         });
       }
 
@@ -1560,27 +1595,26 @@
   // storyboard, dropping one idea tile onto another means "reorder." Here it
   // means "form a new cluster" — same gesture, different screen, different
   // meaning, so it needs its own drop wiring rather than overloading the
-  // shared one. Visuals (wobble, image/text, heart badge) mirror the shared
-  // tile so the two screens still feel like the same object.
-  function _clusterMakeStarburstTile(item, headerRow, size){
-    // Wider wobble than the shared board tile on purpose — this is the one
-    // screen meant to look like a state of mind, not a tidy row. Rotation,
-    // position jitter, and a touch of scale variance are all randomized so
-    // nothing lines up into rows or a grid, even though the tiles still sit
-    // inside a normal flex-wrap flow underneath (keeps scrolling/height
-    // simple — the jitter is paint-only, via transform, not real layout).
+  // shared one. Visuals (image/text, heart badge) mirror the shared tile so
+  // the two screens still feel like the same object.
+  //
+  // Positioned absolutely at (left, top) on the canvas the caller computed —
+  // NOT flowed via flex-wrap. Flex-wrap, even with per-tile jitter, still
+  // places tiles left-to-right in rows under the hood, so it always reads as
+  // a row with a wobble rather than genuine scatter. True randomness needs
+  // real (x, y) freedom, not paint-only jitter on top of a row layout.
+  function _clusterMakeStarburstTile(item, headerRow, size, left, top){
     var rot=(Math.random()*44-22).toFixed(1);
-    var jx=Math.round(Math.random()*28-14);
-    var jy=Math.round(Math.random()*28-14);
     var scale=(0.90+Math.random()*0.22).toFixed(2);
-    var restTransform='translate('+jx+'px,'+jy+'px) rotate('+rot+'deg) scale('+scale+')';
+    var restTransform='rotate('+rot+'deg) scale('+scale+')';
+    var baseZ=1+Math.floor(Math.random()*30);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;flex-shrink:0;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:'+restTransform+';transition:transform .15s'+(item.color?';background:'+item.color:'');
-    tile.addEventListener('mouseenter', function(){ tile.style.transform='translate(0,0) rotate(0deg) scale(1.12)'; tile.style.zIndex='10'; });
-    tile.addEventListener('mouseleave', function(){ tile.style.transform=restTransform; tile.style.zIndex='1'; });
+    tile.style.cssText='position:absolute;left:'+left+'px;top:'+top+'px;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:'+restTransform+';transition:transform .15s;z-index:'+baseZ+(item.color?';background:'+item.color:'');
+    tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.18)'; tile.style.zIndex='999'; });
+    tile.addEventListener('mouseleave', function(){ tile.style.transform=restTransform; tile.style.zIndex=String(baseZ); });
     if(item.content_type==='image' && item.image_url){
       var img=document.createElement('img');
       img.src=item.image_url;

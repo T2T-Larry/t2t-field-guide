@@ -17,10 +17,15 @@ One visual fix:
 
 4. **Starburst reads as scattered now, not a tidy wrapped grid.** The tilt on each loose card was only ±4° — barely more than the shared board tiles use, so a row of cards still visually lined up like a neat row with a slight lean. Now: rotation goes up to ±22°, each tile gets a small random position jitter (paint-only, doesn't affect scrolling/layout) and a touch of random size variance, and the display order itself is reshuffled every time CLUSTER opens or re-renders — so the same bucket doesn't even settle into the same arrangement twice. The underlying `sort_order` data is untouched; this is purely how the center renders.
 
+## Update — July 7, 2026 (fifth pass)
+One more visual fix, on top of the last one:
+
+5. **Cards no longer line up in rows at all.** The previous pass widened tilt and added jitter, but the tiles were still flowing through a flex-wrap layout underneath — so no matter how much per-tile wobble was added, they were still fundamentally arranged left-to-right in rows, just with a wobble on top. Fixed properly this time: loose cards now sit on a free-positioned canvas and land at genuinely random (x, y) coordinates, not a row or a grid cell. A light collision check nudges cards away from directly overlapping their nearest neighbor where there's room to, but doesn't force any alignment — so the result reads as an actual scattered pile, not rows-with-noise. When there are enough cards to need more room than the visible area, the canvas grows taller and the view scrolls, same as before.
+
 ## What it does
 - Adds **CLUSTER** as a third VIEW AS option on the SHAPING card (alongside TOPIC and HEADER) — only appears when the card you're shaping is a bucket (a named header with something underneath it, at any depth). A lone card never shows it.
 - Tapping CLUSTER opens a full-screen-capable view scoped to that one bucket:
-  - **Center** — the bucket's own loose, uncategorized ideas, genuinely scattered (random tilt, jitter, and size, reshuffled every render) — same visual language as New Additions but pushed further, since this screen is meant to read as a state of mind, not a list. Drag one onto another to stack-and-name a new cluster on the spot.
+  - **Center** — the bucket's own loose, uncategorized ideas, genuinely scattered (random position, tilt, and size, reshuffled every render, no row or grid alignment) — same visual language as New Additions but pushed further, since this screen is meant to read as a state of mind, not a list. Drag one onto another to stack-and-name a new cluster on the spot.
   - **Bottom shelf** — the bucket's existing sub-headers, always alphabetical, plus a **+** to spawn a new one. Tap a bucket to peek inside; drag a loose idea onto it to sort in; drag one bucket onto another to nest it.
   - **⛶** toggles full-screen size. **✕** closes CLUSTER and returns to the SHAPING card you opened it from.
 - Fixed a small pre-existing bug along the way: the board markup had two elements both with `id="sb-detail-overlay"` (harmless duplicate, but invalid HTML) — the second one is now `id="sb-cluster-overlay"`, which CLUSTER uses.
@@ -43,6 +48,6 @@ One visual fix:
 6. Tap ⛶ → confirm full-screen expansion and clean return on close.
 7. From the main "Add an idea" screen, save something → confirm the status line names the destination header and "View it →" jumps to the right board with the new card visible.
 8. Double-click a starburst card → confirm SHAPING opens on top of CLUSTER, and closing it returns cleanly, refreshed.
-9. Open CLUSTER on a bucket with several loose cards → confirm they read as scattered (varied tilt/position/size, no visible rows), and re-opening the same bucket gives a different arrangement each time.
+9. Open CLUSTER on a bucket with several loose cards → confirm they read as a genuine scatter (no visible rows or grid lines, varied position/tilt/size), and re-opening the same bucket gives a different arrangement each time.
 
 
