@@ -490,8 +490,19 @@
     tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:10px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
-    if(item.content_type==='image' && item.image_url){
+    if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
+      if(item.content_type==='link'){
+        var badge=document.createElement('div');
+        badge.style.cssText='position:absolute;top:2px;left:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+        badge.textContent='\ud83d\udd17';
+        tile.appendChild(badge);
+      }
+    } else if(item.content_type==='link'){
+      var lp=document.createElement('p');
+      lp.textContent='\ud83d\udd17 '+_linkParseText(item.text_content).title;
+      lp.style.fontSize=_sboardDesktop?'10.5px':'8.5px';
+      tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       p.textContent=item.text_content||'(untitled)';
@@ -567,7 +578,7 @@
       var miscId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
 
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
-        .eq('user_id', user.id).in('content_type',['image','text','header'])
+        .eq('user_id', user.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
@@ -586,7 +597,7 @@
       var contentHeaders=headerRows.filter(function(r){ return reservedIds.indexOf(String(r.id))===-1; });
       _sboardHeaderList=contentHeaders.concat(newAdditionsRow?[newAdditionsRow]:[]);
 
-      var ideaRows=rows.filter(function(r){ return r.content_type==='image'||r.content_type==='text'; });
+      var ideaRows=rows.filter(function(r){ return r.content_type==='image'||r.content_type==='text'||r.content_type==='link'; });
       wrap.innerHTML='';
 
       var childrenOfHeader={};
@@ -1012,7 +1023,7 @@
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
-        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','header'])
+        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
@@ -1239,7 +1250,14 @@
     // or a single word. Images get an editable caption/title underneath —
     // this is what becomes the card's name (and Topic label, if drilled into).
     var bodyHTML;
-    if(item.content_type==='image' && item.image_url){
+    if(item.content_type==='link'){
+      var linkData=_linkParseText(item.text_content);
+      bodyHTML='<div class="sb-body-box">'+(item.image_url?'<img id="sb-img-preview" src="'+item.image_url+'">':'<div style="font-size:40px">\ud83d\udd17</div>')+'</div>'
+        + '<div id="sb-text-display" class="sb-body-text" style="font-size:13px;margin-bottom:4px;color:'+(linkData.title?'#1a3a5c':'#a3907a')+'" title="Tap to edit the title">'+(linkData.title||'+ Add a title')+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(linkData.title||'')+'</textarea>'
+        + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div>'
+        + '<a href="'+linkData.url+'" target="_blank" rel="noopener" style="display:block;font-size:11px;color:#5b9bd5;word-break:break-word;margin-bottom:8px">'+linkData.url+' \u2197</a>';
+    } else if(item.content_type==='image' && item.image_url){
       bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'"></div>'
         + '<div id="sb-text-display" class="sb-body-text" style="font-size:13px;margin-bottom:8px;color:'+(item.text_content?'#1a3a5c':'#a3907a')+'" title="Tap to add a title">'+(item.text_content||'+ Add a title')+'</div>'
         + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
@@ -1337,11 +1355,18 @@
       var newText=document.getElementById('sb-text-input').value.trim();
       if(!newText){ if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
       try{
-        var patch={text_content:newText};
-        if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
+        var patch;
+        if(item.content_type==='link'){
+          var curLink=_linkParseText(item.text_content);
+          patch={text_content: JSON.stringify({url:curLink.url, title:newText})};
+        } else {
+          patch={text_content:newText};
+          if(item.content_type==='text' && _sboardIsAutoHeaderText(newText)) patch.content_type='header';
+        }
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
-        item.text_content=newText;
+        item.text_content=patch.text_content;
+        if(patch.content_type) item.content_type=patch.content_type;
         closeSbDetail();
         renderSeaBoard();
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
@@ -1363,7 +1388,7 @@
         var url=pub.data && pub.data.publicUrl;
         if(!url) throw new Error('No public URL returned.');
         var patch={image_url:url};
-        if(!isHeaderType && item.content_type!=='image') patch.content_type='image';
+        if(!isHeaderType && item.content_type!=='image' && item.content_type!=='link') patch.content_type='image';
         var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.image_url=url;
@@ -1521,7 +1546,7 @@
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
-        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','header'])
+        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
@@ -1754,11 +1779,16 @@
     tile.style.cssText='position:absolute;left:'+left+'px;top:'+top+'px;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:'+restTransform+';transition:transform .15s;z-index:'+baseZ+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.18)'; tile.style.zIndex='999'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform=restTransform; tile.style.zIndex=String(baseZ); });
-    if(item.content_type==='image' && item.image_url){
+    if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img');
       img.src=item.image_url;
       img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;pointer-events:none';
       tile.appendChild(img);
+    } else if(item.content_type==='link'){
+      var lp=document.createElement('p');
+      lp.textContent='\ud83d\udd17 '+_linkParseText(item.text_content).title;
+      lp.style.cssText='margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
+      tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       p.textContent=item.text_content||'(untitled)';
@@ -1950,7 +1980,54 @@
   var _pastePendingFile = null;
   var _linkWired = false;
   var _linkPendingUrl = null;
+  var _linkPendingThumb = null;
+  var _linkPendingTitle = null;
+  var _linkResolveTimer = null;
   var _customWired = false;
+
+  // Known oEmbed-capable providers. Each is called as
+  // {endpoint}?format=json&url={theOriginalUrl} — all of these accept the
+  // full page URL directly (no need to hand-parse video/track IDs) and are
+  // reachable with a plain client-side fetch (CORS-enabled).
+  var _LINK_OEMBED_PROVIDERS=[
+    {hosts:['youtube.com','www.youtube.com','m.youtube.com','youtu.be'], endpoint:'https://www.youtube.com/oembed'},
+    {hosts:['vimeo.com','www.vimeo.com'], endpoint:'https://vimeo.com/api/oembed.json'},
+    {hosts:['open.spotify.com'], endpoint:'https://open.spotify.com/oembed'},
+    {hosts:['soundcloud.com','www.soundcloud.com'], endpoint:'https://soundcloud.com/oembed'},
+    {hosts:['tiktok.com','www.tiktok.com'], endpoint:'https://www.tiktok.com/oembed'}
+  ];
+
+  function _linkFindProvider(url){
+    try{
+      var host=new URL(url).hostname.toLowerCase();
+      for(var i=0;i<_LINK_OEMBED_PROVIDERS.length;i++){
+        if(_LINK_OEMBED_PROVIDERS[i].hosts.indexOf(host)!==-1) return _LINK_OEMBED_PROVIDERS[i];
+      }
+    }catch(e){}
+    return null;
+  }
+
+  async function _linkResolveOEmbed(url){
+    var provider=_linkFindProvider(url);
+    if(!provider) return null;
+    try{
+      var res=await fetch(provider.endpoint+'?format=json&url='+encodeURIComponent(url));
+      if(!res.ok) return null;
+      var data=await res.json();
+      return {title:data.title||null, thumbnail_url:data.thumbnail_url||null, provider_name:data.provider_name||null};
+    }catch(e){ console.warn('_linkResolveOEmbed failed:', e); return null; }
+  }
+
+  // ideas.text_content doubles as {url, title} JSON for link cards, so no
+  // schema change is needed. Falls back to treating the raw string as the
+  // URL itself, for resilience against any older/malformed rows.
+  function _linkParseText(text){
+    try{
+      var parsed=JSON.parse(text);
+      if(parsed && parsed.url) return {url:parsed.url, title:parsed.title||parsed.url};
+    }catch(e){}
+    return {url:text||'', title:text||'Link'};
+  }
 
   async function _ideaEnsureWishTank(){
     try{
@@ -2307,17 +2384,73 @@
 
   function renderIdeaLink(){
     var preview=document.getElementById('ilink-preview');
-    if(preview) preview.textContent='Preview appears here once the link resolves';
+    if(preview) preview.innerHTML=_linkPendingThumb
+      ? ('<img src="'+_linkPendingThumb+'" style="max-width:100%;max-height:90px;border-radius:8px;object-fit:contain;display:block;margin:0 auto 4px">'
+         +'<div style="font-size:10px;color:#3A6080;word-break:break-word">'+(_linkPendingTitle||_linkPendingUrl||'')+'</div>')
+      : (_linkPendingUrl?('Ready to attach: '+_linkPendingUrl+' (no preview available)'):'Preview appears here once the link resolves');
     if(!_linkWired){
       _linkWired=true;
-      T().wire('b-ilink-close', function(){ _linkPendingUrl=null; T().nav('s-idea-capture'); });
+      T().wire('b-ilink-close', function(){ _linkPendingUrl=null; _linkPendingThumb=null; _linkPendingTitle=null; T().nav('s-idea-capture'); });
       var input=document.getElementById('ilink-url');
-      if(input) input.addEventListener('change', function(){
-        _linkPendingUrl=this.value.trim();
-        if(preview) preview.textContent=_linkPendingUrl?('Ready to attach: '+_linkPendingUrl):'Preview appears here once the link resolves';
+      if(input) input.addEventListener('input', function(){
+        var val=this.value.trim();
+        _linkPendingUrl=val; _linkPendingThumb=null; _linkPendingTitle=null;
+        if(_linkResolveTimer) clearTimeout(_linkResolveTimer);
+        if(!val){ renderIdeaLink(); return; }
+        if(preview) preview.textContent='Resolving\u2026';
+        _linkResolveTimer=setTimeout(async function(){
+          var meta=await _linkResolveOEmbed(val);
+          if(_linkPendingUrl!==val) return; // url changed while we were resolving
+          if(meta){ _linkPendingThumb=meta.thumbnail_url; _linkPendingTitle=meta.title; }
+          renderIdeaLink();
+        }, 500);
       });
-      T().wire('b-ilink-attach', function(){ if(_linkPendingUrl) _ideaSaveCard(_linkPendingUrl); });
+      T().wire('b-ilink-attach', function(){
+        if(_linkPendingUrl) _ideaSaveLinkCard(_linkPendingUrl, _linkPendingThumb, _linkPendingTitle);
+      });
     }
+  }
+
+  async function _ideaSaveLinkCard(url, thumb, title){
+    var boardSel=document.getElementById('ic-storyboard');
+    var headerSel=document.getElementById('ic-header');
+    var headerId=headerSel?headerSel.value:null;
+    var headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
+      ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
+    var boardId=boardSel?boardSel.value:null;
+    var savedOk=false, saveErr=null;
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user){ saveErr='Not signed in.'; }
+      else{
+        var ins=await _sb.from('ideas').insert({
+          user_id:user.id,
+          content_type:'link',
+          text_content: JSON.stringify({url:url, title:title||url}),
+          image_url: thumb||null,
+          cluster_id: headerId||null,
+          created_at:new Date().toISOString()
+        });
+        if(ins.error){ saveErr=ins.error.message||String(ins.error); console.error('_ideaSaveLinkCard insert error:', ins.error); }
+        else savedOk=true;
+      }
+    }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveLinkCard exception:', e); }
+    _linkPendingUrl=null; _linkPendingThumb=null; _linkPendingTitle=null;
+    T().nav('s-idea-capture');
+    var status=document.getElementById('idea-status');
+    if(!status) return;
+    if(!savedOk){
+      status.textContent='Save failed: '+(saveErr||'unknown error');
+      setTimeout(function(){ if(status) status.textContent=''; }, 6000);
+      return;
+    }
+    status.innerHTML='Saved to '+headerLabel+'. <span id="idea-status-view" style="text-decoration:underline;cursor:pointer;color:#5b9bd5;font-weight:600">View it \u2192</span>';
+    var viewLink=document.getElementById('idea-status-view');
+    if(viewLink && boardId && boardId!=='__new__'){
+      viewLink.addEventListener('click', function(){ _ideaOpenBoard(boardId); });
+    }
+    setTimeout(function(){ if(status) status.innerHTML=''; }, 6000);
   }
 
   function renderIdeaCustom(){
