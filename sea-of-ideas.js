@@ -561,10 +561,10 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var newAdditionsId=await _sboardEnsureNewAdditionsHeader();
+      var newAdditionsId=await _sboardEnsureNewAdditionsHeader(_sboardCurrentTopicId);
       _sboardNewAdditionsId=newAdditionsId;
-      var purposeId=await _sboardEnsurePurposeHeader();
-      var miscId=await _sboardEnsureMiscHeader();
+      var purposeId=await _sboardEnsurePurposeHeader(_sboardCurrentTopicId);
+      var miscId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
 
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
         .eq('user_id', user.id).in('content_type',['image','text','header'])
@@ -1076,7 +1076,7 @@
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     try{
-      var id=await _sboardEnsurePurposeHeader();
+      var id=await _sboardEnsurePurposeHeader(_sboardCurrentTopicId);
       var row=await _sb.from('ideas').select('notes').eq('id',id).single();
       var curText=(row.data && row.data.notes) || '';
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
@@ -1098,40 +1098,43 @@
     }
   }
 
-  async function _sboardEnsureMiscHeader(){
-    if(_sboardMiscId) return _sboardMiscId;
+  async function _sboardEnsureMiscHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','MISC').limit(1);
+    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','MISC');
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardMiscId=existing.data[0].id; return _sboardMiscId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'MISC',created_at:new Date().toISOString()}).select().single();
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'MISC',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('MISC setup failed: '+ins.error.message);
     _sboardMiscId=ins.data.id;
     return _sboardMiscId;
   }
 
-  async function _sboardEnsurePurposeHeader(){
-    if(_sboardPurposeId) return _sboardPurposeId;
+  async function _sboardEnsurePurposeHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Purpose').limit(1);
+    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Purpose');
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',created_at:new Date().toISOString()}).select().single();
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
     _sboardPurposeId=ins.data.id;
     return _sboardPurposeId;
   }
 
-  async function _sboardEnsureNewAdditionsHeader(){
-    if(_sboardNewAdditionsId) return _sboardNewAdditionsId;
+  async function _sboardEnsureNewAdditionsHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','New Additions').limit(1);
+    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','New Additions');
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardNewAdditionsId=existing.data[0].id; return _sboardNewAdditionsId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'New Additions',created_at:new Date().toISOString()}).select().single();
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'New Additions',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('New Additions setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
     return _sboardNewAdditionsId;
@@ -1389,7 +1392,7 @@
 
     T().wire('sb-misc', async function(){
       try{
-        var targetId=await _sboardEnsureMiscHeader();
+        var targetId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
         var newCluster=isMisc?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
