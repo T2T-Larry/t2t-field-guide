@@ -963,11 +963,15 @@
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-peek-card">'
-      +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">'+safeName+'</div><div class="sc-peek-spacer"></div></div>'
+      +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">'+safeName+'</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
       +'<div id="sb-peek-body" style="text-align:center;font-size:11px;font-style:italic;color:#999;padding:20px 0">Loading…</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-peek-back', onBack||closeSbDetail);
+    // Rename/reparent lives here now, reusing the existing dialog — one place
+    // to edit a header's name or nest it elsewhere, reachable from both the
+    // board's own HEADER view-as button and CLUSTER's bucket peek.
+    T().wire('sb-peek-edit', function(){ openSbHeaderDetail(headerRow); });
     var body=document.getElementById('sb-peek-body');
     var _sb=T().sb;
     try{
@@ -1494,8 +1498,13 @@
       if(!looseCards.length){
         burst.innerHTML='<div class="cl-empty">Nothing loose here — every idea has found a bucket.</div>';
       } else {
+        // Uses its own tile factory, not the shared _sboardMakeTile — dropping
+        // one loose idea onto another here means "form a new cluster," not
+        // "reorder," which is what the same drop already means on the main
+        // storyboard. Two different meanings for the same gesture would be
+        // ambiguous on one screen, so CLUSTER gets its own drop behavior.
         looseCards.forEach(function(item){
-          burst.appendChild(_sboardMakeTile(item, tileSize, false, headerRow.id, tileSize));
+          burst.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize));
         });
       }
 
@@ -1504,13 +1513,18 @@
         var pill=document.createElement('div');
         pill.className='cl-bucket';
         pill.textContent=b.text_content||'(untitled)';
-        pill.title=(b.text_content||'(untitled)')+' — tap to rename · drag here to sort an idea in · drag onto another bucket to nest it';
+        pill.title=(b.text_content||'(untitled)')+' — tap to see what\'s inside · drag here to sort an idea in · drag onto another bucket to nest it';
         // Draggable too — lets one bucket be dropped onto another to nest it,
         // same "header:"-prefixed payload convention the storyboard itself
         // already uses for header drags.
         pill.draggable=true;
         pill.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain','header:'+b.id); });
-        pill.addEventListener('click', function(){ _clusterRenamePill(pill, b, headerRow); });
+        // Click = peek inside (existing openSbHeaderPeek, shared with the
+        // board's own HEADER view-as button). Renaming lives inside the peek
+        // now (✏️ button) rather than on the pill itself — putting rename on
+        // click AND drag on the same element caused exactly the click/dblclick
+        // race the main board already hit and fixed once before.
+        pill.addEventListener('click', function(){ openSbHeaderPeek(b); });
         pill.addEventListener('dragover', function(e){ e.preventDefault(); pill.classList.add('dragover'); });
         pill.addEventListener('dragleave', function(){ pill.classList.remove('dragover'); });
         pill.addEventListener('drop', function(e){
@@ -1530,6 +1544,95 @@
     }catch(err){
       burst.innerHTML='<div class="cl-empty" style="color:#b8562f">'+err.message+'</div>';
     }
+  }
+
+  // Starburst tile — deliberately NOT the shared _sboardMakeTile. On the main
+  // storyboard, dropping one idea tile onto another means "reorder." Here it
+  // means "form a new cluster" — same gesture, different screen, different
+  // meaning, so it needs its own drop wiring rather than overloading the
+  // shared one. Visuals (wobble, image/text, heart badge) mirror the shared
+  // tile so the two screens still feel like the same object.
+  function _clusterMakeStarburstTile(item, headerRow, size){
+    var rot=(Math.random()*8-4).toFixed(1);
+    var tile=document.createElement('div');
+    tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+    tile.draggable=true;
+    tile.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain', String(item.id)); });
+    tile.style.cssText='position:relative;flex-shrink:0;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
+    tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
+    tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
+    if(item.content_type==='image' && item.image_url){
+      var img=document.createElement('img');
+      img.src=item.image_url;
+      img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;pointer-events:none';
+      tile.appendChild(img);
+    } else {
+      var p=document.createElement('p');
+      p.textContent=item.text_content||'(untitled)';
+      p.style.cssText='margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
+      tile.appendChild(p);
+    }
+    if(item.heart_count){
+      var hb=document.createElement('div');
+      hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:14px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
+      hb.textContent=item.heart_count>=2?'💕':'❤️';
+      tile.appendChild(hb);
+    }
+    tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
+    tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
+    tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });
+    tile.addEventListener('drop', function(e){
+      e.preventDefault(); e.stopPropagation(); tile.style.outline='none';
+      var raw=e.dataTransfer.getData('text/plain');
+      if(!raw || raw.indexOf('header:')===0 || String(raw)===String(item.id)) return;
+      _clusterOfferStack(raw, item.id, headerRow);
+    });
+    return tile;
+  }
+
+  // Drop one loose idea onto another — forces a name before anything is
+  // created. Cancel, or leave it blank, and both ideas stay exactly as they
+  // were: loose, unstacked, nothing written. There is no unnamed-stack state.
+  function _clusterOfferStack(draggedId, targetId, headerRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
+      +'<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">Stacking these two ideas together — cancel to leave them loose instead.</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
+      +'<input id="cl-stack-name" type="text" placeholder="Name it…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="cl-stack-save" style="flex:1">Save</button><button class="sc-ov-btn" id="cl-stack-cancel" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    var input=document.getElementById('cl-stack-name');
+    if(input) setTimeout(function(){ input.focus(); }, 50);
+    T().wire('cl-stack-cancel', closeSbDetail);
+    T().wire('cl-stack-save', function(){
+      var name=((document.getElementById('cl-stack-name')||{}).value||'').trim();
+      if(!name){ closeSbDetail(); return; } // no entry = cancel, nothing written
+      _clusterCommitStack(draggedId, targetId, name, headerRow);
+    });
+    if(input) input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ document.getElementById('cl-stack-save').click(); }
+      else if(e.key==='Escape'){ document.getElementById('cl-stack-cancel').click(); }
+    });
+  }
+
+  async function _clusterCommitStack(draggedId, targetId, name, headerRow){
+    var _sb=T().sb;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString()}).select().single();
+      if(ins.error) throw ins.error;
+      var newHeaderId=ins.data.id;
+      var upd1=await _sb.from('ideas').update({cluster_id:newHeaderId}).eq('id',draggedId);
+      if(upd1.error) throw upd1.error;
+      var upd2=await _sb.from('ideas').update({cluster_id:newHeaderId}).eq('id',targetId);
+      if(upd2.error) throw upd2.error;
+    }catch(err){}
+    closeSbDetail();
+    renderSeaBoard();
   }
 
   // Router for anything dropped onto a shelf bucket — a loose idea (plain id)
@@ -1613,40 +1716,10 @@
     renderSeaBoard();
   }
 
-  // Tap an existing bucket pill — Name the Baby, EDIT flow. Same in-place
-  // swap pattern as the ADD flow above, seeded with the current name.
-  function _clusterRenamePill(pill, bucketRow, headerRow){
-    var shelf=document.getElementById('cl-shelf');
-    if(!shelf) return;
-    var input=document.createElement('input');
-    input.className='cl-newbucket-input';
-    input.type='text';
-    input.value=bucketRow.text_content||'';
-    shelf.replaceChild(input, pill);
-    input.focus(); input.select();
-    var done=false;
-    function commit(){
-      if(done) return; done=true;
-      var name=input.value.trim();
-      if(!name || name===bucketRow.text_content){ renderClusterView(headerRow); return; }
-      _clusterRenameCommit(bucketRow.id, name, headerRow);
-    }
-    input.addEventListener('blur', commit);
-    input.addEventListener('keydown', function(e){
-      if(e.key==='Enter'){ input.blur(); }
-      else if(e.key==='Escape'){ done=true; renderClusterView(headerRow); }
-    });
-  }
-
-  async function _clusterRenameCommit(bucketId, name, headerRow){
-    var _sb=T().sb;
-    try{
-      var upd=await _sb.from('ideas').update({text_content:name}).eq('id',bucketId);
-      if(upd.error) throw upd.error;
-    }catch(err){}
-    renderClusterView(headerRow);
-    renderSeaBoard();
-  }
+  /* Renaming a bucket now happens via the ✏️ button inside openSbHeaderPeek,
+     which reuses the existing openSbHeaderDetail dialog (name + nest-under,
+     already built) — see above. Kept CLUSTER's own rename code out of here
+     on purpose, so there's exactly one rename dialog instead of two. */
 
   /* ── 9210-9214 · Idea capture family ── */
   var _ideaCaptureCtx = null;
@@ -1735,16 +1808,21 @@
   }
 
   async function _ideaSaveCard(imageUrl){
+    var boardSel=document.getElementById('ic-storyboard');
     var headerSel=document.getElementById('ic-header');
     var headerId=headerSel?headerSel.value:null;
+    var headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
+      ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
+    var boardId=boardSel?boardSel.value:null;
     var ta=document.getElementById('idea-text');
     var text=(ta?ta.value:_ideaDraftText).trim();
     if(!text && !imageUrl) return;
+    var savedOk=false;
     try{
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(user){
-        await _sb.from('ideas').insert({
+        var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: imageUrl?'image':'text',
           text_content: text||null,
@@ -1752,13 +1830,28 @@
           cluster_id: headerId||null,
           created_at:new Date().toISOString()
         });
+        if(!ins.error) savedOk=true;
       }
     }catch(e){}
     if(ta) ta.value='';
     _ideaDraftText=''; _pastePendingUrl=null; _linkPendingUrl=null;
     T().nav('s-idea-capture');
     var status=document.getElementById('idea-status');
-    if(status){ status.textContent='Saved.'; setTimeout(function(){status.textContent='';},2000); }
+    if(!status) return;
+    if(!savedOk){
+      status.textContent='Something went wrong saving that.';
+      setTimeout(function(){ if(status) status.textContent=''; }, 3000);
+      return;
+    }
+    // Confirms where it actually landed, with a way to go look — otherwise
+    // there's no visual proof the card made it into the header you picked,
+    // since this screen resets for the next idea rather than showing the board.
+    status.innerHTML='Saved to '+headerLabel+'. <span id="idea-status-view" style="text-decoration:underline;cursor:pointer;color:#5b9bd5;font-weight:600">View it →</span>';
+    var viewLink=document.getElementById('idea-status-view');
+    if(viewLink && boardId && boardId!=='__new__'){
+      viewLink.addEventListener('click', function(){ _ideaOpenBoard(boardId); });
+    }
+    setTimeout(function(){ if(status) status.innerHTML=''; }, 6000);
   }
 
   async function renderIdeaCapture(){
