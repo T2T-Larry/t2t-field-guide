@@ -192,7 +192,7 @@
         +'.cl-topbar-btns{display:flex;gap:6px;flex-shrink:0}'
         +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0}'
         +'.cl-hint{font-size:10px;font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
-        +'.cl-starburst{flex:1;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:10px;overflow-y:auto;padding:12px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
+        +'.cl-starburst{flex:1;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:18px;overflow-y:auto;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
         +'.cl-empty{font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:100%}'
         +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
         +'.cl-shelf{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0;align-items:flex-start}'
@@ -1493,6 +1493,16 @@
 
       _sboardIdeaOrderByParent[headerRow.id]=looseCards.map(function(r){ return r.id; });
 
+      // Display order only — shuffled fresh each render so the starburst
+      // doesn't visually settle into the same tidy arrangement every time.
+      // The real sort_order (used above for _sboardIdeaOrderByParent and any
+      // future ordering feature) is untouched.
+      var shuffledCards=looseCards.slice();
+      for(var _i=shuffledCards.length-1;_i>0;_i--){
+        var _j=Math.floor(Math.random()*(_i+1));
+        var _tmp=shuffledCards[_i]; shuffledCards[_i]=shuffledCards[_j]; shuffledCards[_j]=_tmp;
+      }
+
       var tileSize=_clusterWide?92:66;
       burst.innerHTML='';
       if(!looseCards.length){
@@ -1503,7 +1513,7 @@
         // "reorder," which is what the same drop already means on the main
         // storyboard. Two different meanings for the same gesture would be
         // ambiguous on one screen, so CLUSTER gets its own drop behavior.
-        looseCards.forEach(function(item){
+        shuffledCards.forEach(function(item){
           burst.appendChild(_clusterMakeStarburstTile(item, headerRow, tileSize));
         });
       }
@@ -1553,14 +1563,24 @@
   // shared one. Visuals (wobble, image/text, heart badge) mirror the shared
   // tile so the two screens still feel like the same object.
   function _clusterMakeStarburstTile(item, headerRow, size){
-    var rot=(Math.random()*8-4).toFixed(1);
+    // Wider wobble than the shared board tile on purpose — this is the one
+    // screen meant to look like a state of mind, not a tidy row. Rotation,
+    // position jitter, and a touch of scale variance are all randomized so
+    // nothing lines up into rows or a grid, even though the tiles still sit
+    // inside a normal flex-wrap flow underneath (keeps scrolling/height
+    // simple — the jitter is paint-only, via transform, not real layout).
+    var rot=(Math.random()*44-22).toFixed(1);
+    var jx=Math.round(Math.random()*28-14);
+    var jy=Math.round(Math.random()*28-14);
+    var scale=(0.90+Math.random()*0.22).toFixed(2);
+    var restTransform='translate('+jx+'px,'+jy+'px) rotate('+rot+'deg) scale('+scale+')';
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;flex-shrink:0;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
-    tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
-    tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
+    tile.style.cssText='position:relative;flex-shrink:0;width:'+size+'px;height:'+size+'px;border-radius:10px;cursor:pointer;transform:'+restTransform+';transition:transform .15s'+(item.color?';background:'+item.color:'');
+    tile.addEventListener('mouseenter', function(){ tile.style.transform='translate(0,0) rotate(0deg) scale(1.12)'; tile.style.zIndex='10'; });
+    tile.addEventListener('mouseleave', function(){ tile.style.transform=restTransform; tile.style.zIndex='1'; });
     if(item.content_type==='image' && item.image_url){
       var img=document.createElement('img');
       img.src=item.image_url;
