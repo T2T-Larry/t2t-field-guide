@@ -185,19 +185,26 @@
            card from inside CLUSTER never gets buried underneath it. */
         +'#sb-detail-overlay{z-index:220}'
         +'#sb-cluster-overlay{z-index:200}'
-        +'.cl-card{background:#eef2f6;border-radius:16px;padding:14px;width:min(480px,96%);height:min(640px,88vh);box-shadow:0 10px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;box-sizing:border-box}'
+        +'.cl-card{background:#eef2f6;border-radius:16px;padding:14px;width:min(560px,96%);height:min(700px,90vh);box-shadow:0 10px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;box-sizing:border-box;transition:width .15s,height .15s}'
+        +'.cl-card.cl-wide{width:min(1100px,96vw);height:min(920px,92vh)}'
         +'.cl-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;flex-shrink:0}'
         +'.cl-title{font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+        +'.cl-topbar-btns{display:flex;gap:6px;flex-shrink:0}'
         +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0}'
         +'.cl-hint{font-size:10px;font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
-        +'.cl-starburst{flex:1;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:10px;overflow-y:auto;padding:12px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%)}'
+        +'.cl-starburst{flex:1;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:10px;overflow-y:auto;padding:12px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
         +'.cl-empty{font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:100%}'
         +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
-        +'.cl-shelf{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0}'
-        +'.cl-bucket{flex:0 0 auto;min-width:64px;max-width:104px;padding:8px 10px;border-radius:10px;background:#fff;border:1.5px solid #a9cce3;font-size:11px;font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;white-space:normal;word-break:break-word;box-sizing:border-box}'
+        +'.cl-shelf{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0;align-items:flex-start}'
+        /* Fixed height + 2-line clamp — a long header name used to stretch every
+           pill (and the whole shelf row) taller, squeezing the starburst above
+           it down to almost nothing. Height is capped no matter how long the
+           name is; full text is still available via the title tooltip. */
+        +'.cl-bucket{flex:0 0 auto;width:92px;height:46px;padding:5px 8px;border-radius:10px;background:#fff;border:1.5px solid #a9cce3;font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;box-sizing:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.15;word-break:break-word;align-items:center;justify-content:center}'
+        +'.cl-card.cl-wide .cl-bucket{width:120px;height:52px;font-size:12px}'
         +'.cl-bucket.dragover{outline:2px solid #5b9bd5}'
-        +'.cl-newbucket{flex:0 0 auto;min-width:44px;padding:8px 14px;border-radius:10px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:16px;line-height:1;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
-        +'.cl-newbucket-input{flex:0 0 auto;width:110px;padding:7px 8px;border-radius:10px;border:1.5px solid #a9cce3;font-size:11px;font-family:inherit;box-sizing:border-box}';
+        +'.cl-newbucket{flex:0 0 auto;min-width:44px;height:46px;padding:0 14px;border-radius:10px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:16px;line-height:46px;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
+        +'.cl-newbucket-input{flex:0 0 auto;width:110px;height:46px;padding:0 8px;border-radius:10px;border:1.5px solid #a9cce3;font-size:11px;font-family:inherit;box-sizing:border-box}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -323,6 +330,7 @@
   var _sboardChildCountById = {};
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
+  var _clusterWide = false;
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
   var _sboardBoardBgPalette = [
     {n:'White', c:'#ffffff'},
@@ -1419,9 +1427,10 @@
     if(!ov) return;
     _clusterOpenHeaderId=headerRow.id;
     _clusterReturnFn=onClose || function(){ openSbDetail(headerRow); };
+    _clusterWide=false;
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="cl-card">'
-      +'<div class="cl-topbar"><div class="cl-title">'+safeName+'</div><button class="cl-close" id="cl-close">✕</button></div>'
+      +'<div class="cl-topbar"><div class="cl-title">'+safeName+'</div><div class="cl-topbar-btns"><button class="cl-close" id="cl-full" title="Full screen">⛶</button><button class="cl-close" id="cl-close">✕</button></div></div>'
       +'<div class="cl-hint">Loose ideas float free until you drag one into a bucket below.</div>'
       +'<div class="cl-starburst" id="cl-starburst"><div class="cl-empty">Loading…</div></div>'
       +'<div class="cl-shelf-label">Buckets — A–Z</div>'
@@ -1429,14 +1438,33 @@
       +'</div>';
     ov.classList.add('active');
     T().wire('cl-close', closeClusterView);
+    // Full-screen toggle — same underlying mechanism as the storyboard's own
+    // ⛶ button (fg-root.sb-wide), so CLUSTER can use the exact same expanded
+    // real estate the storyboard already gets, plus its own larger card/tile
+    // sizing on top of that.
+    T().wire('cl-full', function(){
+      _clusterWide=!_clusterWide;
+      var btn=document.getElementById('cl-full');
+      if(btn){ btn.innerHTML=_clusterWide?'↩':'⛶'; btn.title=_clusterWide?'Back to normal size':'Full screen'; }
+      var fgr=document.getElementById('fg-root');
+      if(fgr) fgr.classList.toggle('sb-wide', _clusterWide);
+      var card=ov.querySelector('.cl-card');
+      if(card) card.classList.toggle('cl-wide', _clusterWide);
+      renderClusterView(headerRow);
+    });
     renderClusterView(headerRow);
   }
 
   function closeClusterView(){
     var ov=document.getElementById('sb-cluster-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; }
+    // Restore fg-root's width to whatever the storyboard's OWN desktop toggle
+    // says it should be — CLUSTER's fullscreen toggle borrows that same class
+    // while open, but shouldn't leave it stuck on (or off) once you leave.
+    var fgr=document.getElementById('fg-root');
+    if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
     var fn=_clusterReturnFn;
-    _clusterOpenHeaderId=null; _clusterReturnFn=null;
+    _clusterOpenHeaderId=null; _clusterReturnFn=null; _clusterWide=false;
     if(fn) fn();
   }
 
@@ -1461,12 +1489,13 @@
 
       _sboardIdeaOrderByParent[headerRow.id]=looseCards.map(function(r){ return r.id; });
 
+      var tileSize=_clusterWide?92:66;
       burst.innerHTML='';
       if(!looseCards.length){
         burst.innerHTML='<div class="cl-empty">Nothing loose here — every idea has found a bucket.</div>';
       } else {
         looseCards.forEach(function(item){
-          burst.appendChild(_sboardMakeTile(item, 66, false, headerRow.id, 66));
+          burst.appendChild(_sboardMakeTile(item, tileSize, false, headerRow.id, tileSize));
         });
       }
 
@@ -1475,15 +1504,19 @@
         var pill=document.createElement('div');
         pill.className='cl-bucket';
         pill.textContent=b.text_content||'(untitled)';
-        pill.title='Tap to rename · drag an idea here to sort it in';
+        pill.title=(b.text_content||'(untitled)')+' — tap to rename · drag here to sort an idea in · drag onto another bucket to nest it';
+        // Draggable too — lets one bucket be dropped onto another to nest it,
+        // same "header:"-prefixed payload convention the storyboard itself
+        // already uses for header drags.
+        pill.draggable=true;
+        pill.addEventListener('dragstart', function(e){ e.stopPropagation(); e.dataTransfer.setData('text/plain','header:'+b.id); });
         pill.addEventListener('click', function(){ _clusterRenamePill(pill, b, headerRow); });
         pill.addEventListener('dragover', function(e){ e.preventDefault(); pill.classList.add('dragover'); });
         pill.addEventListener('dragleave', function(){ pill.classList.remove('dragover'); });
         pill.addEventListener('drop', function(e){
-          e.preventDefault(); pill.classList.remove('dragover');
+          e.preventDefault(); e.stopPropagation(); pill.classList.remove('dragover');
           var raw=e.dataTransfer.getData('text/plain');
-          if(!raw || raw.indexOf('header:')===0) return;
-          _clusterMoveCard(raw, b.id, headerRow);
+          _clusterHandleDrop(raw, b.id, headerRow);
         });
         shelf.appendChild(pill);
       });
@@ -1497,6 +1530,35 @@
     }catch(err){
       burst.innerHTML='<div class="cl-empty" style="color:#b8562f">'+err.message+'</div>';
     }
+  }
+
+  // Router for anything dropped onto a shelf bucket — a loose idea (plain id)
+  // sorts in; another bucket ("header:"-prefixed id) nests under it. Previously
+  // only the idea case was handled, so dragging one bucket onto another did
+  // nothing — the drop silently no-op'd. Fixed July 7, 2026.
+  function _clusterHandleDrop(raw, targetBucketId, headerRow){
+    if(!raw) return;
+    if(raw.indexOf('header:')===0){
+      var draggedId=raw.slice(7);
+      if(String(draggedId)===String(targetBucketId)) return;
+      _clusterNestHeader(draggedId, targetBucketId, headerRow);
+    } else {
+      _clusterMoveCard(raw, targetBucketId, headerRow);
+    }
+  }
+
+  // Nest one bucket under another — the drag-a-header-onto-a-header gesture.
+  // The moved header keeps its own name and everything already nested under
+  // it; it simply becomes a subber one level deeper, exactly like dragging it
+  // onto a header in the main storyboard already does.
+  async function _clusterNestHeader(headerId, targetBucketId, headerRow){
+    var _sb=T().sb;
+    try{
+      var upd=await _sb.from('ideas').update({cluster_id:targetBucketId}).eq('id',headerId);
+      if(upd.error) throw upd.error;
+    }catch(err){}
+    renderClusterView(headerRow);
+    renderSeaBoard();
   }
 
   // Drag a loose idea onto a shelf bucket — the one drag gesture CLUSTER
