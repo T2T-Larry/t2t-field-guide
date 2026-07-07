@@ -1942,6 +1942,7 @@
   var _themeWired = false;
   var _pasteWired = false;
   var _pastePendingUrl = null;
+  var _pastePendingFile = null;
   var _linkWired = false;
   var _linkPendingUrl = null;
   var _customWired = false;
@@ -2017,6 +2018,26 @@
   function _ideaOpenRoot(){
     _sboardCurrentTopicId=null; _sboardFilter=null;
     T().nav('s-sea-of-ideas-cluster');
+  }
+
+  async function _ideaSaveImageFile(file){
+    var box=document.getElementById('ipaste-drop');
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user) throw new Error('Not signed in.');
+      var fname=file.name||('pasted-image-'+Date.now()+'.png');
+      var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
+      var up=await _sb.storage.from('sea-of-ideas').upload(path, file);
+      if(up.error) throw up.error;
+      var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+      var url=pub.data && pub.data.publicUrl;
+      if(!url) throw new Error('No public URL returned.');
+      _pastePendingUrl=null; _pastePendingFile=null;
+      await _ideaSaveCard(url);
+    }catch(e){
+      if(box) box.innerHTML='Upload failed \u2014 '+(e.message||'try again')+'<br>(Ctrl/Cmd + V)';
+    }
   }
 
   async function _ideaSaveCard(imageUrl){
@@ -2218,6 +2239,7 @@
         for(var i=0;i<items.length;i++){
           if(items[i].type&&items[i].type.indexOf('image/')===0){
             var file=items[i].getAsFile();
+            _pastePendingFile=file;
             var reader=new FileReader();
             reader.onload=function(ev){ _pastePendingUrl=ev.target.result; renderIdeaPaste(); };
             reader.readAsDataURL(file);
@@ -2225,8 +2247,13 @@
           }
         }
       });
-      T().wire('b-ipaste-close', function(){ _pastePendingUrl=null; T().nav('s-idea-capture'); });
-      T().wire('b-ipaste-attach', function(){ if(_pastePendingUrl){ var u=_pastePendingUrl; _pastePendingUrl=null; _ideaSaveCard(u); } });
+      T().wire('b-ipaste-close', function(){ _pastePendingUrl=null; _pastePendingFile=null; T().nav('s-idea-capture'); });
+      T().wire('b-ipaste-attach', function(){
+        if(!_pastePendingFile) return;
+        var box=document.getElementById('ipaste-drop');
+        if(box) box.innerHTML='Uploading\u2026';
+        _ideaSaveImageFile(_pastePendingFile);
+      });
     }
   }
 
