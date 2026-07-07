@@ -179,7 +179,25 @@
         +'.sb-topic-value{display:inline-block;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;font-family:\'Playfair Display\',serif;margin-bottom:10px}'
         +'.sb-hdr-current{font-size:12px;color:#000;font-weight:600;cursor:pointer;margin-bottom:6px;padding:6px 10px;border:1px dashed #a9cce3;border-radius:6px;text-align:left}'
         +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
-        +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}';
+        +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}'
+        /* CLUSTER view — Logged July 7, 2026. SHAPING (#sb-detail-overlay) always
+           renders above CLUSTER (#sb-cluster-overlay) so opening a card's SHAPING
+           card from inside CLUSTER never gets buried underneath it. */
+        +'#sb-detail-overlay{z-index:220}'
+        +'#sb-cluster-overlay{z-index:200}'
+        +'.cl-card{background:#eef2f6;border-radius:16px;padding:14px;width:min(480px,96%);height:min(640px,88vh);box-shadow:0 10px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;box-sizing:border-box}'
+        +'.cl-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;flex-shrink:0}'
+        +'.cl-title{font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+        +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0}'
+        +'.cl-hint{font-size:10px;font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
+        +'.cl-starburst{flex:1;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:10px;overflow-y:auto;padding:12px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%)}'
+        +'.cl-empty{font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:100%}'
+        +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
+        +'.cl-shelf{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0}'
+        +'.cl-bucket{flex:0 0 auto;min-width:64px;max-width:104px;padding:8px 10px;border-radius:10px;background:#fff;border:1.5px solid #a9cce3;font-size:11px;font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;white-space:normal;word-break:break-word;box-sizing:border-box}'
+        +'.cl-bucket.dragover{outline:2px solid #5b9bd5}'
+        +'.cl-newbucket{flex:0 0 auto;min-width:44px;padding:8px 14px;border-radius:10px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:16px;line-height:1;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
+        +'.cl-newbucket-input{flex:0 0 auto;width:110px;padding:7px 8px;border-radius:10px;border:1.5px solid #a9cce3;font-size:11px;font-family:inherit;box-sizing:border-box}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -202,7 +220,7 @@
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
-      +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
+      +'<div id="sb-cluster-overlay" class="sb-overlay"></div>'
       +'</div>'
       +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-idea">💡</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
     fg.appendChild(div.firstChild);
@@ -302,6 +320,9 @@
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
   var _sboardIdeaOrderByParent = {};
+  var _sboardChildCountById = {};
+  var _clusterOpenHeaderId = null;
+  var _clusterReturnFn = null;
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
   var _sboardBoardBgPalette = [
     {n:'White', c:'#ffffff'},
@@ -540,6 +561,16 @@
         if(h.cluster_id){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }
       });
       var topLevelHeaders=contentHeaders.filter(function(h){ return !h.cluster_id; });
+
+      // CLUSTER button gating — Logged July 7, 2026. A header only qualifies as
+      // a "bucket" (and therefore shows CLUSTER on its SHAPING card) once it has
+      // something underneath it — a sub-header or a loose idea — at any depth.
+      _sboardChildCountById={};
+      headerRows.forEach(function(h){
+        var subCount=(subHeadersOf[h.id]||[]).length;
+        var directCount=(childrenOfHeader[h.id]||[]).length;
+        _sboardChildCountById[h.id]=subCount+directCount;
+      });
 
       var _unordered=topLevelHeaders.filter(function(h){ return h.sort_order===null||h.sort_order===undefined; });
       var _ordered=topLevelHeaders.filter(function(h){ return h.sort_order!==null&&h.sort_order!==undefined; });
@@ -1114,6 +1145,10 @@
     var isTrashed=String(item.cluster_id)===String(_sboardTrashId) && _sboardTrashId;
     var isMisc=String(item.cluster_id)===String(_sboardMiscId) && _sboardMiscId;
     var heartCount=item.heart_count||0;
+    // CLUSTER view-as option — Logged July 7, 2026. Only appears when this card
+    // is a bucket (has something underneath it, at any depth). Never shown for
+    // a lone card — there's nothing to sort into groups yet.
+    var isBucket=isHeaderType && (_sboardChildCountById[item.id]||0)>0;
     var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     var swatches=_sboardColorPalette.map(function(c){
       var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
@@ -1182,6 +1217,7 @@
       + '<div class="sb-blue-row-md">'
       + '<button class="sb-viewas-btn" id="sb-view-topic">TOPIC</button>'
       + '<button class="sb-viewas-btn" id="sb-view-header">HEADER</button>'
+      + (isBucket ? '<button class="sb-viewas-btn" id="sb-view-cluster">CLUSTER</button>' : '')
       + '</div>'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-heart" title="Heart">❤️</button>'
@@ -1354,12 +1390,200 @@
 
     T().wire('sb-view-header', function(){ openSbHeaderPeek(item, function(){ openSbDetail(item); }); });
     T().wire('sb-view-topic', function(){ closeSbDetail(); _sboardDrillInto(item); });
+    if(isBucket) T().wire('sb-view-cluster', function(){ closeSbDetail(); openClusterView(item); });
     T().wire('sb-close', closeSbDetail);
   }
   function closeSbDetail(){
     var ov=document.getElementById('sb-detail-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; }
     _sboardActiveId=null;
+    // If CLUSTER is open behind this SHAPING card, refresh it — whatever was
+    // just edited (moved, renamed, trashed) may have changed what belongs here.
+    var clOv=document.getElementById('sb-cluster-overlay');
+    if(clOv && clOv.classList.contains('active') && _clusterOpenHeaderId && _sboardAllRowsById[_clusterOpenHeaderId]){
+      renderClusterView(_sboardAllRowsById[_clusterOpenHeaderId]);
+    }
+  }
+
+  /* ── CLUSTER view (9240 family) — Logged July 7, 2026 ──
+     A per-bucket sense-making screen, opened from the SHAPING card's VIEW AS
+     row. Center = the bucket's own loose ideas, rendered wobbly/unordered —
+     same visual language as New Additions, reused at this fractal level.
+     Shelf (bottom) = the bucket's existing sub-headers, alphabetical — a
+     findability tool only, never part of the starburst metaphor. Populating
+     a bucket never moves its shelf position; only naming/renaming does,
+     since the shelf re-sorts alphabetically on every render. */
+
+  function openClusterView(headerRow, onClose){
+    var ov=document.getElementById('sb-cluster-overlay');
+    if(!ov) return;
+    _clusterOpenHeaderId=headerRow.id;
+    _clusterReturnFn=onClose || function(){ openSbDetail(headerRow); };
+    var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    ov.innerHTML='<div class="cl-card">'
+      +'<div class="cl-topbar"><div class="cl-title">'+safeName+'</div><button class="cl-close" id="cl-close">✕</button></div>'
+      +'<div class="cl-hint">Loose ideas float free until you drag one into a bucket below.</div>'
+      +'<div class="cl-starburst" id="cl-starburst"><div class="cl-empty">Loading…</div></div>'
+      +'<div class="cl-shelf-label">Buckets — A–Z</div>'
+      +'<div class="cl-shelf" id="cl-shelf"></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('cl-close', closeClusterView);
+    renderClusterView(headerRow);
+  }
+
+  function closeClusterView(){
+    var ov=document.getElementById('sb-cluster-overlay');
+    if(ov){ ov.classList.remove('active'); ov.innerHTML=''; }
+    var fn=_clusterReturnFn;
+    _clusterOpenHeaderId=null; _clusterReturnFn=null;
+    if(fn) fn();
+  }
+
+  async function renderClusterView(headerRow){
+    var burst=document.getElementById('cl-starburst');
+    var shelf=document.getElementById('cl-shelf');
+    var _sb=T().sb;
+    if(!burst || !shelf || !_sb) return;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
+        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','header'])
+        .order('created_at',{ascending:true}).limit(300);
+      if(res.error) throw new Error(res.error.message);
+      var rows=res.data||[];
+      rows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
+
+      var looseCards=rows.filter(function(r){ return r.content_type==='text'||r.content_type==='image'; }).sort(_sboardBySortOrder);
+      var buckets=rows.filter(function(r){ return r.content_type==='header'; })
+        .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
+
+      _sboardIdeaOrderByParent[headerRow.id]=looseCards.map(function(r){ return r.id; });
+
+      burst.innerHTML='';
+      if(!looseCards.length){
+        burst.innerHTML='<div class="cl-empty">Nothing loose here — every idea has found a bucket.</div>';
+      } else {
+        looseCards.forEach(function(item){
+          burst.appendChild(_sboardMakeTile(item, 66, false, headerRow.id, 66));
+        });
+      }
+
+      shelf.innerHTML='';
+      buckets.forEach(function(b){
+        var pill=document.createElement('div');
+        pill.className='cl-bucket';
+        pill.textContent=b.text_content||'(untitled)';
+        pill.title='Tap to rename · drag an idea here to sort it in';
+        pill.addEventListener('click', function(){ _clusterRenamePill(pill, b, headerRow); });
+        pill.addEventListener('dragover', function(e){ e.preventDefault(); pill.classList.add('dragover'); });
+        pill.addEventListener('dragleave', function(){ pill.classList.remove('dragover'); });
+        pill.addEventListener('drop', function(e){
+          e.preventDefault(); pill.classList.remove('dragover');
+          var raw=e.dataTransfer.getData('text/plain');
+          if(!raw || raw.indexOf('header:')===0) return;
+          _clusterMoveCard(raw, b.id, headerRow);
+        });
+        shelf.appendChild(pill);
+      });
+
+      var newBtn=document.createElement('div');
+      newBtn.className='cl-newbucket';
+      newBtn.textContent='+';
+      newBtn.title='Name a new bucket';
+      newBtn.addEventListener('click', function(){ _clusterStartNewBucket(newBtn, headerRow); });
+      shelf.appendChild(newBtn);
+    }catch(err){
+      burst.innerHTML='<div class="cl-empty" style="color:#b8562f">'+err.message+'</div>';
+    }
+  }
+
+  // Drag a loose idea onto a shelf bucket — the one drag gesture CLUSTER
+  // offers. Re-renders CLUSTER (so the card leaves the starburst) and the
+  // board underneath stays in sync for whenever the traveler exits.
+  async function _clusterMoveCard(itemId, bucketId, headerRow){
+    var _sb=T().sb;
+    try{
+      var siblingCount=(_sboardIdeaOrderByParent[bucketId]||[]).length;
+      var upd=await _sb.from('ideas').update({cluster_id:bucketId, sort_order:siblingCount}).eq('id',itemId);
+      if(upd.error) throw upd.error;
+    }catch(err){}
+    renderClusterView(headerRow);
+    renderSeaBoard();
+  }
+
+  // "+ new bucket" — Name the Baby, ADD flow. Swaps the button for an inline
+  // input in place; committing creates a new header nested under this bucket,
+  // which then takes its correct alphabetical slot on next render.
+  function _clusterStartNewBucket(newBtn, headerRow){
+    var shelf=document.getElementById('cl-shelf');
+    if(!shelf) return;
+    var input=document.createElement('input');
+    input.className='cl-newbucket-input';
+    input.type='text';
+    input.placeholder='Name it…';
+    shelf.replaceChild(input, newBtn);
+    input.focus();
+    var done=false;
+    function commit(){
+      if(done) return; done=true;
+      var name=input.value.trim();
+      if(!name){ renderClusterView(headerRow); return; }
+      _clusterCreateBucket(name, headerRow);
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ input.blur(); }
+      else if(e.key==='Escape'){ done=true; renderClusterView(headerRow); }
+    });
+  }
+
+  async function _clusterCreateBucket(name, headerRow){
+    var _sb=T().sb;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString()});
+      if(ins.error) throw ins.error;
+    }catch(err){}
+    renderClusterView(headerRow);
+    renderSeaBoard();
+  }
+
+  // Tap an existing bucket pill — Name the Baby, EDIT flow. Same in-place
+  // swap pattern as the ADD flow above, seeded with the current name.
+  function _clusterRenamePill(pill, bucketRow, headerRow){
+    var shelf=document.getElementById('cl-shelf');
+    if(!shelf) return;
+    var input=document.createElement('input');
+    input.className='cl-newbucket-input';
+    input.type='text';
+    input.value=bucketRow.text_content||'';
+    shelf.replaceChild(input, pill);
+    input.focus(); input.select();
+    var done=false;
+    function commit(){
+      if(done) return; done=true;
+      var name=input.value.trim();
+      if(!name || name===bucketRow.text_content){ renderClusterView(headerRow); return; }
+      _clusterRenameCommit(bucketRow.id, name, headerRow);
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ input.blur(); }
+      else if(e.key==='Escape'){ done=true; renderClusterView(headerRow); }
+    });
+  }
+
+  async function _clusterRenameCommit(bucketId, name, headerRow){
+    var _sb=T().sb;
+    try{
+      var upd=await _sb.from('ideas').update({text_content:name}).eq('id',bucketId);
+      if(upd.error) throw upd.error;
+    }catch(err){}
+    renderClusterView(headerRow);
+    renderSeaBoard();
   }
 
   /* ── 9210-9214 · Idea capture family ── */
