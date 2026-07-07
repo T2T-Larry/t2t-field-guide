@@ -2036,6 +2036,7 @@
       _pastePendingUrl=null; _pastePendingFile=null;
       await _ideaSaveCard(url);
     }catch(e){
+      console.error('_ideaSaveImageFile error:', e);
       if(box) box.innerHTML='Upload failed \u2014 '+(e.message||'try again')+'<br>(Ctrl/Cmd + V)';
     }
   }
@@ -2050,11 +2051,13 @@
     var ta=document.getElementById('idea-text');
     var text=(ta?ta.value:_ideaDraftText).trim();
     if(!text && !imageUrl) return;
-    var savedOk=false;
+    var savedOk=false, saveErr=null;
     try{
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
-      if(user){
+      if(!user){
+        saveErr='Not signed in.';
+      } else {
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: imageUrl?'image':'text',
@@ -2063,17 +2066,18 @@
           cluster_id: headerId||null,
           created_at:new Date().toISOString()
         });
-        if(!ins.error) savedOk=true;
+        if(ins.error){ saveErr=ins.error.message||String(ins.error); console.error('_ideaSaveCard insert error:', ins.error); }
+        else savedOk=true;
       }
-    }catch(e){}
+    }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveCard exception:', e); }
     if(ta) ta.value='';
     _ideaDraftText=''; _pastePendingUrl=null; _linkPendingUrl=null;
     T().nav('s-idea-capture');
     var status=document.getElementById('idea-status');
     if(!status) return;
     if(!savedOk){
-      status.textContent='Something went wrong saving that.';
-      setTimeout(function(){ if(status) status.textContent=''; }, 3000);
+      status.textContent='Save failed: '+(saveErr||'unknown error');
+      setTimeout(function(){ if(status) status.textContent=''; }, 6000);
       return;
     }
     // Confirms where it actually landed, with a way to go look — otherwise
