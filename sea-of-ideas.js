@@ -2130,19 +2130,16 @@
     async function refreshHeaders(){
       var boardId=boardSel.value;
       if(boardId==='__new__' || !boardId) return;
-      var naId=null, children=[];
+      var children=[];
       try{
-        naId=await _sboardEnsureHeaderNamed('New Additions', boardId);
         children=await _sboardChildHeaders(boardId);
       }catch(e){ console.warn('refreshHeaders failed:', e); }
-      var others=children.filter(function(c){ return c.id!==naId; });
-      others.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
-      var opts='';
-      if(naId) opts+='<option value="'+naId+'">New Additions</option>';
-      opts+=others.map(function(c){ return '<option value="'+c.id+'">'+c.text_content+'</option>'; }).join('');
+      children.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
+      var opts='<option value="'+boardId+'">New Additions</option>';
+      opts+=children.map(function(c){ return '<option value="'+c.id+'">'+c.text_content+'</option>'; }).join('');
       opts+='<option value="__new__">+ Create new header</option>';
       headerSel.innerHTML=opts;
-      var defaultHeaderId=(_ideaCaptureCtx&&String(_ideaCaptureCtx.boardId)===String(boardId)&&_ideaCaptureCtx.headerId)?_ideaCaptureCtx.headerId:naId;
+      var defaultHeaderId=(_ideaCaptureCtx&&String(_ideaCaptureCtx.boardId)===String(boardId)&&_ideaCaptureCtx.headerId)?_ideaCaptureCtx.headerId:boardId;
       if(defaultHeaderId) headerSel.value=defaultHeaderId;
       if(headerSel.selectedIndex===-1 && headerSel.options.length>1) headerSel.selectedIndex=0;
     }
@@ -2307,7 +2304,7 @@
   async function _ideaGetDefaultHeaderId(){
     var result=await _ideaEnsureWishTank();
     if(!result || !result.id) return null;
-    return await _sboardEnsureHeaderNamed('New Additions', result.id);
+    return result.id;
   }
 
   window.T2TSea = {
