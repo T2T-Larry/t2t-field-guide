@@ -239,6 +239,7 @@
       +'</div>'
       +'<div class="sc-hdr-side" style="text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap">'
         +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
+        +'<button class="sc-ov-btn" id="b-sc-recolor-all" title="Recolor all headers">🎨</button>'
         +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Desktop size">⛶</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
@@ -263,6 +264,7 @@
     T().wire('b-sc-idea', function(){
       if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, returnToBoard:true});
     });
+    T().wire('b-sc-recolor-all', _sboardOpenRecolorAll);
     T().wire('b-sc-mode-toggle', function(){
       _sboardDesktop=!_sboardDesktop;
       var btn=document.getElementById('b-sc-mode-toggle');
@@ -667,7 +669,7 @@
 
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
-        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='New Additions');
+        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='NEW');
         var straight=true;
         var subs=subHeadersOf[headerRow.id]||[];
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
@@ -680,7 +682,7 @@
         hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         if(name==='Purpose'){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openPurposeEditor(); }); }
-        else if(!isReserved){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); }); }
+        else { hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); }); }
         if(!isReserved && depth===0){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -708,17 +710,21 @@
         return block;
       }
 
-      // Local "New Additions" column for a nested (fractal) board — same visual
+      // Local "NEW" column for a nested (fractal) board — same visual
       // treatment as renderGroup, but backed by directItems only (no sub-headers,
       // since this bucket is specifically the uncategorized-items catch-all for
-      // whichever board is currently open), and with no real DB row of its own.
-      function renderLocalNewAdditions(directItems, parentIdForDrop){
+      // whichever board is currently open). It's visually virtual — no children
+      // are ever filed under its own id — but it borrows color from the real
+      // per-level NEW row _sboardEnsureNewAdditionsHeader already ensures exists,
+      // so the color picker has something real to save to.
+      function renderLocalNewAdditions(directItems, parentIdForDrop, newRow){
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('div');
         hd.className='sc-pill named';
-        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('New Additions',15,10)+'px;font-weight:800;margin-bottom:2px;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px';
-        hd.textContent='New Additions';
+        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('NEW',15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.textContent='NEW';
+        if(newRow){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(newRow); }); }
         hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
         hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
         hd.addEventListener('drop', function(e){
@@ -747,7 +753,7 @@
         var directIdeas=(childrenOfHeader[_sboardCurrentTopicId]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[_sboardCurrentTopicId]=directIdeas.map(function(r){ return r.id; });
         var childHeaders=subHeadersOf[_sboardCurrentTopicId]||[];
-        groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, _sboardCurrentTopicId));
+        groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, _sboardCurrentTopicId, _sboardAllRowsById[newAdditionsId]));
         if(directIdeas.length===0 && childHeaders.length===0){
           if(statusEl) statusEl.textContent='Nothing under this Header yet.';
           _sboardVisibleHeaders=[];
@@ -911,7 +917,7 @@
       if(areaEl) areaEl.style.background='#3a2564';
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
-      var parentFallback=(topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
+      var parentFallback=(topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
       if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:parentFallback;
       if(parentHit) parentHit.classList.remove('inert');
     } else {
@@ -1073,7 +1079,7 @@
     var ov=document.getElementById('sb-detail-overlay');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Add an idea</div>'
-      +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">'+(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId] ? 'Goes under '+_sboardHeadersById[_sboardCurrentTopicId].text_content : 'Goes into New Additions')+'</div>'
+      +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">'+(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId] ? 'Goes under '+_sboardHeadersById[_sboardCurrentTopicId].text_content : 'Goes into NEW')+'</div>'
       +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:4px;min-height:70px"></textarea>'
       +'<div style="font-size:9px;font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? to make it a Header automatically</div>'
       +'<div id="qa-idea-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
@@ -1103,21 +1109,68 @@
     });
   }
 
+  // One click, one swatch — recolors every header currently on this board
+  // level (Purpose, MISC, NEW, and every visible content header) instead of
+  // opening each one's SHAPING card individually.
+  function _sboardOpenRecolorAll(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var swatches=_sboardColorPalette.map(function(c){
+      return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
+    }).join('');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this board, including Purpose, MISC and NEW, gets it.</div>'
+      +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
+      +'<button class="sc-ov-btn" id="sb-recolor-close" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-recolor-close', closeSbDetail);
+    ov.querySelectorAll('.sb-swatch').forEach(function(sw){
+      sw.onclick=async function(){
+        var c=sw.getAttribute('data-c');
+        var ids=[_sboardPurposeId,_sboardMiscId,_sboardNewAdditionsId]
+          .concat((_sboardVisibleHeaders||[]).map(function(h){ return h.id; }))
+          .filter(Boolean);
+        var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
+        var _sb=T().sb;
+        try{
+          for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); }
+        }catch(e){}
+        closeSbDetail();
+        renderSeaBoard();
+      };
+    });
+  }
+
   async function openPurposeEditor(){
     var ov=document.getElementById('sb-detail-overlay');
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     try{
       var id=await _sboardEnsurePurposeHeader(_sboardCurrentTopicId);
-      var row=await _sb.from('ideas').select('notes').eq('id',id).single();
+      var row=await _sb.from('ideas').select('notes,color').eq('id',id).single();
       var curText=(row.data && row.data.notes) || '';
+      var curColor=(row.data && row.data.color) || '';
+      var pSwatches=_sboardColorPalette.map(function(c){
+        var sel=(curColor===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
+        return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
+      }).join('');
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Purpose</div>'
         +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px">Why are we doing this?</div>'
+        +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+pSwatches+'</div>'
         +'<textarea id="sb-purpose-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;min-height:70px">'+curText+'</textarea>'
         +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-purpose-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-purpose-close" style="flex:1">Close</button></div>'
         +'</div>';
       ov.classList.add('active');
+      ov.querySelectorAll('.sb-swatch').forEach(function(sw){
+        sw.onclick=async function(){
+          var c=sw.getAttribute('data-c');
+          try{ await _sb.from('ideas').update({color:c}).eq('id',id); }catch(e){}
+          closeSbDetail(); renderSeaBoard();
+        };
+      });
       T().wire('sb-purpose-save', async function(){
         var val=document.getElementById('sb-purpose-box').value;
         var upd=await _sb.from('ideas').update({notes:val}).eq('id',id);
@@ -1162,12 +1215,20 @@
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','New Additions');
+    // Matches both the current label and the pre-rename one, so boards built
+    // before the NEW rename self-heal the first time they're opened again
+    // instead of spawning a duplicate reserved header.
+    var q=_sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').in('text_content',['NEW','New Additions']);
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
-    if(!existing.error && existing.data && existing.data.length){ _sboardNewAdditionsId=existing.data[0].id; return _sboardNewAdditionsId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'New Additions',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('New Additions setup failed: '+ins.error.message);
+    if(!existing.error && existing.data && existing.data.length){
+      var row=existing.data[0];
+      _sboardNewAdditionsId=row.id;
+      if(row.text_content!=='NEW'){ try{ await _sb.from('ideas').update({text_content:'NEW'}).eq('id',row.id); }catch(e){} }
+      return _sboardNewAdditionsId;
+    }
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'NEW',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('NEW setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
     return _sboardNewAdditionsId;
   }
@@ -1186,7 +1247,7 @@
   }
 
   function _sboardMoveOptionsHTML(excludeId, currentClusterId){
-    var opts='<option value=""'+(!currentClusterId?' selected':'')+'>New Additions</option>';
+    var opts='<option value=""'+(!currentClusterId?' selected':'')+'>NEW</option>';
     opts+=_sboardHeaderList.filter(function(h){ return String(h.id)!==String(excludeId); })
       .map(function(h){ var sel=(currentClusterId && String(h.id)===String(currentClusterId))?' selected':''; return '<option value="'+h.id+'"'+sel+'>'+(h.text_content||'(untitled)')+'</option>'; }).join('');
     opts+='<option value="__new__">+ Create new header…</option>';
@@ -1201,18 +1262,30 @@
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
     var isHeaderType=item.content_type==='header';
-    var reservedNames=['Trash','MISC','Purpose','New Additions'];
+    var reservedNames=['Trash','MISC','Purpose','NEW'];
     var isReservedItem=isHeaderType && reservedNames.indexOf(item.text_content)!==-1;
 
     if(isReservedItem){
+      var rSwatches=_sboardColorPalette.map(function(c){
+        var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
+        return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
+      }).join('');
       ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
         + '<div class="sb-card-title">Shape</div>'
         + '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
         + '<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
+        + '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+rSwatches+'</div>'
         + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;flex:1"></textarea>'
         + '<button class="sb-close-btn" id="sb-close">Close</button>'
         + '</div>';
       ov.classList.add('active');
+      ov.querySelectorAll('.sb-swatch').forEach(function(sw){
+        sw.onclick=async function(){
+          var c=sw.getAttribute('data-c');
+          try{ await _sb.from('ideas').update({color:c}).eq('id',item.id); item.color=c; }catch(e){}
+          closeSbDetail(); renderSeaBoard();
+        };
+      });
       var rNotes=document.getElementById('sb-notes-box');
       if(rNotes){ rNotes.value=item.notes||''; rNotes.addEventListener('blur', async function(e){
         try{ await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id); item.notes=e.target.value; }catch(err){}
@@ -1240,26 +1313,26 @@
     var topicLabel=(_sboardCurrentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
     var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
-    var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'New Additions');
+    var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
     var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Sea of Ideas';
     var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
       + '<div class="sb-hdr-eyebrow2">Topic</div><div class="sb-topic-value">'+topicLabel+'</div>';
 
     // HEADER eyebrow: collapsed by default, showing only the current header —
     // tap to reveal the same option list as before (visible-headers-in-context).
-    // "New Additions" here means whichever board's own uncategorized bucket is
+    // "NEW" here means whichever board's own uncategorized bucket is
     // active: null at the root Sea of Ideas, or the current topic id when
     // working inside a nested (fractal) board.
     var localNewAdditionsTarget=_sboardCurrentTopicId||'';
     var isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
     var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
-    var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'New Additions';
+    var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
     var headerListHTML='<div class="sb-hdr-eyebrow2">Header</div>'
       + '<div class="sb-hdr-current" id="sb-hdr-current">'+curHeaderLabel+' ▾</div>'
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist" style="display:none">'
-      + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">New Additions</div>'
+      + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
       + (_sboardPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_sboardPurposeId)?' current':'')+'" data-hid="'+_sboardPurposeId+'">Purpose</div>'):'')
-      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='New Additions'; })
+      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW'; })
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
       + '</div>'
@@ -1501,7 +1574,7 @@
   /* ── CLUSTER view (9240 family) — Logged July 7, 2026 ──
      A per-bucket sense-making screen, opened from the SHAPING card's VIEW AS
      row. Center = the bucket's own loose ideas, rendered wobbly/unordered —
-     same visual language as New Additions, reused at this fractal level.
+     same visual language as NEW, reused at this fractal level.
      Shelf (bottom) = the bucket's existing sub-headers, alphabetical — a
      findability tool only, never part of the starburst metaphor. Populating
      a bucket never moves its shelf position; only naming/renaming does,
@@ -2205,7 +2278,7 @@
       var headerSel=document.getElementById('ic-header');
       headerId=headerSel?headerSel.value:null;
       headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
-        ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
+        ? headerSel.options[headerSel.selectedIndex].text : 'NEW';
       boardId=boardSel?boardSel.value:null;
       var ta=document.getElementById('idea-text');
       text=(ta?ta.value:_ideaDraftText).trim();
@@ -2321,7 +2394,7 @@
         children=await _sboardChildHeaders(boardId);
       }catch(e){ console.warn('refreshHeaders failed:', e); }
       children.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
-      var opts='<option value="'+boardId+'">New Additions</option>';
+      var opts='<option value="'+boardId+'">NEW</option>';
       opts+=children.map(function(c){ return '<option value="'+c.id+'">'+c.text_content+'</option>'; }).join('');
       opts+='<option value="__new__">+ Create new header</option>';
       headerSel.innerHTML=opts;
@@ -2486,7 +2559,7 @@
       var headerSel=document.getElementById('ic-header');
       headerId=headerSel?headerSel.value:null;
       headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
-        ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
+        ? headerSel.options[headerSel.selectedIndex].text : 'NEW';
       boardId=boardSel?boardSel.value:null;
     }
     var savedOk=false, saveErr=null;
@@ -2582,7 +2655,7 @@
      (once built) share one "where am I" position.
 
      HEADER always defaults to New (= the current Topic's own id as
-     cluster_id, the existing New Additions convention) — leaving it
+     cluster_id, the existing NEW convention) — leaving it
      alone or explicitly choosing New are the same save target.
 
      Legacy 9210-9214 screens are left completely intact and still
