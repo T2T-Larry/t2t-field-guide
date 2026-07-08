@@ -2199,9 +2199,11 @@
       if(!user){
         saveErr='Not signed in.';
       } else {
+        var contentType = imageUrl ? 'image' : 'text';
+        if(!imageUrl && sessionMode && (_isxIdeaMode==='header' || _sboardIsAutoHeaderText(text))) contentType='header';
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
-          content_type: imageUrl?'image':'text',
+          content_type: contentType,
           text_content: text||null,
           image_url: imageUrl||null,
           cluster_id: headerId||null,
@@ -2567,6 +2569,7 @@
   var _isxHeaderId = null;      // null = New (defaults to current Topic's own id)
   var _isxHeaderLabel = 'New';
   var _isxCount = 0;
+  var _isxIdeaMode = 'idea';    // 9211 toggle: 'idea' or 'header' (manual override)
   var _isxStart = null;
   var _isxWired = false;
   var _isxExpanded = {};        // compass: which collapsed sibling groups were opened
@@ -2910,15 +2913,32 @@
   }
 
   function _isxOpenIdeaPanel(){
+    _isxIdeaMode='idea';
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
       +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
+      +'<div class="isx-src-row" style="margin-bottom:8px">'
+        +'<button class="isx-src-btn on" id="isx-idea-mode-idea" type="button">\ud83d\udca1 Idea</button>'
+        +'<button class="isx-src-btn" id="isx-idea-mode-header" type="button">\ud83d\udccc Header</button>'
+      +'</div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
+      +'<div style="font-size:9px;font-style:italic;color:#a3907a;margin:4px 0 10px">End with : or ? to make it a Header automatically</div>'
       +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=function(){ _ideaSaveCard(null); };
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
+
+    var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
+    var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
+    function _isxSetMode(m){
+      _isxIdeaMode=m;
+      if(modeIdeaBtn) modeIdeaBtn.classList.toggle('on', m==='idea');
+      if(modeHeaderBtn) modeHeaderBtn.classList.toggle('on', m==='header');
+    }
+    if(modeIdeaBtn) modeIdeaBtn.onclick=function(){ _isxSetMode('idea'); };
+    if(modeHeaderBtn) modeHeaderBtn.onclick=function(){ _isxSetMode('header'); };
+
     var ta=document.getElementById('isx-idea-text'); if(ta) ta.focus();
   }
 
