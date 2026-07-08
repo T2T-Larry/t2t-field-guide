@@ -2638,7 +2638,25 @@
     }
   }
 
+  function _isxShowError(msg){
+    var board=document.getElementById('isx-board');
+    if(!board) return;
+    var banner=document.getElementById('isx-error-banner');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='isx-error-banner';
+      banner.style.cssText='position:absolute;top:14px;left:16px;right:260px;background:#fff3f3;border:2px solid #A32D2D;'
+        +'color:#A32D2D;font-size:11px;padding:8px 12px;border-radius:8px;z-index:22;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+      board.appendChild(banner);
+    }
+    banner.textContent=msg;
+    banner.style.display='block';
+    clearTimeout(banner._isxTimer);
+    banner._isxTimer=setTimeout(function(){ banner.style.display='none'; }, 8000);
+  }
+
   async function _isxRenderLadder(){
+   try{
     var parentWrap=document.getElementById('isx-rung-parent');
     var topicWrap=document.getElementById('isx-rung-topic');
     var headerWrap0=document.getElementById('isx-rung-header');
@@ -2693,6 +2711,7 @@
       +'<div class="isx-viewas-row"><button class="isx-viewas" id="isx-header-viewas">View as Topic</button></div>';
     var headerSel=document.getElementById('isx-sel-header');
     headerSel.onchange=async function(){
+      var vaBtn=document.getElementById('isx-header-viewas');
       if(this.value==='__add__'){
         var name=prompt('Name the new Header:');
         if(name){
@@ -2700,11 +2719,18 @@
           if(newId){ _isxHeaderId=newId; _isxHeaderLabel=name; }
         }
         await _isxRenderLadder();
+        return;
       } else if(this.value==='__new__'){
         _isxHeaderId=null; _isxHeaderLabel='New';
       } else {
         _isxHeaderId=this.value; _isxHeaderLabel=this.options[this.selectedIndex].text;
       }
+      // Fixes the "View as Topic never turns on" bug — re-render replaced the
+      // whole header row's HTML, but the button's disabled state was only ever
+      // set once, at first render, and never re-checked when a real header
+      // got picked afterward. Toggling it directly here (no full re-render)
+      // keeps the dropdown's own open/selected state undisturbed too.
+      if(vaBtn) vaBtn.disabled=!_isxHeaderId;
       await _isxRenderBoard();
     };
     var viewAsBtn=document.getElementById('isx-header-viewas');
@@ -2717,6 +2743,10 @@
         _isxRenderLadder(); _isxRenderBoard();
       };
     }
+   }catch(e){
+     console.error('_isxRenderLadder failed:', e);
+     _isxShowError('Something went wrong loading this level: '+(e&&e.message?e.message:String(e)));
+   }
   }
 
   var _isxCardPos = {}; // session-only manual drag positions, keyed by idea row id
@@ -2752,7 +2782,7 @@
       if(empty) empty.style.display = rows.length ? 'none' : 'block';
       var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
       rows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
-    }catch(e){ console.warn('_isxRenderBoard failed:', e); }
+    }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
   function _isxMakeTile(row, w, h){
@@ -3005,12 +3035,18 @@
   }
 
   function _isxOpenRulesPanel(){
-    _isxOpenPopup('<div class="isx-pcard" style="width:260px"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9214" style="width:260px"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle" style="font-size:20px">\ud83d\udcdc Rules of Creative Thinking</div>'
-      +'<div style="font-size:12px;line-height:1.6;color:#1A3A5C;margin-top:6px">There are no bad ideas here.<br>Quantity over judgment.<br>Half-formed is welcome.<br>Nothing needs solving right now.</div>'
+      +'<div style="font-size:13px;line-height:2;color:#1A3A5C;margin-top:8px">'
+        +'<div>1. No criticism.</div>'
+        +'<div>2. The more, the better.</div>'
+        +'<div>3. The wilder, the better.</div>'
+        +'<div>4. Hitch-hike off other ideas.</div>'
+      +'</div>'
       +'<button class="isx-save" id="isx-p-save">GOT IT</button></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=_isxClosePopup;
+    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
   }
 
   async function _isxOpenCompass(){
