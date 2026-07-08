@@ -2208,7 +2208,7 @@
           image_url: imageUrl||null,
           cluster_id: headerId||null,
           created_at:new Date().toISOString()
-        });
+        }).select().single();
         if(ins.error){ saveErr=ins.error.message||String(ins.error); console.error('_ideaSaveCard insert error:', ins.error); }
         else savedOk=true;
       }
@@ -2216,9 +2216,20 @@
 
     if(sessionMode){
       if(savedOk){
-        _isxClosePopup();
         _isxCount++;
+        if(contentType==='header'){
+          // Step into the header just created so the next capture lands
+          // inside it — this is also what makes the "toggled Header, added
+          // one" moment visible: the location line updates to prove it landed.
+          var newId = ins && ins.data ? ins.data.id : null;
+          if(newId){
+            _isxHeaderId=newId;
+            _isxHeaderLabel=text.replace(/[:?]\s*$/,'').trim()||text;
+          }
+          await _isxRenderLadder();
+        }
         _isxRenderBoard();
+        _isxResetIdeaPanelForNext(contentType==='header');
       } else {
         var isxTa2=document.getElementById('isx-idea-text');
         var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
@@ -2616,7 +2627,7 @@
       T().wire('isx-image-btn', _isxOpenImagePanel);
       T().wire('isx-link-btn', _isxOpenLinkPanel);
       T().wire('isx-rules-btn', _isxOpenRulesPanel);
-      T().wire('isx-compass-btn', _isxOpenCompass);
+      T().wire('isx-compass-btn', _isxOpenStoryboardView);
       T().wire('isx-end-btn', _isxOpenRecap);
       T().wire('isx-fullscreen-btn', _isxToggleFullscreen);
       var board=document.getElementById('isx-board');
@@ -2912,6 +2923,38 @@
     });
   }
 
+  // After a successful save, the 9211 popup stays open and resets itself
+  // rather than closing — ideas come in bursts, and closing after every
+  // single one breaks that rhythm. Header saves get the same treatment,
+  // plus a visible confirmation, since a header row never renders as a
+  // board tile and would otherwise look like nothing happened.
+  function _isxResetIdeaPanelForNext(wasHeader){
+    var ta=document.getElementById('isx-idea-text');
+    if(!ta){
+      // Not the plain Idea panel (Image/Link saves) — keep prior behavior.
+      _isxClosePopup();
+      return;
+    }
+    ta.value=''; ta.focus();
+    _isxIdeaMode='idea';
+    var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
+    var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
+    if(modeIdeaBtn) modeIdeaBtn.classList.add('on');
+    if(modeHeaderBtn) modeHeaderBtn.classList.remove('on');
+    var locEl=document.querySelector('#isx-popup-layer .isx-ploc');
+    if(locEl) locEl.textContent='Saving to: '+_isxLocationLabel();
+    var card=document.querySelector('#isx-popup-layer .isx-pcard');
+    if(card){
+      var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
+      var flash=document.createElement('div');
+      flash.className='isx-save-flash';
+      flash.style.cssText='color:#2f7a4f;font-size:11px;text-align:center;margin-top:4px';
+      flash.textContent = wasHeader ? 'Header added \u2014 add ideas here \u2193' : 'Saved \u2014 keep going';
+      card.appendChild(flash);
+      setTimeout(function(){ if(flash && flash.parentNode) flash.parentNode.removeChild(flash); }, 2200);
+    }
+  }
+
   function _isxOpenIdeaPanel(){
     _isxIdeaMode='idea';
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
@@ -3067,6 +3110,13 @@
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=_isxClosePopup;
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
+  }
+
+  // Eye replaces the compass this iteration: instead of the text "Where
+  // This Sits" tree, it jumps straight to the real visual Storyboard for
+  // wherever the traveler currently is in Idea Session.
+  function _isxOpenStoryboardView(){
+    _ideaOpenBoard(_isxCurrentTopicId());
   }
 
   async function _isxOpenCompass(){
