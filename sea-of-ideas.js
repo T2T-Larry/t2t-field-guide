@@ -1105,7 +1105,12 @@
       +'</div>';
     ov.classList.add('active');
     var ta=document.getElementById('qa-idea-text');
-    if(ta) setTimeout(function(){ ta.focus(); },50);
+    if(ta){
+      setTimeout(function(){ ta.focus(); },50);
+      ta.addEventListener('keydown', function(e){
+        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('qa-idea-save').click(); }
+      });
+    }
     T().wire('qa-idea-close', closeSbDetail);
     T().wire('qa-idea-save', async function(){
       var text=(document.getElementById('qa-idea-text')||{}).value||'';
@@ -2484,7 +2489,12 @@
       T().wire('ic-btn-link', function(){ T().nav('s-idea-link'); });
       T().wire('ic-btn-custom', function(){ T().nav('s-idea-custom'); });
       var ta=document.getElementById('idea-text');
-      if(ta) ta.addEventListener('input', function(){ _ideaDraftText=this.value; });
+      if(ta){
+        ta.addEventListener('input', function(){ _ideaDraftText=this.value; });
+        ta.addEventListener('keydown', function(e){
+          if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _ideaSaveCard(null); }
+        });
+      }
       T().wire('b-save-idea', function(){ _ideaSaveCard(null); });
     }
   }
@@ -3100,7 +3110,13 @@
     if(modeIdeaBtn) modeIdeaBtn.onclick=function(){ _isxSetMode('idea'); };
     if(modeHeaderBtn) modeHeaderBtn.onclick=function(){ _isxSetMode('header'); };
 
-    var ta=document.getElementById('isx-idea-text'); if(ta) ta.focus();
+    var ta=document.getElementById('isx-idea-text');
+    if(ta){
+      ta.focus();
+      ta.addEventListener('keydown', function(e){
+        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _ideaSaveCard(null); }
+      });
+    }
   }
 
   function _isxOpenImagePanel(){
