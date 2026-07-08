@@ -133,6 +133,13 @@
         +'#fg-root.sb-wide{max-width:1200px!important}'
         +'#fg-root.sb-wide #s-sea-of-ideas-cluster{min-height:calc(100vh - 24px)!important;max-height:calc(100vh - 24px)!important}'
         +'#fg-root.sb-wide #sc-board-wrap{display:flex}'
+        // Storyboard fullscreen — Logged July 8, 2026. Same real-viewport
+        // takeover as the CREATE Idea Session's .isx-full (position:fixed,
+        // 100vw/100vh), applied whenever the Storyboard is the active screen.
+        // Deliberately NOT reusing sb-wide's max-width:1200px cap for this —
+        // sb-wide stays reserved for CLUSTER's own separate wide toggle.
+        +'#fg-root.isx-full #s-sea-of-ideas-cluster{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important}'
+        +'#fg-root.isx-full #s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
         +'.sc-hdr-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
         +'.sc-hdr-side{min-width:72px;min-height:46px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end}'
@@ -240,7 +247,7 @@
       +'<div class="sc-hdr-side" style="text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap">'
         +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
         +'<button class="sc-ov-btn" id="b-sc-recolor-all" title="Recolor all headers">🎨</button>'
-        +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Desktop size">⛶</button>'
+        +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Full screen">⛶</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
       +'</div>'
@@ -255,7 +262,8 @@
     T().registerPageNum('s-sea-of-ideas-cluster', '9221');
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
     T().wire('b-sc-close', function(){
-      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
+      var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
+      if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
       _sboardCurrentTopicId=null; _sboardFilter=null;
       var viaChapter = T().consumeSeaChapterEntry();
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
@@ -265,13 +273,16 @@
       if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, returnToBoard:true});
     });
     T().wire('b-sc-recolor-all', _sboardOpenRecolorAll);
-    T().wire('b-sc-mode-toggle', function(){
-      _sboardDesktop=!_sboardDesktop;
-      var btn=document.getElementById('b-sc-mode-toggle');
-      if(btn){ btn.innerHTML=_sboardDesktop?'↩':'⛶'; btn.title=_sboardDesktop?'Back to mobile size':'Desktop size'; }
-      var fgr=document.getElementById('fg-root');
-      if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
-      renderSeaBoard();
+    // The Storyboard is always at real-viewport size now (same .isx-full
+    // takeover as CREATE's Idea Session) — this button now matches CREATE's
+    // own ⛶ exactly: an extra layer, the actual browser/OS Fullscreen API.
+    T().wire('b-sc-mode-toggle', _isxToggleFullscreen);
+    document.addEventListener('fullscreenchange', function(){
+      var b=document.getElementById('b-sc-mode-toggle');
+      if(b && document.getElementById('s-sea-of-ideas-cluster') && document.getElementById('s-sea-of-ideas-cluster').classList.contains('active')){
+        b.innerHTML = document.fullscreenElement ? '\u21a9' : '\u26f6';
+        b.title = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
+      }
     });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
@@ -466,7 +477,7 @@
     var boardWrap=document.getElementById('sc-board-wrap');
     if(!boardWrap) return;
     var fgr=document.getElementById('fg-root');
-    if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
+    if(fgr){ fgr.classList.add('isx-full'); fgr.classList.toggle('sb-wide', _sboardDesktop); }
     return renderSeaBoard();
   }
 
