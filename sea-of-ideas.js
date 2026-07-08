@@ -2215,7 +2215,8 @@
     if(sessionMode){
       if(savedOk){
         _isxClosePopup();
-        _isxOptimisticTile(imageUrl?'image':'text', text||'(image)');
+        _isxCount++;
+        _isxRenderBoard();
       } else {
         var isxTa2=document.getElementById('isx-idea-text');
         var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
@@ -2480,7 +2481,7 @@
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveLinkCard exception:', e); }
 
     if(sessionMode){
-      if(savedOk){ _isxClosePopup(); _isxOptimisticTile('link', title||url); }
+      if(savedOk){ _isxClosePopup(); _isxCount++; _isxRenderBoard(); }
       else{
         var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
         if(errBox){
@@ -2615,6 +2616,12 @@
       T().wire('isx-compass-btn', _isxOpenCompass);
       T().wire('isx-end-btn', _isxOpenRecap);
       T().wire('isx-fullscreen-btn', _isxToggleFullscreen);
+      var board=document.getElementById('isx-board');
+      if(board) board.addEventListener('dblclick', function(e){
+        if(e.target.closest('.isx-tile')) return;
+        var rect=board.getBoundingClientRect();
+        _isxOpenColorPicker(e.clientX-rect.left, e.clientY-rect.top);
+      });
       document.addEventListener('fullscreenchange', function(){
         var b=document.getElementById('isx-fullscreen-btn');
         if(b) b.textContent = document.fullscreenElement ? '\u21a9' : '\u26f6';
@@ -2634,8 +2641,8 @@
   async function _isxRenderLadder(){
     var parentWrap=document.getElementById('isx-rung-parent');
     var topicWrap=document.getElementById('isx-rung-topic');
-    var headerSel=document.getElementById('isx-sel-header');
-    if(!parentWrap||!topicWrap||!headerSel) return;
+    var headerWrap0=document.getElementById('isx-rung-header');
+    if(!parentWrap||!topicWrap||!headerWrap0) return;
 
     if(_isxPath.length>1){
       var parentName=_isxPath[_isxPath.length-2].text;
@@ -2674,14 +2681,17 @@
       topicWrap.innerHTML='<div class="isx-rung-name">'+_isxPath[_isxPath.length-1].text+'</div>';
     }
 
+    var headerWrap=document.getElementById('isx-rung-header');
     var children=await _sboardChildHeaders(_isxCurrentTopicId());
     children.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
-    var hOpts='<option value="__new__"'+(!_isxHeaderId?' selected':'')+'>New (default)</option>'
+    var hOpts='<option value="__new__"'+(!_isxHeaderId?' selected':'')+'>New</option>'
       +children.map(function(c){
         return '<option value="'+c.id+'"'+(String(c.id)===String(_isxHeaderId)?' selected':'')+'>'+c.text_content+'</option>';
       }).join('')
       +'<option value="__add__">+ Add New Header</option>';
-    headerSel.innerHTML=hOpts;
+    headerWrap.innerHTML='<select class="isx-select" id="isx-sel-header">'+hOpts+'</select>'
+      +'<button class="isx-viewas" id="isx-header-viewas">View as Topic</button>';
+    var headerSel=document.getElementById('isx-sel-header');
     headerSel.onchange=async function(){
       if(this.value==='__add__'){
         var name=prompt('Name the new Header:');
@@ -2709,11 +2719,27 @@
     }
   }
 
+  var _isxCardPos = {}; // session-only manual drag positions, keyed by idea row id
+  var _isxColorSwatches = ['#e4e0d8','#fdf6e8','#eaf4ff','#eafaf0','#fdeaea','#f5eaff','#fff3d6','#e8f0f5'];
+
+  async function _isxLoadTopicColor(){
+    var board=document.getElementById('isx-board');
+    if(!board) return;
+    board.style.backgroundColor='';
+    try{
+      var _sb=T().sb;
+      var res=await _sb.from('ideas').select('color').eq('id',_isxCurrentTopicId()).single();
+      if(res.data && res.data.color) board.style.backgroundColor=res.data.color;
+    }catch(e){ /* no color set yet — leave default */ }
+  }
+
   async function _isxRenderBoard(){
     var canvas=document.getElementById('isx-canvas');
     var empty=document.getElementById('isx-empty');
     if(!canvas) return;
     canvas.innerHTML='';
+    if(empty) canvas.appendChild(empty);
+    _isxLoadTopicColor();
     var clusterId=_isxCurrentClusterId();
     try{
       var _sb=T().sb;
@@ -2732,32 +2758,83 @@
   function _isxMakeTile(row, w, h){
     var t=document.createElement('div');
     t.className='isx-tile';
-    var x=16+Math.random()*Math.max(40,w-140), y=16+Math.random()*Math.max(40,h-100);
+    var pos=_isxCardPos[row.id];
+    var x = pos ? pos.x : 16+Math.random()*Math.max(40,w-140);
+    var y = pos ? pos.y : 16+Math.random()*Math.max(40,h-100);
     t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
-    var body='';
-    if(row.content_type==='image'){ body='<img src="'+row.image_url+'" style="width:100%;height:52px;object-fit:cover;border-radius:6px;margin-bottom:4px">'; }
-    else if(row.content_type==='link'){ var parsed=_linkParseText(row.text_content); body='<div class="isx-tile-ic">\ud83d\udd17</div>'+(parsed.title||parsed.url); }
-    else { body='<div class="isx-tile-ic">\ud83d\udca1</div>'+(row.text_content||''); }
-    t.innerHTML=body;
+    var linkUrl=null;
+    if(row.content_type==='image'){
+      t.innerHTML='<img src="'+row.image_url+'" style="height:52px">';
+    } else if(row.content_type==='link'){
+      var parsed=_linkParseText(row.text_content);
+      linkUrl=parsed.url;
+      t.classList.add('isx-link-tile');
+      t.innerHTML=(row.image_url?'<img src="'+row.image_url+'" style="height:52px">':'')
+        +'<div>\ud83d\udd17 '+(parsed.title||parsed.url)+'</div>';
+    } else {
+      t.innerHTML='<div>'+(row.text_content||'')+'</div>';
+    }
+    _isxWireTileDrag(t, row.id, linkUrl);
     return t;
   }
 
-  function _isxOptimisticTile(contentType, label){
-    var canvas=document.getElementById('isx-canvas');
-    var empty=document.getElementById('isx-empty');
-    if(!canvas) return;
-    if(empty) empty.style.display='none';
-    var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
-    var icon = contentType==='link' ? '\ud83d\udd17' : (contentType==='image' ? '\ud83d\udcf7' : '\ud83d\udca1');
-    var t=document.createElement('div');
-    t.className='isx-tile';
-    var x=16+Math.random()*Math.max(40,w-140), y=16+Math.random()*Math.max(40,h-100);
-    t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
-    t.innerHTML='<div class="isx-tile-ic">'+icon+'</div>'+(label||'');
-    canvas.appendChild(t);
-    _isxCount++;
-    var pill=document.getElementById('isx-count-pill');
-    if(pill) pill.textContent='\u2728 '+_isxCount+' caught this session';
+  // Manual drag, same session-only-cache approach CLUSTER already uses (no
+  // dedicated position columns on `ideas` — positions live for the life of
+  // this browser session, same as CLUSTER's starburst). A link tile still
+  // needs to open on a genuine click; a small movement threshold is what
+  // tells a drag apart from a click on the same element.
+  function _isxWireTileDrag(tile, rowId, linkUrl){
+    var startX, startY, origLeft, origTop, moved, canvas;
+    tile.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      canvas=tile.parentElement;
+      startX=e.clientX; startY=e.clientY; moved=false;
+      origLeft=parseFloat(tile.style.left)||0; origTop=parseFloat(tile.style.top)||0;
+      function onMove(ev){
+        var dx=ev.clientX-startX, dy=ev.clientY-startY;
+        if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+        tile.style.left=Math.round(origLeft+dx)+'px';
+        tile.style.top=Math.round(origTop+dy)+'px';
+      }
+      function onUp(){
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        if(moved){
+          _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)};
+        } else if(linkUrl){
+          window.open(linkUrl, '_blank', 'noopener');
+        }
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  function _isxOpenColorPicker(x, y){
+    var board=document.getElementById('isx-board');
+    if(!board) return;
+    var existing=document.getElementById('isx-color-popup'); if(existing) existing.remove();
+    var pop=document.createElement('div');
+    pop.className='isx-color-popup'; pop.id='isx-color-popup';
+    pop.style.left=x+'px'; pop.style.top=y+'px';
+    pop.innerHTML=_isxColorSwatches.map(function(c){ return '<div class="isx-color-swatch" data-color="'+c+'" style="background:'+c+'"></div>'; }).join('');
+    board.appendChild(pop);
+    pop.querySelectorAll('.isx-color-swatch').forEach(function(sw){
+      sw.onclick=async function(){
+        var color=sw.getAttribute('data-color');
+        board.style.backgroundColor=color;
+        pop.remove();
+        try{
+          var _sb=T().sb;
+          await _sb.from('ideas').update({color:color}).eq('id',_isxCurrentTopicId());
+        }catch(e){ console.warn('Saving board color failed:', e); }
+      };
+    });
+    setTimeout(function(){
+      document.addEventListener('click', function closeOnce(e){
+        if(!pop.contains(e.target)){ pop.remove(); document.removeEventListener('click', closeOnce); }
+      });
+    }, 0);
   }
 
   /* ---- Popups: Idea / Image / Link / Rules / Compass / Recap ---- */

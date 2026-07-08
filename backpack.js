@@ -810,7 +810,8 @@
     /* ── BACKPACK PAGE NUMBERS (per Notion 9000 series) ── */
     registerPageNum('s-cover-map',   '9100');
     registerPageNum('s-idea',        '9200');
-    registerPageNum('s-idea-capture','9210');
+    registerPageNum('s-idea-capture','9210-legacy');
+    registerPageNum('s-idea-session','9210');
     registerPageNum('s-idea-theme',  '9211');
     registerPageNum('s-idea-paste',  '9212');
     registerPageNum('s-idea-link',   '9213');

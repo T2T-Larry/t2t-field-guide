@@ -1534,7 +1534,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 </div>
 
 <style>
-  /* ── IDEA SESSION (9215) — Logged July 8, 2026 ──
+  /* ── IDEA SESSION (9210) — Logged July 8, 2026 ──
      This screen breaks out of the normal 680×520 Field Guide card frame
      entirely — real full-screen on the traveler's monitor, not just a
      wider container. .isx-full is toggled on #fg-root only while this
@@ -1546,51 +1546,55 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 
   #s-idea-session{--isx-navy:#1A3A5C;--isx-blue:#378ADD;--isx-lightblue:#EBF4FF;--isx-paleblue:#A8CAFE;--isx-board:#e4e0d8}
   #isx-toolbar{width:190px;flex-shrink:0;background:var(--isx-navy);display:flex;flex-direction:column;
-    padding:14px 12px;gap:10px;overflow-y:auto;color:#fff;box-shadow:2px 0 10px rgba(0,0,0,.25)}
+    padding:14px 12px;gap:8px;overflow-y:auto;color:#fff;box-shadow:2px 0 10px rgba(0,0,0,.25)}
   .isx-mode-row{display:flex;gap:5px}
   .isx-mode-tab{flex:1;text-align:center;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;
     padding:7px 2px;border-radius:7px;font-weight:700;color:#fff}
   .isx-mode-tab.on{background:rgba(55,138,221,.4)}
   .isx-mode-tab.off{background:rgba(255,255,255,.06);color:rgba(255,255,255,.35)}
+  .isx-divider{height:1px;background:rgba(255,255,255,.16);margin:4px 0;flex-shrink:0}
   .isx-ghost{width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,.08);color:#fff;border:none;
-    cursor:pointer;font-family:'Playfair Display',serif;font-size:11px;letter-spacing:1px}
+    cursor:pointer;font-family:'Playfair Display',serif;font-size:11px;letter-spacing:1px;margin-top:auto}
   .isx-ghost:hover{background:rgba(255,255,255,.16)}
   .isx-rung{margin-top:2px}
   .isx-rung-label{font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;color:#a9c6e0;margin-bottom:3px}
-  .isx-rung-body{display:flex;gap:5px;align-items:center}
-  .isx-rung-name{flex:1;font-size:11.5px;padding:5px 7px;border-radius:6px;background:rgba(255,255,255,.08);
-    color:#fff;min-height:14px}
+  .isx-rung-name{font-size:11.5px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.08);
+    color:#fff;min-height:16px;box-sizing:border-box}
   .isx-rung-name.isx-blank{color:rgba(255,255,255,.3);font-style:italic}
-  .isx-select{width:100%;font-size:11.5px;padding:6px 7px;border-radius:6px;border:1px solid rgba(255,255,255,.35);
-    background:rgba(255,255,255,.08);color:#fff;font-family:'Playfair Display',serif}
+  .isx-select{width:100%;font-size:11.5px;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.08);color:#fff;font-family:'Playfair Display',serif;box-sizing:border-box}
   .isx-select option{color:#111}
-  .isx-viewas{font-size:8.5px;padding:4px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.35);
-    background:rgba(255,255,255,.1);color:#fff;cursor:pointer;flex-shrink:0;white-space:nowrap}
+  .isx-viewas{width:100%;font-size:9px;padding:5px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.1);color:#fff;cursor:pointer;margin-top:4px;box-sizing:border-box}
   .isx-viewas:disabled{opacity:.3;cursor:default}
-  .isx-compass{width:36px;height:30px;margin:2px auto 0;display:flex;align-items:center;justify-content:center;
+  .isx-compass{width:36px;height:30px;margin:6px auto 0;display:flex;align-items:center;justify-content:center;
     background:rgba(255,255,255,.08);border:none;border-radius:7px;color:#fff;font-size:15px;cursor:pointer}
   .isx-compass:hover{background:rgba(255,255,255,.16)}
-  .isx-actions{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+  .isx-actions{display:flex;flex-direction:column;gap:6px;margin-top:6px}
   .isx-action-btn{width:100%;height:52px;border:none;border-radius:12px;background:var(--isx-lightblue);color:var(--isx-navy);
     display:flex;align-items:center;gap:10px;padding:0 12px;cursor:pointer;font-family:'Playfair Display',serif;
     font-size:11px;font-weight:700}
   .isx-action-btn .isx-ic{font-size:19px}
   .isx-action-btn:hover{background:var(--isx-paleblue)}
 
-  #isx-board{flex:1;position:relative;overflow:auto;background:var(--isx-board);
-    background-image:radial-gradient(circle,rgba(91,155,213,0.12),transparent 70%)}
+  #isx-board{flex:1;position:relative;overflow:auto;background:var(--isx-board)}
   #isx-canvas{position:relative;width:100%;min-height:100%}
   .isx-tile{position:absolute;width:112px;min-height:66px;background:#fff;border:2px solid #111;border-radius:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,.2);padding:8px;font-size:10.5px;color:var(--isx-navy)}
-  .isx-tile-ic{font-size:15px;margin-bottom:2px}
+    box-shadow:0 3px 8px rgba(0,0,0,.2);padding:8px;font-size:10.5px;color:var(--isx-navy);cursor:grab}
+  .isx-tile:active{cursor:grabbing}
+  .isx-tile.isx-link-tile{cursor:pointer}
+  .isx-tile img{display:block;width:100%;border-radius:6px;margin-bottom:4px;object-fit:cover;pointer-events:none}
   #isx-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#93a4b5;font-style:italic;
-    font-size:13px;text-align:center;width:70%}
+    font-size:13px;text-align:center;width:70%;pointer-events:none}
 
   #isx-session-controls{position:absolute;top:14px;right:16px;display:flex;gap:8px;z-index:20}
   .isx-sc-btn{width:34px;height:34px;border:2px solid #111;border-radius:8px;background:#fff;cursor:pointer;
     font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-  #isx-count-pill{position:absolute;top:14px;left:206px;background:#fff;border:1.5px solid var(--isx-paleblue);
-    border-radius:20px;padding:6px 14px;font-size:11px;color:var(--isx-navy);box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:20}
+
+  .isx-color-popup{position:absolute;background:#fff;border:2px solid #111;border-radius:12px;padding:10px;
+    box-shadow:0 6px 20px rgba(0,0,0,.3);display:grid;grid-template-columns:repeat(4,1fr);gap:8px;z-index:25}
+  .isx-color-swatch{width:32px;height:32px;border-radius:8px;cursor:pointer;border:2px solid rgba(0,0,0,.15)}
+  .isx-color-swatch:hover{border-color:#111}
 
   #isx-popup-layer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
     background:rgba(10,20,30,.25);z-index:30}
@@ -1630,7 +1634,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .isx-stat b{font-size:20px;color:#C9A87C}
 </style>
 
-<!-- 💡 IDEA SESSION — 9215 -->
+<!-- 💡 IDEA SESSION — 9210 -->
 <div class="sc" id="s-idea-session">
   <div id="isx-toolbar">
     <div class="isx-mode-row">
@@ -1638,7 +1642,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <div class="isx-mode-tab off" title="Coming next">Shape</div>
       <div class="isx-mode-tab off" title="Coming later">Share</div>
     </div>
-    <button class="isx-ghost" id="isx-rules-btn">RULES</button>
+    <div class="isx-divider"></div>
 
     <div class="isx-rung">
       <div class="isx-rung-label">Parent</div>
@@ -1650,9 +1654,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     </div>
     <div class="isx-rung">
       <div class="isx-rung-label">Header</div>
-      <div class="isx-rung-body">
+      <div class="isx-rung-body" id="isx-rung-header">
         <select class="isx-select" id="isx-sel-header"></select>
-        <button class="isx-viewas" id="isx-header-viewas">View as Topic</button>
       </div>
     </div>
     <button class="isx-compass" id="isx-compass-btn" title="See the whole structure">🧭</button>
@@ -1662,13 +1665,15 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
       <button class="isx-action-btn" id="isx-image-btn"><span class="isx-ic">📷</span>Image</button>
       <button class="isx-action-btn" id="isx-link-btn"><span class="isx-ic">🔗</span>Link</button>
     </div>
+    <div class="isx-divider"></div>
+
+    <button class="isx-ghost" id="isx-rules-btn">RULES</button>
   </div>
 
   <div id="isx-board">
     <div id="isx-canvas"><div id="isx-empty">Nothing caught yet — the board wakes up the moment you SAVE something.</div></div>
   </div>
 
-  <div id="isx-count-pill">✨ 0 caught this session</div>
   <div id="isx-session-controls">
     <button class="isx-sc-btn" id="isx-fullscreen-btn" title="Full screen">⛶</button>
     <button class="isx-sc-btn" id="isx-end-btn" title="End Session">✕</button>
@@ -1677,7 +1682,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   <div id="isx-popup-layer"></div>
 </div>
 
-<!-- 💡 IDEA CAPTURE — 9210 -->
+<!-- 💡 IDEA CAPTURE — 9210-legacy -->
 <div class="sc" id="s-idea-capture">
   <div class="card" style="background:#e4e0d8"><div class="icw" style="max-width:270px;margin:0 auto;width:100%">
     <div class="icw-head">
