@@ -2647,7 +2647,7 @@
     if(_isxPath.length>1){
       var parentName=_isxPath[_isxPath.length-2].text;
       parentWrap.innerHTML='<div class="isx-rung-name">'+parentName+'</div>'
-        +'<button class="isx-viewas" id="isx-parent-viewas">View as Topic</button>';
+        +'<div class="isx-viewas-row"><button class="isx-viewas" id="isx-parent-viewas">View as Topic</button></div>';
       T().wire('isx-parent-viewas', function(){
         _isxPath.pop(); _isxHeaderId=null; _isxHeaderLabel='New';
         _isxRenderLadder(); _isxRenderBoard();
@@ -2690,7 +2690,7 @@
       }).join('')
       +'<option value="__add__">+ Add New Header</option>';
     headerWrap.innerHTML='<select class="isx-select" id="isx-sel-header">'+hOpts+'</select>'
-      +'<button class="isx-viewas" id="isx-header-viewas">View as Topic</button>';
+      +'<div class="isx-viewas-row"><button class="isx-viewas" id="isx-header-viewas">View as Topic</button></div>';
     var headerSel=document.getElementById('isx-sel-header');
     headerSel.onchange=async function(){
       if(this.value==='__add__'){
@@ -2848,8 +2848,39 @@
     if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
   }
 
+  // Lets a traveler drag the whole capture card aside to peek at the
+  // shotgun wall underneath — mousedown anywhere on the card EXCEPT an
+  // interactive control (text entry, buttons, the image itself) starts
+  // the drag. Position is session-only, same as card drag on the board.
+  function _isxWirePopupDrag(card){
+    if(!card) return;
+    var startX, startY, origLeft, origTop, dragging=false;
+    card.addEventListener('mousedown', function(e){
+      var tag=e.target.tagName;
+      if(tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT'||tag==='BUTTON'||tag==='IMG') return;
+      if(e.target.closest('button')) return;
+      var rect=card.getBoundingClientRect();
+      startX=e.clientX; startY=e.clientY; origLeft=rect.left; origTop=rect.top;
+      card.style.position='fixed'; card.style.margin='0';
+      card.style.left=origLeft+'px'; card.style.top=origTop+'px';
+      dragging=true;
+      function onMove(ev){
+        if(!dragging) return;
+        card.style.left=(origLeft+ev.clientX-startX)+'px';
+        card.style.top=(origTop+ev.clientY-startY)+'px';
+      }
+      function onUp(){
+        dragging=false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   function _isxOpenIdeaPanel(){
-    _isxOpenPopup('<div class="isx-pcard"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
       +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
@@ -2857,22 +2888,20 @@
       +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=function(){ _ideaSaveCard(null); };
+    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
     var ta=document.getElementById('isx-idea-text'); if(ta) ta.focus();
   }
 
   function _isxOpenImagePanel(){
     _isxImgTab='paste'; _isxImgPendingUrl=null; _isxImgPendingFile=null;
-    _isxOpenPopup('<div class="isx-pcard"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9212"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udcf7 Image</div>'
-      +'<div class="isx-psub">Any format in, one clean JPEG out.</div>'
-      +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
       +'<div class="isx-src-row">'
         +'<button class="isx-src-btn on" data-src="paste">Paste / Upload</button>'
         +'<button class="isx-src-btn" data-src="unsplash">Unsplash</button>'
         +'<button class="isx-src-btn" data-src="ai">Generate</button>'
       +'</div>'
       +'<div id="isx-img-body"></div>'
-      +'<div class="isx-heic">HEIC, PNG, WebP, etc. \u2014 auto-converted to JPEG.</div>'
       +'</div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.querySelectorAll('.isx-src-btn').forEach(function(b){
@@ -2882,6 +2911,7 @@
       };
     });
     _isxRenderImageBody();
+    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
   }
 
   function _isxRenderImageBody(){
@@ -2944,14 +2974,13 @@
 
   function _isxOpenLinkPanel(){
     _isxLinkPendingUrl=null; _isxLinkPendingThumb=null; _isxLinkPendingTitle=null;
-    _isxOpenPopup('<div class="isx-pcard"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9213"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udd17 Link</div>'
-      +'<div class="isx-psub">Point us to it \u2014 video, sound, or any reference.</div>'
-      +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
       +'<input type="text" id="isx-link-url" placeholder="Paste a URL\u2026" style="margin-bottom:8px">'
       +'<div class="isx-dropzone" id="isx-link-preview" style="height:80px">Preview appears here once the link resolves</div>'
       +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
     var input=document.getElementById('isx-link-url');
     input.addEventListener('input', function(){
       var val=this.value.trim();
