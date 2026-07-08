@@ -506,7 +506,7 @@
     var rot=straight?0:(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
-    tile.draggable=true;
+    tile.draggable=!item.locked;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
     tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:10px;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
@@ -536,6 +536,12 @@
       hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
       tile.appendChild(hb);
     }
+    if(item.locked){
+      var lb=document.createElement('div');
+      lb.style.cssText='position:absolute;top:2px;right:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+      lb.textContent='\ud83d\udd12';
+      tile.appendChild(lb);
+    }
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
     tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
     tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });
@@ -554,7 +560,7 @@
     var rot=straight?0:(Math.random()*6-3).toFixed(1);
     var wrap=document.createElement('div');
     wrap.className='sc-stack-tile';
-    wrap.draggable=true;
+    wrap.draggable=!headerRow.locked;
     wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
     wrap.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;cursor:pointer;transform:rotate('+rot+'deg)';
     var bg=headerRow.color||'#fff';
@@ -571,6 +577,12 @@
     var fitSize=_sboardFitFontSize(headerRow.text_content, height>=60?13:11, 8);
     p.style.cssText='margin:0;font-weight:700;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
+    if(headerRow.locked){
+      var hlb=document.createElement('div');
+      hlb.style.cssText='position:absolute;top:2px;right:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+      hlb.textContent='\ud83d\udd12';
+      front.appendChild(hlb);
+    }
     wrap.appendChild(back2); wrap.appendChild(back1); wrap.appendChild(front);
     wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
     wrap.addEventListener('dragover', function(e){ e.preventDefault(); front.style.outline='2px solid #5b9bd5'; });
@@ -595,10 +607,14 @@
       if(!user) throw new Error('Not signed in.');
       var newAdditionsId=await _sboardEnsureNewAdditionsHeader(_sboardCurrentTopicId);
       _sboardNewAdditionsId=newAdditionsId;
-      var purposeId=await _sboardEnsurePurposeHeader(_sboardCurrentTopicId);
+      // Purpose only lives on the primary Storyboard — every fractal Topic
+      // used to spawn its own, which meant "why are we doing this?" showed
+      // up on branches seconds old. One project Purpose now covers the tree.
+      var purposeId=_sboardCurrentTopicId?null:await _sboardEnsurePurposeHeader(null);
+      _sboardPurposeId=purposeId;
       var miscId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
 
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
         .eq('user_id', user.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
@@ -683,7 +699,7 @@
         hd.textContent=name;
         if(name==='Purpose'){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openPurposeEditor(); }); }
         else { hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); }); }
-        if(!isReserved && depth===0){
+        if(!isReserved && depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
         }
@@ -913,7 +929,7 @@
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
-      if(topicBox) topicBox.textContent=topicRow.text_content||'(untitled)';
+      if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; }
       if(areaEl) areaEl.style.background='#3a2564';
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
@@ -921,7 +937,7 @@
       if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:parentFallback;
       if(parentHit) parentHit.classList.remove('inert');
     } else {
-      if(topicBox) topicBox.textContent=_sboardGetRootPrompt();
+      if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
       if(areaEl) areaEl.style.background='#1a3a5c';
       if(parentLabel) parentLabel.textContent='Sea of Ideas';
       if(parentHit) parentHit.classList.add('inert');
@@ -929,6 +945,7 @@
   }
 
   async function _sboardMoveCard(itemId, headerId){
+    if(_sboardAllRowsById[itemId] && _sboardAllRowsById[itemId].locked) return;
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     try{
@@ -946,6 +963,7 @@
   // from somewhere else — one gesture covers both cases.
   async function _sboardReorderOrMoveIdea(draggedId, targetId, parentId){
     if(String(draggedId)===String(targetId)) return;
+    if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     var ids=(_sboardIdeaOrderByParent[parentId]||[]).slice();
@@ -1047,7 +1065,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
         .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -1148,7 +1166,7 @@
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     try{
-      var id=await _sboardEnsurePurposeHeader(_sboardCurrentTopicId);
+      var id=await _sboardEnsurePurposeHeader(null);
       var row=await _sb.from('ideas').select('notes,color').eq('id',id).single();
       var curText=(row.data && row.data.notes) || '';
       var curColor=(row.data && row.data.color) || '';
@@ -1383,6 +1401,7 @@
       + '<button class="sb-blue-btn" id="sb-notes" title="Notes">✏️</button>'
       + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
       + (isMisc ? '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
+      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '</div>'
       + '<button class="sb-close-btn" id="sb-close">Close</button>'
@@ -1434,7 +1453,7 @@
 
     // Text editing (auto-promotes to header if punctuation says so)
     var textDisplay=document.getElementById('sb-text-display');
-    if(textDisplay) textDisplay.addEventListener('click', function(){
+    if(textDisplay && !item.locked) textDisplay.addEventListener('click', function(){
       document.getElementById('sb-text-edit').style.display='block';
       textDisplay.style.display='none';
       var ta=document.getElementById('sb-text-input'); ta.focus();
@@ -1488,6 +1507,17 @@
         closeSbDetail();
         renderSeaBoard();
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
+
+    T().wire('sb-lock', async function(){
+      try{
+        var newLocked=!item.locked;
+        var upd=await _sb.from('ideas').update({locked:newLocked}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.locked=newLocked;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
 
     T().wire('sb-heart', async function(){
@@ -1637,7 +1667,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
         .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
