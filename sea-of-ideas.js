@@ -237,7 +237,11 @@
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box"></div>'
       +'</div>'
-      +'<div class="sc-hdr-side" style="text-align:right"><button class="sc-ov-btn" id="b-sc-mode-toggle" title="Desktop size">⛶</button></div>'
+      +'<div class="sc-hdr-side" style="text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap">'
+        +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
+        +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Desktop size">⛶</button>'
+        +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
+      +'</div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -245,29 +249,19 @@
       +'<div id="sc-board-wrap"></div>'
       +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
       +'<div id="sb-cluster-overlay" class="sb-overlay"></div>'
-      +'</div>'
-      +'<div class="bar2 bar-dream-pp"><button class="tb" id="b-sc-back">⬅️</button><button class="tb" id="b-sc-mg">🔍</button><button class="tb" id="b-sc-idea">💡</button><button class="tb" id="b-sc-fwd">➡️</button></div></div>';
+      +'</div></div>';
     fg.appendChild(div.firstChild);
     T().registerPageNum('s-sea-of-ideas-cluster', '9221');
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
-    T().wire('b-sc-back', function(){
+    T().wire('b-sc-close', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
       _sboardCurrentTopicId=null; _sboardFilter=null;
       var viaChapter = T().consumeSeaChapterEntry();
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
       else { T().returnToMG(); }
     });
-    T().wire('b-sc-mg', function(){
-      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('sb-wide');
-      T().goMG();
-    });
     T().wire('b-sc-idea', function(){
       if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, returnToBoard:true});
-    });
-    T().wire('b-sc-fwd', function(){
-      _sboardCurrentTopicId=null; _sboardFilter=null;
-      if(T().currentFile()==='dream.html' && document.getElementById('s-idea-button')){ T().nav('s-idea-button'); }
-      else { T().closeMG(); T().returnToMG(); }
     });
     T().wire('b-sc-mode-toggle', function(){
       _sboardDesktop=!_sboardDesktop;
@@ -280,6 +274,7 @@
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     _sboardApplyBoardBg();
+    _sboardWireAutoScroll();
 
     var topicBoxEl=document.getElementById('sc-topic-box');
     if(topicBoxEl) topicBoxEl.addEventListener('dblclick', function(e){
@@ -468,15 +463,39 @@
   async function renderSeaOfIdeasCluster(){
     var boardWrap=document.getElementById('sc-board-wrap');
     if(!boardWrap) return;
-    var fwdBtn=document.getElementById('b-sc-fwd');
-    if(fwdBtn){
-      var inChapterFlow=(T().currentFile()==='dream.html' && document.getElementById('s-idea-button') && T().getSeaChapterEntry());
-      fwdBtn.style.opacity=inChapterFlow?'1':'.3';
-      fwdBtn.style.pointerEvents=inChapterFlow?'auto':'none';
-    }
     var fgr=document.getElementById('fg-root');
     if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
     return renderSeaBoard();
+  }
+
+  // A dragged card can't reach a header that's scrolled out of view — native
+  // HTML5 drag doesn't auto-scroll a nested container the way it scrolls a
+  // whole page. Hovering near an edge while dragging nudges the scroll a
+  // little on every dragover tick (which fires continuously), covering both
+  // the horizontal row of header columns and, in tall columns, the vertical
+  // scroll on the outer card.
+  function _sboardWireAutoScroll(){
+    var hWrap=document.getElementById('sc-board-wrap');
+    var vWrap=document.getElementById('s-sea-of-ideas-cluster');
+    var EDGE=56, MAXSPEED=16;
+    function edgeScrollX(e){
+      if(!hWrap) return;
+      var rect=hWrap.getBoundingClientRect();
+      var x=e.clientX;
+      if(x<rect.left || x>rect.right) return;
+      if(x-rect.left<EDGE) hWrap.scrollLeft -= MAXSPEED*(1-(x-rect.left)/EDGE);
+      else if(rect.right-x<EDGE) hWrap.scrollLeft += MAXSPEED*(1-(rect.right-x)/EDGE);
+    }
+    function edgeScrollY(e){
+      if(!vWrap) return;
+      var rect=vWrap.getBoundingClientRect();
+      var y=e.clientY;
+      if(y<rect.top || y>rect.bottom) return;
+      if(y-rect.top<EDGE) vWrap.scrollTop -= MAXSPEED*(1-(y-rect.top)/EDGE);
+      else if(rect.bottom-y<EDGE) vWrap.scrollTop += MAXSPEED*(1-(rect.bottom-y)/EDGE);
+    }
+    if(hWrap) hWrap.addEventListener('dragover', edgeScrollX);
+    if(vWrap) vWrap.addEventListener('dragover', edgeScrollY);
   }
 
   function _sboardMakeTile(item, width, straight, groupParentId, height){
