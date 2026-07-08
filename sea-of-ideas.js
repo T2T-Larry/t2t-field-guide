@@ -2165,15 +2165,32 @@
     }
   }
 
+  // In Idea Session mode, the ladder (PARENT/TOPIC/HEADER) is the target,
+  // not the old 9210 dropdowns — this only applies while that screen is
+  // actually on screen, so an idle _isxPath from a previous visit never
+  // steals a save that's genuinely happening on the legacy 9210 screen.
+  function _isxActive(){
+    var s=document.getElementById('s-idea-session');
+    return !!(s && s.classList.contains('active') && _isxPath);
+  }
+
   async function _ideaSaveCard(imageUrl){
-    var boardSel=document.getElementById('ic-storyboard');
-    var headerSel=document.getElementById('ic-header');
-    var headerId=headerSel?headerSel.value:null;
-    var headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
-      ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
-    var boardId=boardSel?boardSel.value:null;
-    var ta=document.getElementById('idea-text');
-    var text=(ta?ta.value:_ideaDraftText).trim();
+    var sessionMode=_isxActive();
+    var headerId, headerLabel, boardId, text;
+    if(sessionMode){
+      headerId=_isxCurrentClusterId(); headerLabel=_isxHeaderLabel; boardId=_isxPath[0].id;
+      var isxTa=document.getElementById('isx-idea-text');
+      text=(isxTa?isxTa.value:'').trim();
+    } else {
+      var boardSel=document.getElementById('ic-storyboard');
+      var headerSel=document.getElementById('ic-header');
+      headerId=headerSel?headerSel.value:null;
+      headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
+        ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
+      boardId=boardSel?boardSel.value:null;
+      var ta=document.getElementById('idea-text');
+      text=(ta?ta.value:_ideaDraftText).trim();
+    }
     if(!text && !imageUrl) return;
     var savedOk=false, saveErr=null;
     try{
@@ -2194,7 +2211,26 @@
         else savedOk=true;
       }
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveCard exception:', e); }
-    if(ta) ta.value='';
+
+    if(sessionMode){
+      if(savedOk){
+        _isxClosePopup();
+        _isxOptimisticTile(imageUrl?'image':'text', text||'(image)');
+      } else {
+        var isxTa2=document.getElementById('isx-idea-text');
+        var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
+        if(errBox){
+          var errEl=document.createElement('div');
+          errEl.style.cssText='color:#A32D2D;font-size:11px;text-align:center;margin-top:6px';
+          errEl.textContent='Save failed: '+(saveErr||'unknown error');
+          errBox.appendChild(errEl);
+        }
+      }
+      return;
+    }
+
+    var ta3=document.getElementById('idea-text');
+    if(ta3) ta3.value='';
     _ideaDraftText=''; _pastePendingUrl=null; _linkPendingUrl=null;
     T().nav('s-idea-capture');
     var status=document.getElementById('idea-status');
@@ -2412,12 +2448,18 @@
   }
 
   async function _ideaSaveLinkCard(url, thumb, title){
-    var boardSel=document.getElementById('ic-storyboard');
-    var headerSel=document.getElementById('ic-header');
-    var headerId=headerSel?headerSel.value:null;
-    var headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
-      ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
-    var boardId=boardSel?boardSel.value:null;
+    var sessionMode=_isxActive();
+    var headerId, headerLabel, boardId;
+    if(sessionMode){
+      headerId=_isxCurrentClusterId(); headerLabel=_isxHeaderLabel; boardId=_isxPath[0].id;
+    } else {
+      var boardSel=document.getElementById('ic-storyboard');
+      var headerSel=document.getElementById('ic-header');
+      headerId=headerSel?headerSel.value:null;
+      headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
+        ? headerSel.options[headerSel.selectedIndex].text : 'New Additions';
+      boardId=boardSel?boardSel.value:null;
+    }
     var savedOk=false, saveErr=null;
     try{
       var _sb=T().sb;
@@ -2436,6 +2478,21 @@
         else savedOk=true;
       }
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveLinkCard exception:', e); }
+
+    if(sessionMode){
+      if(savedOk){ _isxClosePopup(); _isxOptimisticTile('link', title||url); }
+      else{
+        var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
+        if(errBox){
+          var errEl=document.createElement('div');
+          errEl.style.cssText='color:#A32D2D;font-size:11px;text-align:center;margin-top:6px';
+          errEl.textContent='Save failed: '+(saveErr||'unknown error');
+          errBox.appendChild(errEl);
+        }
+      }
+      return;
+    }
+
     _linkPendingUrl=null; _linkPendingThumb=null; _linkPendingTitle=null;
     T().nav('s-idea-capture');
     var status=document.getElementById('idea-status');
@@ -2476,6 +2533,450 @@
     T().registerScreenActivate('s-idea-paste', renderIdeaPaste);
     T().registerScreenActivate('s-idea-link', renderIdeaLink);
     T().registerScreenActivate('s-idea-custom', renderIdeaCustom);
+    T().registerScreenActivate('s-idea-session', renderIdeaSession);
+  }
+
+  /* ============================================================
+     IDEA SESSION (9215) — Logged July 8, 2026.
+     Replaces 9210 as the default CREATE-mode entry point. Same
+     `ideas` table, same cluster_id targeting, same save functions
+     (_ideaSaveCard / _ideaSaveLinkCard / _ideaSaveImageFile) as the
+     legacy 9210-9214 family — this screen is a new front end on top
+     of proven, already-working save logic, not a parallel system.
+
+     PARENT / TOPIC / HEADER ladder: any header can become a Topic
+     ("View as Topic" — same verb, works from HEADER to descend or
+     from PARENT to climb back up). At the project apex there is no
+     PARENT, but the slot is always rendered (blank), never removed,
+     so the toolbar's shape stays identical whether you're deep in a
+     Topic or sitting at the top — this is what lets CREATE and SHAPE
+     (once built) share one "where am I" position.
+
+     HEADER always defaults to New (= the current Topic's own id as
+     cluster_id, the existing New Additions convention) — leaving it
+     alone or explicitly choosing New are the same save target.
+
+     Legacy 9210-9214 screens are left completely intact and still
+     reachable (s-idea's "Add an Idea" trivia link, and as a fallback
+     if window.T2TSea.openIdeaCapture is ever unavailable) — nothing
+     about them is removed by this addition.
+     ============================================================ */
+
+  var _isxPath = null;          // [{id,text}] apex .. current Topic
+  var _isxHeaderId = null;      // null = New (defaults to current Topic's own id)
+  var _isxHeaderLabel = 'New';
+  var _isxCount = 0;
+  var _isxStart = null;
+  var _isxWired = false;
+  var _isxExpanded = {};        // compass: which collapsed sibling groups were opened
+  var _isxImgTab = 'paste';
+  var _isxImgPendingUrl = null;
+  var _isxImgPendingFile = null;
+  var _isxLinkPendingUrl = null;
+  var _isxLinkPendingThumb = null;
+  var _isxLinkPendingTitle = null;
+  var _isxLinkTimer = null;
+
+  function _isxCurrentTopicId(){ return _isxPath && _isxPath.length ? _isxPath[_isxPath.length-1].id : null; }
+  function _isxCurrentClusterId(){ return _isxHeaderId || _isxCurrentTopicId(); }
+  function _isxLocationLabel(){
+    if(!_isxPath) return '';
+    return _isxPath.map(function(p){return p.text;}).join(' \u203a ')+' \u2014 '+_isxHeaderLabel;
+  }
+
+  async function _isxInit(ctx){
+    if(!_isxPath){
+      var wt=await _ideaEnsureWishTank();
+      _isxPath=[{id:wt.id, text:'Wish Tank'}];
+    }
+    if(ctx && ctx.boardId){
+      var boards=await _sboardTopLevelBoards();
+      var match=boards.filter(function(b){ return String(b.id)===String(ctx.boardId); })[0];
+      _isxPath=[{id:ctx.boardId, text: match?match.text_content:'Board'}];
+    }
+    _isxHeaderId = (ctx && ctx.headerId && String(ctx.headerId)!==String(_isxCurrentTopicId())) ? ctx.headerId : null;
+    _isxHeaderLabel='New';
+    if(!_isxStart) _isxStart=Date.now();
+  }
+
+  async function renderIdeaSession(){
+    var fgr=document.getElementById('fg-root');
+    if(fgr) fgr.classList.add('isx-full');
+    if(!_isxPath) await _isxInit(_ideaCaptureCtx);
+    _ideaCaptureCtx=null;
+    await _isxRenderLadder();
+    await _isxRenderBoard();
+    if(!_isxWired){
+      _isxWired=true;
+      T().wire('isx-idea-btn', _isxOpenIdeaPanel);
+      T().wire('isx-image-btn', _isxOpenImagePanel);
+      T().wire('isx-link-btn', _isxOpenLinkPanel);
+      T().wire('isx-rules-btn', _isxOpenRulesPanel);
+      T().wire('isx-compass-btn', _isxOpenCompass);
+      T().wire('isx-end-btn', _isxOpenRecap);
+      T().wire('isx-fullscreen-btn', _isxToggleFullscreen);
+      document.addEventListener('fullscreenchange', function(){
+        var b=document.getElementById('isx-fullscreen-btn');
+        if(b) b.textContent = document.fullscreenElement ? '\u21a9' : '\u26f6';
+      });
+    }
+  }
+
+  function _isxToggleFullscreen(){
+    var el=document.documentElement;
+    if(!document.fullscreenElement){
+      (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen).call(el);
+    } else {
+      (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document);
+    }
+  }
+
+  async function _isxRenderLadder(){
+    var parentWrap=document.getElementById('isx-rung-parent');
+    var topicWrap=document.getElementById('isx-rung-topic');
+    var headerSel=document.getElementById('isx-sel-header');
+    if(!parentWrap||!topicWrap||!headerSel) return;
+
+    if(_isxPath.length>1){
+      var parentName=_isxPath[_isxPath.length-2].text;
+      parentWrap.innerHTML='<div class="isx-rung-name">'+parentName+'</div>'
+        +'<button class="isx-viewas" id="isx-parent-viewas">View as Topic</button>';
+      T().wire('isx-parent-viewas', function(){
+        _isxPath.pop(); _isxHeaderId=null; _isxHeaderLabel='New';
+        _isxRenderLadder(); _isxRenderBoard();
+      });
+    } else {
+      parentWrap.innerHTML='<div class="isx-rung-name isx-blank">\u2014</div>';
+    }
+
+    if(_isxPath.length===1){
+      var boards=await _sboardTopLevelBoards();
+      var opts=boards.map(function(b){
+        return '<option value="'+b.id+'"'+(String(b.id)===String(_isxPath[0].id)?' selected':'')+'>'+b.text_content+'</option>';
+      }).join('')+'<option value="__add__">+ Add New Storyboard</option>';
+      topicWrap.innerHTML='<select class="isx-select" id="isx-sel-topic">'+opts+'</select>';
+      document.getElementById('isx-sel-topic').addEventListener('change', async function(){
+        if(this.value==='__add__'){
+          var name=prompt('Name the new Storyboard (new project):');
+          if(name){
+            var _sb=T().sb; var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+            var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString()}).select().single();
+            if(ins.data){ _isxPath=[{id:ins.data.id, text:name}]; }
+          } else { await _isxRenderLadder(); return; }
+        } else {
+          var text=this.options[this.selectedIndex].text;
+          _isxPath=[{id:this.value, text:text}];
+        }
+        _isxHeaderId=null; _isxHeaderLabel='New';
+        await _isxRenderLadder(); await _isxRenderBoard();
+      });
+    } else {
+      topicWrap.innerHTML='<div class="isx-rung-name">'+_isxPath[_isxPath.length-1].text+'</div>';
+    }
+
+    var children=await _sboardChildHeaders(_isxCurrentTopicId());
+    children.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
+    var hOpts='<option value="__new__"'+(!_isxHeaderId?' selected':'')+'>New (default)</option>'
+      +children.map(function(c){
+        return '<option value="'+c.id+'"'+(String(c.id)===String(_isxHeaderId)?' selected':'')+'>'+c.text_content+'</option>';
+      }).join('')
+      +'<option value="__add__">+ Add New Header</option>';
+    headerSel.innerHTML=hOpts;
+    headerSel.onchange=async function(){
+      if(this.value==='__add__'){
+        var name=prompt('Name the new Header:');
+        if(name){
+          var newId=await _sboardEnsureHeaderNamed(name, _isxCurrentTopicId());
+          if(newId){ _isxHeaderId=newId; _isxHeaderLabel=name; }
+        }
+        await _isxRenderLadder();
+      } else if(this.value==='__new__'){
+        _isxHeaderId=null; _isxHeaderLabel='New';
+      } else {
+        _isxHeaderId=this.value; _isxHeaderLabel=this.options[this.selectedIndex].text;
+      }
+      await _isxRenderBoard();
+    };
+    var viewAsBtn=document.getElementById('isx-header-viewas');
+    if(viewAsBtn){
+      viewAsBtn.disabled=!_isxHeaderId;
+      viewAsBtn.onclick=function(){
+        if(!_isxHeaderId) return;
+        _isxPath.push({id:_isxHeaderId, text:_isxHeaderLabel});
+        _isxHeaderId=null; _isxHeaderLabel='New';
+        _isxRenderLadder(); _isxRenderBoard();
+      };
+    }
+  }
+
+  async function _isxRenderBoard(){
+    var canvas=document.getElementById('isx-canvas');
+    var empty=document.getElementById('isx-empty');
+    if(!canvas) return;
+    canvas.innerHTML='';
+    var clusterId=_isxCurrentClusterId();
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user||!clusterId) return;
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color')
+        .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link'])
+        .order('created_at',{ascending:true}).limit(300);
+      var rows=(res&&res.data)||[];
+      if(empty) empty.style.display = rows.length ? 'none' : 'block';
+      var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
+      rows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
+    }catch(e){ console.warn('_isxRenderBoard failed:', e); }
+  }
+
+  function _isxMakeTile(row, w, h){
+    var t=document.createElement('div');
+    t.className='isx-tile';
+    var x=16+Math.random()*Math.max(40,w-140), y=16+Math.random()*Math.max(40,h-100);
+    t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
+    var body='';
+    if(row.content_type==='image'){ body='<img src="'+row.image_url+'" style="width:100%;height:52px;object-fit:cover;border-radius:6px;margin-bottom:4px">'; }
+    else if(row.content_type==='link'){ var parsed=_linkParseText(row.text_content); body='<div class="isx-tile-ic">\ud83d\udd17</div>'+(parsed.title||parsed.url); }
+    else { body='<div class="isx-tile-ic">\ud83d\udca1</div>'+(row.text_content||''); }
+    t.innerHTML=body;
+    return t;
+  }
+
+  function _isxOptimisticTile(contentType, label){
+    var canvas=document.getElementById('isx-canvas');
+    var empty=document.getElementById('isx-empty');
+    if(!canvas) return;
+    if(empty) empty.style.display='none';
+    var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
+    var icon = contentType==='link' ? '\ud83d\udd17' : (contentType==='image' ? '\ud83d\udcf7' : '\ud83d\udca1');
+    var t=document.createElement('div');
+    t.className='isx-tile';
+    var x=16+Math.random()*Math.max(40,w-140), y=16+Math.random()*Math.max(40,h-100);
+    t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
+    t.innerHTML='<div class="isx-tile-ic">'+icon+'</div>'+(label||'');
+    canvas.appendChild(t);
+    _isxCount++;
+    var pill=document.getElementById('isx-count-pill');
+    if(pill) pill.textContent='\u2728 '+_isxCount+' caught this session';
+  }
+
+  /* ---- Popups: Idea / Image / Link / Rules / Compass / Recap ---- */
+  function _isxOpenPopup(html){
+    var layer=document.getElementById('isx-popup-layer');
+    if(!layer) return;
+    layer.innerHTML=html; layer.classList.add('active');
+  }
+  function _isxClosePopup(){
+    var layer=document.getElementById('isx-popup-layer');
+    if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
+  }
+
+  function _isxOpenIdeaPanel(){
+    _isxOpenPopup('<div class="isx-pcard"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+      +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
+      +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
+      +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
+      +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
+      +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
+    document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    document.getElementById('isx-p-save').onclick=function(){ _ideaSaveCard(null); };
+    var ta=document.getElementById('isx-idea-text'); if(ta) ta.focus();
+  }
+
+  function _isxOpenImagePanel(){
+    _isxImgTab='paste'; _isxImgPendingUrl=null; _isxImgPendingFile=null;
+    _isxOpenPopup('<div class="isx-pcard"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+      +'<div class="isx-ptitle">\ud83d\udcf7 Image</div>'
+      +'<div class="isx-psub">Any format in, one clean JPEG out.</div>'
+      +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
+      +'<div class="isx-src-row">'
+        +'<button class="isx-src-btn on" data-src="paste">Paste / Upload</button>'
+        +'<button class="isx-src-btn" data-src="unsplash">Unsplash</button>'
+        +'<button class="isx-src-btn" data-src="ai">Generate</button>'
+      +'</div>'
+      +'<div id="isx-img-body"></div>'
+      +'<div class="isx-heic">HEIC, PNG, WebP, etc. \u2014 auto-converted to JPEG.</div>'
+      +'</div>');
+    document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    document.querySelectorAll('.isx-src-btn').forEach(function(b){
+      b.onclick=function(){
+        document.querySelectorAll('.isx-src-btn').forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on'); _isxImgTab=b.getAttribute('data-src'); _isxRenderImageBody();
+      };
+    });
+    _isxRenderImageBody();
+  }
+
+  function _isxRenderImageBody(){
+    var body=document.getElementById('isx-img-body');
+    if(!body) return;
+    if(_isxImgTab==='paste'){
+      body.innerHTML='<div class="isx-dropzone" id="isx-dropzone">'
+        +(_isxImgPendingUrl?'<img src="'+_isxImgPendingUrl+'" style="max-width:100%;max-height:100%;border-radius:8px">':'Paste an image here (Ctrl/Cmd + V)<br>or choose a file below')+'</div>'
+        +'<input type="file" id="isx-file-input" accept="image/*" style="width:100%;margin-bottom:8px;font-size:11px;color:#3A6080">'
+        +'<button class="isx-save" id="isx-p-save">SAVE</button>';
+      var fileInput=document.getElementById('isx-file-input');
+      if(fileInput) fileInput.addEventListener('change', function(){
+        if(this.files && this.files[0]){
+          _isxImgPendingFile=this.files[0];
+          var reader=new FileReader();
+          reader.onload=function(ev){ _isxImgPendingUrl=ev.target.result; _isxRenderImageBody(); };
+          reader.readAsDataURL(this.files[0]);
+        }
+      });
+      document.getElementById('isx-p-save').onclick=function(){
+        if(_isxImgPendingFile){
+          var dz=document.getElementById('isx-dropzone'); if(dz) dz.innerHTML='Uploading\u2026';
+          _ideaSaveImageFile(_isxImgPendingFile);
+        }
+      };
+    } else if(_isxImgTab==='unsplash'){
+      body.innerHTML='<div id="isx-unsplash-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">Loading\u2026</div>'
+        +'<button class="isx-save" id="isx-p-save">SAVE</button>';
+      _isxLoadUnsplash();
+      document.getElementById('isx-p-save').onclick=function(){ if(_isxImgPendingUrl) _ideaSaveCard(_isxImgPendingUrl); };
+    } else {
+      body.innerHTML='<div class="isx-dropzone">Custom AI image generation isn\u2019t wired up yet \u2014 needs an image-gen API connected.</div>';
+    }
+  }
+
+  async function _isxLoadUnsplash(){
+    var grid=document.getElementById('isx-unsplash-grid');
+    if(!grid) return;
+    var UNSPLASH_KEY='ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
+    var photos=[];
+    try{
+      for(var i=0;i<4;i++){
+        var r=await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
+        if(r.ok){ var d=await r.json(); photos.push(d.urls.regular); }
+      }
+    }catch(e){}
+    if(!grid) return;
+    if(!photos.length){ grid.innerHTML='Couldn\u2019t load images. Try again.'; return; }
+    grid.innerHTML=photos.map(function(url){
+      return '<div class="isx-unsplash-tile" data-url="'+url+'" style="position:relative;height:72px;border:2px solid #111;border-radius:8px;overflow:hidden;cursor:pointer"><img src="'+url+'" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:2px;right:4px;font-size:15px">\ud83e\udd0d</div></div>';
+    }).join('');
+    document.querySelectorAll('.isx-unsplash-tile').forEach(function(tile){
+      tile.addEventListener('click', function(){
+        document.querySelectorAll('.isx-unsplash-tile div').forEach(function(h){h.textContent='\ud83e\udd0d';});
+        this.querySelector('div').textContent='\ud83e\udda4';
+        _isxImgPendingUrl=this.getAttribute('data-url');
+      });
+    });
+  }
+
+  function _isxOpenLinkPanel(){
+    _isxLinkPendingUrl=null; _isxLinkPendingThumb=null; _isxLinkPendingTitle=null;
+    _isxOpenPopup('<div class="isx-pcard"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+      +'<div class="isx-ptitle">\ud83d\udd17 Link</div>'
+      +'<div class="isx-psub">Point us to it \u2014 video, sound, or any reference.</div>'
+      +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
+      +'<input type="text" id="isx-link-url" placeholder="Paste a URL\u2026" style="margin-bottom:8px">'
+      +'<div class="isx-dropzone" id="isx-link-preview" style="height:80px">Preview appears here once the link resolves</div>'
+      +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
+    document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    var input=document.getElementById('isx-link-url');
+    input.addEventListener('input', function(){
+      var val=this.value.trim();
+      _isxLinkPendingUrl=val; _isxLinkPendingThumb=null; _isxLinkPendingTitle=null;
+      if(_isxLinkTimer) clearTimeout(_isxLinkTimer);
+      var preview=document.getElementById('isx-link-preview');
+      if(!val){ if(preview) preview.textContent='Preview appears here once the link resolves'; return; }
+      if(preview) preview.textContent='Resolving\u2026';
+      _isxLinkTimer=setTimeout(async function(){
+        var meta=await _linkResolveOEmbed(val);
+        if(_isxLinkPendingUrl!==val) return;
+        if(meta){ _isxLinkPendingThumb=meta.thumbnail_url; _isxLinkPendingTitle=meta.title; }
+        var p=document.getElementById('isx-link-preview');
+        if(p) p.innerHTML = _isxLinkPendingThumb
+          ? ('<img src="'+_isxLinkPendingThumb+'" style="max-width:100%;max-height:64px;border-radius:6px;display:block;margin:0 auto 4px">'+(_isxLinkPendingTitle||val))
+          : ('Ready to attach: '+val+' (no preview available)');
+      }, 500);
+    });
+    document.getElementById('isx-p-save').onclick=function(){
+      if(_isxLinkPendingUrl) _ideaSaveLinkCard(_isxLinkPendingUrl, _isxLinkPendingThumb, _isxLinkPendingTitle);
+    };
+  }
+
+  function _isxOpenRulesPanel(){
+    _isxOpenPopup('<div class="isx-pcard" style="width:260px"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+      +'<div class="isx-ptitle" style="font-size:20px">\ud83d\udcdc Rules of Creative Thinking</div>'
+      +'<div style="font-size:12px;line-height:1.6;color:#1A3A5C;margin-top:6px">There are no bad ideas here.<br>Quantity over judgment.<br>Half-formed is welcome.<br>Nothing needs solving right now.</div>'
+      +'<button class="isx-save" id="isx-p-save">GOT IT</button></div>');
+    document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    document.getElementById('isx-p-save').onclick=_isxClosePopup;
+  }
+
+  async function _isxOpenCompass(){
+    var layer=document.getElementById('isx-popup-layer');
+    if(!layer) return;
+    var apexId=_isxPath[0].id;
+    var byId={}, kidsOf={};
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(user){
+        var res=await _sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',user.id).eq('content_type','header');
+        (res.data||[]).forEach(function(r){ byId[r.id]=r; (kidsOf[r.cluster_id]=kidsOf[r.cluster_id]||[]).push(r.id); });
+      }
+    }catch(e){ console.warn('_isxOpenCompass fetch failed:', e); }
+
+    function keyOf(idPath){ return idPath.join('/'); }
+    function renderNode(idPath){
+      var id=idPath[idPath.length-1];
+      var name=byId[id]?byId[id].text_content:_isxPath[0].text;
+      var isHere = keyOf(idPath)===keyOf(_isxPath.map(function(p){return p.id;}));
+      var html='<div class="isx-tnode'+(isHere?' here':'')+'" data-path="'+idPath.join('|')+'">'+(isHere?'\ud83d\udccd ':'')+name+'</div>';
+      var kids=kidsOf[id]||[];
+      if(kids.length){
+        var pathIds=_isxPath.map(function(p){return p.id;});
+        var onPathChild = pathIds.length>idPath.length && keyOf(pathIds.slice(0,idPath.length))===keyOf(idPath) ? pathIds[idPath.length] : null;
+        var expanded=_isxExpanded[keyOf(idPath)];
+        var shown = expanded ? kids : (onPathChild ? [onPathChild] : []);
+        var hidden = kids.filter(function(k){ return shown.indexOf(k)===-1; });
+        html+='<div class="isx-tkids">';
+        shown.forEach(function(k){ html+=renderNode(idPath.concat([k])); });
+        if(hidden.length) html+='<div class="isx-tchip" data-expand="'+keyOf(idPath)+'">+ '+hidden.length+' more here</div>';
+        html+='</div>';
+      }
+      return html;
+    }
+
+    layer.innerHTML='<div class="isx-tree-card"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+      +'<div class="isx-ptitle" style="font-size:20px">\ud83e\udded Where This Sits</div>'
+      +'<div class="isx-psub">\ud83d\udccd marks you. Tap a name to jump there. Tap "+N more" to reveal the rest.</div>'
+      +renderNode([apexId])+'</div>';
+    layer.classList.add('active');
+    document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    layer.querySelectorAll('.isx-tnode').forEach(function(el){
+      el.onclick=async function(){
+        var ids=el.getAttribute('data-path').split('|');
+        var chain=ids.map(function(id, i){ return {id:id, text: i===0?_isxPath[0].text:(byId[id]?byId[id].text_content:'')}; });
+        _isxPath=chain; _isxHeaderId=null; _isxHeaderLabel='New';
+        _isxClosePopup();
+        await _isxRenderLadder(); await _isxRenderBoard();
+      };
+    });
+    layer.querySelectorAll('.isx-tchip').forEach(function(el){
+      el.onclick=function(){ _isxExpanded[el.getAttribute('data-expand')]=true; _isxOpenCompass(); };
+    });
+  }
+
+  function _isxOpenRecap(){
+    var mins=Math.max(1, Math.round((Date.now()-(_isxStart||Date.now()))/60000));
+    var layer=document.getElementById('isx-popup-layer');
+    if(!layer) return;
+    layer.innerHTML='<div class="isx-recap"><h2>Nice session.</h2>'
+      +'<div class="isx-stat"><b>'+_isxCount+'</b> ideas caught</div>'
+      +'<div class="isx-stat"><b>'+mins+'</b> minute'+(mins===1?'':'s')+' in Create mode</div>'
+      +'<button class="isx-save" id="isx-p-done">DONE</button></div>';
+    layer.classList.add('active');
+    document.getElementById('isx-p-done').onclick=function(){
+      var fgr=document.getElementById('fg-root');
+      if(fgr) fgr.classList.remove('isx-full');
+      if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+      _isxClosePopup(); T().returnToMG();
+    };
   }
 
   async function _ideaGetDefaultHeaderId(){
@@ -2494,10 +2995,13 @@
     },
     openBoard: function(boardId){ _ideaOpenBoard(boardId); },
     openIdeaCapture: function(ctx){
+      // Logged July 8, 2026 — now opens the new Idea Session screen (9215)
+      // instead of legacy 9210. 9210-9214 are left fully in place and still
+      // reachable (s-idea's "Add an Idea" trivia link) as a fallback.
       _ideaCaptureCtx=ctx||null;
       _ideaReturnToBoard=!!(ctx&&ctx.returnToBoard);
       _ideaReturnBoardId=(ctx&&ctx.boardId!==undefined)?ctx.boardId:null;
-      T().nav('s-idea-capture');
+      T().nav('s-idea-session');
     },
     getCurrentBoardContext: function(){ return _sboardCurrentTopicId?{boardId:_sboardCurrentTopicId}:null; },
     getDefaultHeaderId: _ideaGetDefaultHeaderId
