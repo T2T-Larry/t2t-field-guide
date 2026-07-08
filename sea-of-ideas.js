@@ -608,6 +608,7 @@
   }
 
   async function renderSeaBoard(){
+    if(_isxActive()){ return _isxRenderBoard(); }
     var wrap=document.getElementById('sc-board-wrap');
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
@@ -2928,7 +2929,7 @@
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user||!clusterId) return;
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked')
         .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link'])
         .order('created_at',{ascending:true}).limit(300);
       var rows=(res&&res.data)||[];
@@ -2942,9 +2943,15 @@
     var t=document.createElement('div');
     t.className='isx-tile';
     var pos=_isxCardPos[row.id];
-    var x = pos ? pos.x : 16+Math.random()*Math.max(40,w-140);
-    var y = pos ? pos.y : 16+Math.random()*Math.max(40,h-100);
-    t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
+    if(!pos){
+      // Cache the very first placement, not just drags — otherwise every
+      // un-dragged card gets a brand new random spot on every re-render
+      // (e.g. right after adding a new idea), which reshuffles the whole
+      // board every time instead of only placing the new arrival.
+      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
+      _isxCardPos[row.id]=pos;
+    }
+    t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     var linkUrl=null;
     if(row.content_type==='image'){
       t.innerHTML='<img src="'+row.image_url+'" style="height:52px">';
@@ -2957,6 +2964,9 @@
     } else {
       t.innerHTML='<div>'+(row.text_content||'')+'</div>';
     }
+    // Same SHAPING card the Storyboard uses — full-size image view, heart,
+    // notes, lock — so a card behaves identically on both screens.
+    t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(row); });
     _isxWireTileDrag(t, row.id, linkUrl);
     return t;
   }
