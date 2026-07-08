@@ -255,10 +255,25 @@
       +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
-      +'<div id="sb-detail-overlay" class="sb-overlay"></div>'
-      +'<div id="sb-cluster-overlay" class="sb-overlay"></div>'
       +'</div></div>';
     fg.appendChild(div.firstChild);
+    // These live as direct children of fg-root, NOT inside the Storyboard's
+    // own .sc screen div — a .sc gets display:none whenever it isn't the
+    // active screen, and a display:none ancestor hides everything inside it
+    // even with position:fixed. Nesting the overlays in Storyboard meant
+    // opening a card's detail from the CREATE screen built the card but it
+    // was trapped inside a hidden parent — dblclick looked like it did
+    // nothing. Living at fg-root level, they render from any screen.
+    if(!document.getElementById('sb-detail-overlay')){
+      var detailOv=document.createElement('div');
+      detailOv.id='sb-detail-overlay'; detailOv.className='sb-overlay';
+      fg.appendChild(detailOv);
+    }
+    if(!document.getElementById('sb-cluster-overlay')){
+      var clusterOv=document.createElement('div');
+      clusterOv.id='sb-cluster-overlay'; clusterOv.className='sb-overlay';
+      fg.appendChild(clusterOv);
+    }
     T().registerPageNum('s-sea-of-ideas-cluster', '9221');
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
     T().wire('b-sc-close', function(){
