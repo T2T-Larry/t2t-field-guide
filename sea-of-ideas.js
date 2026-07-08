@@ -2218,14 +2218,10 @@
       if(savedOk){
         _isxCount++;
         if(contentType==='header'){
-          // Step into the header just created so the next capture lands
-          // inside it — this is also what makes the "toggled Header, added
-          // one" moment visible: the location line updates to prove it landed.
-          var newId = ins && ins.data ? ins.data.id : null;
-          if(newId){
-            _isxHeaderId=newId;
-            _isxHeaderLabel=text.replace(/[:?]\s*$/,'').trim()||text;
-          }
+          // Refresh the ladder so the new header shows up as a pickable
+          // option, but do NOT move the traveler into it — where a capture
+          // lands is always a deliberate choice via the toggle/dropdown,
+          // never a side effect of creating a header.
           await _isxRenderLadder();
         }
         _isxRenderBoard();
