@@ -55,7 +55,7 @@
     card.style.position = 'absolute';
     card.style.width = CARD + 'px';
     card.style.height = CARD + 'px';
-    card.style.background = '#3A3A3A';
+    card.style.background = '#B5B5B5';
     card.style.border = '2px solid #111';
     card.style.borderRadius = '8px';
     card.style.boxShadow = '0 3px 8px rgba(0,0,0,.22), 0 1px 3px rgba(0,0,0,.14)';
@@ -77,7 +77,7 @@
     label.style.justifyContent = 'center';
     label.style.padding = '18px';
     label.style.boxSizing = 'border-box';
-    label.style.color = '#F5F3FF';
+    label.style.color = '#241F2E';
     label.style.textAlign = 'center';
     label.style.lineHeight = '1.15';
     label.style.overflow = 'hidden';
@@ -108,20 +108,6 @@
       if (opts.onHeart) opts.onHeart(hearted);
     });
     card.appendChild(heart);
-
-    var lock = document.createElement('div');
-    lock.style.position = 'absolute';
-    lock.style.bottom = '-8px'; lock.style.left = '-8px';
-    lock.style.width = '20px'; lock.style.height = '20px';
-    lock.style.borderRadius = '50%';
-    lock.style.background = '#F5F3FF';
-    lock.style.border = '1.5px solid #111';
-    lock.style.display = data.locked ? 'flex' : 'none';
-    lock.style.alignItems = 'center';
-    lock.style.justifyContent = 'center';
-    lock.style.fontSize = '10px';
-    lock.textContent = '🔒';
-    card.appendChild(lock);
 
     /* Drag, adapted from Idea Session's _isxWireTileDrag — mousedown
        + threshold distinguishes a drag from a click; dblclick still
@@ -169,8 +155,7 @@
       el: card,
       fitText: fitText,
       setShape: function(s){ face.style.clipPath = CLIPS[s] || CLIPS.circle; },
-      setColor: function(c){ face.style.background = c; },
-      setLocked: function(v){ lock.style.display = v ? 'flex' : 'none'; }
+      setColor: function(c){ face.style.background = c; }
     };
   }
 
@@ -198,7 +183,7 @@
           '<button id="gb-add">＋ New Gem</button>' +
         '</div>' +
         '<div style="position:relative;flex:1;width:100%;background:#EFE7FB;overflow:hidden">' +
-          '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems <span id="gb-count"></span></div>' +
+          '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems</div>' +
           '<button id="gb-close" aria-label="Close" style="position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
           '<div id="gb-pile" style="position:absolute;top:56px;left:16px;right:16px;bottom:16px"></div>' +
           '<div id="gb-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;color:#7c3aed;text-align:center;padding:40px;box-sizing:border-box">' +
@@ -211,7 +196,8 @@
               '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed">Gem</div>' +
               '<button id="gb-detail-close" aria-label="Close" style="width:28px;height:28px;border-radius:50%;background:#ede9fe;border:1.5px solid #111;cursor:pointer">✕</button>' +
             '</div>' +
-            '<div id="gb-source" style="font-size:12px;color:#7c3aed;opacity:.8;margin-bottom:12px;min-height:14px"></div>' +
+            '<div id="gb-source" style="font-size:12px;color:#7c3aed;opacity:.8;margin-bottom:4px;min-height:14px"></div>' +
+            '<div id="gb-lock-note" style="display:none;font-size:12px;color:#7c3aed;opacity:.8;margin-bottom:12px">🔒 Locked — shape and color were chosen on purpose</div>' +
             '<textarea id="gb-text" style="width:100%;min-height:70px;font-size:16px;color:#5B21B6;line-height:1.5;background:#fff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px;box-sizing:border-box;resize:none;margin-bottom:12px"></textarea>' +
             '<div id="gb-notes-wrap" style="display:none;margin-bottom:12px">' +
               '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Notes</div>' +
@@ -311,11 +297,9 @@
     await ensureCuratedGems();
     var pile = document.getElementById('gb-pile');
     var empty = document.getElementById('gb-empty');
-    var countEl = document.getElementById('gb-count');
     pile.innerHTML = ''; _tiles = {};
 
     var gems = await loadGems();
-    countEl.textContent = gems.length ? gems.length : '';
     empty.style.display = gems.length ? 'none' : 'flex';
 
     var W = pile.clientWidth || 900, H = pile.clientHeight || 500;
@@ -362,9 +346,10 @@
       box.addEventListener('click', function(){
         gem.shape = name;
         gem.locked = true;
-        var t = _tiles[gem.id]; if (t) { t.setShape(name); t.setLocked(true); }
+        var t = _tiles[gem.id]; if (t) t.setShape(name);
         saveGemField(gem.id, { shape: name, locked: true });
         paintShapePicker(gem);
+        paintLockNote(gem);
       });
       wrap.appendChild(box);
     });
@@ -390,13 +375,19 @@
       ring.addEventListener('click', function(){
         gem.color = c;
         gem.locked = true;
-        var t = _tiles[gem.id]; if (t) { t.setColor(c); t.setLocked(true); }
+        var t = _tiles[gem.id]; if (t) t.setColor(c);
         saveGemField(gem.id, { color: c, locked: true });
         paintColorPicker(gem);
         paintShapePicker(gem);
+        paintLockNote(gem);
       });
       wrap.appendChild(ring);
     });
+  }
+
+  function paintLockNote(gem){
+    var el = document.getElementById('gb-lock-note');
+    if (el) el.style.display = gem.locked ? 'block' : 'none';
   }
 
   function openDetail(gem){
@@ -407,6 +398,7 @@
     document.getElementById('gb-notes-wrap').style.display = 'none';
     paintShapePicker(gem);
     paintColorPicker(gem);
+    paintLockNote(gem);
     document.getElementById('gb-detail').style.display = 'flex';
   }
 
