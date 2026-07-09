@@ -1,28 +1,23 @@
 /* ============================================================
    gems.js — T2T Field Guide · Gems module (9420)
-   New build — July 9, 2026. Replaces the old 9420 list-view
-   (s-gems-list) as the default Gems screen reached from the
-   💎 backpack button. The legacy Gems hub — s-gems, s-gem-add,
-   s-gems-list, s-gems-miro, plus registerGems()/getGemCandidates()
-   in backpack.js — is left fully intact and UNCHANGED. Nothing
-   was deleted. It's just no longer the default path.
+   v2 — July 9, 2026. Adds real full-screen (isx-full, same
+   takeover as Idea Session 9210), random arrival colors, manual
+   drag with persisted positions, and a traveler "add a Gem"
+   button. Replaces the previous fixed-height, purple-default,
+   static-layout version.
 
-   Talks to backpack.js ONLY through window.T2T (the existing
-   public API) — never reaches into backpack.js internals
-   directly. Loads AFTER backpack.js (and after sea-of-ideas.js,
-   if present) in every phase file that needs Gems.
+   Legacy Gems hub — s-gems, s-gem-add, s-gems-list, s-gems-miro —
+   still untouched, still not deleted.
 
-   Built plug-and-play on purpose: gemTile() is a standalone
-   renderer — takes plain {text, shape, color, hearted} data and
-   two callbacks, returns a DOM node. Nothing in it assumes Gems
-   specifically. Any future feature that wants a scattered,
-   editable card pile (a future Values pass, some other board)
-   can call gemTile() directly without touching this file's
-   Supabase/data logic.
+   Talks to backpack.js ONLY through window.T2T. Loads AFTER
+   backpack.js (and sea-of-ideas.js, if present).
 
-   REQUIRES a one-time Supabase migration — see note at bottom
-   of this file. Nothing here will save correctly until that
-   migration is run.
+   gemTile() stays a standalone, plug-and-play renderer — plain
+   data + callbacks in, DOM node out. Nothing in it assumes Gems
+   specifically.
+
+   REQUIRES the Supabase migration at the bottom of this file —
+   two new columns (pos_x, pos_y) beyond the migration already run.
    ============================================================ */
 
 (function(){
@@ -37,22 +32,22 @@
     pentagon: 'polygon(50% 4%,95% 38%,79% 92%,21% 92%,5% 38%)',
     hexagon:  'polygon(25% 6%,75% 6%,96% 50%,75% 94%,25% 94%,4% 50%)'
   };
-  var PALETTE = ['#E9D8FD','#FDE8D8','#D8F3E9','#FDE0EC','#DCE8FD','#F5E8D0'];
-  var PURPLE = '#5B21B6';
+  var PALETTE = ['#E9D8FD','#FDE8D8','#D8F3E9','#FDE0EC','#DCE8FD','#F5E8D0','#5B21B6'];
   var CARD = 96;
 
+  function randomShape(){ return SHAPES[Math.floor(Math.random() * SHAPES.length)]; }
+  function randomColor(){ return PALETTE[Math.floor(Math.random() * PALETTE.length)]; }
+
   /* ── CURATED GEM SOURCE LIST ──
-     Each entry is a Gem the guide offers, tied to the page it
-     lives on. The moment a traveler's B (bookmark) passes
-     page_num, the Gem unlocks into their chest — once, silently,
-     no popup, same mechanism the Map already uses for traveled
-     vs. unvisited. Add future curated Gems here as new pages lock. */
+     Each entry unlocks into the traveler's chest once their B
+     (bookmark) passes page_num — same mechanism the Map already
+     uses. Add future curated Gems here as new pages lock. */
   var CURATED = [
     { page_num:'0200', text:'Every great invention started as a thought.', attr:'Curated · from 0200' }
   ];
 
   /* ── REUSABLE TILE RENDERER — plug-and-play ──
-     opts: { onOpen(), onHeart(hearted) }
+     opts: { onOpen(), onHeart(hearted), onDrag(x,y) }
      Returns { el, fitText(), setShape(s), setColor(c) }. */
   function gemTile(data, opts){
     opts = opts || {};
@@ -64,12 +59,12 @@
     card.style.border = '2px solid #111';
     card.style.borderRadius = '8px';
     card.style.boxShadow = '0 3px 8px rgba(0,0,0,.22), 0 1px 3px rgba(0,0,0,.14)';
-    card.style.cursor = 'pointer';
+    card.style.cursor = 'grab';
 
     var face = document.createElement('div');
     face.style.position = 'absolute';
     face.style.top = '0'; face.style.left = '0'; face.style.right = '0'; face.style.bottom = '0';
-    face.style.background = data.color || PURPLE;
+    face.style.background = data.color || randomColor();
     face.style.clipPath = CLIPS[data.shape] || CLIPS.circle;
     card.appendChild(face);
 
@@ -114,6 +109,36 @@
     });
     card.appendChild(heart);
 
+    /* Drag, adapted from Idea Session's _isxWireTileDrag — mousedown
+       + threshold distinguishes a drag from a click; dblclick still
+       fires independently for opening the card. */
+    (function wireDrag(){
+      var startX, startY, origLeft, origTop, moved;
+      card.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        startX = e.clientX; startY = e.clientY; moved = false;
+        origLeft = parseFloat(card.style.left) || 0;
+        origTop = parseFloat(card.style.top) || 0;
+        card.style.cursor = 'grabbing';
+        function onMove(ev){
+          var dx = ev.clientX - startX, dy = ev.clientY - startY;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+          card.style.left = Math.round(origLeft + dx) + 'px';
+          card.style.top = Math.round(origTop + dy) + 'px';
+        }
+        function onUp(){
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          card.style.cursor = 'grab';
+          if (moved && opts.onDrag) {
+            opts.onDrag(parseFloat(card.style.left), parseFloat(card.style.top));
+          }
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    })();
+
     card.addEventListener('dblclick', function(){ if (opts.onOpen) opts.onOpen(); });
 
     function fitText(){
@@ -139,12 +164,20 @@
     var fg = document.getElementById('fg-root'); if (!fg) return;
     if (document.getElementById('s-gems-board')) return;
 
+    if (!document.getElementById('gems-board-style')) {
+      var style = document.createElement('style');
+      style.id = 'gems-board-style';
+      style.textContent = '#s-gems-board.active{height:100%;display:flex!important;flex-direction:column}';
+      document.head.appendChild(style);
+    }
+
     var div = document.createElement('div');
     div.innerHTML =
       '<div class="sc card" id="s-gems-board">' +
-        '<div style="position:relative;width:100%;height:480px;background:#F5F3FF;overflow:hidden">' +
+        '<div style="position:relative;flex:1;width:100%;background:#F5F3FF;overflow:hidden">' +
           '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems <span id="gb-count"></span></div>' +
-          '<button id="gb-close" aria-label="Close" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
+          '<button id="gb-add" aria-label="Add a Gem" style="position:absolute;top:10px;right:52px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer;font-size:16px">+</button>' +
+          '<button id="gb-close" aria-label="Close" style="position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
           '<div id="gb-pile" style="position:absolute;top:56px;left:16px;right:16px;bottom:16px"></div>' +
           '<div id="gb-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;color:#7c3aed;text-align:center;padding:40px;box-sizing:border-box">' +
             '<div style="font-size:15px;line-height:1.6">No Gems yet.<br>They surface when you\'re ready.</div>' +
@@ -177,23 +210,32 @@
 
     T().registerPageNum('s-gems-board', '9420');
     T().registerCtx('s-gems-board', 'Gems');
-    T().wire('gb-close', function(){ T().returnToMG(); });
+    T().wire('gb-close', function(){
+      var fgr = document.getElementById('fg-root');
+      if (fgr) fgr.classList.remove('isx-full');
+      T().returnToMG();
+    });
     T().wire('gb-detail-close', closeDetail);
+    T().wire('gb-add', addNewGem);
     T().registerScreenActivate('s-gems-board', renderGemsBoard);
   }
 
   /* ── DATA LAYER ── */
 
+  async function currentUserId(){
+    var sb = T().sb;
+    var user = await sb.auth.getUser();
+    return (user && user.data && user.data.user) ? user.data.user.id : null;
+  }
+
   async function ensureCuratedGems(){
-    var sb = T().sb, member = T().getMember();
-    if (!sb || !member) return;
+    var sb = T().sb;
+    if (!sb) return;
     var visited = (T().getVisited ? T().getVisited() : []);
     var due = CURATED.filter(function(c){ return visited.indexOf(c.page_num) !== -1; });
     if (!due.length) return;
     try {
-      var user = await sb.auth.getUser();
-      if (!user || !user.data || !user.data.user) return;
-      var uid = user.data.user.id;
+      var uid = await currentUserId(); if (!uid) return;
       var existing = await sb.from('gems').select('source_page').eq('user_id', uid).eq('source_type', 'curated');
       var have = (existing.data || []).map(function(r){ return r.source_page; });
       var missing = due.filter(function(c){ return have.indexOf(c.page_num) === -1; });
@@ -202,8 +244,7 @@
         await sb.from('gems').insert({
           user_id: uid, gem_text: c.text, attribution: c.attr,
           source_type: 'curated', source_page: c.page_num,
-          shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
-          color: PURPLE, hearted: false, trashed: false
+          shape: randomShape(), color: randomColor(), hearted: false, trashed: false
         });
       }
     } catch (e) { console.error('Gems: curated insert failed', e); }
@@ -212,9 +253,8 @@
   async function loadGems(){
     var sb = T().sb;
     try {
-      var user = await sb.auth.getUser();
-      if (!user || !user.data || !user.data.user) return [];
-      var res = await sb.from('gems').select('*').eq('user_id', user.data.user.id).eq('trashed', false).order('created_at', { ascending: false });
+      var uid = await currentUserId(); if (!uid) return [];
+      var res = await sb.from('gems').select('*').eq('user_id', uid).eq('trashed', false).order('created_at', { ascending: false });
       return res.data || [];
     } catch (e) { console.error('Gems: load failed', e); return []; }
   }
@@ -225,11 +265,27 @@
     catch (e) { console.error('Gems: save failed', e); }
   }
 
+  async function addNewGem(){
+    var sb = T().sb;
+    try {
+      var uid = await currentUserId(); if (!uid) return;
+      await sb.from('gems').insert({
+        user_id: uid, gem_text: 'New Gem', attribution: null,
+        source_type: 'traveler', source_page: null,
+        shape: randomShape(), color: randomColor(), hearted: false, trashed: false
+      });
+      await renderGemsBoard();
+    } catch (e) { console.error('Gems: add failed', e); }
+  }
+
   /* ── RENDER ── */
 
-  var _activeGemId = null, _tiles = {};
+  var _tiles = {}, _activeGemId = null;
 
   async function renderGemsBoard(){
+    var fgr = document.getElementById('fg-root');
+    if (fgr) fgr.classList.add('isx-full');
+
     await ensureCuratedGems();
     var pile = document.getElementById('gb-pile');
     var empty = document.getElementById('gb-empty');
@@ -240,21 +296,23 @@
     countEl.textContent = gems.length ? gems.length : '';
     empty.style.display = gems.length ? 'none' : 'flex';
 
-    var W = pile.clientWidth || 560, H = pile.clientHeight || 340;
+    var W = pile.clientWidth || 900, H = pile.clientHeight || 500;
     gems.forEach(function(g){
-      var x = Math.random() * Math.max(0, W - CARD);
-      var y = Math.random() * Math.max(0, H - CARD);
-      var rot = (Math.random() * 14 - 7).toFixed(1);
+      var hasPos = (g.pos_x !== null && g.pos_x !== undefined && g.pos_y !== null && g.pos_y !== undefined);
+      var x = hasPos ? g.pos_x : Math.random() * Math.max(0, W - CARD);
+      var y = hasPos ? g.pos_y : Math.random() * Math.max(0, H - CARD);
+      if (!hasPos) saveGemField(g.id, { pos_x: x, pos_y: y });
+
       var tile = gemTile(
-        { text: g.gem_text, shape: g.shape || 'circle', color: g.color || PURPLE, hearted: g.hearted },
+        { text: g.gem_text, shape: g.shape || randomShape(), color: g.color || randomColor(), hearted: g.hearted },
         {
           onOpen: function(){ openDetail(g); },
-          onHeart: function(h){ saveGemField(g.id, { hearted: h }); }
+          onHeart: function(h){ saveGemField(g.id, { hearted: h }); },
+          onDrag: function(nx, ny){ saveGemField(g.id, { pos_x: nx, pos_y: ny }); }
         }
       );
       tile.el.style.left = x + 'px';
       tile.el.style.top = y + 'px';
-      tile.el.style.transform = 'rotate(' + rot + 'deg)';
       pile.appendChild(tile.el);
       tile.fitText();
       _tiles[g.id] = tile;
@@ -275,7 +333,7 @@
       box.style.background = selected ? '#ede9fe' : 'transparent';
       var mini = document.createElement('div');
       mini.style.width = '22px'; mini.style.height = '22px';
-      mini.style.background = gem.color || PURPLE;
+      mini.style.background = gem.color || '#5B21B6';
       mini.style.clipPath = CLIPS[name];
       mini.style.border = '1.5px solid #111';
       box.appendChild(mini);
@@ -292,7 +350,7 @@
   function paintColorPicker(gem){
     var wrap = document.getElementById('gb-colors');
     wrap.innerHTML = '';
-    PALETTE.concat([PURPLE]).forEach(function(c){
+    PALETTE.forEach(function(c){
       var ring = document.createElement('div');
       var selected = (c === gem.color);
       ring.style.width = '36px'; ring.style.height = '36px';
@@ -358,17 +416,9 @@
 })();
 
 /* ============================================================
-   REQUIRED ONE-TIME SUPABASE MIGRATION
-   Run this once in the Supabase SQL editor before pushing this
-   file live. The existing `gems` table only has
-   user_id / gem_text / attribution / created_at — this adds the
-   columns the new board depends on.
+   ADDITIONAL SUPABASE MIGRATION (v2) — run alongside the one
+   from the previous build. Adds saved drag positions.
 
-   alter table gems add column if not exists shape text default 'circle';
-   alter table gems add column if not exists color text default '#5B21B6';
-   alter table gems add column if not exists hearted boolean default false;
-   alter table gems add column if not exists notes text;
-   alter table gems add column if not exists source_type text default 'traveler';
-   alter table gems add column if not exists source_page text;
-   alter table gems add column if not exists trashed boolean default false;
+   alter table gems add column if not exists pos_x numeric;
+   alter table gems add column if not exists pos_y numeric;
    ============================================================ */
