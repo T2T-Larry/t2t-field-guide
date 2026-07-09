@@ -32,7 +32,7 @@
     pentagon: 'polygon(50% 4%,95% 38%,79% 92%,21% 92%,5% 38%)',
     hexagon:  'polygon(25% 6%,75% 6%,96% 50%,75% 94%,25% 94%,4% 50%)'
   };
-  var PALETTE = ['#E9D8FD','#FDE8D8','#D8F3E9','#FDE0EC','#DCE8FD','#F5E8D0','#5B21B6'];
+  var PALETTE = ['#E9D8FD','#FDE8D8','#D8F3E9','#FDE0EC','#DCE8FD','#F5E8D0'];
   var CARD = 96;
 
   function randomShape(){ return SHAPES[Math.floor(Math.random() * SHAPES.length)]; }
@@ -77,7 +77,7 @@
     label.style.justifyContent = 'center';
     label.style.padding = '18px';
     label.style.boxSizing = 'border-box';
-    label.style.color = '#241F2E';
+    label.style.color = '#111';
     label.style.textAlign = 'center';
     label.style.lineHeight = '1.15';
     label.style.overflow = 'hidden';
