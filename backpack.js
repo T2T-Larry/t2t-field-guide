@@ -798,7 +798,7 @@
       else nav('s-idea-capture', false);
     });
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
-    wire('b-mg-gems',   function(){closeMG();nav('s-gems',   false);});
+    wire('b-mg-gems',   function(){closeMG();nav('s-gems-board', false);});
     wire('b-mg-trivia', function(){closeMG();nav('s-trivia', false);});
     wire('b-trivia-back', returnToMG);
     wire('b-trivia-mg',   goMG);
@@ -822,7 +822,9 @@
     registerPageNum('s-journal-miro',   '9330');
     registerPageNum('s-gems',      '9400');
     registerPageNum('s-gem-add',   '9410');
-    registerPageNum('s-gems-list', '9420');
+    /* s-gems-list previously held 9420 — freed for the new gems.js
+       board (July 9, 2026). s-gems-list itself is untouched, just
+       no longer numbered/reachable from the default backpack path. */
     registerPageNum('s-gems-miro', '9430');
     registerPageNum('s-trivia', '9500');
     registerPageNum('s-tools',  '9600');
@@ -986,6 +988,7 @@
     setPrimaryPages:function(arr){_primaryPages=arr;},
     loadMemberProfile:loadMemberProfile,
     loadVisitedFromSupabase:loadVisitedFromSupabase,
+    getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
     getCtx:getCtx, renderMap:renderMap,
     openJournalMiro:openJournalMiro,
