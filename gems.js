@@ -109,6 +109,20 @@
     });
     card.appendChild(heart);
 
+    var lock = document.createElement('div');
+    lock.style.position = 'absolute';
+    lock.style.bottom = '-8px'; lock.style.left = '-8px';
+    lock.style.width = '20px'; lock.style.height = '20px';
+    lock.style.borderRadius = '50%';
+    lock.style.background = '#F5F3FF';
+    lock.style.border = '1.5px solid #111';
+    lock.style.display = data.locked ? 'flex' : 'none';
+    lock.style.alignItems = 'center';
+    lock.style.justifyContent = 'center';
+    lock.style.fontSize = '10px';
+    lock.textContent = '🔒';
+    card.appendChild(lock);
+
     /* Drag, adapted from Idea Session's _isxWireTileDrag — mousedown
        + threshold distinguishes a drag from a click; dblclick still
        fires independently for opening the card. */
@@ -155,7 +169,8 @@
       el: card,
       fitText: fitText,
       setShape: function(s){ face.style.clipPath = CLIPS[s] || CLIPS.circle; },
-      setColor: function(c){ face.style.background = c; }
+      setColor: function(c){ face.style.background = c; },
+      setLocked: function(v){ lock.style.display = v ? 'flex' : 'none'; }
     };
   }
 
@@ -167,16 +182,23 @@
     if (!document.getElementById('gems-board-style')) {
       var style = document.createElement('style');
       style.id = 'gems-board-style';
-      style.textContent = '#s-gems-board.active{height:100%;display:flex!important;flex-direction:column}';
+      style.textContent =
+        '#fg-root.isx-full #s-gems-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:row}' +
+        '#gb-toolbar{width:150px;flex-shrink:0;background:#4C1D95;display:flex;flex-direction:column;padding:14px 12px;gap:10px;overflow-y:auto;color:#F5F3FF}' +
+        '#gb-toolbar .gb-tb-label{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;text-align:center;opacity:.75;margin-bottom:4px}' +
+        '#gb-toolbar button{background:#EFE7FB;color:#4C1D95;border:1.5px solid #111;border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer}';
       document.head.appendChild(style);
     }
 
     var div = document.createElement('div');
     div.innerHTML =
       '<div class="sc card" id="s-gems-board">' +
+        '<div id="gb-toolbar">' +
+          '<div class="gb-tb-label">Gems</div>' +
+          '<button id="gb-add">＋ New Gem</button>' +
+        '</div>' +
         '<div style="position:relative;flex:1;width:100%;background:#EFE7FB;overflow:hidden">' +
           '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems <span id="gb-count"></span></div>' +
-          '<button id="gb-add" aria-label="Add a Gem" style="position:absolute;top:10px;right:52px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer;font-size:16px">+</button>' +
           '<button id="gb-close" aria-label="Close" style="position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
           '<div id="gb-pile" style="position:absolute;top:56px;left:16px;right:16px;bottom:16px"></div>' +
           '<div id="gb-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;color:#7c3aed;text-align:center;padding:40px;box-sizing:border-box">' +
@@ -304,7 +326,7 @@
       if (!hasPos) saveGemField(g.id, { pos_x: x, pos_y: y });
 
       var tile = gemTile(
-        { text: g.gem_text, shape: g.shape || randomShape(), color: g.color || randomColor(), hearted: g.hearted },
+        { text: g.gem_text, shape: g.shape || randomShape(), color: g.color || randomColor(), hearted: g.hearted, locked: g.locked },
         {
           onOpen: function(){ openDetail(g); },
           onHeart: function(h){ saveGemField(g.id, { hearted: h }); },
@@ -333,14 +355,15 @@
       box.style.background = selected ? '#ede9fe' : 'transparent';
       var mini = document.createElement('div');
       mini.style.width = '22px'; mini.style.height = '22px';
-      mini.style.background = gem.color || '#5B21B6';
+      mini.style.background = '#5B21B6';
       mini.style.clipPath = CLIPS[name];
       mini.style.border = '1.5px solid #111';
       box.appendChild(mini);
       box.addEventListener('click', function(){
         gem.shape = name;
-        var t = _tiles[gem.id]; if (t) t.setShape(name);
-        saveGemField(gem.id, { shape: name });
+        gem.locked = true;
+        var t = _tiles[gem.id]; if (t) { t.setShape(name); t.setLocked(true); }
+        saveGemField(gem.id, { shape: name, locked: true });
         paintShapePicker(gem);
       });
       wrap.appendChild(box);
@@ -366,8 +389,9 @@
       ring.appendChild(dot);
       ring.addEventListener('click', function(){
         gem.color = c;
-        var t = _tiles[gem.id]; if (t) t.setColor(c);
-        saveGemField(gem.id, { color: c });
+        gem.locked = true;
+        var t = _tiles[gem.id]; if (t) { t.setColor(c); t.setLocked(true); }
+        saveGemField(gem.id, { color: c, locked: true });
         paintColorPicker(gem);
         paintShapePicker(gem);
       });
@@ -421,4 +445,11 @@
 
    alter table gems add column if not exists pos_x numeric;
    alter table gems add column if not exists pos_y numeric;
+   ============================================================ */
+
+/* ============================================================
+   ADDITIONAL SUPABASE MIGRATION (v3) — adds the traveler-choice
+   lock flag.
+
+   alter table gems add column if not exists locked boolean default false;
    ============================================================ */
