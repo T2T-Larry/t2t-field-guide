@@ -28,7 +28,7 @@
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
-    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div id="b-sea-to-cluster" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button></div></div>';
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div id="b-sea-to-cluster" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button><button class="tb" id="b-sea-close" style="display:none">✕</button></div></div>';
     fg.appendChild(div.firstChild);
     T().registerPageNum('s-sea-of-ideas', '9220');
     T().registerCtx('s-sea-of-ideas', 'Sea of Ideas');
@@ -46,6 +46,7 @@
       else { T().returnToMG(); }
     });
     T().wire('b-sea-mg', T().goMG);
+    T().wire('b-sea-close', function(){ T().returnToMG(); });
     T().wire('b-sea-to-cluster', function(){ T().nav('s-sea-of-ideas-cluster'); });
     T().wire('b-sea-fwd', function(){
       if(T().currentFile()==='dream.html' && document.getElementById('s-idea-button')){ T().nav('s-idea-button'); }
@@ -56,10 +57,22 @@
 
   async function renderSeaOfIdeas(){
     var fwdBtn = document.getElementById('b-sea-fwd');
+    var backBtn = document.getElementById('b-sea-back');
+    var mgBtn = document.getElementById('b-sea-mg');
+    var closeBtn = document.getElementById('b-sea-close');
     if(fwdBtn){
       var inChapterFlow = (T().currentFile()==='dream.html' && document.getElementById('s-idea-button') && T().getSeaChapterEntry());
       fwdBtn.style.opacity = inChapterFlow ? '1' : '0.3';
       fwdBtn.style.pointerEvents = inChapterFlow ? 'auto' : 'none';
+      // Side-trip entry (via 🔍 backpack, not chapter flow): swap the
+      // sequence costume (⬅️/🔍/➡️) for a single ✕, matching the
+      // Storyboard/CLUSTER visit-and-return pattern. The back button's
+      // own handler already does this same smart-return logic in this
+      // case -- this just makes the button costume match the behavior.
+      if(backBtn) backBtn.style.display = inChapterFlow ? '' : 'none';
+      if(mgBtn) mgBtn.style.display = inChapterFlow ? '' : 'none';
+      fwdBtn.style.display = inChapterFlow ? '' : 'none';
+      if(closeBtn) closeBtn.style.display = inChapterFlow ? 'none' : '';
     }
     var grid = document.getElementById('sea-grid');
     var empty = document.getElementById('sea-empty');
