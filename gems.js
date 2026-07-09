@@ -55,7 +55,7 @@
     card.style.position = 'absolute';
     card.style.width = CARD + 'px';
     card.style.height = CARD + 'px';
-    card.style.background = '#2B2438';
+    card.style.background = '#3A3A3A';
     card.style.border = '2px solid #111';
     card.style.borderRadius = '8px';
     card.style.boxShadow = '0 3px 8px rgba(0,0,0,.22), 0 1px 3px rgba(0,0,0,.14)';
@@ -174,7 +174,7 @@
     var div = document.createElement('div');
     div.innerHTML =
       '<div class="sc card" id="s-gems-board">' +
-        '<div style="position:relative;flex:1;width:100%;background:#F5F3FF;overflow:hidden">' +
+        '<div style="position:relative;flex:1;width:100%;background:#EFE7FB;overflow:hidden">' +
           '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems <span id="gb-count"></span></div>' +
           '<button id="gb-add" aria-label="Add a Gem" style="position:absolute;top:10px;right:52px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer;font-size:16px">+</button>' +
           '<button id="gb-close" aria-label="Close" style="position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
