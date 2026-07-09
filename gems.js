@@ -142,7 +142,7 @@
     var div = document.createElement('div');
     div.innerHTML =
       '<div class="sc card" id="s-gems-board">' +
-        '<div style="position:relative;width:100%;height:100%;background:#F5F3FF;overflow:hidden">' +
+        '<div style="position:relative;width:100%;height:480px;background:#F5F3FF;overflow:hidden">' +
           '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems <span id="gb-count"></span></div>' +
           '<button id="gb-close" aria-label="Close" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
           '<div id="gb-pile" style="position:absolute;top:56px;left:16px;right:16px;bottom:16px"></div>' +
