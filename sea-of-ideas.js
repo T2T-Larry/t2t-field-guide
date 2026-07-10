@@ -1424,14 +1424,20 @@
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
     }
 
-    ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
-      + '<div class="sb-card-title">Shape</div>'
+    ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center;background:#F5F1E8;position:relative">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+      + '<span style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:#2C2C2A">DETAILS</span>'
+      + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:13px;color:#2C2C2A">✕</button>'
+      + '</div>'
       + apexTag
       + crumbsHTML
       + headerListHTML
       + bodyHTML
-      + '<div id="sb-hearts-row" style="font-size:14px;min-height:14px;margin:2px 0">'+_sboardHeartsHTML(heartCount)+'</div>'
-      + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
+      + '<div style="display:flex;align-items:center;gap:6px;margin:6px 0">'
+      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
+      + '<span style="color:#D4537E;font-size:13px">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
+      + '</div>'
+      + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
@@ -1442,14 +1448,19 @@
       + (isBucket ? '<button class="sb-viewas-btn" id="sb-view-cluster">CLUSTER</button>' : '')
       + '</div>'
       + '<div class="sb-blue-row">'
-      + '<button class="sb-blue-btn" id="sb-heart" title="Heart">❤️</button>'
       + '<button class="sb-blue-btn" id="sb-notes" title="Notes">✏️</button>'
       + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
-      + (isMisc ? '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>' : '')
+      + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '</div>'
-      + '<button class="sb-close-btn" id="sb-close">Close</button>'
+      + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
+      + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
+      + '<p style="font-size:14px;font-weight:500;margin:0 0 10px;color:#2C2C2A">Moose poop?</p>'
+      + '<div style="display:flex;gap:8px;justify-content:center">'
+      + '<button id="sb-trash-yes" style="font-size:12px;padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
+      + '<button id="sb-trash-no" style="font-size:12px;padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
+      + '</div></div></div>'
       + '</div>';
     ov.classList.add('active');
 
@@ -1565,15 +1576,29 @@
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
 
-    T().wire('sb-heart', async function(){
-      try{
-        var newCount=(item.heart_count||0)+1;
-        var upd=await _sb.from('ideas').update({heart_count:newCount}).eq('id',item.id);
-        if(upd.error) throw upd.error;
-        item.heart_count=newCount;
-        var hr=document.getElementById('sb-hearts-row'); if(hr) hr.innerHTML=_sboardHeartsHTML(newCount);
-      }catch(err){ if(statusBox) statusBox.textContent='Heart needs the heart_count Supabase column.'; }
-    });
+    (function(){
+      var heartBtn=document.getElementById('sb-heart');
+      var heartCountEl=document.getElementById('sb-heart-count');
+      if(!heartBtn) return;
+      var holdTimer=null, held=false;
+      async function applyHeartDelta(delta){
+        try{
+          var newCount=Math.max(0,(item.heart_count||0)+delta);
+          var upd=await _sb.from('ideas').update({heart_count:newCount}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.heart_count=newCount;
+          if(heartCountEl) heartCountEl.textContent=newCount;
+        }catch(err){ if(statusBox) statusBox.textContent='Heart needs the heart_count Supabase column.'; }
+      }
+      function startHold(){ held=false; holdTimer=setTimeout(function(){ held=true; applyHeartDelta(-1); }, 550); }
+      function cancelHold(){ clearTimeout(holdTimer); }
+      heartBtn.addEventListener('mousedown', startHold);
+      heartBtn.addEventListener('touchstart', startHold);
+      heartBtn.addEventListener('mouseup', cancelHold);
+      heartBtn.addEventListener('mouseleave', cancelHold);
+      heartBtn.addEventListener('touchend', cancelHold);
+      heartBtn.addEventListener('click', function(){ if(!held) applyHeartDelta(1); held=false; });
+    })();
     T().wire('sb-notes', function(){ document.getElementById('sb-notes-box').style.display='block'; });
     var notesBox=document.getElementById('sb-notes-box');
     if(notesBox) notesBox.addEventListener('blur', async function(e){
@@ -1596,20 +1621,33 @@
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
-    if(isMisc){
-      T().wire('sb-trash', async function(){
-        if(isHeaderType){ closeSbDetail(); _sboardConfirmTrashHeader(item); return; }
-        try{
-          var targetId=await _sboardEnsureTrashHeader();
-          var newCluster=isTrashed?null:targetId;
-          var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
-          if(upd.error) throw upd.error;
-          item.cluster_id=newCluster;
-          closeSbDetail();
-          renderSeaBoard();
-        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-      });
+    async function _sbDoTrash(){
+      if(isHeaderType){ closeSbDetail(); _sboardConfirmTrashHeader(item); return; }
+      try{
+        var targetId=await _sboardEnsureTrashHeader();
+        var newCluster=isTrashed?null:targetId;
+        var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.cluster_id=newCluster;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     }
+    var trashOverlay=document.getElementById('sb-trash-overlay');
+    var lastTrashClick=0;
+    T().wire('sb-trash', function(){
+      var now=Date.now();
+      if(now-lastTrashClick<350){
+        // Double click — skip the confirm, trash it now.
+        if(trashOverlay) trashOverlay.style.display='none';
+        _sbDoTrash();
+      } else if(trashOverlay){
+        trashOverlay.style.display='flex';
+      }
+      lastTrashClick=now;
+    });
+    T().wire('sb-trash-yes', function(){ if(trashOverlay) trashOverlay.style.display='none'; _sbDoTrash(); });
+    T().wire('sb-trash-no', function(){ if(trashOverlay) trashOverlay.style.display='none'; });
 
     // Gear → color swatches
     T().wire('sb-gear', function(){
