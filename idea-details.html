@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDEA DETAILS — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Playfair Display', Georgia, serif;
+    background: #ece7dc;
+    margin: 0;
+    padding: 40px 16px;
+    display: flex;
+    justify-content: center;
+  }
+  .card-screen {
+    background: #F5F1E8;
+    border-radius: 16px;
+    padding: 20px;
+    width: 400px;
+    position: relative;
+  }
+  .eyebrow-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .eyebrow-top span {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: #2C2C2A;
+  }
+  .close-btn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    background: #fff;
+    border: 1px solid #B4B2A9;
+    cursor: pointer;
+    font-size: 13px;
+    color: #2C2C2A;
+    font-family: inherit;
+  }
+  .pth-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .pth-col { flex: 1; min-width: 0; }
+  .eyebrow {
+    font-size: 9px;
+    color: #5F5E5A;
+    margin-bottom: 3px;
+    letter-spacing: 0.03em;
+  }
+  .parent-value {
+    font-size: 12px;
+    color: #444441;
+    padding: 4px 8px;
+  }
+  select, .field-box, input[type=text] {
+    width: 100%;
+    background: #fff;
+    border: 0.5px solid #B4B2A9;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #2C2C2A;
+    padding: 3px 6px;
+    height: 26px;
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+  .title-field {
+    height: 26px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    margin-bottom: 8px;
+  }
+  .title-field input {
+    border: none;
+    background: transparent;
+    height: auto;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 500;
+    width: 100%;
+  }
+  .content-box {
+    background: #fff;
+    border: 0.5px solid #B4B2A9;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: min-height 0.2s ease;
+  }
+  .content-text {
+    min-height: 55px;
+    font-size: 14px;
+    color: #2C2C2A;
+    line-height: 1.6;
+    outline: none;
+  }
+  .content-image {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    background: #EEECE4;
+    border-radius: 6px;
+    color: #888780;
+    font-size: 12px;
+    text-align: center;
+  }
+  .toggle-preview {
+    font-size: 11px;
+    padding: 4px 8px;
+    background: #fff;
+    border: 0.5px solid #B4B2A9;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-family: 'Playfair Display', Georgia, serif;
+    color: #5F5E5A;
+  }
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pill-btn {
+    font-size: 12px;
+    padding: 5px 9px;
+    background: #fff;
+    border: 0.5px solid #B4B2A9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: #2C2C2A;
+    font-family: inherit;
+    user-select: none;
+  }
+  .heart-icon { color: #D4537E; font-size: 13px; }
+  .spacer { flex: 1; }
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #2C2C2A;
+    font-size: 15px;
+  }
+  .links-panel {
+    display: none;
+    background: #fff;
+    border: 0.5px solid #B4B2A9;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+  }
+  .links-panel div { padding: 4px 0; color: #185FA5; }
+  .overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    border-radius: 16px;
+    align-items: center;
+    justify-content: center;
+  }
+  .overlay-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 18px;
+    text-align: center;
+    border: 0.5px solid #888780;
+  }
+  .overlay-box p { font-size: 14px; font-weight: 500; margin: 0 0 10px; color: #2C2C2A; }
+  .overlay-btns { display: flex; gap: 8px; justify-content: center; }
+  .overlay-btns button {
+    font-size: 12px;
+    padding: 6px 12px;
+    background: #fff;
+    border: 0.5px solid #B4B2A9;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .note {
+    max-width: 400px;
+    margin: 16px auto 0;
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="card-screen" id="ideaDetails">
+
+    <div class="eyebrow-top">
+      <span>DETAILS</span>
+      <button class="close-btn" aria-label="Close">&#10005;</button>
+    </div>
+
+    <div class="pth-row">
+      <div class="pth-col">
+        <div class="eyebrow">Parent</div>
+        <div class="parent-value">Sea of ideas</div>
+      </div>
+      <div class="pth-col">
+        <div class="eyebrow">Topic</div>
+        <select>
+          <option>Wayfinding</option>
+          <option>Sensory design</option>
+          <option>+ Add your own...</option>
+        </select>
+      </div>
+      <div class="pth-col">
+        <div class="eyebrow">Header</div>
+        <select>
+          <option>Trail markers</option>
+          <option>New additions</option>
+          <option>+ Add your own...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="eyebrow">Title (optional)</div>
+    <div class="field-box title-field">
+      <input type="text" placeholder="">
+    </div>
+
+    <div class="eyebrow">Content</div>
+    <div class="content-box">
+      <div class="content-text" id="textContent" contenteditable="true">What if the traveler could leave a trail of light behind them on the path, so they can see how far they've come...</div>
+      <div class="content-image" id="imageContent">full-size image would render here</div>
+    </div>
+
+    <button class="toggle-preview" id="toggleMode">Preview: switch to image idea</button>
+
+    <div class="links-panel" id="linksPanel">
+      <div>Trail of light — reference sketch</div>
+      <div>Bioluminescence video</div>
+    </div>
+
+    <div class="action-row">
+      <button class="pill-btn" id="heartBtn" aria-label="Tap to add a heart, hold to remove one">
+        <span class="heart-icon">&#9829;</span>
+        <span id="heartCount">3</span>
+      </button>
+      <div class="spacer"></div>
+      <button class="pill-btn" id="linksBtn">&#128206; 2</button>
+      <button class="icon-btn" id="trashBtn" aria-label="Trash this idea">&#128465;</button>
+    </div>
+
+    <div class="overlay" id="overlay">
+      <div class="overlay-box">
+        <p>Moose poop?</p>
+        <div class="overlay-btns">
+          <button id="confirmTrash">Yes</button>
+          <button id="cancelTrash">Keep it</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="note">Prototype only — not wired to Supabase. Open in a browser to test interactions.</p>
+</div>
+
+<script>
+  // Heart: click adds, press-and-hold (~550ms) removes
+  let hearts = 3;
+  const heartBtn = document.getElementById('heartBtn');
+  const heartCount = document.getElementById('heartCount');
+  let holdTimer = null;
+  let held = false;
+
+  function startHold() {
+    held = false;
+    holdTimer = setTimeout(() => {
+      held = true;
+      hearts = Math.max(0, hearts - 1);
+      heartCount.textContent = hearts;
+    }, 550);
+  }
+  function cancelHold() { clearTimeout(holdTimer); }
+
+  heartBtn.addEventListener('mousedown', startHold);
+  heartBtn.addEventListener('touchstart', startHold);
+  heartBtn.addEventListener('mouseup', cancelHold);
+  heartBtn.addEventListener('mouseleave', cancelHold);
+  heartBtn.addEventListener('touchend', cancelHold);
+  heartBtn.addEventListener('click', () => {
+    if (!held) {
+      hearts += 1;
+      heartCount.textContent = hearts;
+    }
+    held = false;
+  });
+
+  // Links panel toggle
+  const linksBtn = document.getElementById('linksBtn');
+  const linksPanel = document.getElementById('linksPanel');
+  linksBtn.addEventListener('click', () => {
+    linksPanel.style.display = linksPanel.style.display === 'none' || !linksPanel.style.display ? 'block' : 'none';
+  });
+
+  // Content mode toggle (text vs image)
+  const toggleBtn = document.getElementById('toggleMode');
+  const textContent = document.getElementById('textContent');
+  const imageContent = document.getElementById('imageContent');
+  let isImage = false;
+  toggleBtn.addEventListener('click', () => {
+    isImage = !isImage;
+    textContent.style.display = isImage ? 'none' : 'block';
+    imageContent.style.display = isImage ? 'flex' : 'none';
+    toggleBtn.textContent = isImage ? 'Preview: switch to text idea' : 'Preview: switch to image idea';
+  });
+
+  // Trash: single click = confirm overlay ("Moose poop?"), double click = secret skip
+  const trashBtn = document.getElementById('trashBtn');
+  const overlay = document.getElementById('overlay');
+  const cardScreen = document.getElementById('ideaDetails');
+  let lastTrashClick = 0;
+
+  trashBtn.addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastTrashClick < 350) {
+      cardScreen.style.opacity = '0.3';
+    } else {
+      overlay.style.display = 'flex';
+    }
+    lastTrashClick = now;
+  });
+  document.getElementById('cancelTrash').addEventListener('click', () => {
+    overlay.style.display = 'none';
+  });
+  document.getElementById('confirmTrash').addEventListener('click', () => {
+    overlay.style.display = 'none';
+    cardScreen.style.opacity = '0.3';
+  });
+
+  document.querySelector('.close-btn').addEventListener('click', () => {
+    alert('Close would return to the front of the card.');
+  });
+</script>
+
+</body>
+</html>
