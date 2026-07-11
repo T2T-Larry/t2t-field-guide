@@ -3531,7 +3531,7 @@
 
   async function _focusBuildState(){
     var allHeaders=await _focusFetchAllHeaders();
-    var roots=allHeaders.filter(function(h){ return h.cluster_id===null; });
+    var roots=allHeaders.filter(function(h){ return h.cluster_id===null && h.text_content!=='Trash'; });
     var wishTank=roots.filter(function(p){return p.text_content==='Wish Tank';})[0] || roots[0];
     var projectEarned=roots.filter(function(r){ return r.id!==(wishTank&&wishTank.id); }).length>0;
     var allDescendants = wishTank ? _focusDescendants(allHeaders, wishTank.id) : [];
@@ -3633,8 +3633,7 @@
   function _focusRenderRows(state){
     var rows=document.getElementById('fc-rows'); if(!rows) return;
     rows.innerHTML='';
-    var atRoot = String(state.topic.id)===String(state.project.id);
-    _focusRenderRow(rows, 'PROJECT', atRoot?'':state.project.name, state.projectLocked, state.projectEarned,
+    _focusRenderRow(rows, 'PROJECT', state.project.name, state.projectLocked, state.projectEarned,
       function(){ return state.projects; },
       function(name){ return _focusCreateHeader(name, null).then(function(row){
         state.projects.push(row);
@@ -3647,7 +3646,7 @@
       }); },
       function(row){
         state.project={id:row.id, name:row.text_content};
-        state.topic={id:row.id, name:row.text_content}; // collapses back to root — PROJECT goes blank again until TOPIC diverges
+        state.topic={id:row.id, name:row.text_content}; // TOPIC starts equal to PROJECT until you drill into something distinct
         state.topicLocked=false;
         _focusFetchTopics(row.id).then(function(topics){
           state.topics=topics; state.topicEarned=topics.length>0;
