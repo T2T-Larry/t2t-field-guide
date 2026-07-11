@@ -3512,7 +3512,9 @@
   async function _focusCreateHeader(name, parentId){
     var T2=T(); var u=T2.getMember(); var sb=T2.sb;
     var ins=await sb.from('ideas').insert({user_id:u.id, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()}).select().single();
-    return ins && ins.data;
+    if(ins.error) throw new Error('Create failed: '+ins.error.message);
+    if(!ins.data) throw new Error('Create failed: no row returned');
+    return ins.data;
   }
 
   async function _focusFetchTopics(projectId){
@@ -3574,7 +3576,13 @@
       var name=input.value.trim(); if(!name) return;
       addBtn.disabled=true;
       onCreate(name).then(function(row){ onSelect(row); }).catch(function(e){
-        console.error('FOCUS add failed', e); addBtn.disabled=false;
+        console.error('FOCUS add failed', e);
+        addBtn.disabled=false;
+        var msg=document.createElement('div');
+        msg.style.cssText='color:#a33;font-size:11px;font-family:sans-serif;padding:4px 4px 0';
+        msg.textContent='Could not create — '+(e&&e.message?e.message:'try again');
+        addRow.parentNode.insertBefore(msg, addRow.nextSibling);
+        setTimeout(function(){ msg.remove(); }, 4000);
       });
     }
     addBtn.onclick=function(e){ e.stopPropagation(); doAdd(); };
@@ -3624,7 +3632,15 @@
     var atRoot = String(state.topic.id)===String(state.project.id);
     _focusRenderRow(rows, 'PROJECT', atRoot?'':state.project.name, state.projectLocked, state.projectEarned,
       function(){ return state.projects; },
-      function(name){ return _focusCreateHeader(name, null).then(function(row){ state.projects.push(row); return row; }); },
+      function(name){ return _focusCreateHeader(name, null).then(function(row){
+        state.projects.push(row);
+        return Promise.all([
+          _sboardEnsurePurposeHeader(row.id),
+          _sboardEnsureMiscHeader(row.id),
+          _sboardEnsureNewAdditionsHeader(row.id)
+        ]).catch(function(e){ console.warn('Default header seed failed for new project:', e); })
+          .then(function(){ return row; });
+      }); },
       function(row){
         state.project={id:row.id, name:row.text_content};
         state.topic={id:row.id, name:row.text_content}; // collapses back to root — PROJECT goes blank again until TOPIC diverges
