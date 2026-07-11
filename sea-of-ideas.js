@@ -3418,7 +3418,103 @@
     return result.id;
   }
 
+  /* ── FOCUS — 9611 — front door for the whole Tools chapter ──
+     Locked July 11, 2026: Question is not a peer pocket alongside
+     Idea/Shape/Share, it's the gate they all sit behind. Skipped
+     entirely when nothing's earned. First pass: earned-check reads
+     real Supabase header rows (root-level headers = PROJECT
+     candidates, siblings under Wish Tank = TOPIC candidates); HEADER
+     rung is left gray for now — a traveler with only one project has
+     no real HEADER options to switch between yet either. Good enough
+     to gate correctly today, not yet tuned for deep nested projects. */
+  var _focusReturnTarget = 's-sea-of-ideas-cluster';
+
+  function injectFocusScreen(){
+    var fg=document.getElementById('fg-root'); if(!fg) return;
+    if(document.getElementById('s-focus')) return;
+    if(!document.getElementById('focus-style')){
+      var style=document.createElement('style');
+      style.id='focus-style';
+      style.textContent='#s-focus{background:#e4e0d8}#s-focus .fc-eyebrow{font-family:sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;margin-bottom:4px}#s-focus .fc-frame{background:#fff;border:1.5px solid #b0a898;border-radius:9px;padding:9px 10px 9px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}#s-focus .fc-val{font-family:"Playfair Display",Georgia,serif;font-size:16px;color:#3B2510;cursor:pointer}#s-focus .fc-val.inert{color:#a39a8c;cursor:default}#s-focus .fc-lock{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:none;background:transparent;font-size:15px;cursor:pointer}#s-focus .fc-lock.inert{opacity:.35;cursor:default}#s-focus .fc-begin{width:100%;margin-top:8px;padding:11px;border-radius:9px;background:#0a4a38;color:#fff;border:none;font-family:"Playfair Display",Georgia,serif;font-size:15px;font-weight:700;cursor:pointer}';
+      document.head.appendChild(style);
+    }
+    var div=document.createElement('div');
+    div.innerHTML='<div class="sc xw" id="s-focus" style="padding:1.75rem;position:relative">'
+      +'<button id="fc-close" aria-label="Close" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:#f0ede8;border:1.5px solid #b0a898;font-family:sans-serif;font-size:13px;color:#3B2510;cursor:pointer">✕</button>'
+      +'<div style="text-align:center;font-family:\'Playfair Display\',Georgia,serif;font-size:20px;font-weight:700;color:#3B2510;margin:0 0 1.5rem">What are we working on?</div>'
+      +'<div id="fc-rows"></div>'
+      +'<button class="fc-begin" id="fc-begin">Begin</button>'
+      +'</div>';
+    fg.appendChild(div.firstChild);
+    document.getElementById('fc-close').onclick=function(){ T().returnToMG(); };
+    document.getElementById('fc-begin').onclick=function(){ T().nav(_focusReturnTarget); };
+    T().registerUtilScreen('s-focus');
+    T().registerPageNum('s-focus','9611');
+  }
+
+  function _focusRenderRows(rungs){
+    var rows=document.getElementById('fc-rows'); if(!rows) return;
+    rows.innerHTML='';
+    rungs.forEach(function(r){
+      var inert = r.state==='gray';
+      var wrap=document.createElement('div');
+      wrap.innerHTML='<div class="fc-eyebrow">'+r.label+'</div>';
+      var frame=document.createElement('div'); frame.className='fc-frame';
+      var val=document.createElement('div'); val.className='fc-val'+(inert?' inert':'');
+      val.innerHTML=r.value+(inert?'':' <span style="font-family:sans-serif;font-size:11px;color:#9a9285">▾</span>');
+      var lock=document.createElement('button'); lock.className='fc-lock'+(inert?' inert':'');
+      lock.setAttribute('aria-label', r.state==='locked' ? 'Locked, tap to unlock' : (inert?'Nothing to lock yet':'Unlocked, tap to lock'));
+      lock.textContent = r.state==='locked' ? '🔒' : '🔓';
+      if(!inert){
+        lock.onclick=function(){
+          if(r.state==='locked'){ r.state='unlocked'; r.value=r.def; } else { r.state='locked'; }
+          _focusRenderRows(rungs);
+        };
+      }
+      frame.appendChild(val); frame.appendChild(lock);
+      wrap.appendChild(frame);
+      rows.appendChild(wrap);
+    });
+  }
+
+  async function _focusCheckEarned(){
+    var T2=T(); var u=T2 && T2.getMember ? T2.getMember() : null;
+    var sb = T2 && T2.sb;
+    if(!u || !sb) return {show:false};
+    try{
+      var roots=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
+      var rootRows=(roots && roots.data) || [];
+      var projectEarned = rootRows.length > 1; // more than just Wish Tank
+      var wishTank = rootRows.filter(function(r){return r.text_content==='Wish Tank';})[0] || rootRows[0];
+      var wtId = wishTank ? wishTank.id : null;
+      var siblings = wtId ? await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',wtId) : {data:[]};
+      var sibRows=(siblings && siblings.data) || [];
+      var topicEarned = sibRows.length > 1; // more than just NEW
+      return {
+        show: projectEarned || topicEarned,
+        rungs:[
+          {label:'PROJECT', value: wishTank ? wishTank.text_content : 'Wish Tank', def:'Wish Tank', state: projectEarned?'unlocked':'gray'},
+          {label:'TOPIC', value:'New', def:'New', state: topicEarned?'unlocked':'gray'},
+          {label:'HEADER', value:'New', def:'New', state:'gray'}
+        ]
+      };
+    }catch(e){
+      console.error('FOCUS earned-check failed', e);
+      return {show:false};
+    }
+  }
+
+  async function openFocusGate(returnTarget){
+    _focusReturnTarget = returnTarget || 's-sea-of-ideas-cluster';
+    var result = await _focusCheckEarned();
+    if(!result.show){ T().nav(_focusReturnTarget); return; }
+    injectFocusScreen();
+    _focusRenderRows(result.rungs);
+    T().nav('s-focus');
+  }
+
   window.T2TSea = {
+    openFocusGate: openFocusGate,
     openTrash: async function(){
       try{
         var tid=await _sboardEnsureTrashHeader();

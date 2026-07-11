@@ -858,7 +858,11 @@
       if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
       else nav('s-idea-capture');
     });
-    wire('b-sea-ideas',function(){ seaChapterEntry = false; nav('s-sea-of-ideas-cluster'); });
+    wire('b-sea-ideas',function(){
+      seaChapterEntry = false;
+      if(window.T2TSea && window.T2TSea.openFocusGate) window.T2TSea.openFocusGate('s-sea-of-ideas-cluster');
+      else nav('s-sea-of-ideas-cluster');
+    });
 
     /* JOURNAL HUB */
     wire('b-journal-back',returnToMG);
@@ -947,7 +951,10 @@
     wire('b-sr-back',function(){nav('s-tools');}); wire('b-sr-mg',goMG);
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
-    wire('b-tools-sea-ideas', function(){ nav('s-sea-of-ideas-cluster'); });
+    wire('b-tools-sea-ideas', function(){
+      if(window.T2TSea && window.T2TSea.openFocusGate) window.T2TSea.openFocusGate('s-sea-of-ideas-cluster');
+      else nav('s-sea-of-ideas-cluster');
+    });
     wire('b-tools-trash', function(){
       if (window.T2TSea) window.T2TSea.openTrash();
     });
