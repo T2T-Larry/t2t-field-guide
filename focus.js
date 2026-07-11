@@ -27,6 +27,8 @@
 
 (function(){
 
+  function T(){ return window.T2T; }
+
   var _returnTarget = 's-sea-of-ideas-cluster';
   var _state = null;
   var _openDropdown = null;
@@ -64,10 +66,10 @@
      current TOPIC. PARENT is path[path.length-2] when it exists. ── */
 
   async function _buildState(){
-    var projects=await T2TData.topLevelBoards();
+    var projects=await window.T2TData.topLevelBoards();
     var wishTank=projects.filter(function(p){return p.text_content==='Wish Tank';})[0] || projects[0];
     var root = wishTank ? {id:wishTank.id, name:wishTank.text_content} : {id:null, name:'Wish Tank'};
-    var topicChildren = root.id ? await T2TData.activeChildHeaders(root.id) : [];
+    var topicChildren = root.id ? await window.T2TData.activeChildHeaders(root.id) : [];
     return {
       projects: projects,
       path: [root],
@@ -83,7 +85,7 @@
   function _parent(state){ return state.path.length>1 ? state.path[state.path.length-2] : null; }
 
   async function _refreshTopicChildren(state){
-    state.topicChildren = await T2TData.activeChildHeaders(_topic(state).id);
+    state.topicChildren = await window.T2TData.activeChildHeaders(_topic(state).id);
   }
 
   function _renderRow(container, opts){
@@ -174,12 +176,12 @@
       onLockToggle:function(){ state.projectLocked=!state.projectLocked; _renderRows(state); },
       getOptions:function(){ return state.projects; },
       onCreate:function(name){
-        return T2TData.createHeader(name, null).then(function(row){
+        return window.T2TData.createHeader(name, null).then(function(row){
           state.projects.push(row);
           return Promise.all([
-            T2TData.ensurePurposeHeader(row.id),
-            T2TData.ensureMiscHeader(row.id),
-            T2TData.ensureNewAdditionsHeader(row.id)
+            window.T2TData.ensurePurposeHeader(row.id),
+            window.T2TData.ensureMiscHeader(row.id),
+            window.T2TData.ensureNewAdditionsHeader(row.id)
           ]).catch(function(e){ console.warn('Default header seed failed for new project:', e); })
             .then(function(){ return row; });
         });
@@ -210,7 +212,7 @@
       showLock:true, locked:state.topicLocked, earned: state.topicChildren.length>0,
       onLockToggle:function(){ state.topicLocked=!state.topicLocked; _renderRows(state); },
       getOptions:function(){ return state.topicChildren; },
-      onCreate:function(name){ return T2TData.createHeader(name, _topic(state).id); },
+      onCreate:function(name){ return window.T2TData.createHeader(name, _topic(state).id); },
       onSelect:function(row){
         state.path.push({id:row.id, name:row.text_content});
         state.topicLocked=false;
