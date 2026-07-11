@@ -3421,13 +3421,18 @@
   /* ── FOCUS — 9611 — front door for the whole Tools chapter ──
      Locked July 11, 2026: Question is not a peer pocket alongside
      Idea/Shape/Share, it's the gate they all sit behind. Skipped
-     entirely when nothing's earned. First pass: earned-check reads
-     real Supabase header rows (root-level headers = PROJECT
-     candidates, siblings under Wish Tank = TOPIC candidates); HEADER
-     rung is left gray for now — a traveler with only one project has
-     no real HEADER options to switch between yet either. Good enough
-     to gate correctly today, not yet tuned for deep nested projects. */
+     entirely when nothing's earned.
+     Fully wired pass: PROJECT and TOPIC frames are real — tap to see
+     existing options plus "+ New", pick one or create one right
+     there. Selecting never locks (Freedom of Choice) — locking stays
+     a separate, deliberate tap on the padlock, and the padlock is
+     only enabled once a genuine second option exists to lock to.
+     HEADER stays a visual stub — no real HEADER-switching UX built
+     yet, left honest rather than faked. */
+  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash'];
   var _focusReturnTarget = 's-sea-of-ideas-cluster';
+  var _focusState = null;
+  var _focusOpenDropdown = null;
 
   function injectFocusScreen(){
     var fg=document.getElementById('fg-root'); if(!fg) return;
@@ -3435,96 +3440,190 @@
     if(!document.getElementById('focus-style')){
       var style=document.createElement('style');
       style.id='focus-style';
-      style.textContent='#s-focus{background:#e4e0d8}#s-focus .fc-eyebrow{font-family:sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;margin-bottom:4px}#s-focus .fc-frame{background:#fff;border:1.5px solid #b0a898;border-radius:9px;padding:9px 10px 9px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px}#s-focus .fc-val{font-family:"Playfair Display",Georgia,serif;font-size:16px;color:#3B2510;cursor:pointer}#s-focus .fc-val.inert{color:#a39a8c;cursor:default}#s-focus .fc-lock{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:none;background:transparent;font-size:15px;cursor:pointer}#s-focus .fc-lock.inert{opacity:.35;cursor:default}#s-focus .fc-begin{width:100%;margin-top:8px;padding:11px;border-radius:9px;background:#0a4a38;color:#fff;border:none;font-family:"Playfair Display",Georgia,serif;font-size:15px;font-weight:700;cursor:pointer}';
+      style.textContent='#s-focus{background:#e4e0d8}#s-focus .fc-eyebrow{font-family:sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;margin-bottom:4px}#s-focus .fc-frame{background:#fff;border:1.5px solid #b0a898;border-radius:9px;padding:9px 10px 9px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px}#s-focus .fc-val{font-family:"Playfair Display",Georgia,serif;font-size:16px;color:#3B2510;cursor:pointer}#s-focus .fc-val.inert{color:#a39a8c;cursor:default}#s-focus .fc-lock{width:30px;height:30px;flex-shrink:0;border-radius:50%;border:none;background:transparent;font-size:15px;cursor:pointer}#s-focus .fc-lock.inert{opacity:.35;cursor:default}#s-focus .fc-begin{width:100%;margin-top:8px;padding:11px;border-radius:9px;background:#0a4a38;color:#fff;border:none;font-family:"Playfair Display",Georgia,serif;font-size:15px;font-weight:700;cursor:pointer}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc xw" id="s-focus" style="padding:1.75rem;position:relative">'
       +'<button id="fc-close" aria-label="Close" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:#f0ede8;border:1.5px solid #b0a898;font-family:sans-serif;font-size:13px;color:#3B2510;cursor:pointer">✕</button>'
       +'<div style="text-align:center;font-family:\'Playfair Display\',Georgia,serif;font-size:20px;font-weight:700;color:#3B2510;margin:0 0 1.5rem">What are we working on?</div>'
-      +'<div id="fc-rows"></div>'
+      +'<div id="fc-rows" style="display:flex;flex-direction:column;gap:16px"></div>'
       +'<button class="fc-begin" id="fc-begin">Begin</button>'
       +'</div>';
     fg.appendChild(div.firstChild);
-    document.getElementById('fc-close').onclick=function(){ T().returnToMG(); };
-    document.getElementById('fc-begin').onclick=function(){ T().nav(_focusReturnTarget); };
+    document.getElementById('fc-close').onclick=function(){ _focusCloseDropdowns(); T().returnToMG(); };
     T().registerUtilScreen('s-focus');
     T().registerPageNum('s-focus','9611');
   }
 
-  function _focusRenderRows(rungs){
-    var rows=document.getElementById('fc-rows'); if(!rows) return;
-    rows.innerHTML='';
-    rungs.forEach(function(r){
-      var inert = r.state==='gray';
-      var wrap=document.createElement('div');
-      wrap.innerHTML='<div class="fc-eyebrow">'+r.label+'</div>';
-      var frame=document.createElement('div'); frame.className='fc-frame';
-      var val=document.createElement('div'); val.className='fc-val'+(inert?' inert':'');
-      val.innerHTML=r.value+(inert?'':' <span style="font-family:sans-serif;font-size:11px;color:#9a9285">▾</span>');
-      var lock=document.createElement('button'); lock.className='fc-lock'+(inert?' inert':'');
-      lock.setAttribute('aria-label', r.state==='locked' ? 'Locked, tap to unlock' : (inert?'Nothing to lock yet':'Unlocked, tap to lock'));
-      lock.textContent = r.state==='locked' ? '🔒' : '🔓';
-      if(!inert){
-        lock.onclick=function(){
-          if(r.state==='locked'){ r.state='unlocked'; r.value=r.def; } else { r.state='locked'; }
-          _focusRenderRows(rungs);
-        };
-      }
-      frame.appendChild(val); frame.appendChild(lock);
-      wrap.appendChild(frame);
-      rows.appendChild(wrap);
-    });
+  async function _focusFetchProjects(){
+    var T2=T(); var u=T2.getMember(); var sb=T2.sb;
+    var res=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
+    return (res && res.data) || [];
   }
 
-  async function _focusCheckEarned(){
-    var T2=T(); var u=T2 && T2.getMember ? T2.getMember() : null;
-    var sb = T2 && T2.sb;
-    var RESERVED = ['NEW','MISC','Purpose','Trash'];
+  async function _focusFetchTopics(projectId){
+    if(!projectId) return [];
+    var T2=T(); var u=T2.getMember(); var sb=T2.sb;
+    var res=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',projectId);
+    var rows=(res && res.data)||[];
+    return rows.filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; });
+  }
+
+  async function _focusCreateHeader(name, parentId){
+    var T2=T(); var u=T2.getMember(); var sb=T2.sb;
+    var ins=await sb.from('ideas').insert({user_id:u.id, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()}).select().single();
+    return ins && ins.data;
+  }
+
+  async function _focusBuildState(){
+    var projects=await _focusFetchProjects();
+    var wishTank=projects.filter(function(p){return p.text_content==='Wish Tank';})[0] || projects[0];
+    var topics = wishTank ? await _focusFetchTopics(wishTank.id) : [];
+    return {
+      projects:projects,
+      project: wishTank ? {id:wishTank.id, name:wishTank.text_content} : {id:null, name:'Wish Tank'},
+      projectLocked:false,
+      projectEarned: projects.length > 1,
+      topics:topics,
+      topic:{id:null, name:'New'},
+      topicLocked:false,
+      topicEarned: topics.length > 0
+    };
+  }
+
+  function _focusCloseDropdowns(){
+    var panels=document.querySelectorAll('#s-focus .fc-panel');
+    panels.forEach(function(p){ p.remove(); });
+    _focusOpenDropdown=null;
+  }
+
+  function _focusOpenPanel(anchorEl, label, options, onCreate, onSelect){
+    var panel=document.createElement('div'); panel.className='fc-panel';
+    panel.style.cssText='background:#fff;border:1.5px solid #b0a898;border-radius:9px;margin-top:6px;padding:6px;max-height:180px;overflow-y:auto';
+    options.forEach(function(o){
+      var item=document.createElement('div');
+      item.textContent=o.text_content;
+      item.style.cssText='padding:8px 10px;font-family:"Playfair Display",Georgia,serif;font-size:15px;color:#3B2510;cursor:pointer;border-radius:6px';
+      item.onmouseenter=function(){ item.style.background='#f0ede8'; };
+      item.onmouseleave=function(){ item.style.background='transparent'; };
+      item.onclick=function(e){ e.stopPropagation(); onSelect(o); };
+      panel.appendChild(item);
+    });
+    var addRow=document.createElement('div');
+    addRow.style.cssText='display:flex;gap:6px;padding:8px 4px 2px;border-top:'+(options.length?'1px solid #e4e0d8;':'none;')+'margin-top:'+(options.length?'4px':'0');
+    var input=document.createElement('input');
+    input.placeholder='+ New '+label.toLowerCase();
+    input.style.cssText='flex:1;font-family:sans-serif;font-size:13px;border:1.5px solid #b0a898;border-radius:6px;padding:6px 8px';
+    var addBtn=document.createElement('button');
+    addBtn.textContent='Add';
+    addBtn.style.cssText='font-family:sans-serif;font-size:13px;border:1.5px solid #b0a898;border-radius:6px;background:#f0ede8;padding:6px 12px;cursor:pointer';
+    function doAdd(){
+      var name=input.value.trim(); if(!name) return;
+      addBtn.disabled=true;
+      onCreate(name).then(function(row){ onSelect(row); }).catch(function(e){
+        console.error('FOCUS add failed', e); addBtn.disabled=false;
+      });
+    }
+    addBtn.onclick=function(e){ e.stopPropagation(); doAdd(); };
+    input.onclick=function(e){ e.stopPropagation(); };
+    input.onkeydown=function(e){ if(e.key==='Enter') doAdd(); };
+    addRow.appendChild(input); addRow.appendChild(addBtn);
+    panel.appendChild(addRow);
+    anchorEl.appendChild(panel);
+  }
+
+  function _focusRenderRow(container, label, value, locked, earned, getOptions, onCreate, onSelect){
+    var wrap=document.createElement('div');
+    wrap.innerHTML='<div class="fc-eyebrow">'+label+'</div>';
+    var frame=document.createElement('div'); frame.className='fc-frame';
+    var val=document.createElement('div'); val.className='fc-val';
+    val.innerHTML=value+' <span style="font-family:sans-serif;font-size:11px;color:#9a9285">▾</span>';
+    val.onclick=function(e){
+      e.stopPropagation();
+      if(_focusOpenDropdown===label){ _focusCloseDropdowns(); return; }
+      _focusCloseDropdowns();
+      _focusOpenDropdown=label;
+      _focusOpenPanel(wrap, label, getOptions(), onCreate, function(row){
+        _focusCloseDropdowns();
+        onSelect(row);
+        _focusRenderRows(_focusState);
+      });
+    };
+    var lock=document.createElement('button'); lock.className='fc-lock'+(earned?'':' inert');
+    lock.setAttribute('aria-label', locked ? 'Locked, tap to unlock' : (earned?'Unlocked, tap to lock':'Nothing to lock yet'));
+    lock.textContent = locked ? '🔒' : '🔓';
+    if(earned){
+      lock.onclick=function(e){
+        e.stopPropagation();
+        if(label==='PROJECT') _focusState.projectLocked=!_focusState.projectLocked;
+        if(label==='TOPIC') _focusState.topicLocked=!_focusState.topicLocked;
+        _focusRenderRows(_focusState);
+      };
+    }
+    frame.appendChild(val); frame.appendChild(lock);
+    wrap.appendChild(frame);
+    container.appendChild(wrap);
+  }
+
+  function _focusRenderRows(state){
+    var rows=document.getElementById('fc-rows'); if(!rows) return;
+    rows.innerHTML='';
+    _focusRenderRow(rows, 'PROJECT', state.project.name, state.projectLocked, state.projectEarned,
+      function(){ return state.projects; },
+      function(name){ return _focusCreateHeader(name, null).then(function(row){ state.projects.push(row); return row; }); },
+      function(row){
+        state.project={id:row.id, name:row.text_content};
+        state.topicLocked=false;
+        _focusFetchTopics(row.id).then(function(topics){
+          state.topics=topics; state.topic={id:null,name:'New'}; state.topicEarned=topics.length>0;
+          _focusRenderRows(state);
+        });
+      });
+    _focusRenderRow(rows, 'TOPIC', state.topic.name, state.topicLocked, state.topicEarned,
+      function(){ return state.topics; },
+      function(name){ return _focusCreateHeader(name, state.project.id).then(function(row){ state.topics.push(row); return row; }); },
+      function(row){ state.topic={id:row.id, name:row.text_content}; });
+    var wrap=document.createElement('div');
+    wrap.innerHTML='<div class="fc-eyebrow">HEADER</div>'
+      +'<div class="fc-frame"><div class="fc-val inert">New</div>'
+      +'<button class="fc-lock inert" aria-label="Nothing to lock yet">🔓</button></div>';
+    rows.appendChild(wrap);
+    document.getElementById('fc-begin').onclick=function(){
+      _focusCloseDropdowns();
+      var targetId = state.topic.id || state.project.id;
+      if(window.T2TSea && window.T2TSea.openBoard && targetId) window.T2TSea.openBoard(targetId);
+      T().nav(_focusReturnTarget);
+    };
+  }
+
+  async function openFocusGate(returnTarget, forceShow){
+    _focusReturnTarget = returnTarget || 's-sea-of-ideas-cluster';
+    var T2=T(); var u=T2 && T2.getMember ? T2.getMember() : null; var sb=T2 && T2.sb;
     if(!u || !sb){
-      console.error('FOCUS earned-check skipped — member or sb not ready', {u:!!u, sb:!!sb});
-      return {show:false};
+      console.error('FOCUS gate skipped — member or sb not ready', {u:!!u, sb:!!sb});
+      T().nav(_focusReturnTarget);
+      return;
     }
     try{
-      var roots=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
-      var rootRows=(roots && roots.data) || [];
-      var realRoots = rootRows.filter(function(r){ return RESERVED.indexOf(r.text_content)===-1; });
-      var wishTank = rootRows.filter(function(r){return r.text_content==='Wish Tank';})[0] || rootRows[0];
-      var projectEarned = realRoots.filter(function(r){return r.id!==(wishTank&&wishTank.id);}).length > 0; // a real project beyond Wish Tank itself
-      var wtId = wishTank ? wishTank.id : null;
-      var siblings = wtId ? await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',wtId) : {data:[]};
-      var sibRows=(siblings && siblings.data) || [];
-      var realSiblings = sibRows.filter(function(r){ return RESERVED.indexOf(r.text_content)===-1; });
-      var topicEarned = realSiblings.length > 0; // at least one Header the traveler actually made, not a standing utility one
-      return {
-        show: projectEarned || topicEarned,
-        rungs:[
-          {label:'PROJECT', value: wishTank ? wishTank.text_content : 'Wish Tank', def:'Wish Tank', state: projectEarned?'unlocked':'gray'},
-          {label:'TOPIC', value:'New', def:'New', state: topicEarned?'unlocked':'gray'},
-          {label:'HEADER', value:'New', def:'New', state:'gray'}
-        ]
-      };
+      var state=await _focusBuildState();
+      if(!forceShow && !(state.projectEarned || state.topicEarned)){ T().nav(_focusReturnTarget); return; }
+      _focusState=state;
+      injectFocusScreen();
+      _focusRenderRows(state);
+      T().nav('s-focus');
     }catch(e){
-      console.error('FOCUS earned-check failed', e);
+      console.error('FOCUS gate failed', e);
       var fg=document.getElementById('fg-root');
       if(fg){
         var err=document.createElement('div');
         err.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;background:#5a1a1a;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9999';
-        err.textContent='FOCUS check failed: '+(e&&e.message?e.message:e);
+        err.textContent='FOCUS failed: '+(e&&e.message?e.message:e);
         fg.appendChild(err);
         setTimeout(function(){ err.remove(); }, 4000);
       }
-      return {show:false};
+      T().nav(_focusReturnTarget);
     }
-  }
-
-  async function openFocusGate(returnTarget){
-    _focusReturnTarget = returnTarget || 's-sea-of-ideas-cluster';
-    var result = await _focusCheckEarned();
-    if(!result.show){ T().nav(_focusReturnTarget); return; }
-    injectFocusScreen();
-    _focusRenderRows(result.rungs);
-    T().nav('s-focus');
   }
 
   window.T2TSea = {

@@ -952,7 +952,7 @@
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
     wire('b-tools-sea-ideas', function(){
-      if(window.T2TSea && window.T2TSea.openFocusGate) window.T2TSea.openFocusGate('s-sea-of-ideas-cluster');
+      if(window.T2TSea && window.T2TSea.openFocusGate) window.T2TSea.openFocusGate('s-sea-of-ideas-cluster', true);
       else nav('s-sea-of-ideas-cluster');
     });
     wire('b-tools-trash', function(){
