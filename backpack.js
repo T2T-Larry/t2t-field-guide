@@ -793,12 +793,8 @@
     wire('b-mg-map',goMap);
     wire('b-mg-idea',   function(){
       closeMG();
-      if(window.T2TSea && window.T2TSea.openFocusGate){
-        // TEMP — July 11, 2026: forceShow set true (was false) to verify the
-        // Wish Tank race-condition fix and isolate whether the skip-when-
-        // nothing's-earned condition is what let it get triggered. Revert
-        // to false once confirmed, to restore frictionless quick-capture.
-        window.T2TSea.openFocusGate('s-idea-session', true, function(selectedId){
+      if(window.T2TFocus && window.T2TFocus.openFocusGate){
+        window.T2TFocus.openFocusGate('s-idea-session', false, function(selectedId){
           var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
           if(selectedId) ctx = Object.assign({}, ctx, {boardId: selectedId});
           window.T2TSea.openIdeaCapture(ctx);
@@ -866,8 +862,8 @@
        see b-mg-idea above) but is left in place and still reachable; its "Capture
        an Idea" button below just forwards into the same 9210 flow. */
     wire('b-capture-idea',function(){
-      if(window.T2TSea && window.T2TSea.openFocusGate){
-        window.T2TSea.openFocusGate('s-idea-session', false, function(selectedId){
+      if(window.T2TFocus && window.T2TFocus.openFocusGate){
+        window.T2TFocus.openFocusGate('s-idea-session', false, function(selectedId){
           var ctx = selectedId ? {boardId:selectedId} : null;
           window.T2TSea.openIdeaCapture(ctx);
         });
@@ -876,7 +872,7 @@
     });
     wire('b-sea-ideas',function(){
       seaChapterEntry = false;
-      if(window.T2TSea && window.T2TSea.openFocusGate) window.T2TSea.openFocusGate('s-sea-of-ideas-cluster');
+      if(window.T2TFocus && window.T2TFocus.openFocusGate) window.T2TFocus.openFocusGate('s-sea-of-ideas-cluster');
       else nav('s-sea-of-ideas-cluster');
     });
 
@@ -968,7 +964,7 @@
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
     wire('b-tools-sea-ideas', function(){
-      if(window.T2TSea && window.T2TSea.openFocusGate) window.T2TSea.openFocusGate('s-sea-of-ideas-cluster', true);
+      if(window.T2TFocus && window.T2TFocus.openFocusGate) window.T2TFocus.openFocusGate('s-sea-of-ideas-cluster', true);
       else nav('s-sea-of-ideas-cluster');
     });
     wire('b-tools-trash', function(){
