@@ -3592,22 +3592,27 @@
     document.getElementById('fc-begin').onclick=function(){
       _focusCloseDropdowns();
       var targetId = state.topic.id || state.project.id;
+      if(state.onEnter){ state.onEnter(targetId); return; }
       if(window.T2TSea && window.T2TSea.openBoard && targetId) window.T2TSea.openBoard(targetId);
       T().nav(_focusReturnTarget);
     };
   }
 
-  async function openFocusGate(returnTarget, forceShow){
+  async function openFocusGate(returnTarget, forceShow, onEnter){
     _focusReturnTarget = returnTarget || 's-sea-of-ideas-cluster';
     var T2=T(); var u=T2 && T2.getMember ? T2.getMember() : null; var sb=T2 && T2.sb;
     if(!u || !sb){
       console.error('FOCUS gate skipped — member or sb not ready', {u:!!u, sb:!!sb});
-      T().nav(_focusReturnTarget);
+      if(onEnter) onEnter(null); else T().nav(_focusReturnTarget);
       return;
     }
     try{
       var state=await _focusBuildState();
-      if(!forceShow && !(state.projectEarned || state.topicEarned)){ T().nav(_focusReturnTarget); return; }
+      state.onEnter = onEnter || null;
+      if(!forceShow && !(state.projectEarned || state.topicEarned)){
+        if(onEnter) onEnter(null); else T().nav(_focusReturnTarget);
+        return;
+      }
       _focusState=state;
       injectFocusScreen();
       _focusRenderRows(state);
@@ -3622,7 +3627,7 @@
         fg.appendChild(err);
         setTimeout(function(){ err.remove(); }, 4000);
       }
-      T().nav(_focusReturnTarget);
+      if(onEnter) onEnter(null); else T().nav(_focusReturnTarget);
     }
   }
 

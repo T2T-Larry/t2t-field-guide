@@ -792,10 +792,17 @@
     });
     wire('b-mg-map',goMap);
     wire('b-mg-idea',   function(){
-      var ctx=(window.T2TSea&&window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
       closeMG();
-      if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(ctx);
-      else nav('s-idea-capture', false);
+      if(window.T2TSea && window.T2TSea.openFocusGate){
+        window.T2TSea.openFocusGate('s-idea-session', false, function(selectedId){
+          var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
+          if(selectedId) ctx = Object.assign({}, ctx, {boardId: selectedId});
+          window.T2TSea.openIdeaCapture(ctx);
+        });
+      } else if(window.T2TSea&&window.T2TSea.openIdeaCapture){
+        var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
+        window.T2TSea.openIdeaCapture(ctx);
+      } else nav('s-idea-capture', false);
     });
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
     wire('b-mg-gems',   function(){closeMG();nav('s-gems-board', false);});
@@ -855,7 +862,12 @@
        see b-mg-idea above) but is left in place and still reachable; its "Capture
        an Idea" button below just forwards into the same 9210 flow. */
     wire('b-capture-idea',function(){
-      if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
+      if(window.T2TSea && window.T2TSea.openFocusGate){
+        window.T2TSea.openFocusGate('s-idea-session', false, function(selectedId){
+          var ctx = selectedId ? {boardId:selectedId} : null;
+          window.T2TSea.openIdeaCapture(ctx);
+        });
+      } else if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
       else nav('s-idea-capture');
     });
     wire('b-sea-ideas',function(){
