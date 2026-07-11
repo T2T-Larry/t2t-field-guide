@@ -3531,13 +3531,14 @@
     var allDescendants = wishTank ? _focusDescendants(allHeaders, wishTank.id) : [];
     var realTopics = allDescendants.filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; })
       .sort(function(a,b){ return a.text_content.localeCompare(b.text_content); });
+    var projectObj = wishTank ? {id:wishTank.id, name:wishTank.text_content} : {id:null, name:'Wish Tank'};
     return {
       projects:roots,
-      project: wishTank ? {id:wishTank.id, name:wishTank.text_content} : {id:null, name:'Wish Tank'},
+      project: projectObj,
       projectLocked:false,
       projectEarned: projectEarned,
       topics: realTopics, // whole-tree scan, any depth — not just direct children of the project
-      topic:{id:null, name:'New'},
+      topic:{id:projectObj.id, name:projectObj.name}, // starts equal to PROJECT — you're at the root until you drill into something distinct
       topicLocked:false,
       topicEarned: realTopics.length > 0
     };
@@ -3620,14 +3621,16 @@
   function _focusRenderRows(state){
     var rows=document.getElementById('fc-rows'); if(!rows) return;
     rows.innerHTML='';
-    _focusRenderRow(rows, 'PROJECT', state.project.name, state.projectLocked, state.projectEarned,
+    var atRoot = String(state.topic.id)===String(state.project.id);
+    _focusRenderRow(rows, 'PROJECT', atRoot?'':state.project.name, state.projectLocked, state.projectEarned,
       function(){ return state.projects; },
       function(name){ return _focusCreateHeader(name, null).then(function(row){ state.projects.push(row); return row; }); },
       function(row){
         state.project={id:row.id, name:row.text_content};
+        state.topic={id:row.id, name:row.text_content}; // collapses back to root — PROJECT goes blank again until TOPIC diverges
         state.topicLocked=false;
         _focusFetchTopics(row.id).then(function(topics){
-          state.topics=topics; state.topic={id:null,name:'New'}; state.topicEarned=topics.length>0;
+          state.topics=topics; state.topicEarned=topics.length>0;
           _focusRenderRows(state);
         });
       });
