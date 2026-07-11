@@ -3485,6 +3485,12 @@
   async function _focusFetchAllHeaders(){
     var T2=T(); var u=T2.getMember(); var sb=T2.sb;
     var res=await sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',u.id).eq('content_type','header');
+    if(res && res.error){
+      console.warn('_focusFetchAllHeaders error, retrying once:', res.error);
+      await new Promise(function(r){ setTimeout(r,400); });
+      res=await sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',u.id).eq('content_type','header');
+      if(res && res.error) console.error('_focusFetchAllHeaders failed after retry:', res.error);
+    }
     return (res && res.data) || [];
   }
 
@@ -3507,6 +3513,14 @@
     var T2=T(); var u=T2.getMember(); var sb=T2.sb;
     var ins=await sb.from('ideas').insert({user_id:u.id, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()}).select().single();
     return ins && ins.data;
+  }
+
+  async function _focusFetchTopics(projectId){
+    if(!projectId) return [];
+    var allHeaders=await _focusFetchAllHeaders();
+    return _focusDescendants(allHeaders, projectId)
+      .filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; })
+      .sort(function(a,b){ return a.text_content.localeCompare(b.text_content); });
   }
 
   async function _focusBuildState(){
