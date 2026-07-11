@@ -3480,16 +3480,22 @@
   async function _focusCheckEarned(){
     var T2=T(); var u=T2 && T2.getMember ? T2.getMember() : null;
     var sb = T2 && T2.sb;
-    if(!u || !sb) return {show:false};
+    var RESERVED = ['NEW','MISC','Purpose','Trash'];
+    if(!u || !sb){
+      console.error('FOCUS earned-check skipped — member or sb not ready', {u:!!u, sb:!!sb});
+      return {show:false};
+    }
     try{
       var roots=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
       var rootRows=(roots && roots.data) || [];
-      var projectEarned = rootRows.length > 1; // more than just Wish Tank
+      var realRoots = rootRows.filter(function(r){ return RESERVED.indexOf(r.text_content)===-1; });
       var wishTank = rootRows.filter(function(r){return r.text_content==='Wish Tank';})[0] || rootRows[0];
+      var projectEarned = realRoots.filter(function(r){return r.id!==(wishTank&&wishTank.id);}).length > 0; // a real project beyond Wish Tank itself
       var wtId = wishTank ? wishTank.id : null;
       var siblings = wtId ? await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',wtId) : {data:[]};
       var sibRows=(siblings && siblings.data) || [];
-      var topicEarned = sibRows.length > 1; // more than just NEW
+      var realSiblings = sibRows.filter(function(r){ return RESERVED.indexOf(r.text_content)===-1; });
+      var topicEarned = realSiblings.length > 0; // at least one Header the traveler actually made, not a standing utility one
       return {
         show: projectEarned || topicEarned,
         rungs:[
@@ -3500,6 +3506,14 @@
       };
     }catch(e){
       console.error('FOCUS earned-check failed', e);
+      var fg=document.getElementById('fg-root');
+      if(fg){
+        var err=document.createElement('div');
+        err.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;background:#5a1a1a;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9999';
+        err.textContent='FOCUS check failed: '+(e&&e.message?e.message:e);
+        fg.appendChild(err);
+        setTimeout(function(){ err.remove(); }, 4000);
+      }
       return {show:false};
     }
   }
