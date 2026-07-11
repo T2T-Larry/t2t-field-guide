@@ -794,7 +794,11 @@
     wire('b-mg-idea',   function(){
       closeMG();
       if(window.T2TSea && window.T2TSea.openFocusGate){
-        window.T2TSea.openFocusGate('s-idea-session', false, function(selectedId){
+        // TEMP — July 11, 2026: forceShow set true (was false) to verify the
+        // Wish Tank race-condition fix and isolate whether the skip-when-
+        // nothing's-earned condition is what let it get triggered. Revert
+        // to false once confirmed, to restore frictionless quick-capture.
+        window.T2TSea.openFocusGate('s-idea-session', true, function(selectedId){
           var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
           if(selectedId) ctx = Object.assign({}, ctx, {boardId: selectedId});
           window.T2TSea.openIdeaCapture(ctx);
