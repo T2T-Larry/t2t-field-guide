@@ -3456,18 +3456,25 @@
     T().registerPageNum('s-focus','9611');
   }
 
-  async function _focusFetchProjects(){
+  async function _focusFetchAllHeaders(){
     var T2=T(); var u=T2.getMember(); var sb=T2.sb;
-    var res=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
+    var res=await sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',u.id).eq('content_type','header');
     return (res && res.data) || [];
   }
 
-  async function _focusFetchTopics(projectId){
-    if(!projectId) return [];
-    var T2=T(); var u=T2.getMember(); var sb=T2.sb;
-    var res=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',projectId);
-    var rows=(res && res.data)||[];
-    return rows.filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; });
+  function _focusDescendants(allHeaders, rootId){
+    var byParent={};
+    allHeaders.forEach(function(h){ var p=h.cluster_id; if(!byParent[p]) byParent[p]=[]; byParent[p].push(h); });
+    var result=[]; var seen={};
+    var queue=(byParent[rootId]||[]).slice();
+    while(queue.length){
+      var node=queue.shift();
+      if(seen[node.id]) continue;
+      seen[node.id]=true;
+      result.push(node);
+      (byParent[node.id]||[]).forEach(function(c){ queue.push(c); });
+    }
+    return result;
   }
 
   async function _focusCreateHeader(name, parentId){
@@ -3477,18 +3484,22 @@
   }
 
   async function _focusBuildState(){
-    var projects=await _focusFetchProjects();
-    var wishTank=projects.filter(function(p){return p.text_content==='Wish Tank';})[0] || projects[0];
-    var topics = wishTank ? await _focusFetchTopics(wishTank.id) : [];
+    var allHeaders=await _focusFetchAllHeaders();
+    var roots=allHeaders.filter(function(h){ return h.cluster_id===null; });
+    var wishTank=roots.filter(function(p){return p.text_content==='Wish Tank';})[0] || roots[0];
+    var projectEarned=roots.filter(function(r){ return r.id!==(wishTank&&wishTank.id); }).length>0;
+    var allDescendants = wishTank ? _focusDescendants(allHeaders, wishTank.id) : [];
+    var realTopics = allDescendants.filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; })
+      .sort(function(a,b){ return a.text_content.localeCompare(b.text_content); });
     return {
-      projects:projects,
+      projects:roots,
       project: wishTank ? {id:wishTank.id, name:wishTank.text_content} : {id:null, name:'Wish Tank'},
       projectLocked:false,
-      projectEarned: projects.length > 1,
-      topics:topics,
+      projectEarned: projectEarned,
+      topics: realTopics, // whole-tree scan, any depth — not just direct children of the project
       topic:{id:null, name:'New'},
       topicLocked:false,
-      topicEarned: topics.length > 0
+      topicEarned: realTopics.length > 0
     };
   }
 
