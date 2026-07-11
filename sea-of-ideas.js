@@ -2808,6 +2808,17 @@
   async function _isxInit(ctx){
     if(!_isxPath){
       var wt=await _ideaEnsureWishTank();
+      if(!wt || !wt.id){
+        // Wish Tank lookup failed (auth/Supabase not ready yet) — retry once
+        // after a short delay rather than silently proceeding with a null id,
+        // which was creating orphaned root-level Purpose/MISC/NEW headers.
+        await new Promise(function(r){ setTimeout(r,400); });
+        wt=await _ideaEnsureWishTank();
+      }
+      if(!wt || !wt.id){
+        console.error('Idea capture: Wish Tank unavailable, aborting init', wt&&wt.error);
+        throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
+      }
       _isxPath=[{id:wt.id, text:'Wish Tank'}];
     }
     if(ctx && ctx.boardId){
@@ -2823,7 +2834,22 @@
   async function renderIdeaSession(){
     var fgr=document.getElementById('fg-root');
     if(fgr) fgr.classList.add('isx-full');
-    if(!_isxPath) await _isxInit(_ideaCaptureCtx);
+    if(!_isxPath){
+      try{
+        await _isxInit(_ideaCaptureCtx);
+      }catch(e){
+        console.error('renderIdeaSession init failed', e);
+        if(fgr){
+          var err=document.createElement('div');
+          err.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;background:#5a1a1a;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9999';
+          err.textContent='Could not open Sea of Ideas — try again in a moment.';
+          fgr.appendChild(err);
+          setTimeout(function(){ err.remove(); }, 4000);
+        }
+        T().returnToMG();
+        return;
+      }
+    }
     _ideaCaptureCtx=null;
     await _isxRenderLadder();
     await _isxRenderBoard();
