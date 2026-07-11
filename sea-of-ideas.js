@@ -3483,7 +3483,9 @@
   }
 
   async function _focusFetchAllHeaders(){
-    var T2=T(); var u=T2.getMember(); var sb=T2.sb;
+    var sb=T().sb;
+    var u=(await sb.auth.getUser()).data.user;
+    if(!u) return [];
     var res=await sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',u.id).eq('content_type','header');
     if(res && res.error){
       console.warn('_focusFetchAllHeaders error, retrying once:', res.error);
@@ -3510,7 +3512,9 @@
   }
 
   async function _focusCreateHeader(name, parentId){
-    var T2=T(); var u=T2.getMember(); var sb=T2.sb;
+    var sb=T().sb;
+    var u=(await sb.auth.getUser()).data.user;
+    if(!u) throw new Error('Not signed in');
     var ins=await sb.from('ideas').insert({user_id:u.id, content_type:'header', text_content:name, cluster_id:parentId||null, created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('Create failed: '+ins.error.message);
     if(!ins.data) throw new Error('Create failed: no row returned');
