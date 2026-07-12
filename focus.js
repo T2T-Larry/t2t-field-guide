@@ -1,7 +1,7 @@
 /* ============================================================
    focus.js — 9611 FOCUS, front door for the whole Tools chapter
    Extracted from sea-of-ideas.js July 11, 2026 as its own module —
-   FOCUS gates entry into any board, it was never a Sea of Ideas
+   FOCUS gates entry into any board, it was never an ISB
    concern specifically.
 
    Locked design (July 11, 2026):

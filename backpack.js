@@ -41,7 +41,7 @@
   var stack       = [];
   var primaryPage = null;
   var mgOrigin    = null;
-  var seaChapterEntry = false; /* true only when Sea of Ideas was entered via the normal CREATE chapter flow (not via the 🔍 backpack) */
+  var seaChapterEntry = false; /* true only when ISB was entered via the normal CREATE chapter flow (not via the 🔍 backpack) */
   var _primaryPages = [];
 
   (function restoreNavState(){
@@ -401,7 +401,7 @@
     {num:'1110',label:'Creative License',  id:'s-cl-intro'},
     {num:'1130',label:'Inklings',          id:'s-what-i-want'},
     {num:'1140',label:'Creative Sparks',   id:'s-lightning-bug'},
-    {num:'1150',label:'Sea of Ideas',      id:'s-sea-of-ideas'},
+    {num:'1150',label:'ISB',      id:'s-sea-of-ideas'},
     {num:'1160',label:'PLUSing',           id:'s-plusing'}
   ];
 
@@ -436,7 +436,7 @@
   async function postIdeaToMiro(text,ctx) {
     var boardId=_bid(_member.miro_board_id); if(!boardId) return false;
     var statusEl=document.getElementById('idea-status');
-    if(statusEl) statusEl.textContent='Sending to Sea of Ideas\u2026';
+    if(statusEl) statusEl.textContent='Sending to ISB\u2026';
     var COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
     var color=COLORS[Math.floor(Math.random()*COLORS.length)];
     var content='<p>\uD83D\uDCA1</p><p>'+text+'</p>';
@@ -451,7 +451,7 @@
           position:{x:Math.floor(Math.random()*1200)-600,y:Math.floor(Math.random()*800)-400,origin:'center'}
         })
       });
-      if(statusEl){ statusEl.textContent=res.ok?'\uD83C\uDF0A In your Sea of Ideas!':''; if(res.ok) setTimeout(function(){if(statusEl)statusEl.textContent='';},3000); }
+      if(statusEl){ statusEl.textContent=res.ok?'\uD83C\uDF0A In your ISB!':''; if(res.ok) setTimeout(function(){if(statusEl)statusEl.textContent='';},3000); }
       return res.ok;
     } catch(e){ if(statusEl) statusEl.textContent=''; return false; }
   }

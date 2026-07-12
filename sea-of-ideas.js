@@ -1,5 +1,5 @@
 /* ============================================================
-   sea-of-ideas.js — T2T Field Guide · Idea Hub / Sea of Ideas module
+   sea-of-ideas.js — T2T Field Guide · Idea Hub / ISB module
    Extraction pass — July 3, 2026. Behavior is UNCHANGED from the
    version that lived inside backpack.js. IDs, page numbers (9220
    grid / 9221 cluster), and every function name are preserved so
@@ -28,12 +28,12 @@
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
-    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">Sea of Ideas</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your Sea of Ideas</div></div></div><div id="b-sea-to-cluster" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button><button class="tb" id="b-sea-close" style="display:none">✕</button></div></div>';
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">ISB</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your ISB</div></div></div><div id="b-sea-to-cluster" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button><button class="tb" id="b-sea-close" style="display:none">✕</button></div></div>';
     fg.appendChild(div.firstChild);
     T().registerPageNum('s-sea-of-ideas', '9220');
-    T().registerCtx('s-sea-of-ideas', 'Sea of Ideas');
+    T().registerCtx('s-sea-of-ideas', 'ISB');
     T().registerGems('s-sea-of-ideas', [
-      {text:'The Sea of Ideas holds everything — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
+      {text:'The ISB holds everything — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
     ]);
     T().registerTrivia('s-sea-of-ideas', [
       { label: 'Purpose', id: 's-sea-trivia-purpose' },
@@ -269,15 +269,15 @@
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
-      +'<div id="sc-project-label" class="sc-hdr-frame-label">Sea of Ideas</div>'
+      +'<div id="sc-project-label" class="sc-hdr-frame-label">ISB</div>'
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
-      +'<div id="sc-parent-label" class="sc-hdr-frame-label">Sea of Ideas</div>'
+      +'<div id="sc-parent-label" class="sc-hdr-frame-label">ISB</div>'
       +'</div>'
-      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9625</div>'
+      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9710</div>'
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-start;flex-wrap:wrap">'
@@ -310,8 +310,8 @@
       clusterOv.id='sb-cluster-overlay'; clusterOv.className='sb-overlay';
       fg.appendChild(clusterOv);
     }
-    T().registerPageNum('s-sea-of-ideas-cluster', '9625');
-    T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
+    T().registerPageNum('s-sea-of-ideas-cluster', '9710');
+    T().registerCtx('s-sea-of-ideas-cluster', 'ISB — Cluster');
     T().wire('b-sc-close', function(){
       var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
       if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
@@ -811,7 +811,7 @@
       // the "Purpose and Field Guide both showing under What do you want?"
       // bug: Purpose and the Ideas bucket used to be scoped to
       // cluster_id=null, a leftover from when there was only ever one
-      // project — Sea of Ideas / What do you want? was never a real
+      // project — ISB / What do you want? was never a real
       // project, just placeholder text for that shared null slot. Locked
       // July 12, 2026: Purpose and the project-root Ideas bucket now
       // resolve to the actual project (Wish Tank, Field Guide, etc.), never
@@ -1130,7 +1130,7 @@
   }
 
   function _sboardTopicOptionsHTML(excludeId){
-    var currentLabel=(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]) ? _sboardHeadersById[_sboardCurrentTopicId].text_content : 'Sea of Ideas';
+    var currentLabel=(_sboardCurrentTopicId && _sboardHeadersById[_sboardCurrentTopicId]) ? _sboardHeadersById[_sboardCurrentTopicId].text_content : 'ISB';
     var currentValue=_sboardCurrentTopicId||'';
     var opts='<option value="'+currentValue+'">Topic ('+currentLabel+')</option>';
     opts+=_sboardHeaderList
@@ -1244,8 +1244,8 @@
     } else {
       if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
       if(areaEl) areaEl.style.background='#1a3a5c';
-      if(projectLabel) projectLabel.textContent='Sea of Ideas';
-      if(parentLabel) parentLabel.textContent='Sea of Ideas';
+      if(projectLabel) projectLabel.textContent='ISB';
+      if(parentLabel) parentLabel.textContent='ISB';
       if(parentHit){ parentHit.classList.add('inert'); }
     }
   }
@@ -1724,14 +1724,14 @@
     var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
     var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
-    var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Sea of Ideas';
+    var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'ISB';
     var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
       + '<div class="sb-hdr-eyebrow2">Topic</div><div class="sb-topic-value">'+topicLabel+'</div>';
 
     // HEADER eyebrow: collapsed by default, showing only the current header —
     // tap to reveal the same option list as before (visible-headers-in-context).
     // "NEW" here means whichever board's own uncategorized bucket is
-    // active: null at the root Sea of Ideas, or the current topic id when
+    // active: null at the root ISB, or the current topic id when
     // working inside a nested (fractal) board.
     var localNewAdditionsTarget=_sboardCurrentTopicId||'';
     var isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
@@ -3270,7 +3270,7 @@
         if(fgr){
           var err=document.createElement('div');
           err.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;background:#5a1a1a;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9999';
-          err.textContent='Could not open Sea of Ideas — try again in a moment.';
+          err.textContent='Could not open ISB — try again in a moment.';
           fgr.appendChild(err);
           setTimeout(function(){ err.remove(); }, 4000);
         }
