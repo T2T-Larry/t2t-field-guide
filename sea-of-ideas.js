@@ -266,15 +266,15 @@
       +'<div id="sc-topic-box"></div>'
       +'</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start">'
-      +'<div style="display:flex;flex-direction:column;align-items:flex-start">'
+      +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
-      +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center">'
+      +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-project-label" class="sc-hdr-frame-label">Sea of Ideas</div>'
       +'</div>'
       +'</div>'
-      +'<div style="display:flex;flex-direction:column;align-items:flex-start">'
+      +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
-      +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center">'
+      +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Sea of Ideas</div>'
       +'</div>'
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9625</div>'
@@ -934,8 +934,17 @@
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('div');
         hd.className='sc-pill named';
-        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize('NEW',15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(newRow&&newRow.color?';background:'+newRow.color:'');
-        hd.textContent='NEW';
+        // Contextual label — added July 12, 2026. Loose ideas under a Topic
+        // aren't necessarily "new" (a card can land here by sliding down or
+        // a header demoting, not just by being freshly typed), so the
+        // bucket now reads "[Topic] Ideas" instead of the generic NEW when
+        // there's a real Topic to name it after — e.g. "Website Ideas"
+        // when Website is the current Topic. Root level (no Topic selected)
+        // keeps the plain NEW label, since there's no single name to attach.
+        var topicRowForLabel=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
+        var localLabel=topicRowForLabel?((topicRowForLabel.text_content||'Topic')+' Ideas'):'NEW';
+        hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.textContent=localLabel;
         if(newRow){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(newRow); }); }
         hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
         hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
@@ -1569,7 +1578,7 @@
     var isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
     var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
     var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
-    var headerListHTML='<div class="sb-hdr-eyebrow2">Header</div>'
+    var headerListHTML='<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
       + '<div class="sb-hdr-current" id="sb-hdr-current">'+curHeaderLabel+' ▾</div>'
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist" style="display:none">'
       + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
@@ -1578,7 +1587,11 @@
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
       + '</div>'
-      + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>';
+      + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
+      + '<div style="display:flex;gap:6px;margin-top:6px">'
+      + '<button class="sc-ov-btn" id="sb-hdr-othertopic" style="flex:1;font-size:10px">📍 Different Topic…</button>'
+      + '<button class="sc-ov-btn" id="sb-hdr-otherproj" style="flex:1;font-size:10px">🔀 Different Project…</button>'
+      + '</div>';
 
     // Body: always the same fixed size and shape, whether it holds an image
     // or a single word. Images get an editable caption/title underneath —
@@ -1720,9 +1733,88 @@
         }catch(err){ if(statusBox) statusBox.textContent=err.message; }
       });
     });
+    async function openMoveToProjectPicker(){
+      var ov2=document.getElementById('sb-detail-overlay');
+      if(!ov2) return;
+      var boards=(await _sboardTopLevelBoards()).slice().sort(function(a,b){
+        return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+      });
+      var rows=boards.filter(function(b){ return String(b.id)!==String(item.id); }).map(function(b){
+        return '<div class="sb-hdr-vitem" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
+      }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+(item.text_content||'(untitled)')+'"</div>'
+        +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Moves this card — and everything nested underneath it — into the top level of the project you pick.</div>'
+        +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
+        +'<button class="sc-ov-btn" id="sb-moveproj-cancel" style="width:100%">Cancel</button>'
+        +'</div>';
+      ov2.classList.add('active');
+      Array.prototype.forEach.call(ov2.querySelectorAll('.sb-hdr-vitem[data-pid]'), function(row){
+        row.addEventListener('click', async function(){
+          var pid=row.getAttribute('data-pid');
+          try{
+            var upd=await _sb.from('ideas').update({cluster_id:pid}).eq('id',item.id).select();
+            if(upd.error) throw upd.error;
+            item.cluster_id=pid;
+            closeSbDetail();
+            var landing=boards.find(function(b){ return String(b.id)===String(pid); });
+            if(landing) _sboardDrillInto(landing);
+          }catch(err){ console.error(err); }
+        });
+      });
+      T().wire('sb-moveproj-cancel', function(){ openSbDetail(item); });
+    }
+
+    // Different Topic — added July 12, 2026. Broader reach than the Header
+    // picker above (which only lists what's already visible in the current
+    // local view): searches every header anywhere in the current project,
+    // at any depth, so you can move a card straight to a Topic you aren't
+    // currently standing near, without having to navigate there first.
+    async function openMoveToTopicPicker(){
+      var ov2=document.getElementById('sb-detail-overlay');
+      if(!ov2) return;
+      var currentProjectRow=(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId])
+        ? _sboardProjectRowFor(_sboardAllRowsById[_sboardCurrentTopicId]) : null;
+      var reserved=['Trash','MISC','Purpose','NEW','New Additions'];
+      var candidates=Object.keys(_sboardHeadersById).map(function(k){ return _sboardHeadersById[k]; })
+        .filter(function(h){
+          if(String(h.id)===String(item.id)) return false;
+          if(reserved.indexOf(h.text_content)!==-1) return false;
+          if(!currentProjectRow) return false;
+          var proj=_sboardProjectRowFor(h);
+          return proj && String(proj.id)===String(currentProjectRow.id);
+        })
+        .sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
+      var rows=candidates.map(function(h){
+        return '<div class="sb-hdr-vitem" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>';
+      }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other topics in this project yet.</div>';
+      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Move under a different Topic</div>'
+        +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:240px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
+        +'<button class="sc-ov-btn" id="sb-movetopic-cancel" style="width:100%">Cancel</button>'
+        +'</div>';
+      ov2.classList.add('active');
+      Array.prototype.forEach.call(ov2.querySelectorAll('.sb-hdr-vitem[data-hid]'), function(row){
+        row.addEventListener('click', async function(){
+          var hid=row.getAttribute('data-hid');
+          var landing=_sboardHeadersById[hid];
+          try{
+            var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
+            if(upd.error) throw upd.error;
+            item.cluster_id=hid;
+            closeSbDetail();
+            if(landing) _sboardDrillInto(landing);
+          }catch(err){ console.error(err); }
+        });
+      });
+      T().wire('sb-movetopic-cancel', function(){ openSbDetail(item); });
+    }
+
     T().wire('sb-hdr-newh', function(){
       document.getElementById('sb-newheader-row').style.display='block';
     });
+    T().wire('sb-hdr-othertopic', openMoveToTopicPicker);
+    T().wire('sb-hdr-otherproj', openMoveToProjectPicker);
     T().wire('sb-newheader-go', async function(){
       var name=(document.getElementById('sb-newheader-input')||{}).value||'';
       name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
