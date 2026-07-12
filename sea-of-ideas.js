@@ -697,7 +697,7 @@
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
       tile.style.outline='none'; tile.style.boxShadow='none';
       var raw=e.dataTransfer.getData('text/plain');
-      if(!raw || raw.indexOf('header:')===0) return;
+      if(!raw || raw==='sb-goup' || raw.indexOf('header:')===0) return;
       if(frac>=0.3 && frac<=0.7){
         _sboardStackIntoHeader(raw, item);
       } else {
@@ -765,7 +765,7 @@
     wrap.addEventListener('drop', function(e){
       e.preventDefault(); front.style.outline='none';
       var raw=e.dataTransfer.getData('text/plain');
-      if(!raw||raw.indexOf('header:')===0) return;
+      if(!raw||raw==='sb-goup'||raw.indexOf('header:')===0) return;
       _sboardMoveCard(raw, headerRow.id);
     });
     return wrap;
@@ -884,7 +884,7 @@
         hd.addEventListener('drop', function(e){
           e.preventDefault(); hd.style.outline='none';
           var raw=e.dataTransfer.getData('text/plain');
-          if(!raw) return;
+          if(!raw || raw==='sb-goup') return;
           if(raw.indexOf('header:')===0){
             _sboardReorderHeader(raw.slice(7), headerRow.id);
           } else {
@@ -922,7 +922,7 @@
         hd.addEventListener('drop', function(e){
           e.preventDefault(); hd.style.outline='none';
           var raw=e.dataTransfer.getData('text/plain');
-          if(!raw||raw.indexOf('header:')===0) return;
+          if(!raw||raw==='sb-goup'||raw.indexOf('header:')===0) return;
           _sboardMoveCard(raw, parentIdForDrop);
         });
         block.appendChild(hd);
