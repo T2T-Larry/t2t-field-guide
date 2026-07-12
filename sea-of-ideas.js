@@ -3021,16 +3021,48 @@
       canvas=tile.parentElement;
       startX=e.clientX; startY=e.clientY; moved=false;
       origLeft=parseFloat(tile.style.left)||0; origTop=parseFloat(tile.style.top)||0;
+      // Sliding-window navigation, added July 12, 2026 — the same free-drag gesture
+      // used for repositioning a card on the canvas also doubles as a way to
+      // shift the ladder: release over the Topic rung to recenter directly
+      // onto this card (Subber -> Topic in one move), or over the Header
+      // rung to promote it and select it as the current Header target
+      // (Subber -> Header, staying on the same Topic). Only the Topic and
+      // Header rungs are live drop targets for now — the Parent rung stays
+      // click-only (its own "View as Topic" climb-back button) until a
+      // longer jump like that gets its own design pass.
+      var topicRungEl=document.getElementById('isx-rung-topic');
+      var headerRungEl=document.getElementById('isx-rung-header');
+      var topicWrapEl=topicRungEl?topicRungEl.closest('.isx-rung'):null;
+      var headerWrapEl=headerRungEl?headerRungEl.closest('.isx-rung'):null;
+      function overEl(el, ev){
+        if(!el) return false;
+        var r=el.getBoundingClientRect();
+        return ev.clientX>=r.left && ev.clientX<=r.right && ev.clientY>=r.top && ev.clientY<=r.bottom;
+      }
+      function clearRungHighlights(){
+        if(topicWrapEl) topicWrapEl.classList.remove('isx-rung-dropready');
+        if(headerWrapEl) headerWrapEl.classList.remove('isx-rung-dropready');
+      }
       function onMove(ev){
         var dx=ev.clientX-startX, dy=ev.clientY-startY;
         if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
         tile.style.left=Math.round(origLeft+dx)+'px';
         tile.style.top=Math.round(origTop+dy)+'px';
+        clearRungHighlights();
+        if(moved){
+          if(overEl(topicRungEl, ev) && topicWrapEl) topicWrapEl.classList.add('isx-rung-dropready');
+          else if(overEl(headerRungEl, ev) && headerWrapEl) headerWrapEl.classList.add('isx-rung-dropready');
+        }
       }
-      function onUp(){
+      function onUp(ev){
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
-        if(moved){
+        clearRungHighlights();
+        if(moved && overEl(topicRungEl, ev)){
+          _isxPromoteCardToTopic(rowId);
+        } else if(moved && overEl(headerRungEl, ev)){
+          _isxPromoteCardToHeader(rowId);
+        } else if(moved){
           _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)};
         } else if(linkUrl){
           window.open(linkUrl, '_blank', 'noopener');
@@ -3039,6 +3071,57 @@
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+  }
+
+  // Drag-to-Topic: recenters the ladder directly onto a floating card, the
+  // same destination as if it had first been promoted to Header and then
+  // "View as Topic"d — this just skips the intermediate step. No content_type
+  // change needed; a Topic doesn't have to already be a header row (same
+  // auto-promotion-is-earned principle the board already uses elsewhere).
+  async function _isxPromoteCardToTopic(rowId){
+    var row=await _isxFetchRow(rowId);
+    if(!row) return;
+    delete _isxCardPos[rowId];
+    _isxPath.push({id:row.id, text:row.text_content||'(untitled)'});
+    _isxHeaderId=null; _isxHeaderLabel='New';
+    await _isxRenderLadder();
+    await _isxRenderBoard();
+  }
+
+  // Drag-to-Header: promotes a floating card to a header row (if it isn't
+  // one already) and selects it as the current Header target. Topic doesn't
+  // change — this is the one-step version of naming a header then picking
+  // it from the dropdown.
+  async function _isxPromoteCardToHeader(rowId){
+    var row=await _isxFetchRow(rowId);
+    if(!row) return;
+    if(row.content_type!=='header'){
+      var _sb=T().sb;
+      try{
+        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id', rowId).select().single();
+        if(upd.error) throw upd.error;
+        row=upd.data;
+      }catch(e){
+        _isxShowError('Couldn\u2019t promote to header: '+(e&&e.message?e.message:String(e)));
+        return;
+      }
+    }
+    delete _isxCardPos[rowId];
+    _isxHeaderId=row.id; _isxHeaderLabel=row.text_content||'(untitled)';
+    await _isxRenderLadder();
+    await _isxRenderBoard();
+  }
+
+  async function _isxFetchRow(rowId){
+    var _sb=T().sb;
+    try{
+      var res=await _sb.from('ideas').select('id,content_type,text_content,cluster_id,image_url').eq('id',rowId).single();
+      if(res.error) throw res.error;
+      return res.data;
+    }catch(e){
+      _isxShowError('Couldn\u2019t read that card: '+(e&&e.message?e.message:String(e)));
+      return null;
+    }
   }
 
   function _isxOpenColorPicker(x, y){

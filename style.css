@@ -276,6 +276,8 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     cursor:pointer;font-family:'Playfair Display',serif;font-size:11px;letter-spacing:1px}
   .isx-ghost:hover{background:rgba(255,255,255,.16)}
   .isx-rung{margin-top:2px}
+  .isx-rung.isx-rung-dropready .isx-rung-name,
+  .isx-rung.isx-rung-dropready .isx-select{outline:2px solid #5b9bd5;background:rgba(55,138,221,.28)}
   .isx-rung-label{font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;color:#a9c6e0;margin-bottom:3px}
   .isx-rung-body{display:flex;flex-direction:column;gap:4px}
   .isx-rung-name{width:100%;font-size:11.5px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.08);
