@@ -249,8 +249,12 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:8px 16px 6px;margin-bottom:4px">'
-      +'<div style="display:grid;grid-template-columns:minmax(64px,1fr) minmax(64px,1fr) 2fr auto;align-items:end;gap:18px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 8px;margin-bottom:4px;position:relative;min-height:40px">'
+      +'<div style="text-align:center">'
+      +'<div class="sc-hdr-eyebrow">Topic</div>'
+      +'<div id="sc-topic-box" draggable="true"></div>'
+      +'</div>'
+      +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:18px">'
       +'<div id="sc-project-hit" class="sc-hdr-side" style="text-align:left;justify-content:flex-start;align-self:start">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div id="sc-project-label">Sea of Ideas</div>'
@@ -260,16 +264,12 @@
       +'<div id="sc-parent-label">Sea of Ideas</div>'
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9625</div>'
       +'</div>'
-      +'<div style="text-align:center;align-self:start">'
-      +'<div class="sc-hdr-eyebrow">Topic</div>'
-      +'<div id="sc-topic-box"></div>'
       +'</div>'
-      +'<div class="sc-hdr-side" style="text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-end;flex-wrap:wrap">'
+      +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-start;flex-wrap:wrap">'
         +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
         +'<button class="sc-ov-btn" id="b-sc-recolor-all" title="Recolor all headers">🎨</button>'
         +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Full screen">⛶</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
-      +'</div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -380,6 +380,32 @@
       parentHitEl.addEventListener('dragstart', function(e){
         if(parentHitEl.classList.contains('inert')){ e.preventDefault(); return; }
         e.dataTransfer.setData('text/plain', 'sb-goup');
+      });
+    }
+
+    // Topic slides down to Header level, added July 12, 2026 — the reverse
+    // of dragging Parent up onto Topic. Grab Topic itself and drop it onto
+    // Parent: same underlying climb (_sboardGoUpOneLevel — new Topic becomes
+    // old Parent, old Topic reappears as a Header pill underneath), just
+    // reached by pushing the current Topic down instead of pulling Parent
+    // up. Whichever direction feels natural, both land in the same place.
+    if(topicBoxEl){
+      topicBoxEl.addEventListener('dragstart', function(e){
+        if(!_sboardCurrentTopicId){ e.preventDefault(); return; }
+        e.dataTransfer.setData('text/plain', 'sb-goup');
+      });
+    }
+    if(parentHitEl){
+      parentHitEl.addEventListener('dragover', function(e){
+        if(parentHitEl.classList.contains('inert')) return;
+        e.preventDefault(); parentHitEl.classList.add('dragover');
+      });
+      parentHitEl.addEventListener('dragleave', function(){ parentHitEl.classList.remove('dragover'); });
+      parentHitEl.addEventListener('drop', function(e){
+        e.preventDefault(); parentHitEl.classList.remove('dragover');
+        if(parentHitEl.classList.contains('inert')) return;
+        var raw=e.dataTransfer.getData('text/plain');
+        if(raw==='sb-goup' && _sboardCurrentTopicId) _sboardGoUpOneLevel();
       });
     }
 
@@ -1080,7 +1106,7 @@
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
-      if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; }
+      if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; topicBox.setAttribute('draggable','true'); }
       if(areaEl) areaEl.style.background='#3a2564';
       // PROJECT — fixed root anchor, walks the cluster_id chain all the way
       // up regardless of how deep Topic currently is. Locked July 12, 2026:
@@ -1096,7 +1122,7 @@
       if(parentLabel) parentLabel.textContent=parentRow?(parentRow.text_content||'(untitled)'):projectName;
       if(parentHit){ parentHit.classList.remove('inert'); parentHit.setAttribute('draggable','true'); }
     } else {
-      if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
+      if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; topicBox.setAttribute('draggable','false'); }
       if(areaEl) areaEl.style.background='#1a3a5c';
       if(projectLabel) projectLabel.textContent='Sea of Ideas';
       if(parentLabel) parentLabel.textContent='Sea of Ideas';
