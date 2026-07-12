@@ -162,7 +162,7 @@
         +'#sc-project-hit{cursor:pointer}'
         +'#sc-project-label{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:700;color:#fff;line-height:1.2}'
         +'#sc-topic-box.dragover,#sc-parent-hit.dragover,#sc-project-hit.dragover{outline:2px solid #5b9bd5}'
-        +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:6px 12px;box-sizing:border-box}'
+        +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'.sc-hdr-frame-label{opacity:.72}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
@@ -199,6 +199,14 @@
         +'.sb-viewas-eyebrow{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#5F5E5A;text-align:center;margin-bottom:4px}'
         +'.sb-viewas-btn{box-sizing:border-box;background:#fff;color:#5F5E5A;border:0.5px solid #D3D1C7;border-radius:8px;padding:5px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;flex:1 1 auto}'
         +'.sb-viewas-btn:active{transform:scale(0.95)}'
+        +'.sb-slider-project{font-size:10px;font-weight:700;letter-spacing:1px;text-align:center;color:#7c3aed;cursor:pointer;padding:4px 0;margin-bottom:2px}'
+        +'.sb-slider-project:active{transform:scale(0.97)}'
+        +'.sb-slider-track{display:flex;flex-direction:column;border:1px solid #B4B2A9;border-radius:10px;overflow:hidden}'
+        +'.sb-slider-notch{padding:8px 0;text-align:center;font-size:10.5px;font-weight:700;letter-spacing:1px;background:#fff;color:#2C2C2A;cursor:pointer;border-bottom:0.5px solid #e3e0d8}'
+        +'.sb-slider-notch:last-child{border-bottom:none}'
+        +'.sb-slider-notch:active:not(.sb-slide-disabled){transform:scale(0.98)}'
+        +'.sb-slider-notch.sb-slide-current{background:#1a3a5c;color:#fff}'
+        +'.sb-slider-notch.sb-slide-disabled{color:#c4c0b8;background:#f5f3ee;cursor:default}'
         +'.sb-card-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#5b9bd5;text-align:center;margin-bottom:6px}'
         +'.sb-close-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;font-weight:700;border:0.5px solid #B4B2A9;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;flex-shrink:0}'
         +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:500;color:#444441;margin-bottom:8px;text-align:left}'
@@ -255,16 +263,20 @@
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 8px;margin-bottom:4px;position:relative;min-height:40px">'
       +'<div style="text-align:center">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
-      +'<div id="sc-topic-box" draggable="true"></div>'
+      +'<div id="sc-topic-box"></div>'
       +'</div>'
-      +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px">'
-      +'<div id="sc-project-hit" class="sc-hdr-side sc-hdr-frame" style="text-align:left;justify-content:flex-start;align-self:start">'
+      +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start">'
+      +'<div style="display:flex;flex-direction:column;align-items:flex-start">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
+      +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center">'
       +'<div id="sc-project-label" class="sc-hdr-frame-label">Sea of Ideas</div>'
       +'</div>'
-      +'<div id="sc-parent-hit" class="sc-hdr-side sc-hdr-frame" draggable="true" style="text-align:left;justify-content:flex-start;align-self:start">'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:flex-start">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
+      +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Sea of Ideas</div>'
+      +'</div>'
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9625</div>'
       +'</div>'
       +'</div>'
@@ -337,115 +349,20 @@
       }
     });
 
-    // Drag-to-Topic — added July 12, 2026. Drop any card (idea or header,
-    // dragged the same way it already reorders/moves) straight onto the
-    // Topic chrome to recenter the whole board on it in one motion — the
-    // window slides, Parent and Project resolve from the dropped card's own
-    // ancestor chain via _sboardUpdateHeaderChrome, no separate bookkeeping
-    // needed here.
-    //
-    // Parent is also a slidable card of its own, added July 12, 2026: drag
-    // the Parent chrome itself onto Topic to climb back up one level — the
-    // drag version of the climb-back gesture, same destination the existing
-    // click already reaches (_sboardGoUpOneLevel), just reachable by sliding
-    // like everything else on this board now is. A 'sb-goup' sentinel tells
-    // Topic's drop handler this wasn't a card at all.
-    if(topicBoxEl){
-      topicBoxEl.addEventListener('dragover', function(e){ e.preventDefault(); topicBoxEl.classList.add('dragover'); });
-      topicBoxEl.addEventListener('dragleave', function(){ topicBoxEl.classList.remove('dragover'); });
-      topicBoxEl.addEventListener('drop', function(e){
-        e.preventDefault(); topicBoxEl.classList.remove('dragover');
-        var raw=e.dataTransfer.getData('text/plain');
-        if(!raw) return;
-        if(raw==='sb-goup'){
-          if(_sboardCurrentTopicId) _sboardGoUpOneLevel();
-          return;
-        }
-        var draggedId = raw.indexOf('header:')===0 ? raw.slice(7) : raw;
-        var row=_sboardAllRowsById[draggedId];
-        if(!row) return;
-        _sboardDrillInto(row);
-      });
-    }
-
-    // PROJECT click now opens a real switcher — added July 12, 2026, so you
-    // can move to a different Top Banana project entirely (Wish Tank ->
-    // Field Guide), not just jump back to the current one's own root.
+    // PROJECT opens the switcher — lets you move to a different top-level
+    // project entirely (Wish Tank -> Field Guide), not just back to the
+    // current one's own root.
     T().wire('sc-project-hit', openProjectSwitcher);
 
+    // PARENT still climbs one level on a simple click — the DETAILS slider
+    // (added July 12, 2026) is now the primary way to move a specific card
+    // between Parent/Topic/Header/Subber, so the earlier chrome drag-drop
+    // system (drag Topic/Parent/cards onto each other) has been removed;
+    // this plain click is the one navigation shortcut that stays outside
+    // the slider, since it predates this session and needs no card open.
     T().wire('sc-parent-hit', function(){
       if(_sboardCurrentTopicId){ _sboardGoUpOneLevel(); }
     });
-
-    var parentHitEl=document.getElementById('sc-parent-hit');
-    if(parentHitEl){
-      parentHitEl.addEventListener('dragstart', function(e){
-        if(parentHitEl.classList.contains('inert')){ e.preventDefault(); return; }
-        e.dataTransfer.setData('text/plain', 'sb-goup');
-      });
-    }
-
-    // Topic slides down to Header level, added July 12, 2026 — the reverse
-    // of dragging Parent up onto Topic. Grab Topic itself and drop it onto
-    // Parent: same underlying climb (_sboardGoUpOneLevel — new Topic becomes
-    // old Parent, old Topic reappears as a Header pill underneath), just
-    // reached by pushing the current Topic down instead of pulling Parent
-    // up. Whichever direction feels natural, both land in the same place.
-    if(topicBoxEl){
-      topicBoxEl.addEventListener('dragstart', function(e){
-        if(!_sboardCurrentTopicId){ e.preventDefault(); return; }
-        e.dataTransfer.setData('text/plain', 'sb-goup');
-      });
-    }
-    // Parent and Project are now full slide targets for any card, not just
-    // the goup sentinel — added July 12, 2026, completing "any level to any
-    // other": drop a Subber on Parent and the board recenters to that
-    // card's own home level (one step up from where it currently lives);
-    // drop it on Project and the board jumps straight to that card's root
-    // project. dragenter is guarded the same as dragover — some browsers
-    // are stricter about which of the two actually needs preventDefault,
-    // so both are covered here rather than relying on dragover alone.
-    if(parentHitEl){
-      parentHitEl.addEventListener('dragenter', function(e){ if(!parentHitEl.classList.contains('inert')) e.preventDefault(); });
-      parentHitEl.addEventListener('dragover', function(e){
-        if(parentHitEl.classList.contains('inert')) return;
-        e.preventDefault(); parentHitEl.classList.add('dragover');
-      });
-      parentHitEl.addEventListener('dragleave', function(){ parentHitEl.classList.remove('dragover'); });
-      parentHitEl.addEventListener('drop', function(e){
-        e.preventDefault(); parentHitEl.classList.remove('dragover');
-        if(parentHitEl.classList.contains('inert')) return;
-        var raw=e.dataTransfer.getData('text/plain');
-        if(!raw) return;
-        if(raw==='sb-goup'){
-          if(_sboardCurrentTopicId) _sboardGoUpOneLevel();
-          return;
-        }
-        var draggedId = raw.indexOf('header:')===0 ? raw.slice(7) : raw;
-        var row=_sboardAllRowsById[draggedId];
-        if(!row) return;
-        var landing = row.cluster_id ? _sboardAllRowsById[row.cluster_id] : null;
-        if(landing) _sboardDrillInto(landing);
-
-      });
-    }
-
-    var projectHitEl=document.getElementById('sc-project-hit');
-    if(projectHitEl){
-      projectHitEl.addEventListener('dragenter', function(e){ e.preventDefault(); });
-      projectHitEl.addEventListener('dragover', function(e){ e.preventDefault(); projectHitEl.classList.add('dragover'); });
-      projectHitEl.addEventListener('dragleave', function(){ projectHitEl.classList.remove('dragover'); });
-      projectHitEl.addEventListener('drop', function(e){
-        e.preventDefault(); projectHitEl.classList.remove('dragover');
-        var raw=e.dataTransfer.getData('text/plain');
-        if(!raw || raw==='sb-goup') return;
-        var draggedId = raw.indexOf('header:')===0 ? raw.slice(7) : raw;
-        var row=_sboardAllRowsById[draggedId];
-        if(!row) return;
-        var projectRow=_sboardProjectRowFor(row);
-        if(projectRow) _sboardDrillInto(projectRow);
-      });
-    }
 
     (function(){
       var clicks=0, timer=null;
@@ -609,7 +526,11 @@
   async function openProjectSwitcher(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    var _sb=T().sb;
     var boards=await _sboardTopLevelBoards();
+    boards=boards.slice().sort(function(a,b){
+      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+    });
     var currentProjectId=null;
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var pr=_sboardProjectRowFor(_sboardAllRowsById[_sboardCurrentTopicId]);
@@ -621,9 +542,21 @@
     }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Project</div>'
-      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:240px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
+      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new project</label>'
+      +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+      +'<button class="sc-ov-btn save" id="sb-proj-new-go">Create</button>'
+      +'</div>'
+      +'<div id="sb-proj-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<button class="sc-ov-btn" id="sb-proj-cancel" style="width:100%">Cancel</button>'
       +'</div>';
+    // Positioned along the left side, near the Project chrome it was opened
+    // from, rather than dead-center — added July 12, 2026. Reset in
+    // closeSbDetail so other popups that use this same overlay aren't
+    // affected by the override.
+    ov.style.justifyContent='flex-start';
+    ov.style.paddingLeft='max(20px, 4vw)';
     ov.classList.add('active');
     Array.prototype.forEach.call(ov.querySelectorAll('.sb-hdr-vitem[data-pid]'), function(row){
       row.addEventListener('click', function(){
@@ -634,6 +567,20 @@
       });
     });
     T().wire('sb-proj-cancel', closeSbDetail);
+    T().wire('sb-proj-new-go', async function(){
+      var errEl=document.getElementById('sb-proj-err');
+      var nameInput=document.getElementById('sb-proj-new-input');
+      var name=(nameInput&&nameInput.value||'').trim();
+      if(!name){ if(errEl) errEl.textContent='Name it first.'; return; }
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw ins.error;
+        closeSbDetail();
+        _sboardDrillInto(ins.data);
+      }catch(err){ if(errEl) errEl.textContent=err.message; }
+    });
   }
 
   function _sboardNextClusterNumber(){
@@ -1179,7 +1126,7 @@
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
-      if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; topicBox.setAttribute('draggable','true'); }
+      if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; }
       if(areaEl) areaEl.style.background='#3a2564';
       // PROJECT — fixed root anchor, walks the cluster_id chain all the way
       // up regardless of how deep Topic currently is. Locked July 12, 2026:
@@ -1193,13 +1140,13 @@
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       if(parentLabel) parentLabel.textContent=parentRow?(parentRow.text_content||'(untitled)'):projectName;
-      if(parentHit){ parentHit.classList.remove('inert'); parentHit.setAttribute('draggable','true'); }
+      if(parentHit){ parentHit.classList.remove('inert'); }
     } else {
-      if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; topicBox.setAttribute('draggable','false'); }
+      if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
       if(areaEl) areaEl.style.background='#1a3a5c';
       if(projectLabel) projectLabel.textContent='Sea of Ideas';
       if(parentLabel) parentLabel.textContent='Sea of Ideas';
-      if(parentHit){ parentHit.classList.add('inert'); parentHit.setAttribute('draggable','false'); }
+      if(parentHit){ parentHit.classList.add('inert'); }
     }
   }
 
@@ -1583,6 +1530,19 @@
     // is a bucket (has something underneath it, at any depth). Never shown for
     // a lone card — there's nothing to sort into groups yet.
     var isBucket=isHeaderType && (_sboardChildCountById[item.id]||0)>0;
+    // Fractal-view slider gating — added July 12, 2026. PARENT needs a real
+    // grandparent to land on (climbing two levels from this card's home);
+    // HEADER needs a real parent to promote-into-view under; SUBBER is
+    // blocked while this card is a header actively holding content (same
+    // rule the old demote button used, now just a grayed notch instead of
+    // a separate button). TOPIC is always reachable — any card can become
+    // the viewed board.
+    var _sliderParentRow = item.cluster_id ? _sboardAllRowsById[item.cluster_id] : null;
+    var canSlideParent = !!(_sliderParentRow && _sliderParentRow.cluster_id);
+    var canSlideHeader = !!item.cluster_id;
+    var canSlideSubber = !(isHeaderType && isBucket);
+    var isCurrentTopic = String(item.id)===String(_sboardCurrentTopicId);
+    var sliderCurrentRank = isCurrentTopic ? 'topic' : (isHeaderType ? 'header' : 'subber');
     var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     var swatches=_sboardColorPalette.map(function(c){
       var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
@@ -1661,18 +1621,19 @@
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
-      + '<div class="sb-viewas-eyebrow">View as:</div>'
-      + '<div class="sb-blue-row-md">'
-      + '<button class="sb-viewas-btn" id="sb-view-topic">TOPIC</button>'
-      + '<button class="sb-viewas-btn" id="sb-view-header">HEADER</button>'
-      + (isBucket ? '<button class="sb-viewas-btn" id="sb-view-cluster">CLUSTER</button>' : '')
+      + '<div class="sb-slider-project" id="sb-slider-project" title="Switch project">PROJECT</div>'
+      + '<div class="sb-viewas-eyebrow">VIEW</div>'
+      + '<div class="sb-slider-track" style="margin-bottom:8px'+(item.locked?';opacity:.45;pointer-events:none':'')+'">'
+      + '<div class="sb-slider-notch'+(!canSlideParent?' sb-slide-disabled':'')+'" id="sb-slide-parent" data-rank="parent">PARENT</div>'
+      + '<div class="sb-slider-notch'+(sliderCurrentRank==='topic'?' sb-slide-current':'')+'" id="sb-slide-topic" data-rank="topic">TOPIC</div>'
+      + '<div class="sb-slider-notch'+(!canSlideHeader?' sb-slide-disabled':(sliderCurrentRank==='header'?' sb-slide-current':''))+'" id="sb-slide-header" data-rank="header">HEADER</div>'
+      + '<div class="sb-slider-notch'+(!canSlideSubber?' sb-slide-disabled':(sliderCurrentRank==='subber'?' sb-slide-current':''))+'" id="sb-slide-subber" data-rank="subber">SUBBER</div>'
       + '</div>'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-notes" title="Notes">✏️</button>'
       + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
-      + (isHeaderType && !isBucket ? '<button class="sb-blue-btn" id="sb-demote" title="Turn back into an idea — only shown while this header is empty">↩️</button>' : '')
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
@@ -1702,10 +1663,37 @@
 
     var statusBox=document.getElementById('sb-note-status');
 
-    T().wire('sb-demote', async function(){
+    T().wire('sb-slider-project', openProjectSwitcher);
+
+    T().wire('sb-slide-parent', function(){
+      if(!canSlideParent) return;
+      var grandparent=_sliderParentRow.cluster_id?_sboardAllRowsById[_sliderParentRow.cluster_id]:null;
+      if(!grandparent) return;
+      closeSbDetail();
+      _sboardDrillInto(grandparent);
+    });
+    T().wire('sb-slide-topic', function(){
+      closeSbDetail();
+      _sboardDrillInto(item);
+    });
+    T().wire('sb-slide-header', async function(){
+      if(!canSlideHeader) return;
       try{
-        var upd=await _sb.from('ideas').update({content_type:'text'}).eq('id',item.id).select();
-        if(upd.error) throw upd.error;
+        if(item.content_type!=='header'){
+          var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+        }
+        closeSbDetail();
+        _sboardDrillInto(_sliderParentRow);
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
+    T().wire('sb-slide-subber', async function(){
+      if(!canSlideSubber) return;
+      try{
+        if(item.content_type==='header'){
+          var upd=await _sb.from('ideas').update({content_type:'text'}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+        }
         closeSbDetail();
         renderSeaBoard();
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
@@ -1912,14 +1900,12 @@
       });
     });
 
-    T().wire('sb-view-header', function(){ openSbHeaderPeek(item, function(){ openSbDetail(item); }); });
-    T().wire('sb-view-topic', function(){ closeSbDetail(); _sboardDrillInto(item); });
-    if(isBucket) T().wire('sb-view-cluster', function(){ closeSbDetail(); openClusterView(item); });
+
     T().wire('sb-close', closeSbDetail);
   }
   function closeSbDetail(){
     var ov=document.getElementById('sb-detail-overlay');
-    if(ov){ ov.classList.remove('active'); ov.innerHTML=''; }
+    if(ov){ ov.classList.remove('active'); ov.innerHTML=''; ov.style.justifyContent=''; ov.style.paddingLeft=''; }
     _sboardActiveId=null;
     // If CLUSTER is open behind this SHAPING card, refresh it — whatever was
     // just edited (moved, renamed, trashed) may have changed what belongs here.
