@@ -258,7 +258,7 @@
       +'<div id="sc-parent-hit" class="sc-hdr-side" style="text-align:left">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-label">Sea of Ideas</div>'
-      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9221</div>'
+      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9625</div>'
       +'</div>'
       +'<div style="text-align:center">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
@@ -294,7 +294,7 @@
       clusterOv.id='sb-cluster-overlay'; clusterOv.className='sb-overlay';
       fg.appendChild(clusterOv);
     }
-    T().registerPageNum('s-sea-of-ideas-cluster', '9221');
+    T().registerPageNum('s-sea-of-ideas-cluster', '9625');
     T().registerCtx('s-sea-of-ideas-cluster', 'Sea of Ideas — Cluster');
     T().wire('b-sc-close', function(){
       var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
@@ -629,15 +629,59 @@
       tile.appendChild(lb);
     }
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
-    tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
-    tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });
+    // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
+    // tile nests (stacks the dragged card under this one, promoting this
+    // one to a header if it wasn't already — same "first card placed stays
+    // the header" rule CLUSTER already uses). The top/bottom edges keep the
+    // plain reorder/move behavior that was already here. Splitting the same
+    // drop target into zones, rather than adding new DOM between tiles,
+    // resolves the reorder-vs-nest ambiguity flagged July 7 without
+    // restructuring the column layout.
+    tile.addEventListener('dragover', function(e){
+      e.preventDefault();
+      var rect=tile.getBoundingClientRect();
+      var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
+      if(frac<0.3){ tile.style.outline='none'; tile.style.boxShadow='inset 0 3px 0 0 #5b9bd5'; }
+      else if(frac>0.7){ tile.style.outline='none'; tile.style.boxShadow='inset 0 -3px 0 0 #5b9bd5'; }
+      else { tile.style.boxShadow='none'; tile.style.outline='2px solid #5b9bd5'; }
+    });
+    tile.addEventListener('dragleave', function(){ tile.style.outline='none'; tile.style.boxShadow='none'; });
     tile.addEventListener('drop', function(e){
-      e.preventDefault(); tile.style.outline='none';
+      e.preventDefault();
+      var rect=tile.getBoundingClientRect();
+      var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
+      tile.style.outline='none'; tile.style.boxShadow='none';
       var raw=e.dataTransfer.getData('text/plain');
       if(!raw || raw.indexOf('header:')===0) return;
-      _sboardReorderOrMoveIdea(raw, item.id, groupParentId!==undefined?groupParentId:(item.cluster_id||null));
+      if(frac>=0.3 && frac<=0.7){
+        _sboardStackIntoHeader(raw, item);
+      } else {
+        _sboardReorderOrMoveIdea(raw, item.id, groupParentId!==undefined?groupParentId:(item.cluster_id||null));
+      }
     });
     return tile;
+  }
+
+  // Drop-to-stack — added July 12, 2026. Dropping card A onto the center of
+  // card B promotes B to a header in place (if it wasn't one already) and
+  // moves A underneath it — same rule already locked for CLUSTER's own
+  // stacking gesture ("the first card placed stays the header, never the
+  // most recently added"), now reachable directly on the main board via the
+  // tile's own center zone instead of only inside CLUSTER view.
+  async function _sboardStackIntoHeader(draggedId, targetItem){
+    if(String(draggedId)===String(targetItem.id)) return;
+    if(targetItem.locked) return;
+    var _sb=T().sb;
+    var statusEl=document.getElementById('sc-status');
+    try{
+      if(targetItem.content_type!=='header'){
+        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',targetItem.id);
+        if(upd.error) throw upd.error;
+      }
+      await _sboardMoveCard(draggedId, targetItem.id);
+    }catch(err){
+      if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
+    }
   }
 
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
@@ -1483,9 +1527,10 @@
 
     ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center;background:#F5F1E8;position:relative">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-      + '<span style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:#2C2C2A">DETAILS</span>'
+      + '<span id="sb-details-eyebrow" style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">DETAILS</span>'
       + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:13px;color:#2C2C2A">✕</button>'
       + '</div>'
+      + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9636</div>'
       + apexTag
       + crumbsHTML
       + headerListHTML
@@ -1509,6 +1554,7 @@
       + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
+      + (isHeaderType && !isBucket ? '<button class="sb-blue-btn" id="sb-demote" title="Turn back into an idea — only shown while this header is empty">↩️</button>' : '')
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
@@ -1521,7 +1567,31 @@
       + '</div>';
     ov.classList.add('active');
 
+    (function(){
+      var clicks=0, timer=null;
+      var eyebrow=document.getElementById('sb-details-eyebrow');
+      if(eyebrow) eyebrow.addEventListener('click', function(){
+        clicks++;
+        if(timer) clearTimeout(timer);
+        timer=setTimeout(function(){ clicks=0; }, 600);
+        if(clicks>=3){
+          clicks=0;
+          var pn=document.getElementById('sb-pagenum');
+          if(pn){ pn.style.opacity='1'; setTimeout(function(){ pn.style.opacity='0'; }, 2000); }
+        }
+      });
+    })();
+
     var statusBox=document.getElementById('sb-note-status');
+
+    T().wire('sb-demote', async function(){
+      try{
+        var upd=await _sb.from('ideas').update({content_type:'text'}).eq('id',item.id).select();
+        if(upd.error) throw upd.error;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
 
     // Header field: collapsed by default, expands to the option list on tap
     T().wire('sb-hdr-current', function(){
