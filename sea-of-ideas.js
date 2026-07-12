@@ -159,6 +159,9 @@
         +'#sc-parent-hit{cursor:pointer}'
         +'#sc-parent-hit.inert{cursor:default}'
         +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:700;color:#fff;line-height:1.2}'
+        +'#sc-project-hit{cursor:pointer}'
+        +'#sc-project-label{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:700;color:#fff;line-height:1.2}'
+        +'#sc-topic-box.dragover,#sc-parent-hit.dragover{outline:2px solid #5b9bd5}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
         +'#sc-topic-box{display:inline-block;max-width:220px;box-sizing:border-box;white-space:normal;word-wrap:break-word}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
@@ -247,7 +250,11 @@
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:8px 16px 6px;margin-bottom:4px">'
-      +'<div style="display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:10px">'
+      +'<div style="display:grid;grid-template-columns:auto auto 1fr auto;align-items:end;gap:10px">'
+      +'<div id="sc-project-hit" class="sc-hdr-side" style="text-align:left">'
+      +'<div class="sc-hdr-eyebrow">Project</div>'
+      +'<div id="sc-project-label">Sea of Ideas</div>'
+      +'</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-side" style="text-align:left">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-label">Sea of Ideas</div>'
@@ -325,6 +332,32 @@
       } else {
         openRootPromptEditor();
       }
+    });
+
+    // Drag-to-Topic — added July 12, 2026. Drop any card (idea or header,
+    // dragged the same way it already reorders/moves) straight onto the
+    // Topic chrome to recenter the whole board on it in one motion — the
+    // window slides, Parent and Project resolve from the dropped card's own
+    // ancestor chain via _sboardUpdateHeaderChrome, no separate bookkeeping
+    // needed here.
+    if(topicBoxEl){
+      topicBoxEl.addEventListener('dragover', function(e){ e.preventDefault(); topicBoxEl.classList.add('dragover'); });
+      topicBoxEl.addEventListener('dragleave', function(){ topicBoxEl.classList.remove('dragover'); });
+      topicBoxEl.addEventListener('drop', function(e){
+        e.preventDefault(); topicBoxEl.classList.remove('dragover');
+        var raw=e.dataTransfer.getData('text/plain');
+        if(!raw) return;
+        var draggedId = raw.indexOf('header:')===0 ? raw.slice(7) : raw;
+        var row=_sboardAllRowsById[draggedId];
+        if(!row) return;
+        _sboardDrillInto(row);
+      });
+    }
+
+    T().wire('sc-project-hit', function(){
+      if(!_sboardCurrentTopicId || !_sboardAllRowsById[_sboardCurrentTopicId]) return;
+      var projectRow=_sboardProjectRowFor(_sboardAllRowsById[_sboardCurrentTopicId]);
+      if(projectRow && String(projectRow.id)!==String(_sboardCurrentTopicId)) _sboardDrillInto(projectRow);
     });
 
     T().wire('sc-parent-hit', function(){
@@ -470,6 +503,20 @@
       cur=parent; guard++;
     }
     return cur.id;
+  }
+  // PROJECT is the fixed root anchor above Parent/Topic — never changes as a
+  // traveler drags/drills deeper. Walks the same cluster_id chain
+  // _sboardTopAncestor already walks for headerRows, but off the full
+  // _sboardAllRowsById map so it works for any row (idea or header), not
+  // just header rows. Added July 12, 2026.
+  function _sboardProjectRowFor(row){
+    var cur=row, guard=0;
+    while(cur && cur.cluster_id && guard<25){
+      var parent=_sboardAllRowsById[cur.cluster_id];
+      if(!parent) break;
+      cur=parent; guard++;
+    }
+    return cur;
   }
   function _sboardNextClusterNumber(){
     var max=0;
@@ -966,19 +1013,29 @@
     var areaEl=document.getElementById('sc-header-area');
     var parentHit=document.getElementById('sc-parent-hit');
     var parentLabel=document.getElementById('sc-parent-label');
+    var projectLabel=document.getElementById('sc-project-label');
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
       if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; }
       if(areaEl) areaEl.style.background='#3a2564';
+      // PROJECT — fixed root anchor, walks the cluster_id chain all the way
+      // up regardless of how deep Topic currently is. Locked July 12, 2026:
+      // at the project apex (nothing above Topic yet), Project/Parent/Topic
+      // all read the same name — e.g. viewing Wish Tank itself shows
+      // "PROJECT Wish Tank · PARENT Wish Tank · TOPIC Wish Tank" — rather
+      // than Parent falling back to generic placeholder text.
+      var projectRow=_sboardProjectRowFor(topicRow);
+      var projectName=(projectRow?projectRow.text_content:topicRow.text_content)||'(untitled)';
+      if(projectLabel) projectLabel.textContent=projectName;
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
-      var parentFallback=(topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
-      if(parentLabel) parentLabel.textContent=parentRow?parentRow.text_content:parentFallback;
+      if(parentLabel) parentLabel.textContent=parentRow?(parentRow.text_content||'(untitled)'):projectName;
       if(parentHit) parentHit.classList.remove('inert');
     } else {
       if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
       if(areaEl) areaEl.style.background='#1a3a5c';
+      if(projectLabel) projectLabel.textContent='Sea of Ideas';
       if(parentLabel) parentLabel.textContent='Sea of Ideas';
       if(parentHit) parentHit.classList.add('inert');
     }
