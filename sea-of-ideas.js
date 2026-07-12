@@ -849,7 +849,16 @@
       _sboardPurposeId = purposeRow ? purposeRow.id : null;
 
       var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
-      var contentHeaders=headerRows.filter(function(r){ return reservedIds.indexOf(String(r.id))===-1; });
+      var reservedNames=['Trash','MISC','Purpose','NEW','New Additions'];
+      // Name-based backstop, added July 12, 2026 — id-based exclusion above
+      // only catches Purpose/MISC/Ideas rows this exact render already
+      // resolved for the current project. Any orphaned row still carrying
+      // one of these reserved names (pre-cleanup data, or any future
+      // drift) is excluded here too, so it can never masquerade as a
+      // top-level project.
+      var contentHeaders=headerRows.filter(function(r){
+        return reservedIds.indexOf(String(r.id))===-1 && reservedNames.indexOf(r.text_content)===-1;
+      });
       _sboardHeaderList=contentHeaders.concat(newAdditionsRow?[newAdditionsRow]:[]);
 
       var ideaRows=rows.filter(function(r){ return r.content_type==='image'||r.content_type==='text'||r.content_type==='link'; });
@@ -917,18 +926,27 @@
         hd.textContent=name;
         if(name==='Purpose'){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openPurposeEditor(); }); }
         else { hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(headerRow); }); }
-        if(!isReserved && depth===0 && !headerRow.locked){
+        if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
         }
-        hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
-        hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
+        hd.addEventListener('dragover', function(e){
+          e.preventDefault();
+          var rect=hd.getBoundingClientRect();
+          var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
+          hd.style.outline='none';
+          hd.style.boxShadow = (frac<0.5) ? 'inset 4px 0 0 0 #2d7dff' : 'inset -4px 0 0 0 #2d7dff';
+          hd._dropSide = (frac<0.5) ? 'before' : 'after';
+        });
+        hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd._dropSide=null; });
         hd.addEventListener('drop', function(e){
-          e.preventDefault(); hd.style.outline='none';
+          e.preventDefault();
+          var side=hd._dropSide||'before';
+          hd.style.boxShadow='none'; hd._dropSide=null;
           var raw=e.dataTransfer.getData('text/plain');
           if(!raw || raw==='sb-goup') return;
           if(raw.indexOf('header:')===0){
-            _sboardReorderHeader(raw.slice(7), headerRow.id);
+            _sboardReorderHeader(raw.slice(7), headerRow.id, side==='after');
           } else {
             _sboardMoveCard(raw, headerRow.id);
           }
@@ -968,13 +986,30 @@
         hd.style.cssText='position:static;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:12px'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(newRow); }); }
-        hd.addEventListener('dragover', function(e){ e.preventDefault(); hd.style.outline='2px solid #5b9bd5'; });
-        hd.addEventListener('dragleave', function(){ hd.style.outline='none'; });
+        if(newRow && !newRow.locked){
+          hd.draggable=true;
+          hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+newRow.id); });
+        }
+        hd.addEventListener('dragover', function(e){
+          e.preventDefault();
+          var rect=hd.getBoundingClientRect();
+          var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
+          hd.style.outline='none';
+          hd.style.boxShadow = (frac<0.5) ? 'inset 4px 0 0 0 #2d7dff' : 'inset -4px 0 0 0 #2d7dff';
+          hd._dropSide = (frac<0.5) ? 'before' : 'after';
+        });
+        hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd._dropSide=null; });
         hd.addEventListener('drop', function(e){
-          e.preventDefault(); hd.style.outline='none';
+          e.preventDefault();
+          var side=hd._dropSide||'before';
+          hd.style.boxShadow='none'; hd._dropSide=null;
           var raw=e.dataTransfer.getData('text/plain');
-          if(!raw||raw==='sb-goup'||raw.indexOf('header:')===0) return;
-          _sboardMoveCard(raw, parentIdForDrop);
+          if(!raw||raw==='sb-goup') return;
+          if(raw.indexOf('header:')===0){
+            if(newRow) _sboardReorderHeader(raw.slice(7), newRow.id, side==='after');
+          } else {
+            _sboardMoveCard(raw, parentIdForDrop);
+          }
         });
         block.appendChild(hd);
         if(directItems.length){
@@ -990,31 +1025,55 @@
       groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
 
-      if(purposeRow && isAtProjectRoot) groupsWrap.appendChild(renderGroup(purposeRow, 0));
-
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         var directIdeas=(childrenOfHeader[_sboardCurrentTopicId]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[_sboardCurrentTopicId]=directIdeas.map(function(r){ return r.id; });
         var childHeaders=subHeadersOf[_sboardCurrentTopicId]||[];
-        groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, _sboardCurrentTopicId, _sboardAllRowsById[newAdditionsId]));
-        if(directIdeas.length===0 && childHeaders.length===0){
-          if(statusEl) statusEl.textContent='Nothing under this Header yet.';
-          _sboardVisibleHeaders=[];
-        } else {
-          var childHeadersSorted=childHeaders.slice().sort(_sboardBySortOrder);
-          _sboardTopLevelOrder=childHeadersSorted.map(function(h){ return h.id; });
-          _sboardVisibleHeaders=childHeadersSorted;
-          childHeadersSorted.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
-          if(statusEl) statusEl.textContent='';
-        }
+        var childHeadersSorted=childHeaders.slice().sort(_sboardBySortOrder);
+
+        // Unified row — added July 12, 2026. Purpose, the Ideas bucket,
+        // ordinary content headers, and MISC now all live in one
+        // reorderable row instead of three fixed islands with only the
+        // middle section movable. A row member without a real sort_order
+        // yet falls back to the familiar default arrangement (Purpose,
+        // Ideas, content, MISC) via priority tie-break; the first drag
+        // anywhere in the row gives every member a real sort_order and
+        // the fallback stops mattering from then on.
+        var mergedRow=[];
+        if(purposeRow && isAtProjectRoot) mergedRow.push(purposeRow);
+        if(newAdditionsRow) mergedRow.push(newAdditionsRow);
+        mergedRow=mergedRow.concat(childHeadersSorted);
+        if(miscRow) mergedRow.push(miscRow);
+        var _rowPriority=function(h){
+          if(purposeRow && String(h.id)===String(purposeRow.id)) return -2;
+          if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)) return -1;
+          if(miscRow && String(h.id)===String(miscRow.id)) return 999;
+          return 0;
+        };
+        mergedRow.sort(function(a,b){
+          var ao=(a.sort_order===null||a.sort_order===undefined)?_rowPriority(a):a.sort_order;
+          var bo=(b.sort_order===null||b.sort_order===undefined)?_rowPriority(b):b.sort_order;
+          return ao-bo;
+        });
+        _sboardTopLevelOrder=mergedRow.map(function(h){ return h.id; });
+        _sboardVisibleHeaders=childHeadersSorted;
+
+        if(statusEl) statusEl.textContent=(directIdeas.length===0 && childHeaders.length===0) ? 'Nothing under this Header yet.' : '';
+
+        mergedRow.forEach(function(h){
+          if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)){
+            groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, _sboardCurrentTopicId, h));
+          } else {
+            groupsWrap.appendChild(renderGroup(h, 0));
+          }
+        });
       } else {
         if(newAdditionsRow) groupsWrap.appendChild(renderGroup(newAdditionsRow, 0));
         orderedTop.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
         _sboardVisibleHeaders=(newAdditionsRow?[newAdditionsRow]:[]).concat(orderedTop);
         if(statusEl) statusEl.textContent='';
+        if(miscRow) groupsWrap.appendChild(renderGroup(miscRow, 0));
       }
-
-      if(miscRow) groupsWrap.appendChild(renderGroup(miscRow, 0));
 
       wrap.appendChild(groupsWrap);
       _sboardUpdateHeaderChrome();
@@ -1222,7 +1281,7 @@
     }
   }
 
-  async function _sboardReorderHeader(draggedId, targetId){
+  async function _sboardReorderHeader(draggedId, targetId, insertAfter){
     if(String(draggedId)===String(targetId)) return;
     var statusEl=document.getElementById('sc-status');
     var ids=_sboardTopLevelOrder.slice();
@@ -1231,6 +1290,7 @@
     if(fromIdx===-1||toIdx===-1) return;
     ids.splice(fromIdx,1);
     var insertAt=ids.findIndex(function(id){ return String(id)===String(targetId); });
+    if(insertAfter) insertAt+=1;
     ids.splice(insertAt,0,draggedId);
     var _sb=T().sb;
     if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
