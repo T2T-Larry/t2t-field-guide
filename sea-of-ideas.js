@@ -250,17 +250,17 @@
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:8px 16px 6px;margin-bottom:4px">'
-      +'<div style="display:grid;grid-template-columns:auto auto 1fr auto;align-items:end;gap:10px">'
-      +'<div id="sc-project-hit" class="sc-hdr-side" style="text-align:left">'
+      +'<div style="display:grid;grid-template-columns:minmax(64px,1fr) minmax(64px,1fr) 2fr auto;align-items:end;gap:18px">'
+      +'<div id="sc-project-hit" class="sc-hdr-side" style="text-align:left;justify-content:flex-start;align-self:start">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div id="sc-project-label">Sea of Ideas</div>'
       +'</div>'
-      +'<div id="sc-parent-hit" class="sc-hdr-side" style="text-align:left">'
+      +'<div id="sc-parent-hit" class="sc-hdr-side" draggable="true" style="text-align:left;justify-content:flex-start;align-self:start">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-label">Sea of Ideas</div>'
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9625</div>'
       +'</div>'
-      +'<div style="text-align:center">'
+      +'<div style="text-align:center;align-self:start">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box"></div>'
       +'</div>'
@@ -340,6 +340,13 @@
     // window slides, Parent and Project resolve from the dropped card's own
     // ancestor chain via _sboardUpdateHeaderChrome, no separate bookkeeping
     // needed here.
+    //
+    // Parent is also a slidable card of its own, added July 12, 2026: drag
+    // the Parent chrome itself onto Topic to climb back up one level — the
+    // drag version of the climb-back gesture, same destination the existing
+    // click already reaches (_sboardGoUpOneLevel), just reachable by sliding
+    // like everything else on this board now is. A 'sb-goup' sentinel tells
+    // Topic's drop handler this wasn't a card at all.
     if(topicBoxEl){
       topicBoxEl.addEventListener('dragover', function(e){ e.preventDefault(); topicBoxEl.classList.add('dragover'); });
       topicBoxEl.addEventListener('dragleave', function(){ topicBoxEl.classList.remove('dragover'); });
@@ -347,6 +354,10 @@
         e.preventDefault(); topicBoxEl.classList.remove('dragover');
         var raw=e.dataTransfer.getData('text/plain');
         if(!raw) return;
+        if(raw==='sb-goup'){
+          if(_sboardCurrentTopicId) _sboardGoUpOneLevel();
+          return;
+        }
         var draggedId = raw.indexOf('header:')===0 ? raw.slice(7) : raw;
         var row=_sboardAllRowsById[draggedId];
         if(!row) return;
@@ -363,6 +374,14 @@
     T().wire('sc-parent-hit', function(){
       if(_sboardCurrentTopicId){ _sboardGoUpOneLevel(); }
     });
+
+    var parentHitEl=document.getElementById('sc-parent-hit');
+    if(parentHitEl){
+      parentHitEl.addEventListener('dragstart', function(e){
+        if(parentHitEl.classList.contains('inert')){ e.preventDefault(); return; }
+        e.dataTransfer.setData('text/plain', 'sb-goup');
+      });
+    }
 
     (function(){
       var clicks=0, timer=null;
@@ -1075,13 +1094,13 @@
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       if(parentLabel) parentLabel.textContent=parentRow?(parentRow.text_content||'(untitled)'):projectName;
-      if(parentHit) parentHit.classList.remove('inert');
+      if(parentHit){ parentHit.classList.remove('inert'); parentHit.setAttribute('draggable','true'); }
     } else {
       if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
       if(areaEl) areaEl.style.background='#1a3a5c';
       if(projectLabel) projectLabel.textContent='Sea of Ideas';
       if(parentLabel) parentLabel.textContent='Sea of Ideas';
-      if(parentHit) parentHit.classList.add('inert');
+      if(parentHit){ parentHit.classList.add('inert'); parentHit.setAttribute('draggable','false'); }
     }
   }
 
