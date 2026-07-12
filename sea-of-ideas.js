@@ -283,6 +283,7 @@
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-start;flex-wrap:wrap">'
         +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
         +'<button class="sc-ov-btn" id="b-sc-recolor-all" title="Recolor all headers">🎨</button>'
+        +'<button class="sc-ov-btn" id="b-sc-fix-orphans" title="Fix Purpose/Ideas headers stuck at the shared root">🔧</button>'
         +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Full screen">⛶</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
@@ -323,6 +324,7 @@
       if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, returnToBoard:true});
     });
     T().wire('b-sc-recolor-all', _sboardOpenRecolorAll);
+    T().wire('b-sc-fix-orphans', _sboardOpenFixOrphansConfirm);
     // The Storyboard is always at real-viewport size now (same .isx-full
     // takeover as CREATE's Idea Session) — this button now matches CREATE's
     // own ⛶ exactly: an extra layer, the actual browser/OS Fullscreen API.
@@ -801,12 +803,32 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var newAdditionsId=await _sboardEnsureNewAdditionsHeader(_sboardCurrentTopicId);
+
+      // Resolve which project (if any) the current Topic actually belongs
+      // to, using whatever's already cached from the last render (reliably
+      // fresh in practice — you can't have navigated to a Topic without a
+      // prior render having already fetched its row). This is what fixes
+      // the "Purpose and Field Guide both showing under What do you want?"
+      // bug: Purpose and the Ideas bucket used to be scoped to
+      // cluster_id=null, a leftover from when there was only ever one
+      // project — Sea of Ideas / What do you want? was never a real
+      // project, just placeholder text for that shared null slot. Locked
+      // July 12, 2026: Purpose and the project-root Ideas bucket now
+      // resolve to the actual project (Wish Tank, Field Guide, etc.), never
+      // to a shared null root.
+      var currentTopicRowForProject=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
+      var currentProjectRowForScope=currentTopicRowForProject?_sboardProjectRowFor(currentTopicRowForProject):null;
+      var isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(_sboardCurrentTopicId));
+
+      var newAdditionsId=_sboardCurrentTopicId ? await _sboardEnsureNewAdditionsHeader(
+        _sboardCurrentTopicId,
+        isAtProjectRoot ? ((currentProjectRowForScope.text_content||'Project')+' Ideas') : null
+      ) : null;
       _sboardNewAdditionsId=newAdditionsId;
-      // Purpose only lives on the primary Storyboard — every fractal Topic
-      // used to spawn its own, which meant "why are we doing this?" showed
-      // up on branches seconds old. One project Purpose now covers the tree.
-      var purposeId=_sboardCurrentTopicId?null:await _sboardEnsurePurposeHeader(null);
+      // Purpose — one per PROJECT, reachable from anywhere inside that
+      // project (not just its exact root), never shared across projects
+      // and never shown when no project is selected at all.
+      var purposeId=currentProjectRowForScope?await _sboardEnsurePurposeHeader(currentProjectRowForScope.id):null;
       _sboardPurposeId=purposeId;
       var miscId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
 
@@ -968,7 +990,7 @@
       groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
 
-      if(purposeRow) groupsWrap.appendChild(renderGroup(purposeRow, 0));
+      if(purposeRow && isAtProjectRoot) groupsWrap.appendChild(renderGroup(purposeRow, 0));
 
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         var directIdeas=(childrenOfHeader[_sboardCurrentTopicId]||[]).slice().sort(_sboardBySortOrder);
@@ -1350,6 +1372,72 @@
   // One click, one swatch — recolors every header currently on this board
   // level (Purpose, MISC, NEW, and every visible content header) instead of
   // opening each one's SHAPING card individually.
+  // Fix orphaned Purpose/Ideas headers — added July 12, 2026. Purpose and
+  // the Ideas bucket used to be scoped to cluster_id=null, back when there
+  // was only ever one project — that assumption broke the moment a second
+  // real project (Field Guide) existed, since null stopped meaning "the
+  // project" and started meaning "no project," with both projects'
+  // top-level pills rendering alongside orphaned Purpose/Ideas rows that
+  // looked like they belonged to a shared fake container. The ongoing
+  // render logic is already fixed (see renderSeaBoard); this is the
+  // one-time sweep for rows that were already created under the old rule.
+  // Scans first, shows exactly what it found, only touches rows on
+  // explicit confirm — never moves arbitrary idea content, only the three
+  // known reserved header types this bug could have produced.
+  async function _sboardOpenFixOrphansConfirm(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var _sb=T().sb;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var wt=await _ideaEnsureWishTank();
+      if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
+      var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id)
+        .eq('content_type','header').is('cluster_id',null)
+        .in('text_content',['Purpose','NEW','New Additions']);
+      if(res.error) throw new Error(res.error.message);
+      var orphans=(res.data||[]).filter(function(r){ return String(r.id)!==String(wt.id); });
+      var ov2=document.getElementById('sb-detail-overlay');
+      if(!orphans.length){
+        ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to fix</div>'
+          +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">No orphaned Purpose or Ideas headers found at the shared root.</div>'
+          +'<button class="sc-ov-btn" id="sb-fix-close" style="width:100%">Close</button></div>';
+        ov2.classList.add('active');
+        T().wire('sb-fix-close', closeSbDetail);
+        return;
+      }
+      var listHTML=orphans.map(function(o){ return '<div style="font-size:12px;padding:3px 0">• '+(o.text_content||'(untitled)')+'</div>'; }).join('');
+      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Found '+orphans.length+' orphaned header(s)</div>'
+        +'<div style="font-size:11px;color:#7a6040;margin-bottom:8px">These will move under Wish Tank. The Ideas header will be renamed "Wish Tank Ideas". Field Guide is untouched — it gets its own fresh Purpose and Ideas headers automatically the next time you open it.</div>'
+        +'<div style="text-align:left;margin-bottom:10px">'+listHTML+'</div>'
+        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-fix-go" style="flex:1">Fix it</button><button class="sc-ov-btn" id="sb-fix-cancel" style="flex:1">Cancel</button></div>'
+        +'</div>';
+      ov2.classList.add('active');
+      T().wire('sb-fix-cancel', closeSbDetail);
+      T().wire('sb-fix-go', async function(){
+        try{
+          for(var i=0;i<orphans.length;i++){
+            var o=orphans[i];
+            var newName=(o.text_content==='Purpose')?'Purpose':'Wish Tank Ideas';
+            var upd=await _sb.from('ideas').update({cluster_id:wt.id,text_content:newName}).eq('id',o.id);
+            if(upd.error) throw upd.error;
+          }
+          closeSbDetail();
+          renderSeaBoard();
+        }catch(err){
+          var errBox=document.querySelector('.sc-overlay-card');
+          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+        }
+      });
+    }catch(err){
+      var statusEl=document.getElementById('sc-status');
+      if(statusEl){ statusEl.textContent='Fix failed: '+err.message; statusEl.classList.add('err'); }
+    }
+  }
+
   function _sboardOpenRecolorAll(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -1449,24 +1537,25 @@
     return _sboardPurposeId;
   }
 
-  async function _sboardEnsureNewAdditionsHeader(parentId){
+  async function _sboardEnsureNewAdditionsHeader(parentId, desiredName){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    // Matches both the current label and the pre-rename one, so boards built
-    // before the NEW rename self-heal the first time they're opened again
-    // instead of spawning a duplicate reserved header.
-    var q=_sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').in('text_content',['NEW','New Additions']);
+    var name=desiredName||'NEW';
+    // Matches the current label, the desired label, and the pre-rename one,
+    // so boards from any earlier naming era self-heal instead of spawning
+    // a duplicate reserved header.
+    var q=_sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').in('text_content',['NEW','New Additions',name]);
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){
       var row=existing.data[0];
       _sboardNewAdditionsId=row.id;
-      if(row.text_content!=='NEW'){ try{ await _sb.from('ideas').update({text_content:'NEW'}).eq('id',row.id); }catch(e){} }
+      if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
       return _sboardNewAdditionsId;
     }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'NEW',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('NEW setup failed: '+ins.error.message);
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
     return _sboardNewAdditionsId;
   }
