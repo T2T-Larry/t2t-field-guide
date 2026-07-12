@@ -820,17 +820,27 @@
       var currentProjectRowForScope=currentTopicRowForProject?_sboardProjectRowFor(currentTopicRowForProject):null;
       var isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(_sboardCurrentTopicId));
 
-      var newAdditionsId=_sboardCurrentTopicId ? await _sboardEnsureNewAdditionsHeader(
-        _sboardCurrentTopicId,
-        isAtProjectRoot ? ((currentProjectRowForScope.text_content||'Project')+' Ideas') : null
-      ) : null;
+      // Ensure-calls run concurrently, added July 12, 2026 — these three
+      // are fully independent (none needs another's result), but were
+      // previously awaited one after another, each a separate Supabase
+      // round trip. That sequential chain is what made opening a project
+      // for the first time (Purpose/Ideas being created fresh) feel slow.
+      var _ensureResults=await Promise.all([
+        _sboardCurrentTopicId ? _sboardEnsureNewAdditionsHeader(
+          _sboardCurrentTopicId,
+          isAtProjectRoot ? ((currentProjectRowForScope.text_content||'Project')+' Ideas') : null
+        ) : Promise.resolve(null),
+        currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
+        _sboardEnsureMiscHeader(_sboardCurrentTopicId)
+      ]);
+      var newAdditionsId=_ensureResults[0];
       _sboardNewAdditionsId=newAdditionsId;
       // Purpose — one per PROJECT, reachable from anywhere inside that
       // project (not just its exact root), never shared across projects
       // and never shown when no project is selected at all.
-      var purposeId=currentProjectRowForScope?await _sboardEnsurePurposeHeader(currentProjectRowForScope.id):null;
+      var purposeId=_ensureResults[1];
       _sboardPurposeId=purposeId;
-      var miscId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
+      var miscId=_ensureResults[2];
 
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
         .eq('user_id', user.id).in('content_type',['image','text','link','header'])
@@ -1455,7 +1465,7 @@
       if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
       var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id)
         .eq('content_type','header').is('cluster_id',null)
-        .in('text_content',['Purpose','NEW','New Additions']);
+        .in('text_content',['Purpose','NEW','New Additions','MISC']);
       if(res.error) throw new Error(res.error.message);
       var orphans=(res.data||[]).filter(function(r){ return String(r.id)!==String(wt.id); });
       var ov2=document.getElementById('sb-detail-overlay');
@@ -1481,7 +1491,7 @@
         try{
           for(var i=0;i<orphans.length;i++){
             var o=orphans[i];
-            var newName=(o.text_content==='Purpose')?'Purpose':'Wish Tank Ideas';
+            var newName=(o.text_content==='Purpose')?'Purpose':(o.text_content==='MISC'?'MISC':'Wish Tank Ideas');
             var upd=await _sb.from('ideas').update({cluster_id:wt.id,text_content:newName}).eq('id',o.id);
             if(upd.error) throw upd.error;
           }
