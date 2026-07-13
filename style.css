@@ -315,7 +315,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     box-shadow:0 3px 8px rgba(0,0,0,.2);padding:8px;font-size:10.5px;color:var(--isx-navy);cursor:grab}
   .isx-tile:active{cursor:grabbing}
   .isx-tile.isx-link-tile{cursor:pointer}
-  .isx-tile img{display:block;width:100%;border-radius:6px;margin-bottom:4px;object-fit:cover;pointer-events:none}
+  .isx-tile img{display:block;width:100%;height:100%;border-radius:6px;margin-bottom:4px;object-fit:contain;pointer-events:none}
   #isx-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#93a4b5;font-style:italic;
     font-size:13px;text-align:center;width:70%;pointer-events:none}
 

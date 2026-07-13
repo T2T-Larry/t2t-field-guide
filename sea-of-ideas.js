@@ -92,7 +92,7 @@
           tile.style.cssText = 'aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:#eee';
           var img = document.createElement('img');
           img.src = row.image_url;
-          img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+          img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block';
           tile.appendChild(img);
           grid.appendChild(tile);
         } else if(row.text_content){
@@ -118,7 +118,7 @@
       style.textContent='#s-sea-of-ideas-cluster .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}#s-sea-of-ideas-cluster .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}#s-sea-of-ideas-cluster .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}'
         +'.sc-tile{position:absolute;width:64px;height:64px;border-radius:10px;background:#fff;border:1px solid #cfe4f2;box-shadow:0 3px 8px rgba(26,58,92,0.15);overflow:hidden;cursor:grab;user-select:none}'
         +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(26,58,92,0.28);z-index:50}'
-        +'.sc-tile img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}'
+        +'.sc-tile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}'
         +'.sc-tile.text{padding:5px;display:flex;align-items:center;justify-content:center}'
         +'.sc-tile.text p{margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none}'
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
@@ -2469,7 +2469,7 @@
     if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img');
       img.src=item.image_url;
-      img.style.cssText='width:100%;height:100%;object-fit:cover;display:block;pointer-events:none';
+      img.style.cssText='width:100%;height:100%;object-fit:contain;display:block;pointer-events:none';
       tile.appendChild(img);
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
@@ -3669,8 +3669,6 @@
     var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
     if(modeIdeaBtn) modeIdeaBtn.classList.add('on');
     if(modeHeaderBtn) modeHeaderBtn.classList.remove('on');
-    var locEl=document.querySelector('#isx-popup-layer .isx-ploc');
-    if(locEl) locEl.textContent='Saving to: '+_isxLocationLabel();
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
       var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
@@ -3688,13 +3686,11 @@
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
-      +'<div class="isx-ploc">Saving to: '+_isxLocationLabel()+'</div>'
       +'<div class="isx-src-row" style="margin-bottom:8px">'
         +'<button class="isx-src-btn on" id="isx-idea-mode-idea" type="button">\ud83d\udca1 Idea</button>'
-        +'<button class="isx-src-btn" id="isx-idea-mode-header" type="button">\ud83d\udccc Header</button>'
+        +'<button class="isx-src-btn" id="isx-idea-mode-header" type="button">\u274b Header</button>'
       +'</div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
-      +'<div style="font-size:9px;font-style:italic;color:#a3907a;margin:4px 0 10px">End with : or ? to make it a Header automatically</div>'
       +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=function(){ _ideaSaveCard(null); };
@@ -3715,6 +3711,27 @@
       ta.focus();
       ta.addEventListener('keydown', function(e){
         if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _ideaSaveCard(null); }
+      });
+      // 9711 tune-up, July 13, 2026: the magic input field accepts ANY
+      // pasted source, not just typed text. An image on the clipboard
+      // (screenshot, copied photo, etc.) saves straight through the same
+      // compress-to-JPEG-then-upload pipeline the dedicated 📷 Image
+      // panel already uses (_ideaSaveImageFile) — one field, one save
+      // path, images or text. Link/URL-paste auto-detection is NOT yet
+      // wired here — a pasted URL just lands as plain text for now.
+      ta.addEventListener('paste', function(e){
+        var items=e.clipboardData && e.clipboardData.items;
+        if(!items) return;
+        for(var i=0;i<items.length;i++){
+          if(items[i].type && items[i].type.indexOf('image/')===0){
+            var file=items[i].getAsFile();
+            if(file){
+              e.preventDefault();
+              _ideaSaveImageFile(file);
+            }
+            return;
+          }
+        }
       });
     }
   }
