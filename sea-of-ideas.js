@@ -3651,7 +3651,8 @@
     });
   }
 
-  var _isxInputPendingImageFile = null; // set by paste; cleared on save, cancel, or reset
+  var _isxInputPendingImageFile = null; // set by paste or camera; cleared on save, cancel, or reset
+  var _isxInputPendingExternalUrl = null; // set by Unsplash pick — an external URL reference, not a file to upload
 
   // After a successful save, the 9211 popup stays open and resets itself
   // rather than closing — ideas come in bursts, and closing after every
@@ -3668,6 +3669,7 @@
     ta.value=''; ta.focus();
     _isxIdeaMode='idea';
     _isxClearPendingImage();
+    _isxClearPendingExternalUrl();
     var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
     var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
     if(modeIdeaBtn) modeIdeaBtn.classList.add('on');
@@ -3763,18 +3765,70 @@
         var stillOpen=document.querySelector('#isx-popup-layer .isx-pcard');
         if(!stillOpen) _isxOpenIdeaPanel();
       });
+    } else if(_isxInputPendingExternalUrl){
+      // Unsplash pick — an external URL reference, same as the old
+      // dedicated Image popup's Unsplash tab: no download/compress
+      // step, _ideaSaveCard already resets the panel in place on
+      // success just like a plain text save.
+      var extUrl=_isxInputPendingExternalUrl;
+      _isxInputPendingExternalUrl=null;
+      _ideaSaveCard(extUrl);
     } else {
       _ideaSaveCard(null);
     }
   }
 
+  function _isxClearPendingExternalUrl(){
+    _isxInputPendingExternalUrl=null;
+    var preview=document.getElementById('isx-paste-preview');
+    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
+  }
+
+  // Loads 4 random high-quality Unsplash photos straight into the card's
+  // own preview area — same source/key as the old dedicated Image
+  // popup's Unsplash tab (_isxLoadUnsplash), just rendered here so
+  // there's no second screen to open. Tapping a thumbnail marks it
+  // selected; SAVE/ENTER then commits it as an external-URL image card.
+  async function _isxShowUnsplashPicker(){
+    _isxClearPendingImage(); _isxClearPendingLink();
+    _isxInputPendingExternalUrl=null;
+    var preview=document.getElementById('isx-paste-preview');
+    if(!preview) return;
+    preview.style.display='block';
+    preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Loading Unsplash\u2026</div>';
+    var UNSPLASH_KEY='ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
+    var photos=[];
+    try{
+      for(var i=0;i<4;i++){
+        var r=await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
+        if(r.ok){ var d=await r.json(); photos.push(d.urls.regular); }
+      }
+    }catch(e){}
+    if(!preview) return; // popup may have closed while this was in flight
+    if(!photos.length){ preview.innerHTML='<div style="font-size:10px;color:#A32D2D;text-align:center;padding:10px 0">Couldn\u2019t load images. Try again.</div>'; return; }
+    preview.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px" id="isx-unsplash-pick-grid">'
+      +photos.map(function(url){
+        return '<div class="isx-unsplash-tile" data-url="'+url+'" style="position:relative;height:64px;border:2px solid #111;border-radius:8px;overflow:hidden;cursor:pointer">'
+          +'<img src="'+url+'" style="width:100%;height:100%;object-fit:cover">'
+          +'<div style="position:absolute;bottom:2px;right:4px;font-size:14px">\ud83e\udd0d</div></div>';
+      }).join('')+'</div>';
+    document.querySelectorAll('#isx-unsplash-pick-grid .isx-unsplash-tile').forEach(function(tile){
+      tile.addEventListener('click', function(){
+        document.querySelectorAll('#isx-unsplash-pick-grid .isx-unsplash-tile div').forEach(function(h){h.textContent='\ud83e\udd0d';});
+        this.querySelector('div').textContent='\ud83e\udda4';
+        _isxInputPendingExternalUrl=this.getAttribute('data-url');
+      });
+    });
+  }
+
   // Cancel is a permanent fixture now, not a state-conditional button —
   // it resets the whole card back to blank (typed text, pending image,
-  // or pending link), not just pasted content. Never closes the popup;
-  // that's still the ✕'s job alone.
+  // pending link, or a pending Unsplash pick), not just pasted content.
+  // Never closes the popup; that's still the ✕'s job alone.
   function _isxCancelIdeaEntry(){
     _isxClearPendingImage();
     _isxClearPendingLink();
+    _isxClearPendingExternalUrl();
     var ta=document.getElementById('isx-idea-text');
     if(ta){ ta.value=''; ta.focus(); }
   }
@@ -3783,6 +3837,7 @@
     _isxIdeaMode='idea';
     _isxInputPendingImageFile=null;
     _isxInputPendingLink=null;
+    _isxInputPendingExternalUrl=null;
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
@@ -3790,18 +3845,21 @@
         +'<button class="isx-src-btn on" id="isx-idea-mode-idea" type="button">\ud83d\udca1 Idea</button>'
         +'<button class="isx-src-btn" id="isx-idea-mode-header" type="button">\u274b Header</button>'
       +'</div>'
+      +'<div class="isx-src-row" style="margin-bottom:8px">'
+        +'<button class="isx-src-btn" id="isx-btn-camera" type="button">\ud83d\udcf7 Camera</button>'
+        +'<button class="isx-src-btn" id="isx-btn-unsplash" type="button">\ud83c\udf05 Unsplash</button>'
+      +'</div>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
       +'<input type="file" id="isx-camera-input" accept="image/*" capture="environment" style="display:none">'
       +'<div class="isx-save-row">'
-        +'<button class="isx-camera-btn" id="isx-p-camera" type="button" title="Take a photo">\ud83d\udcf7</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
       +'</div></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=_isxCommitIdeaPanel;
     document.getElementById('isx-p-cancel').onclick=_isxCancelIdeaEntry;
-    var cameraBtn=document.getElementById('isx-p-camera');
+    var cameraBtn=document.getElementById('isx-btn-camera');
     var cameraInput=document.getElementById('isx-camera-input');
     if(cameraBtn && cameraInput){
       cameraBtn.onclick=function(){ cameraInput.click(); };
@@ -3809,6 +3867,8 @@
         if(this.files && this.files[0]) _isxShowPendingImage(this.files[0]);
       });
     }
+    var unsplashBtn=document.getElementById('isx-btn-unsplash');
+    if(unsplashBtn) unsplashBtn.onclick=_isxShowUnsplashPicker;
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
     var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');

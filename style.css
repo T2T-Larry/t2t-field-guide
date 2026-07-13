@@ -355,9 +355,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .isx-cancel{flex:0 0 78px;padding:11px 6px;border:1.5px solid var(--isx-navy);border-radius:9px;background:transparent;
     color:var(--isx-navy);font-family:'Playfair Display',serif;font-weight:700;letter-spacing:.5px;font-size:12px;cursor:pointer}
   .isx-cancel:hover{background:rgba(91,155,213,.12)}
-  .isx-camera-btn{flex:0 0 44px;padding:11px 0;border:1.5px solid var(--isx-navy);border-radius:9px;background:transparent;
-    color:var(--isx-navy);font-size:16px;cursor:pointer;text-align:center}
-  .isx-camera-btn:hover{background:rgba(91,155,213,.12)}
 
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
   .isx-tnode{margin:2px 0 2px 14px;font-size:12px;color:var(--isx-navy);cursor:pointer;padding:2px 4px;border-radius:5px}
