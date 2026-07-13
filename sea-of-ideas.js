@@ -3651,6 +3651,8 @@
     });
   }
 
+  var _isxInputPendingImageFile = null; // set by paste; cleared on save, cancel, or reset
+
   // After a successful save, the 9211 popup stays open and resets itself
   // rather than closing — ideas come in bursts, and closing after every
   // single one breaks that rhythm. Header saves get the same treatment,
@@ -3665,6 +3667,7 @@
     }
     ta.value=''; ta.focus();
     _isxIdeaMode='idea';
+    _isxClearPendingImage();
     var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
     var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
     if(modeIdeaBtn) modeIdeaBtn.classList.add('on');
@@ -3681,8 +3684,47 @@
     }
   }
 
+  // 9711 tune-up, July 13, 2026 (revised): a pasted image no longer saves
+  // itself instantly — it shows a preview with CANCEL/SAVE, matching the
+  // already-locked rule that non-text content gets an explicit save
+  // affordance rather than auto-committing (Enter has no natural meaning
+  // for a paste, and neither does "it just appears on the board").
+  function _isxShowPendingImage(file){
+    _isxInputPendingImageFile=file;
+    var preview=document.getElementById('isx-paste-preview');
+    var cancelBtn=document.getElementById('isx-p-cancel');
+    if(preview){
+      var url=URL.createObjectURL(file);
+      preview.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:140px;border-radius:8px;'
+        +'display:block;margin:0 auto 8px;object-fit:contain">';
+      preview.style.display='block';
+    }
+    if(cancelBtn) cancelBtn.style.display='inline-block';
+  }
+
+  function _isxClearPendingImage(){
+    _isxInputPendingImageFile=null;
+    var preview=document.getElementById('isx-paste-preview');
+    var cancelBtn=document.getElementById('isx-p-cancel');
+    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
+    if(cancelBtn) cancelBtn.style.display='none';
+  }
+
+  function _isxCommitIdeaPanel(){
+    if(_isxInputPendingImageFile){
+      var file=_isxInputPendingImageFile;
+      var preview=document.getElementById('isx-paste-preview');
+      if(preview) preview.insertAdjacentHTML('beforeend','<div style="font-size:10px;color:#5b9bd5;text-align:center">Uploading\u2026</div>');
+      _isxInputPendingImageFile=null;
+      _ideaSaveImageFile(file);
+    } else {
+      _ideaSaveCard(null);
+    }
+  }
+
   function _isxOpenIdeaPanel(){
     _isxIdeaMode='idea';
+    _isxInputPendingImageFile=null;
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
@@ -3690,10 +3732,13 @@
         +'<button class="isx-src-btn on" id="isx-idea-mode-idea" type="button">\ud83d\udca1 Idea</button>'
         +'<button class="isx-src-btn" id="isx-idea-mode-header" type="button">\u274b Header</button>'
       +'</div>'
+      +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
-      +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
+      +'<div class="isx-save-row"><button class="isx-cancel" id="isx-p-cancel" style="display:none" type="button">CANCEL</button>'
+      +'<button class="isx-save" id="isx-p-save">SAVE</button></div></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
-    document.getElementById('isx-p-save').onclick=function(){ _ideaSaveCard(null); };
+    document.getElementById('isx-p-save').onclick=_isxCommitIdeaPanel;
+    document.getElementById('isx-p-cancel').onclick=function(){ _isxClearPendingImage(); };
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
     var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
@@ -3710,15 +3755,16 @@
     if(ta){
       ta.focus();
       ta.addEventListener('keydown', function(e){
-        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _ideaSaveCard(null); }
+        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _isxCommitIdeaPanel(); }
       });
-      // 9711 tune-up, July 13, 2026: the magic input field accepts ANY
-      // pasted source, not just typed text. An image on the clipboard
-      // (screenshot, copied photo, etc.) saves straight through the same
-      // compress-to-JPEG-then-upload pipeline the dedicated 📷 Image
-      // panel already uses (_ideaSaveImageFile) — one field, one save
-      // path, images or text. Link/URL-paste auto-detection is NOT yet
-      // wired here — a pasted URL just lands as plain text for now.
+      // The magic input field accepts ANY pasted source, not just typed
+      // text. An image on the clipboard (screenshot, copied photo, etc.)
+      // shows a preview here (see _isxShowPendingImage) rather than
+      // saving instantly — SAVE or ENTER then commits it through the
+      // same compress-to-JPEG-then-upload pipeline the dedicated 📷
+      // Image panel already uses (_ideaSaveImageFile). Link/URL-paste
+      // auto-detection is NOT yet wired here — a pasted URL just lands
+      // as plain text for now.
       ta.addEventListener('paste', function(e){
         var items=e.clipboardData && e.clipboardData.items;
         if(!items) return;
@@ -3727,7 +3773,7 @@
             var file=items[i].getAsFile();
             if(file){
               e.preventDefault();
-              _ideaSaveImageFile(file);
+              _isxShowPendingImage(file);
             }
             return;
           }

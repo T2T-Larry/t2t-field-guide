@@ -346,9 +346,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .isx-dropzone{background:var(--brand-white);border:2px dashed var(--isx-paleblue);border-radius:10px;height:110px;
     display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--brand-blue-gray);margin-bottom:10px}
   .isx-heic{font-size:9.5px;color:#7a90a8;text-align:center;margin:-4px 0 8px;font-style:italic}
+  .isx-save-row{display:flex;gap:8px;margin-top:6px}
   .isx-save{width:100%;padding:11px;border:none;border-radius:9px;background:var(--isx-navy);color:var(--brand-white);
     font-family:'Playfair Display',serif;font-weight:700;letter-spacing:1px;font-size:13px;cursor:pointer;margin-top:6px}
   .isx-save:hover{background:#12283f}
+  .isx-save-row .isx-save{width:auto;flex:1;margin-top:0}
+  .isx-cancel{flex:0 0 86px;padding:11px 6px;border:1.5px solid var(--isx-navy);border-radius:9px;background:transparent;
+    color:var(--isx-navy);font-family:'Playfair Display',serif;font-weight:700;letter-spacing:.5px;font-size:12px;cursor:pointer}
+  .isx-cancel:hover{background:rgba(91,155,213,.12)}
 
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
   .isx-tnode{margin:2px 0 2px 14px;font-size:12px;color:var(--isx-navy);cursor:pointer;padding:2px 4px;border-radius:5px}
