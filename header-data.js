@@ -182,6 +182,53 @@
     }catch(e){ return {id:null, error:'Exception: '+(e&&e.message?e.message:String(e))}; }
   }
 
+  /* ── 9711 Idea Input — sticky last-topic (Locked July 13, 2026) ──
+     Supabase-backed (must survive a full browser-close boundary, not
+     just an in-memory variable), scoped per-project — stored as a
+     column directly on that project's own root row so switching
+     between projects never leaks one project's last-focused Topic
+     into another's Input screen.
+     Migration required in Supabase (run once):
+       alter table ideas add column if not exists last_input_topic_id uuid; */
+
+  async function getLastInputTopic(projectId){
+    if(!projectId) return null;
+    try{
+      var sb=_sb(); var u=await _currentUser(); if(!u) return null;
+      var res=await sb.from('ideas').select('last_input_topic_id').eq('id',projectId).eq('user_id',u.id).single();
+      if(res.error){ console.warn('getLastInputTopic error:', res.error); return null; }
+      return (res.data && res.data.last_input_topic_id) || null;
+    }catch(e){ console.warn('getLastInputTopic exception:', e); return null; }
+  }
+
+  async function setLastInputTopic(projectId, topicId){
+    if(!projectId) return;
+    try{
+      var sb=_sb();
+      var res=await sb.from('ideas').update({last_input_topic_id: topicId||null}).eq('id',projectId);
+      if(res.error) console.warn('setLastInputTopic error:', res.error);
+    }catch(e){ console.warn('setLastInputTopic exception:', e); }
+  }
+
+  /* Walks cluster_id from a Topic up to its root project, returning
+     [{id,text}, ...] ordered apex..topic — the exact shape _isxPath
+     needs to resume a session at the right depth, not just the root. */
+  async function ancestorChain(topicId){
+    var chain=[];
+    try{
+      var sb=_sb(); var u=await _currentUser(); if(!u) return chain;
+      var curId=topicId, guard=0;
+      while(curId && guard<50){
+        guard++;
+        var res=await sb.from('ideas').select('id,text_content,cluster_id').eq('id',curId).eq('user_id',u.id).single();
+        if(res.error || !res.data) break;
+        chain.unshift({id:res.data.id, text:res.data.text_content});
+        curId=res.data.cluster_id;
+      }
+    }catch(e){ console.warn('ancestorChain exception:', e); }
+    return chain;
+  }
+
   window.T2TData = {
     RESERVED_HEADERS: RESERVED_HEADERS,
     fetchAllHeaders: fetchAllHeaders,
@@ -195,7 +242,10 @@
     ensurePurposeHeader: ensurePurposeHeader,
     ensureNewAdditionsHeader: ensureNewAdditionsHeader,
     ensureTrashHeader: ensureTrashHeader,
-    ensureWishTank: ensureWishTank
+    ensureWishTank: ensureWishTank,
+    getLastInputTopic: getLastInputTopic,
+    setLastInputTopic: setLastInputTopic,
+    ancestorChain: ancestorChain
   };
 
 })();

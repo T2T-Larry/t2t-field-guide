@@ -3233,6 +3233,19 @@
     return _isxPath.map(function(p){return p.text;}).join(' \u203a ')+' \u2014 '+_isxHeaderLabel;
   }
 
+  // 9711 lock (July 13, 2026): no Header rung on this screen at all — every
+  // save targets the current Topic's own NEW/Ideas bucket. _isxHeaderId is
+  // kept as a variable only because _isxCurrentClusterId() reads it, but it
+  // is now permanently null; the old dropdown/"View as Topic"-from-Header
+  // mechanism that used to set it has been removed below.
+  async function _isxPersistLastTopic(){
+    try{
+      if(window.T2TData && window.T2TData.setLastInputTopic && _isxPath && _isxPath.length){
+        await window.T2TData.setLastInputTopic(_isxPath[0].id, _isxCurrentTopicId());
+      }
+    }catch(e){ console.warn('Persist last Input topic failed:', e); }
+  }
+
   async function _isxInit(ctx){
     if(!_isxPath){
       var wt=await _ideaEnsureWishTank();
@@ -3248,13 +3261,28 @@
         throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
       }
       _isxPath=[{id:wt.id, text:'Wish Tank'}];
+      // Sticky state, manual reset only (locked July 13, 2026) — resume
+      // wherever this project's Input was last pointed, rather than always
+      // reopening at the project apex. Only applies to the plain 💡
+      // shortcut (no explicit ctx.boardId passed in).
+      if(!ctx || !ctx.boardId){
+        try{
+          if(window.T2TData && window.T2TData.getLastInputTopic && window.T2TData.ancestorChain){
+            var lastId=await window.T2TData.getLastInputTopic(wt.id);
+            if(lastId){
+              var chain=await window.T2TData.ancestorChain(lastId);
+              if(chain && chain.length) _isxPath=chain;
+            }
+          }
+        }catch(e){ console.warn('Resume last Input topic failed:', e); }
+      }
     }
     if(ctx && ctx.boardId){
       var boards=await _sboardTopLevelBoards();
       var match=boards.filter(function(b){ return String(b.id)===String(ctx.boardId); })[0];
       _isxPath=[{id:ctx.boardId, text: match?match.text_content:'Board'}];
     }
-    _isxHeaderId = (ctx && ctx.headerId && String(ctx.headerId)!==String(_isxCurrentTopicId())) ? ctx.headerId : null;
+    _isxHeaderId = null;
     _isxHeaderLabel='New';
     if(!_isxStart) _isxStart=Date.now();
   }
@@ -3333,8 +3361,7 @@
    try{
     var parentWrap=document.getElementById('isx-rung-parent');
     var topicWrap=document.getElementById('isx-rung-topic');
-    var headerWrap0=document.getElementById('isx-rung-header');
-    if(!parentWrap||!topicWrap||!headerWrap0) return;
+    if(!parentWrap||!topicWrap) return;
 
     if(_isxPath.length>1){
       var parentName=_isxPath[_isxPath.length-2].text;
@@ -3342,7 +3369,7 @@
         +'<div class="isx-viewas-row"><button class="isx-viewas" id="isx-parent-viewas">View as Topic</button></div>';
       T().wire('isx-parent-viewas', function(){
         _isxPath.pop(); _isxHeaderId=null; _isxHeaderLabel='New';
-        _isxRenderLadder(); _isxRenderBoard();
+        _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
       });
     } else {
       parentWrap.innerHTML='<div class="isx-rung-name isx-blank">\u2014</div>';
@@ -3367,56 +3394,15 @@
           _isxPath=[{id:this.value, text:text}];
         }
         _isxHeaderId=null; _isxHeaderLabel='New';
-        await _isxRenderLadder(); await _isxRenderBoard();
+        await _isxRenderLadder(); await _isxRenderBoard(); await _isxPersistLastTopic();
       });
     } else {
       topicWrap.innerHTML='<div class="isx-rung-name">'+_isxPath[_isxPath.length-1].text+'</div>';
     }
-
-    var headerWrap=document.getElementById('isx-rung-header');
-    var children=await _sboardChildHeaders(_isxCurrentTopicId());
-    children.sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||''); });
-    var hOpts='<option value="__new__"'+(!_isxHeaderId?' selected':'')+'>New</option>'
-      +children.map(function(c){
-        return '<option value="'+c.id+'"'+(String(c.id)===String(_isxHeaderId)?' selected':'')+'>'+c.text_content+'</option>';
-      }).join('')
-      +'<option value="__add__">+ Add New Header</option>';
-    headerWrap.innerHTML='<select class="isx-select" id="isx-sel-header">'+hOpts+'</select>'
-      +'<div class="isx-viewas-row"><button class="isx-viewas" id="isx-header-viewas">View as Topic</button></div>';
-    var headerSel=document.getElementById('isx-sel-header');
-    headerSel.onchange=async function(){
-      var vaBtn=document.getElementById('isx-header-viewas');
-      if(this.value==='__add__'){
-        var name=prompt('Name the new Header:');
-        if(name){
-          var newId=await _sboardEnsureHeaderNamed(name, _isxCurrentTopicId());
-          if(newId){ _isxHeaderId=newId; _isxHeaderLabel=name; }
-        }
-        await _isxRenderLadder();
-        return;
-      } else if(this.value==='__new__'){
-        _isxHeaderId=null; _isxHeaderLabel='New';
-      } else {
-        _isxHeaderId=this.value; _isxHeaderLabel=this.options[this.selectedIndex].text;
-      }
-      // Fixes the "View as Topic never turns on" bug — re-render replaced the
-      // whole header row's HTML, but the button's disabled state was only ever
-      // set once, at first render, and never re-checked when a real header
-      // got picked afterward. Toggling it directly here (no full re-render)
-      // keeps the dropdown's own open/selected state undisturbed too.
-      if(vaBtn) vaBtn.disabled=!_isxHeaderId;
-      await _isxRenderBoard();
-    };
-    var viewAsBtn=document.getElementById('isx-header-viewas');
-    if(viewAsBtn){
-      viewAsBtn.disabled=!_isxHeaderId;
-      viewAsBtn.onclick=function(){
-        if(!_isxHeaderId) return;
-        _isxPath.push({id:_isxHeaderId, text:_isxHeaderLabel});
-        _isxHeaderId=null; _isxHeaderLabel='New';
-        _isxRenderLadder(); _isxRenderBoard();
-      };
-    }
+    // 9711 lock, July 13, 2026: Header rung removed entirely — every save
+    // targets this Topic's own NEW/Ideas bucket (_isxHeaderId stays null
+    // permanently, see _isxInit). Moving an *existing* idea to a different
+    // Header is DETAILS-card-back's job now, not this screen's.
    }catch(e){
      console.error('_isxRenderLadder failed:', e);
      _isxShowError('Something went wrong loading this level: '+(e&&e.message?e.message:String(e)));

@@ -818,7 +818,7 @@
     registerPageNum('s-cover-map',   '9100');
     registerPageNum('s-idea',        '9200');
     registerPageNum('s-idea-capture','9210-legacy');
-    registerPageNum('s-idea-session','9210');
+    registerPageNum('s-idea-session','9711'); /* was 9210 — renumbered July 13, 2026 into the 9700-9799 Storyboard family, right after ISB (9710) */
     registerPageNum('s-idea-theme',  '9211');
     registerPageNum('s-idea-paste',  '9212');
     registerPageNum('s-idea-link',   '9213');
