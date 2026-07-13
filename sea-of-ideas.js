@@ -3692,22 +3692,18 @@
   function _isxShowPendingImage(file){
     _isxInputPendingImageFile=file;
     var preview=document.getElementById('isx-paste-preview');
-    var cancelBtn=document.getElementById('isx-p-cancel');
     if(preview){
       var url=URL.createObjectURL(file);
       preview.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:140px;border-radius:8px;'
         +'display:block;margin:0 auto 8px;object-fit:contain">';
       preview.style.display='block';
     }
-    if(cancelBtn) cancelBtn.style.display='inline-block';
   }
 
   function _isxClearPendingImage(){
     _isxInputPendingImageFile=null;
     var preview=document.getElementById('isx-paste-preview');
-    var cancelBtn=document.getElementById('isx-p-cancel');
     if(preview){ preview.innerHTML=''; preview.style.display='none'; }
-    if(cancelBtn) cancelBtn.style.display='none';
   }
 
   var _isxInputPendingLink = null; // {url, title, thumb} — set by paste; cleared on save, cancel, or reset
@@ -3720,12 +3716,10 @@
   function _isxShowPendingLink(url){
     _isxInputPendingLink={url:url, title:null, thumb:null};
     var preview=document.getElementById('isx-paste-preview');
-    var cancelBtn=document.getElementById('isx-p-cancel');
     if(preview){
       preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Looking up this link\u2026</div>';
       preview.style.display='block';
     }
-    if(cancelBtn) cancelBtn.style.display='inline-block';
     _linkResolveOEmbed(url).then(function(meta){
       if(!_isxInputPendingLink || _isxInputPendingLink.url!==url) return; // cancelled or replaced meanwhile
       _isxInputPendingLink.title=meta&&meta.title||url;
@@ -3742,9 +3736,7 @@
   function _isxClearPendingLink(){
     _isxInputPendingLink=null;
     var preview=document.getElementById('isx-paste-preview');
-    var cancelBtn=document.getElementById('isx-p-cancel');
     if(preview){ preview.innerHTML=''; preview.style.display='none'; }
-    if(cancelBtn) cancelBtn.style.display='none';
   }
 
   // A single bare URL, nothing else on the line — conservative on
@@ -3776,6 +3768,17 @@
     }
   }
 
+  // Cancel is a permanent fixture now, not a state-conditional button —
+  // it resets the whole card back to blank (typed text, pending image,
+  // or pending link), not just pasted content. Never closes the popup;
+  // that's still the ✕'s job alone.
+  function _isxCancelIdeaEntry(){
+    _isxClearPendingImage();
+    _isxClearPendingLink();
+    var ta=document.getElementById('isx-idea-text');
+    if(ta){ ta.value=''; ta.focus(); }
+  }
+
   function _isxOpenIdeaPanel(){
     _isxIdeaMode='idea';
     _isxInputPendingImageFile=null;
@@ -3789,11 +3792,23 @@
       +'</div>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
-      +'<div class="isx-save-row"><button class="isx-cancel" id="isx-p-cancel" style="display:none" type="button">CANCEL</button>'
-      +'<button class="isx-save" id="isx-p-save">SAVE</button></div></div>');
+      +'<input type="file" id="isx-camera-input" accept="image/*" capture="environment" style="display:none">'
+      +'<div class="isx-save-row">'
+        +'<button class="isx-camera-btn" id="isx-p-camera" type="button" title="Take a photo">\ud83d\udcf7</button>'
+        +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
+        +'<button class="isx-save" id="isx-p-save">SAVE</button>'
+      +'</div></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=_isxCommitIdeaPanel;
-    document.getElementById('isx-p-cancel').onclick=function(){ _isxClearPendingImage(); _isxClearPendingLink(); };
+    document.getElementById('isx-p-cancel').onclick=_isxCancelIdeaEntry;
+    var cameraBtn=document.getElementById('isx-p-camera');
+    var cameraInput=document.getElementById('isx-camera-input');
+    if(cameraBtn && cameraInput){
+      cameraBtn.onclick=function(){ cameraInput.click(); };
+      cameraInput.addEventListener('change', function(){
+        if(this.files && this.files[0]) _isxShowPendingImage(this.files[0]);
+      });
+    }
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
     var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
