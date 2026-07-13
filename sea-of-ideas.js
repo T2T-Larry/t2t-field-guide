@@ -3710,6 +3710,50 @@
     if(cancelBtn) cancelBtn.style.display='none';
   }
 
+  var _isxInputPendingLink = null; // {url, title, thumb} — set by paste; cleared on save, cancel, or reset
+
+  // Same preview-then-confirm shape as the image path: show what the
+  // link resolves to (or a bare fallback if unresolved) before it
+  // becomes a real card. Loading state first, then fills in once
+  // _linkResolveOEmbed returns — allowlisted providers only (YouTube,
+  // Vimeo, Spotify, SoundCloud, TikTok), same as the dedicated 🔗 panel.
+  function _isxShowPendingLink(url){
+    _isxInputPendingLink={url:url, title:null, thumb:null};
+    var preview=document.getElementById('isx-paste-preview');
+    var cancelBtn=document.getElementById('isx-p-cancel');
+    if(preview){
+      preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Looking up this link\u2026</div>';
+      preview.style.display='block';
+    }
+    if(cancelBtn) cancelBtn.style.display='inline-block';
+    _linkResolveOEmbed(url).then(function(meta){
+      if(!_isxInputPendingLink || _isxInputPendingLink.url!==url) return; // cancelled or replaced meanwhile
+      _isxInputPendingLink.title=meta&&meta.title||url;
+      _isxInputPendingLink.thumb=meta&&meta.thumbnail_url||null;
+      if(!preview) return;
+      preview.innerHTML=(_isxInputPendingLink.thumb
+          ? '<img src="'+_isxInputPendingLink.thumb+'" style="max-width:100%;max-height:120px;border-radius:8px;display:block;margin:0 auto 6px;object-fit:contain">'
+          : '<div style="font-size:28px;text-align:center;margin-bottom:4px">\ud83d\udd17</div>')
+        +'<div style="font-size:12px;color:var(--isx-navy);text-align:center;font-weight:600">'+_isxInputPendingLink.title+'</div>'
+        +'<div style="font-size:9.5px;color:#7a90a8;text-align:center;word-break:break-word">'+url+'</div>';
+    });
+  }
+
+  function _isxClearPendingLink(){
+    _isxInputPendingLink=null;
+    var preview=document.getElementById('isx-paste-preview');
+    var cancelBtn=document.getElementById('isx-p-cancel');
+    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
+    if(cancelBtn) cancelBtn.style.display='none';
+  }
+
+  // A single bare URL, nothing else on the line — conservative on
+  // purpose, so pasting a sentence that happens to contain a link still
+  // just types normally instead of getting hijacked into link mode.
+  function _isxIsBareUrl(text){
+    return /^https?:\/\/\S+$/i.test((text||'').trim());
+  }
+
   function _isxCommitIdeaPanel(){
     if(_isxInputPendingImageFile){
       var file=_isxInputPendingImageFile;
@@ -3717,6 +3761,16 @@
       if(preview) preview.insertAdjacentHTML('beforeend','<div style="font-size:10px;color:#5b9bd5;text-align:center">Uploading\u2026</div>');
       _isxInputPendingImageFile=null;
       _ideaSaveImageFile(file);
+    } else if(_isxInputPendingLink){
+      var pending=_isxInputPendingLink;
+      _isxInputPendingLink=null;
+      _ideaSaveLinkCard(pending.url, pending.thumb, pending.title).then(function(){
+        // _ideaSaveLinkCard closes the popup on success, but leaves it
+        // open with an error message on failure — only reopen a fresh
+        // panel in the success case, or we'd wipe out that error.
+        var stillOpen=document.querySelector('#isx-popup-layer .isx-pcard');
+        if(!stillOpen) _isxOpenIdeaPanel();
+      });
     } else {
       _ideaSaveCard(null);
     }
@@ -3725,6 +3779,7 @@
   function _isxOpenIdeaPanel(){
     _isxIdeaMode='idea';
     _isxInputPendingImageFile=null;
+    _isxInputPendingLink=null;
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
@@ -3738,7 +3793,7 @@
       +'<button class="isx-save" id="isx-p-save">SAVE</button></div></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=_isxCommitIdeaPanel;
-    document.getElementById('isx-p-cancel').onclick=function(){ _isxClearPendingImage(); };
+    document.getElementById('isx-p-cancel').onclick=function(){ _isxClearPendingImage(); _isxClearPendingLink(); };
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
     var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
@@ -3758,25 +3813,30 @@
         if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _isxCommitIdeaPanel(); }
       });
       // The magic input field accepts ANY pasted source, not just typed
-      // text. An image on the clipboard (screenshot, copied photo, etc.)
-      // shows a preview here (see _isxShowPendingImage) rather than
-      // saving instantly — SAVE or ENTER then commits it through the
-      // same compress-to-JPEG-then-upload pipeline the dedicated 📷
-      // Image panel already uses (_ideaSaveImageFile). Link/URL-paste
-      // auto-detection is NOT yet wired here — a pasted URL just lands
-      // as plain text for now.
+      // text. An image on the clipboard shows a preview (see
+      // _isxShowPendingImage); a bare URL shows a title+thumbnail
+      // preview via the same oEmbed pipeline the dedicated 🔗 panel
+      // uses (see _isxShowPendingLink). Either way, nothing saves until
+      // SAVE/ENTER — matches the locked "explicit save affordance for
+      // non-text content" rule, no auto-commit on paste.
       ta.addEventListener('paste', function(e){
         var items=e.clipboardData && e.clipboardData.items;
-        if(!items) return;
-        for(var i=0;i<items.length;i++){
-          if(items[i].type && items[i].type.indexOf('image/')===0){
-            var file=items[i].getAsFile();
-            if(file){
-              e.preventDefault();
-              _isxShowPendingImage(file);
+        if(items){
+          for(var i=0;i<items.length;i++){
+            if(items[i].type && items[i].type.indexOf('image/')===0){
+              var file=items[i].getAsFile();
+              if(file){
+                e.preventDefault();
+                _isxShowPendingImage(file);
+              }
+              return;
             }
-            return;
           }
+        }
+        var text=e.clipboardData && e.clipboardData.getData('text/plain');
+        if(text && _isxIsBareUrl(text)){
+          e.preventDefault();
+          _isxShowPendingLink(text.trim());
         }
       });
     }
