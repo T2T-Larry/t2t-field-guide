@@ -3901,7 +3901,7 @@
     _isxInputPendingImageFile=null;
     _isxInputPendingLink=null;
     _isxInputPendingExternalUrl=null;
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9211"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9712"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
       +'<div class="isx-src-row" style="margin-bottom:8px">'
@@ -3992,7 +3992,7 @@
 
   function _isxOpenImagePanel(){
     _isxImgTab='paste'; _isxImgPendingUrl=null; _isxImgPendingFile=null;
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9212"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9713"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udcf7 Image</div>'
       +'<div class="isx-src-row">'
         +'<button class="isx-src-btn on" data-src="paste">Paste / Upload</button>'
@@ -4072,7 +4072,7 @@
 
   function _isxOpenLinkPanel(){
     _isxLinkPendingUrl=null; _isxLinkPendingThumb=null; _isxLinkPendingTitle=null;
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9213"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9714"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udd17 Link</div>'
       +'<input type="text" id="isx-link-url" placeholder="Paste a URL\u2026" style="margin-bottom:8px">'
       +'<div class="isx-dropzone" id="isx-link-preview" style="height:80px">Preview appears here once the link resolves</div>'
@@ -4103,7 +4103,7 @@
   }
 
   function _isxOpenRulesPanel(){
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9214" style="width:260px"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9715" style="width:260px"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle" style="font-size:20px">\ud83d\udcdc Rules of Creative Thinking</div>'
       +'<div style="font-size:13px;line-height:2;color:#1A3A5C;margin-top:8px">'
         +'<div>1. No criticism.</div>'
