@@ -867,8 +867,7 @@
     });
     wire('b-sea-ideas',function(){
       seaChapterEntry = false;
-      if(window.T2TFocus && window.T2TFocus.openFocusGate) window.T2TFocus.openFocusGate('s-sea-of-ideas-cluster');
-      else nav('s-sea-of-ideas-cluster');
+      nav('s-sea-of-ideas-cluster');
     });
 
     /* JOURNAL HUB */
@@ -959,8 +958,7 @@
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
     wire('b-tools-sea-ideas', function(){
-      if(window.T2TFocus && window.T2TFocus.openFocusGate) window.T2TFocus.openFocusGate('s-sea-of-ideas-cluster', true);
-      else nav('s-sea-of-ideas-cluster');
+      nav('s-sea-of-ideas-cluster');
     });
     wire('b-tools-trash', function(){
       if (window.T2TSea) window.T2TSea.openTrash();

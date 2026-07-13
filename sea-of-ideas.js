@@ -3359,46 +3359,35 @@
 
   async function _isxRenderLadder(){
    try{
-    var parentWrap=document.getElementById('isx-rung-parent');
-    var topicWrap=document.getElementById('isx-rung-topic');
-    if(!parentWrap||!topicWrap) return;
+    var projectLabel=document.getElementById('isx-project-label');
+    var parentHit=document.getElementById('isx-parent-hit');
+    var parentLabel=document.getElementById('isx-parent-label');
+    var topicBox=document.getElementById('isx-topic-box');
+    if(!projectLabel||!parentHit||!parentLabel||!topicBox) return;
 
+    // PROJECT — fixed anchor, display only. Switching projects entirely is
+    // FOCUS's job (reopen via 💡), same division of labor as everywhere else.
+    projectLabel.textContent=_isxPath[0].text;
+
+    // PARENT — one level above TOPIC, click to climb back exactly one level.
+    // Blank/inert only when TOPIC === PROJECT (nothing above yet).
     if(_isxPath.length>1){
-      var parentName=_isxPath[_isxPath.length-2].text;
-      parentWrap.innerHTML='<div class="isx-rung-name">'+parentName+'</div>'
-        +'<div class="isx-viewas-row"><button class="isx-viewas" id="isx-parent-viewas">View as Topic</button></div>';
-      T().wire('isx-parent-viewas', function(){
+      parentLabel.textContent=_isxPath[_isxPath.length-2].text;
+      parentHit.classList.remove('inert');
+      parentHit.onclick=function(){
         _isxPath.pop(); _isxHeaderId=null; _isxHeaderLabel='New';
         _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
-      });
+      };
     } else {
-      parentWrap.innerHTML='<div class="isx-rung-name isx-blank">\u2014</div>';
+      parentLabel.textContent='\u2014';
+      parentHit.classList.add('inert');
+      parentHit.onclick=null;
     }
 
-    if(_isxPath.length===1){
-      var boards=await _sboardTopLevelBoards();
-      var opts=boards.map(function(b){
-        return '<option value="'+b.id+'"'+(String(b.id)===String(_isxPath[0].id)?' selected':'')+'>'+b.text_content+'</option>';
-      }).join('')+'<option value="__add__">+ Add New Storyboard</option>';
-      topicWrap.innerHTML='<select class="isx-select" id="isx-sel-topic">'+opts+'</select>';
-      document.getElementById('isx-sel-topic').addEventListener('change', async function(){
-        if(this.value==='__add__'){
-          var name=prompt('Name the new Storyboard (new project):');
-          if(name){
-            var _sb=T().sb; var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
-            var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString()}).select().single();
-            if(ins.data){ _isxPath=[{id:ins.data.id, text:name}]; }
-          } else { await _isxRenderLadder(); return; }
-        } else {
-          var text=this.options[this.selectedIndex].text;
-          _isxPath=[{id:this.value, text:text}];
-        }
-        _isxHeaderId=null; _isxHeaderLabel='New';
-        await _isxRenderLadder(); await _isxRenderBoard(); await _isxPersistLastTopic();
-      });
-    } else {
-      topicWrap.innerHTML='<div class="isx-rung-name">'+_isxPath[_isxPath.length-1].text+'</div>';
-    }
+    // TOPIC — current position, large centered pill, matches 9710's own
+    // #sc-topic-box treatment exactly (same class, same look).
+    topicBox.textContent=_isxPath[_isxPath.length-1].text;
+
     // 9711 lock, July 13, 2026: Header rung removed entirely — every save
     // targets this Topic's own NEW/Ideas bucket (_isxHeaderId stays null
     // permanently, see _isxInit). Moving an *existing* idea to a different
@@ -3498,18 +3487,21 @@
       // Header rungs are live drop targets for now — the Parent rung stays
       // click-only (its own "View as Topic" climb-back button) until a
       // longer jump like that gets its own design pass.
-      var topicRungEl=document.getElementById('isx-rung-topic');
-      var headerRungEl=document.getElementById('isx-rung-header');
-      var topicWrapEl=topicRungEl?topicRungEl.closest('.isx-rung'):null;
-      var headerWrapEl=headerRungEl?headerRungEl.closest('.isx-rung'):null;
+      // Sliding-window navigation, added July 12, 2026 — the same free-drag gesture
+      // used for repositioning a card on the canvas also doubles as a way to
+      // recenter the ladder directly onto this card by dropping it on the
+      // TOPIC box (Subber -> Topic in one move). The old Header-rung drop
+      // target was removed July 13, 2026 along with the Header rung itself
+      // (no bucket selection lives on this screen anymore) — moving a card
+      // to a specific Header is DETAILS-card-back's job now.
+      var topicRungEl=document.getElementById('isx-topic-box');
       function overEl(el, ev){
         if(!el) return false;
         var r=el.getBoundingClientRect();
         return ev.clientX>=r.left && ev.clientX<=r.right && ev.clientY>=r.top && ev.clientY<=r.bottom;
       }
       function clearRungHighlights(){
-        if(topicWrapEl) topicWrapEl.classList.remove('isx-rung-dropready');
-        if(headerWrapEl) headerWrapEl.classList.remove('isx-rung-dropready');
+        if(topicRungEl) topicRungEl.classList.remove('isx-rung-dropready');
       }
       function onMove(ev){
         var dx=ev.clientX-startX, dy=ev.clientY-startY;
@@ -3518,8 +3510,7 @@
         tile.style.top=Math.round(origTop+dy)+'px';
         clearRungHighlights();
         if(moved){
-          if(overEl(topicRungEl, ev) && topicWrapEl) topicWrapEl.classList.add('isx-rung-dropready');
-          else if(overEl(headerRungEl, ev) && headerWrapEl) headerWrapEl.classList.add('isx-rung-dropready');
+          if(overEl(topicRungEl, ev)) topicRungEl.classList.add('isx-rung-dropready');
         }
       }
       function onUp(ev){
@@ -3528,8 +3519,6 @@
         clearRungHighlights();
         if(moved && overEl(topicRungEl, ev)){
           _isxPromoteCardToTopic(rowId);
-        } else if(moved && overEl(headerRungEl, ev)){
-          _isxPromoteCardToHeader(rowId);
         } else if(moved){
           _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)};
         } else if(linkUrl){
@@ -3554,6 +3543,7 @@
     _isxHeaderId=null; _isxHeaderLabel='New';
     await _isxRenderLadder();
     await _isxRenderBoard();
+    await _isxPersistLastTopic();
   }
 
   // Drag-to-Header: promotes a floating card to a header row (if it isn't

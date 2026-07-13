@@ -327,41 +327,35 @@
 
 <!-- 💡 IDEA INPUT + FOCUSED BUCKET — 9711 (locked July 13, 2026, was 9210) -->
 <div class="sc" id="s-idea-session">
-  <div id="isx-toolbar">
-    <div class="isx-mode-row">
-      <div class="isx-mode-tab on">Create</div>
-      <div class="isx-mode-tab off" title="Coming next">Shape</div>
-      <div class="isx-mode-tab off" title="Coming later">Share</div>
+  <div id="isx-header-area">
+    <div id="isx-header-topleft">
+      <div class="isx-hdr-col">
+        <div class="sc-hdr-eyebrow">Project</div>
+        <div class="sc-hdr-frame inert" id="isx-project-hit"><div class="sc-hdr-frame-label" id="isx-project-label">—</div></div>
+      </div>
+      <div class="isx-hdr-col">
+        <div class="sc-hdr-eyebrow">Parent</div>
+        <div class="sc-hdr-frame inert" id="isx-parent-hit"><div class="sc-hdr-frame-label" id="isx-parent-label">—</div></div>
+      </div>
     </div>
-    <div class="isx-divider"></div>
-
-    <div class="isx-rung">
-      <div class="isx-rung-label">Parent</div>
-      <div class="isx-rung-body" id="isx-rung-parent"></div>
+    <div id="isx-header-center">
+      <div class="sc-hdr-eyebrow">Topic</div>
+      <div class="sc-topic-box" id="isx-topic-box">—</div>
     </div>
-    <div class="isx-rung">
-      <div class="isx-rung-label">Topic</div>
-      <div class="isx-rung-body" id="isx-rung-topic"></div>
+    <div id="isx-header-right">
+      <button class="sc-ov-btn" id="isx-idea-btn" title="Add an idea">💡</button>
+      <button class="sc-ov-btn" id="isx-image-btn" title="Add an image">📷</button>
+      <button class="sc-ov-btn" id="isx-link-btn" title="Add a link">🔗</button>
+      <button class="sc-ov-btn" id="isx-rules-btn" title="Brainstorm rules">RULES</button>
+      <button class="sc-ov-btn" id="isx-compass-btn" title="See the Storyboard">👁️</button>
+      <button class="sc-ov-btn" id="isx-fullscreen-btn" title="Full screen">⛶</button>
+      <button class="sc-ov-btn" id="isx-end-btn" title="Close">✕</button>
     </div>
-    <button class="isx-compass" id="isx-compass-btn" title="See the Storyboard">👁️</button>
-    <div class="isx-divider"></div>
-
-    <div class="isx-actions">
-      <button class="isx-action-btn" id="isx-idea-btn"><span class="isx-ic">💡</span>Idea</button>
-      <button class="isx-action-btn" id="isx-image-btn"><span class="isx-ic">📷</span>Image</button>
-      <button class="isx-action-btn" id="isx-link-btn"><span class="isx-ic">🔗</span>Link</button>
-    </div>
-    <div class="isx-divider"></div>
-    <button class="isx-ghost" id="isx-rules-btn">RULES</button>
+    <div id="isx-pagenum">9711</div>
   </div>
 
   <div id="isx-board">
     <div id="isx-canvas"><div id="isx-empty">Nothing caught yet — the board wakes up the moment you SAVE something.</div></div>
-  </div>
-
-  <div id="isx-session-controls">
-    <button class="isx-sc-btn" id="isx-fullscreen-btn" title="Full screen">⛶</button>
-    <button class="isx-sc-btn" id="isx-end-btn" title="End Session">✕</button>
   </div>
 
   <div id="isx-popup-layer"></div>
