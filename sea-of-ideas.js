@@ -184,7 +184,7 @@
         +'.sb-hdr-vitem.current{background:#F5F1E8;font-weight:700}'
         +'.sb-hdr-vitem.newh{color:#0F6E56;font-weight:700;border-top:1px dashed #D3D1C7;margin-top:2px;padding-top:8px}'
         +'.sb-body-box{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:120px;max-height:50vh;border-radius:8px;background:#fff;border:0.5px solid #B4B2A9;padding:10px 12px;box-sizing:border-box;margin-bottom:8px;overflow:hidden;position:relative}'
-        +'.sb-body-box img{max-width:100%;max-height:50vh;border-radius:8px;object-fit:contain}'
+        +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain;display:block}'
         +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#2C2C2A;font-weight:500;font-size:14px;cursor:pointer;word-break:break-word}'
         +'.sb-blue-row{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
         +'.sb-blue-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:1 1 auto;min-width:36px}'
@@ -1654,6 +1654,30 @@
   // Unified SHAPING card — same overlay, same buttons, regardless of whether
   // the card double-clicked is an idea, a header, or a sub-header. Type is a
   // state (has children / ends in : or ?), not a different kind of object.
+  // Full-viewport zoom for a single image — dismissed by clicking
+  // anywhere on the overlay, the ✕, or Escape. Built fresh and torn
+  // down each time rather than living in static markup, since it's
+  // only ever needed for as long as one image is being examined.
+  function _sbOpenImageLightbox(url){
+    var lb=document.createElement('div');
+    lb.id='sb-img-lightbox';
+    lb.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;'
+      +'display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+    lb.innerHTML='<img src="'+url+'" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:4px;pointer-events:none">'
+      +'<button id="sb-img-lightbox-close" aria-label="Close" style="position:absolute;top:16px;right:16px;width:38px;height:38px;'
+      +'border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:18px;cursor:pointer">\u2715</button>';
+    document.body.appendChild(lb);
+    function close(){
+      if(lb.parentNode) lb.parentNode.removeChild(lb);
+      document.removeEventListener('keydown', onKey);
+    }
+    lb.addEventListener('click', close);
+    var closeBtn=lb.querySelector('#sb-img-lightbox-close');
+    if(closeBtn) closeBtn.addEventListener('click', function(e){ e.stopPropagation(); close(); });
+    function onKey(e){ if(e.key==='Escape') close(); }
+    document.addEventListener('keydown', onKey);
+  }
+
   function openSbDetail(item){
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
@@ -1834,6 +1858,18 @@
     })();
 
     var statusBox=document.getElementById('sb-note-status');
+
+    // Double-click-to-zoom lightbox — Locked July 13, 2026. The DETAILS
+    // back is already the larger view of an image; some images (a
+    // whiteboard photo, a screenshot with small text) still need more
+    // than that to actually read. Double-clicking the image here zooms
+    // it again, near full-screen, dismissed by clicking anywhere or ✕.
+    var imgPreview=document.getElementById('sb-img-preview');
+    if(imgPreview){
+      imgPreview.style.cursor='zoom-in';
+      imgPreview.title='Double-click to zoom in';
+      imgPreview.addEventListener('dblclick', function(){ _sbOpenImageLightbox(imgPreview.src); });
+    }
 
     T().wire('sb-slider-project', openProjectSwitcher);
 
