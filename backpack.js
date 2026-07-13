@@ -793,13 +793,11 @@
     wire('b-mg-map',goMap);
     wire('b-mg-idea',   function(){
       closeMG();
-      if(window.T2TFocus && window.T2TFocus.openFocusGate){
-        window.T2TFocus.openFocusGate('s-idea-session', false, function(selectedId){
-          var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
-          if(selectedId) ctx = Object.assign({}, ctx, {boardId: selectedId});
-          window.T2TSea.openIdeaCapture(ctx);
-        });
-      } else if(window.T2TSea&&window.T2TSea.openIdeaCapture){
+      // 9611 FOCUS retired from this entry point, July 13, 2026 — 9711 now
+      // handles its own sticky last-Topic resume, so the extra gate screen
+      // in front of it is redundant. FOCUS is still used elsewhere (e.g.
+      // entering the Storyboard directly, b-sea-ideas below).
+      if(window.T2TSea && window.T2TSea.openIdeaCapture){
         var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
         window.T2TSea.openIdeaCapture(ctx);
       } else nav('s-idea-capture', false);
@@ -854,20 +852,17 @@
     wire('b-idea-back',returnToMG);
     wire('b-idea-mg',goMG);
     wire('b-idea-trivia',function(){ _triviaOverride='s-idea'; nav('s-trivia',false); });
-    /* NOTE: 9210 capture flow (selects, close, save, image buttons) is now wired
-       entirely inside sea-of-ideas.js via renderIdeaCapture() — registered against
-       's-idea-capture' through registerScreenActivate. This keeps all Idea/board
-       schema logic (boards, headers, cluster_id) in one file. The 9200 hub screen
-       ('s-idea') is no longer the default entry point (💡 now opens 9210 directly,
-       see b-mg-idea above) but is left in place and still reachable; its "Capture
-       an Idea" button below just forwards into the same 9210 flow. */
+    /* NOTE: capture flow (selects, close, save, image buttons) is wired
+       entirely inside sea-of-ideas.js via renderIdeaSession() — registered
+       against 's-idea-session' through registerScreenActivate. This keeps
+       all Idea/board schema logic (boards, headers, cluster_id) in one
+       file. The 9200 hub screen ('s-idea') is no longer the default entry
+       point (💡 now opens 9711 directly, see b-mg-idea above) but is left
+       in place and still reachable; its "Capture an Idea" button below
+       just forwards into the same 9711 flow. 9611 FOCUS retired from this
+       entry point July 13, 2026 — same reasoning as b-mg-idea above. */
     wire('b-capture-idea',function(){
-      if(window.T2TFocus && window.T2TFocus.openFocusGate){
-        window.T2TFocus.openFocusGate('s-idea-session', false, function(selectedId){
-          var ctx = selectedId ? {boardId:selectedId} : null;
-          window.T2TSea.openIdeaCapture(ctx);
-        });
-      } else if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
+      if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
       else nav('s-idea-capture');
     });
     wire('b-sea-ideas',function(){
