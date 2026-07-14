@@ -90,8 +90,8 @@
     _triviaRegistry[screenId] = links || [];
     /* track the target screen IDs so goBack() can identify trivia pages */
     (links||[]).forEach(function(link){
-      if(link.id && _triviaScreens.indexOf(link.id)===-1)
-        _triviaScreens.push(link.id);
+      if(link.target && _triviaScreens.indexOf(link.target)===-1)
+        _triviaScreens.push(link.target);
     });
   }
 
@@ -109,7 +109,7 @@
     }
     links.forEach(function(link) {
       var div = document.createElement('div');
-      var pn = _pageNums[link.id];
+      var pn = _pageNums[link.target];
       div.className = 'more-link' + (pn && getVisited().indexOf(pn)!==-1 ? ' visited' : '');
       div.innerHTML =
         '<div class="more-link-left">' +
@@ -118,7 +118,7 @@
           (link.sub ? '<div class="more-link-sub">' + link.sub + '</div>' : '') +
           '</div></div>' +
         '<div class="more-link-arrow"></div>';
-      div.addEventListener('click', function() { nav(link.id); });
+      div.addEventListener('click', function() { nav(link.target); });
       el.appendChild(div);
     });
   }
