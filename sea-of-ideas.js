@@ -3374,6 +3374,13 @@
         var rect=board.getBoundingClientRect();
         _isxOpenColorPicker(e.clientX-rect.left, e.clientY-rect.top);
       });
+      // Click the backdrop (not the card itself) closes the popup — same
+      // result as its own ✕. Covers the Idea Input card and every other
+      // popup that uses this shared layer. July 14, 2026.
+      var popupLayer=document.getElementById('isx-popup-layer');
+      if(popupLayer) popupLayer.addEventListener('click', function(e){
+        if(e.target===popupLayer) _isxClosePopup();
+      });
     }
   }
 

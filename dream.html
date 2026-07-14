@@ -1306,6 +1306,47 @@
   <div class="bar2"><button class="tb" id="b-idea-back">⬅️</button><button class="tb" id="b-idea-trivia">🌸</button><button class="tb" id="b-idea-mg">🔍</button></div>
 </div>
 
+<!-- 💡 IDEA INPUT + FOCUSED BUCKET — 9711 (locked July 13, 2026, was 9210) -->
+<div class="sc" id="s-idea-session">
+  <div id="isx-header-area">
+    <div id="isx-header-topleft">
+      <div class="isx-hdr-col">
+        <div class="sc-hdr-eyebrow">Project</div>
+        <div class="sc-hdr-frame" id="isx-project-hit"><div class="sc-hdr-frame-label" id="isx-project-label">—</div></div>
+      </div>
+      <div class="isx-hdr-col">
+        <div class="sc-hdr-eyebrow">Parent</div>
+        <div class="sc-hdr-frame inert" id="isx-parent-hit"><div class="sc-hdr-frame-label" id="isx-parent-label">—</div></div>
+      </div>
+    </div>
+    <div id="isx-header-center">
+      <div class="sc-hdr-eyebrow">Topic</div>
+      <div class="sc-topic-box" id="isx-topic-box">—</div>
+    </div>
+    <div id="isx-header-right">
+      <div class="isx-hdr-row">
+        <button class="sc-ov-btn" id="isx-idea-btn" title="Add an idea">💡</button>
+        <button class="sc-ov-btn" id="isx-recolor-btn" title="Recolor all headers">🎨</button>
+        <button class="sc-ov-btn" id="isx-rules-btn" title="Brainstorm rules">RULES</button>
+        <button class="sc-ov-btn" id="isx-end-btn" title="Close">✕</button>
+      </div>
+      <div class="isx-hdr-row">
+        <button class="sc-ov-btn" id="isx-compass-btn" title="See the Storyboard">👁️ STORYBOARD VIEW</button>
+      </div>
+    </div>
+    <div id="isx-pagenum">9711</div>
+  </div>
+
+  <div id="isx-board">
+    <div id="isx-canvas"><div id="isx-empty">Nothing caught yet — the board wakes up the moment you SAVE something.</div></div>
+    <!-- Nested inside #isx-board (not a sibling of the header) on purpose,
+         July 13, 2026: an open popup should only cover the board, never
+         the header — PARENT/TOPIC need to stay reachable so the traveler
+         can climb or switch bucket without first closing whatever card
+         is open. -->
+    <div id="isx-popup-layer"></div>
+  </div>
+</div>
 
 <!-- 💡 IDEA CAPTURE — 9210-legacy -->
 <div class="sc" id="s-idea-capture">
