@@ -86,7 +86,7 @@
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
       var res=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
       if(res.error){ console.warn('topLevelBoards error:', res.error); return []; }
-      return (res.data||[]).filter(function(r){ return r.text_content!=='Trash'; });
+      return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; });
     }catch(e){ console.warn('topLevelBoards exception:', e); return []; }
   }
 
