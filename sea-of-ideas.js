@@ -4002,10 +4002,6 @@
     _isxIdeaMode='idea';
     _isxClearPendingImage();
     _isxClearPendingExternalUrl();
-    var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
-    var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
-    if(modeIdeaBtn) modeIdeaBtn.classList.add('on');
-    if(modeHeaderBtn) modeHeaderBtn.classList.remove('on');
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
       var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
@@ -4201,10 +4197,6 @@
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
       +'<div class="isx-src-row" style="margin-bottom:8px">'
-        +'<button class="isx-src-btn on" id="isx-idea-mode-idea" type="button">\ud83d\udca1 Idea</button>'
-        +'<button class="isx-src-btn" id="isx-idea-mode-header" type="button">\u274b Header</button>'
-      +'</div>'
-      +'<div class="isx-src-row" style="margin-bottom:8px">'
         +'<button class="isx-src-btn" id="isx-btn-camera" type="button">\ud83d\udcf7 Camera</button>'
         +'<button class="isx-src-btn" id="isx-btn-attach" type="button">\ud83d\udcce Attach</button>'
         +'<button class="isx-src-btn" id="isx-btn-unsplash" type="button">\ud83c\udf05 Unsplash</button>'
@@ -4239,16 +4231,6 @@
     var unsplashBtn=document.getElementById('isx-btn-unsplash');
     if(unsplashBtn) unsplashBtn.onclick=_isxShowUnsplashPicker;
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
-
-    var modeIdeaBtn=document.getElementById('isx-idea-mode-idea');
-    var modeHeaderBtn=document.getElementById('isx-idea-mode-header');
-    function _isxSetMode(m){
-      _isxIdeaMode=m;
-      if(modeIdeaBtn) modeIdeaBtn.classList.toggle('on', m==='idea');
-      if(modeHeaderBtn) modeHeaderBtn.classList.toggle('on', m==='header');
-    }
-    if(modeIdeaBtn) modeIdeaBtn.onclick=function(){ _isxSetMode('idea'); };
-    if(modeHeaderBtn) modeHeaderBtn.onclick=function(){ _isxSetMode('header'); };
 
     var ta=document.getElementById('isx-idea-text');
     if(ta){
