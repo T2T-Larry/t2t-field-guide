@@ -38,7 +38,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260714a"></script>
 <script src="backpack.js?v=20260714a"></script>
-<script src="sea-of-ideas.js?v=20260714c"></script>
+<script src="sea-of-ideas.js?v=20260714d"></script>
 <script src="gems.js?v=20260709d"></script>
 </head>
 <body>
@@ -1339,12 +1339,15 @@
   </div>
 
   <div id="isx-board">
-    <div id="isx-canvas"><div id="isx-empty">Nothing caught yet — the board wakes up the moment you SAVE something.</div></div>
-    <!-- Nested inside #isx-board (not a sibling of the header) on purpose,
-         July 13, 2026: an open popup should only cover the board, never
-         the header — PARENT/TOPIC need to stay reachable so the traveler
-         can climb or switch bucket without first closing whatever card
-         is open. -->
+    <div id="isx-header-strip"></div>
+    <div id="isx-canvas-scroll">
+      <div id="isx-canvas"><div id="isx-empty">Nothing caught yet — the board wakes up the moment you SAVE something.</div></div>
+    </div>
+    <!-- Nested inside #isx-board (not a sibling of the header-area) on
+         purpose, July 13, 2026: an open popup should only cover the board,
+         never the header — PARENT/TOPIC need to stay reachable so the
+         traveler can climb or switch bucket without first closing
+         whatever card is open. -->
     <div id="isx-popup-layer"></div>
   </div>
 </div>

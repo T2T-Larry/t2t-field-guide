@@ -3387,6 +3387,22 @@
       if(popupLayer) popupLayer.addEventListener('click', function(e){
         if(e.target===popupLayer) _isxClosePopup();
       });
+      // Triple-click PARENT to reveal the page number badge — same
+      // convention as 9710's own sc-parent-hit trick.
+      (function(){
+        var clicks=0, timer=null;
+        var hit=document.getElementById('isx-parent-hit');
+        if(hit) hit.addEventListener('click', function(){
+          clicks++;
+          if(timer) clearTimeout(timer);
+          timer=setTimeout(function(){ clicks=0; }, 600);
+          if(clicks>=3){
+            clicks=0;
+            var pn=document.getElementById('isx-pagenum');
+            if(pn){ pn.style.opacity='1'; setTimeout(function(){ pn.style.opacity='0'; }, 2000); }
+          }
+        });
+      })();
     }
   }
 
@@ -3652,9 +3668,10 @@
 
   async function _isxRenderBoard(){
     var canvas=document.getElementById('isx-canvas');
+    var strip=document.getElementById('isx-header-strip');
     var empty=document.getElementById('isx-empty');
-    if(!canvas) return;
-    canvas.innerHTML='';
+    if(!canvas||!strip) return;
+    canvas.innerHTML=''; strip.innerHTML='';
     if(empty) canvas.appendChild(empty);
     _isxLoadTopicColor();
     var clusterId=_isxCurrentClusterId();
@@ -3684,23 +3701,24 @@
 
       if(empty) empty.style.display = (ideaRows.length||contentHeaders.length) ? 'none' : 'block';
 
-      // Headers along the top row, same fixed-position idea as 9710's own
-      // column headers — left to right in creation order, MISC then Trash
-      // pinned at the end. Loose ideas scatter freely in the space below.
-      var HEADER_ROW_Y=16, HEADER_TILE_W=112, HEADER_GAP=12;
+      // Headers live in their own fixed strip above the scrolling canvas —
+      // July 14, 2026 (was manually x/y-positioned inside the same
+      // scrolling canvas as loose ideas). Flex-wrap handles overflow onto
+      // a second row on its own; the strip sits outside #isx-canvas-scroll
+      // so it never scrolls out of view while browsing idea cards. MISC
+      // then Trash pinned at the end, same order as before.
       var headerRowOrder=contentHeaders.concat(miscRow?[miscRow]:[]).concat(trashRow?[trashRow]:[]);
-      headerRowOrder.forEach(function(r, i){
+      headerRowOrder.forEach(function(r){
         var icon = String(r.id)===String(trashId) ? '\ud83d\uddd1\ufe0f ' : (String(r.id)===String(miscId) ? '\ud83d\udce6 ' : '');
-        canvas.appendChild(_isxMakeHeaderStackTile(r, 16+i*(HEADER_TILE_W+HEADER_GAP), HEADER_ROW_Y, icon));
+        strip.appendChild(_isxMakeHeaderStackTile(r, icon));
       });
 
-      var freeTop=HEADER_ROW_Y+66+24; // clear of the header row
-      var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600+freeTop);
-      ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h, freeTop)); });
+      var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
+      ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
-  function _isxMakeTile(row, w, h, freeTop){
+  function _isxMakeTile(row, w, h){
     var t=document.createElement('div');
     t.className='isx-tile';
     t.dataset.isxId=row.id;
@@ -3712,8 +3730,7 @@
       // un-dragged card gets a brand new random spot on every re-render
       // (e.g. right after adding a new idea), which reshuffles the whole
       // board every time instead of only placing the new arrival.
-      var top=freeTop||16;
-      pos={ x: 16+Math.random()*Math.max(40,w-140), y: top+Math.random()*Math.max(40,h-top-84) };
+      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
       _isxCardPos[row.id]=pos;
     }
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
@@ -3736,25 +3753,25 @@
     return t;
   }
 
-  // Header buckets — July 14, 2026: pinned along a fixed top row, like
-  // 9710's own column headers, instead of scattered among loose ideas.
-  // Same stacked-card look as 9710's _sboardMakeHeaderStackTile (three
-  // layered, slightly rotated... actually kept straight here, since a row
-  // reads better unrotated), built on the isx mouse-drag system so
-  // dragging one onto the TOPIC rung still drills in — but a plain
-  // reposition drag snaps back to its row slot on release (pinned=true in
-  // _isxWireTileDrag) rather than free-floating like a loose idea. Always
-  // a valid drop target for loose ideas (see _isxWireTileDrag). MISC and
-  // Trash are the same tile, just permanent slots at the end of the row
-  // with an icon prefix — Trash is one single bucket for the whole
-  // account (matches 9710), MISC is per-Topic.
-  function _isxMakeHeaderStackTile(row, x, y, iconPrefix){
+  // Header buckets — July 14, 2026 (rebuilt): live in the fixed
+  // #isx-header-strip above the scrolling canvas, in normal flex-wrap flow
+  // rather than manually positioned x/y — flex-wrap puts overflow headers
+  // on a second row on its own, and since the strip sits outside
+  // #isx-canvas-scroll, it never scrolls out of view while browsing idea
+  // cards. Same stacked-card look as 9710's own header tiles. Still built
+  // on the isx mouse-drag system so dragging one onto the TOPIC rung
+  // drills in (pinned=true — a plain reposition drag just re-renders,
+  // snapping back into flow rather than free-floating). Always a valid
+  // drop target for loose ideas (see _isxWireTileDrag). MISC and Trash are
+  // the same tile, just permanent slots at the end of the strip with an
+  // icon prefix — Trash is one single bucket for the whole account
+  // (matches 9710), MISC is per-Topic.
+  function _isxMakeHeaderStackTile(row, iconPrefix){
     var t=document.createElement('div');
     t.className='isx-tile isx-stack-tile';
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
-    t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
     var bg=row.color||'#fff';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
@@ -3773,14 +3790,14 @@
   // needs to open on a genuine click; a small movement threshold is what
   // tells a drag apart from a click on the same element.
   function _isxWireTileDrag(tile, rowId, linkUrl, pinned){
-    var startX, startY, origLeft, origTop, moved, canvas;
+    var startX, startY, origLeft, origTop, moved;
     tile.addEventListener('mousedown', function(e){
       e.preventDefault();
-      canvas=tile.parentElement;
       var board=document.getElementById('isx-board');
+      var scroller=document.getElementById('isx-canvas-scroll');
       startX=e.clientX; startY=e.clientY; moved=false;
       origLeft=parseFloat(tile.style.left)||0; origTop=parseFloat(tile.style.top)||0;
-      var startScrollLeft=board?board.scrollLeft:0, startScrollTop=board?board.scrollTop:0;
+      var startScrollLeft=scroller?scroller.scrollLeft:0, startScrollTop=scroller?scroller.scrollTop:0;
       // Sliding-window navigation, added July 12, 2026 — the same free-drag gesture
       // used for repositioning a card on the canvas also doubles as a way to
       // shift the ladder: release over the Topic rung to recenter directly
@@ -3810,7 +3827,7 @@
       // _isxOfferStackName) and the dragged card nests under it. Locked
       // tiles and the tile being dragged itself are never valid targets.
       function findTileTarget(ev){
-        var tiles=canvas.querySelectorAll('.isx-tile');
+        var tiles=board.querySelectorAll('.isx-tile');
         for(var i=0;i<tiles.length;i++){
           var el=tiles[i];
           if(el===tile || el.dataset.isxLocked) continue;
@@ -3820,36 +3837,38 @@
       }
       function clearRungHighlights(){
         if(topicRungEl) topicRungEl.classList.remove('isx-rung-dropready');
-        canvas.querySelectorAll('.isx-tile-dropready').forEach(function(el){ el.classList.remove('isx-tile-dropready'); });
+        board.querySelectorAll('.isx-tile-dropready').forEach(function(el){ el.classList.remove('isx-tile-dropready'); });
       }
-      // Edge auto-scroll — July 14, 2026. #isx-board is the scroll
-      // container; the header row (MISC/Trash pinned at the end) can sit
-      // well off-screen on a Topic with several headers, so dragging a
-      // card toward the edge needs to scroll to reach it, same as 9710's
-      // own edge-scroll on its board-wrap.
+      // Edge auto-scroll — July 14, 2026. #isx-canvas-scroll is the scroll
+      // container for loose ideas (headers live in the always-visible
+      // fixed strip now, so they no longer need scrolling into view).
+      // Dragging a loose idea near the canvas edge still scrolls to reach
+      // more cards, same as 9710's own edge-scroll on its board-wrap.
       var EDGE=56, MAXSPEED=16;
       function edgeScroll(ev){
-        if(!board) return;
-        var r=board.getBoundingClientRect();
+        if(!scroller) return;
+        var r=scroller.getBoundingClientRect();
         var x=ev.clientX, y=ev.clientY;
         if(x>=r.left && x<=r.right){
-          if(x-r.left<EDGE) board.scrollLeft-=MAXSPEED*(1-(x-r.left)/EDGE);
-          else if(r.right-x<EDGE) board.scrollLeft+=MAXSPEED*(1-(r.right-x)/EDGE);
+          if(x-r.left<EDGE) scroller.scrollLeft-=MAXSPEED*(1-(x-r.left)/EDGE);
+          else if(r.right-x<EDGE) scroller.scrollLeft+=MAXSPEED*(1-(r.right-x)/EDGE);
         }
         if(y>=r.top && y<=r.bottom){
-          if(y-r.top<EDGE) board.scrollTop-=MAXSPEED*(1-(y-r.top)/EDGE);
-          else if(r.bottom-y<EDGE) board.scrollTop+=MAXSPEED*(1-(r.bottom-y)/EDGE);
+          if(y-r.top<EDGE) scroller.scrollTop-=MAXSPEED*(1-(y-r.top)/EDGE);
+          else if(r.bottom-y<EDGE) scroller.scrollTop+=MAXSPEED*(1-(r.bottom-y)/EDGE);
         }
       }
       function onMove(ev){
         edgeScroll(ev);
-        // Compensate for however much the board has auto-scrolled since
+        // Compensate for however much the canvas has auto-scrolled since
         // mousedown, or the tile drifts from the cursor as soon as
         // edgeScroll kicks in — raw client-coordinate delta alone stops
         // matching canvas-local position the moment the container scrolls
-        // underneath a fixed cursor position.
-        var scrollDx=board?(board.scrollLeft-startScrollLeft):0;
-        var scrollDy=board?(board.scrollTop-startScrollTop):0;
+        // underneath a fixed cursor position. Pinned (header strip) tiles
+        // never scroll, so this is a no-op for them (scroller deltas stay
+        // zero relative to their own container regardless).
+        var scrollDx=scroller?(scroller.scrollLeft-startScrollLeft):0;
+        var scrollDy=scroller?(scroller.scrollTop-startScrollTop):0;
         var dx=(ev.clientX-startX)+scrollDx, dy=(ev.clientY-startY)+scrollDy;
         if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
         tile.style.left=Math.round(origLeft+dx)+'px';
@@ -4021,10 +4040,21 @@
     var layer=document.getElementById('isx-popup-layer');
     if(!layer) return;
     layer.innerHTML=html; layer.classList.add('active');
+    _isxUpdatePageNum();
   }
   function _isxClosePopup(){
     var layer=document.getElementById('isx-popup-layer');
     if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
+    _isxUpdatePageNum();
+  }
+  // The header badge is fixed at 9711 in the HTML, but a popup on top
+  // (Idea 9712, Image 9713, Link 9714, Rules 9715…) is its own Touch
+  // Point and should say so while it's open — July 14, 2026.
+  function _isxUpdatePageNum(){
+    var pn=document.getElementById('isx-pagenum');
+    if(!pn) return;
+    var openCard=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
+    pn.textContent = openCard ? openCard.getAttribute('data-pagenum') : '9711';
   }
 
   // Lets a traveler drag the whole capture card aside to peek at the
