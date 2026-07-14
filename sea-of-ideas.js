@@ -3539,6 +3539,9 @@
   function _isxMakeTile(row, w, h){
     var t=document.createElement('div');
     t.className='isx-tile';
+    t.dataset.isxId=row.id;
+    t.dataset.isxType=row.content_type;
+    t.dataset.isxLocked=row.locked?'1':'';
     var pos=_isxCardPos[row.id];
     if(!pos){
       // Cache the very first placement, not just drags — otherwise every
@@ -3572,14 +3575,15 @@
   // 2026. Same stacked-card look as 9710's _sboardMakeHeaderStackTile
   // (three layered, slightly rotated cards), but built on the isx mouse-drag
   // positioning system so it behaves identically to a loose isx-tile:
-  // repositions freely, and dragging it onto the TOPIC rung drills in
-  // (_isxPromoteCardToTopic works on any row regardless of content_type).
-  // View-only for now — no drop-to-cluster target yet, that's the next
-  // build (visually cluster loose cards, then commit to a new/existing
-  // subheader).
+  // repositions freely, dragging it onto the TOPIC rung drills in
+  // (_isxPromoteCardToTopic works on any row regardless of content_type),
+  // and it's a valid drop target for loose ideas (see _isxWireTileDrag).
   function _isxMakeHeaderStackTile(row, w, h){
     var t=document.createElement('div');
     t.className='isx-tile isx-stack-tile';
+    t.dataset.isxId=row.id;
+    t.dataset.isxType=row.content_type;
+    t.dataset.isxLocked=row.locked?'1':'';
     var pos=_isxCardPos[row.id];
     if(!pos){
       pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
@@ -3632,8 +3636,24 @@
         var r=el.getBoundingClientRect();
         return ev.clientX>=r.left && ev.clientX<=r.right && ev.clientY>=r.top && ev.clientY<=r.bottom;
       }
+      // Drop-onto-another-tile — July 14, 2026. Dropping a loose idea onto
+      // an existing header stack moves it there directly (no prompt, it
+      // already has a home). Dropping it onto another loose idea groups
+      // them: the target becomes a header (name optional — see
+      // _isxOfferStackName) and the dragged card nests under it. Locked
+      // tiles and the tile being dragged itself are never valid targets.
+      function findTileTarget(ev){
+        var tiles=canvas.querySelectorAll('.isx-tile');
+        for(var i=0;i<tiles.length;i++){
+          var el=tiles[i];
+          if(el===tile || el.dataset.isxLocked) continue;
+          if(overEl(el, ev)) return el;
+        }
+        return null;
+      }
       function clearRungHighlights(){
         if(topicRungEl) topicRungEl.classList.remove('isx-rung-dropready');
+        canvas.querySelectorAll('.isx-tile-dropready').forEach(function(el){ el.classList.remove('isx-tile-dropready'); });
       }
       function onMove(ev){
         var dx=ev.clientX-startX, dy=ev.clientY-startY;
@@ -3643,14 +3663,25 @@
         clearRungHighlights();
         if(moved){
           if(overEl(topicRungEl, ev)) topicRungEl.classList.add('isx-rung-dropready');
+          else{ var tgt=findTileTarget(ev); if(tgt) tgt.classList.add('isx-tile-dropready'); }
         }
       }
       function onUp(ev){
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         clearRungHighlights();
+        var tileTarget = moved ? findTileTarget(ev) : null;
         if(moved && overEl(topicRungEl, ev)){
           _isxPromoteCardToTopic(rowId);
+        } else if(moved && tileTarget){
+          if(tileTarget.dataset.isxType==='header'){
+            delete _isxCardPos[rowId];
+            _sboardMoveCard(rowId, tileTarget.dataset.isxId);
+          } else {
+            _isxFetchRow(tileTarget.dataset.isxId).then(function(targetRow){
+              if(targetRow) _isxOfferStackName(rowId, targetRow);
+            });
+          }
         } else if(moved){
           _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)};
         } else if(linkUrl){
@@ -3660,6 +3691,55 @@
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+  }
+
+  // Drop one loose idea onto another — groups them by promoting the target
+  // to a header. Naming is optional (Larry, July 14, 2026): Save renames
+  // the new header, Skip/blank keeps the target's own existing text as the
+  // header name — there is no "cancel and stay loose" path here, unlike
+  // CLUSTER's own _clusterOfferStack, which forces a name or nothing
+  // happens at all. Renaming later is always available via DETAILS.
+  function _isxOfferStackName(draggedId, targetRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var targetName=targetRow.text_content||'(untitled)';
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
+      +'<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">Skip to keep \u201c'+targetName+'\u201d as the header name \u2014 rename anytime from DETAILS.</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
+      +'<input id="isx-stack-name" type="text" placeholder="'+targetName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-stack-save" style="flex:1">Save</button><button class="sc-ov-btn" id="isx-stack-skip" style="flex:1">Skip</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    var input=document.getElementById('isx-stack-name');
+    if(input) setTimeout(function(){ input.focus(); }, 50);
+    function commit(name){ closeSbDetail(); _isxCommitStackIntoHeader(draggedId, targetRow, name); }
+    T().wire('isx-stack-skip', function(){ commit(null); });
+    T().wire('isx-stack-save', function(){
+      var name=((document.getElementById('isx-stack-name')||{}).value||'').trim();
+      commit(name||null);
+    });
+    if(input) input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ document.getElementById('isx-stack-save').click(); }
+      else if(e.key==='Escape'){ document.getElementById('isx-stack-skip').click(); }
+    });
+  }
+
+  async function _isxCommitStackIntoHeader(draggedId, targetRow, name){
+    var _sb=T().sb;
+    try{
+      if(targetRow.content_type!=='header'){
+        var updates={content_type:'header'};
+        if(name) updates.text_content=name;
+        var upd=await _sb.from('ideas').update(updates).eq('id',targetRow.id);
+        if(upd.error) throw upd.error;
+      } else if(name){
+        var upd2=await _sb.from('ideas').update({text_content:name}).eq('id',targetRow.id);
+        if(upd2.error) throw upd2.error;
+      }
+      delete _isxCardPos[draggedId];
+      await _sboardMoveCard(draggedId, targetRow.id);
+    }catch(err){ _isxShowError('Couldn\u2019t group these: '+(err&&err.message?err.message:String(err))); }
   }
 
   // Drag-to-Topic: recenters the ladder directly onto a floating card, the
