@@ -3353,6 +3353,7 @@
     if(!_isxWired){
       _isxWired=true;
       T().wire('isx-idea-btn', _isxOpenIdeaPanel);
+      T().wire('isx-recolor-btn', _isxOpenRecolorAll);
       T().wire('isx-rules-btn', _isxOpenRulesPanel);
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
       T().wire('isx-end-btn', _isxOpenRecap);
@@ -3503,6 +3504,54 @@
   var _isxCardPos = {}; // session-only manual drag positions, keyed by idea row id
   var _isxColorSwatches = ['#e4e0d8','#fdf6e8','#eaf4ff','#eafaf0','#fdeaea','#f5eaff','#fff3d6','#e8f0f5'];
 
+  // Recolor all headers on THIS Topic in one click — same idea as 9710's
+  // own 🎨 (_sboardOpenRecolorAll), but computes its own header-id list
+  // fresh from the current clusterId rather than reading 9710's globals
+  // (_sboardVisibleHeaders etc.), which may be stale or scoped to a
+  // different Topic if 9710 hasn't been opened this session. Covers every
+  // content subheader plus MISC; Trash is excluded — it's a global bucket,
+  // not "on this board" — matching 9710's own exclusion. July 14, 2026.
+  async function _isxOpenRecolorAll(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var clusterId=_isxCurrentClusterId();
+    if(!clusterId) return;
+    var _sb=T().sb;
+    try{
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user) throw new Error('Not signed in.');
+      var miscId=await _sboardEnsureMiscHeader(clusterId);
+      var res=await _sb.from('ideas').select('id,text_content')
+        .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
+      if(res.error) throw res.error;
+      var excludedNames=['Purpose','NEW','New Additions'];
+      var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; })
+        .map(function(r){ return r.id; }).concat(miscId?[miscId]:[]);
+      var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
+      var swatches=_isxColorSwatches.map(function(c){
+        return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
+      }).join('');
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
+        +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this Topic, including MISC, gets it.</div>'
+        +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
+        +'<button class="sc-ov-btn" id="isx-recolor-close" style="width:100%">Cancel</button>'
+        +'</div>';
+      ov.classList.add('active');
+      T().wire('isx-recolor-close', closeSbDetail);
+      ov.querySelectorAll('.sb-swatch').forEach(function(sw){
+        sw.onclick=async function(){
+          var c=sw.getAttribute('data-c');
+          try{
+            for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); }
+          }catch(e){}
+          closeSbDetail();
+          _isxRenderBoard();
+        };
+      });
+    }catch(err){ _isxShowError('Couldn\u2019t load headers to recolor: '+(err&&err.message?err.message:String(err))); }
+  }
+
   async function _isxLoadTopicColor(){
     var board=document.getElementById('isx-board');
     if(!board) return;
@@ -3641,8 +3690,10 @@
     tile.addEventListener('mousedown', function(e){
       e.preventDefault();
       canvas=tile.parentElement;
+      var board=document.getElementById('isx-board');
       startX=e.clientX; startY=e.clientY; moved=false;
       origLeft=parseFloat(tile.style.left)||0; origTop=parseFloat(tile.style.top)||0;
+      var startScrollLeft=board?board.scrollLeft:0, startScrollTop=board?board.scrollTop:0;
       // Sliding-window navigation, added July 12, 2026 — the same free-drag gesture
       // used for repositioning a card on the canvas also doubles as a way to
       // shift the ladder: release over the Topic rung to recenter directly
@@ -3684,8 +3735,35 @@
         if(topicRungEl) topicRungEl.classList.remove('isx-rung-dropready');
         canvas.querySelectorAll('.isx-tile-dropready').forEach(function(el){ el.classList.remove('isx-tile-dropready'); });
       }
+      // Edge auto-scroll — July 14, 2026. #isx-board is the scroll
+      // container; the header row (MISC/Trash pinned at the end) can sit
+      // well off-screen on a Topic with several headers, so dragging a
+      // card toward the edge needs to scroll to reach it, same as 9710's
+      // own edge-scroll on its board-wrap.
+      var EDGE=56, MAXSPEED=16;
+      function edgeScroll(ev){
+        if(!board) return;
+        var r=board.getBoundingClientRect();
+        var x=ev.clientX, y=ev.clientY;
+        if(x>=r.left && x<=r.right){
+          if(x-r.left<EDGE) board.scrollLeft-=MAXSPEED*(1-(x-r.left)/EDGE);
+          else if(r.right-x<EDGE) board.scrollLeft+=MAXSPEED*(1-(r.right-x)/EDGE);
+        }
+        if(y>=r.top && y<=r.bottom){
+          if(y-r.top<EDGE) board.scrollTop-=MAXSPEED*(1-(y-r.top)/EDGE);
+          else if(r.bottom-y<EDGE) board.scrollTop+=MAXSPEED*(1-(r.bottom-y)/EDGE);
+        }
+      }
       function onMove(ev){
-        var dx=ev.clientX-startX, dy=ev.clientY-startY;
+        edgeScroll(ev);
+        // Compensate for however much the board has auto-scrolled since
+        // mousedown, or the tile drifts from the cursor as soon as
+        // edgeScroll kicks in — raw client-coordinate delta alone stops
+        // matching canvas-local position the moment the container scrolls
+        // underneath a fixed cursor position.
+        var scrollDx=board?(board.scrollLeft-startScrollLeft):0;
+        var scrollDy=board?(board.scrollTop-startScrollTop):0;
+        var dx=(ev.clientX-startX)+scrollDx, dy=(ev.clientY-startY)+scrollDy;
         if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
         tile.style.left=Math.round(origLeft+dx)+'px';
         tile.style.top=Math.round(origTop+dy)+'px';
