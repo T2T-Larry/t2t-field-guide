@@ -3368,6 +3368,12 @@
       // not _sboardCurrentTopicId) since 9710's openProjectSwitcher()
       // is hardwired to Storyboard-only state.
       T().wire('isx-project-hit', _isxOpenProjectSwitcher);
+      // TOPIC — July 14, 2026: same lateral-jump idea as PROJECT above,
+      // but among siblings under the current PARENT instead of top-level
+      // projects. Reachable at all times, including while the Idea Input
+      // card is open on top of the board (see the isx-popup-layer nesting
+      // note above — the header row is never covered by a popup).
+      T().wire('isx-topic-box', _isxOpenTopicSwitcher);
       var board=document.getElementById('isx-board');
       if(board) board.addEventListener('dblclick', function(e){
         if(e.target.closest('.isx-tile')) return;
@@ -3507,6 +3513,75 @@
         if(ins.error) throw ins.error;
         closeSbDetail();
         _isxPath=[{id:ins.data.id, text:ins.data.text_content}];
+        _isxHeaderId=null; _isxHeaderLabel='New';
+        _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
+      }catch(err){ if(errEl) errEl.textContent=err.message; }
+    });
+  }
+
+  // TOPIC switcher — jumps sideways among siblings under the current
+  // PARENT, replacing only the last leg of _isxPath so PROJECT/PARENT stay
+  // put. At the root (no PARENT yet — TOPIC === PROJECT), there's no
+  // sibling scope to speak of, so this falls back to the same top-level
+  // project pool PROJECT's own switcher uses. July 14, 2026.
+  async function _isxOpenTopicSwitcher(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var _sb=T().sb;
+    var parentEntry=(_isxPath && _isxPath.length>1) ? _isxPath[_isxPath.length-2] : null;
+    var currentTopicId=(_isxPath && _isxPath.length) ? _isxPath[_isxPath.length-1].id : null;
+    var siblings;
+    try{
+      siblings = parentEntry
+        ? await window.T2TData.activeChildHeaders(parentEntry.id)
+        : await _sboardTopLevelBoards();
+    }catch(err){ _isxShowError('Couldn\u2019t load topics: '+(err&&err.message?err.message:String(err))); return; }
+    siblings=(siblings||[]).slice().sort(function(a,b){
+      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+    });
+    var rows=siblings.map(function(s){
+      var cur=String(s.id)===String(currentTopicId)?' current':'';
+      return '<div class="sb-hdr-vitem'+cur+'" data-tid="'+s.id+'">'+(s.text_content||'(untitled)')+'</div>';
+    }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No sibling topics yet.</div>';
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Topic</div>'
+      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new topic'+(parentEntry?(' under '+parentEntry.text):'')+'</label>'
+      +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+      +'<input id="sb-topic-new-input" type="text" placeholder="Topic name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+      +'<button class="sc-ov-btn save" id="sb-topic-new-go">Create</button>'
+      +'</div>'
+      +'<div id="sb-topic-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<button class="sc-ov-btn" id="sb-topic-cancel" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.style.justifyContent='flex-start';
+    ov.style.paddingLeft='max(20px, 4vw)';
+    ov.classList.add('active');
+    Array.prototype.forEach.call(ov.querySelectorAll('.sb-hdr-vitem[data-tid]'), function(row){
+      row.addEventListener('click', function(){
+        var tid=row.getAttribute('data-tid');
+        var sib=siblings.find(function(s){ return String(s.id)===String(tid); });
+        closeSbDetail();
+        if(sib){
+          _isxPath[_isxPath.length-1]={id:sib.id, text:sib.text_content||'(untitled)'};
+          _isxHeaderId=null; _isxHeaderLabel='New';
+          _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
+        }
+      });
+    });
+    T().wire('sb-topic-cancel', closeSbDetail);
+    T().wire('sb-topic-new-go', async function(){
+      var errEl=document.getElementById('sb-topic-err');
+      var nameInput=document.getElementById('sb-topic-new-input');
+      var name=(nameInput&&nameInput.value||'').trim();
+      if(!name){ if(errEl) errEl.textContent='Name it first.'; return; }
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentEntry?parentEntry.id:null,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw ins.error;
+        closeSbDetail();
+        _isxPath[_isxPath.length-1]={id:ins.data.id, text:ins.data.text_content};
         _isxHeaderId=null; _isxHeaderLabel='New';
         _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
       }catch(err){ if(errEl) errEl.textContent=err.message; }
@@ -4196,38 +4271,16 @@
     _isxOpenPopup('<div class="isx-pcard" data-pagenum="9712"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
-      +'<div class="isx-src-row" style="margin-bottom:8px">'
-        +'<button class="isx-src-btn" id="isx-btn-camera" type="button">\ud83d\udcf7 Camera</button>'
-        +'<button class="isx-src-btn" id="isx-btn-attach" type="button">\ud83d\udcce Attach</button>'
-        +'<button class="isx-src-btn" id="isx-btn-unsplash" type="button">\ud83c\udf05 Unsplash</button>'
-      +'</div>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
-      +'<input type="file" id="isx-camera-input" accept="image/*" capture="environment" style="display:none">'
-      +'<input type="file" id="isx-attach-input" accept="image/*" style="display:none">'
       +'<div class="isx-save-row">'
-        +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
+        +'<button class="isx-src-btn" id="isx-btn-unsplash" type="button">\ud83c\udf05 Unsplash</button>'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
+        +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
       +'</div></div>');
     document.getElementById('isx-p-close').onclick=_isxClosePopup;
     document.getElementById('isx-p-save').onclick=_isxCommitIdeaPanel;
     document.getElementById('isx-p-cancel').onclick=_isxCancelIdeaEntry;
-    var cameraBtn=document.getElementById('isx-btn-camera');
-    var cameraInput=document.getElementById('isx-camera-input');
-    if(cameraBtn && cameraInput){
-      cameraBtn.onclick=function(){ cameraInput.click(); };
-      cameraInput.addEventListener('change', function(){
-        if(this.files && this.files[0]) _isxShowPendingImage(this.files[0]);
-      });
-    }
-    var attachBtn=document.getElementById('isx-btn-attach');
-    var attachInput=document.getElementById('isx-attach-input');
-    if(attachBtn && attachInput){
-      attachBtn.onclick=function(){ attachInput.click(); };
-      attachInput.addEventListener('change', function(){
-        if(this.files && this.files[0]) _isxShowPendingImage(this.files[0]);
-      });
-    }
     var unsplashBtn=document.getElementById('isx-btn-unsplash');
     if(unsplashBtn) unsplashBtn.onclick=_isxShowUnsplashPicker;
     _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
