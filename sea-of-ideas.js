@@ -304,6 +304,11 @@
       var detailOv=document.createElement('div');
       detailOv.id='sb-detail-overlay'; detailOv.className='sb-overlay';
       fg.appendChild(detailOv);
+      // Click the backdrop (not the card itself) to close — same result as
+      // the explicit ✕. Added July 14, 2026.
+      detailOv.addEventListener('click', function(e){
+        if(e.target===detailOv) closeSbDetail();
+      });
     }
     if(!document.getElementById('sb-cluster-overlay')){
       var clusterOv=document.createElement('div');
@@ -3521,22 +3526,45 @@
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user||!clusterId) return;
+
+      // MISC is per-Topic (same ensure-call 9710 uses); Trash is a single
+      // global bucket for the whole account. Both are always shown, even
+      // empty — permanent slots at the end of the header row, not
+      // something that only appears once it has content. July 14, 2026.
+      var _ensureResults=await Promise.all([_sboardEnsureMiscHeader(clusterId), _sboardEnsureTrashHeader()]);
+      var miscId=_ensureResults[0], trashId=_ensureResults[1];
+
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked')
         .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
-      var reservedHeaderNames=['Trash','MISC','Purpose','NEW','New Additions'];
-      var rows=((res&&res.data)||[]).filter(function(r){
-        return r.content_type!=='header' || reservedHeaderNames.indexOf(r.text_content)===-1;
+      var excludedNames=['Purpose','NEW','New Additions'];
+      var allRows=((res&&res.data)||[]).filter(function(r){
+        return r.content_type!=='header' || excludedNames.indexOf(r.text_content)===-1;
       });
-      if(empty) empty.style.display = rows.length ? 'none' : 'block';
-      var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
-      rows.forEach(function(r){
-        canvas.appendChild(r.content_type==='header' ? _isxMakeHeaderStackTile(r, w, h) : _isxMakeTile(r, w, h));
+      var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
+      var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId); });
+      var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || await _isxFetchRow(miscId);
+      var trashRow=await _isxFetchRow(trashId);
+
+      if(empty) empty.style.display = (ideaRows.length||contentHeaders.length) ? 'none' : 'block';
+
+      // Headers along the top row, same fixed-position idea as 9710's own
+      // column headers — left to right in creation order, MISC then Trash
+      // pinned at the end. Loose ideas scatter freely in the space below.
+      var HEADER_ROW_Y=16, HEADER_TILE_W=112, HEADER_GAP=12;
+      var headerRowOrder=contentHeaders.concat(miscRow?[miscRow]:[]).concat(trashRow?[trashRow]:[]);
+      headerRowOrder.forEach(function(r, i){
+        var icon = String(r.id)===String(trashId) ? '\ud83d\uddd1\ufe0f ' : (String(r.id)===String(miscId) ? '\ud83d\udce6 ' : '');
+        canvas.appendChild(_isxMakeHeaderStackTile(r, 16+i*(HEADER_TILE_W+HEADER_GAP), HEADER_ROW_Y, icon));
       });
+
+      var freeTop=HEADER_ROW_Y+66+24; // clear of the header row
+      var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600+freeTop);
+      ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h, freeTop)); });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
-  function _isxMakeTile(row, w, h){
+  function _isxMakeTile(row, w, h, freeTop){
     var t=document.createElement('div');
     t.className='isx-tile';
     t.dataset.isxId=row.id;
@@ -3548,7 +3576,8 @@
       // un-dragged card gets a brand new random spot on every re-render
       // (e.g. right after adding a new idea), which reshuffles the whole
       // board every time instead of only placing the new arrival.
-      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
+      var top=freeTop||16;
+      pos={ x: 16+Math.random()*Math.max(40,w-140), y: top+Math.random()*Math.max(40,h-top-84) };
       _isxCardPos[row.id]=pos;
     }
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
@@ -3567,38 +3596,38 @@
     // Same SHAPING card the Storyboard uses — full-size image view, heart,
     // notes, lock — so a card behaves identically on both screens.
     t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(row); });
-    _isxWireTileDrag(t, row.id, linkUrl);
+    _isxWireTileDrag(t, row.id, linkUrl, false);
     return t;
   }
 
-  // Existing subheaders, shown freeform alongside loose ideas — July 14,
-  // 2026. Same stacked-card look as 9710's _sboardMakeHeaderStackTile
-  // (three layered, slightly rotated cards), but built on the isx mouse-drag
-  // positioning system so it behaves identically to a loose isx-tile:
-  // repositions freely, dragging it onto the TOPIC rung drills in
-  // (_isxPromoteCardToTopic works on any row regardless of content_type),
-  // and it's a valid drop target for loose ideas (see _isxWireTileDrag).
-  function _isxMakeHeaderStackTile(row, w, h){
+  // Header buckets — July 14, 2026: pinned along a fixed top row, like
+  // 9710's own column headers, instead of scattered among loose ideas.
+  // Same stacked-card look as 9710's _sboardMakeHeaderStackTile (three
+  // layered, slightly rotated... actually kept straight here, since a row
+  // reads better unrotated), built on the isx mouse-drag system so
+  // dragging one onto the TOPIC rung still drills in — but a plain
+  // reposition drag snaps back to its row slot on release (pinned=true in
+  // _isxWireTileDrag) rather than free-floating like a loose idea. Always
+  // a valid drop target for loose ideas (see _isxWireTileDrag). MISC and
+  // Trash are the same tile, just permanent slots at the end of the row
+  // with an icon prefix — Trash is one single bucket for the whole
+  // account (matches 9710), MISC is per-Topic.
+  function _isxMakeHeaderStackTile(row, x, y, iconPrefix){
     var t=document.createElement('div');
     t.className='isx-tile isx-stack-tile';
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
-    var pos=_isxCardPos[row.id];
-    if(!pos){
-      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
-      _isxCardPos[row.id]=pos;
-    }
-    t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
+    t.style.left=Math.round(x)+'px'; t.style.top=Math.round(y)+'px';
     var bg=row.color||'#fff';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-front" style="background:'+bg+'">'
         +(row.locked?'<div class="isx-stack-lock">\ud83d\udd12</div>':'')
-        +'<div>'+(row.text_content||'(untitled)')+'</div>'
+        +'<div>'+(iconPrefix||'')+(row.text_content||'(untitled)')+'</div>'
       +'</div>';
     t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(row); });
-    _isxWireTileDrag(t, row.id, null);
+    _isxWireTileDrag(t, row.id, null, true);
     return t;
   }
 
@@ -3607,7 +3636,7 @@
   // this browser session, same as CLUSTER's starburst). A link tile still
   // needs to open on a genuine click; a small movement threshold is what
   // tells a drag apart from a click on the same element.
-  function _isxWireTileDrag(tile, rowId, linkUrl){
+  function _isxWireTileDrag(tile, rowId, linkUrl, pinned){
     var startX, startY, origLeft, origTop, moved, canvas;
     tile.addEventListener('mousedown', function(e){
       e.preventDefault();
@@ -3683,7 +3712,8 @@
             });
           }
         } else if(moved){
-          _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)};
+          if(pinned){ _isxRenderBoard(); } // snap back to its fixed row slot
+          else{ _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)}; }
         } else if(linkUrl){
           window.open(linkUrl, '_blank', 'noopener');
         }
@@ -3785,7 +3815,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,content_type,text_content,cluster_id,image_url').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,content_type,text_content,cluster_id,image_url,color,locked').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
