@@ -3348,21 +3348,20 @@
     if(!_isxWired){
       _isxWired=true;
       T().wire('isx-idea-btn', _isxOpenIdeaPanel);
-      T().wire('isx-image-btn', _isxOpenImagePanel);
-      T().wire('isx-link-btn', _isxOpenLinkPanel);
       T().wire('isx-rules-btn', _isxOpenRulesPanel);
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
       T().wire('isx-end-btn', _isxOpenRecap);
-      T().wire('isx-fullscreen-btn', _isxToggleFullscreen);
+      // PROJECT — July 14, 2026: was display-only/inert on this screen;
+      // now a real lateral jump between top-level projects, same intent
+      // as 9710's own PROJECT chrome, but isx-scoped (updates _isxPath,
+      // not _sboardCurrentTopicId) since 9710's openProjectSwitcher()
+      // is hardwired to Storyboard-only state.
+      T().wire('isx-project-hit', _isxOpenProjectSwitcher);
       var board=document.getElementById('isx-board');
       if(board) board.addEventListener('dblclick', function(e){
         if(e.target.closest('.isx-tile')) return;
         var rect=board.getBoundingClientRect();
         _isxOpenColorPicker(e.clientX-rect.left, e.clientY-rect.top);
-      });
-      document.addEventListener('fullscreenchange', function(){
-        var b=document.getElementById('isx-fullscreen-btn');
-        if(b) b.textContent = document.fullscreenElement ? '\u21a9' : '\u26f6';
       });
     }
   }
@@ -3434,6 +3433,68 @@
    }
   }
 
+  // isx-scoped PROJECT switcher — July 14, 2026. Same UI/UX pattern as
+  // 9710's openProjectSwitcher(), but drives _isxPath directly instead of
+  // _sboardCurrentTopicId/_sboardDrillInto, so it's safe to open from this
+  // screen (9711) without touching Storyboard-only state.
+  async function _isxOpenProjectSwitcher(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var _sb=T().sb;
+    var boards=await _sboardTopLevelBoards();
+    boards=boards.slice().sort(function(a,b){
+      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+    });
+    var currentProjectId=(_isxPath && _isxPath.length) ? _isxPath[0].id : null;
+    var rows=boards.map(function(b){
+      var cur=String(b.id)===String(currentProjectId)?' current':'';
+      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
+    }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Project</div>'
+      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new project</label>'
+      +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+      +'<button class="sc-ov-btn save" id="sb-proj-new-go">Create</button>'
+      +'</div>'
+      +'<div id="sb-proj-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<button class="sc-ov-btn" id="sb-proj-cancel" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.style.justifyContent='flex-start';
+    ov.style.paddingLeft='max(20px, 4vw)';
+    ov.classList.add('active');
+    Array.prototype.forEach.call(ov.querySelectorAll('.sb-hdr-vitem[data-pid]'), function(row){
+      row.addEventListener('click', function(){
+        var pid=row.getAttribute('data-pid');
+        var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
+        closeSbDetail();
+        if(boardRow){
+          _isxPath=[{id:boardRow.id, text:boardRow.text_content||'(untitled)'}];
+          _isxHeaderId=null; _isxHeaderLabel='New';
+          _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
+        }
+      });
+    });
+    T().wire('sb-proj-cancel', closeSbDetail);
+    T().wire('sb-proj-new-go', async function(){
+      var errEl=document.getElementById('sb-proj-err');
+      var nameInput=document.getElementById('sb-proj-new-input');
+      var name=(nameInput&&nameInput.value||'').trim();
+      if(!name){ if(errEl) errEl.textContent='Name it first.'; return; }
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw ins.error;
+        closeSbDetail();
+        _isxPath=[{id:ins.data.id, text:ins.data.text_content}];
+        _isxHeaderId=null; _isxHeaderLabel='New';
+        _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
+      }catch(err){ if(errEl) errEl.textContent=err.message; }
+    });
+  }
+
   var _isxCardPos = {}; // session-only manual drag positions, keyed by idea row id
   var _isxColorSwatches = ['#e4e0d8','#fdf6e8','#eaf4ff','#eafaf0','#fdeaea','#f5eaff','#fff3d6','#e8f0f5'];
 
@@ -3461,12 +3522,17 @@
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user||!clusterId) return;
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked')
-        .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link'])
+        .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
-      var rows=(res&&res.data)||[];
+      var reservedHeaderNames=['Trash','MISC','Purpose','NEW','New Additions'];
+      var rows=((res&&res.data)||[]).filter(function(r){
+        return r.content_type!=='header' || reservedHeaderNames.indexOf(r.text_content)===-1;
+      });
       if(empty) empty.style.display = rows.length ? 'none' : 'block';
       var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
-      rows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
+      rows.forEach(function(r){
+        canvas.appendChild(r.content_type==='header' ? _isxMakeHeaderStackTile(r, w, h) : _isxMakeTile(r, w, h));
+      });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
@@ -3499,6 +3565,36 @@
     // notes, lock — so a card behaves identically on both screens.
     t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(row); });
     _isxWireTileDrag(t, row.id, linkUrl);
+    return t;
+  }
+
+  // Existing subheaders, shown freeform alongside loose ideas — July 14,
+  // 2026. Same stacked-card look as 9710's _sboardMakeHeaderStackTile
+  // (three layered, slightly rotated cards), but built on the isx mouse-drag
+  // positioning system so it behaves identically to a loose isx-tile:
+  // repositions freely, and dragging it onto the TOPIC rung drills in
+  // (_isxPromoteCardToTopic works on any row regardless of content_type).
+  // View-only for now — no drop-to-cluster target yet, that's the next
+  // build (visually cluster loose cards, then commit to a new/existing
+  // subheader).
+  function _isxMakeHeaderStackTile(row, w, h){
+    var t=document.createElement('div');
+    t.className='isx-tile isx-stack-tile';
+    var pos=_isxCardPos[row.id];
+    if(!pos){
+      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
+      _isxCardPos[row.id]=pos;
+    }
+    t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
+    var bg=row.color||'#fff';
+    t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
+      +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
+      +'<div class="isx-stack-front" style="background:'+bg+'">'
+        +(row.locked?'<div class="isx-stack-lock">\ud83d\udd12</div>':'')
+        +'<div>'+(row.text_content||'(untitled)')+'</div>'
+      +'</div>';
+    t.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(row); });
+    _isxWireTileDrag(t, row.id, null);
     return t;
   }
 

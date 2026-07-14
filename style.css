@@ -277,12 +277,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
      action buttons top-right. No left toolbar — the old sidebar (mode
      tabs, rungs, action-btn column) is retired. */
   #isx-header-area{background:var(--isx-navy);padding:10px 16px 8px;position:relative;min-height:40px;
-    display:flex;align-items:flex-start;justify-content:center;box-shadow:2px 0 10px rgba(0,0,0,.25)}
+    display:flex;align-items:flex-start;justify-content:center;box-shadow:2px 0 10px rgba(0,0,0,.25);
+    border-bottom:2px solid var(--brand-ink)}
   #isx-header-topleft{position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start}
   .isx-hdr-col{display:flex;flex-direction:column;align-items:center}
   #isx-header-center{text-align:center;padding-top:2px}
-  #isx-header-right{position:absolute;top:10px;right:16px;display:flex;flex-direction:row;flex-wrap:wrap;
-    gap:4px;justify-content:flex-end;align-items:flex-start;max-width:230px}
+  #isx-header-right{position:absolute;top:10px;right:16px;display:flex;flex-direction:column;
+    gap:4px;align-items:flex-end;max-width:230px}
+  .isx-hdr-row{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;justify-content:flex-end}
   #isx-pagenum{position:absolute;bottom:2px;right:8px;font-size:8px;letter-spacing:2px;color:#7fa8cc;opacity:0;transition:opacity .3s}
 
   /* Contrast fix for the lighter Blue Sky header bg (the shared sc-hdr-*
@@ -316,6 +318,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .isx-tile:active{cursor:grabbing}
   .isx-tile.isx-link-tile{cursor:pointer}
   .isx-tile img{display:block;width:100%;height:100%;border-radius:6px;margin-bottom:4px;object-fit:contain;pointer-events:none}
+  .isx-tile.isx-stack-tile{background:transparent;border:none;box-shadow:none;padding:0}
+  .isx-stack-layer{position:absolute;width:100%;height:100%;border:1.5px solid #4a4a4a;border-radius:10px}
+  .isx-stack-front{position:absolute;top:0;left:0;width:100%;height:100%;border:1.5px solid #4a4a4a;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;
+    overflow:hidden;font-weight:700;font-size:11px;line-height:1.15;color:#1a3a5c}
+  .isx-stack-lock{position:absolute;top:2px;right:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.6)}
   #isx-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#93a4b5;font-style:italic;
     font-size:13px;text-align:center;width:70%;pointer-events:none}
 
