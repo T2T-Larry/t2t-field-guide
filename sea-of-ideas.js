@@ -3356,7 +3356,12 @@
       T().wire('isx-recolor-btn', _isxOpenRecolorAll);
       T().wire('isx-rules-btn', _isxOpenRulesPanel);
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
-      T().wire('isx-end-btn', _isxOpenRecap);
+      T().wire('isx-end-btn', function(){
+        var fgr=document.getElementById('fg-root');
+        if(fgr) fgr.classList.remove('isx-full');
+        if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+        T().returnToMG();
+      });
       // PROJECT — July 14, 2026: was display-only/inert on this screen;
       // now a real lateral jump between top-level projects, same intent
       // as 9710's own PROJECT chrome, but isx-scoped (updates _isxPath,
@@ -4461,23 +4466,6 @@
     layer.querySelectorAll('.isx-tchip').forEach(function(el){
       el.onclick=function(){ _isxExpanded[el.getAttribute('data-expand')]=true; _isxOpenCompass(); };
     });
-  }
-
-  function _isxOpenRecap(){
-    var mins=Math.max(1, Math.round((Date.now()-(_isxStart||Date.now()))/60000));
-    var layer=document.getElementById('isx-popup-layer');
-    if(!layer) return;
-    layer.innerHTML='<div class="isx-recap"><h2>Nice session.</h2>'
-      +'<div class="isx-stat"><b>'+_isxCount+'</b> ideas caught</div>'
-      +'<div class="isx-stat"><b>'+mins+'</b> minute'+(mins===1?'':'s')+' in Create mode</div>'
-      +'<button class="isx-save" id="isx-p-done">DONE</button></div>';
-    layer.classList.add('active');
-    document.getElementById('isx-p-done').onclick=function(){
-      var fgr=document.getElementById('fg-root');
-      if(fgr) fgr.classList.remove('isx-full');
-      if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
-      _isxClosePopup(); T().returnToMG();
-    };
   }
 
   async function _ideaGetDefaultHeaderId(){
