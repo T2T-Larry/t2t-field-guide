@@ -637,6 +637,29 @@
   <div class="bar2"><button class="tb" id="b-trivia-back">⬅️</button><button class="tb" id="b-trivia-mg">🔍</button></div>
 </div>
 
+<!-- SECRET SAUCE -->
+<div class="sc card" id="s-secret-sauce">
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:10px">
+      <div class="reader-eyebrow">T2T</div>
+      <div class="reader-line bold" style="font-size:26px">Bill's Secret Sauce</div>
+      <div style="width:60px;height:0.5px;background:#C9A87C;margin:8px auto"></div>
+      <div class="reader-line small" style="line-height:1.9;text-align:left">
+        Add:<br>
+        1 spark of Curiosity<br>
+        1 spark of Imagination<br>
+        1 spark of Desire<br>
+        Mix thoroughly into a pot of Passion<br>
+        Blend in equal parts of Possibility and Potential<br>
+        Add a dash of Courage<br>
+        Stir continuously with a Stick-to-it-ness<br>
+        Season to taste.
+      </div>
+    </div>
+  </div>
+  <div class="bar2"><button class="tb" id="b-secret-sauce-back">⬅️</button><button class="tb" id="b-secret-sauce-mg">🔍</button></div>
+</div>
+
 <!-- AUTHORS -->
 <div class="sc" id="s-authors">
   <div class="card"><div class="sw">
@@ -720,6 +743,7 @@
   T.registerCtx('s-dream-intro',    'Dream Phase');
   T.registerCtx('s-trivia',         'Trivia');
   T.registerCtx('s-authors',        'Meet the Authors');
+  T.registerCtx('s-secret-sauce',   'Secret Sauce');
 
   /* ── MAP TARGETS ── */
   ['s-cover','s-cover-map','s-what-is-t2t','s-t2t-goals',
@@ -730,7 +754,8 @@
   T.registerTrivia('s-cover', [
     {icon:'📖', label:'What is T2T?',    sub:'A system, not a philosophy.',                  target:'s-what-is-t2t'},
     {icon:'🎯', label:'T2T Goals',       sub:'Vision · Excellence · Beautiful Journey.',     target:'s-t2t-goals'},
-    {icon:'👤', label:'Meet the Authors',sub:'A revolution that started with a conversation.',target:'s-authors'}
+    {icon:'👤', label:'Meet the Authors',sub:'A revolution that started with a conversation.',target:'s-authors'},
+    {icon:'🥣', label:'Secret Sauce',    sub:"Bill's recipe for the real thing.",              target:'s-secret-sauce'}
   ]);
   T.registerTrivia('s-invention', [
     {icon:'🧠', label:'More about Thoughts', sub:'60,000 a day. Only 2% are new.', target:'s-thoughts-1'}
@@ -850,6 +875,7 @@
 
   /* ── TRIVIA + AUTHORS ── */
   T.wire('b-aut-back', function(){T.nav('s-trivia');}); T.wire('b-aut-mg', T.goMG);
+  T.wire('b-secret-sauce-back', function(){T.nav('s-trivia');}); T.wire('b-secret-sauce-mg', T.goMG);
 
   /* ── PASSWORD RESET ── */
   (async function(){
