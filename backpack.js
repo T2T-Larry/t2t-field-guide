@@ -947,7 +947,7 @@
     loadVisitedFromSupabase:loadVisitedFromSupabase,
     getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
-    getCtx:getCtx, renderMap:renderMap,
+    getCtx:getCtx,
     openJournalMiro:openJournalMiro,
     openGemsMiro:openGemsMiro, openGemAdd:openGemAdd,
     ensureMiroReminder:ensureMiroReminder,
