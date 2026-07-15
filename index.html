@@ -20,6 +20,8 @@
 <script src="sea-of-ideas.js?v=20260714d"></script>
 <script src="focus.js?v=20260711b"></script>
 <script src="backpack.js?v=20260714a"></script>
+<script src="tmap.js?v=20260714a"></script>
+<script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260709d"></script>
 </head>
 <body>
@@ -72,28 +74,6 @@
     <button class="tb" id="b-cover-back">⬅️</button>
     <button class="tb" id="b-cover-mg">🔍</button>
     <button class="tb" id="b-cover-next">➡️</button>
-  </div>
-</div>
-
-<!-- SHARED MAP -->
-<div class="sc" id="s-cover-map">
-  <div class="card"><div class="mw">
-    <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>
-    <div class="mg-band"></div>
-    <div class="pr tap" id="tog-map-intro"><span class="pl2">🚪 Introduction</span><span class="ptg" id="map-intro-steps-tog">▼</span></div>
-    <div class="ps" id="map-intro-steps"></div>
-    <div class="pr tap" id="tog-map-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="map-dream-tog">▼</span></div>
-    <div id="map-dream" class="ps phd"></div>
-    <div class="pr tap" id="tog-map-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="map-believe-tog">▼</span></div>
-    <div id="map-believe" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-map-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="map-dare-tog">▼</span></div>
-    <div id="map-dare" class="ps phd"><div class="cm">Coming soon.</div></div>
-    <div class="pr tap" id="tog-map-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="map-journey-tog">▼</span></div>
-    <div id="map-journey" class="ps phd"><div class="cm">Coming soon.</div></div>
-  </div></div>
-  <div class="bar2">
-    <button class="tb" id="b-map-back">⬅️</button>
-    <button class="tb" id="b-map-mg">🔍</button>
   </div>
 </div>
 
@@ -726,6 +706,7 @@
   T.setPrimaryPages(['s-cover','s-invention','s-want','s-know','s-no-transition','s-dream-intro']);
 
   /* ── PAGE NUMBERS ── */
+  T.registerPageNum('s-signin',        '0010');
   T.registerPageNum('s-cover',         '0100');
   T.registerPageNum('s-what-is-t2t',   '0100.1');
   T.registerPageNum('s-t2t-goals',     '0100.2'); T.registerPageNum('s-invention',  '0200');
@@ -861,12 +842,14 @@
   T.wire('b-know-sortof', function(){ T.nav('s-sortof-transition'); });
   T.wire('b-know-yes',   function(){if(typeof sendPrompt!=='undefined') sendPrompt('Yes [on: Do you know what you want?]');});
 
-  /* ── 0990 · NO PATH TRANSITION ── */
-  T.registerPageNum('s-no-transition', '0990');
+  /* ── 0410 · NO PATH TRANSITION ── (renumbered from 0990 to match Concepts DB, July 14, 2026) */
+  T.registerPageNum('s-no-transition', '0410');
   T.registerCtx('s-no-transition', 'On Your Way');
   T.wire('b-no-transition-back', function(){ T.nav('s-know'); });
 
-  T.registerPageNum('s-sortof-transition', '0410');
+  /* 0430 · YES — reserved in Concepts DB, no dedicated screen built yet (currently routes to sendPrompt via b-know-yes). */
+
+  T.registerPageNum('s-sortof-transition', '0420');
   T.registerCtx('s-sortof-transition', 'On Your Way');
   T.wire('b-sortof-back', function(){ T.nav('s-know'); });
   T.wire('b-sortof-mg',   T.goMG);

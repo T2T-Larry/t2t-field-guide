@@ -306,7 +306,7 @@
     var m=_mapMap[cur];
     if(!m){ for(var i=stack.length-1;i>=0;i--){ if(_mapMap[stack[i]]){ m=_mapMap[stack[i]]; break; } } }
     nav(m||'s-cover-map');
-    renderMap(srcNum);
+    if (window.T2T && window.T2T.renderMap) window.T2T.renderMap(srcNum);
   }
 
   function goMore() {
@@ -374,61 +374,13 @@
     else     { el.classList.add('phd');    el.style.display='none'; if(tog) tog.textContent='▼'; }
   }
 
-  function autoOpenMapPhase(curNum){
-    var allSections = ['map-intro-steps','map-dream','map-believe','map-dare','map-journey'];
-    var target = 'map-intro-steps';
-    if(curNum){
-      var lead=curNum.charAt(0);
-      if(lead==='1') target='map-dream';
-      else if(lead==='2') target='map-believe';
-      else if(lead==='3') target='map-dare';
-      else if(lead==='4') target='map-journey';
-    }
-    allSections.forEach(function(id){ setPhOpen(id, id===target); });
-  }
+  /* autoOpenMapPhase moved to tmap.js, July 14, 2026 — setPhOpen stays here
+     and is exported below since it's a small generic utility, not Map-specific. */
 
-  /* ── MAP RENDER ── */
-  var _introSteps = [
-    {num:'0100',label:'Field Guide',                                  id:'s-cover'},
-    {num:'0200',label:'Every great invention started as a thought.',  id:'s-invention'},
-    {num:'0300',label:'What do you want?',                            id:'s-want'},
-    {num:'0400',label:'Do you know what you want?',                   id:'s-know'}
-  ];
-
-  var _dreamSteps = [
-    {num:'1000',label:'The Dream Phase',   id:'s-dream'},
-    {num:'1100',label:'CREATE',            id:'s-create-hub'},
-    {num:'1110',label:'Creative License',  id:'s-cl-intro'},
-    {num:'1130',label:'Inklings',          id:'s-what-i-want'},
-    {num:'1140',label:'Creative Sparks',   id:'s-lightning-bug'},
-    {num:'1150',label:'ISB',      id:'s-sea-of-ideas'},
-    {num:'1160',label:'PLUSing',           id:'s-plusing'}
-  ];
-
-  function renderStepList(containerId, steps, curNum, visited) {
-    var el=document.getElementById(containerId); if(!el) return;
-    el.innerHTML='';
-    steps.forEach(function(step){
-      var div=document.createElement('div');
-      var isCur=(step.num===curNum), isVis=visited.indexOf(step.num)!==-1&&!isCur;
-      div.className='st'+(isCur?' here':isVis?' vis':' unv');
-      div.innerHTML='<span class="sn">'+(isCur?'📍':isVis?'👣':step.num)+'</span><span class="sl">'+step.label+'</span>';
-      /* visited and current stops are tappable — navigate there */
-      if (isCur||isVis) {
-        div.style.cursor='pointer';
-        div.addEventListener('click',(function(n){ return function(){ closeMG(); navToPageNum(n); }; })(step.num));
-      }
-      el.appendChild(div);
-    });
-  }
-
-  function renderMap(curNum) {
-    var visited=getVisited();
-    if(curNum===undefined) curNum=_pageNums[cur]||null;
-    renderStepList('map-intro-steps', _introSteps, curNum, visited);
-    renderStepList('map-dream',       _dreamSteps, curNum, visited);
-    autoOpenMapPhase(curNum);
-  }
+  /* ── MAP RENDER ── moved to tmap.js, July 14, 2026 (Tmap/Dmap split — see
+     FG Standards). backpack.js exposes getCurNum/setPhOpen/getPageNumsReverse
+     below so tmap.js (and optionally dmap.js) can build the Map screen
+     without needing backpack.js's private closure state directly. */
 
   /* ── MIRO HELPERS ── */
   function _bid(id){ if(!id) return null; return id.endsWith('=')?id:id+'='; }
@@ -839,14 +791,7 @@
     registerPageNum('s-share', '9640');
     /* s-dare has no Notion page number assigned yet */
 
-    /* MAP */
-    wire('b-map-back',returnToMG);
-    wire('b-map-mg',goMG);
-    wire('tog-map-intro',   function(){togglePh('map-intro-steps');});
-    wire('tog-map-dream',  function(){togglePh('map-dream');});
-    wire('tog-map-believe',function(){togglePh('map-believe');});
-    wire('tog-map-dare',   function(){togglePh('map-dare');});
-    wire('tog-map-journey',function(){togglePh('map-journey');});
+    /* MAP — wired by tmap.js against its own injected elements, not here */
 
     /* IDEA HUB */
     wire('b-idea-back',returnToMG);
@@ -1008,7 +953,10 @@
     ensureMiroReminder:ensureMiroReminder,
     openJournalView:openJournalView,
     postIdeaToMiro:postIdeaToMiro, postImageToMiro:postImageToMiro,
-    navToPageNum:navToPageNum, currentFile:currentFile
+    navToPageNum:navToPageNum, currentFile:currentFile,
+    getCurNum:function(){ return _pageNums[cur]||null; },
+    setPhOpen:setPhOpen,
+    getPageNumsReverse:function(){ return _pageNumsReverse; }
   };
 
   document.addEventListener('DOMContentLoaded',function(){
