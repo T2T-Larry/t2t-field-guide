@@ -932,7 +932,7 @@
     tile.addEventListener('click', function(e){
       e.stopPropagation();
       if(window.T2TSea && window.T2TSea.openIdeaCapture){
-        window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, headerId:headerId, returnToBoard:true});
+        window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, headerId:headerId, returnToBoard:true, openImmediately:true});
       }
     });
     return tile;
@@ -2946,6 +2946,12 @@
   var _ideaCaptureCtx = null;
   var _ideaReturnToBoard = false;
   var _ideaReturnBoardId = null;
+  // True only when a 9710 [+] column circle triggered this — the 9712 Idea
+  // Input card should pop open immediately, preconditioned to that header.
+  // False for the general 💡 entry points, which should just land on 9711
+  // itself (browsing/resuming), not force the capture card open. Locked
+  // July 16, 2026.
+  var _ideaOpenCaptureImmediately = false;
   var _ideaWired = false;
   var _ideaDraftText = '';
   var _themeWired = false;
@@ -3640,9 +3646,15 @@
       }
     }
     _ideaCaptureCtx=null;
+    var _shouldAutoOpenCapture=_ideaOpenCaptureImmediately;
+    _ideaOpenCaptureImmediately=false;
     await _isxRenderLadder();
     await _isxRenderBoard();
     _isxUpdatePageNum();
+    // A 9710 column circle asked for the 9712 Idea Input card directly, not
+    // just a landing on the board underneath it — open it now, already
+    // targeted at the header that was clicked. Locked July 16, 2026.
+    if(_shouldAutoOpenCapture) _isxOpenIdeaPanel();
     if(!_isxWired){
       _isxWired=true;
       T().wire('isx-idea-btn', _isxOpenIdeaPanel);
@@ -4880,6 +4892,7 @@
       _ideaCaptureCtx=ctx||null;
       _ideaReturnToBoard=!!(ctx&&ctx.returnToBoard);
       _ideaReturnBoardId=(ctx&&ctx.boardId!==undefined)?ctx.boardId:null;
+      _ideaOpenCaptureImmediately=!!(ctx&&ctx.openImmediately);
       T().nav('s-idea-session');
     },
     getCurrentBoardContext: function(){ return _sboardCurrentTopicId?{boardId:_sboardCurrentTopicId}:null; },
