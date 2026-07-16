@@ -135,9 +135,9 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:8px 18px;font-size:28px;font-weight:700;color:#1a3a5c;cursor:pointer}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:0;padding:8px 18px;font-size:28px;font-weight:700;color:#1a3a5c;cursor:pointer;position:relative}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
-        +'#sc-divider{border-bottom:none;margin:0 0 4px;width:100%}'
+        +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
         +'#sc-status:empty{display:none;margin:0}'
         +'#sc-status.err{color:#b8562f}'
@@ -269,10 +269,10 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 8px;margin-bottom:2px;position:relative;min-height:40px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:40px">'
       +'<div style="text-align:center">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
-      +'<div id="sc-topic-box"></div>'
+      +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
@@ -361,8 +361,8 @@
     _sboardApplyBoardBg();
     _sboardWireAutoScroll();
 
-    var topicBoxEl=document.getElementById('sc-topic-box');
-    if(topicBoxEl) topicBoxEl.addEventListener('dblclick', function(e){
+    var topicCornerFlip=document.getElementById('sc-topic-corner-flip');
+    if(topicCornerFlip) topicCornerFlip.addEventListener('click', function(e){
       e.stopPropagation();
       if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
         openSbDetail(_sboardAllRowsById[_sboardCurrentTopicId]);
@@ -1312,6 +1312,7 @@
 
   function _sboardUpdateHeaderChrome(){
     var topicBox=document.getElementById('sc-topic-box');
+    var topicText=document.getElementById('sc-topic-text');
     var areaEl=document.getElementById('sc-header-area');
     var parentHit=document.getElementById('sc-parent-hit');
     var parentLabel=document.getElementById('sc-parent-label');
@@ -1319,7 +1320,8 @@
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
-      if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; }
+      if(topicText){ topicText.textContent=topicRow.text_content||'(untitled)'; }
+      if(topicBox){ topicBox.style.background=topicRow.color||''; }
       // PROJECT — fixed root anchor, walks the cluster_id chain all the way
       // up regardless of how deep Topic currently is. Locked July 12, 2026:
       // at the project apex (nothing above Topic yet), Project/Parent/Topic
@@ -1334,7 +1336,8 @@
       if(parentLabel) parentLabel.textContent=parentRow?(parentRow.text_content||'(untitled)'):projectName;
       if(parentHit){ parentHit.classList.remove('inert'); }
     } else {
-      if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
+      if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
+      if(topicBox){ topicBox.style.background=''; }
       if(projectLabel) projectLabel.textContent='ISB';
       if(parentLabel) parentLabel.textContent='ISB';
       if(parentHit){ parentHit.classList.add('inert'); }
