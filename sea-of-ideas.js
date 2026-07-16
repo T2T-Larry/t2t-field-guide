@@ -177,8 +177,8 @@
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
         +'#sc-topic-box{display:inline-block;max-width:320px;box-sizing:border-box;white-space:normal;word-wrap:break-word}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
-        +'.sc-add-header-tile:hover{background:#eaf3fb;border-color:#5b9bd5}'
-        +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5}'
+        +'.sc-add-header-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
+        +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
         +'.sc-peek-card{background:#fff;border-radius:14px;padding:14px;width:min(360px,94%);max-height:82vh;overflow-y:auto;box-sizing:border-box}'
         +'.sc-peek-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1.5px solid #cfe4f2}'
         +'.sc-peek-topbar button{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:0 0 auto}'
@@ -876,17 +876,17 @@
     return wrap;
   }
 
-  // [+] tile — adds a new header at whatever board is currently open,
+  // [+] control — adds a new header at whatever board is currently open,
   // landing right where MISC sits (far right). Simpler and more direct
   // than routing through the 💡 idea-capture flow just to make a header.
-  // Locked July 16, 2026.
+  // Kept small and understated (a control, not a card) after feedback
+  // that a full card-sized dashed box felt cluttered. Locked July 16, 2026.
   function _sboardMakeAddHeaderTile(width, height){
-    width=width||152;
     height=height||64;
     var tile=document.createElement('button');
     tile.className='sc-add-header-tile';
     tile.title='Add a new header';
-    tile.style.cssText='flex-shrink:0;width:'+width+'px;height:'+height+'px;margin-bottom:2px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:2px dashed #a9cce3;border-radius:0;color:#5b9bd5;font-size:26px;font-weight:700;cursor:pointer';
+    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:center;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#5b9bd5;font-size:18px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddHeaderPrompt(); });
     return tile;
@@ -927,12 +927,16 @@
   // add, landing directly under that header. Full capture (camera/
   // paste/link) still lives behind 💡 for anything beyond plain text.
   // Locked July 16, 2026.
+  // [+] control at the end of a header's own subber list — quick text-only
+  // add, landing directly under that header. Full capture (camera/
+  // paste/link) still lives behind 💡 for anything beyond plain text.
+  // Kept small and understated, same reasoning as the header [+] above.
+  // Locked July 16, 2026.
   function _sboardMakeAddSubberTile(headerId, width, height){
-    width=width||104; height=height||64;
     var tile=document.createElement('button');
     tile.className='sc-add-subber-tile';
     tile.title='Add a new card here';
-    tile.style.cssText='flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:0;color:#5b9bd5;font-size:20px;font-weight:700;cursor:pointer';
+    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:15px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddSubberPrompt(headerId); });
     return tile;
@@ -995,6 +999,19 @@
       // to a shared null root.
       var currentTopicRowForProject=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
       var currentProjectRowForScope=currentTopicRowForProject?_sboardProjectRowFor(currentTopicRowForProject):null;
+      // Fallback for a cold/stale cache — e.g. the first time this Topic is
+      // opened this session, or right after switching projects. Without
+      // this, the row lookup above silently misses, Purpose gets treated
+      // as project-less, and it never shows even at a real project root.
+      // Locked July 16, 2026.
+      if(!currentProjectRowForScope && _sboardCurrentTopicId && window.T2TData && window.T2TData.ancestorChain){
+        try{
+          var _chainForProject=await window.T2TData.ancestorChain(_sboardCurrentTopicId);
+          if(_chainForProject && _chainForProject.length){
+            currentProjectRowForScope={id:_chainForProject[0].id, text_content:_chainForProject[0].text};
+          }
+        }catch(e){ /* leave null — ensure-calls below just skip Purpose this render */ }
+      }
       var isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(_sboardCurrentTopicId));
 
       // Ensure-calls run concurrently, added July 12, 2026 — these three
