@@ -137,7 +137,7 @@
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
         +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;cursor:pointer}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
-        +'#sc-divider{border-bottom:1.5px solid #cfe4f2;margin:0 0 6px;width:100%}'
+        +'#sc-divider{border-bottom:none;margin:0 0 6px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
         +'#sc-status.err{color:#b8562f}'
         +'.sc-overlay-card{background:#fff;border-radius:14px;padding:16px;width:min(260px,84%);box-shadow:0 10px 24px rgba(0,0,0,0.3)}'
@@ -511,9 +511,11 @@
     var w=document.getElementById('sc-board-wrap');
     var areaEl=document.getElementById('sc-header-area');
     var clusterEl=document.getElementById('s-sea-of-ideas-cluster');
+    var swEl=clusterEl?clusterEl.querySelector('.sw'):null;
     if(w) w.style.background=c||'transparent';
     if(areaEl) areaEl.style.background=c||(_sboardCurrentTopicId?'#3a2564':'#1a3a5c');
     if(clusterEl) clusterEl.style.background=c||'';
+    if(swEl) swEl.style.background=c||'';
   }
   function _sboardSetBoardBg(c){
     try{ localStorage.setItem('t2t_seaOfIdeas_boardBg', c); }catch(e){}
