@@ -293,14 +293,11 @@
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">'
         +'<div style="display:flex;flex-direction:row;gap:4px;justify-content:flex-end;flex-wrap:wrap">'
-        +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
-        +'<button class="sc-ov-btn" id="b-sc-recolor-all" title="Recolor all headers">🎨</button>'
-        +'<button class="sc-ov-btn" id="b-sc-fix-orphans" title="Fix Purpose/Ideas headers stuck at the shared root">🔧</button>'
-        +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Full screen">⛶</button>'
+        +'<button class="sc-ov-btn" id="b-sc-gear" title="Options">⚙️</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
         +'</div>'
         +'<div style="display:flex;flex-direction:row;gap:4px;justify-content:flex-end">'
-        +'<button class="sc-ov-btn" id="b-sc-session-view" title="Open Session View">👁️ SESSION VIEW</button>'
+        +'<button class="sc-ov-btn" id="b-sc-session-view" title="Open Session View">SESSION VIEW</button>'
         +'</div>'
       +'</div>'
       +'</div>'
@@ -341,23 +338,8 @@
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
       else { T().returnToMG(); }
     });
-    T().wire('b-sc-idea', function(){
-      if(window.T2TSea && window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, returnToBoard:true});
-    });
-    T().wire('b-sc-recolor-all', _sboardOpenRecolorAll);
-    T().wire('b-sc-fix-orphans', _sboardOpenFixOrphansConfirm);
-    // The Storyboard is always at real-viewport size now (same .isx-full
-    // takeover as CREATE's Idea Session) — this button now matches CREATE's
-    // own ⛶ exactly: an extra layer, the actual browser/OS Fullscreen API.
-    T().wire('b-sc-mode-toggle', _isxToggleFullscreen);
+    T().wire('b-sc-gear', _sboardOpenGearMenu);
     T().wire('b-sc-session-view', _sboardOpenIdeaSession);
-    document.addEventListener('fullscreenchange', function(){
-      var b=document.getElementById('b-sc-mode-toggle');
-      if(b && document.getElementById('s-sea-of-ideas-cluster') && document.getElementById('s-sea-of-ideas-cluster').classList.contains('active')){
-        b.innerHTML = document.fullscreenElement ? '\u21a9' : '\u26f6';
-        b.title = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
-      }
-    });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     _sboardApplyBoardBg();
@@ -932,46 +914,24 @@
   // paste/link) still lives behind 💡 for anything beyond plain text.
   // Kept small and understated, same reasoning as the header [+] above.
   // Locked July 16, 2026.
+  // [+] control at the end of a header's own subber list — opens the same
+  // full capture card everything else uses (camera/attach/Unsplash, paste,
+  // link), pre-targeted at this specific header, then returns to this
+  // board on save. No more separate lightweight text-only dialog — one
+  // input experience everywhere. Locked July 16, 2026.
   function _sboardMakeAddSubberTile(headerId, width, height){
     var tile=document.createElement('button');
     tile.className='sc-add-subber-tile';
     tile.title='Add a new card here';
     tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:15px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
     tile.textContent='+';
-    tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddSubberPrompt(headerId); });
-    return tile;
-  }
-
-  function _sboardOpenAddSubberPrompt(headerId){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">New card</div>'
-      +'<textarea id="sb-addsubber-input" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px;min-height:60px"></textarea>'
-      +'<div style="font-size:10px;color:#888;font-style:italic;margin-bottom:6px">Need a photo or a link instead? Use 💡 for that.</div>'
-      +'<div id="sb-addsubber-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addsubber-go" style="flex:1">Add</button><button class="sc-ov-btn" id="sb-addsubber-cancel" style="flex:1">Cancel</button></div>'
-      +'</div>';
-    ov.classList.add('active');
-    var input=document.getElementById('sb-addsubber-input');
-    if(input) setTimeout(function(){ input.focus(); }, 50);
-    T().wire('sb-addsubber-cancel', closeSbDetail);
-    T().wire('sb-addsubber-go', async function(){
-      var errEl=document.getElementById('sb-addsubber-err');
-      var text=((input&&input.value)||'').trim();
-      if(!text){ if(errEl) errEl.textContent='Card can\'t be empty.'; return; }
-      var _sb=T().sb;
-      try{
-        var user=(await _sb.auth.getUser()).data.user;
-        if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'text',text_content:text,cluster_id:headerId||null,created_at:new Date().toISOString()}).select().single();
-        if(ins.error) throw ins.error;
-        closeSbDetail();
-        renderSeaBoard();
-      }catch(err){
-        if(errEl) errEl.textContent=err.message;
+    tile.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(window.T2TSea && window.T2TSea.openIdeaCapture){
+        window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, headerId:headerId, returnToBoard:true});
       }
     });
+    return tile;
   }
 
   async function renderSeaBoard(){
@@ -1793,6 +1753,31 @@
         renderSeaBoard();
       };
     });
+  }
+
+  // Gear menu — consolidates the traveler options that used to be separate
+  // top-row buttons (recolor all headers, fix orphaned Purpose/Ideas
+  // headers, full screen) into one place, leaving only Gear and X visible.
+  // Locked July 16, 2026.
+  function _sboardOpenGearMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var fsIcon=document.fullscreenElement?'\u21a9':'\u26f6';
+    var fsLabel=document.fullscreenElement?'Exit full screen':'Full screen';
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+      +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+      +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
+      +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
+      +'</div>'
+      +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%">Close</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
+    T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
+    T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); _isxToggleFullscreen(); });
+    T().wire('sb-gear-close', closeSbDetail);
   }
 
   async function openPurposeEditor(){
@@ -3624,6 +3609,7 @@
     _ideaCaptureCtx=null;
     await _isxRenderLadder();
     await _isxRenderBoard();
+    _isxUpdatePageNum();
     if(!_isxWired){
       _isxWired=true;
       T().wire('isx-idea-btn', _isxOpenIdeaPanel);
@@ -4344,11 +4330,16 @@
   // The header badge is fixed at 9711 in the HTML, but a popup on top
   // (Idea 9712, Image 9713, Link 9714, Rules 9715…) is its own Touch
   // Point and should say so while it's open — July 14, 2026.
+  // Also: when this screen was opened as a quick add-a-card shortcut (e.g.
+  // the [+] on a Storyboard header) rather than a deliberate visit to
+  // Session View, the badge shouldn't claim "9711" — it's just borrowing
+  // this screen's input card, and it returns to the board on save. Locked
+  // July 16, 2026.
   function _isxUpdatePageNum(){
     var pn=document.getElementById('isx-pagenum');
     if(!pn) return;
     var openCard=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
-    pn.textContent = openCard ? openCard.getAttribute('data-pagenum') : '9711';
+    pn.textContent = openCard ? openCard.getAttribute('data-pagenum') : (_ideaReturnToBoard ? '9710' : '9711');
   }
 
   // Lets a traveler drag the whole capture card aside to peek at the
