@@ -459,10 +459,23 @@
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
   var _sboardBoardBgPalette = [
     {n:'White', c:'#ffffff'},
+    {n:'Cream', c:'#f5f1e8'},
     {n:'Cork', c:'#c9a876'},
+    {n:'Sand', c:'#e3d5b8'},
+    {n:'Sage', c:'#a8b89a'},
     {n:'Dark Green', c:'#1e4d3a'},
+    {n:'Teal', c:'#0f6e56'},
+    {n:'Sky', c:'#5b9bd5'},
     {n:'Dark Blue', c:'#16324f'},
-    {n:'Purple', c:'#4a2f5e'}
+    {n:'Navy', c:'#1a3a5c'},
+    {n:'Slate', c:'#3d4a5c'},
+    {n:'Purple', c:'#4a2f5e'},
+    {n:'Plum', c:'#6b3a5e'},
+    {n:'Rose', c:'#c98a9c'},
+    {n:'Coral', c:'#d97b5f'},
+    {n:'Mustard', c:'#d4a72c'},
+    {n:'Charcoal', c:'#2c2c2a'},
+    {n:'Black', c:'#000000'}
   ];
   function _sboardGetBoardBg(){
     try{ return localStorage.getItem('t2t_seaOfIdeas_boardBg')||''; }catch(e){ return ''; }
@@ -494,8 +507,13 @@
     T().wire('sb-rootprompt-close', closeSbDetail);
   }
   function _sboardApplyBoardBg(){
+    var c=_sboardGetBoardBg();
     var w=document.getElementById('sc-board-wrap');
-    if(w) w.style.background=_sboardGetBoardBg()||'transparent';
+    var areaEl=document.getElementById('sc-header-area');
+    var clusterEl=document.getElementById('s-sea-of-ideas-cluster');
+    if(w) w.style.background=c||'transparent';
+    if(areaEl) areaEl.style.background=c||(_sboardCurrentTopicId?'#3a2564':'#1a3a5c');
+    if(clusterEl) clusterEl.style.background=c||'';
   }
   function _sboardSetBoardBg(c){
     try{ localStorage.setItem('t2t_seaOfIdeas_boardBg', c); }catch(e){}
@@ -505,17 +523,25 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     var swHTML=_sboardBoardBgPalette.map(function(p){
-      return '<button class="sb-bg-swatch" data-c="'+p.c+'" title="'+p.n+'" style="width:40px;height:40px;border-radius:8px;background:'+p.c+';border:1.5px solid #cfe4f2;cursor:pointer;margin:4px"></button>';
+      return '<button class="sb-bg-swatch" data-c="'+p.c+'" title="'+p.n+'" style="width:36px;height:36px;border-radius:8px;background:'+p.c+';border:1.5px solid #cfe4f2;cursor:pointer;margin:3px"></button>';
     }).join('');
+    var cur=_sboardGetBoardBg()||'#1a3a5c';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Board background</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Storyboard background</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">One color for the whole screen. Stays until you change it.</div>'
       +'<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:12px">'+swHTML+'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">'
+      +'<label for="sb-bg-custom" style="font-size:11px;font-weight:700;color:#1a3a5c">Custom:</label>'
+      +'<input type="color" id="sb-bg-custom" value="'+cur+'" style="width:44px;height:36px;border:1.5px solid #cfe4f2;border-radius:8px;padding:0;cursor:pointer">'
+      +'</div>'
       +'<button class="sc-ov-btn" id="sb-bg-close">Close</button>'
       +'</div>';
     ov.classList.add('active');
     Array.prototype.forEach.call(ov.querySelectorAll('.sb-bg-swatch'), function(btn){
       btn.addEventListener('click', function(){ _sboardSetBoardBg(btn.getAttribute('data-c')); closeSbDetail(); });
     });
+    var customInput=document.getElementById('sb-bg-custom');
+    if(customInput) customInput.addEventListener('input', function(){ _sboardSetBoardBg(customInput.value); });
     T().wire('sb-bg-close', closeSbDetail);
   }
 
@@ -1285,7 +1311,6 @@
     if(_sboardCurrentTopicId && _sboardAllRowsById[_sboardCurrentTopicId]){
       var topicRow=_sboardAllRowsById[_sboardCurrentTopicId];
       if(topicBox){ topicBox.textContent=topicRow.text_content||'(untitled)'; topicBox.style.background=topicRow.color||''; }
-      if(areaEl) areaEl.style.background='#3a2564';
       // PROJECT — fixed root anchor, walks the cluster_id chain all the way
       // up regardless of how deep Topic currently is. Locked July 12, 2026:
       // at the project apex (nothing above Topic yet), Project/Parent/Topic
@@ -1301,11 +1326,14 @@
       if(parentHit){ parentHit.classList.remove('inert'); }
     } else {
       if(topicBox){ topicBox.textContent=_sboardGetRootPrompt(); topicBox.style.background=''; }
-      if(areaEl) areaEl.style.background='#1a3a5c';
       if(projectLabel) projectLabel.textContent='ISB';
       if(parentLabel) parentLabel.textContent='ISB';
       if(parentHit){ parentHit.classList.add('inert'); }
     }
+    // One traveler-chosen color paints the whole screen (header strip +
+    // board area) — no more separate hardcoded navy/purple fighting it.
+    // Locked July 16, 2026.
+    _sboardApplyBoardBg();
   }
 
   async function _sboardMoveCard(itemId, headerId){
