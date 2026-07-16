@@ -172,6 +172,9 @@
         +'#sc-project-label{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:700;color:#fff;line-height:1.2}'
         +'#sc-topic-box.dragover,#sc-parent-hit.dragover,#sc-project-hit.dragover{outline:2px solid #5b9bd5}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
+        +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:10px;font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
+        +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
+        +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:14px}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'.sc-hdr-frame-label{opacity:.72}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
@@ -291,14 +294,10 @@
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9710</div>'
       +'</div>'
       +'</div>'
-      +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">'
-        +'<div style="display:flex;flex-direction:row;gap:4px;justify-content:flex-end;flex-wrap:wrap">'
-        +'<button class="sc-ov-btn" id="b-sc-gear" title="Options">⚙️</button>'
+      +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
+        +'<button class="sc-hdr-btn-muted" id="b-sc-session-view" title="Open Session View">SESSION VIEW</button>'
+        +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Options">⚙️</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
-        +'</div>'
-        +'<div style="display:flex;flex-direction:row;gap:4px;justify-content:flex-end">'
-        +'<button class="sc-ov-btn" id="b-sc-session-view" title="Open Session View">SESSION VIEW</button>'
-        +'</div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -868,7 +867,12 @@
     var tile=document.createElement('button');
     tile.className='sc-add-header-tile';
     tile.title='Add a new header';
-    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:center;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#5b9bd5;font-size:18px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
+    // align-self:flex-start + a top margin sized to center the circle
+    // within the header row's own height — was align-self:center, which
+    // vertically centered it against the *tallest column* (i.e. down by
+    // the subbers) instead of sitting level with the header cards
+    // themselves. Fixed July 16, 2026.
+    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:flex-start;margin-top:'+Math.max(0,(height-36)/2)+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#5b9bd5;font-size:18px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddHeaderPrompt(); });
     return tile;
@@ -1077,6 +1081,12 @@
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
         var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='NEW');
+        // MISC can take a new card just as freely as any content header —
+        // it's specifically for ideas that don't relate to the current
+        // TOPIC, so excluding it from the [+] made no sense. Purpose/NEW/
+        // Trash stay excluded (statement-only, auto-managed, and off-limits
+        // respectively). Locked July 16, 2026.
+        var blocksNewSubbers=(name==='Trash'||name==='Purpose'||name==='NEW');
         var straight=true;
         var subs=subHeadersOf[headerRow.id]||[];
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
@@ -1140,16 +1150,16 @@
           }
         });
         block.appendChild(hd);
-        if(directItems.length || subs.length || !isReserved){
+        if(directItems.length || subs.length || !blocksNewSubbers){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
           subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
           // [+] under each header adds a new subber directly here — mirrors
-          // the [+] after MISC for headers. Skipped on Purpose/MISC/NEW/
-          // Trash, which aren't meant to hold arbitrary loose cards the
-          // same way. Locked July 16, 2026.
-          if(!isReserved && !headerRow.locked){
+          // the [+] after MISC for headers. MISC included now too (any
+          // idea can land there, on-topic or not). Purpose/NEW/Trash stay
+          // excluded. Locked July 16, 2026.
+          if(!blocksNewSubbers && !headerRow.locked){
             scroll.appendChild(_sboardMakeAddSubberTile(headerRow.id, SUBBER_W, SUBBER_H));
           }
           block.appendChild(scroll);
@@ -3590,6 +3600,29 @@
   async function renderIdeaSession(){
     var fgr=document.getElementById('fg-root');
     if(fgr) fgr.classList.add('isx-full');
+    // An explicit ctx (boardId, optionally headerId) — e.g. the Storyboard's
+    // own [+] controls — always wins over whatever Session View happened
+    // to already be resting on from an earlier visit. Before this fix, a
+    // stale _isxPath from a prior visit made the "sticky resume" behavior
+    // silently override an explicit "add to this exact header" request,
+    // landing on the wrong board/header entirely. Locked July 16, 2026.
+    if(_ideaCaptureCtx && _ideaCaptureCtx.boardId){
+      try{
+        var _explicitChain=(window.T2TData && window.T2TData.ancestorChain) ? await window.T2TData.ancestorChain(_ideaCaptureCtx.boardId) : null;
+        if(_explicitChain && _explicitChain.length){ _isxPath=_explicitChain; }
+        else {
+          var _explicitRow=await _isxFetchRow(_ideaCaptureCtx.boardId);
+          _isxPath=[{id:_ideaCaptureCtx.boardId, text:_explicitRow?(_explicitRow.text_content||'(untitled)'):'(untitled)'}];
+        }
+        if(_ideaCaptureCtx.headerId){
+          var _explicitHeaderRow=await _isxFetchRow(_ideaCaptureCtx.headerId);
+          _isxHeaderId=_ideaCaptureCtx.headerId;
+          _isxHeaderLabel=_explicitHeaderRow?(_explicitHeaderRow.text_content||'(untitled)'):'New';
+        } else {
+          _isxHeaderId=null; _isxHeaderLabel='New';
+        }
+      }catch(e){ console.warn('Explicit idea-capture ctx failed, falling back to normal init:', e); }
+    }
     if(!_isxPath){
       try{
         await _isxInit(_ideaCaptureCtx);
