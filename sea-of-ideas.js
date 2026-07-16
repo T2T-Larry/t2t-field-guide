@@ -135,7 +135,7 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;cursor:pointer}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;padding:8px 18px;font-size:28px;font-weight:700;color:#1a3a5c;cursor:pointer}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 6px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -174,7 +174,7 @@
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'.sc-hdr-frame-label{opacity:.72}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
-        +'#sc-topic-box{display:inline-block;max-width:220px;box-sizing:border-box;white-space:normal;word-wrap:break-word}'
+        +'#sc-topic-box{display:inline-block;max-width:320px;box-sizing:border-box;white-space:normal;word-wrap:break-word}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
         +'.sc-peek-card{background:#fff;border-radius:14px;padding:14px;width:min(360px,94%);max-height:82vh;overflow-y:auto;box-sizing:border-box}'
         +'.sc-peek-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1.5px solid #cfe4f2}'
@@ -288,12 +288,17 @@
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9710</div>'
       +'</div>'
       +'</div>'
-      +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:row;gap:4px;justify-content:flex-end;align-items:flex-start;flex-wrap:wrap">'
+      +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end">'
+        +'<div style="display:flex;flex-direction:row;gap:4px;justify-content:flex-end;flex-wrap:wrap">'
         +'<button class="sc-ov-btn" id="b-sc-idea" title="Add an idea">💡</button>'
         +'<button class="sc-ov-btn" id="b-sc-recolor-all" title="Recolor all headers">🎨</button>'
         +'<button class="sc-ov-btn" id="b-sc-fix-orphans" title="Fix Purpose/Ideas headers stuck at the shared root">🔧</button>'
         +'<button class="sc-ov-btn" id="b-sc-mode-toggle" title="Full screen">⛶</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:row;gap:4px;justify-content:flex-end">'
+        +'<button class="sc-ov-btn" id="b-sc-session-view" title="Open Session View">👁️ SESSION VIEW</button>'
+        +'</div>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -342,6 +347,7 @@
     // takeover as CREATE's Idea Session) — this button now matches CREATE's
     // own ⛶ exactly: an extra layer, the actual browser/OS Fullscreen API.
     T().wire('b-sc-mode-toggle', _isxToggleFullscreen);
+    T().wire('b-sc-session-view', _sboardOpenIdeaSession);
     document.addEventListener('fullscreenchange', function(){
       var b=document.getElementById('b-sc-mode-toggle');
       if(b && document.getElementById('s-sea-of-ideas-cluster') && document.getElementById('s-sea-of-ideas-cluster').classList.contains('active')){
@@ -2852,6 +2858,29 @@
   function _ideaOpenBoard(boardId){
     _sboardCurrentTopicId=boardId; _sboardFilter=boardId;
     T().nav('s-sea-of-ideas-cluster');
+  }
+
+  // Reciprocal of _isxOpenStoryboardView (9711 → 9710). Carries the current
+  // TOPIC over into Session View by seeding _isxPath with the full ancestor
+  // chain (same helper the isx side already uses to resume a specific
+  // board), so the traveler lands on the same Topic instead of back at the
+  // Wish Tank apex. Locked July 16, 2026.
+  async function _sboardOpenIdeaSession(){
+    var topicId=_sboardCurrentTopicId;
+    if(!topicId){ _isxPath=null; T().nav('s-idea-session'); return; }
+    try{
+      var chain=(window.T2TData && window.T2TData.ancestorChain) ? await window.T2TData.ancestorChain(topicId) : null;
+      if(chain && chain.length){ _isxPath=chain; }
+      else {
+        var row=_sboardAllRowsById[topicId];
+        _isxPath=[{id:topicId, text:row?(row.text_content||'(untitled)'):'(untitled)'}];
+      }
+    }catch(e){
+      var row2=_sboardAllRowsById[topicId];
+      _isxPath=[{id:topicId, text:row2?(row2.text_content||'(untitled)'):'(untitled)'}];
+    }
+    _isxHeaderId=null; _isxHeaderLabel='New';
+    T().nav('s-idea-session');
   }
 
   function _ideaOpenRoot(){
