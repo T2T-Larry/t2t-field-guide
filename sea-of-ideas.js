@@ -116,14 +116,14 @@
       var style=document.createElement('style');
       style.id='sea-cluster-style';
       style.textContent='#s-sea-of-ideas-cluster .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}#s-sea-of-ideas-cluster .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}#s-sea-of-ideas-cluster .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}'
-        +'.sc-tile{position:absolute;width:64px;height:64px;border-radius:0;background:#fff;border:1px solid #cfe4f2;box-shadow:0 3px 8px rgba(26,58,92,0.15);overflow:hidden;cursor:grab;user-select:none}'
-        +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(26,58,92,0.28);z-index:50}'
+        +'.sc-tile{position:absolute;width:64px;height:64px;border-radius:0;background:#fff;border:1px solid #cfe4f2;box-shadow:0 3px 10px rgba(0,0,0,0.28);overflow:hidden;cursor:grab;user-select:none}'
+        +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(0,0,0,0.4);z-index:50}'
         +'.sc-tile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}'
         +'.sc-tile.text{padding:5px;display:flex;align-items:center;justify-content:center}'
         +'.sc-tile.text p{margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none}'
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
         +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:10px;font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
-        +'.sc-pill.named{background:#fff;color:#1a3a5c;border:1px solid #a9cce3;border-radius:0}'
+        +'.sc-pill.named{background:#fff;color:#1a3a5c;border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         // Corner-flip dog-ear — added July 16, 2026. Turned-up lower-right
         // corner on every card (idea/subber + header, any size). Click
         // opens the back of the card (openSbDetail). Kept separate from
@@ -135,7 +135,7 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:0;padding:8px 18px;font-size:28px;font-weight:700;color:#1a3a5c;cursor:pointer;position:relative}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:28px;font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -826,12 +826,12 @@
     var bg=headerRow.color||'#fff';
     var back2=document.createElement('div');
     back2.className='sc-stack-layer';
-    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #4a4a4a;border-radius:0';
+    back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0';
     var back1=document.createElement('div');
     back1.className='sc-stack-layer';
-    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:'+bg+';border:1.5px solid #4a4a4a;border-radius:0';
+    back1.style.cssText='position:absolute;top:2.5px;left:2.5px;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0';
     var front=document.createElement('div');
-    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:1.5px solid #4a4a4a;border-radius:0;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
+    front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
     var fitSize=_sboardFitFontSize(headerRow.text_content, height>=60?13:11, 8);
@@ -1006,8 +1006,20 @@
         var hdFitSize=_sboardFitFontSize(name, 15, 10);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
-        if(name==='Purpose'){ hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openPurposeEditor(); }); }
-        else {
+        if(name==='Purpose'){
+          // Purpose is a card like any other now — corner-flip opens its
+          // own editor (color + "why are we doing this" note) instead of
+          // dblclick owning that job, and dblclick drills into it as TOPIC
+          // just like every other header. Locked July 16, 2026.
+          hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
+          var purposeCornerFlip=document.createElement('div');
+          purposeCornerFlip.className='sc-corner-flip';
+          purposeCornerFlip.title='Flip card';
+          purposeCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openPurposeEditor(); });
+          purposeCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+          purposeCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
+          hd.appendChild(purposeCornerFlip);
+        } else {
           // Double-click a HEADER to drill into it — that card becomes the
           // new TOPIC. Editing/renaming moved to the corner-flip (back of
           // card) below. Locked July 16, 2026.
@@ -1142,6 +1154,10 @@
         // Ideas, content, MISC) via priority tie-break; the first drag
         // anywhere in the row gives every member a real sort_order and
         // the fallback stops mattering from then on.
+        // Purpose shows only on the project's own top-level board — never
+        // on nested/fractal boards, which need the room. Reverted July 16,
+        // 2026 (previous session had widened this to every board, which
+        // was the wrong direction).
         var mergedRow=[];
         if(purposeRow && isAtProjectRoot) mergedRow.push(purposeRow);
         if(newAdditionsRow) mergedRow.push(newAdditionsRow);
