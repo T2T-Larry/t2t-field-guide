@@ -385,3 +385,16 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .isx-recap h2{font-family:'Caveat',cursive;font-size:32px;color:var(--brand-brown-dark);margin:0 0 6px}
   .isx-stat{font-size:14px;color:var(--brand-brown-dark);margin:4px 0}
   .isx-stat b{font-size:20px;color:var(--brand-gold)}
+
+  /* ── TRAVEL SPINNER — pocket watch loading indicator ──
+     Shows the instant nav() switches screens, hides once the target
+     screen's activate function (sync or async) finishes. Prevents the
+     "screen disappeared and nothing happened" gap during data fetches.
+     Locked July 16, 2026. */
+  #travel-spinner{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(253,246,232,.6);z-index:200;pointer-events:none;opacity:0;transition:opacity .15s}
+  #travel-spinner.active{display:flex;opacity:1}
+  #travel-spinner .tw-case{animation:tw-sway 2.2s ease-in-out infinite;transform-origin:50% 4%}
+  #travel-spinner .tw-hand{transform-origin:50px 56px;animation:tw-spin 1s linear infinite}
+  @keyframes tw-spin{to{transform:rotate(360deg)}}
+  @keyframes tw-sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}

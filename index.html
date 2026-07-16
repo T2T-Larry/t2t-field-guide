@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260709b">
+<link rel="stylesheet" href="style.css?v=20260716a">
 <style>
 .fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default;align-self:flex-start}
 .card.rnd{border-radius:12px;min-height:0;flex:0 0 auto}
@@ -17,9 +17,10 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260714a"></script>
-<script src="sea-of-ideas.js?v=20260714d"></script>
+<script src="idea-capture.js?v=20260716a"></script>
+<script src="sea-of-ideas.js?v=20260716a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260714a"></script>
+<script src="backpack.js?v=20260716a"></script>
 <script src="tmap.js?v=20260714a"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260709d"></script>
@@ -341,12 +342,12 @@
     <div id="isx-canvas-scroll">
       <div id="isx-canvas"><div id="isx-empty">Nothing caught yet — the board wakes up the moment you SAVE something.</div></div>
     </div>
-    <!-- Nested inside #isx-board (not a sibling of the header-area) on
-         purpose, July 13, 2026: an open popup should only cover the board,
-         never the header — PARENT/TOPIC need to stay reachable so the
-         traveler can climb or switch bucket without first closing
-         whatever card is open. -->
-    <div id="isx-popup-layer"></div>
+    <!-- isx-popup-layer moved to be a direct child of #fg-root (see just
+         before </div><!-- /.fg -->) — July 16, 2026. It used to live here,
+         nested inside 9711's own board, which meant the 9712/9713/9714/9715
+         capture cards could only ever appear on top of 9711. The 9710
+         [+] column circles need to open the same card without leaving
+         9710, so the layer now sits above whichever screen is active. -->
   </div>
 </div>
 
@@ -696,6 +697,29 @@
   <div class="cp-msg" id="cp-msg"></div>
 </div></div><div class="bar2"><button class="tb" id="b-cp-back">⬅️</button><button class="tb" id="b-cp-mg">🔍</button></div></div>
 
+<!-- Global capture-card overlay — covers whatever screen (9710, 9711, etc.)
+     is currently active, so 9712/9713/9714/9715 can be opened without
+     navigating away first. Moved here from inside #s-idea-session, July 16,
+     2026. -->
+<div id="isx-popup-layer"></div>
+<!-- Pocket-watch loading indicator — shows during screen transitions that
+     need a moment (data fetch) so a screen never just goes blank. -->
+<div id="travel-spinner" aria-hidden="true">
+  <svg width="64" height="64" viewBox="0 0 100 100">
+    <g class="tw-case">
+      <line x1="50" y1="2" x2="50" y2="12" stroke="#3B2510" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="50" cy="2" r="4" fill="#C9A87C" stroke="#3B2510" stroke-width="2"/>
+      <circle cx="50" cy="56" r="40" fill="#FDF6E8" stroke="#3B2510" stroke-width="4"/>
+      <circle cx="50" cy="56" r="36" fill="none" stroke="#C9A87C" stroke-width="1.5"/>
+      <line x1="50" y1="20" x2="50" y2="27" stroke="#3B2510" stroke-width="2" stroke-linecap="round"/>
+      <line x1="50" y1="85" x2="50" y2="92" stroke="#3B2510" stroke-width="2" stroke-linecap="round"/>
+      <line x1="14" y1="56" x2="21" y2="56" stroke="#3B2510" stroke-width="2" stroke-linecap="round"/>
+      <line x1="79" y1="56" x2="86" y2="56" stroke="#3B2510" stroke-width="2" stroke-linecap="round"/>
+      <line class="tw-hand" x1="50" y1="56" x2="50" y2="30" stroke="#3B2510" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="50" cy="56" r="3" fill="#3B2510"/>
+    </g>
+  </svg>
+</div>
 </div><!-- /.fg -->
 
 <script>

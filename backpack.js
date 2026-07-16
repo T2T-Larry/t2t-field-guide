@@ -187,6 +187,26 @@
     } catch(e){}
   }
 
+  /* ── TRAVEL SPINNER — pocket watch ──
+     Shown the instant a screen switches, hidden once that screen's own
+     activate function is done — instantly for static screens (no visible
+     flash), or until the data actually arrives for ones that fetch. A
+     safety-net timeout hides it regardless if something never resolves, so
+     it can never get stuck spinning forever. Locked July 16, 2026. */
+  var _spinnerHideTimer=null;
+  function showTravelSpinner(){
+    var sp=document.getElementById('travel-spinner');
+    if(!sp) return;
+    sp.classList.add('active');
+    if(_spinnerHideTimer) clearTimeout(_spinnerHideTimer);
+    _spinnerHideTimer=setTimeout(hideTravelSpinner, 5000);
+  }
+  function hideTravelSpinner(){
+    var sp=document.getElementById('travel-spinner');
+    if(sp) sp.classList.remove('active');
+    if(_spinnerHideTimer){ clearTimeout(_spinnerHideTimer); _spinnerHideTimer=null; }
+  }
+
   /* ── CORE NAV ── */
   function nav(id, push) {
     var t=document.getElementById(id); if(!t) return;
@@ -199,15 +219,21 @@
     cur=id;
     if (_primaryPages.indexOf(id)!==-1) primaryPage=id;
     var pn=_pageNums[id]; if(pn) addVisited(pn);
+    showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
     if (id==='s-journal')         { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
     if (id==='s-gems')            { var gc=document.getElementById('gems-view-choices');    if(gc) gc.style.display='none'; }
     if (id==='s-journal-view')    renderJournalView();
     if (id==='s-journal-cover')   initJournalCover();
     if (id==='s-gems-list')       renderGemsView();
-    if (_screenActivate[id]) _screenActivate[id]();
+    var _activateResult = _screenActivate[id] ? _screenActivate[id]() : null;
     if (id==='s-change-password') initChangePassword();
     window.scrollTo(0,0);
+    if(_activateResult && typeof _activateResult.then==='function'){
+      _activateResult.then(hideTravelSpinner, hideTravelSpinner);
+    } else {
+      hideTravelSpinner();
+    }
   }
 
   function goBack() {
@@ -932,6 +958,7 @@
   window.T2T = {
     nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
+    showTravelSpinner:showTravelSpinner, hideTravelSpinner:hideTravelSpinner,
     markSeaChapterEntry:function(){ seaChapterEntry = true; },
     getSeaChapterEntry:function(){ return seaChapterEntry; },
     consumeSeaChapterEntry:function(){ var v=seaChapterEntry; seaChapterEntry=false; return v; },

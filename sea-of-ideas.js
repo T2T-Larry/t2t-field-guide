@@ -931,15 +931,25 @@
     tile.textContent='+';
     tile.addEventListener('click', function(e){
       e.stopPropagation();
-      if(window.T2TSea && window.T2TSea.openIdeaCapture){
-        window.T2TSea.openIdeaCapture({boardId:_sboardCurrentTopicId, headerId:headerId, returnToBoard:true, openImmediately:true});
-      }
+      _sboardOpenQuickCapture(headerId);
     });
     return tile;
   }
 
+  // Opens the 9712 Idea Input card directly on top of 9710 — no navigation
+  // to 9711 first, no shared state with it either. IdeaCapture doesn't
+  // know or care which screen called it. Locked July 16, 2026.
+  function _sboardOpenQuickCapture(headerId){
+    var headerRow=_sboardHeadersById && _sboardHeadersById[headerId];
+    window.IdeaCapture.open({
+      headerId: headerId,
+      headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
+      boardId: _sboardCurrentTopicId,
+      onSaved: function(){ renderSeaBoard(); }
+    });
+  }
+
   async function renderSeaBoard(){
-    if(_isxActive()){ return _isxRenderBoard(); }
     var wrap=document.getElementById('sc-board-wrap');
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
@@ -2946,12 +2956,6 @@
   var _ideaCaptureCtx = null;
   var _ideaReturnToBoard = false;
   var _ideaReturnBoardId = null;
-  // True only when a 9710 [+] column circle triggered this — the 9712 Idea
-  // Input card should pop open immediately, preconditioned to that header.
-  // False for the general 💡 entry points, which should just land on 9711
-  // itself (browsing/resuming), not force the capture card open. Locked
-  // July 16, 2026.
-  var _ideaOpenCaptureImmediately = false;
   var _ideaWired = false;
   var _ideaDraftText = '';
   var _themeWired = false;
@@ -3114,32 +3118,19 @@
     }
   }
 
-  // In Idea Session mode, the ladder (PARENT/TOPIC/HEADER) is the target,
-  // not the old 9210 dropdowns — this only applies while that screen is
-  // actually on screen, so an idle _isxPath from a previous visit never
-  // steals a save that's genuinely happening on the legacy 9210 screen.
-  function _isxActive(){
-    var s=document.getElementById('s-idea-session');
-    return !!(s && s.classList.contains('active') && _isxPath);
-  }
-
+  // Legacy 9210 save only, now that the 9712 Idea Input card has its own
+  // independent save path in idea-capture.js (window.IdeaCapture). This
+  // function no longer branches on "session mode" — anything reachable
+  // through this screen's own dropdowns. Trimmed July 16, 2026.
   async function _ideaSaveCard(imageUrl){
-    var sessionMode=_isxActive();
-    var headerId, headerLabel, boardId, text;
-    if(sessionMode){
-      headerId=_isxCurrentClusterId(); headerLabel=_isxHeaderLabel; boardId=_isxPath[0].id;
-      var isxTa=document.getElementById('isx-idea-text');
-      text=(isxTa?isxTa.value:'').trim();
-    } else {
-      var boardSel=document.getElementById('ic-storyboard');
-      var headerSel=document.getElementById('ic-header');
-      headerId=headerSel?headerSel.value:null;
-      headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
-        ? headerSel.options[headerSel.selectedIndex].text : 'NEW';
-      boardId=boardSel?boardSel.value:null;
-      var ta=document.getElementById('idea-text');
-      text=(ta?ta.value:_ideaDraftText).trim();
-    }
+    var boardSel=document.getElementById('ic-storyboard');
+    var headerSel=document.getElementById('ic-header');
+    var headerId=headerSel?headerSel.value:null;
+    var headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
+      ? headerSel.options[headerSel.selectedIndex].text : 'NEW';
+    var boardId=boardSel?boardSel.value:null;
+    var ta=document.getElementById('idea-text');
+    var text=(ta?ta.value:_ideaDraftText).trim();
     if(!text && !imageUrl) return;
     var savedOk=false, saveErr=null;
     try{
@@ -3149,7 +3140,7 @@
         saveErr='Not signed in.';
       } else {
         var contentType = imageUrl ? 'image' : 'text';
-        if(!imageUrl && sessionMode && (_isxIdeaMode==='header' || _sboardIsAutoHeaderText(text))) contentType='header';
+        if(!imageUrl && _sboardIsAutoHeaderText(text)) contentType='header';
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: contentType,
@@ -3162,31 +3153,6 @@
         else savedOk=true;
       }
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveCard exception:', e); }
-
-    if(sessionMode){
-      if(savedOk){
-        _isxCount++;
-        if(contentType==='header'){
-          // Refresh the ladder so the new header shows up as a pickable
-          // option, but do NOT move the traveler into it — where a capture
-          // lands is always a deliberate choice via the toggle/dropdown,
-          // never a side effect of creating a header.
-          await _isxRenderLadder();
-        }
-        _isxRenderBoard();
-        _isxResetIdeaPanelForNext(contentType==='header');
-      } else {
-        var isxTa2=document.getElementById('isx-idea-text');
-        var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
-        if(errBox){
-          var errEl=document.createElement('div');
-          errEl.style.cssText='color:#A32D2D;font-size:11px;text-align:center;margin-top:6px';
-          errEl.textContent='Save failed: '+(saveErr||'unknown error');
-          errBox.appendChild(errEl);
-        }
-      }
-      return;
-    }
 
     var ta3=document.getElementById('idea-text');
     if(ta3) ta3.value='';
@@ -3411,19 +3377,15 @@
     }
   }
 
+  // Legacy 9210 save only — see the note above _ideaSaveCard. Trimmed
+  // July 16, 2026.
   async function _ideaSaveLinkCard(url, thumb, title){
-    var sessionMode=_isxActive();
-    var headerId, headerLabel, boardId;
-    if(sessionMode){
-      headerId=_isxCurrentClusterId(); headerLabel=_isxHeaderLabel; boardId=_isxPath[0].id;
-    } else {
-      var boardSel=document.getElementById('ic-storyboard');
-      var headerSel=document.getElementById('ic-header');
-      headerId=headerSel?headerSel.value:null;
-      headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
-        ? headerSel.options[headerSel.selectedIndex].text : 'NEW';
-      boardId=boardSel?boardSel.value:null;
-    }
+    var boardSel=document.getElementById('ic-storyboard');
+    var headerSel=document.getElementById('ic-header');
+    var headerId=headerSel?headerSel.value:null;
+    var headerLabel=(headerSel && headerSel.selectedIndex>=0 && headerSel.options[headerSel.selectedIndex])
+      ? headerSel.options[headerSel.selectedIndex].text : 'NEW';
+    var boardId=boardSel?boardSel.value:null;
     var savedOk=false, saveErr=null;
     try{
       var _sb=T().sb;
@@ -3442,20 +3404,6 @@
         else savedOk=true;
       }
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_ideaSaveLinkCard exception:', e); }
-
-    if(sessionMode){
-      if(savedOk){ _isxClosePopup(); _isxCount++; _isxRenderBoard(); }
-      else{
-        var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
-        if(errBox){
-          var errEl=document.createElement('div');
-          errEl.style.cssText='color:#A32D2D;font-size:11px;text-align:center;margin-top:6px';
-          errEl.textContent='Save failed: '+(saveErr||'unknown error');
-          errBox.appendChild(errEl);
-        }
-      }
-      return;
-    }
 
     _linkPendingUrl=null; _linkPendingThumb=null; _linkPendingTitle=null;
     T().nav('s-idea-capture');
@@ -3529,18 +3477,9 @@
   var _isxPath = null;          // [{id,text}] apex .. current Topic
   var _isxHeaderId = null;      // null = New (defaults to current Topic's own id)
   var _isxHeaderLabel = 'New';
-  var _isxCount = 0;
-  var _isxIdeaMode = 'idea';    // 9211 toggle: 'idea' or 'header' (manual override)
   var _isxStart = null;
   var _isxWired = false;
   var _isxExpanded = {};        // compass: which collapsed sibling groups were opened
-  var _isxImgTab = 'paste';
-  var _isxImgPendingUrl = null;
-  var _isxImgPendingFile = null;
-  var _isxLinkPendingUrl = null;
-  var _isxLinkPendingThumb = null;
-  var _isxLinkPendingTitle = null;
-  var _isxLinkTimer = null;
 
   function _isxCurrentTopicId(){ return _isxPath && _isxPath.length ? _isxPath[_isxPath.length-1].id : null; }
   function _isxCurrentClusterId(){ return _isxHeaderId || _isxCurrentTopicId(); }
@@ -3646,20 +3585,24 @@
       }
     }
     _ideaCaptureCtx=null;
-    var _shouldAutoOpenCapture=_ideaOpenCaptureImmediately;
-    _ideaOpenCaptureImmediately=false;
     await _isxRenderLadder();
     await _isxRenderBoard();
-    _isxUpdatePageNum();
-    // A 9710 column circle asked for the 9712 Idea Input card directly, not
-    // just a landing on the board underneath it — open it now, already
-    // targeted at the header that was clicked. Locked July 16, 2026.
-    if(_shouldAutoOpenCapture) _isxOpenIdeaPanel();
+    var pnInit=document.getElementById('isx-pagenum'); if(pnInit) pnInit.textContent='9711';
     if(!_isxWired){
       _isxWired=true;
-      T().wire('isx-idea-btn', _isxOpenIdeaPanel);
+      T().wire('isx-idea-btn', function(){
+        window.IdeaCapture.open({
+          headerId: _isxHeaderId,
+          headerLabel: _isxHeaderLabel,
+          boardId: _isxCurrentTopicId(),
+          onSaved: function(row){
+            if(row && row.content_type==='header'){ _isxRenderLadder(); }
+            _isxRenderBoard();
+          }
+        });
+      });
       T().wire('isx-recolor-btn', _isxOpenRecolorAll);
-      T().wire('isx-rules-btn', _isxOpenRulesPanel);
+      T().wire('isx-rules-btn', function(){ window.IdeaCapture.openRules(); });
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
       T().wire('isx-end-btn', function(){
         var fgr=document.getElementById('fg-root');
@@ -3684,13 +3627,6 @@
         if(e.target.closest('.isx-tile')) return;
         var rect=board.getBoundingClientRect();
         _isxOpenColorPicker(e.clientX-rect.left, e.clientY-rect.top);
-      });
-      // Click the backdrop (not the card itself) closes the popup — same
-      // result as its own ✕. Covers the Idea Input card and every other
-      // popup that uses this shared layer. July 14, 2026.
-      var popupLayer=document.getElementById('isx-popup-layer');
-      if(popupLayer) popupLayer.addEventListener('click', function(e){
-        if(e.target===popupLayer) _isxClosePopup();
       });
       // Triple-click PARENT to reveal the page number badge — same
       // convention as 9710's own sc-parent-hit trick.
@@ -4360,459 +4296,21 @@
     }, 0);
   }
 
-  /* ---- Popups: Idea / Image / Link / Rules / Compass / Recap ---- */
-  function _isxOpenPopup(html){
-    var layer=document.getElementById('isx-popup-layer');
-    if(!layer) return;
-    layer.innerHTML=html; layer.classList.add('active');
-    _isxUpdatePageNum();
-  }
-  function _isxClosePopup(){
-    var layer=document.getElementById('isx-popup-layer');
-    if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
-    _isxUpdatePageNum();
-  }
-  // The header badge is fixed at 9711 in the HTML, but a popup on top
-  // (Idea 9712, Image 9713, Link 9714, Rules 9715…) is its own Touch
-  // Point and should say so while it's open — July 14, 2026.
-  // Also: when this screen was opened as a quick add-a-card shortcut (e.g.
-  // the [+] on a Storyboard header) rather than a deliberate visit to
-  // Session View, the badge shouldn't claim "9711" — it's just borrowing
-  // this screen's input card, and it returns to the board on save. Locked
-  // July 16, 2026.
-  function _isxUpdatePageNum(){
-    var pn=document.getElementById('isx-pagenum');
-    if(!pn) return;
-    var openCard=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
-    pn.textContent = openCard ? openCard.getAttribute('data-pagenum') : (_ideaReturnToBoard ? '9710' : '9711');
-  }
-
-  // Lets a traveler drag the whole capture card aside to peek at the
-  // shotgun wall underneath — mousedown anywhere on the card EXCEPT an
-  // interactive control (text entry, buttons, the image itself) starts
-  // the drag. Position is session-only, same as card drag on the board.
-  function _isxWirePopupDrag(card){
-    if(!card) return;
-    var startX, startY, origLeft, origTop, dragging=false;
-    card.addEventListener('mousedown', function(e){
-      var tag=e.target.tagName;
-      if(tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT'||tag==='BUTTON'||tag==='IMG') return;
-      if(e.target.closest('button')) return;
-      var rect=card.getBoundingClientRect();
-      startX=e.clientX; startY=e.clientY; origLeft=rect.left; origTop=rect.top;
-      card.style.position='fixed'; card.style.margin='0';
-      card.style.left=origLeft+'px'; card.style.top=origTop+'px';
-      dragging=true;
-      function onMove(ev){
-        if(!dragging) return;
-        card.style.left=(origLeft+ev.clientX-startX)+'px';
-        card.style.top=(origTop+ev.clientY-startY)+'px';
-      }
-      function onUp(){
-        dragging=false;
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  }
-
-  var _isxInputPendingImageFile = null; // set by paste or camera; cleared on save, cancel, or reset
-  var _isxInputPendingExternalUrl = null; // set by Unsplash pick — an external URL reference, not a file to upload
-
-  // After a successful save, the 9211 popup stays open and resets itself
-  // rather than closing — ideas come in bursts, and closing after every
-  // single one breaks that rhythm. Header saves get the same treatment,
-  // plus a visible confirmation, since a header row never renders as a
-  // board tile and would otherwise look like nothing happened.
-  function _isxResetIdeaPanelForNext(wasHeader){
-    var ta=document.getElementById('isx-idea-text');
-    if(!ta){
-      // Not the plain Idea panel (Image/Link saves) — keep prior behavior.
-      _isxClosePopup();
-      return;
-    }
-    ta.value=''; ta.focus();
-    _isxIdeaMode='idea';
-    _isxClearPendingImage();
-    _isxClearPendingExternalUrl();
-    var card=document.querySelector('#isx-popup-layer .isx-pcard');
-    if(card){
-      var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
-      var flash=document.createElement('div');
-      flash.className='isx-save-flash';
-      flash.style.cssText='color:#2f7a4f;font-size:11px;text-align:center;margin-top:4px';
-      flash.textContent = wasHeader ? 'Header added \u2014 add ideas here \u2193' : 'Saved \u2014 keep going';
-      card.appendChild(flash);
-      setTimeout(function(){ if(flash && flash.parentNode) flash.parentNode.removeChild(flash); }, 2200);
-    }
-  }
-
-  // 9711 tune-up, July 13, 2026 (revised): a pasted image no longer saves
-  // itself instantly — it shows a preview with CANCEL/SAVE, matching the
-  // already-locked rule that non-text content gets an explicit save
-  // affordance rather than auto-committing (Enter has no natural meaning
-  // for a paste, and neither does "it just appears on the board").
-  function _isxShowPendingImage(file){
-    _isxInputPendingImageFile=file;
-    var preview=document.getElementById('isx-paste-preview');
-    if(preview){
-      var url=URL.createObjectURL(file);
-      preview.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:140px;border-radius:8px;'
-        +'display:block;margin:0 auto 8px;object-fit:contain">';
-      preview.style.display='block';
-    }
-  }
-
-  function _isxClearPendingImage(){
-    _isxInputPendingImageFile=null;
-    var preview=document.getElementById('isx-paste-preview');
-    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
-  }
-
-  var _isxInputPendingLink = null; // {url, title, thumb} — set by paste; cleared on save, cancel, or reset
-
-  // Same preview-then-confirm shape as the image path: show what the
-  // link resolves to (or a bare fallback if unresolved) before it
-  // becomes a real card. Loading state first, then fills in once
-  // _linkResolveOEmbed returns — allowlisted providers only (YouTube,
-  // Vimeo, Spotify, SoundCloud, TikTok), same as the dedicated 🔗 panel.
-  function _isxShowPendingLink(url){
-    _isxInputPendingLink={url:url, title:null, thumb:null};
-    var preview=document.getElementById('isx-paste-preview');
-    if(preview){
-      preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Looking up this link\u2026</div>';
-      preview.style.display='block';
-    }
-    _linkResolveOEmbed(url).then(function(meta){
-      if(!_isxInputPendingLink || _isxInputPendingLink.url!==url) return; // cancelled or replaced meanwhile
-      _isxInputPendingLink.title=meta&&meta.title||url;
-      _isxInputPendingLink.thumb=meta&&meta.thumbnail_url||null;
-      if(!preview) return;
-      preview.innerHTML=(_isxInputPendingLink.thumb
-          ? '<img src="'+_isxInputPendingLink.thumb+'" style="max-width:100%;max-height:120px;border-radius:8px;display:block;margin:0 auto 6px;object-fit:contain">'
-          : '<div style="font-size:28px;text-align:center;margin-bottom:4px">\ud83d\udd17</div>')
-        +'<div style="font-size:12px;color:var(--isx-navy);text-align:center;font-weight:600">'+_isxInputPendingLink.title+'</div>'
-        +'<div style="font-size:9.5px;color:#7a90a8;text-align:center;word-break:break-word">'+url+'</div>';
-    });
-  }
-
-  function _isxClearPendingLink(){
-    _isxInputPendingLink=null;
-    var preview=document.getElementById('isx-paste-preview');
-    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
-  }
-
-  // A single bare URL, nothing else on the line — conservative on
-  // purpose, so pasting a sentence that happens to contain a link still
-  // just types normally instead of getting hijacked into link mode.
-  function _isxIsBareUrl(text){
-    return /^https?:\/\/\S+$/i.test((text||'').trim());
-  }
-
-  function _isxCommitIdeaPanel(){
-    if(_isxInputPendingImageFile){
-      var file=_isxInputPendingImageFile;
-      var preview=document.getElementById('isx-paste-preview');
-      if(preview) preview.insertAdjacentHTML('beforeend','<div style="font-size:10px;color:#5b9bd5;text-align:center">Uploading\u2026</div>');
-      _isxInputPendingImageFile=null;
-      _ideaSaveImageFile(file);
-    } else if(_isxInputPendingLink){
-      var pending=_isxInputPendingLink;
-      _isxInputPendingLink=null;
-      _ideaSaveLinkCard(pending.url, pending.thumb, pending.title).then(function(){
-        // _ideaSaveLinkCard closes the popup on success, but leaves it
-        // open with an error message on failure — only reopen a fresh
-        // panel in the success case, or we'd wipe out that error.
-        var stillOpen=document.querySelector('#isx-popup-layer .isx-pcard');
-        if(!stillOpen) _isxOpenIdeaPanel();
-      });
-    } else if(_isxInputPendingExternalUrl){
-      // Unsplash pick — an external URL reference, same as the old
-      // dedicated Image popup's Unsplash tab: no download/compress
-      // step, _ideaSaveCard already resets the panel in place on
-      // success just like a plain text save.
-      var extUrl=_isxInputPendingExternalUrl;
-      _isxInputPendingExternalUrl=null;
-      _ideaSaveCard(extUrl);
-    } else {
-      _ideaSaveCard(null);
-    }
-  }
-
-  function _isxClearPendingExternalUrl(){
-    _isxInputPendingExternalUrl=null;
-    var preview=document.getElementById('isx-paste-preview');
-    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
-  }
-
-  // Loads 4 random high-quality Unsplash photos straight into the card's
-  // Loads random high-quality Unsplash photos straight into the card's
-  // own preview area — same source/key as the old dedicated Image
-  // popup's Unsplash tab, just rendered here so there's no second
-  // screen to open. Tapping a thumbnail marks it selected; SAVE/ENTER
-  // then commits it as an external-URL image card. "Load more" appends
-  // rather than replacing, in a scrollable grid, so this isn't capped
-  // at one static batch of 4.
-  var UNSPLASH_KEY='ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
-
-  async function _isxFetchUnsplashBatch(n){
-    var photos=[];
-    try{
-      for(var i=0;i<n;i++){
-        var r=await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
-        if(r.ok){ var d=await r.json(); photos.push(d.urls.regular); }
-      }
-    }catch(e){}
-    return photos;
-  }
-
-  function _isxWireUnsplashTiles(){
-    document.querySelectorAll('#isx-unsplash-pick-grid .isx-unsplash-tile').forEach(function(tile){
-      if(tile._isxWired) return;
-      tile._isxWired=true;
-      tile.addEventListener('click', function(){
-        document.querySelectorAll('#isx-unsplash-pick-grid .isx-unsplash-tile div').forEach(function(h){h.textContent='\ud83e\udd0d';});
-        this.querySelector('div').textContent='\ud83e\udda4';
-        _isxInputPendingExternalUrl=this.getAttribute('data-url');
-      });
-    });
-  }
-
-  function _isxUnsplashTileHTML(url){
-    return '<div class="isx-unsplash-tile" data-url="'+url+'" style="position:relative;height:64px;border:2px solid #111;border-radius:8px;overflow:hidden;cursor:pointer">'
-      +'<img src="'+url+'" style="width:100%;height:100%;object-fit:cover">'
-      +'<div style="position:absolute;bottom:2px;right:4px;font-size:14px">\ud83e\udd0d</div></div>';
-  }
-
-  async function _isxShowUnsplashPicker(){
-    _isxClearPendingImage(); _isxClearPendingLink();
-    _isxInputPendingExternalUrl=null;
-    var preview=document.getElementById('isx-paste-preview');
-    if(!preview) return;
-    preview.style.display='block';
-    preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Loading Unsplash\u2026</div>';
-    var photos=await _isxFetchUnsplashBatch(4);
-    if(!preview) return; // popup may have closed while this was in flight
-    if(!photos.length){ preview.innerHTML='<div style="font-size:10px;color:#A32D2D;text-align:center;padding:10px 0">Couldn\u2019t load images. Try again.</div>'; return; }
-    preview.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:200px;overflow-y:auto" id="isx-unsplash-pick-grid">'
-      +photos.map(_isxUnsplashTileHTML).join('')+'</div>'
-      +'<button type="button" id="isx-unsplash-more" style="width:100%;margin-top:6px;padding:6px;font-size:10px;'
-      +'border:1.5px dashed var(--isx-paleblue);border-radius:8px;background:transparent;color:var(--isx-navy);cursor:pointer">\ud83d\udd04 More photos</button>';
-    _isxWireUnsplashTiles();
-    var moreBtn=document.getElementById('isx-unsplash-more');
-    if(moreBtn) moreBtn.onclick=async function(){
-      moreBtn.disabled=true; moreBtn.textContent='Loading\u2026';
-      var more=await _isxFetchUnsplashBatch(4);
-      var grid=document.getElementById('isx-unsplash-pick-grid');
-      if(grid){ grid.insertAdjacentHTML('beforeend', more.map(_isxUnsplashTileHTML).join('')); _isxWireUnsplashTiles(); }
-      moreBtn.disabled=false; moreBtn.textContent='\ud83d\udd04 More photos';
-    };
-  }
-
-  // Cancel is a permanent fixture now, not a state-conditional button —
-  // it resets the whole card back to blank (typed text, pending image,
-  // pending link, or a pending Unsplash pick), not just pasted content.
-  // Never closes the popup; that's still the ✕'s job alone.
-  function _isxCancelIdeaEntry(){
-    _isxClearPendingImage();
-    _isxClearPendingLink();
-    _isxClearPendingExternalUrl();
-    var ta=document.getElementById('isx-idea-text');
-    if(ta){ ta.value=''; ta.focus(); }
-  }
-
-  function _isxOpenIdeaPanel(){
-    _isxIdeaMode='idea';
-    _isxInputPendingImageFile=null;
-    _isxInputPendingLink=null;
-    _isxInputPendingExternalUrl=null;
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9712"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
-      +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
-      +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
-      +'<div id="isx-paste-preview" style="display:none"></div>'
-      +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
-      +'<div class="isx-save-row">'
-        +'<button class="isx-src-btn" id="isx-btn-unsplash" type="button">\ud83c\udf05 Unsplash</button>'
-        +'<button class="isx-save" id="isx-p-save">SAVE</button>'
-        +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
-      +'</div></div>');
-    document.getElementById('isx-p-close').onclick=_isxClosePopup;
-    document.getElementById('isx-p-save').onclick=_isxCommitIdeaPanel;
-    document.getElementById('isx-p-cancel').onclick=_isxCancelIdeaEntry;
-    var unsplashBtn=document.getElementById('isx-btn-unsplash');
-    if(unsplashBtn) unsplashBtn.onclick=_isxShowUnsplashPicker;
-    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
-
-    var ta=document.getElementById('isx-idea-text');
-    if(ta){
-      ta.focus();
-      ta.addEventListener('keydown', function(e){
-        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _isxCommitIdeaPanel(); }
-      });
-      // The magic input field accepts ANY pasted source, not just typed
-      // text. An image on the clipboard shows a preview (see
-      // _isxShowPendingImage); a bare URL shows a title+thumbnail
-      // preview via the same oEmbed pipeline the dedicated 🔗 panel
-      // uses (see _isxShowPendingLink). Either way, nothing saves until
-      // SAVE/ENTER — matches the locked "explicit save affordance for
-      // non-text content" rule, no auto-commit on paste.
-      ta.addEventListener('paste', function(e){
-        var items=e.clipboardData && e.clipboardData.items;
-        if(items){
-          for(var i=0;i<items.length;i++){
-            if(items[i].type && items[i].type.indexOf('image/')===0){
-              var file=items[i].getAsFile();
-              if(file){
-                e.preventDefault();
-                _isxShowPendingImage(file);
-              }
-              return;
-            }
-          }
-        }
-        var text=e.clipboardData && e.clipboardData.getData('text/plain');
-        if(text && _isxIsBareUrl(text)){
-          e.preventDefault();
-          _isxShowPendingLink(text.trim());
-        }
-      });
-    }
-  }
-
-  function _isxOpenImagePanel(){
-    _isxImgTab='paste'; _isxImgPendingUrl=null; _isxImgPendingFile=null;
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9713"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
-      +'<div class="isx-ptitle">\ud83d\udcf7 Image</div>'
-      +'<div class="isx-src-row">'
-        +'<button class="isx-src-btn on" data-src="paste">Paste / Upload</button>'
-        +'<button class="isx-src-btn" data-src="unsplash">Unsplash</button>'
-        +'<button class="isx-src-btn" data-src="ai">Generate</button>'
-      +'</div>'
-      +'<div id="isx-img-body"></div>'
-      +'</div>');
-    document.getElementById('isx-p-close').onclick=_isxClosePopup;
-    document.querySelectorAll('.isx-src-btn').forEach(function(b){
-      b.onclick=function(){
-        document.querySelectorAll('.isx-src-btn').forEach(function(x){x.classList.remove('on');});
-        b.classList.add('on'); _isxImgTab=b.getAttribute('data-src'); _isxRenderImageBody();
-      };
-    });
-    _isxRenderImageBody();
-    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
-  }
-
-  function _isxRenderImageBody(){
-    var body=document.getElementById('isx-img-body');
-    if(!body) return;
-    if(_isxImgTab==='paste'){
-      body.innerHTML='<div class="isx-dropzone" id="isx-dropzone">'
-        +(_isxImgPendingUrl?'<img src="'+_isxImgPendingUrl+'" style="max-width:100%;max-height:100%;border-radius:8px">':'Paste an image here (Ctrl/Cmd + V)<br>or choose a file below')+'</div>'
-        +'<input type="file" id="isx-file-input" accept="image/*" style="width:100%;margin-bottom:8px;font-size:11px;color:#3A6080">'
-        +'<button class="isx-save" id="isx-p-save">SAVE</button>';
-      var fileInput=document.getElementById('isx-file-input');
-      if(fileInput) fileInput.addEventListener('change', function(){
-        if(this.files && this.files[0]){
-          _isxImgPendingFile=this.files[0];
-          var reader=new FileReader();
-          reader.onload=function(ev){ _isxImgPendingUrl=ev.target.result; _isxRenderImageBody(); };
-          reader.readAsDataURL(this.files[0]);
-        }
-      });
-      document.getElementById('isx-p-save').onclick=function(){
-        if(_isxImgPendingFile){
-          var dz=document.getElementById('isx-dropzone'); if(dz) dz.innerHTML='Uploading\u2026';
-          _ideaSaveImageFile(_isxImgPendingFile);
-        }
-      };
-    } else if(_isxImgTab==='unsplash'){
-      body.innerHTML='<div id="isx-unsplash-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">Loading\u2026</div>'
-        +'<button class="isx-save" id="isx-p-save">SAVE</button>';
-      _isxLoadUnsplash();
-      document.getElementById('isx-p-save').onclick=function(){ if(_isxImgPendingUrl) _ideaSaveCard(_isxImgPendingUrl); };
-    } else {
-      body.innerHTML='<div class="isx-dropzone">Custom AI image generation isn\u2019t wired up yet \u2014 needs an image-gen API connected.</div>';
-    }
-  }
-
-  async function _isxLoadUnsplash(){
-    var grid=document.getElementById('isx-unsplash-grid');
-    if(!grid) return;
-    var UNSPLASH_KEY='ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
-    var photos=[];
-    try{
-      for(var i=0;i<4;i++){
-        var r=await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
-        if(r.ok){ var d=await r.json(); photos.push(d.urls.regular); }
-      }
-    }catch(e){}
-    if(!grid) return;
-    if(!photos.length){ grid.innerHTML='Couldn\u2019t load images. Try again.'; return; }
-    grid.innerHTML=photos.map(function(url){
-      return '<div class="isx-unsplash-tile" data-url="'+url+'" style="position:relative;height:72px;border:2px solid #111;border-radius:8px;overflow:hidden;cursor:pointer"><img src="'+url+'" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:2px;right:4px;font-size:15px">\ud83e\udd0d</div></div>';
-    }).join('');
-    document.querySelectorAll('.isx-unsplash-tile').forEach(function(tile){
-      tile.addEventListener('click', function(){
-        document.querySelectorAll('.isx-unsplash-tile div').forEach(function(h){h.textContent='\ud83e\udd0d';});
-        this.querySelector('div').textContent='\ud83e\udda4';
-        _isxImgPendingUrl=this.getAttribute('data-url');
-      });
-    });
-  }
-
-  function _isxOpenLinkPanel(){
-    _isxLinkPendingUrl=null; _isxLinkPendingThumb=null; _isxLinkPendingTitle=null;
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9714"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
-      +'<div class="isx-ptitle">\ud83d\udd17 Link</div>'
-      +'<input type="text" id="isx-link-url" placeholder="Paste a URL\u2026" style="margin-bottom:8px">'
-      +'<div class="isx-dropzone" id="isx-link-preview" style="height:80px">Preview appears here once the link resolves</div>'
-      +'<button class="isx-save" id="isx-p-save">SAVE</button></div>');
-    document.getElementById('isx-p-close').onclick=_isxClosePopup;
-    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
-    var input=document.getElementById('isx-link-url');
-    input.addEventListener('input', function(){
-      var val=this.value.trim();
-      _isxLinkPendingUrl=val; _isxLinkPendingThumb=null; _isxLinkPendingTitle=null;
-      if(_isxLinkTimer) clearTimeout(_isxLinkTimer);
-      var preview=document.getElementById('isx-link-preview');
-      if(!val){ if(preview) preview.textContent='Preview appears here once the link resolves'; return; }
-      if(preview) preview.textContent='Resolving\u2026';
-      _isxLinkTimer=setTimeout(async function(){
-        var meta=await _linkResolveOEmbed(val);
-        if(_isxLinkPendingUrl!==val) return;
-        if(meta){ _isxLinkPendingThumb=meta.thumbnail_url; _isxLinkPendingTitle=meta.title; }
-        var p=document.getElementById('isx-link-preview');
-        if(p) p.innerHTML = _isxLinkPendingThumb
-          ? ('<img src="'+_isxLinkPendingThumb+'" style="max-width:100%;max-height:64px;border-radius:6px;display:block;margin:0 auto 4px">'+(_isxLinkPendingTitle||val))
-          : ('Ready to attach: '+val+' (no preview available)');
-      }, 500);
-    });
-    document.getElementById('isx-p-save').onclick=function(){
-      if(_isxLinkPendingUrl) _ideaSaveLinkCard(_isxLinkPendingUrl, _isxLinkPendingThumb, _isxLinkPendingTitle);
-    };
-  }
-
-  function _isxOpenRulesPanel(){
-    _isxOpenPopup('<div class="isx-pcard" data-pagenum="9715" style="width:260px"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
-      +'<div class="isx-ptitle" style="font-size:20px">\ud83d\udcdc Rules of Creative Thinking</div>'
-      +'<div style="font-size:13px;line-height:2;color:#1A3A5C;margin-top:8px">'
-        +'<div>1. No criticism.</div>'
-        +'<div>2. The more, the better.</div>'
-        +'<div>3. The wilder, the better.</div>'
-        +'<div>4. Hitch-hike off other ideas.</div>'
-      +'</div>'
-      +'<button class="isx-save" id="isx-p-save">GOT IT</button></div>');
-    document.getElementById('isx-p-close').onclick=_isxClosePopup;
-    document.getElementById('isx-p-save').onclick=_isxClosePopup;
-    _isxWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
-  }
 
   // Eye replaces the compass this iteration: instead of the text "Where
   // This Sits" tree, it jumps straight to the real visual Storyboard for
   // wherever the traveler currently is in Idea Session.
   function _isxOpenStoryboardView(){
     _ideaOpenBoard(_isxCurrentTopicId());
+  }
+
+  // Compass ("Where This Sits") manages #isx-popup-layer directly rather
+  // than through IdeaCapture — it's not part of the 9712-9715 capture
+  // family, just a fellow user of the same shared overlay element. This
+  // is its own close, scoped to itself. Locked July 16, 2026.
+  function _isxCloseCompass(){
+    var layer=document.getElementById('isx-popup-layer');
+    if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
   }
 
   async function _isxOpenCompass(){
@@ -4855,13 +4353,13 @@
       +'<div class="isx-psub">\ud83d\udccd marks you. Tap a name to jump there. Tap "+N more" to reveal the rest.</div>'
       +renderNode([apexId])+'</div>';
     layer.classList.add('active');
-    document.getElementById('isx-p-close').onclick=_isxClosePopup;
+    document.getElementById('isx-p-close').onclick=_isxCloseCompass;
     layer.querySelectorAll('.isx-tnode').forEach(function(el){
       el.onclick=async function(){
         var ids=el.getAttribute('data-path').split('|');
         var chain=ids.map(function(id, i){ return {id:id, text: i===0?_isxPath[0].text:(byId[id]?byId[id].text_content:'')}; });
         _isxPath=chain; _isxHeaderId=null; _isxHeaderLabel='New';
-        _isxClosePopup();
+        _isxCloseCompass();
         await _isxRenderLadder(); await _isxRenderBoard();
       };
     });
@@ -4892,11 +4390,11 @@
       _ideaCaptureCtx=ctx||null;
       _ideaReturnToBoard=!!(ctx&&ctx.returnToBoard);
       _ideaReturnBoardId=(ctx&&ctx.boardId!==undefined)?ctx.boardId:null;
-      _ideaOpenCaptureImmediately=!!(ctx&&ctx.openImmediately);
       T().nav('s-idea-session');
     },
     getCurrentBoardContext: function(){ return _sboardCurrentTopicId?{boardId:_sboardCurrentTopicId}:null; },
-    getDefaultHeaderId: _ideaGetDefaultHeaderId
+    getDefaultHeaderId: _ideaGetDefaultHeaderId,
+    resolveOEmbed: _linkResolveOEmbed
   };
 
   document.addEventListener('DOMContentLoaded', function(){
