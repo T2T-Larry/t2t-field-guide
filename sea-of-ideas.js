@@ -177,6 +177,8 @@
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
         +'#sc-topic-box{display:inline-block;max-width:320px;box-sizing:border-box;white-space:normal;word-wrap:break-word}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
+        +'.sc-add-header-tile:hover{background:#eaf3fb;border-color:#5b9bd5}'
+        +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5}'
         +'.sc-peek-card{background:#fff;border-radius:14px;padding:14px;width:min(360px,94%);max-height:82vh;overflow-y:auto;box-sizing:border-box}'
         +'.sc-peek-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1.5px solid #cfe4f2}'
         +'.sc-peek-topbar button{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:0 0 auto}'
@@ -282,7 +284,7 @@
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Parent</div>'
+      +'<div class="sc-hdr-eyebrow">Parent Topic</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">ISB</div>'
       +'</div>'
@@ -382,8 +384,17 @@
     // system (drag Topic/Parent/cards onto each other) has been removed;
     // this plain click is the one navigation shortcut that stays outside
     // the slider, since it predates this session and needs no card open.
+    // Fixed July 16, 2026: was climbing all the way to the cross-project
+    // "What do you want?" apex whenever the current Topic had no parent of
+    // its own (i.e. sitting at a project's own root) — that apex behaves
+    // like a project chooser, duplicating what PROJECT already does, so
+    // PARENT now stays inert there instead of escaping to it.
+    function _sboardCanGoUpFromTopic(){
+      var row=_sboardCurrentTopicId?_sboardAllRowsById[_sboardCurrentTopicId]:null;
+      return !!(row && row.cluster_id);
+    }
     T().wire('sc-parent-hit', function(){
-      if(_sboardCurrentTopicId){ _sboardGoUpOneLevel(); }
+      if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); }
     });
     // Double-click PARENT also climbs back to TOPIC level — explicit
     // gesture requested July 16, 2026, alongside the existing single click.
@@ -391,7 +402,7 @@
       var parentHitEl=document.getElementById('sc-parent-hit');
       if(parentHitEl) parentHitEl.addEventListener('dblclick', function(e){
         e.stopPropagation();
-        if(_sboardCurrentTopicId){ _sboardGoUpOneLevel(); }
+        if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); }
       });
     })();
 
@@ -865,6 +876,100 @@
     return wrap;
   }
 
+  // [+] tile — adds a new header at whatever board is currently open,
+  // landing right where MISC sits (far right). Simpler and more direct
+  // than routing through the 💡 idea-capture flow just to make a header.
+  // Locked July 16, 2026.
+  function _sboardMakeAddHeaderTile(width, height){
+    width=width||152;
+    height=height||64;
+    var tile=document.createElement('button');
+    tile.className='sc-add-header-tile';
+    tile.title='Add a new header';
+    tile.style.cssText='flex-shrink:0;width:'+width+'px;height:'+height+'px;margin-bottom:2px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:2px dashed #a9cce3;border-radius:0;color:#5b9bd5;font-size:26px;font-weight:700;cursor:pointer';
+    tile.textContent='+';
+    tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddHeaderPrompt(); });
+    return tile;
+  }
+
+  function _sboardOpenAddHeaderPrompt(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">New header</div>'
+      +'<input id="sb-addheader-input" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
+      +'<div id="sb-addheader-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addheader-go" style="flex:1">Create</button><button class="sc-ov-btn" id="sb-addheader-cancel" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    var input=document.getElementById('sb-addheader-input');
+    if(input) setTimeout(function(){ input.focus(); }, 50);
+    T().wire('sb-addheader-cancel', closeSbDetail);
+    T().wire('sb-addheader-go', async function(){
+      var errEl=document.getElementById('sb-addheader-err');
+      var name=((input&&input.value)||'').trim();
+      if(!name){ if(errEl) errEl.textContent='Name can\'t be empty.'; return; }
+      var _sb=T().sb;
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:_sboardCurrentTopicId||null,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw ins.error;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){
+        if(errEl) errEl.textContent=err.message;
+      }
+    });
+  }
+
+  // [+] tile at the end of a header's own subber list — quick text-only
+  // add, landing directly under that header. Full capture (camera/
+  // paste/link) still lives behind 💡 for anything beyond plain text.
+  // Locked July 16, 2026.
+  function _sboardMakeAddSubberTile(headerId, width, height){
+    width=width||104; height=height||64;
+    var tile=document.createElement('button');
+    tile.className='sc-add-subber-tile';
+    tile.title='Add a new card here';
+    tile.style.cssText='flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:0;color:#5b9bd5;font-size:20px;font-weight:700;cursor:pointer';
+    tile.textContent='+';
+    tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddSubberPrompt(headerId); });
+    return tile;
+  }
+
+  function _sboardOpenAddSubberPrompt(headerId){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">New card</div>'
+      +'<textarea id="sb-addsubber-input" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px;min-height:60px"></textarea>'
+      +'<div style="font-size:10px;color:#888;font-style:italic;margin-bottom:6px">Need a photo or a link instead? Use 💡 for that.</div>'
+      +'<div id="sb-addsubber-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addsubber-go" style="flex:1">Add</button><button class="sc-ov-btn" id="sb-addsubber-cancel" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    var input=document.getElementById('sb-addsubber-input');
+    if(input) setTimeout(function(){ input.focus(); }, 50);
+    T().wire('sb-addsubber-cancel', closeSbDetail);
+    T().wire('sb-addsubber-go', async function(){
+      var errEl=document.getElementById('sb-addsubber-err');
+      var text=((input&&input.value)||'').trim();
+      if(!text){ if(errEl) errEl.textContent='Card can\'t be empty.'; return; }
+      var _sb=T().sb;
+      try{
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'text',text_content:text,cluster_id:headerId||null,created_at:new Date().toISOString()}).select().single();
+        if(ins.error) throw ins.error;
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){
+        if(errEl) errEl.textContent=err.message;
+      }
+    });
+  }
+
   async function renderSeaBoard(){
     if(_isxActive()){ return _isxRenderBoard(); }
     var wrap=document.getElementById('sc-board-wrap');
@@ -1058,11 +1163,18 @@
           }
         });
         block.appendChild(hd);
-        if(directItems.length || subs.length){
+        if(directItems.length || subs.length || !isReserved){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
           subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
+          // [+] under each header adds a new subber directly here — mirrors
+          // the [+] after MISC for headers. Skipped on Purpose/MISC/NEW/
+          // Trash, which aren't meant to hold arbitrary loose cards the
+          // same way. Locked July 16, 2026.
+          if(!isReserved && !headerRow.locked){
+            scroll.appendChild(_sboardMakeAddSubberTile(headerRow.id, SUBBER_W, SUBBER_H));
+          }
           block.appendChild(scroll);
         }
         return block;
@@ -1193,6 +1305,10 @@
         if(statusEl) statusEl.textContent='';
         if(miscRow) groupsWrap.appendChild(renderGroup(miscRow, 0));
       }
+      // [+] after MISC — adds a new header at this board's level. Simpler,
+      // more discoverable than the 💡 button for this one job. Locked
+      // July 16, 2026.
+      groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));
 
       wrap.appendChild(groupsWrap);
       _sboardUpdateHeaderChrome();
@@ -1349,8 +1465,17 @@
       if(projectLabel) projectLabel.textContent=projectName;
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
-      if(parentLabel) parentLabel.textContent=parentRow?(parentRow.text_content||'(untitled)'):projectName;
-      if(parentHit){ parentHit.classList.remove('inert'); }
+      // PARENT is inert once there's nothing above the current Topic (i.e.
+      // sitting at a project's own root) — fixed July 16, 2026. It used to
+      // stay clickable here and climb all the way out to the cross-project
+      // apex, which behaves like a project chooser and duplicated PROJECT.
+      if(parentId && parentRow){
+        if(parentLabel) parentLabel.textContent=parentRow.text_content||'(untitled)';
+        if(parentHit){ parentHit.classList.remove('inert'); }
+      } else {
+        if(parentLabel) parentLabel.textContent='\u2014';
+        if(parentHit){ parentHit.classList.add('inert'); }
+      }
     } else {
       if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
       if(topicBox){ topicBox.style.background=''; }
