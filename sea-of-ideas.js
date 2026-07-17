@@ -226,6 +226,20 @@
         +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:500;color:#444441;margin-bottom:8px;text-align:left}'
         +'.sb-topic-value{display:block;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 8px;font-size:12px;font-weight:500;color:#2C2C2A;font-family:\'Playfair Display\',serif;margin-bottom:8px;text-align:left}'
         +'.sb-hdr-current{font-size:12px;color:#2C2C2A;font-weight:500;cursor:pointer;margin-bottom:6px;padding:5px 8px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;text-align:left}'
+        /* DETAILS redesign — July 17, 2026. Large landscape card shape (distinct
+           from the compact .sb-shape-card used by the Shape/reserved-header
+           dialog), Current Location row + single MOVE button, HEART/NOTES
+           grouped directly below Content. */
+        +'.sb-details-card{width:min(480px,92vw);border-radius:20px;border-top:6px solid #5b9bd5;box-shadow:0 10px 30px rgba(0,0,0,0.18);position:relative}'
+        +'.sb-details-card::after{content:\'\';position:absolute;top:6px;right:0;width:0;height:0;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #e4ddc9 transparent transparent}'
+        +'.sb-loc-row{display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid #B4B2A9;border-radius:10px;padding:8px 10px;margin-bottom:10px}'
+        +'.sb-loc-crumbs{flex:1;min-width:0;font-size:12px;color:#5F5E5A;text-align:left}'
+        +'.sb-loc-crumbs .cur{color:#2C2C2A;font-weight:700}'
+        +'.sb-move-btn{font-size:11px;padding:6px 14px;background:#2C2C2A;color:#fff;border:none;border-radius:20px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;flex-shrink:0}'
+        +'.sb-move-btn:active{transform:scale(0.96)}'
+        +'.sb-below-content-row{display:flex;gap:6px;margin:6px 0 8px}'
+        +'.sb-notes-pill{font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A;font-family:inherit}'
+        +'.sb-notes-pill.active{background:#EEECE4}'
         +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
         +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}'
         /* CLUSTER view — Logged July 7, 2026. SHAPING (#sb-detail-overlay) always
@@ -2010,21 +2024,28 @@
     var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
     var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
     var parentLabelCrumb=(_sboardCurrentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'ISB';
-    var crumbsHTML='<div class="sb-hdr-eyebrow2">Parent</div><div class="sb-parent-value">'+parentLabelCrumb+'</div>'
-      + '<div class="sb-hdr-eyebrow2">Topic</div><div class="sb-topic-value">'+topicLabel+'</div>';
 
-    // HEADER eyebrow: collapsed by default, showing only the current header —
-    // tap to reveal the same option list as before (visible-headers-in-context).
-    // "NEW" here means whichever board's own uncategorized bucket is
-    // active: null at the root ISB, or the current topic id when
-    // working inside a nested (fractal) board.
+    // HEADER: "NEW" here means whichever board's own uncategorized bucket is
+    // active: null at the root ISB, or the current topic id when working
+    // inside a nested (fractal) board.
     var localNewAdditionsTarget=_sboardCurrentTopicId||'';
     var isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
     var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
     var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
-    var headerListHTML='<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
-      + '<div class="sb-hdr-current" id="sb-hdr-current">'+curHeaderLabel+' ▾</div>'
-      + '<div class="sb-hdr-vlist" id="sb-hdr-vlist" style="display:none">'
+
+    // Current Location — read-only, styled like the Content/Title field
+    // headers. Repositioning happens only through the single MOVE button,
+    // which reveals the panel below (same header/topic/project pickers
+    // that used to sit always-partly-visible on the card).
+    var currentLocationHTML='<div class="sb-hdr-eyebrow2">Current Location</div>'
+      + '<div class="sb-loc-row">'
+      + '<div class="sb-loc-crumbs">'+parentLabelCrumb+' &rsaquo; '+topicLabel+' &rsaquo; <span class="cur">'+curHeaderLabel+'</span></div>'
+      + '<button class="sb-move-btn" id="sb-move-btn">MOVE</button>'
+      + '</div>';
+
+    var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
+      + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
+      + '<div class="sb-hdr-vlist" id="sb-hdr-vlist">'
       + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
       + (_sboardPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_sboardPurposeId)?' current':'')+'" data-hid="'+_sboardPurposeId+'">Purpose</div>'):'')
       + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW'; })
@@ -2035,6 +2056,7 @@
       + '<div style="display:flex;gap:6px;margin-top:6px">'
       + '<button class="sc-ov-btn" id="sb-hdr-othertopic" style="flex:1;font-size:10px">📍 Different Topic…</button>'
       + '<button class="sc-ov-btn" id="sb-hdr-otherproj" style="flex:1;font-size:10px">🔀 Different Project…</button>'
+      + '</div>'
       + '</div>';
 
     // Body: always the same fixed size and shape, whether it holds an image
@@ -2060,19 +2082,20 @@
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
     }
 
-    ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center;background:#F5F1E8;position:relative">'
+    ov.innerHTML='<div class="sc-overlay-card sb-shape-card sb-details-card" style="text-align:center;background:#F5F1E8;position:relative">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
       + '<span id="sb-details-eyebrow" style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">DETAILS</span>'
       + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:13px;color:#2C2C2A">✕</button>'
       + '</div>'
       + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
-      + crumbsHTML
+      + currentLocationHTML
       + headerListHTML
       + bodyHTML
-      + '<div style="display:flex;align-items:center;gap:6px;margin:6px 0">'
+      + '<div class="sb-below-content-row">'
       + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
       + '<span style="color:#D4537E;font-size:13px">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
+      + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️ Notes</button>'
       + '</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
@@ -2086,12 +2109,12 @@
       + '<div class="sb-slider-notch'+(!canSlideHeader?' sb-slide-disabled':(sliderCurrentRank==='header'?' sb-slide-current':''))+'" id="sb-slide-header" data-rank="header">HEADER</div>'
       + '<div class="sb-slider-notch'+(!canSlideSubber?' sb-slide-disabled':(sliderCurrentRank==='subber'?' sb-slide-current':''))+'" id="sb-slide-subber" data-rank="subber">SUBBER</div>'
       + '</div>'
-      + '<div class="sb-blue-row">'
-      + '<button class="sb-blue-btn" id="sb-notes" title="Notes">✏️</button>'
-      + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc">'+(isMisc?'MISC ✓':'MISC')+'</button>'
-      + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
-      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
-      + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
+      + '<div class="sb-blue-row" style="justify-content:space-between">'
+      + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc" style="flex:0 0 auto">'+(isMisc?'MISC ✓':'MISC')+'</button>'
+      + '<div style="flex:1"></div>'
+      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'" style="flex:0 0 auto">'+(item.locked?'🔒':'🔓')+'</button>'
+      + '<button class="sb-blue-btn" id="sb-gear" title="Appearance" style="flex:0 0 auto">⚙️</button>'
+      + '<button class="sb-blue-btn" id="sb-trash" title="Trash" style="flex:0 0 auto">'+(isTrashed?'↩️':'🗑️')+'</button>'
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
@@ -2170,11 +2193,11 @@
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
-    // Header field: collapsed by default, expands to the option list on tap
-    T().wire('sb-hdr-current', function(){
-      var vlist=document.getElementById('sb-hdr-vlist');
-      vlist.style.display=(vlist.style.display==='none')?'flex':'none';
-      vlist.style.flexDirection='column';
+    // MOVE — single entry point. Reveals the same header/topic/project
+    // pickers that used to sit always-partly-visible on the card.
+    T().wire('sb-move-btn', function(){
+      var panel=document.getElementById('sb-move-panel');
+      if(panel) panel.style.display=(panel.style.display==='none')?'block':'none';
     });
 
     // Header list: tap to reassign immediately
