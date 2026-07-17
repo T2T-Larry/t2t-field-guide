@@ -1122,32 +1122,17 @@
         var hdFitSize=_sboardFitFontSize(name, 15, 10);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
-        if(name==='Purpose'){
-          // Purpose is a card like any other now — corner-flip opens its
-          // own editor (color + "why are we doing this" note) instead of
-          // dblclick owning that job, and dblclick drills into it as TOPIC
-          // just like every other header. Locked July 16, 2026.
-          hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
-          var purposeCornerFlip=document.createElement('div');
-          purposeCornerFlip.className='sc-corner-flip';
-          purposeCornerFlip.title='Flip card';
-          purposeCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openPurposeEditor(); });
-          purposeCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-          purposeCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
-          hd.appendChild(purposeCornerFlip);
-        } else {
-          // Double-click a HEADER to drill into it — that card becomes the
-          // new TOPIC. Editing/renaming moved to the corner-flip (back of
-          // card) below. Locked July 16, 2026.
-          hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
-          var hdCornerFlip=document.createElement('div');
-          hdCornerFlip.className='sc-corner-flip';
-          hdCornerFlip.title='Flip card';
-          hdCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
-          hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-          hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
-          hd.appendChild(hdCornerFlip);
-        }
+        // Purpose used to have its own separate corner-flip editor; as of
+        // July 17, 2026 it's treated exactly like any other header — same
+        // dblclick-to-drill-in, same corner-flip into openSbDetail().
+        hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
+        var hdCornerFlip=document.createElement('div');
+        hdCornerFlip.className='sc-corner-flip';
+        hdCornerFlip.title='Flip card';
+        hdCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
+        hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+        hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
+        hd.appendChild(hdCornerFlip);
         if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -1814,46 +1799,6 @@
     T().wire('sb-gear-close', closeSbDetail);
   }
 
-  async function openPurposeEditor(){
-    var ov=document.getElementById('sb-detail-overlay');
-    var statusEl=document.getElementById('sc-status');
-    var _sb=T().sb;
-    try{
-      var id=await _sboardEnsurePurposeHeader(null);
-      var row=await _sb.from('ideas').select('notes,color').eq('id',id).single();
-      var curText=(row.data && row.data.notes) || '';
-      var curColor=(row.data && row.data.color) || '';
-      var pSwatches=_sboardColorPalette.map(function(c){
-        var sel=(curColor===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
-        return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
-      }).join('');
-      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Purpose</div>'
-        +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px">Why are we doing this?</div>'
-        +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+pSwatches+'</div>'
-        +'<textarea id="sb-purpose-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;min-height:70px">'+curText+'</textarea>'
-        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-purpose-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-purpose-close" style="flex:1">Close</button></div>'
-        +'</div>';
-      ov.classList.add('active');
-      ov.querySelectorAll('.sb-swatch').forEach(function(sw){
-        sw.onclick=async function(){
-          var c=sw.getAttribute('data-c');
-          try{ await _sb.from('ideas').update({color:c}).eq('id',id); }catch(e){}
-          closeSbDetail(); renderSeaBoard();
-        };
-      });
-      T().wire('sb-purpose-save', async function(){
-        var val=document.getElementById('sb-purpose-box').value;
-        var upd=await _sb.from('ideas').update({notes:val}).eq('id',id);
-        if(!upd.error){ var btn=document.getElementById('b-sc-purpose'); if(btn) btn.title=val; }
-        closeSbDetail();
-      });
-      T().wire('sb-purpose-close', closeSbDetail);
-    }catch(err){
-      if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
-    }
-  }
-
   async function _sboardEnsureMiscHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
@@ -1958,7 +1903,7 @@
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
     var isHeaderType=item.content_type==='header';
-    var reservedNames=['Trash','MISC','Purpose','NEW'];
+    var reservedNames=['Trash','MISC','NEW'];
     var isReservedItem=isHeaderType && reservedNames.indexOf(item.text_content)!==-1;
 
     if(isReservedItem){
