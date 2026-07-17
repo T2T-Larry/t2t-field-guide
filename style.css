@@ -267,8 +267,17 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
      Blue Sky, not dark navy — reuses the Dream Phase's own locked
      identity blue (#5b9bd5) rather than inventing a new one. Variable
      name kept as --isx-navy to limit edit surface across this file;
-     it now holds a sky blue, not navy. */
-  #s-idea-session{--isx-navy:#5B9BD5;--isx-blue:#378ADD;--isx-lightblue:#EBF4FF;--isx-paleblue:var(--brand-blue-light);--isx-board:var(--isx-lightblue)}
+     it now holds a sky blue, not navy.
+     Moved from #s-idea-session to #fg-root, July 17, 2026: the
+     isx-popup-layer (holding the 9712/9713/9714/9715 capture cards)
+     was relocated on July 16 to sit as a direct child of #fg-root so
+     9710 could open it too. That left it OUTSIDE #s-idea-session,
+     where these vars used to be scoped — so on 9710 the popup card's
+     background:var(--isx-lightblue) resolved to nothing and the card
+     rendered see-through. Scoping to #fg-root covers both 9710 and
+     9711/9712 since the popup layer and #s-idea-session are both
+     descendants of it. */
+  #fg-root{--isx-navy:#5B9BD5;--isx-blue:#378ADD;--isx-lightblue:#EBF4FF;--isx-paleblue:var(--brand-blue-light);--isx-board:var(--isx-lightblue)}
 
   /* 9711 lock, July 13, 2026: header bar matches 9710's own chrome exactly —
      same shared classes (sc-hdr-eyebrow / sc-hdr-frame / sc-topic-box /
