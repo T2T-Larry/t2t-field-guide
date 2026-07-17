@@ -263,11 +263,13 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     max-width:none!important;max-height:none!important;border-radius:0!important;margin:0!important;box-shadow:none!important}
   #s-idea-session.active{flex-direction:column!important;height:100%}
 
-  /* 9711 lock, July 13, 2026 (revised): Idea family default color is
-     Blue Sky, not dark navy — reuses the Dream Phase's own locked
-     identity blue (#5b9bd5) rather than inventing a new one. Variable
-     name kept as --isx-navy to limit edit surface across this file;
-     it now holds a sky blue, not navy.
+  /* 9711 lock, July 13, 2026 (superseded July 17, 2026): the Blue Sky
+     header bg tried here was reverted — 9711's header bar now matches
+     9710's dark navy (#1a3a5c) exactly again, per redecoration request.
+     --isx-navy itself still holds Blue Sky (#5b9bd5): it's the accent
+     color for 9711's own popups (paste/link/custom image dialogs, tree
+     nodes) and stays Blue Sky there — only the header BAR background
+     reverted to navy. See #isx-header-area below for the literal override.
      Moved from #s-idea-session to #fg-root, July 17, 2026: the
      isx-popup-layer (holding the 9712/9713/9714/9715 capture cards)
      was relocated on July 16 to sit as a direct child of #fg-root so
@@ -277,7 +279,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
      rendered see-through. Scoping to #fg-root covers both 9710 and
      9711/9712 since the popup layer and #s-idea-session are both
      descendants of it. */
-  #fg-root{--isx-navy:#5B9BD5;--isx-blue:#378ADD;--isx-lightblue:#EBF4FF;--isx-paleblue:var(--brand-blue-light);--isx-board:var(--isx-lightblue)}
+  #fg-root{--isx-navy:#5B9BD5;--isx-blue:#378ADD;--isx-lightblue:#EBF4FF;--isx-paleblue:var(--brand-blue-light);--isx-board:var(--brand-white)}
 
   /* 9711 lock, July 13, 2026: header bar matches 9710's own chrome exactly —
      same shared classes (sc-hdr-eyebrow / sc-hdr-frame / sc-topic-box /
@@ -285,7 +287,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
      on load order). PROJECT + PARENT top-left, TOPIC large top-center,
      action buttons top-right. No left toolbar — the old sidebar (mode
      tabs, rungs, action-btn column) is retired. */
-  #isx-header-area{background:var(--isx-navy);padding:10px 16px 8px;position:relative;min-height:40px;
+  #isx-header-area{background:#1a3a5c;padding:10px 16px 8px;position:relative;min-height:40px;
     display:flex;align-items:flex-start;justify-content:center;box-shadow:2px 0 10px rgba(0,0,0,.25);
     border-bottom:2px solid var(--brand-ink)}
   #isx-header-topleft{position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start}
@@ -295,13 +297,6 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     gap:4px;align-items:flex-end;max-width:230px}
   .isx-hdr-row{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;justify-content:flex-end}
   #isx-pagenum{position:absolute;bottom:2px;right:8px;font-size:8px;letter-spacing:2px;color:#7fa8cc;opacity:0;transition:opacity .3s}
-
-  /* Contrast fix for the lighter Blue Sky header bg (the shared sc-hdr-*
-     rules below assume a dark navy backdrop; #s-idea-session is lighter
-     now, so its eyebrow/frame need slightly stronger contrast here). */
-  #s-idea-session .sc-hdr-eyebrow{color:rgba(255,255,255,.85)}
-  #s-idea-session .sc-hdr-frame{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.3)}
-  #s-idea-session .sc-hdr-frame .sc-hdr-eyebrow{color:rgba(255,255,255,.7)}
 
   /* Shared header-chrome classes — same names/values as 9710's own header
      (see injectSeaOfIdeasCluster in sea-of-ideas.js), defined here too so
@@ -319,6 +314,18 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 10px;border-radius:14px;font-size:11px;
     font-weight:600;cursor:pointer;color:#5b9bd5}
   .sc-ov-btn:hover{background:#eaf3fb}
+
+  /* Gear/Options button — same classes as 9710's own #b-sc-gear (see
+     injectSeaOfIdeasCluster in idea-storyboard-9710.js), defined here too
+     so 9711's gear button looks right even opened before 9710 has ever
+     been visited. Added July 17, 2026 when 9711's 🎨 Recolor button moved
+     behind this Options menu, mirroring 9710's own consolidation. */
+  .sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;
+    border-radius:8px;padding:0 12px;height:30px;font-size:10px;font-weight:700;letter-spacing:.03em;
+    cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+    opacity:.85;transition:background .15s,opacity .15s}
+  .sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}
+  .sc-hdr-btn-icon{padding:0;width:30px;font-size:14px}
 
   #isx-board{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--isx-board)}
   #isx-header-strip{flex:0 0 auto;display:flex;flex-wrap:wrap;gap:10px;padding:14px 16px;background:var(--isx-board)}

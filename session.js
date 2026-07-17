@@ -178,7 +178,7 @@
           }
         });
       });
-      T().wire('isx-recolor-btn', _isxOpenRecolorAll);
+      T().wire('isx-gear-btn', _isxOpenGearMenu);
       T().wire('isx-rules-btn', function(){ window.IdeaCapture.openRules(); });
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
       T().wire('isx-end-btn', function(){
@@ -436,6 +436,25 @@
   // different Topic if 9710 hasn't been opened this session. Covers every
   // content subheader plus MISC; Trash is excluded — it's a global bucket,
   // not "on this board" — matching 9710's own exclusion. July 14, 2026.
+  // Gear menu — mirrors 9710's own Options consolidation (see
+  // _sboardOpenGearMenu in idea-storyboard-9710.js): moves the 🎨 Recolor
+  // button that used to sit in the top row behind one Options icon next
+  // to ✕. Added July 17, 2026.
+  function _isxOpenGearMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+      +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+      +'</div>'
+      +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%">Close</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('isx-gear-recolor', function(){ closeSbDetail(); _isxOpenRecolorAll(); });
+    T().wire('isx-gear-close', closeSbDetail);
+  }
+
   async function _isxOpenRecolorAll(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
