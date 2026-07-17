@@ -221,30 +221,58 @@
     var layer=document.getElementById('isx-popup-layer');
     if(!layer) return;
     layer.innerHTML=html; layer.classList.add('active');
-    _icSyncBadges();
+    _icWireOwnPageBadge();
   }
 
   function _icClosePopup(){
     var layer=document.getElementById('isx-popup-layer');
     if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
-    _icSyncBadges();
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
     if(cb) cb();
   }
 
-  // Keeps both the 9710 (#sc-pagenum) and 9711 (#isx-pagenum) badges
-  // showing the truth while a capture card sits on top of either —
-  // whichever badge is actually visible is the one that matters, so
-  // it's harmless to set both. Locked July 16, 2026.
-  function _icSyncBadges(){
-    var openCard=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
-    var num=openCard ? openCard.getAttribute('data-pagenum') : null;
-    var pn=document.getElementById('isx-pagenum');
-    if(pn) pn.textContent = num || '9711';
-    var scpn=document.getElementById('sc-pagenum');
-    if(scpn) scpn.textContent = num || '9710';
+  // RULE: every screen reveals its OWN number on triple-click — never a
+  // neighbor's. July 17, 2026 fix: the old approach borrowed the HOST
+  // screen's hidden badge (#sc-pagenum on 9710, #isx-pagenum on 9711) and
+  // re-wrote its text to match whichever popup was open. That broke the
+  // rule two ways: (1) the host's real triple-click hotspot sits behind
+  // the popup's full-screen backdrop, so the first of the "three" clicks
+  // actually landed on the backdrop and closed the popup — by the time a
+  // real triple-click registered, it was hitting the HOST screen's own
+  // hotspot showing the HOST's own number again; (2) it meant this file
+  // had to know host-screen element IDs at all, which contradicts the
+  // "knows nothing about 9710 or 9711" design above. Fix: each popup
+  // carries its own badge + its own triple-click hotspot (the title),
+  // fully self-contained, so it always shows its own data-pagenum no
+  // matter which screen it's sitting on top of.
+  function _icWireOwnPageBadge(){
+    var card=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
+    if(!card) return;
+    var num=card.getAttribute('data-pagenum');
+    var badge=card.querySelector('.isx-pnum');
+    if(!badge){
+      badge=document.createElement('div');
+      badge.className='isx-pnum';
+      card.appendChild(badge);
+    }
+    badge.textContent=num;
+    var title=card.querySelector('.isx-ptitle');
+    if(title && !title._pnumWired){
+      title._pnumWired=true;
+      var clicks=0, timer=null;
+      title.addEventListener('click', function(){
+        clicks++;
+        if(timer) clearTimeout(timer);
+        timer=setTimeout(function(){ clicks=0; }, 600);
+        if(clicks>=3){
+          clicks=0;
+          badge.style.opacity='1';
+          setTimeout(function(){ badge.style.opacity='0'; }, 2000);
+        }
+      });
+    }
   }
 
   // Lets a traveler drag the whole capture card aside to peek at the

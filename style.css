@@ -359,6 +359,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     padding:16px 20px 18px;position:relative;box-sizing:border-box}
   .isx-pclose{position:absolute;top:10px;right:10px;width:28px;height:28px;background:var(--brand-white);border:2px solid var(--brand-ink);
     border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+  /* Self-contained page-number badge, one per popup card — triple-click
+     the title to reveal for 2s. Never borrows a host screen's badge.
+     July 17, 2026 fix, see _icWireOwnPageBadge in idea-capture.js. */
+  .isx-pnum{position:absolute;bottom:8px;left:16px;font-size:8px;letter-spacing:2px;color:#7fa8cc;
+    opacity:0;transition:opacity .3s;pointer-events:none}
   .isx-ptitle{font-size:24px;font-weight:700;color:var(--isx-navy);margin:0 30px 2px 0}
   .isx-psub{font-size:11px;color:var(--brand-blue-gray);margin-bottom:6px}
   .isx-ploc{font-size:10px;color:#7a90a8;font-style:italic;margin-bottom:10px}
