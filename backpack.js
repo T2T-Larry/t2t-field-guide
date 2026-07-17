@@ -379,7 +379,15 @@
         _tapCount = 0;
         var ov=document.getElementById('mg-overlay');
         var mgOpen = ov && ov.classList.contains('active');
-        var num = mgOpen ? '9000' : (_pageNums[cur] || '—');
+        // 9712/13/14/15 capture cards never call nav() — by design, they sit
+        // on top of whatever screen is active without disturbing it (see
+        // idea-capture.js header). That means `cur` still points at the
+        // HOST screen (9710 or 9711) while one of these is open, so this
+        // toast kept reporting the host's number instead of the card's own.
+        // Fixed July 17, 2026 — same priority pattern as mgOpen above,
+        // using the public IdeaCapture.isOpen()/currentPageNum() API.
+        var icOpen = window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen();
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (_pageNums[cur] || '—'));
         showPageToast(num);
       }
     });

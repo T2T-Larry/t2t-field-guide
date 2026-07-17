@@ -221,7 +221,6 @@
     var layer=document.getElementById('isx-popup-layer');
     if(!layer) return;
     layer.innerHTML=html; layer.classList.add('active');
-    _icWireOwnPageBadge();
   }
 
   function _icClosePopup(){
@@ -234,46 +233,20 @@
   }
 
   // RULE: every screen reveals its OWN number on triple-click — never a
-  // neighbor's. July 17, 2026 fix: the old approach borrowed the HOST
-  // screen's hidden badge (#sc-pagenum on 9710, #isx-pagenum on 9711) and
-  // re-wrote its text to match whichever popup was open. That broke the
-  // rule two ways: (1) the host's real triple-click hotspot sits behind
-  // the popup's full-screen backdrop, so the first of the "three" clicks
-  // actually landed on the backdrop and closed the popup — by the time a
-  // real triple-click registered, it was hitting the HOST screen's own
-  // hotspot showing the HOST's own number again; (2) it meant this file
-  // had to know host-screen element IDs at all, which contradicts the
-  // "knows nothing about 9710 or 9711" design above. Fix: each popup
-  // carries its own badge + its own triple-click hotspot (the title),
-  // fully self-contained, so it always shows its own data-pagenum no
-  // matter which screen it's sitting on top of.
-  function _icWireOwnPageBadge(){
-    var card=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
-    if(!card) return;
-    var num=card.getAttribute('data-pagenum');
-    var badge=card.querySelector('.isx-pnum');
-    if(!badge){
-      badge=document.createElement('div');
-      badge.className='isx-pnum';
-      card.appendChild(badge);
-    }
-    badge.textContent=num;
-    var title=card.querySelector('.isx-ptitle');
-    if(title && !title._pnumWired){
-      title._pnumWired=true;
-      var clicks=0, timer=null;
-      title.addEventListener('click', function(){
-        clicks++;
-        if(timer) clearTimeout(timer);
-        timer=setTimeout(function(){ clicks=0; }, 600);
-        if(clicks>=3){
-          clicks=0;
-          badge.style.opacity='1';
-          setTimeout(function(){ badge.style.opacity='0'; }, 2000);
-        }
-      });
-    }
-  }
+  // neighbor's. July 17, 2026: this used to be "fixed" here with a
+  // per-popup badge + its own triple-click hotspot on the title. That
+  // was solving the wrong problem — the actual triple-click reveal
+  // ("Hidden Mickey") is a single GLOBAL listener in backpack.js that
+  // shows a toast for whatever `cur` screen is active. Since these
+  // capture cards deliberately never call nav() (see file header —
+  // they sit on top of the host screen without disturbing it), `cur`
+  // still pointed at the host (9710/9711) while a card was open, so
+  // the toast reported the HOST's number, not the card's own — no
+  // local badge in this file could ever have fixed that. The real fix
+  // is in backpack.js's toast handler, which now checks
+  // IdeaCapture.isOpen()/currentPageNum() (below) the same way it
+  // already checked the MG overlay. Removed the dead local badge code
+  // so there's only one triple-click reveal system in the app, not two.
 
   // Lets a traveler drag the whole capture card aside to peek at the
   // shotgun wall underneath — mousedown anywhere on the card EXCEPT an
