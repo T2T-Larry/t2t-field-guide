@@ -2065,7 +2065,7 @@
       + '<span id="sb-details-eyebrow" style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">DETAILS</span>'
       + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:13px;color:#2C2C2A">✕</button>'
       + '</div>'
-      + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9636</div>'
+      + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
       + crumbsHTML
       + headerListHTML
@@ -2100,8 +2100,10 @@
       + '<button id="sb-trash-yes" style="font-size:12px;padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
       + '<button id="sb-trash-no" style="font-size:12px;padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
       + '</div></div></div>'
+      + '<div class="sc-corner-flip" id="sb-detail-corner-flip" title="Flip back to front"></div>'
       + '</div>';
     ov.classList.add('active');
+    T().wire('sb-detail-corner-flip', closeSbDetail);
 
     (function(){
       var clicks=0, timer=null;
