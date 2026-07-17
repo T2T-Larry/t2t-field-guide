@@ -230,7 +230,7 @@
            from the compact .sb-shape-card used by the Shape/reserved-header
            dialog), Current Location row + single MOVE button, HEART/NOTES
            grouped directly below Content. */
-        +'.sb-details-card{width:min(480px,92vw);border-radius:20px;border-top:6px solid #5b9bd5;box-shadow:0 10px 30px rgba(0,0,0,0.18);position:relative}'
+        +'.sb-details-card{width:min(380px,90vw);border-radius:0;border-top:6px solid #5b9bd5;box-shadow:0 10px 30px rgba(0,0,0,0.18);position:relative}'
         +'.sb-details-card::after{content:\'\';position:absolute;top:6px;right:0;width:0;height:0;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #e4ddc9 transparent transparent}'
         +'.sb-loc-row{display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid #B4B2A9;border-radius:10px;padding:8px 10px;margin-bottom:10px}'
         +'.sb-loc-crumbs{flex:1;min-width:0;font-size:12px;color:#5F5E5A;text-align:left}'
@@ -2004,12 +2004,6 @@
     // rule the old demote button used, now just a grayed notch instead of
     // a separate button). TOPIC is always reachable — any card can become
     // the viewed board.
-    var _sliderParentRow = item.cluster_id ? _sboardAllRowsById[item.cluster_id] : null;
-    var canSlideParent = !!(_sliderParentRow && _sliderParentRow.cluster_id);
-    var canSlideHeader = !!item.cluster_id;
-    var canSlideSubber = !(isHeaderType && isBucket);
-    var isCurrentTopic = String(item.id)===String(_sboardCurrentTopicId);
-    var sliderCurrentRank = isCurrentTopic ? 'topic' : (isHeaderType ? 'header' : 'subber');
     var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     var swatches=_sboardColorPalette.map(function(c){
       var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
@@ -2045,6 +2039,7 @@
 
     var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
+      + '<div class="sb-hdr-vitem'+(isMisc?' current':'')+'" id="sb-misc-pinned" style="border:0.5px solid #D3D1C7;border-radius:8px;margin-bottom:6px;font-weight:600">'+(isMisc?'📦 Misc ✓ — tap to move out':'📦 Misc (project archive)')+'</div>'
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist">'
       + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
       + (_sboardPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_sboardPurposeId)?' current':'')+'" data-hid="'+_sboardPurposeId+'">Purpose</div>'):'')
@@ -2101,20 +2096,10 @@
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
-      + '<div class="sb-slider-project" id="sb-slider-project" title="Switch project">PROJECT</div>'
-      + '<div class="sb-viewas-eyebrow">VIEW</div>'
-      + '<div class="sb-slider-track" style="margin-bottom:8px'+(item.locked?';opacity:.45;pointer-events:none':'')+'">'
-      + '<div class="sb-slider-notch'+(!canSlideParent?' sb-slide-disabled':'')+'" id="sb-slide-parent" data-rank="parent">PARENT</div>'
-      + '<div class="sb-slider-notch'+(sliderCurrentRank==='topic'?' sb-slide-current':'')+'" id="sb-slide-topic" data-rank="topic">TOPIC</div>'
-      + '<div class="sb-slider-notch'+(!canSlideHeader?' sb-slide-disabled':(sliderCurrentRank==='header'?' sb-slide-current':''))+'" id="sb-slide-header" data-rank="header">HEADER</div>'
-      + '<div class="sb-slider-notch'+(!canSlideSubber?' sb-slide-disabled':(sliderCurrentRank==='subber'?' sb-slide-current':''))+'" id="sb-slide-subber" data-rank="subber">SUBBER</div>'
-      + '</div>'
-      + '<div class="sb-blue-row" style="justify-content:space-between">'
-      + '<button class="sb-blue-btn'+(isMisc?' misc-on':'')+'" id="sb-misc" title="Misc" style="flex:0 0 auto">'+(isMisc?'MISC ✓':'MISC')+'</button>'
-      + '<div style="flex:1"></div>'
-      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'" style="flex:0 0 auto">'+(item.locked?'🔒':'🔓')+'</button>'
-      + '<button class="sb-blue-btn" id="sb-gear" title="Appearance" style="flex:0 0 auto">⚙️</button>'
-      + '<button class="sb-blue-btn" id="sb-trash" title="Trash" style="flex:0 0 auto">'+(isTrashed?'↩️':'🗑️')+'</button>'
+      + '<div class="sb-blue-row">'
+      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
+      + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
+      + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'🗑️')+'</button>'
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
@@ -2156,42 +2141,6 @@
       imgPreview.title='Double-click to zoom in';
       imgPreview.addEventListener('dblclick', function(){ _sbOpenImageLightbox(imgPreview.src); });
     }
-
-    T().wire('sb-slider-project', openProjectSwitcher);
-
-    T().wire('sb-slide-parent', function(){
-      if(!canSlideParent) return;
-      var grandparent=_sliderParentRow.cluster_id?_sboardAllRowsById[_sliderParentRow.cluster_id]:null;
-      if(!grandparent) return;
-      closeSbDetail();
-      _sboardDrillInto(grandparent);
-    });
-    T().wire('sb-slide-topic', function(){
-      closeSbDetail();
-      _sboardDrillInto(item);
-    });
-    T().wire('sb-slide-header', async function(){
-      if(!canSlideHeader) return;
-      try{
-        if(item.content_type!=='header'){
-          var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',item.id);
-          if(upd.error) throw upd.error;
-        }
-        closeSbDetail();
-        _sboardDrillInto(_sliderParentRow);
-      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-    });
-    T().wire('sb-slide-subber', async function(){
-      if(!canSlideSubber) return;
-      try{
-        if(item.content_type==='header'){
-          var upd=await _sb.from('ideas').update({content_type:'text'}).eq('id',item.id);
-          if(upd.error) throw upd.error;
-        }
-        closeSbDetail();
-        renderSeaBoard();
-      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-    });
 
     // MOVE — single entry point. Reveals the same header/topic/project
     // pickers that used to sit always-partly-visible on the card.
@@ -2415,7 +2364,7 @@
       }catch(err){ if(statusBox) statusBox.textContent='Notes need the notes Supabase column.'; }
     });
 
-    T().wire('sb-misc', async function(){
+    T().wire('sb-misc-pinned', async function(){
       try{
         var targetId=await _sboardEnsureMiscHeader(_sboardCurrentTopicId);
         var newCluster=isMisc?null:targetId;
