@@ -308,7 +308,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}
   .sc-hdr-frame-label{font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:var(--brand-white);line-height:1.2}
   .sc-topic-box{text-align:center;background:#eaf3fb;border:1px solid #a9cce3;border-radius:6px;
-    padding:6px 14px;font-size:18px;font-weight:700;color:#1a3a5c;display:inline-block;max-width:220px;
+    padding:8px 16px;font-size:26px;font-weight:700;color:#1a3a5c;display:inline-block;max-width:260px;
     box-sizing:border-box;white-space:normal;word-wrap:break-word}
   .sc-topic-box.isx-rung-dropready{outline:2px solid #5b9bd5;background:rgba(55,138,221,.28);color:var(--brand-white)}
   .sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 10px;border-radius:14px;font-size:11px;
