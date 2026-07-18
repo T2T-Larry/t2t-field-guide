@@ -333,6 +333,12 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
      whatever position each was last dropped at. Left in the HTML rather
      than removed (minimal-footprint principle), just hidden. */
   #isx-header-strip{display:none}
+  /* Fixed alpha-ring layer (July 18, 2026) — sibling of #isx-canvas-scroll,
+     NOT inside it, so scrolling/panning the freeform canvas never moves
+     anything in here. Untouched (never-dragged) headers + the fixed Trash
+     icon live here, positioned via _isxRingLayout in board-relative pixels. */
+  #isx-header-ring{position:absolute;inset:0;pointer-events:none;z-index:40}
+  #isx-header-ring .isx-tile{pointer-events:auto}
   #isx-canvas-scroll{flex:1;position:relative;overflow:auto}
   #isx-canvas{position:relative;width:100%;min-height:100%}
   .isx-tile{position:absolute;width:112px;min-height:66px;background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:0;
@@ -356,6 +362,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     overflow:hidden;font-weight:700;font-size:11px;line-height:1.15;color:#1a3a5c}
   .isx-stack-lock{position:absolute;top:2px;right:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.6)}
   .isx-tile.isx-tile-dropready{outline:2px solid #5b9bd5}
+  /* Fixed Trash icon (July 18, 2026) — small and round, pinned to the
+     board's bottom-right corner via #isx-header-ring, overriding the big
+     rectangular stack-tile look with .isx-tile still applied for drop-
+     target hit-testing (see findTileTarget in _isxWireTileDrag). */
+  .isx-tile.isx-trash-fixed{position:absolute;right:16px;bottom:16px;left:auto;top:auto;
+    width:44px;height:44px;min-height:0;border-radius:50%;background:var(--brand-white);
+    border:2px solid var(--brand-ink);box-shadow:0 2px 6px rgba(0,0,0,.3);padding:0;
+    display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;z-index:80}
   /* Corner-flip dog-ear, matches 9710's .sc-corner-flip — turned-up
      lower-right corner, click opens the back of the card. July 16, 2026. */
   .isx-corner-flip{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 15px 15px;

@@ -454,12 +454,31 @@
   // scattered anywhere on the canvas, matching the old whole-board random
   // placement. A freshly-chosen spot is persisted immediately so it
   // survives reload instead of reshuffling every visit.
-  function _isxResolvePos(row, w, h, anchor){
+  function _isxResolvePos(row, w, h, anchor, ephemeral, idx){
+    // Stored position always wins regardless of ephemeral mode — once a row
+    // has a real (canvas_x, canvas_y), it is "settled" and behaves exactly as
+    // before.
+    if(row.canvas_x!=null && row.canvas_y!=null){
+      var stored={x:row.canvas_x, y:row.canvas_y};
+      _isxCardPos[row.id]=stored;
+      return stored;
+    }
+    // Ephemeral: this row's own parent is a still-unsettled ring header (or a
+    // nested header underneath one) — never persisted, never cached across
+    // renders, recomputed fresh every time from the LIVE anchor so it travels
+    // naturally whenever the ring reflows instead of getting orphaned. Once a
+    // traveler actually drags this specific row, it gets a real canvas_x/
+    // canvas_y and the branch above takes over for good. July 18, 2026.
+    if(ephemeral){
+      var n=idx||0, angle=n*0.9, radius=60+n*14;
+      return {
+        x: Math.round((anchor?anchor.x:w/2)+Math.cos(angle)*radius),
+        y: Math.round((anchor?anchor.y:h/2)+Math.sin(angle)*radius)
+      };
+    }
     var pos=_isxCardPos[row.id];
     if(pos) return pos;
-    if(row.canvas_x!=null && row.canvas_y!=null){
-      pos={x:row.canvas_x, y:row.canvas_y};
-    } else if(anchor){
+    if(anchor){
       pos={
         x: Math.max(8, Math.min(w-120, anchor.x+(Math.random()*160-80))),
         y: Math.max(8, Math.min(h-80, anchor.y+(Math.random()*160-80)))
@@ -471,6 +490,49 @@
     }
     _isxCardPos[row.id]=pos;
     return pos;
+  }
+
+  // ---- Fixed alpha-ring header layout (July 18, 2026) ----
+  // Headers that have never been dragged (canvas_x/canvas_y still null)
+  // render in a separate viewport-pinned layer (#isx-header-ring, a sibling
+  // of #isx-canvas-scroll — scrolling the canvas never moves it) instead of
+  // on the freeform canvas. Evenly spaced by alphabetical RANK (not by
+  // starting letter — rank-based spacing stays even no matter what the
+  // actual names are) around the board's own rectangular perimeter,
+  // clockwise from top-left, with a reserved gap carved out of the
+  // bottom-right corner for the fixed Trash icon. The moment a traveler
+  // drags one, it detaches: its drop position gets converted from
+  // board-relative to real canvas coordinates and persisted, so from then
+  // on it lives as an ordinary freeform pile like everything else — same
+  // "stays put until moved" rule as loose cards.
+  var ISX_RING_MARGIN = 20;
+  var ISX_RING_TRASH_RESERVE = 92;
+
+  function _isxRingPerimeterPoint(d, w, h, margin){
+    if(d<w) return {x:margin+d, y:margin};
+    d-=w;
+    if(d<h) return {x:margin+w, y:margin+d};
+    d-=h;
+    if(d<w) return {x:margin+w-d, y:margin+h};
+    d-=w;
+    return {x:margin, y:margin+h-d};
+  }
+
+  function _isxRingLayout(n, boardW, boardH){
+    var margin=ISX_RING_MARGIN;
+    var w=Math.max(60, boardW-2*margin), h=Math.max(60, boardH-2*margin);
+    var per=2*(w+h);
+    var cornerD=w+h; // right-edge -> bottom-edge join = bottom-right corner
+    var res=Math.min(ISX_RING_TRASH_RESERVE, per*0.3);
+    var usable=Math.max(1, per-res);
+    var gapStart=cornerD-res/2;
+    var pts=[];
+    for(var i=0;i<n;i++){
+      var u = n>1 ? (i/n)*usable : usable/2;
+      var d = u<gapStart ? u : u+res;
+      pts.push(_isxRingPerimeterPoint(d, w, h, margin));
+    }
+    return pts;
   }
 
   // Recolor all headers on THIS Topic in one click — same idea as 9710's
@@ -491,12 +553,60 @@
       +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+      +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%">Close</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('isx-gear-recolor', function(){ closeSbDetail(); _isxOpenRecolorAll(); });
+    T().wire('isx-gear-reset', function(){ closeSbDetail(); _isxOpenResetHeadersConfirm(); });
     T().wire('isx-gear-close', closeSbDetail);
+  }
+
+  // Factory reset — headers only, current board only (Locked July 18,
+  // 2026). Clears canvas_x/canvas_y on every content header + MISC on THIS
+  // Topic so they fall back to the alpha ring on next render. Never touches
+  // Trash (separate global bucket, not part of the ring) and never touches
+  // card CONTENTS inside a header — only where the header itself sits.
+  // Skippable confirm, same don't-ask-again pattern as Trash.
+  function _isxOpenResetHeadersConfirm(){
+    if(localStorage.getItem('isxSkipResetConfirm')==='1'){ _isxResetHeadersToAlpha(); return; }
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov){ _isxResetHeadersToAlpha(); return; }
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Reset headers to A–Z?</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Sends every header on THIS Topic back to the alphabetical ring. Cards inside them are untouched.</div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;justify-content:center;margin-bottom:10px"><input type="checkbox" id="isx-reset-skip"> Don\u2019t ask me again</label>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-reset-yes" style="flex:1">Reset</button><button class="sc-ov-btn" id="isx-reset-no" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('isx-reset-no', closeSbDetail);
+    T().wire('isx-reset-yes', function(){
+      var cb=document.getElementById('isx-reset-skip');
+      if(cb&&cb.checked) localStorage.setItem('isxSkipResetConfirm','1');
+      closeSbDetail();
+      _isxResetHeadersToAlpha();
+    });
+  }
+
+  async function _isxResetHeadersToAlpha(){
+    var clusterId=_isxCurrentClusterId();
+    if(!clusterId) return;
+    var _sb=T().sb;
+    try{
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user) throw new Error('Not signed in.');
+      var res=await _sb.from('ideas').select('id,text_content')
+        .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
+      if(res.error) throw res.error;
+      var excludedNames=['Purpose','NEW','New Additions','Trash'];
+      var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; }).map(function(r){ return r.id; });
+      for(var i=0;i<ids.length;i++){
+        delete _isxCardPos[ids[i]];
+        await _sb.from('ideas').update({canvas_x:null, canvas_y:null}).eq('id',ids[i]);
+      }
+      _isxRenderBoard();
+    }catch(err){ _isxShowError('Couldn\u2019t reset headers: '+(err&&err.message?err.message:String(err))); }
   }
 
   async function _isxOpenRecolorAll(){
@@ -543,9 +653,11 @@
   async function _isxRenderBoard(){
     var canvas=document.getElementById('isx-canvas');
     var strip=document.getElementById('isx-header-strip');
+    var ringLayer=document.getElementById('isx-header-ring');
+    var boardEl=document.getElementById('isx-board');
     var empty=document.getElementById('isx-empty');
     if(!canvas||!strip) return;
-    canvas.innerHTML=''; strip.innerHTML='';
+    canvas.innerHTML=''; strip.innerHTML=''; if(ringLayer) ringLayer.innerHTML='';
     _isxSelected={};
     if(empty) canvas.appendChild(empty);
     if(T2TStoryboard.applyBoardBg) T2TStoryboard.applyBoardBg();
@@ -572,26 +684,94 @@
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
       var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId); });
       var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || await _isxFetchRow(miscId);
-      var trashRow=await _isxFetchRow(trashId);
 
       if(empty) empty.style.display = (ideaRows.length||contentHeaders.length) ? 'none' : 'block';
 
-      // Header piles now live directly on the freeform canvas, at whatever
-      // (canvas_x, canvas_y) each was last dropped at — randomly scattered
-      // on first-ever appearance, same "loose piles" feel as everything
-      // else on the board. Redesigned July 18, 2026 (was a fixed
-      // flex-wrap strip above the canvas). MISC then Trash still built
-      // last, but free to sit anywhere once dragged.
-      var headerRowOrder=contentHeaders.concat(miscRow?[miscRow]:[]).concat(trashRow?[trashRow]:[]);
       var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
+      var boardW=boardEl?Math.max(boardEl.clientWidth,300):w, boardH=boardEl?Math.max(boardEl.clientHeight,300):h;
 
-      for(var i=0;i<headerRowOrder.length;i++){
-        var r=headerRowOrder[i];
-        var icon = String(r.id)===String(trashId) ? '\ud83d\uddd1\ufe0f ' : (String(r.id)===String(miscId) ? '\ud83d\udce6 ' : '');
-        await _isxBuildHeaderPile(r, icon, w, h, canvas, null);
+      // Fixed alpha-ring header layout (July 18, 2026): a header stays in
+      // the viewport-pinned ring for as long as it's never been dragged
+      // (canvas_x/canvas_y still null). The instant a traveler drags one,
+      // it persists a real position and moves to the freeform canvas below
+      // — permanently, until a factory reset (see _isxResetHeadersToAlpha)
+      // sends it back. MISC participates like any ordinary header; Trash
+      // is its own fixed icon, never part of the ring or the canvas.
+      var ringCandidates=contentHeaders.concat(miscRow?[miscRow]:[]);
+      var untouchedRing=ringCandidates.filter(function(r){ return r.canvas_x==null || r.canvas_y==null; })
+        .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'}); });
+      var canvasHeaders=ringCandidates.filter(function(r){ return !(r.canvas_x==null || r.canvas_y==null); });
+
+      if(ringLayer){
+        var ringPts=_isxRingLayout(untouchedRing.length, boardW, boardH);
+        for(var ri=0; ri<untouchedRing.length; ri++){
+          var rr=untouchedRing[ri];
+          var ricon = String(rr.id)===String(miscId) ? '\ud83d\udce6 ' : '';
+          await _isxBuildHeaderPile(rr, ricon, boardW, boardH, ringLayer, null, true, ringPts[ri]);
+        }
+        _isxBuildTrashIcon(trashId);
+      }
+
+      for(var ci=0; ci<canvasHeaders.length; ci++){
+        var cr=canvasHeaders[ci];
+        var cicon = String(cr.id)===String(miscId) ? '\ud83d\udce6 ' : '';
+        await _isxBuildHeaderPile(cr, cicon, w, h, canvas, null);
       }
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
+  }
+
+  // Fixed Trash icon (July 18, 2026) — small, pinned to the bottom-right of
+  // the board viewport regardless of scroll, replacing the old "Trash is a
+  // pile like any other header" treatment. Direct-drop fast lane: dropping
+  // a loose (non-header) card here bypasses MISC entirely, with a single
+  // skippable confirm (localStorage "don't ask me again", separate from the
+  // factory-reset one). Dropping a HEADER here keeps a heavier, non-
+  // skippable confirm — trashing a whole header takes its contents with it,
+  // a bigger blast radius than one duplicate/junk card.
+  function _isxBuildTrashIcon(trashId){
+    var ringLayer=document.getElementById('isx-header-ring');
+    if(!ringLayer||!trashId) return;
+    var t=document.createElement('div');
+    t.className='isx-tile isx-trash-fixed';
+    t.dataset.isxId=trashId;
+    t.dataset.isxType='header';
+    t.title='Trash';
+    t.innerHTML='\ud83d\uddd1\ufe0f';
+    ringLayer.appendChild(t);
+  }
+
+  function _isxHandleTrashDrop(rowId, trashId, isHeader){
+    if(isHeader){
+      if(!window.confirm('Trash this header and everything in it? This can\u2019t be undone.')){ _isxRenderBoard(); return; }
+      delete _isxCardPos[rowId]; delete _isxFanned[rowId];
+      T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard);
+      return;
+    }
+    if(localStorage.getItem('isxSkipTrashConfirm')==='1'){
+      T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard);
+      return;
+    }
+    _isxOpenTrashConfirm(rowId, trashId);
+  }
+
+  function _isxOpenTrashConfirm(rowId, trashId){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov){ T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard); return; }
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash this?</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">One-way \u2014 off the board for good.</div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;justify-content:center;margin-bottom:10px"><input type="checkbox" id="isx-trash-skip"> Don\u2019t ask me again</label>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-trash-yes" style="flex:1">Trash it</button><button class="sc-ov-btn" id="isx-trash-no" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('isx-trash-no', function(){ closeSbDetail(); _isxRenderBoard(); });
+    T().wire('isx-trash-yes', function(){
+      var cb=document.getElementById('isx-trash-skip');
+      if(cb&&cb.checked) localStorage.setItem('isxSkipTrashConfirm','1');
+      closeSbDetail();
+      T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard);
+    });
   }
 
   // A header pile: the header tile itself, plus its own real contents
@@ -606,10 +786,23 @@
   // double-click still drills into the header as a Topic, unchanged.
   // Recurses into any nested header that's itself open. Larry, July 18,
   // 2026.
-  async function _isxBuildHeaderPile(row, iconPrefix, w, h, canvas, anchor){
-    var pileTile=_isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor);
+  //
+  // `ephemeral` + `forcedPos` (added July 18, 2026, fixed alpha-ring
+  // redesign): when this pile itself is still-untouched and living in the
+  // ring layer, forcedPos is its computed ring position (skips
+  // _isxResolvePos/_isxSavePos entirely — nothing is persisted just for
+  // sitting in the ring). `ephemeral` propagates to every descendant that
+  // has never been individually touched either, so a whole untouched
+  // subtree rides along with the ring header instead of anchoring to a
+  // position that may shift the next time the ring reflows. The instant
+  // any single row in that subtree is dragged, IT gets a real persisted
+  // position and drops out of ephemeral mode for good — same "stays put
+  // until moved" rule as everywhere else on this board.
+  async function _isxBuildHeaderPile(row, iconPrefix, w, h, canvas, anchor, ephemeral, forcedPos){
+    var pileTile=_isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor, ephemeral, forcedPos);
     canvas.appendChild(pileTile);
-    var pilePos=_isxCardPos[row.id];
+    var pilePos=forcedPos || pileTile._isxPos || _isxCardPos[row.id];
+    var childEphemeral = !!ephemeral || row.canvas_x==null;
     var _sb=T().sb;
     var children=[];
     try{
@@ -623,8 +816,8 @@
     if(_isxFanned[row.id]){
       for(var i=0;i<children.length;i++){
         var c=children[i];
-        if(c.content_type==='header'){ await _isxBuildHeaderPile(c, '', w, h, canvas, pilePos); }
-        else { canvas.appendChild(_isxMakeTile(c, w, h, pilePos)); }
+        if(c.content_type==='header'){ await _isxBuildHeaderPile(c, '', w, h, canvas, pilePos, childEphemeral); }
+        else { canvas.appendChild(_isxMakeTile(c, w, h, pilePos, childEphemeral, i)); }
       }
     } else {
       var CAP=6, STEP=4;
@@ -650,14 +843,15 @@
     }
   }
 
-  function _isxMakeTile(row, w, h, anchor){
+  function _isxMakeTile(row, w, h, anchor, ephemeral, idx){
     var t=document.createElement('div');
     t.className='isx-tile';
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
-    var pos=_isxResolvePos(row, w, h, anchor);
+    var pos=_isxResolvePos(row, w, h, anchor, ephemeral, idx);
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
+    t._isxPos=pos;
     var linkUrl=null;
     if(row.content_type==='image'){
       t.innerHTML='<img src="'+row.image_url+'" style="height:52px">';
@@ -680,7 +874,17 @@
     isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
     isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     t.appendChild(isxCornerFlip);
-    _isxWireTileDrag(t, row.id, linkUrl, false);
+    // Scope cut, July 18, 2026: a never-touched card still riding along
+    // with a still-unsettled ring/ephemeral parent isn't individually
+    // drag-repositionable yet — its position isn't real until something
+    // durable exists to store it relative to (the parent header itself
+    // hasn't settled into a canvas position). Drag the header itself to
+    // detach it into the canvas first; every child inside it becomes a
+    // normal, fully draggable freeform card from that point on. Corner-
+    // flip/DETAILS still work regardless.
+    if(!ephemeral || row.canvas_x!=null){
+      _isxWireTileDrag(t, row.id, linkUrl, false);
+    }
     return t;
   }
 
@@ -694,17 +898,18 @@
   // plain reposition drop just persists its new spot. Single click
   // toggles the pile open/closed (see _isxBuildHeaderPile); double-click
   // still drills straight into it as a Topic. Always a valid drop target
-  // for loose ideas. MISC and Trash are the same tile — Trash is one
-  // single bucket for the whole account (matches 9710), MISC is
-  // per-Topic.
-  function _isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor){
+  // for loose ideas. MISC is an ordinary header now (July 18, 2026 —
+  // fully in the ring/canvas rotation like any content header). Trash is
+  // its own fixed icon (see _isxBuildTrashIcon), no longer a stack tile.
+  function _isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor, ephemeral, forcedPos){
     var t=document.createElement('div');
     t.className='isx-tile isx-stack-tile';
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
-    var pos=_isxResolvePos(row, w||600, h||600, anchor);
+    var pos = forcedPos || _isxResolvePos(row, w||600, h||600, anchor, ephemeral);
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
+    t._isxPos=pos;
     var bg=row.color||'#fff';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
@@ -740,7 +945,11 @@
       delete _isxFanned[row.id];
       _isxPromoteCardToTopic(row.id);
     });
-    _isxWireTileDrag(t, row.id, null, true);
+    // Ring-anchored headers (forcedPos given) detach into the freeform
+    // canvas the instant they're dragged — see _isxWireTileDrag's ringMode
+    // handling, which converts the drop's board-relative coordinates into
+    // real canvas coordinates before persisting.
+    _isxWireTileDrag(t, row.id, null, true, !!forcedPos);
     return t;
   }
 
@@ -751,7 +960,14 @@
   // diverged from that once positions needed to survive reload). A link
   // tile still needs to open on a genuine click; a small movement
   // threshold is what tells a drag apart from a click on the same element.
-  function _isxWireTileDrag(tile, rowId, linkUrl, pinned){
+  // `ringMode` (added July 18, 2026): true only for a header tile currently
+  // rendered in #isx-header-ring. Dragging still just follows the cursor
+  // in board-relative pixels like any tile — the one difference is at
+  // drop: board-relative coordinates get the current scroll offset added
+  // back in before being saved, so the persisted (canvas_x, canvas_y) means
+  // the same thing it always has once this header re-renders on the real,
+  // scrollable canvas from now on.
+  function _isxWireTileDrag(tile, rowId, linkUrl, pinned, ringMode){
     var startX, startY, origLeft, origTop, moved;
     tile.addEventListener('mousedown', function(e){
       e.preventDefault();
@@ -870,6 +1086,8 @@
         if(moved && overEl(topicRungEl, ev)){
           delete _isxFanned[rowId];
           _isxPromoteCardToTopic(rowId);
+        } else if(moved && tileTarget && tileTarget.classList.contains('isx-trash-fixed')){
+          _isxHandleTrashDrop(rowId, tileTarget.dataset.isxId, pinned);
         } else if(moved && tileTarget){
           if(tileTarget.dataset.isxType==='header'){
             delete _isxCardPos[rowId]; delete _isxFanned[rowId];
@@ -881,6 +1099,10 @@
           }
         } else if(moved){
           var finalX=parseFloat(tile.style.left)||0, finalY=parseFloat(tile.style.top)||0;
+          if(ringMode){
+            finalX += scroller?scroller.scrollLeft:0;
+            finalY += scroller?scroller.scrollTop:0;
+          }
           _isxCardPos[rowId]={x:finalX,y:finalY};
           _isxSavePos(rowId, finalX, finalY);
           // A moved header pile needs a refresh so its cascade/spread
