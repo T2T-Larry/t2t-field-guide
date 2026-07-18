@@ -202,9 +202,10 @@
       var board=document.getElementById('isx-board');
       if(board) board.addEventListener('dblclick', function(e){
         if(e.target.closest('.isx-tile')) return;
-        var rect=board.getBoundingClientRect();
-        _isxOpenColorPicker(e.clientX-rect.left, e.clientY-rect.top);
+        T2TStoryboard.openBoardBgPicker();
       });
+      var lassoCanvas=document.getElementById('isx-canvas');
+      if(lassoCanvas) _isxWireLasso(lassoCanvas);
       // Triple-click PARENT to reveal the page number badge — same
       // convention as 9710's own sc-parent-hit trick.
       (function(){
@@ -426,8 +427,51 @@
     });
   }
 
-  var _isxCardPos = {}; // session-only manual drag positions, keyed by idea row id
+  // _isxCardPos is now a live cache backed by Supabase (canvas_x/canvas_y
+  // on `ideas`), not purely session-only — seeded from the DB on first
+  // sight of a row, written through on every drop via _isxSavePos. Header
+  // piles use the exact same cache/positioning path as loose ideas now
+  // that they live on the freeform canvas instead of a fixed strip.
+  // Freeform pile canvas redesign — Larry, July 18, 2026.
+  var _isxCardPos = {};
+  var _isxFanned = {};       // header ids currently spread open (session-only — every Topic opens with all piles closed)
+  var _isxSelected = {};     // lasso-selected row ids, session-only
+  var _isxClickTimers = {};  // pending single-click-vs-dblclick disambiguation per header row id
   var _isxColorSwatches = ['#e4e0d8','#fdf6e8','#eaf4ff','#eafaf0','#fdeaea','#f5eaff','#fff3d6','#e8f0f5'];
+
+  function _isxSavePos(rowId, x, y){
+    var _sb=T().sb;
+    if(!_sb) return;
+    _sb.from('ideas').update({canvas_x:Math.round(x), canvas_y:Math.round(y)}).eq('id',rowId)
+      .then(function(res){ if(res&&res.error) console.warn('Position save failed for', rowId, res.error.message); })
+      .catch(function(e){ console.warn('Position save failed for', rowId, e); });
+  }
+
+  // Shared by loose ideas and header piles alike: reuse this row's cached
+  // position if we've already placed it this render pass; else its own
+  // stored (canvas_x, canvas_y) if it has one; else a fresh spot — near
+  // `anchor` (the parent pile it just fanned out from) if given, else
+  // scattered anywhere on the canvas, matching the old whole-board random
+  // placement. A freshly-chosen spot is persisted immediately so it
+  // survives reload instead of reshuffling every visit.
+  function _isxResolvePos(row, w, h, anchor){
+    var pos=_isxCardPos[row.id];
+    if(pos) return pos;
+    if(row.canvas_x!=null && row.canvas_y!=null){
+      pos={x:row.canvas_x, y:row.canvas_y};
+    } else if(anchor){
+      pos={
+        x: Math.max(8, Math.min(w-120, anchor.x+(Math.random()*160-80))),
+        y: Math.max(8, Math.min(h-80, anchor.y+(Math.random()*160-80)))
+      };
+      _isxSavePos(row.id, pos.x, pos.y);
+    } else {
+      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
+      _isxSavePos(row.id, pos.x, pos.y);
+    }
+    _isxCardPos[row.id]=pos;
+    return pos;
+  }
 
   // Recolor all headers on THIS Topic in one click — same idea as 9710's
   // own 🎨 (_sboardOpenRecolorAll), but computes its own header-id list
@@ -496,25 +540,15 @@
     }catch(err){ _isxShowError('Couldn\u2019t load headers to recolor: '+(err&&err.message?err.message:String(err))); }
   }
 
-  async function _isxLoadTopicColor(){
-    var board=document.getElementById('isx-board');
-    if(!board) return;
-    board.style.backgroundColor='';
-    try{
-      var _sb=T().sb;
-      var res=await _sb.from('ideas').select('color').eq('id',_isxCurrentTopicId()).single();
-      if(res.data && res.data.color) board.style.backgroundColor=res.data.color;
-    }catch(e){ /* no color set yet — leave default */ }
-  }
-
   async function _isxRenderBoard(){
     var canvas=document.getElementById('isx-canvas');
     var strip=document.getElementById('isx-header-strip');
     var empty=document.getElementById('isx-empty');
     if(!canvas||!strip) return;
     canvas.innerHTML=''; strip.innerHTML='';
+    _isxSelected={};
     if(empty) canvas.appendChild(empty);
-    _isxLoadTopicColor();
+    if(T2TStoryboard.applyBoardBg) T2TStoryboard.applyBoardBg();
     var clusterId=_isxCurrentClusterId();
     try{
       var _sb=T().sb;
@@ -523,12 +557,12 @@
 
       // MISC is per-Topic (same ensure-call 9710 uses); Trash is a single
       // global bucket for the whole account. Both are always shown, even
-      // empty — permanent slots at the end of the header row, not
-      // something that only appears once it has content. July 14, 2026.
+      // empty — permanent slots, not something that only appears once it
+      // has content. July 14, 2026.
       var _ensureResults=await Promise.all([T2TStoryboard.ensureMiscHeader(clusterId), T2TStoryboard.ensureTrashHeader()]);
       var miscId=_ensureResults[0], trashId=_ensureResults[1];
 
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
         .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       var excludedNames=['Purpose','NEW','New Additions'];
@@ -542,38 +576,87 @@
 
       if(empty) empty.style.display = (ideaRows.length||contentHeaders.length) ? 'none' : 'block';
 
-      // Headers live in their own fixed strip above the scrolling canvas —
-      // July 14, 2026 (was manually x/y-positioned inside the same
-      // scrolling canvas as loose ideas). Flex-wrap handles overflow onto
-      // a second row on its own; the strip sits outside #isx-canvas-scroll
-      // so it never scrolls out of view while browsing idea cards. MISC
-      // then Trash pinned at the end, same order as before.
+      // Header piles now live directly on the freeform canvas, at whatever
+      // (canvas_x, canvas_y) each was last dropped at — randomly scattered
+      // on first-ever appearance, same "loose piles" feel as everything
+      // else on the board. Redesigned July 18, 2026 (was a fixed
+      // flex-wrap strip above the canvas). MISC then Trash still built
+      // last, but free to sit anywhere once dragged.
       var headerRowOrder=contentHeaders.concat(miscRow?[miscRow]:[]).concat(trashRow?[trashRow]:[]);
-      headerRowOrder.forEach(function(r){
-        var icon = String(r.id)===String(trashId) ? '\ud83d\uddd1\ufe0f ' : (String(r.id)===String(miscId) ? '\ud83d\udce6 ' : '');
-        strip.appendChild(_isxMakeHeaderStackTile(r, icon));
-      });
-
       var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
+
+      for(var i=0;i<headerRowOrder.length;i++){
+        var r=headerRowOrder[i];
+        var icon = String(r.id)===String(trashId) ? '\ud83d\uddd1\ufe0f ' : (String(r.id)===String(miscId) ? '\ud83d\udce6 ' : '');
+        await _isxBuildHeaderPile(r, icon, w, h, canvas, null);
+      }
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
-  function _isxMakeTile(row, w, h){
+  // A header pile: the header tile itself, plus its own real contents
+  // rendered one of two ways depending on _isxFanned[row.id] — CLOSED
+  // (default, every Topic opens this way): the actual child cards cascade
+  // tightly behind the header, each nudged a few px further down-right
+  // than the last, so only corners/edges peek out and focus stays on the
+  // header — capped at a handful of visible slivers plus a "+N" badge for
+  // the rest. OPEN: the same real cards scatter loosely around the pile's
+  // own position, fully visible and individually draggable/lassoable.
+  // Toggled by a single click on the header (see _isxMakeHeaderStackTile);
+  // double-click still drills into the header as a Topic, unchanged.
+  // Recurses into any nested header that's itself open. Larry, July 18,
+  // 2026.
+  async function _isxBuildHeaderPile(row, iconPrefix, w, h, canvas, anchor){
+    var pileTile=_isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor);
+    canvas.appendChild(pileTile);
+    var pilePos=_isxCardPos[row.id];
+    var _sb=T().sb;
+    var children=[];
+    try{
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
+        .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
+        .order('created_at',{ascending:true}).limit(300);
+      children=(res&&res.data)||[];
+    }catch(e){ console.warn('_isxBuildHeaderPile children fetch failed', e); }
+    if(!children.length) return;
+
+    if(_isxFanned[row.id]){
+      for(var i=0;i<children.length;i++){
+        var c=children[i];
+        if(c.content_type==='header'){ await _isxBuildHeaderPile(c, '', w, h, canvas, pilePos); }
+        else { canvas.appendChild(_isxMakeTile(c, w, h, pilePos)); }
+      }
+    } else {
+      var CAP=6, STEP=4;
+      var shown=children.slice(0, CAP);
+      shown.forEach(function(c, idx){
+        var layer=document.createElement('div');
+        layer.className='isx-cascade-card';
+        layer.style.left=Math.round(pilePos.x+(idx+1)*STEP)+'px';
+        layer.style.top=Math.round(pilePos.y+(idx+1)*STEP)+'px';
+        layer.style.background=c.color||'#fff';
+        layer.style.zIndex=String(CAP-idx);
+        canvas.appendChild(layer);
+      });
+      if(children.length>CAP){
+        var badge=document.createElement('div');
+        badge.className='isx-cascade-more';
+        badge.textContent='+'+(children.length-CAP);
+        badge.style.left=Math.round(pilePos.x+(CAP+1)*STEP+6)+'px';
+        badge.style.top=Math.round(pilePos.y-10)+'px';
+        canvas.appendChild(badge);
+      }
+      pileTile.style.zIndex=String(CAP+1);
+    }
+  }
+
+  function _isxMakeTile(row, w, h, anchor){
     var t=document.createElement('div');
     t.className='isx-tile';
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
-    var pos=_isxCardPos[row.id];
-    if(!pos){
-      // Cache the very first placement, not just drags — otherwise every
-      // un-dragged card gets a brand new random spot on every re-render
-      // (e.g. right after adding a new idea), which reshuffles the whole
-      // board every time instead of only placing the new arrival.
-      pos={ x: 16+Math.random()*Math.max(40,w-140), y: 16+Math.random()*Math.max(40,h-100) };
-      _isxCardPos[row.id]=pos;
-    }
+    var pos=_isxResolvePos(row, w, h, anchor);
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     var linkUrl=null;
     if(row.content_type==='image'){
@@ -601,25 +684,27 @@
     return t;
   }
 
-  // Header buckets — July 14, 2026 (rebuilt): live in the fixed
-  // #isx-header-strip above the scrolling canvas, in normal flex-wrap flow
-  // rather than manually positioned x/y — flex-wrap puts overflow headers
-  // on a second row on its own, and since the strip sits outside
-  // #isx-canvas-scroll, it never scrolls out of view while browsing idea
-  // cards. Same stacked-card look as 9710's own header tiles. Still built
-  // on the isx mouse-drag system so dragging one onto the TOPIC rung
-  // drills in (pinned=true — a plain reposition drag just re-renders,
-  // snapping back into flow rather than free-floating). Always a valid
-  // drop target for loose ideas (see _isxWireTileDrag). MISC and Trash are
-  // the same tile, just permanent slots at the end of the strip with an
-  // icon prefix — Trash is one single bucket for the whole account
-  // (matches 9710), MISC is per-Topic.
-  function _isxMakeHeaderStackTile(row, iconPrefix){
+  // Header buckets — redesigned July 18, 2026 as freeform piles: live
+  // directly on #isx-canvas at their own persisted (canvas_x, canvas_y)
+  // instead of a fixed flex-wrap strip (the #isx-header-strip approach
+  // from July 14, 2026 — see the CSS, now hidden/unused). Same
+  // stacked-card look as 9710's own header tiles. Built on the isx
+  // mouse-drag system so dragging one onto the TOPIC rung drills in, or
+  // onto another pile nests it (pinned=true — see _isxWireTileDrag); a
+  // plain reposition drop just persists its new spot. Single click
+  // toggles the pile open/closed (see _isxBuildHeaderPile); double-click
+  // still drills straight into it as a Topic. Always a valid drop target
+  // for loose ideas. MISC and Trash are the same tile — Trash is one
+  // single bucket for the whole account (matches 9710), MISC is
+  // per-Topic.
+  function _isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor){
     var t=document.createElement('div');
     t.className='isx-tile isx-stack-tile';
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
+    var pos=_isxResolvePos(row, w||600, h||600, anchor);
+    t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     var bg=row.color||'#fff';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
@@ -633,37 +718,63 @@
       isxStackCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
       isxStackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     }
-    // Double-click a HEADER/sub-header card here drills into it — same
-    // TOPIC-promotion drag-to-rung already does, now reachable with a
-    // simple double-click too. Locked July 16, 2026.
-    t.addEventListener('dblclick', function(e){ e.stopPropagation(); _isxPromoteCardToTopic(row.id); });
+    // Single click = toggle this pile open/closed (spread its real cards
+    // out to view/reorganize, or gather them back into the cascade).
+    // Double-click still drills into the header as a Topic — a plain
+    // click waits ~250ms to make sure a second one isn't coming before it
+    // acts, so a genuine double-click never flashes the pile open first.
+    // Larry, July 18, 2026.
+    t.addEventListener('click', function(e){
+      if(e.target.closest('.isx-corner-flip')) return;
+      e.stopPropagation();
+      if(_isxClickTimers[row.id]) return;
+      _isxClickTimers[row.id]=setTimeout(function(){
+        delete _isxClickTimers[row.id];
+        if(_isxFanned[row.id]) delete _isxFanned[row.id]; else _isxFanned[row.id]=true;
+        _isxRenderBoard();
+      }, 250);
+    });
+    t.addEventListener('dblclick', function(e){
+      e.stopPropagation();
+      if(_isxClickTimers[row.id]){ clearTimeout(_isxClickTimers[row.id]); delete _isxClickTimers[row.id]; }
+      delete _isxFanned[row.id];
+      _isxPromoteCardToTopic(row.id);
+    });
     _isxWireTileDrag(t, row.id, null, true);
     return t;
   }
 
-  // Manual drag, same session-only-cache approach CLUSTER already uses (no
-  // dedicated position columns on `ideas` — positions live for the life of
-  // this browser session, same as CLUSTER's starburst). A link tile still
-  // needs to open on a genuine click; a small movement threshold is what
-  // tells a drag apart from a click on the same element.
+  // Manual drag. Positions now persist to Supabase (canvas_x/canvas_y on
+  // `ideas`, via _isxSavePos) rather than living only for the browser
+  // session — updated as part of the freeform pile canvas redesign, July
+  // 18, 2026 (CLUSTER's own starburst is still session-only; this screen
+  // diverged from that once positions needed to survive reload). A link
+  // tile still needs to open on a genuine click; a small movement
+  // threshold is what tells a drag apart from a click on the same element.
   function _isxWireTileDrag(tile, rowId, linkUrl, pinned){
     var startX, startY, origLeft, origTop, moved;
     tile.addEventListener('mousedown', function(e){
       e.preventDefault();
       var board=document.getElementById('isx-board');
       var scroller=document.getElementById('isx-canvas-scroll');
+      var canvasEl=document.getElementById('isx-canvas');
       startX=e.clientX; startY=e.clientY; moved=false;
       origLeft=parseFloat(tile.style.left)||0; origTop=parseFloat(tile.style.top)||0;
       var startScrollLeft=scroller?scroller.scrollLeft:0, startScrollTop=scroller?scroller.scrollTop:0;
-      // Sliding-window navigation, added July 12, 2026 — the same free-drag gesture
-      // used for repositioning a card on the canvas also doubles as a way to
-      // shift the ladder: release over the Topic rung to recenter directly
-      // onto this card (Subber -> Topic in one move), or over the Header
-      // rung to promote it and select it as the current Header target
-      // (Subber -> Header, staying on the same Topic). Only the Topic and
-      // Header rungs are live drop targets for now — the Parent rung stays
-      // click-only (its own "View as Topic" climb-back button) until a
-      // longer jump like that gets its own design pass.
+
+      // Lasso-selected group (2+) moves together, relative positions kept
+      // — same convention as 9710's own CLUSTER lasso. Snapshot every
+      // selected tile's starting left/top once, here at drag start. A
+      // group drag only ever repositions (no reparent/promote/fan) — same
+      // restriction CLUSTER's group-drag has. Freeform pile canvas
+      // redesign — Larry, July 18, 2026.
+      var isGroup = !!(_isxSelected[rowId] && Object.keys(_isxSelected).length>1);
+      var groupEls=null, groupOrig=null;
+      if(isGroup && canvasEl){
+        groupEls=Array.prototype.filter.call(canvasEl.querySelectorAll('.isx-tile'), function(t){ return _isxSelected[t.dataset.isxId]; });
+        groupOrig=groupEls.map(function(t){ return {left:parseFloat(t.style.left)||0, top:parseFloat(t.style.top)||0}; });
+      }
+
       // Sliding-window navigation, added July 12, 2026 — the same free-drag gesture
       // used for repositioning a card on the canvas also doubles as a way to
       // recenter the ladder directly onto this card by dropping it on the
@@ -697,10 +808,9 @@
         board.querySelectorAll('.isx-tile-dropready').forEach(function(el){ el.classList.remove('isx-tile-dropready'); });
       }
       // Edge auto-scroll — July 14, 2026. #isx-canvas-scroll is the scroll
-      // container for loose ideas (headers live in the always-visible
-      // fixed strip now, so they no longer need scrolling into view).
-      // Dragging a loose idea near the canvas edge still scrolls to reach
-      // more cards, same as 9710's own edge-scroll on its board-wrap.
+      // container for the whole freeform canvas. Dragging a tile near the
+      // canvas edge still scrolls to reach more cards, same as 9710's own
+      // edge-scroll on its board-wrap.
       var EDGE=56, MAXSPEED=16;
       function edgeScroll(ev){
         if(!scroller) return;
@@ -721,15 +831,21 @@
         // mousedown, or the tile drifts from the cursor as soon as
         // edgeScroll kicks in — raw client-coordinate delta alone stops
         // matching canvas-local position the moment the container scrolls
-        // underneath a fixed cursor position. Pinned (header strip) tiles
-        // never scroll, so this is a no-op for them (scroller deltas stay
-        // zero relative to their own container regardless).
+        // underneath a fixed cursor position.
         var scrollDx=scroller?(scroller.scrollLeft-startScrollLeft):0;
         var scrollDy=scroller?(scroller.scrollTop-startScrollTop):0;
         var dx=(ev.clientX-startX)+scrollDx, dy=(ev.clientY-startY)+scrollDy;
         if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
         tile.style.left=Math.round(origLeft+dx)+'px';
         tile.style.top=Math.round(origTop+dy)+'px';
+        if(groupEls){
+          groupEls.forEach(function(t,i){
+            if(t===tile) return;
+            t.style.left=Math.round(groupOrig[i].left+dx)+'px';
+            t.style.top=Math.round(groupOrig[i].top+dy)+'px';
+          });
+          return; // group drag never reparents/promotes/fans — reposition only
+        }
         clearRungHighlights();
         if(moved){
           if(overEl(topicRungEl, ev)) topicRungEl.classList.add('isx-rung-dropready');
@@ -739,13 +855,24 @@
       function onUp(ev){
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        if(groupEls){
+          if(moved){
+            groupEls.forEach(function(t){
+              var gx=parseFloat(t.style.left)||0, gy=parseFloat(t.style.top)||0;
+              _isxCardPos[t.dataset.isxId]={x:gx,y:gy};
+              _isxSavePos(t.dataset.isxId, gx, gy);
+            });
+          }
+          return;
+        }
         clearRungHighlights();
         var tileTarget = moved ? findTileTarget(ev) : null;
         if(moved && overEl(topicRungEl, ev)){
+          delete _isxFanned[rowId];
           _isxPromoteCardToTopic(rowId);
         } else if(moved && tileTarget){
           if(tileTarget.dataset.isxType==='header'){
-            delete _isxCardPos[rowId];
+            delete _isxCardPos[rowId]; delete _isxFanned[rowId];
             T2TStoryboard.moveCard(rowId, tileTarget.dataset.isxId);
           } else {
             _isxFetchRow(tileTarget.dataset.isxId).then(function(targetRow){
@@ -753,11 +880,67 @@
             });
           }
         } else if(moved){
-          if(pinned){ _isxRenderBoard(); } // snap back to its fixed row slot
-          else{ _isxCardPos[rowId]={x:parseFloat(tile.style.left), y:parseFloat(tile.style.top)}; }
+          var finalX=parseFloat(tile.style.left)||0, finalY=parseFloat(tile.style.top)||0;
+          _isxCardPos[rowId]={x:finalX,y:finalY};
+          _isxSavePos(rowId, finalX, finalY);
+          // A moved header pile needs a refresh so its cascade/spread
+          // children re-anchor around its new spot; a loose idea doesn't
+          // need the whole board reloaded for a nudge.
+          if(pinned) _isxRenderBoard();
         } else if(linkUrl){
           window.open(linkUrl, '_blank', 'noopener');
         }
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // Lasso-select on blank canvas — mousedown on empty space (not on a
+  // tile) draws a selection rectangle; releasing selects every real tile
+  // it overlaps (cascade slivers are inert and excluded, since they don't
+  // carry the .isx-tile class). Dragging any selected tile then moves the
+  // whole selection together — see _isxWireTileDrag. A click with no real
+  // movement just clears the current selection. Ported from 9710's
+  // CLUSTER lasso — Larry, July 18, 2026.
+  function _isxWireLasso(canvas){
+    canvas.addEventListener('mousedown', function(e){
+      if(e.target!==canvas) return;
+      e.preventDefault();
+      var r0=canvas.getBoundingClientRect();
+      var start={x:e.clientX-r0.left, y:e.clientY-r0.top};
+      var moved=false;
+      var lasso=document.createElement('div');
+      lasso.className='isx-lasso';
+      lasso.style.left=start.x+'px'; lasso.style.top=start.y+'px';
+      lasso.style.width='0px'; lasso.style.height='0px';
+      canvas.appendChild(lasso);
+      function onMove(e2){
+        var r=canvas.getBoundingClientRect();
+        var cx=e2.clientX-r.left, cy=e2.clientY-r.top;
+        if(Math.abs(cx-start.x)>3 || Math.abs(cy-start.y)>3) moved=true;
+        var x=Math.min(cx,start.x), y=Math.min(cy,start.y);
+        lasso.style.left=x+'px'; lasso.style.top=y+'px';
+        lasso.style.width=Math.abs(cx-start.x)+'px';
+        lasso.style.height=Math.abs(cy-start.y)+'px';
+      }
+      function onUp(){
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        var lb={left:parseFloat(lasso.style.left), top:parseFloat(lasso.style.top), width:parseFloat(lasso.style.width), height:parseFloat(lasso.style.height)};
+        if(lasso.parentNode) lasso.parentNode.removeChild(lasso);
+        _isxSelected={};
+        if(moved){
+          Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
+            var tx=parseFloat(t.style.left)||0, ty=parseFloat(t.style.top)||0;
+            var tw=t.offsetWidth||112, th=t.offsetHeight||66;
+            var overlaps = tx<lb.left+lb.width && tx+tw>lb.left && ty<lb.top+lb.height && ty+th>lb.top;
+            if(overlaps) _isxSelected[t.dataset.isxId]=true;
+          });
+        }
+        Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
+          t.classList.toggle('isx-selected', !!_isxSelected[t.dataset.isxId]);
+        });
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -822,6 +1005,7 @@
     var row=await _isxFetchRow(rowId);
     if(!row) return;
     delete _isxCardPos[rowId];
+    delete _isxFanned[rowId];
     T2TShared.isxPath.push({id:row.id, text:row.text_content||'(untitled)'});
     T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
     await _isxRenderLadder();
@@ -856,7 +1040,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,content_type,text_content,cluster_id,image_url,color,locked').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
@@ -864,34 +1048,6 @@
       return null;
     }
   }
-
-  function _isxOpenColorPicker(x, y){
-    var board=document.getElementById('isx-board');
-    if(!board) return;
-    var existing=document.getElementById('isx-color-popup'); if(existing) existing.remove();
-    var pop=document.createElement('div');
-    pop.className='isx-color-popup'; pop.id='isx-color-popup';
-    pop.style.left=x+'px'; pop.style.top=y+'px';
-    pop.innerHTML=_isxColorSwatches.map(function(c){ return '<div class="isx-color-swatch" data-color="'+c+'" style="background:'+c+'"></div>'; }).join('');
-    board.appendChild(pop);
-    pop.querySelectorAll('.isx-color-swatch').forEach(function(sw){
-      sw.onclick=async function(){
-        var color=sw.getAttribute('data-color');
-        board.style.backgroundColor=color;
-        pop.remove();
-        try{
-          var _sb=T().sb;
-          await _sb.from('ideas').update({color:color}).eq('id',_isxCurrentTopicId());
-        }catch(e){ console.warn('Saving board color failed:', e); }
-      };
-    });
-    setTimeout(function(){
-      document.addEventListener('click', function closeOnce(e){
-        if(!pop.contains(e.target)){ pop.remove(); document.removeEventListener('click', closeOnce); }
-      });
-    }, 0);
-  }
-
 
   // Eye replaces the compass this iteration: instead of the text "Where
   // This Sits" tree, it jumps straight to the real visual Storyboard for

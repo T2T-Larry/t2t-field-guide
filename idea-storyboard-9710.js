@@ -539,6 +539,14 @@
     if(areaEl) areaEl.style.background=c||(T2TShared.currentTopicId?'#3a2564':'#1a3a5c');
     if(clusterEl) clusterEl.style.background=c||'';
     if(swEl) swEl.style.background=c||'';
+    // 9711 SESSION shares this same whole-screen background as of the
+    // family-resemblance pass, July 18, 2026 — one color, either screen's
+    // picker updates both. Was its own per-Topic Supabase-stored color
+    // before this (see removed _isxLoadTopicColor in session.js).
+    var isxBoard=document.getElementById('isx-board');
+    var isxArea=document.getElementById('isx-header-area');
+    if(isxBoard) isxBoard.style.background=c||'transparent';
+    if(isxArea) isxArea.style.background=c||'#3a2564';
   }
   function _sboardSetBoardBg(c){
     try{ localStorage.setItem('t2t_seaOfIdeas_boardBg', c); }catch(e){}
@@ -2860,7 +2868,9 @@
     isAutoHeaderText: _sboardIsAutoHeaderText,
     getRow: function(id){ return _sboardAllRowsById[id]; },
     openDetail: openSbDetail,
-    closeDetail: closeSbDetail
+    closeDetail: closeSbDetail,
+    applyBoardBg: _sboardApplyBoardBg,
+    openBoardBgPicker: openBoardBgPicker
   };
 
   document.addEventListener('DOMContentLoaded', function(){
