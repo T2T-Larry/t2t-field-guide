@@ -507,6 +507,8 @@
   // "stays put until moved" rule as loose cards.
   var ISX_RING_MARGIN = 20;
   var ISX_RING_TRASH_RESERVE = 92;
+  var ISX_RING_TILE_W = 120;  // generous bounding box for a stack tile
+  var ISX_RING_TILE_H = 74;
 
   function _isxRingPerimeterPoint(d, w, h, margin){
     if(d<w) return {x:margin+d, y:margin};
@@ -520,7 +522,16 @@
 
   function _isxRingLayout(n, boardW, boardH){
     var margin=ISX_RING_MARGIN;
-    var w=Math.max(60, boardW-2*margin), h=Math.max(60, boardH-2*margin);
+    // A ring point is used directly as a tile's (left, top) — its top-left
+    // CORNER, not its center. Walking the raw board rectangle put the right
+    // and bottom edges' corner at the board's true edge, so the tile's own
+    // width/height then ran straight off-screen with nothing to scroll to
+    // (the ring layer is deliberately non-scrolling). Fixed July 18, 2026:
+    // w/h here are the span of valid TOP-LEFT positions, inset by the
+    // tile's own footprint on the far sides, so the tile's opposite corner
+    // always lands back inside the board.
+    var w=Math.max(60, boardW-2*margin-ISX_RING_TILE_W);
+    var h=Math.max(60, boardH-2*margin-ISX_RING_TILE_H);
     var per=2*(w+h);
     var cornerD=w+h; // right-edge -> bottom-edge join = bottom-right corner
     var res=Math.min(ISX_RING_TRASH_RESERVE, per*0.3);
