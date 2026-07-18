@@ -154,7 +154,7 @@
     's-trivia','s-cover-more','s-invention-more','s-want-more','s-know-more',
     's-what-is-t2t','s-t2t-goals','s-authors',
     's-thoughts-1','s-thoughts-2','s-thoughts-3',
-    's-idea','s-idea-capture',
+    's-idea',
     's-journal','s-journal-capture','s-journal-cover',
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
@@ -792,7 +792,7 @@
         // tap once there.
         ctx.autoOpenCapture=true;
         window.T2TSea.openIdeaCapture(ctx);
-      } else nav('s-idea-capture', false);
+      } else console.error('Idea capture unavailable — window.T2TSea.openIdeaCapture is missing (session.js failed to load?). The old 9210-legacy fallback screen was removed July 18, 2026, so there is no longer a second path here.');
     });
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
     wire('b-mg-gems',   function(){closeMG();nav('s-gems-board', false);});
@@ -807,12 +807,10 @@
     /* ── BACKPACK PAGE NUMBERS (per Notion 9000 series) ── */
     registerPageNum('s-cover-map',   '9100');
     registerPageNum('s-idea',        '9200');
-    registerPageNum('s-idea-capture','9210-legacy');
+    // s-idea-capture/theme/paste/link/custom (9210-legacy, 9211-9214)
+    // registrations removed July 18, 2026 along with the screens
+    // themselves — see idea-media-shared.js.
     registerPageNum('s-idea-session','9711'); /* was 9210 — renumbered July 13, 2026 into the 9700-9799 Storyboard family, right after ISB (9710) */
-    registerPageNum('s-idea-theme',  '9211');
-    registerPageNum('s-idea-paste',  '9212');
-    registerPageNum('s-idea-link',   '9213');
-    registerPageNum('s-idea-custom', '9214');
     registerPageNum('s-journal',        '9300');
     registerPageNum('s-journal-capture','9310');
     registerPageNum('s-journal-view',   '9320');
@@ -848,7 +846,7 @@
        entry point July 13, 2026 — same reasoning as b-mg-idea above. */
     wire('b-capture-idea',function(){
       if(window.T2TSea&&window.T2TSea.openIdeaCapture) window.T2TSea.openIdeaCapture(null);
-      else nav('s-idea-capture');
+      else console.error('Idea capture unavailable — window.T2TSea.openIdeaCapture is missing (session.js failed to load?). The old 9210-legacy fallback screen was removed July 18, 2026, so there is no longer a second path here.');
     });
     wire('b-sea-ideas',function(){
       seaChapterEntry = false;

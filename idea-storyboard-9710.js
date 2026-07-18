@@ -47,10 +47,17 @@
     T().registerGems('s-sea-of-ideas', [
       {text:'The ISB holds everything — no commitment, no wrong answers.', attr:'T2T Field Guide · CREATE'}
     ]);
+    // 'Add an Idea' -> s-idea-capture entry removed July 18, 2026 along
+    // with the legacy screen it pointed to (see idea-media-shared.js). It
+    // used the wrong property name anyway (id instead of target, which is
+    // what renderTrivia in backpack.js actually reads) so it likely never
+    // navigated correctly in the first place. The other two entries below
+    // are untouched — also worth noting neither of THEM sets `target`
+    // either (both use `id`), so this whole trivia list may never have
+    // worked; flagging rather than guessing at a fix beyond today's ask.
     T().registerTrivia('s-sea-of-ideas', [
       { label: 'Purpose', id: 's-sea-trivia-purpose' },
-      { label: 'Types of Seas of Ideas', id: 's-sea-trivia-types' },
-      { label: 'Add an Idea', id: 's-idea-capture' }
+      { label: 'Types of Seas of Ideas', id: 's-sea-trivia-types' }
     ]);
     T().wire('b-sea-back', function(){
       var viaChapter = T().consumeSeaChapterEntry();
