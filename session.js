@@ -915,6 +915,16 @@
       lasso.style.left=start.x+'px'; lasso.style.top=start.y+'px';
       lasso.style.width='0px'; lasso.style.height='0px';
       canvas.appendChild(lasso);
+      function applySelection(lb){
+        _isxSelected={};
+        Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
+          var tx=parseFloat(t.style.left)||0, ty=parseFloat(t.style.top)||0;
+          var tw=t.offsetWidth||112, th=t.offsetHeight||66;
+          var overlaps = tx<lb.left+lb.width && tx+tw>lb.left && ty<lb.top+lb.height && ty+th>lb.top;
+          if(overlaps) _isxSelected[t.dataset.isxId]=true;
+          t.classList.toggle('isx-selected', overlaps);
+        });
+      }
       function onMove(e2){
         var r=canvas.getBoundingClientRect();
         var cx=e2.clientX-r.left, cy=e2.clientY-r.top;
@@ -923,24 +933,24 @@
         lasso.style.left=x+'px'; lasso.style.top=y+'px';
         lasso.style.width=Math.abs(cx-start.x)+'px';
         lasso.style.height=Math.abs(cy-start.y)+'px';
+        // Highlight live as the rectangle passes over tiles, so it's clear
+        // before releasing exactly what's about to be grabbed — flagged by
+        // Larry, July 18, 2026.
+        if(moved) applySelection({left:x, top:y, width:Math.abs(cx-start.x), height:Math.abs(cy-start.y)});
       }
       function onUp(){
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         var lb={left:parseFloat(lasso.style.left), top:parseFloat(lasso.style.top), width:parseFloat(lasso.style.width), height:parseFloat(lasso.style.height)};
         if(lasso.parentNode) lasso.parentNode.removeChild(lasso);
-        _isxSelected={};
         if(moved){
+          applySelection(lb);
+        } else {
+          _isxSelected={};
           Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
-            var tx=parseFloat(t.style.left)||0, ty=parseFloat(t.style.top)||0;
-            var tw=t.offsetWidth||112, th=t.offsetHeight||66;
-            var overlaps = tx<lb.left+lb.width && tx+tw>lb.left && ty<lb.top+lb.height && ty+th>lb.top;
-            if(overlaps) _isxSelected[t.dataset.isxId]=true;
+            t.classList.remove('isx-selected');
           });
         }
-        Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
-          t.classList.toggle('isx-selected', !!_isxSelected[t.dataset.isxId]);
-        });
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);

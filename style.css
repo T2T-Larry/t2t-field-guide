@@ -341,7 +341,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   .isx-tile.isx-link-tile{cursor:pointer}
   .isx-tile img{display:block;width:100%;height:100%;border-radius:0;margin-bottom:4px;object-fit:contain;pointer-events:none}
   .isx-tile.isx-stack-tile{background:transparent;border:none;box-shadow:none;padding:0}
-  .isx-tile.isx-selected{box-shadow:0 0 0 3px #5b9bd5}
+  .isx-tile.isx-selected{box-shadow:0 0 0 3px #2f7fe0,0 0 10px rgba(47,127,224,0.55)}
   /* Closed-pile cascade — real cards peeking out behind the header, inert
      until the pile is opened (single click). Freeform pile canvas
      redesign, July 18, 2026. */
@@ -349,7 +349,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
     box-shadow:0 2px 5px rgba(0,0,0,.2);pointer-events:none}
   .isx-cascade-more{position:absolute;background:#1a3a5c;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;
     border-radius:8px;pointer-events:none;z-index:50}
-  .isx-lasso{position:absolute;border:1.5px dashed #5b9bd5;background:rgba(91,155,213,0.15);pointer-events:none;z-index:900}
+  .isx-lasso{position:absolute;border:2px solid #2f7fe0;background:rgba(47,127,224,0.16);pointer-events:none;z-index:900;box-shadow:0 0 14px rgba(47,127,224,0.4)}
   .isx-stack-layer{position:absolute;width:100%;height:100%;border:1.5px solid #4a4a4a;border-radius:0}
   .isx-stack-front{position:absolute;top:0;left:0;width:100%;height:100%;border:1.5px solid #4a4a4a;border-radius:0;
     display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;

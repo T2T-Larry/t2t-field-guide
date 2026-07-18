@@ -275,8 +275,8 @@
         +'.cl-starburst{order:1;flex:1;position:relative;overflow-y:auto;overflow-x:hidden;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
         +'.cl-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:80%}'
         +'.cl-canvas{position:relative;width:100%;cursor:crosshair}'
-        +'.cl-lasso{position:absolute;border:1.5px dashed #5b9bd5;background:rgba(91,155,213,0.15);pointer-events:none;z-index:900}'
-        +'.sc-tile.cl-selected{box-shadow:0 0 0 3px #5b9bd5}'
+        +'.cl-lasso{position:absolute;border:2px solid #2f7fe0;background:rgba(47,127,224,0.16);pointer-events:none;z-index:900;box-shadow:0 0 14px rgba(47,127,224,0.4)}'
+        +'.sc-tile.cl-selected{box-shadow:0 0 0 3px #2f7fe0,0 0 10px rgba(47,127,224,0.55)}'
         +'.cl-shelf-col{order:2;flex-shrink:0;display:flex;flex-direction:column;min-height:0}'
         +'.cl-card.cl-wide .cl-shelf-col{order:0;width:118px;border-right:1.5px solid #cfe4f2;padding-right:8px}'
         +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
@@ -2531,6 +2531,15 @@
           lasso.style.left=start.x+'px'; lasso.style.top=start.y+'px';
           lasso.style.width='0px'; lasso.style.height='0px';
           canvas.appendChild(lasso);
+          function applySelection(lb){
+            _clusterSelected={};
+            Array.prototype.forEach.call(canvas.querySelectorAll('.sc-tile'), function(t){
+              var tx=parseFloat(t.style.left), ty=parseFloat(t.style.top);
+              var overlaps = tx<lb.left+lb.width && tx+tileSize>lb.left && ty<lb.top+lb.height && ty+tileSize>lb.top;
+              if(overlaps) _clusterSelected[t.getAttribute('data-idea-id')]=true;
+              t.classList.toggle('cl-selected', overlaps);
+            });
+          }
           function onMove(e2){
             var r=canvas.getBoundingClientRect();
             var cx=e2.clientX-r.left, cy=e2.clientY-r.top;
@@ -2539,23 +2548,24 @@
             lasso.style.left=x+'px'; lasso.style.top=y+'px';
             lasso.style.width=Math.abs(cx-start.x)+'px';
             lasso.style.height=Math.abs(cy-start.y)+'px';
+            // Highlight live as the rectangle passes over tiles, so it's
+            // clear before releasing exactly what's about to be grabbed —
+            // flagged by Larry, July 18, 2026.
+            if(moved) applySelection({left:x, top:y, width:Math.abs(cx-start.x), height:Math.abs(cy-start.y)});
           }
           function onUp(){
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
             var lb={left:parseFloat(lasso.style.left), top:parseFloat(lasso.style.top), width:parseFloat(lasso.style.width), height:parseFloat(lasso.style.height)};
             if(lasso.parentNode) lasso.parentNode.removeChild(lasso);
-            _clusterSelected={};
             if(moved){
+              applySelection(lb);
+            } else {
+              _clusterSelected={};
               Array.prototype.forEach.call(canvas.querySelectorAll('.sc-tile'), function(t){
-                var tx=parseFloat(t.style.left), ty=parseFloat(t.style.top);
-                var overlaps = tx<lb.left+lb.width && tx+tileSize>lb.left && ty<lb.top+lb.height && ty+tileSize>lb.top;
-                if(overlaps) _clusterSelected[t.getAttribute('data-idea-id')]=true;
+                t.classList.remove('cl-selected');
               });
             }
-            Array.prototype.forEach.call(canvas.querySelectorAll('.sc-tile'), function(t){
-              t.classList.toggle('cl-selected', !!_clusterSelected[t.getAttribute('data-idea-id')]);
-            });
           }
           document.addEventListener('mousemove', onMove);
           document.addEventListener('mouseup', onUp);
