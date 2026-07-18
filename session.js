@@ -1130,6 +1130,12 @@
     t.dataset.isxId=row.id;
     t.dataset.isxType=row.content_type;
     t.dataset.isxLocked=row.locked?'1':'';
+    // July 18, 2026 (Larry): 9710's own plain-card tile (_sboardMakeTile)
+    // has always painted item.color onto the tile background — 9711's
+    // never did, so a single-card recolor looked like it "didn't work" on
+    // 9711 even though the Supabase row was saving correctly. Matches
+    // 9710's behavior now.
+    if(row.color) t.style.background=row.color;
     var pos=_isxResolvePos(row, w, h, anchor, ephemeral, idx);
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     t._isxPos=pos;
@@ -1638,17 +1644,23 @@
   // idea-storyboard-9710.js) patch a single on-screen 9711 tile directly
   // instead of forcing a full board reload for a one-card color change —
   // Larry asked for this July 18, 2026 ("change just one item without
-  // refreshing the entire screen"). Only header stack tiles show color
-  // visually today, so a plain idea/link/image tile match returns false
-  // and the caller falls back to its existing full-refresh path.
+  // refreshing the entire screen"). Handles both header stack tiles
+  // (3 layered divs) and plain idea/link/image tiles (background directly
+  // on the tile itself, matching _isxMakeTile). Returns false only if the
+  // tile isn't currently on screen, so the caller falls back to a full
+  // refresh (e.g. a card nested inside a still-closed pile).
   function _isxPatchTileColor(id, color){
     var board=document.getElementById('isx-board');
     if(!board) return false;
     var tile=board.querySelector('.isx-tile[data-isx-id="'+id+'"]');
-    if(!tile || !tile.classList.contains('isx-stack-tile')) return false;
-    Array.prototype.forEach.call(tile.querySelectorAll('.isx-stack-layer, .isx-stack-front'), function(layer){
-      layer.style.background=color;
-    });
+    if(!tile) return false;
+    if(tile.classList.contains('isx-stack-tile')){
+      Array.prototype.forEach.call(tile.querySelectorAll('.isx-stack-layer, .isx-stack-front'), function(layer){
+        layer.style.background=color;
+      });
+    } else {
+      tile.style.background=color;
+    }
     return true;
   }
 
