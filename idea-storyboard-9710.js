@@ -982,6 +982,18 @@
   }
 
   async function renderSeaBoard(){
+    // July 18, 2026: DETAILS (openSbDetail, below) is shared between 9710
+    // and 9711 — every action inside it (color, heart, lock, trash, move,
+    // notes) calls this function afterward to refresh the board. But
+    // #sc-board-wrap always exists in the DOM regardless of which screen
+    // is active, so this used to silently refresh 9710's own (invisible)
+    // board even while 9711 was what's actually on screen — e.g. Larry
+    // recoloring a card from 9711 and seeing nothing happen. Delegate to
+    // 9711's own render in that case instead.
+    var isxScreen=document.getElementById('s-idea-session');
+    if(isxScreen && isxScreen.classList.contains('active') && window.T2TSea && window.T2TSea.renderBoard){
+      return window.T2TSea.renderBoard();
+    }
     var wrap=document.getElementById('sc-board-wrap');
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;

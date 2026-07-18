@@ -287,7 +287,10 @@
       banner=document.createElement('div');
       banner.id='isx-error-banner';
       banner.style.cssText='position:absolute;top:14px;left:16px;right:260px;background:#fff3f3;border:2px solid #A32D2D;'
-        +'color:#A32D2D;font-size:11px;padding:8px 12px;border-radius:8px;z-index:22;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+        // z-index 45: above #isx-header-ring (z-index:40, covers the whole
+        // board) so this is never hidden behind the fixed alpha-ring headers.
+        // Larry caught this live, July 18, 2026.
+        +'color:#A32D2D;font-size:11px;padding:8px 12px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
       board.appendChild(banner);
     }
     banner.textContent=msg;
@@ -308,7 +311,7 @@
       banner=document.createElement('div');
       banner.id='isx-toast-banner';
       banner.style.cssText='position:absolute;top:14px;left:16px;right:260px;background:#eaf6ea;border:2px solid #2d7a3d;'
-        +'color:#2d7a3d;font-size:11px;padding:8px 12px;border-radius:8px;z-index:22;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+        +'color:#2d7a3d;font-size:11px;padding:8px 12px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
       board.appendChild(banner);
     }
     banner.textContent=msg;
@@ -1125,17 +1128,18 @@
     isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
     isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     t.appendChild(isxCornerFlip);
-    // Scope cut, July 18, 2026: a never-touched card still riding along
-    // with a still-unsettled ring/ephemeral parent isn't individually
-    // drag-repositionable yet — its position isn't real until something
-    // durable exists to store it relative to (the parent header itself
-    // hasn't settled into a canvas position). Drag the header itself to
-    // detach it into the canvas first; every child inside it becomes a
-    // normal, fully draggable freeform card from that point on. Corner-
-    // flip/DETAILS still work regardless.
-    if(!ephemeral || row.canvas_x!=null){
-      _isxWireTileDrag(t, row.id, linkUrl, false);
-    }
+    // Reversed July 18, 2026 (was: gated off while ephemeral — see git
+    // history). Larry hit this live ("Michael Vance ... cannot be moved")
+    // and it read as a bug, not an acceptable limit. Dragging now always
+    // wires up, even for a loose card still riding along with a still-
+    // unsettled ring/ephemeral header: the very first drag calls
+    // _isxSavePos, which gives it a real (canvas_x, canvas_y) and makes it
+    // "settled" from then on — the exact same mechanism that already lets
+    // a ring header itself detach into the canvas on first drag. Nested
+    // HEADER piles were never gated this way to begin with (see
+    // _isxMakeHeaderStackTile below) — this just brings loose cards in
+    // line with how headers already behaved.
+    _isxWireTileDrag(t, row.id, linkUrl, false);
     return t;
   }
 
@@ -1627,7 +1631,13 @@
     },
     getCurrentBoardContext: function(){ return T2TShared.currentTopicId?{boardId:T2TShared.currentTopicId}:null; },
     getDefaultHeaderId: T2TMedia.getDefaultHeaderId,
-    resolveOEmbed: T2TMedia.resolveOEmbed
+    resolveOEmbed: T2TMedia.resolveOEmbed,
+    // Exposed July 18, 2026 so renderSeaBoard (idea-storyboard-9710.js) can
+    // delegate here when 9711 is the active screen — DETAILS is shared
+    // between both boards and every action inside it (color, heart, lock,
+    // trash, move) used to unconditionally refresh 9710's own board, which
+    // does nothing visible while 9711 is what's actually on screen.
+    renderBoard: function(){ return _isxRenderBoard(); }
   };
 
   document.addEventListener('DOMContentLoaded', function(){
