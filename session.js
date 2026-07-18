@@ -194,6 +194,40 @@
       // card is open on top of the board (see the isx-popup-layer nesting
       // note above — the header row is never covered by a popup).
       T().wire('isx-topic-box', _isxOpenTopicSwitcher);
+      // TOPIC now gets the same lower-right corner-flip every other card
+      // has (see index.html/dream.html) — opens its own DETAILS back
+      // (notes, etc.) same as any card, without disturbing the existing
+      // click-anywhere-else-on-the-box = open Topic switcher behavior.
+      // July 18, 2026.
+      T().wire('isx-topic-corner-flip', function(e){
+        e.stopPropagation();
+        var cur=T2TShared.isxPath[T2TShared.isxPath.length-1];
+        if(!cur||!cur.id) return;
+        _isxFetchRow(cur.id).then(function(row){ if(row) T2TStoryboard.openDetail(row); });
+      });
+      // Keyboard shortcuts (Ctrl/Cmd+Z/Shift+Z, C/V, D, A, Delete/
+      // Backspace) — only while 9711 is the active screen, and never
+      // while focus is in a real text field (typing in Idea Input,
+      // DETAILS notes, rename dialogs, etc. must behave normally).
+      // July 18, 2026.
+      document.addEventListener('keydown', function(e){
+        var screen=document.getElementById('s-idea-session');
+        if(!screen || !screen.classList.contains('active')) return;
+        var tag=(e.target&&e.target.tagName||'').toLowerCase();
+        if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+        var mod=e.metaKey||e.ctrlKey;
+        if(mod){
+          var k=e.key.toLowerCase();
+          if(k==='z'){ e.preventDefault(); if(e.shiftKey) _isxRedo(); else _isxUndo(); return; }
+          if(k==='y'){ e.preventDefault(); _isxRedo(); return; }
+          if(k==='c'){ e.preventDefault(); _isxCopySelected(); return; }
+          if(k==='v'){ e.preventDefault(); _isxPasteClipboard(); return; }
+          if(k==='d'){ e.preventDefault(); _isxDuplicateSelected(); return; }
+          if(k==='a'){ e.preventDefault(); _isxSelectAll(); return; }
+          return;
+        }
+        if(e.key==='Delete' || e.key==='Backspace'){ e.preventDefault(); _isxTrashSelected(); }
+      });
       var board=document.getElementById('isx-board');
       if(board) board.addEventListener('dblclick', function(e){
         if(e.target.closest('.isx-tile')) return;
@@ -262,13 +296,192 @@
     banner._isxTimer=setTimeout(function(){ banner.style.display='none'; }, 8000);
   }
 
+  // Lightweight neutral toast (undo/redo/copy/duplicate/paste confirmations)
+  // — separate element from the red error banner above so the two never
+  // collide, shorter-lived since these aren't things Larry needs to read
+  // twice. July 18, 2026.
+  function _isxShowToast(msg){
+    var board=document.getElementById('isx-board');
+    if(!board) return;
+    var banner=document.getElementById('isx-toast-banner');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='isx-toast-banner';
+      banner.style.cssText='position:absolute;top:14px;left:16px;right:260px;background:#eaf6ea;border:2px solid #2d7a3d;'
+        +'color:#2d7a3d;font-size:11px;padding:8px 12px;border-radius:8px;z-index:22;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+      board.appendChild(banner);
+    }
+    banner.textContent=msg;
+    banner.style.display='block';
+    clearTimeout(banner._isxTimer);
+    banner._isxTimer=setTimeout(function(){ banner.style.display='none'; }, 3000);
+  }
+
+  // ---- Undo/redo slot (single-step) — July 18, 2026 ----
+  function _isxPushAction(entry){ _isxLastAction=entry; _isxLastUndone=null; }
+  async function _isxUndo(){
+    if(!_isxLastAction){ _isxShowToast('Nothing to undo.'); return; }
+    var a=_isxLastAction; _isxLastAction=null;
+    await a.undo();
+    _isxLastUndone=a;
+    _isxShowToast(a.label+' undone.');
+  }
+  async function _isxRedo(){
+    if(!_isxLastUndone){ _isxShowToast('Nothing to redo.'); return; }
+    var a=_isxLastUndone; _isxLastUndone=null;
+    await a.redo();
+    _isxLastAction=a;
+    _isxShowToast(a.label+' redone.');
+  }
+
+  // Hard-delete — only ever used to undo a creation THIS session just made
+  // (a duplicate or a paste), never on a pre-existing card. Trashing (see
+  // _isxTrashSelected/_isxHandleTrashDrop) stays the one-way, confirmed
+  // path for anything that existed before this action.
+  async function _sbDeleteIdea(id){
+    var _sb=T().sb;
+    var del=await _sb.from('ideas').delete().eq('id',id);
+    if(del&&del.error) console.warn('Undo delete failed for', id, del.error.message);
+  }
+
+  // Shallow duplicate — copies a card/header's own content onto a fresh
+  // row near the original. Does NOT deep-copy a header's children (scope
+  // cut, July 18, 2026): a duplicated header lands empty, same as any
+  // freshly created one.
+  async function _isxDuplicateRow(row){
+    var _sb=T().sb;
+    var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+    if(!user) return null;
+    var basePos=_isxCardPos[row.id]||{x:40,y:40};
+    var ins=await _sb.from('ideas').insert({
+      user_id:user.id, content_type:row.content_type, text_content:row.text_content,
+      image_url:row.image_url||null, color:row.color||null, cluster_id:row.cluster_id,
+      canvas_x:Math.round(basePos.x+24), canvas_y:Math.round(basePos.y+24),
+      created_at:new Date().toISOString()
+    }).select().single();
+    if(ins.error){ _isxShowError('Couldn\u2019t duplicate: '+ins.error.message); return null; }
+    return ins.data;
+  }
+
+  async function _isxDuplicateSelected(){
+    var ids=Object.keys(_isxSelected);
+    if(!ids.length){ _isxShowToast('Select a card first.'); return; }
+    var created=[];
+    for(var i=0;i<ids.length;i++){
+      var row=await _isxFetchRow(ids[i]);
+      if(!row) continue;
+      var dup=await _isxDuplicateRow(row);
+      if(dup) created.push(dup.id);
+    }
+    if(!created.length) return;
+    _isxSelected={};
+    created.forEach(function(id){ _isxSelected[id]=true; });
+    await _isxRenderBoard();
+    _isxPushAction({
+      label:'Duplicate',
+      undo: async function(){ for(var i=0;i<created.length;i++){ await _sbDeleteIdea(created[i]); } await _isxRenderBoard(); },
+      redo: async function(){ _isxShowToast('Redo not available for duplicate \u2014 use Ctrl/Cmd+D again.'); }
+    });
+    _isxShowToast(created.length>1 ? created.length+' cards duplicated.' : 'Card duplicated.');
+  }
+
+  function _isxCopySelected(){
+    var ids=Object.keys(_isxSelected);
+    if(!ids.length){ _isxShowToast('Select a card first.'); return; }
+    Promise.all(ids.map(_isxFetchRow)).then(function(rows){
+      rows=rows.filter(Boolean);
+      if(!rows.length) return;
+      _isxClipboard=rows.map(function(r){
+        return {content_type:r.content_type, text_content:r.text_content, image_url:r.image_url||null, color:r.color||null};
+      });
+      _isxShowToast(_isxClipboard.length>1 ? _isxClipboard.length+' cards copied.' : 'Card copied.');
+    });
+  }
+
+  async function _isxPasteClipboard(){
+    if(!_isxClipboard || !_isxClipboard.length){ _isxShowToast('Nothing to paste.'); return; }
+    var _sb=T().sb;
+    var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+    if(!user) return;
+    var clusterId=_isxCurrentClusterId();
+    if(!clusterId) return;
+    var created=[];
+    for(var i=0;i<_isxClipboard.length;i++){
+      var c=_isxClipboard[i];
+      var ins=await _sb.from('ideas').insert({
+        user_id:user.id, content_type:c.content_type, text_content:c.text_content,
+        image_url:c.image_url, color:c.color, cluster_id:clusterId,
+        canvas_x:40+i*24, canvas_y:40+i*24, created_at:new Date().toISOString()
+      }).select().single();
+      if(!ins.error) created.push(ins.data.id);
+    }
+    if(!created.length) return;
+    _isxSelected={};
+    created.forEach(function(id){ _isxSelected[id]=true; });
+    await _isxRenderBoard();
+    _isxPushAction({
+      label:'Paste',
+      undo: async function(){ for(var i=0;i<created.length;i++){ await _sbDeleteIdea(created[i]); } await _isxRenderBoard(); },
+      redo: async function(){ _isxShowToast('Redo not available for paste \u2014 use Ctrl/Cmd+V again.'); }
+    });
+    _isxShowToast(created.length>1 ? created.length+' cards pasted.' : 'Card pasted.');
+  }
+
+  // Keyboard-driven trash — deliberately separate from _isxHandleTrashDrop
+  // (the mouse drag-to-Trash path, unchanged). Same one-way confirm and
+  // same isxSkipTrashConfirm preference, but captures each row's prior
+  // cluster_id first so Ctrl/Cmd+Z can put it right back. July 18, 2026.
+  async function _isxTrashSelected(){
+    var ids=Object.keys(_isxSelected);
+    if(!ids.length){ _isxShowToast('Select a card first.'); return; }
+    if(!_isxTrashId){ _isxShowToast('Trash isn\u2019t ready yet \u2014 try again in a moment.'); return; }
+    var skip=localStorage.getItem('isxSkipTrashConfirm')==='1';
+    if(!skip){
+      var msg = ids.length>1 ? ('Trash '+ids.length+' items?') : 'Trash this?';
+      if(!window.confirm(msg+' You can Ctrl/Cmd+Z right after if it was a mistake.')) return;
+    }
+    var prev=[];
+    for(var i=0;i<ids.length;i++){
+      var row=await _isxFetchRow(ids[i]);
+      if(!row) continue;
+      prev.push({id:row.id, clusterId:row.cluster_id});
+      await T2TStoryboard.moveCard(row.id, _isxTrashId);
+    }
+    if(!prev.length) return;
+    _isxSelected={};
+    await _isxRenderBoard();
+    _isxPushAction({
+      label:'Trash',
+      undo: async function(){ for(var i=0;i<prev.length;i++){ await T2TStoryboard.moveCard(prev[i].id, prev[i].clusterId); } await _isxRenderBoard(); },
+      redo: async function(){ for(var i=0;i<prev.length;i++){ await T2TStoryboard.moveCard(prev[i].id, _isxTrashId); } await _isxRenderBoard(); }
+    });
+    _isxShowToast(prev.length>1 ? prev.length+' items trashed. Ctrl/Cmd+Z to undo.' : 'Trashed. Ctrl/Cmd+Z to undo.');
+  }
+
+  // Select-all — same scope boundary as the lasso it mirrors (see
+  // _isxWireLasso): the freeform canvas only. Untouched ring headers
+  // aren't individually selectable yet either way. July 18, 2026.
+  function _isxSelectAll(){
+    var canvas=document.getElementById('isx-canvas');
+    if(!canvas) return;
+    _isxSelected={};
+    var any=false;
+    Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
+      _isxSelected[t.dataset.isxId]=true;
+      t.classList.add('isx-selected');
+      any=true;
+    });
+    if(!any) _isxShowToast('Nothing on the canvas to select.');
+  }
+
   async function _isxRenderLadder(){
    try{
     var projectLabel=document.getElementById('isx-project-label');
     var parentHit=document.getElementById('isx-parent-hit');
     var parentLabel=document.getElementById('isx-parent-label');
     var topicBox=document.getElementById('isx-topic-box');
-    if(!projectLabel||!parentHit||!parentLabel||!topicBox) return;
+    var topicText=document.getElementById('isx-topic-text');
+    if(!projectLabel||!parentHit||!parentLabel||!topicBox||!topicText) return;
 
     // PROJECT — fixed anchor, display only. Switching projects entirely is
     // FOCUS's job (reopen via 💡), same division of labor as everywhere else.
@@ -294,8 +507,11 @@
     }
 
     // TOPIC — current position, large centered pill, matches 9710's own
-    // #sc-topic-box treatment exactly (same class, same look).
-    topicBox.textContent=T2TShared.isxPath[T2TShared.isxPath.length-1].text;
+    // #sc-topic-box treatment exactly (same class, same look). Written to
+    // the inner #isx-topic-text span, NOT the outer box — the box also
+    // holds the corner-flip div now, and textContent on the parent would
+    // wipe that child out on every single render. July 18, 2026.
+    topicText.textContent=T2TShared.isxPath[T2TShared.isxPath.length-1].text;
 
     // 9711 lock, July 13, 2026: Header rung removed entirely — every save
     // targets this Topic's own NEW/Ideas bucket (T2TShared.isxHeaderId stays null
@@ -449,6 +665,19 @@
   var _isxSelected = {};     // lasso-selected row ids, session-only
   var _isxClickTimers = {};  // pending single-click-vs-dblclick disambiguation per header row id
   var _isxColorSwatches = ['#e4e0d8','#fdf6e8','#eaf4ff','#eafaf0','#fdeaea','#f5eaff','#fff3d6','#e8f0f5'];
+
+  // Keyboard shortcuts state (Ctrl/Cmd+Z undo, +Shift+Z redo, C/V copy-
+  // paste, D duplicate, A select-all, Delete/Backspace trash) — July 18,
+  // 2026. Scope: undo/redo cover only actions triggered THROUGH these
+  // shortcuts (keyboard-trash, duplicate, paste). Existing mouse drag/drop
+  // (reposition, drop-onto-header, promote-to-Topic, drag-to-Trash) is
+  // untouched and not yet wired into this undo slot — a follow-up, not a
+  // gap being hidden. Single-step only: one action deep each way, not a
+  // full history stack.
+  var _isxTrashId = null;
+  var _isxLastAction = null;
+  var _isxLastUndone = null;
+  var _isxClipboard = null;
 
   function _isxSavePos(rowId, x, y){
     var _sb=T().sb;
@@ -695,10 +924,17 @@
       // has content. July 14, 2026.
       var _ensureResults=await Promise.all([T2TStoryboard.ensureMiscHeader(clusterId), T2TStoryboard.ensureTrashHeader()]);
       var miscId=_ensureResults[0], trashId=_ensureResults[1];
+      _isxTrashId = trashId;
 
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
         .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
+      // July 18, 2026: this used to fall through unchecked — a Supabase
+      // error left res.data undefined, allRows silently became [], and the
+      // WHOLE board (every header + every card) rendered as if genuinely
+      // empty, no error shown anywhere. Throwing here routes it into the
+      // catch below, which already shows a red banner via _isxShowError.
+      if(res.error) throw res.error;
       var excludedNames=['Purpose','NEW','New Additions'];
       var allRows=((res&&res.data)||[]).filter(function(r){
         return r.content_type!=='header' || excludedNames.indexOf(r.text_content)===-1;
@@ -834,8 +1070,12 @@
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
+      if(res.error) throw res.error;
       children=(res&&res.data)||[];
-    }catch(e){ console.warn('_isxBuildHeaderPile children fetch failed', e); }
+    }catch(e){
+      console.warn('_isxBuildHeaderPile children fetch failed', e);
+      _isxShowError('Some cards in \u201c'+(row.text_content||'this header')+'\u201d didn\u2019t load: '+(e&&e.message?e.message:String(e)));
+    }
     if(!children.length) return;
 
     if(_isxFanned[row.id]){

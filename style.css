@@ -293,8 +293,14 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
   #isx-header-topleft{position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start}
   .isx-hdr-col{display:flex;flex-direction:column;align-items:center}
   #isx-header-center{text-align:center;padding-top:2px}
-  #isx-header-right{position:absolute;top:10px;right:16px;display:flex;flex-direction:column;
-    gap:4px;align-items:flex-end;max-width:230px}
+  /* Single row, matching 9710's own .sc-hdr-side chrome exactly —
+     merged from two stacked rows July 18, 2026 so 9711's toolbar reads
+     as one visual family with 9710's. 💡 stays leftmost since it's the
+     one action 9710 doesn't have (opening Idea Input). .isx-hdr-row is
+     retired (no longer referenced in the HTML) but left defined here in
+     case anything still targets it. */
+  #isx-header-right{position:absolute;top:10px;right:16px;display:flex;flex-direction:row;
+    gap:6px;align-items:center;flex-wrap:wrap;max-width:320px;justify-content:flex-end}
   .isx-hdr-row{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;justify-content:flex-end}
   #isx-pagenum{position:absolute;bottom:2px;right:8px;font-size:8px;letter-spacing:2px;color:#7fa8cc;opacity:0;transition:opacity .3s}
 
