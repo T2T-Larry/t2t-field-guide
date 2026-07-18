@@ -474,6 +474,7 @@
     _icOpenPopup('<div class="isx-pcard" data-pagenum="9712"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
+      +'<button class="isx-src-btn" id="isx-p-rules" type="button" style="width:100%;margin-bottom:8px">\ud83d\udcdc Rules</button>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
       +'<div class="isx-save-row">'
@@ -484,6 +485,9 @@
     document.getElementById('isx-p-close').onclick=_icClosePopup;
     document.getElementById('isx-p-save').onclick=_icCommitIdeaPanel;
     document.getElementById('isx-p-cancel').onclick=_icCancelIdeaEntry;
+    // RULES moved here from 9711's header, July 18, 2026 — ground rules
+    // apply to the act of capturing an idea, not to viewing the board.
+    document.getElementById('isx-p-rules').onclick=_icRenderRulesPanel;
     var unsplashBtn=document.getElementById('isx-btn-unsplash');
     if(unsplashBtn) unsplashBtn.onclick=_icShowUnsplashPicker;
     _icWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));

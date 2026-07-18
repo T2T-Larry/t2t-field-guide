@@ -785,6 +785,12 @@
       // entering the Storyboard directly, b-sea-ideas below).
       if(window.T2TSea && window.T2TSea.openIdeaCapture){
         var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
+        ctx=ctx||{};
+        // Clicking 💡 in the backpack means "I want to add an idea," not
+        // "show me the board" — Locked July 18, 2026. 9712 auto-opens on
+        // top of 9711 the moment it lands, rather than requiring a second
+        // tap once there.
+        ctx.autoOpenCapture=true;
         window.T2TSea.openIdeaCapture(ctx);
       } else nav('s-idea-capture', false);
     });

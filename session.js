@@ -122,6 +122,9 @@
   async function renderIdeaSession(){
     var fgr=document.getElementById('fg-root');
     if(fgr) fgr.classList.add('isx-full');
+    // Backpack 💡 means "add an idea," not "show me the board" — Locked
+    // July 18, 2026. Captured before ideaCaptureCtx gets nulled below.
+    var _isxWantAutoOpen = !!(T2TShared.ideaCaptureCtx && T2TShared.ideaCaptureCtx.autoOpenCapture);
     // An explicit ctx (boardId, optionally headerId) — e.g. the Storyboard's
     // own [+] controls — always wins over whatever Session View happened
     // to already be resting on from an earlier visit. Before this fix, a
@@ -167,19 +170,11 @@
     var pnInit=document.getElementById('isx-pagenum'); if(pnInit) pnInit.textContent='9711';
     if(!_isxWired){
       _isxWired=true;
-      T().wire('isx-idea-btn', function(){
-        window.IdeaCapture.open({
-          headerId: T2TShared.isxHeaderId,
-          headerLabel: T2TShared.isxHeaderLabel,
-          boardId: _isxCurrentTopicId(),
-          onSaved: function(row){
-            if(row && row.content_type==='header'){ _isxRenderLadder(); }
-            _isxRenderBoard();
-          }
-        });
-      });
+      T().wire('isx-idea-btn', _isxOpenIdeaCaptureHere);
       T().wire('isx-gear-btn', _isxOpenGearMenu);
-      T().wire('isx-rules-btn', function(){ window.IdeaCapture.openRules(); });
+      // RULES button moved off 9711's header onto 9712 (Idea Input card)
+      // itself, July 18, 2026 — ground rules apply to the act of capturing
+      // an idea, not to viewing/managing the board. See idea-capture.js.
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
       T().wire('isx-end-btn', function(){
         var fgr=document.getElementById('fg-root');
@@ -223,6 +218,22 @@
         });
       })();
     }
+    if(_isxWantAutoOpen) _isxOpenIdeaCaptureHere();
+  }
+
+  // Shared by the 9711 header's own 💡 button and the backpack auto-open
+  // path above — opens 9712 (Idea Input) targeting whatever bucket 9711
+  // is currently focused on.
+  function _isxOpenIdeaCaptureHere(){
+    window.IdeaCapture.open({
+      headerId: T2TShared.isxHeaderId,
+      headerLabel: T2TShared.isxHeaderLabel,
+      boardId: _isxCurrentTopicId(),
+      onSaved: function(row){
+        if(row && row.content_type==='header'){ _isxRenderLadder(); }
+        _isxRenderBoard();
+      }
+    });
   }
 
   function _isxToggleFullscreen(){
