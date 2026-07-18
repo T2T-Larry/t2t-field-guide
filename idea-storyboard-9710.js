@@ -466,6 +466,13 @@
   var _sboardTopLevelOrder = [];
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
+  // Set by 9711 (session.js, setIsxContext) after every render — lets the
+  // shared DETAILS card compute an accurate "Current Location" breadcrumb
+  // and header lookup when opened from 9711, instead of reading 9710's own
+  // (often stale or empty) T2TShared.currentTopicId / _sboardAllRowsById.
+  // Larry, July 18, 2026 ("'What do you want?' is no longer a project...
+  // that isn't right").
+  var _isxDetailCtx = null;
   var _sboardIdeaOrderByParent = {};
   var _sboardChildCountById = {};
   var _clusterOpenHeaderId = null;
@@ -1967,20 +1974,38 @@
 
     // PARENT / TOPIC eyebrows — computed exactly the way the board's own
     // chrome computes them, so the SHAPING card always agrees with the board.
-    var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
-    var topicLabel=(T2TShared.currentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
-    var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
-    var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
-    var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
-    var parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'ISB';
+    // 9711 SESSION branch: DETAILS is shared, but T2TShared.currentTopicId
+    // and _sboardAllRowsById only ever get set by 9710's own renderSeaBoard
+    // — stale (or entirely unset, showing the old "What do you want?"
+    // placeholder) whenever DETAILS is opened from 9711 instead. Use the
+    // live context 9711 hands over after every render (setIsxContext)
+    // when 9711 is the screen actually on screen. July 18, 2026.
+    var isxScreenEl=document.getElementById('s-idea-session');
+    var isOn9711=!!(isxScreenEl && isxScreenEl.classList.contains('active'));
+    var topicLabel, parentLabelCrumb, localNewAdditionsTarget, isInLocalNewAdditions, curHeaderLabel;
+    if(isOn9711 && _isxDetailCtx){
+      topicLabel=_isxDetailCtx.topicText||_sboardGetRootPrompt();
+      parentLabelCrumb=_isxDetailCtx.parentText||'ISB';
+      localNewAdditionsTarget=_isxDetailCtx.topicId||'';
+      isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
+      var curHeaderRow9711=(item.cluster_id && !isInLocalNewAdditions)?(_isxDetailCtx.rowsById||{})[item.cluster_id]:null;
+      curHeaderLabel=curHeaderRow9711?(curHeaderRow9711.text_content||'(untitled)'):'NEW';
+    } else {
+      var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
+      topicLabel=(T2TShared.currentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
+      var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
+      var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
+      var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
+      parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'ISB';
 
-    // HEADER: "NEW" here means whichever board's own uncategorized bucket is
-    // active: null at the root ISB, or the current topic id when working
-    // inside a nested (fractal) board.
-    var localNewAdditionsTarget=T2TShared.currentTopicId||'';
-    var isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
-    var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
-    var curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
+      // HEADER: "NEW" here means whichever board's own uncategorized bucket is
+      // active: null at the root ISB, or the current topic id when working
+      // inside a nested (fractal) board.
+      localNewAdditionsTarget=T2TShared.currentTopicId||'';
+      isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
+      var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
+      curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
+    }
 
     // Current Location — read-only, styled like the Content/Title field
     // headers. Repositioning happens only through the single MOVE button,
@@ -2915,7 +2940,8 @@
     // works correctly no matter which screen opened DETAILS. Larry, July
     // 18, 2026 ("unable to drop some of the ideas into an existing
     // header, nor can I move it on the back of the card").
-    setVisibleHeaders: function(list){ _sboardVisibleHeaders = list||[]; }
+    setVisibleHeaders: function(list){ _sboardVisibleHeaders = list||[]; },
+    setIsxContext: function(ctx){ _isxDetailCtx = ctx||null; }
   };
 
   document.addEventListener('DOMContentLoaded', function(){

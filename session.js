@@ -1070,6 +1070,21 @@
         });
         T2TStoryboard.setVisibleHeaders(moveList);
       }
+      // Hands the shared DETAILS card an accurate PARENT/TOPIC breadcrumb
+      // and a rows-by-id lookup for THIS Topic, so "Current Location"
+      // reads correctly when DETAILS is opened from 9711 instead of
+      // falling back to 9710's own stale/unset state (the "'What do you
+      // want?' is no longer a project" confusion) — July 18, 2026.
+      if(window.T2TStoryboard && T2TStoryboard.setIsxContext){
+        var rowsById={};
+        allRows.forEach(function(r){ rowsById[r.id]=r; });
+        T2TStoryboard.setIsxContext({
+          rowsById: rowsById,
+          topicId: clusterId,
+          topicText: (T2TShared.isxPath && T2TShared.isxPath.length) ? T2TShared.isxPath[T2TShared.isxPath.length-1].text : '',
+          parentText: (T2TShared.isxPath && T2TShared.isxPath.length>1) ? T2TShared.isxPath[T2TShared.isxPath.length-2].text : null
+        });
+      }
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
