@@ -286,11 +286,14 @@
     if(!banner){
       banner=document.createElement('div');
       banner.id='isx-error-banner';
-      banner.style.cssText='position:absolute;top:14px;left:16px;right:260px;background:#fff3f3;border:2px solid #A32D2D;'
+      // Moved from a wide left-anchored strip to a small right-anchored
+      // one, up near TOPIC/the toolbar instead of stretching across most
+      // of the board — Larry, July 18, 2026.
+      banner.style.cssText='position:absolute;top:14px;left:auto;right:16px;width:200px;background:#fff3f3;border:2px solid #A32D2D;'
         // z-index 45: above #isx-header-ring (z-index:40, covers the whole
         // board) so this is never hidden behind the fixed alpha-ring headers.
         // Larry caught this live, July 18, 2026.
-        +'color:#A32D2D;font-size:11px;padding:8px 12px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+        +'color:#A32D2D;font-size:10px;padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
       board.appendChild(banner);
     }
     banner.textContent=msg;
@@ -310,8 +313,10 @@
     if(!banner){
       banner=document.createElement('div');
       banner.id='isx-toast-banner';
-      banner.style.cssText='position:absolute;top:14px;left:16px;right:260px;background:#eaf6ea;border:2px solid #2d7a3d;'
-        +'color:#2d7a3d;font-size:11px;padding:8px 12px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+      // Same repositioning as the error banner above — small, right-
+      // anchored, up near TOPIC/the toolbar. July 18, 2026.
+      banner.style.cssText='position:absolute;top:14px;left:auto;right:16px;width:200px;background:#eaf6ea;border:2px solid #2d7a3d;'
+        +'color:#2d7a3d;font-size:10px;padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
       board.appendChild(banner);
     }
     banner.textContent=msg;
@@ -1649,7 +1654,12 @@
     // between both boards and every action inside it (color, heart, lock,
     // trash, move) used to unconditionally refresh 9710's own board, which
     // does nothing visible while 9711 is what's actually on screen.
-    renderBoard: function(){ return _isxRenderBoard(); }
+    // Fixed to also call _isxRenderLadder, not just _isxRenderBoard — the
+    // ladder (PROJECT/PARENT/TOPIC chrome, including TOPIC's own color)
+    // never re-ran after a DETAILS action, which is why recoloring TOPIC
+    // still looked like it wasn't working even after the color itself
+    // saved correctly and the delegation fix above landed. July 18, 2026.
+    renderBoard: function(){ _isxRenderLadder(); return _isxRenderBoard(); }
   };
 
   document.addEventListener('DOMContentLoaded', function(){
