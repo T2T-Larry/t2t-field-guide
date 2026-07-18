@@ -920,7 +920,34 @@
     }catch(err){ _isxShowError('Couldn\u2019t load headers to recolor: '+(err&&err.message?err.message:String(err))); }
   }
 
-  async function _isxRenderBoard(){
+  // July 18, 2026 (Larry: "if nothing has changed, do we have to endure a
+  // refresh time... is there any way to shorten the screen change times?").
+  // Toggling Storyboard<->Session and back to a Topic you were JUST on
+  // still re-fetches and rebuilds the whole board every time, even though
+  // the exact same board is already sitting on screen. _isxRenderBoard is
+  // now a thin gate: if we're returning to the same clusterId we last
+  // finished rendering (and something is actually on screen already), the
+  // real fetch+rebuild runs in the background, unawaited — the caller
+  // (renderIdeaSession, via nav()'s travel spinner) doesn't wait for it, so
+  // the toggle feels instant. If the data underneath genuinely changed
+  // while you were away, it snaps into place a moment later via the same
+  // fetch-then-swap logic from Session 121 (never blanks, never blocks).
+  // A brand-new Topic (different clusterId, or first visit this session)
+  // still takes the normal blocking path so the ring/board is actually
+  // there before the spinner hides.
+  var _isxLastRenderedClusterId = null;
+  function _isxRenderBoard(){
+    var clusterId=_isxCurrentClusterId();
+    var canvas=document.getElementById('isx-canvas');
+    var isReturningToSameBoard = !!(clusterId && clusterId===_isxLastRenderedClusterId && canvas && canvas.children.length>0);
+    if(isReturningToSameBoard){
+      _isxRenderBoardFetch();
+      return Promise.resolve();
+    }
+    return _isxRenderBoardFetch();
+  }
+
+  async function _isxRenderBoardFetch(){
     var canvas=document.getElementById('isx-canvas');
     var strip=document.getElementById('isx-header-strip');
     var ringLayer=document.getElementById('isx-header-ring');
@@ -1032,6 +1059,7 @@
         return _isxBuildHeaderPile(cr, '', w, h, canvas, null);
       }));
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
+      _isxLastRenderedClusterId = clusterId;
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 
