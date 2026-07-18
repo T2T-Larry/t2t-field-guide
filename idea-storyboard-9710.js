@@ -2372,7 +2372,13 @@
           if(upd.error) throw upd.error;
           item.color=c;
           try{ localStorage.setItem('t2t_seaOfIdeas_'+(isHeaderType?'header':'subber')+'Color', c); }catch(e){}
-          renderSeaBoard();
+          // 9711 SESSION: patch the one on-screen tile directly instead of
+          // a full board reload for a single-card color change — Larry,
+          // July 18, 2026. isxPatchColor only exists (and only returns
+          // true) when 9711 is active and the tile is actually on screen;
+          // otherwise fall back to the old full-refresh delegation.
+          var patchedInPlace = window.T2TStoryboard && T2TStoryboard.isxPatchColor && T2TStoryboard.isxPatchColor(item.id, c);
+          if(!patchedInPlace) renderSeaBoard();
         }catch(err){ if(statusBox) statusBox.textContent='Color needs the color Supabase column: '+err.message; }
       });
     });

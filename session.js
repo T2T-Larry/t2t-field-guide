@@ -927,10 +927,6 @@
     var boardEl=document.getElementById('isx-board');
     var empty=document.getElementById('isx-empty');
     if(!canvas||!strip) return;
-    canvas.innerHTML=''; strip.innerHTML=''; if(ringLayer) ringLayer.innerHTML='';
-    _isxSelected={};
-    if(empty) canvas.appendChild(empty);
-    if(T2TStoryboard.applyBoardBg) T2TStoryboard.applyBoardBg();
     var clusterId=_isxCurrentClusterId();
     try{
       var _sb=T().sb;
@@ -961,6 +957,20 @@
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
       var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId); });
       var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || await _isxFetchRow(miscId);
+
+      // July 18, 2026 (Larry): the board used to wipe to blank the instant
+      // any change was made, then rebuild — a Supabase error partway
+      // through (a not-yet-run migration, a dropped connection, etc.) left
+      // it blank for good, looking like the app had crashed. Everything
+      // above this line only reads data; nothing on screen changes until
+      // the fetch has actually succeeded. The wipe+rebuild is unchanged,
+      // just moved here so the new board snaps into view once it's ready
+      // instead of the old one vanishing first. On error (see catch below)
+      // the previous board is simply left alone.
+      canvas.innerHTML=''; strip.innerHTML=''; if(ringLayer) ringLayer.innerHTML='';
+      _isxSelected={};
+      if(empty) canvas.appendChild(empty);
+      if(T2TStoryboard.applyBoardBg) T2TStoryboard.applyBoardBg();
 
       if(empty) empty.style.display = (ideaRows.length||contentHeaders.length) ? 'none' : 'block';
 
@@ -1624,9 +1634,28 @@
     });
   }
 
+  // Lets DETAILS' shared color swatch (openSbDetail, in
+  // idea-storyboard-9710.js) patch a single on-screen 9711 tile directly
+  // instead of forcing a full board reload for a one-card color change —
+  // Larry asked for this July 18, 2026 ("change just one item without
+  // refreshing the entire screen"). Only header stack tiles show color
+  // visually today, so a plain idea/link/image tile match returns false
+  // and the caller falls back to its existing full-refresh path.
+  function _isxPatchTileColor(id, color){
+    var board=document.getElementById('isx-board');
+    if(!board) return false;
+    var tile=board.querySelector('.isx-tile[data-isx-id="'+id+'"]');
+    if(!tile || !tile.classList.contains('isx-stack-tile')) return false;
+    Array.prototype.forEach.call(tile.querySelectorAll('.isx-stack-layer, .isx-stack-front'), function(layer){
+      layer.style.background=color;
+    });
+    return true;
+  }
+
   window.T2TSession = {
     toggleFullscreen: _isxToggleFullscreen
   };
+  if(window.T2TStoryboard) window.T2TStoryboard.isxPatchColor = _isxPatchTileColor;
 
   window.T2TSea = {
     openTrash: async function(){
