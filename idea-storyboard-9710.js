@@ -1023,7 +1023,7 @@
           isAtProjectRoot ? ((currentProjectRowForScope.text_content||'Project')+' Ideas') : null
         ) : Promise.resolve(null),
         currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
-        _sboardEnsureMiscHeader(T2TShared.currentTopicId)
+        T2TData.ensureMiscHeader(T2TShared.currentTopicId)
       ]);
       var newAdditionsId=_ensureResults[0];
       _sboardNewAdditionsId=newAdditionsId;
@@ -1422,7 +1422,7 @@
     T().wire('sb-trash-go', async function(){
       var _sb=T().sb;
       try{
-        var trashId=await _sboardEnsureTrashHeader();
+        var trashId=await T2TData.ensureTrashHeader();
         var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
         closeSbDetail();
@@ -1809,20 +1809,6 @@
     T().wire('sb-gear-close', closeSbDetail);
   }
 
-  async function _sboardEnsureMiscHeader(parentId){
-    var _sb=T().sb;
-    var user=(await _sb.auth.getUser()).data.user;
-    if(!user) throw new Error('Not signed in.');
-    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','MISC');
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
-    if(!existing.error && existing.data && existing.data.length){ _sboardMiscId=existing.data[0].id; return _sboardMiscId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'MISC',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('MISC setup failed: '+ins.error.message);
-    _sboardMiscId=ins.data.id;
-    return _sboardMiscId;
-  }
-
   async function _sboardEnsurePurposeHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
@@ -1858,19 +1844,6 @@
     if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
     return _sboardNewAdditionsId;
-  }
-
-  async function _sboardEnsureTrashHeader(){
-    if(_sboardTrashId) return _sboardTrashId;
-    var _sb=T().sb;
-    var user=(await _sb.auth.getUser()).data.user;
-    if(!user) throw new Error('Not signed in.');
-    var existing=await _sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Trash').limit(1);
-    if(!existing.error && existing.data && existing.data.length){ _sboardTrashId=existing.data[0].id; return _sboardTrashId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Trash',created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('Trash setup failed: '+ins.error.message);
-    _sboardTrashId=ins.data.id;
-    return _sboardTrashId;
   }
 
   function _sboardMoveOptionsHTML(excludeId, currentClusterId){
@@ -2321,7 +2294,7 @@
 
     T().wire('sb-misc-pinned', async function(){
       try{
-        var targetId=await _sboardEnsureMiscHeader(T2TShared.currentTopicId);
+        var targetId=await T2TData.ensureMiscHeader(T2TShared.currentTopicId);
         var newCluster=isMisc?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
@@ -2334,7 +2307,7 @@
     async function _sbDoTrash(){
       if(isHeaderType){ closeSbDetail(); _sboardConfirmTrashHeader(item); return; }
       try{
-        var targetId=await _sboardEnsureTrashHeader();
+        var targetId=await T2TData.ensureTrashHeader();
         var newCluster=isTrashed?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
@@ -2376,7 +2349,6 @@
         }catch(err){ if(statusBox) statusBox.textContent='Color needs the color Supabase column: '+err.message; }
       });
     });
-
 
     T().wire('sb-close', closeSbDetail);
   }
@@ -2881,10 +2853,9 @@
      already built) — see above. Kept CLUSTER's own rename code out of here
      on purpose, so there's exactly one rename dialog instead of two. */
 
-
   window.T2TStoryboard = {
-    ensureMiscHeader: _sboardEnsureMiscHeader,
-    ensureTrashHeader: _sboardEnsureTrashHeader,
+    ensureMiscHeader: T2TData.ensureMiscHeader,
+    ensureTrashHeader: T2TData.ensureTrashHeader,
     moveCard: _sboardMoveCard,
     isAutoHeaderText: _sboardIsAutoHeaderText,
     getRow: function(id){ return _sboardAllRowsById[id]; },
