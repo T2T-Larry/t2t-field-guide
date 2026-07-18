@@ -514,7 +514,18 @@
     // the inner #isx-topic-text span, NOT the outer box — the box also
     // holds the corner-flip div now, and textContent on the parent would
     // wipe that child out on every single render. July 18, 2026.
-    topicText.textContent=T2TShared.isxPath[T2TShared.isxPath.length-1].text;
+    var _isxCurTopicEntry=T2TShared.isxPath[T2TShared.isxPath.length-1];
+    topicText.textContent=_isxCurTopicEntry.text;
+    // Color: 9710's own _sboardUpdateHeaderChrome already does this
+    // (topicBox.style.background=topicRow.color||'') from its own row
+    // cache — 9711 never had the equivalent line. No local row cache to
+    // read here, so fetch just this one row; fire-and-forget, doesn't
+    // block the rest of the ladder render. July 18, 2026.
+    if(_isxCurTopicEntry && _isxCurTopicEntry.id){
+      _isxFetchRow(_isxCurTopicEntry.id).then(function(curRow){
+        if(curRow && topicBox) topicBox.style.background=curRow.color||'';
+      });
+    }
 
     // 9711 lock, July 13, 2026: Header rung removed entirely — every save
     // targets this Topic's own NEW/Ideas bucket (T2TShared.isxHeaderId stays null
@@ -967,16 +978,17 @@
         var ringPts=_isxRingLayout(untouchedRing.length, boardW, boardH);
         for(var ri=0; ri<untouchedRing.length; ri++){
           var rr=untouchedRing[ri];
-          var ricon = String(rr.id)===String(miscId) ? '\ud83d\udce6 ' : '';
-          await _isxBuildHeaderPile(rr, ricon, boardW, boardH, ringLayer, null, true, ringPts[ri]);
+          // MISC's box-emoji prefix removed July 18, 2026 — rendered as a
+          // stray gold dot on Larry's system (same tofu-style emoji-font
+          // issue already fixed for Trash's icon earlier today).
+          await _isxBuildHeaderPile(rr, '', boardW, boardH, ringLayer, null, true, ringPts[ri]);
         }
         _isxBuildTrashIcon(trashId);
       }
 
       for(var ci=0; ci<canvasHeaders.length; ci++){
         var cr=canvasHeaders[ci];
-        var cicon = String(cr.id)===String(miscId) ? '\ud83d\udce6 ' : '';
-        await _isxBuildHeaderPile(cr, cicon, w, h, canvas, null);
+        await _isxBuildHeaderPile(cr, '', w, h, canvas, null);
       }
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
