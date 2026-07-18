@@ -937,8 +937,19 @@
       // global bucket for the whole account. Both are always shown, even
       // empty — permanent slots, not something that only appears once it
       // has content. July 14, 2026.
-      var _ensureResults=await Promise.all([T2TStoryboard.ensureMiscHeader(clusterId), T2TStoryboard.ensureTrashHeader()]);
-      var miscId=_ensureResults[0], trashId=_ensureResults[1];
+      // Purpose — one per PROJECT, same rule 9710 already uses: only shown
+      // when the current Topic IS the project root itself (e.g. WISH TANK),
+      // not on every deeper Topic. 9711 never had this at all before —
+      // Larry caught it live, July 18, 2026.
+      var isAtProjectRoot = !!(T2TShared.isxPath && T2TShared.isxPath.length===1);
+      var projectId = (T2TShared.isxPath && T2TShared.isxPath[0]) ? T2TShared.isxPath[0].id : null;
+      var _ensureResults=await Promise.all([
+        T2TStoryboard.ensureMiscHeader(clusterId),
+        T2TStoryboard.ensureTrashHeader(),
+        (isAtProjectRoot && projectId && window.T2TData && window.T2TData.ensurePurposeHeader)
+          ? window.T2TData.ensurePurposeHeader(projectId) : Promise.resolve(null)
+      ]);
+      var miscId=_ensureResults[0], trashId=_ensureResults[1], purposeId=_ensureResults[2];
       _isxTrashId = trashId;
 
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
@@ -952,11 +963,17 @@
       if(res.error) throw res.error;
       var excludedNames=['Purpose','NEW','New Additions'];
       var allRows=((res&&res.data)||[]).filter(function(r){
-        return r.content_type!=='header' || excludedNames.indexOf(r.text_content)===-1;
+        if(r.content_type!=='header') return true;
+        // Let OUR ensured Purpose row through even though its name is in
+        // excludedNames below — the name filter is only a backstop against
+        // orphaned rows, not our own real one when we're at project root.
+        if(purposeId && String(r.id)===String(purposeId)) return true;
+        return excludedNames.indexOf(r.text_content)===-1;
       });
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
-      var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId); });
+      var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId) && String(r.id)!==String(purposeId); });
       var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || await _isxFetchRow(miscId);
+      var purposeRow=purposeId ? allRows.find(function(r){ return String(r.id)===String(purposeId); }) : null;
 
       // July 18, 2026 (Larry): the board used to wipe to blank the instant
       // any change was made, then rebuild — a Supabase error partway
@@ -984,27 +1001,36 @@
       // — permanently, until a factory reset (see _isxResetHeadersToAlpha)
       // sends it back. MISC participates like any ordinary header; Trash
       // is its own fixed icon, never part of the ring or the canvas.
-      var ringCandidates=contentHeaders.concat(miscRow?[miscRow]:[]);
+      var ringCandidates=contentHeaders.concat(miscRow?[miscRow]:[]).concat(purposeRow?[purposeRow]:[]);
       var untouchedRing=ringCandidates.filter(function(r){ return r.canvas_x==null || r.canvas_y==null; })
         .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'}); });
       var canvasHeaders=ringCandidates.filter(function(r){ return !(r.canvas_x==null || r.canvas_y==null); });
 
       if(ringLayer){
         var ringPts=_isxRingLayout(untouchedRing.length, boardW, boardH);
-        for(var ri=0; ri<untouchedRing.length; ri++){
-          var rr=untouchedRing[ri];
+        // Each header pile does its own Supabase round trip just to check
+        // whether it has children (see _isxBuildHeaderPile) — these used to
+        // run one at a time (await inside a for loop), so N headers meant N
+        // sequential network round trips stacked up on every single board
+        // render/toggle. Firing them together cuts that down to roughly
+        // the slowest single request instead of the sum of all of them —
+        // Larry, July 18, 2026 ("is there any way to shorten the screen
+        // change times?"). Append order is still preserved: each call's
+        // own DOM insert happens synchronously before its first await, so
+        // this loop still runs them in order — only the (usually invisible)
+        // children fetch behind each pile now happens concurrently.
+        await Promise.all(untouchedRing.map(function(rr, ri){
           // MISC's box-emoji prefix removed July 18, 2026 — rendered as a
           // stray gold dot on Larry's system (same tofu-style emoji-font
           // issue already fixed for Trash's icon earlier today).
-          await _isxBuildHeaderPile(rr, '', boardW, boardH, ringLayer, null, true, ringPts[ri]);
-        }
+          return _isxBuildHeaderPile(rr, '', boardW, boardH, ringLayer, null, true, ringPts[ri]);
+        }));
         _isxBuildTrashIcon(trashId);
       }
 
-      for(var ci=0; ci<canvasHeaders.length; ci++){
-        var cr=canvasHeaders[ci];
-        await _isxBuildHeaderPile(cr, '', w, h, canvas, null);
-      }
+      await Promise.all(canvasHeaders.map(function(cr){
+        return _isxBuildHeaderPile(cr, '', w, h, canvas, null);
+      }));
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
