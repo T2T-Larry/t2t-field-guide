@@ -1060,6 +1060,16 @@
       }));
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
       _isxLastRenderedClusterId = clusterId;
+      // Hands this Topic's own real header list to the shared DETAILS
+      // "Move to a different Header" panel (idea-storyboard-9710.js),
+      // which otherwise only ever sees whatever 9710 itself last rendered
+      // -- July 18, 2026, see setVisibleHeaders above.
+      if(window.T2TStoryboard && T2TStoryboard.setVisibleHeaders){
+        var moveList=contentHeaders.slice().sort(function(a,b){
+          return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'});
+        });
+        T2TStoryboard.setVisibleHeaders(moveList);
+      }
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
   }
 

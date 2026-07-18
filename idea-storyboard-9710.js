@@ -2905,7 +2905,17 @@
     openDetail: openSbDetail,
     closeDetail: closeSbDetail,
     applyBoardBg: _sboardApplyBoardBg,
-    openBoardBgPicker: openBoardBgPicker
+    openBoardBgPicker: openBoardBgPicker,
+    // DETAILS' "Move to a different Header" list (openSbDetail, above)
+    // reads _sboardVisibleHeaders directly -- populated only by 9710's own
+    // renderSeaBoard, so opening DETAILS from 9711 always showed 9710's
+    // last-rendered headers (often empty, or from the wrong Topic
+    // entirely) instead of the Topic actually on screen. Lets 9711 hand
+    // over its own current header list right after it renders, so MOVE
+    // works correctly no matter which screen opened DETAILS. Larry, July
+    // 18, 2026 ("unable to drop some of the ideas into an existing
+    // header, nor can I move it on the back of the card").
+    setVisibleHeaders: function(list){ _sboardVisibleHeaders = list||[]; }
   };
 
   document.addEventListener('DOMContentLoaded', function(){
