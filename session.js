@@ -833,28 +833,14 @@
         if(c.content_type==='header'){ await _isxBuildHeaderPile(c, '', w, h, canvas, pilePos, childEphemeral); }
         else { canvas.appendChild(_isxMakeTile(c, w, h, pilePos, childEphemeral, i)); }
       }
-    } else {
-      var CAP=6, STEP=4;
-      var shown=children.slice(0, CAP);
-      shown.forEach(function(c, idx){
-        var layer=document.createElement('div');
-        layer.className='isx-cascade-card';
-        layer.style.left=Math.round(pilePos.x+(idx+1)*STEP)+'px';
-        layer.style.top=Math.round(pilePos.y+(idx+1)*STEP)+'px';
-        layer.style.background=c.color||'#fff';
-        layer.style.zIndex=String(CAP-idx);
-        canvas.appendChild(layer);
-      });
-      if(children.length>CAP){
-        var badge=document.createElement('div');
-        badge.className='isx-cascade-more';
-        badge.textContent='+'+(children.length-CAP);
-        badge.style.left=Math.round(pilePos.x+(CAP+1)*STEP+6)+'px';
-        badge.style.top=Math.round(pilePos.y-10)+'px';
-        canvas.appendChild(badge);
-      }
-      pileTile.style.zIndex=String(CAP+1);
     }
+    // CLOSED state intentionally renders nothing extra (July 18, 2026,
+    // flagged live by Larry): a header used to grow a taller cascade of
+    // peeking sliver-cards the more children it had, so a full header
+    // visibly looked "bigger" than a nearly-empty one. Every header now
+    // shows the same fixed 3-layer stack look (see _isxMakeHeaderStackTile)
+    // no matter how much is inside it — count is discoverable by opening
+    // the pile or drilling in as a Topic, not by size at a glance.
   }
 
   function _isxMakeTile(row, w, h, anchor, ephemeral, idx){
