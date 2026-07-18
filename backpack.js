@@ -387,7 +387,15 @@
         // Fixed July 17, 2026 — same priority pattern as mgOpen above,
         // using the public IdeaCapture.isOpen()/currentPageNum() API.
         var icOpen = window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen();
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (_pageNums[cur] || '—'));
+        // DETAILS (9716, the shared Storyboard/Session card-back overlay)
+        // has the exact same "sits on top without calling nav()" problem
+        // the 9712-9715 fix above already covers -- just never got added
+        // to this check, so triple-clicking the card back still reported
+        // whatever host screen (9710/9711) was underneath it. Larry, July
+        // 18, 2026.
+        var detailOv=document.getElementById('sb-detail-overlay');
+        var detailOpen = !!(detailOv && detailOv.classList.contains('active'));
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (detailOpen ? '9716' : (_pageNums[cur] || '—')));
         showPageToast(num);
       }
     });
