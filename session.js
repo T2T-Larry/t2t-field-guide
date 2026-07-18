@@ -339,7 +339,7 @@
         }
       });
     });
-    T().wire('sb-proj-cancel', closeSbDetail);
+    T().wire('sb-proj-cancel', T2TStoryboard.closeDetail);
     T().wire('sb-proj-new-go', async function(){
       var errEl=document.getElementById('sb-proj-err');
       var nameInput=document.getElementById('sb-proj-new-input');
@@ -408,7 +408,7 @@
         }
       });
     });
-    T().wire('sb-topic-cancel', closeSbDetail);
+    T().wire('sb-topic-cancel', T2TStoryboard.closeDetail);
     T().wire('sb-topic-new-go', async function(){
       var errEl=document.getElementById('sb-topic-err');
       var nameInput=document.getElementById('sb-topic-new-input');
@@ -558,9 +558,9 @@
       +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%">Close</button>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('isx-gear-recolor', function(){ closeSbDetail(); _isxOpenRecolorAll(); });
-    T().wire('isx-gear-reset', function(){ closeSbDetail(); _isxOpenResetHeadersConfirm(); });
-    T().wire('isx-gear-close', closeSbDetail);
+    T().wire('isx-gear-recolor', function(){ T2TStoryboard.closeDetail(); _isxOpenRecolorAll(); });
+    T().wire('isx-gear-reset', function(){ T2TStoryboard.closeDetail(); _isxOpenResetHeadersConfirm(); });
+    T().wire('isx-gear-close', T2TStoryboard.closeDetail);
   }
 
   // Factory reset — headers only, current board only (Locked July 18,
@@ -580,11 +580,11 @@
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-reset-yes" style="flex:1">Reset</button><button class="sc-ov-btn" id="isx-reset-no" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('isx-reset-no', closeSbDetail);
+    T().wire('isx-reset-no', T2TStoryboard.closeDetail);
     T().wire('isx-reset-yes', function(){
       var cb=document.getElementById('isx-reset-skip');
       if(cb&&cb.checked) localStorage.setItem('isxSkipResetConfirm','1');
-      closeSbDetail();
+      T2TStoryboard.closeDetail();
       _isxResetHeadersToAlpha();
     });
   }
@@ -636,7 +636,7 @@
         +'<button class="sc-ov-btn" id="isx-recolor-close" style="width:100%">Cancel</button>'
         +'</div>';
       ov.classList.add('active');
-      T().wire('isx-recolor-close', closeSbDetail);
+      T().wire('isx-recolor-close', T2TStoryboard.closeDetail);
       ov.querySelectorAll('.sb-swatch').forEach(function(sw){
         sw.onclick=async function(){
           var c=sw.getAttribute('data-c');
@@ -765,11 +765,11 @@
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-trash-yes" style="flex:1">Trash it</button><button class="sc-ov-btn" id="isx-trash-no" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('isx-trash-no', function(){ closeSbDetail(); _isxRenderBoard(); });
+    T().wire('isx-trash-no', function(){ T2TStoryboard.closeDetail(); _isxRenderBoard(); });
     T().wire('isx-trash-yes', function(){
       var cb=document.getElementById('isx-trash-skip');
       if(cb&&cb.checked) localStorage.setItem('isxSkipTrashConfirm','1');
-      closeSbDetail();
+      T2TStoryboard.closeDetail();
       T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard);
     });
   }
