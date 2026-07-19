@@ -1082,7 +1082,15 @@
           rowsById: rowsById,
           topicId: clusterId,
           topicText: (T2TShared.isxPath && T2TShared.isxPath.length) ? T2TShared.isxPath[T2TShared.isxPath.length-1].text : '',
-          parentText: (T2TShared.isxPath && T2TShared.isxPath.length>1) ? T2TShared.isxPath[T2TShared.isxPath.length-2].text : null
+          parentText: (T2TShared.isxPath && T2TShared.isxPath.length>1) ? T2TShared.isxPath[T2TShared.isxPath.length-2].text : null,
+          // Card-details sweep, July 19, 2026: DETAILS also reads
+          // _sboardMiscId/_sboardTrashId/_sboardPurposeId directly for the
+          // trash/misc button states and the Purpose row in the Move list --
+          // same 9710-only-state bug class as Current Location, just not
+          // caught in the July 18 pass. Hand these over too.
+          miscId: miscId,
+          trashId: trashId,
+          purposeId: purposeId
         });
       }
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }

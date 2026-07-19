@@ -1919,6 +1919,11 @@
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
+    // Card-details sweep, July 19, 2026: hoisted up from further down so
+    // isTrashed/isMisc/the Purpose row below can also be screen-aware, not
+    // just the Current Location breadcrumb.
+    var isxScreenEl=document.getElementById('s-idea-session');
+    var isOn9711=!!(isxScreenEl && isxScreenEl.classList.contains('active'));
     var isHeaderType=item.content_type==='header';
     var reservedNames=['Trash','MISC','NEW'];
     var isReservedItem=isHeaderType && reservedNames.indexOf(item.text_content)!==-1;
@@ -1952,8 +1957,16 @@
       return;
     }
 
-    var isTrashed=String(item.cluster_id)===String(_sboardTrashId) && _sboardTrashId;
-    var isMisc=String(item.cluster_id)===String(_sboardMiscId) && _sboardMiscId;
+    // Card-details sweep, July 19, 2026: _sboardTrashId/_sboardMiscId/
+    // _sboardPurposeId are only ever populated by 9710's own renderSeaBoard
+    // fetch -- stale or unset entirely if 9710 never rendered this session.
+    // Same bug class as Current Location (fixed July 18); prefer 9711's own
+    // context (setIsxContext) when it's the active screen.
+    var _effTrashId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.trashId : _sboardTrashId;
+    var _effMiscId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.miscId : _sboardMiscId;
+    var _effPurposeId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.purposeId : _sboardPurposeId;
+    var isTrashed=String(item.cluster_id)===String(_effTrashId) && _effTrashId;
+    var isMisc=String(item.cluster_id)===String(_effMiscId) && _effMiscId;
     var heartCount=item.heart_count||0;
     // CLUSTER view-as option — Logged July 7, 2026. Only appears when this card
     // is a bucket (has something underneath it, at any depth). Never shown for
@@ -1980,8 +1993,6 @@
     // placeholder) whenever DETAILS is opened from 9711 instead. Use the
     // live context 9711 hands over after every render (setIsxContext)
     // when 9711 is the screen actually on screen. July 18, 2026.
-    var isxScreenEl=document.getElementById('s-idea-session');
-    var isOn9711=!!(isxScreenEl && isxScreenEl.classList.contains('active'));
     var topicLabel, parentLabelCrumb, localNewAdditionsTarget, isInLocalNewAdditions, curHeaderLabel;
     if(isOn9711 && _isxDetailCtx){
       topicLabel=_isxDetailCtx.topicText||_sboardGetRootPrompt();
@@ -2022,7 +2033,7 @@
       + '<div class="sb-hdr-vitem'+(isMisc?' current':'')+'" id="sb-misc-pinned" style="border:0.5px solid #D3D1C7;border-radius:8px;margin-bottom:6px;font-weight:600">'+(isMisc?'📦 Misc ✓ — tap to move out':'📦 Misc (project archive)')+'</div>'
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist">'
       + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
-      + (_sboardPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_sboardPurposeId)?' current':'')+'" data-hid="'+_sboardPurposeId+'">Purpose</div>'):'')
+      + (_effPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_effPurposeId)?' current':'')+'" data-hid="'+_effPurposeId+'">Purpose</div>'):'')
       + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW'; })
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
@@ -2183,18 +2194,29 @@
     async function openMoveToTopicPicker(){
       var ov2=document.getElementById('sb-detail-overlay');
       if(!ov2) return;
-      var currentProjectRow=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId])
-        ? _sboardProjectRowFor(_sboardAllRowsById[T2TShared.currentTopicId]) : null;
+      // Card-details sweep, July 19, 2026: this used to search
+      // _sboardHeadersById/_sboardAllRowsById, both 9710-only caches that
+      // sit empty all session if 9710's own board never rendered -- opening
+      // this picker from 9711 always showed "No other topics in this
+      // project yet.", even when there were plenty. Fetches its own live,
+      // screen-agnostic header list instead (same pattern already used by
+      // openMoveToProjectPicker just above), so this works regardless of
+      // which screen opened DETAILS.
       var reserved=['Trash','MISC','Purpose','NEW','New Additions'];
-      var candidates=Object.keys(_sboardHeadersById).map(function(k){ return _sboardHeadersById[k]; })
-        .filter(function(h){
-          if(String(h.id)===String(item.id)) return false;
-          if(reserved.indexOf(h.text_content)!==-1) return false;
-          if(!currentProjectRow) return false;
-          var proj=_sboardProjectRowFor(h);
-          return proj && String(proj.id)===String(currentProjectRow.id);
-        })
-        .sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
+      var topicIdForProject=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : T2TShared.currentTopicId;
+      var candidates=[];
+      if(topicIdForProject && window.T2TData && window.T2TData.ancestorChain && window.T2TData.fetchAllHeaders && window.T2TData.headerDescendants){
+        try{
+          var chain=await window.T2TData.ancestorChain(topicIdForProject);
+          var projectId=chain.length?chain[0].id:null;
+          if(projectId){
+            var allHeadersLive=await window.T2TData.fetchAllHeaders();
+            candidates=window.T2TData.headerDescendants(allHeadersLive, projectId)
+              .filter(function(h){ return String(h.id)!==String(item.id) && reserved.indexOf(h.text_content)===-1; });
+          }
+        }catch(e){ console.warn('openMoveToTopicPicker project lookup failed:', e); }
+      }
+      candidates=candidates.slice().sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
       var rows=candidates.map(function(h){
         return '<div class="sb-hdr-vitem" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>';
       }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other topics in this project yet.</div>';
@@ -2207,12 +2229,21 @@
       Array.prototype.forEach.call(ov2.querySelectorAll('.sb-hdr-vitem[data-hid]'), function(row){
         row.addEventListener('click', async function(){
           var hid=row.getAttribute('data-hid');
-          var landing=_sboardHeadersById[hid];
+          // Card-details sweep, July 19, 2026: landing now comes from the
+          // live candidates list above (was _sboardHeadersById, same stale
+          // 9710-only cache this whole picker just got fixed away from).
+          var landing=candidates.find(function(c){ return String(c.id)===String(hid); });
           try{
             var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
             if(upd.error) throw upd.error;
             item.cluster_id=hid;
             closeSbDetail();
+            // Note (found during this sweep, not fixed): _sboardDrillInto
+            // navigates 9710's own board (sets T2TShared.currentTopicId).
+            // From 9711 this refreshes the board you're still standing on
+            // rather than following the card to its new Topic -- lower
+            // priority, same posture as the isMisc/isTrashed item already
+            // deferred July 18.
             if(landing) _sboardDrillInto(landing);
           }catch(err){ console.error(err); }
         });
@@ -2346,7 +2377,11 @@
 
     T().wire('sb-misc-pinned', async function(){
       try{
-        var targetId=await T2TData.ensureMiscHeader(T2TShared.currentTopicId);
+        // Card-details sweep, July 19, 2026: T2TShared.currentTopicId is
+        // 9710-only (never set by 9711's own navigation) -- use 9711's
+        // handed-over Topic id when it's the active screen, same as the
+        // rest of this sweep.
+        var targetId=await T2TData.ensureMiscHeader((isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : T2TShared.currentTopicId);
         var newCluster=isMisc?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
