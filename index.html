@@ -22,7 +22,8 @@
 <script src="idea-storyboard-9710.js?v=20260719a"></script>
 <script src="session.js?v=20260719a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260719b"></script>
+<script src="backpack.js?v=20260719c"></script>
+<script src="briefing-board.js?v=20260719a"></script>
 <script src="tmap.js?v=20260714a"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260718m"></script>
@@ -351,6 +352,20 @@
 
 <!-- ✏️ JOURNAL HUB -->
 <div class="sc" id="s-journal">
+  <div class="card"><div class="jw">
+    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510;font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">📝 Notes</div><div class="mg-mt" style="color:#7A5C3A">Keep what matters, your way.</div></div>
+    <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;width:100%"></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
+      <button class="jb" id="b-notes-journal">✏️ Journal</button>
+      <button class="jb" id="b-notes-bb">📌 Briefing Board</button>
+    </div>
+  </div></div>
+  <div class="bar2"><button class="tb" id="b-notes-back">⬅️</button><button class="tb" id="b-notes-mg">🔍</button></div>
+</div>
+
+<!-- JOURNAL SUB-LANDING (9300.1) -- was the whole of 9300 before the Notes
+     chooser split it off, July 19, 2026. Add Note / View Journal live here now. -->
+<div class="sc" id="s-journal-landing">
   <div class="card"><div class="jw">
     <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C"><div class="mg-mh" style="color:#3B2510;font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">✏️ Journal</div><div class="mg-mt" style="color:#7A5C3A">Your personal record of the adventure.</div></div>
     <div style="background:#f0e6d0;padding:7px 24px 6px;border-bottom:.5px solid #C9A87C;width:100%"></div>

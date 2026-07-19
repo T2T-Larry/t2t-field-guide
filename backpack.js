@@ -155,7 +155,7 @@
     's-what-is-t2t','s-t2t-goals','s-authors',
     's-thoughts-1','s-thoughts-2','s-thoughts-3',
     's-idea',
-    's-journal','s-journal-capture','s-journal-cover',
+    's-journal','s-journal-landing','s-journal-capture','s-journal-cover',
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
     's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
@@ -221,7 +221,7 @@
     var pn=_pageNums[id]; if(pn) addVisited(pn);
     showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
-    if (id==='s-journal')         { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
+    if (id==='s-journal-landing') { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
     if (id==='s-gems')            { var gc=document.getElementById('gems-view-choices');    if(gc) gc.style.display='none'; }
     if (id==='s-journal-view')    renderJournalView();
     if (id==='s-journal-cover')   initJournalCover();
@@ -828,6 +828,13 @@
     // themselves — see idea-media-shared.js.
     registerPageNum('s-idea-session','9711'); /* was 9210 — renumbered July 13, 2026 into the 9700-9799 Storyboard family, right after ISB (9710) */
     registerPageNum('s-journal',        '9300');
+    // 9300 became the NOTES chooser (Journal vs Briefing Board) July 19,
+    // 2026 -- the Add Note/View Journal buttons that used to live directly
+    // on 9300 moved one step deeper onto their own screen, so they get
+    // their own number too: 9300.1, decimal off the Notes hub, same
+    // pattern as Trivia (0100.1, 1110.1). Larry: every screen is a Touch
+    // Point, no exceptions.
+    registerPageNum('s-journal-landing','9300.1');
     registerPageNum('s-journal-capture','9310');
     registerPageNum('s-journal-view',   '9320');
     // Every screen a traveler can land on is its own Touch Point and gets
@@ -878,8 +885,13 @@
     });
 
     /* JOURNAL HUB */
-    wire('b-journal-back',returnToMG);
+    wire('b-journal-back',function(){nav('s-journal');});
     wire('b-journal-mg',goMG);
+    /* NOTES chooser (9300) -- Journal vs Briefing Board, added July 19, 2026 */
+    wire('b-notes-back',returnToMG);
+    wire('b-notes-mg',goMG);
+    wire('b-notes-journal',function(){nav('s-journal-landing');});
+    wire('b-notes-bb',function(){nav('s-briefing-board');});
     wire('b-add-note',function(){
       nav('s-journal-capture');
       setTimeout(function(){
@@ -890,10 +902,10 @@
     });
     wire('b-view-journal',openJournalView);
     wire('b-jview-list',openJournalView); wire('b-jview-miro',openJournalMiro);
-    wire('b-jcap-back',function(){nav('s-journal');}); wire('b-jcap-mg',goMG);
-    wire('b-jcov-back',function(){nav('s-journal');}); wire('b-jcov-mg',goMG);
+    wire('b-jcap-back',function(){nav('s-journal-landing');}); wire('b-jcap-mg',goMG);
+    wire('b-jcov-back',function(){nav('s-journal-landing');}); wire('b-jcov-mg',goMG);
     wire('b-jcov-next',function(){if(_jeEntries.length>0){showEntryAt(_jeEntries,0);nav('s-journal-entry');}});
-    wire('b-jview-back',function(){nav('s-journal');}); wire('b-jview-mg',goMG);
+    wire('b-jview-back',function(){nav('s-journal-landing');}); wire('b-jview-mg',goMG);
     wire('b-jentry-back',function(){nav('s-journal-view');}); wire('b-jentry-mg',goMG);
     wire('b-je-back',function(){nav('s-journal-view');});
     wire('b-je-prev',function(){if(_jeIndex>0)showEntryAt(_jeEntries,_jeIndex-1);else nav('s-journal-cover');});
@@ -912,7 +924,7 @@
     });
     var journalTA=document.getElementById('journal-text');
     if(journalTA) journalTA.addEventListener('input',function(){var b=document.getElementById('b-save-journal');if(b)b.classList.toggle('active',this.value.trim().length>0);});
-    wire('b-jmiro-back',function(){var e=document.getElementById('journal-miro-embed');if(e)e.src='';nav('s-journal',false);});
+    wire('b-jmiro-back',function(){var e=document.getElementById('journal-miro-embed');if(e)e.src='';nav('s-journal-landing',false);});
     wire('b-jmiro-mg',goMG);
     wire('b-jmiro-full',function(){var e=document.getElementById('journal-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
