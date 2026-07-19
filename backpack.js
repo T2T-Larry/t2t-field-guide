@@ -395,7 +395,15 @@
         // 18, 2026.
         var detailOv=document.getElementById('sb-detail-overlay');
         var detailOpen = !!(detailOv && detailOv.classList.contains('active'));
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (detailOpen ? '9716' : (_pageNums[cur] || '—')));
+        // CLUSTER (9717) and the trash confirmation (9718) have the exact
+        // same "sits on top without calling nav()" problem DETAILS (9716)
+        // had - same fix, same reasoning. Every screen is a Touch Point and
+        // gets its own number, no exceptions. Larry, July 19, 2026.
+        var clusterOv=document.getElementById('sb-cluster-overlay');
+        var clusterOpen = !!(clusterOv && clusterOv.classList.contains('active'));
+        var trashOv=document.getElementById('sb-trash-overlay');
+        var trashOpen = !!(trashOv && trashOv.style.display==='flex');
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (_pageNums[cur] || '—')))));
         showPageToast(num);
       }
     });
@@ -822,6 +830,14 @@
     registerPageNum('s-journal',        '9300');
     registerPageNum('s-journal-capture','9310');
     registerPageNum('s-journal-view',   '9320');
+    // Every screen a traveler can land on is its own Touch Point and gets
+    // its own number — Larry, July 19, 2026. Cover and Entry are states
+    // within the View flow (9320), so they take decimals off it, matching
+    // the established Trivia pattern (0100.1, 1110.1, etc.) rather than a
+    // whole new ten-block, since neither will ever need Trivia-style
+    // multiplication of siblings.
+    registerPageNum('s-journal-cover',  '9320.1');
+    registerPageNum('s-journal-entry',  '9320.2');
     registerPageNum('s-journal-miro',   '9330');
     registerPageNum('s-gems',      '9400');
     registerPageNum('s-gem-add',   '9410');
