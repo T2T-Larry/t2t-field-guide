@@ -32,6 +32,16 @@
    9380/9390 held in reserve (a Done archive, automation settings,
    whatever earns its place later).
 
+   Trash + hearts, July 20, 2026 -- Larry's framing: a card sitting in
+   Do is really just an idea (no inherent value yet), same as anything
+   on the ISB before it's proven out. So this board borrows the ISB's
+   own two ways of handling that: a fixed round Trash can (bottom-right
+   of the board, same "small circle, drag a card onto it" convention as
+   9711's isx-trash-fixed) for an idea that turns out not worth doing --
+   NOT the same thing as finishing it (that's Done) -- plus a heart
+   count (tap to add, hold to remove, same gesture as the ISB's
+   sb-heart-pill) on the back of the card, for resonance.
+
    Persistence: sessionStorage for now, same local-fallback pattern
    Journal already uses (loadEntriesLocal/saveEntryLocal in
    backpack.js). Real per-traveler storage (a Supabase table,
@@ -50,8 +60,11 @@
     {key:'hangups', label:'Hang-Ups'}
   ];
 
+  var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
+
   var _bbCards = null;
   var _bbOpenCardId = null;
+  var _bbTrashPendingId = null;
 
   function _bbToday(){
     var d=new Date();
@@ -67,7 +80,7 @@
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none'}
+      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none', hearts:0}
     ];
   }
   function _bbCardsList(){
@@ -84,7 +97,8 @@
     var style=document.createElement('style');
     style.id='bb-style';
     style.textContent=
-       '#fg-root.isx-full #s-briefing-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:column}'
+       '#s-briefing-board{position:relative}'
+      +'#fg-root.isx-full #s-briefing-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:column}'
       +'.bb-mhead{background:#FDF6E8;border-bottom:3px solid #C9A87C;padding:14px 20px 10px;flex-shrink:0}'
       +'.bb-mh{color:#3B2510;font-size:32px;font-weight:700;line-height:1;padding-bottom:6px;font-family:"Playfair Display",serif}'
       +'.bb-mt{color:#7A5C3A;font-size:13px;font-style:italic}'
@@ -103,10 +117,18 @@
       +'.bb-card .bb-task{color:#3B2510;margin:2px 0 5px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:#7A5C3A;min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
+      +'.bb-heart-badge{position:absolute;bottom:2px;left:4px;font-size:13px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed #C9A87C;border-radius:3px;text-align:center;padding:8px;font-size:12px;color:#6b4a2e;cursor:pointer;font-family:Georgia,serif}'
       +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
+      /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
+         bottom-right" convention as 9711's isx-trash-fixed. Anchored to
+         #s-briefing-board itself (not #bb-board-wrap, which scrolls
+         horizontally on narrow screens) so it never drifts off with the
+         columns and never has to fight the bar2 strip below it. */
+      +'.bb-trash{position:absolute;right:16px;bottom:76px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid #3B2510;box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
+      +'.bb-trash.bb-trash-dropready{outline:2px solid #a3372b;outline-offset:2px}'
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
       +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7A5C3A;margin-bottom:3px}'
@@ -115,6 +137,7 @@
       +'.bb-flags{display:flex;gap:6px}'
       +'.bb-flag-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid #C9A87C;background:#fff;cursor:pointer;color:#7A5C3A;font-family:Georgia,serif}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
+      +'.bb-heart-pill{font-size:12px;padding:5px 10px;background:#fff;border:1.5px solid #C9A87C;border-radius:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#3B2510;font-family:Georgia,serif}'
       /* Overlay chrome for Add a Card (9360) / Back of the Card (9370),
          July 20, 2026 -- same "fixed, dimmed backdrop, click-outside-
          closes" pattern as idea-storyboard-9710.js's .sb-overlay. Lives
@@ -144,13 +167,15 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead"><div class="bb-mh">Briefing Board</div><div class="bb-mt">Do &middot; Doing &middot; Done &middot; Hang-Ups &mdash; what’s happening right now.</div></div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
+        +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
         +'<div class="bar2"><button class="tb" id="b-bb-back">⬅️</button><button class="tb" id="b-bb-mg">🔍</button></div>'
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
-    // Add a Card (9360) and Back of the Card (9370) -- overlays, live
-    // as direct children of #fg-root so they render regardless of
-    // whether #s-briefing-board happens to be the active .sc screen.
+    // Add a Card (9360), Back of the Card (9370) and the Trash confirm --
+    // all overlays, living as direct children of #fg-root so they render
+    // regardless of whether #s-briefing-board happens to be the active
+    // .sc screen.
     if(!document.getElementById('bb-add-overlay')){
       var addOv=document.createElement('div');
       addOv.id='bb-add-overlay'; addOv.className='bb-overlay';
@@ -184,10 +209,31 @@
               +'<button class="bb-flag-btn" data-flag="green">green</button>'
               +'<button class="bb-flag-btn" data-flag="blue">blue</button>'
             +'</div></div>'
+            +'<div class="bb-field" style="text-align:center">'
+              +'<label>Resonance</label>'
+              +'<button class="bb-heart-pill" id="bb-d-heart" aria-label="Tap to add a heart, hold to remove one">'
+                +'<span style="color:#a3372b;font-size:13px">❤</span><span id="bb-d-heart-count">0</span>'
+              +'</button>'
+            +'</div>'
           +'</div>'
         +'</div>';
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
+    }
+    if(!document.getElementById('bb-trash-overlay')){
+      var trashOv=document.createElement('div');
+      trashOv.id='bb-trash-overlay'; trashOv.className='bb-overlay';
+      trashOv.innerHTML=
+         '<div class="bb-overlay-card" style="width:280px;text-align:center">'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#3B2510;margin-bottom:6px">Moose poop?</div>'
+          +'<div style="font-size:12px;color:#7A5C3A;font-style:italic;margin-bottom:14px">Off the board for good &mdash; this isn’t the same as Done.</div>'
+          +'<div style="display:flex;gap:8px">'
+            +'<button class="bb-flag-btn" id="bb-trash-yes" style="background:#a3372b;color:#fff;border-color:#a3372b">Yes</button>'
+            +'<button class="bb-flag-btn" id="bb-trash-no">Keep it</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(trashOv);
+      trashOv.addEventListener('click', function(e){ if(e.target===trashOv) closeTrashConfirm(); });
     }
 
     T().registerPageNum('s-briefing-board', '9350');
@@ -229,6 +275,7 @@
       el.innerHTML='<div class="bb-top"><span class="bb-date">'+_esc(c.assigned)+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
         +'<div class="bb-task">'+_esc(c.task)+'</div>'
         +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+_esc(c.due||'')+'</span></div>'
+        +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
         +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
       el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
       target.appendChild(el);
@@ -280,6 +327,8 @@
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-budget').value=c.budget||'';
     document.getElementById('bb-d-notes').value=c.notes||'';
+    var heartCountEl=document.getElementById('bb-d-heart-count');
+    if(heartCountEl) heartCountEl.textContent=c.hearts||0;
     var flags=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
     for(var i=0;i<flags.length;i++){
       flags[i].classList.toggle('bb-flag-active', flags[i].getAttribute('data-flag')===(c.flag||'none'));
@@ -302,6 +351,59 @@
     renderBoard();
   }
 
+  function openTrashConfirm(id){
+    _bbTrashPendingId=id;
+    var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.add('active');
+  }
+
+  function closeTrashConfirm(){
+    _bbTrashPendingId=null;
+    var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
+  }
+
+  function doTrashCard(){
+    var id=_bbTrashPendingId;
+    _bbCards=_bbCardsList().filter(function(x){ return x.id!==id; });
+    _bbSaveLocal(_bbCards);
+    _bbTrashPendingId=null;
+    var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
+    renderBoard();
+  }
+
+  function wireTrashIcon(){
+    var trash=document.getElementById('bb-trash'); if(!trash) return;
+    trash.addEventListener('dragover', function(e){ e.preventDefault(); trash.classList.add('bb-trash-dropready'); });
+    trash.addEventListener('dragleave', function(){ trash.classList.remove('bb-trash-dropready'); });
+    trash.addEventListener('drop', function(e){
+      e.preventDefault();
+      trash.classList.remove('bb-trash-dropready');
+      var id=Number(e.dataTransfer.getData('text/plain'));
+      if(id) openTrashConfirm(id);
+    });
+  }
+
+  function wireHeartPill(){
+    var heartBtn=document.getElementById('bb-d-heart');
+    var heartCountEl=document.getElementById('bb-d-heart-count');
+    if(!heartBtn) return;
+    var holdTimer=null, held=false;
+    function applyDelta(delta){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c) return;
+      c.hearts=Math.max(0,(c.hearts||0)+delta);
+      _bbSaveLocal(_bbCardsList());
+      if(heartCountEl) heartCountEl.textContent=c.hearts;
+    }
+    function startHold(){ held=false; holdTimer=setTimeout(function(){ held=true; applyDelta(-1); }, 550); }
+    function cancelHold(){ clearTimeout(holdTimer); }
+    heartBtn.addEventListener('mousedown', startHold);
+    heartBtn.addEventListener('touchstart', startHold);
+    heartBtn.addEventListener('mouseup', cancelHold);
+    heartBtn.addEventListener('mouseleave', cancelHold);
+    heartBtn.addEventListener('touchend', cancelHold);
+    heartBtn.addEventListener('click', function(){ if(!held) applyDelta(1); held=false; });
+  }
+
   function wireBriefingBoard(){
     T().wire('b-bb-back', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
@@ -316,7 +418,7 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none'});
+      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none', hearts:0});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
@@ -335,6 +437,11 @@
         });
       })(flagBtns[i]);
     }
+    wireHeartPill();
+
+    T().wire('bb-trash-yes', doTrashCard);
+    T().wire('bb-trash-no', closeTrashConfirm);
+    wireTrashIcon();
   }
 
   document.addEventListener('DOMContentLoaded', function(){
