@@ -404,7 +404,15 @@
         var clusterOpen = !!(clusterOv && clusterOv.classList.contains('active'));
         var trashOv=document.getElementById('sb-trash-overlay');
         var trashOpen = !!(trashOv && trashOv.style.display==='flex');
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (_pageNums[cur] || '—')))));
+        // Briefing Board's own two overlays (Add a Card / Back of the
+        // Card) have the identical "sits on top without calling nav()"
+        // situation as DETAILS/CLUSTER/trash above -- same fix, same
+        // reasoning. Larry, July 20, 2026.
+        var bbAddOv=document.getElementById('bb-add-overlay');
+        var bbAddOpen = !!(bbAddOv && bbAddOv.classList.contains('active'));
+        var bbDetailOv=document.getElementById('bb-detail-overlay');
+        var bbDetailOpen = !!(bbDetailOv && bbDetailOv.classList.contains('active'));
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (_pageNums[cur] || '—')))))));
         showPageToast(num);
       }
     });

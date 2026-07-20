@@ -17,9 +17,18 @@
 
    Screens, every one individually numbered per Larry's July 19, 2026
    rule -- every traveler-facing screen is a Touch Point:
-     9350  s-briefing-board   the board itself (4 fixed columns)
-     9360  s-briefing-add     Add a Card
-     9370  s-briefing-detail  Back of the Card
+     9350  s-briefing-board    the board itself (4 fixed columns) --
+                                a real nav()'d screen.
+     9360  bb-add-overlay      Add a Card
+     9370  bb-detail-overlay   Back of the Card
+   9360/9370 converted from nav()'d screens to overlays July 20, 2026,
+   per Larry: the card should sit ON TOP of the board (board stays
+   visible/live underneath, dimmed), closed via an explicit X or by
+   clicking outside the card -- same convention idea-storyboard-9710.js
+   already uses for its own DETAILS card (sb-detail-overlay). Per the
+   July 19 rule, overlay screens still get their own Touch Point number,
+   they just don't call nav() to get it -- see backpack.js's page-toast
+   detection for where 9360/9370 get recognized while active.
    9380/9390 held in reserve (a Done archive, automation settings,
    whatever earns its place later).
 
@@ -98,7 +107,7 @@
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed #C9A87C;border-radius:3px;text-align:center;padding:8px;font-size:12px;color:#6b4a2e;cursor:pointer;font-family:Georgia,serif}'
       +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
-      +'.bbw{flex:1;display:flex;flex-direction:column;align-items:center;padding:20px 24px;background:#FDF6E8;width:100%;box-sizing:border-box}'
+      +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
       +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7A5C3A;margin-bottom:3px}'
       +'.bb-field input,.bb-field textarea{width:100%;font-family:Georgia,serif;font-size:14px;border:1.5px solid #C9A87C;border-radius:4px;padding:7px 8px;background:#fff;color:#3B2510;box-sizing:border-box}'
@@ -106,15 +115,22 @@
       +'.bb-flags{display:flex;gap:6px}'
       +'.bb-flag-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid #C9A87C;background:#fff;cursor:pointer;color:#7A5C3A;font-family:Georgia,serif}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
-      /* Back of the Card (9370) and Add a Card (9360) inherit .isx-full's
-         100vw/100vh stage from the board (isx-full is never turned off
-         between these three screens, only when returning to the MG),
-         so the plain .card rule -- flex:1 in a flex column, no width cap --
-         stretched edge to edge. Pin these two to a width just past the
-         280px field frame (see .bb-field), centered, and let them use the
-         full-screen height instead of the normal 520px card cap: a tall,
-         narrow card, not a wide flat one. Logged July 20, 2026. */
-      +'#fg-root.isx-full #s-briefing-detail.active .card,#fg-root.isx-full #s-briefing-add.active .card{width:340px;max-width:340px;align-self:center;max-height:none}';
+      /* Overlay chrome for Add a Card (9360) / Back of the Card (9370),
+         July 20, 2026 -- same "fixed, dimmed backdrop, click-outside-
+         closes" pattern as idea-storyboard-9710.js's .sb-overlay. Lives
+         at #fg-root level (see injectBriefingBoardScreens), not inside
+         #s-briefing-board, for the same reason 9710's overlays live at
+         fg-root: a display:none ancestor (the board when it's not the
+         active screen) would hide a position:fixed child too. Card is
+         pinned to 340px -- just past the 280px field frame -- and tall
+         rather than wide, scrolling internally if content runs long. */
+      +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
+      +'.bb-overlay.active{display:flex}'
+      +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid #C9A87C;box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
+      +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
+      +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7A5C3A}'
+      +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #C9A87C;cursor:pointer;font-size:13px;color:#3B2510}'
+      +'.bb-close:hover{background:#FDF6E8}';
     document.head.appendChild(style);
   }
 
@@ -129,39 +145,53 @@
         +'<div class="bb-mhead"><div class="bb-mh">Briefing Board</div><div class="bb-mt">Do &middot; Doing &middot; Done &middot; Hang-Ups &mdash; what’s happening right now.</div></div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bar2"><button class="tb" id="b-bb-back">⬅️</button><button class="tb" id="b-bb-mg">🔍</button></div>'
-      +'</div>'
-      +'<div class="sc" id="s-briefing-add">'
-        +'<div class="card"><div class="bbw">'
-          +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
-          +'<div class="bb-field"><label>Due date &mdash; only if it’s real</label><input id="bb-new-due" type="text" placeholder="e.g. 7/25"></div>'
-          +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
-        +'</div></div>'
-        +'<div class="bar2"><button class="tb" id="b-bb-add-back">⬅️</button><button class="tb" id="b-bb-add-mg">🔍</button></div>'
-      +'</div>'
-      +'<div class="sc" id="s-briefing-detail">'
-        +'<div class="card"><div class="bbw">'
-          +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
-          +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
-          +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
-          +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
-          +'<div class="bb-field"><label>Notes / plussing</label><textarea id="bb-d-notes" placeholder="How could this go better next time?"></textarea></div>'
-          +'<div class="bb-field"><label>Signal flag</label><div class="bb-flags">'
-            +'<button class="bb-flag-btn" data-flag="none">none</button>'
-            +'<button class="bb-flag-btn" data-flag="red">red</button>'
-            +'<button class="bb-flag-btn" data-flag="green">green</button>'
-            +'<button class="bb-flag-btn" data-flag="blue">blue</button>'
-          +'</div></div>'
-        +'</div></div>'
-        +'<div class="bar2"><button class="tb" id="b-bb-d-back">⬅️</button><button class="tb" id="b-bb-d-mg">🔍</button></div>'
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
-    T().registerPageNum('s-briefing-board',  '9350');
-    T().registerPageNum('s-briefing-add',    '9360');
-    T().registerPageNum('s-briefing-detail', '9370');
+    // Add a Card (9360) and Back of the Card (9370) -- overlays, live
+    // as direct children of #fg-root so they render regardless of
+    // whether #s-briefing-board happens to be the active .sc screen.
+    if(!document.getElementById('bb-add-overlay')){
+      var addOv=document.createElement('div');
+      addOv.id='bb-add-overlay'; addOv.className='bb-overlay';
+      addOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Card</span><button class="bb-close" id="bb-add-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
+            +'<div class="bb-field"><label>Due date &mdash; only if it’s real</label><input id="bb-new-due" type="text" placeholder="e.g. 7/25"></div>'
+            +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(addOv);
+      addOv.addEventListener('click', function(e){ if(e.target===addOv) closeAddCard(); });
+    }
+    if(!document.getElementById('bb-detail-overlay')){
+      var detailOv=document.createElement('div');
+      detailOv.id='bb-detail-overlay'; detailOv.className='bb-overlay';
+      detailOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Back of the Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
+            +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
+            +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
+            +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
+            +'<div class="bb-field"><label>Notes / plussing</label><textarea id="bb-d-notes" placeholder="How could this go better next time?"></textarea></div>'
+            +'<div class="bb-field"><label>Signal flag</label><div class="bb-flags">'
+              +'<button class="bb-flag-btn" data-flag="none">none</button>'
+              +'<button class="bb-flag-btn" data-flag="red">red</button>'
+              +'<button class="bb-flag-btn" data-flag="green">green</button>'
+              +'<button class="bb-flag-btn" data-flag="blue">blue</button>'
+            +'</div></div>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(detailOv);
+      detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
+    }
+
+    T().registerPageNum('s-briefing-board', '9350');
     T().registerUtilScreen('s-briefing-board');
-    T().registerUtilScreen('s-briefing-add');
-    T().registerUtilScreen('s-briefing-detail');
     T().registerCtx('s-briefing-board', 'Briefing Board');
 
     T().registerScreenActivate('s-briefing-board', function(){
@@ -228,11 +258,17 @@
       });
     });
     var addTile=document.getElementById('bb-add-tile');
-    if(addTile) addTile.addEventListener('click', function(){
-      var t=document.getElementById('bb-new-task'); if(t) t.value='';
-      var d=document.getElementById('bb-new-due'); if(d) d.value='';
-      T().nav('s-briefing-add');
-    });
+    if(addTile) addTile.addEventListener('click', openAddCard);
+  }
+
+  function openAddCard(){
+    var t=document.getElementById('bb-new-task'); if(t) t.value='';
+    var d=document.getElementById('bb-new-due'); if(d) d.value='';
+    var ov=document.getElementById('bb-add-overlay'); if(ov) ov.classList.add('active');
+  }
+
+  function closeAddCard(){
+    var ov=document.getElementById('bb-add-overlay'); if(ov) ov.classList.remove('active');
   }
 
   function openCardDetail(id){
@@ -244,11 +280,11 @@
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-budget').value=c.budget||'';
     document.getElementById('bb-d-notes').value=c.notes||'';
-    var flags=document.querySelectorAll('#s-briefing-detail .bb-flag-btn');
+    var flags=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
     for(var i=0;i<flags.length;i++){
       flags[i].classList.toggle('bb-flag-active', flags[i].getAttribute('data-flag')===(c.flag||'none'));
     }
-    T().nav('s-briefing-detail');
+    var ov=document.getElementById('bb-detail-overlay'); if(ov) ov.classList.add('active');
   }
 
   function closeCardDetail(){
@@ -262,7 +298,8 @@
       _bbSaveLocal(_bbCardsList());
     }
     _bbOpenCardId=null;
-    T().nav('s-briefing-board');
+    var ov=document.getElementById('bb-detail-overlay'); if(ov) ov.classList.remove('active');
+    renderBoard();
   }
 
   function wireBriefingBoard(){
@@ -272,8 +309,7 @@
     });
     T().wire('b-bb-mg', T().goMG);
 
-    T().wire('b-bb-add-back', function(){ T().nav('s-briefing-board'); });
-    T().wire('b-bb-add-mg', T().goMG);
+    T().wire('bb-add-close', closeAddCard);
     T().wire('b-bb-save-card', function(){
       var t=document.getElementById('bb-new-task');
       var d=document.getElementById('bb-new-due');
@@ -282,18 +318,18 @@
       var cards=_bbCardsList();
       cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none'});
       _bbSaveLocal(cards);
-      T().nav('s-briefing-board');
+      closeAddCard();
+      renderBoard();
     });
 
-    T().wire('b-bb-d-back', closeCardDetail);
-    T().wire('b-bb-d-mg', T().goMG);
-    var flagBtns=document.querySelectorAll('#s-briefing-detail .bb-flag-btn');
+    T().wire('bb-detail-close', closeCardDetail);
+    var flagBtns=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
     for(var i=0;i<flagBtns.length;i++){
       (function(btn){
         btn.addEventListener('click', function(){
           var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
           if(c) c.flag=btn.getAttribute('data-flag');
-          var all=document.querySelectorAll('#s-briefing-detail .bb-flag-btn');
+          var all=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
           for(var j=0;j<all.length;j++) all[j].classList.remove('bb-flag-active');
           btn.classList.add('bb-flag-active');
         });
