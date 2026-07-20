@@ -28,7 +28,7 @@
     div.innerHTML =
       '<div class="sc" id="s-cover-map">'+
         '<div class="card"><div class="mw">'+
-          '<div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🗺️ Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>'+
+          '<div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🧭 Map</div><div class="mg-mt">You are here. Your position on the path.</div></div>'+
           '<div class="mg-band"></div>'+
           '<div class="pr tap" id="tog-map-intro"><span class="pl2">🚪 Introduction</span><span class="ptg" id="map-intro-steps-tog">▼</span></div>'+
           '<div class="ps" id="map-intro-steps"></div>'+

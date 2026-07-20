@@ -41,7 +41,7 @@
   var stack       = [];
   var primaryPage = null;
   var mgOrigin    = null;
-  var seaChapterEntry = false; /* true only when ISB was entered via the normal CREATE chapter flow (not via the 🔍 backpack) */
+  var seaChapterEntry = false; /* true only when ISB was entered via the normal CREATE chapter flow (not via the ☰ backpack) */
   var _primaryPages = [];
 
   (function restoreNavState(){
@@ -158,6 +158,7 @@
     's-journal','s-journal-landing','s-journal-capture','s-journal-cover',
     's-journal-view','s-journal-entry','s-journal-miro',
     's-gems','s-gem-add','s-gems-list','s-gems-miro',
+    's-search',
     's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
     's-configure','s-change-password','s-sea-of-ideas','s-sea-of-ideas-cluster'
   ];
@@ -779,7 +780,7 @@
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('mg-overlay')) return;
     var div=document.createElement('div');
-    div.innerHTML='<div class="mg-overlay" id="mg-overlay"><div class="mg-modal"><div class="mg-wrap"><div class="mg-head"><div class="mg-ring">🔍</div><div class="mg-ttl">Details</div><div class="mg-desc">Plus places to keep what matters.</div></div><div class="mg-hrule"></div><div class="mg-body"><div class="mg-row"><div class="mg-btn" id="b-mg-map">🗺️</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-idea">💡</div><div class="mg-btn" id="b-mg-journal">✏️</div><div class="mg-btn" id="b-mg-gems">💎</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-trivia">🌸</div><div class="mg-btn" id="b-mg-tools">🛠️</div></div></div></div><div class="mg-bar"><div class="mg-ret" id="b-mg-ret">⬅️</div></div></div></div>';
+    div.innerHTML='<div class="mg-overlay" id="mg-overlay"><div class="mg-modal"><div class="mg-wrap"><div class="mg-head"><div class="mg-ring">☰</div><div class="mg-ttl">Details</div><div class="mg-desc">Plus places to keep what matters.</div></div><div class="mg-hrule"></div><div class="mg-body"><div class="mg-row"><div class="mg-btn" id="b-mg-map">🧭</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-idea">💡</div><div class="mg-btn" id="b-mg-journal">✏️</div><div class="mg-btn" id="b-mg-search">🔍</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-tools">🛠️</div></div></div></div><div class="mg-bar"><div class="mg-ret" id="b-mg-ret">⬅️</div></div></div></div>';
     fg.appendChild(div.firstChild);
     wireMGOverlay();
   }
@@ -811,8 +812,12 @@
       } else console.error('Idea capture unavailable — window.T2TSea.openIdeaCapture is missing (session.js failed to load?). The old 9210-legacy fallback screen was removed July 18, 2026, so there is no longer a second path here.');
     });
     wire('b-mg-journal',function(){closeMG();nav('s-journal',false);});
-    wire('b-mg-gems',   function(){closeMG();nav('s-gems-board', false);});
-    wire('b-mg-trivia', function(){closeMG();nav('s-trivia', false);});
+    // 🔍 Search hub — Larry, July 20, 2026: "using a magnifying glass along
+    // the path in the forest where you might find interesting flowers or
+    // precious gems." Replaces the old direct Gems slot in this row; Trivia
+    // and Gems both moved one step deeper onto their own shared landing
+    // page (s-search, 9800) instead of sitting directly in the backpack.
+    wire('b-mg-search', function(){closeMG();nav('s-search', false);});
     wire('b-trivia-back', returnToMG);
     wire('b-trivia-mg',   goMG);
     wire('b-mg-tools',  function(){closeMG();nav('s-tools',  false);});
@@ -859,6 +864,13 @@
     registerPageNum('s-shape-tools', '9630');
     registerPageNum('s-share', '9640');
     /* s-dare has no Notion page number assigned yet */
+    // 9800 — Search hub (🔍 Trivia + Gems), added July 20, 2026. Whole
+    // number, not a decimal off anything, since it's a new top-level
+    // backpack destination (parallel to Notes/Gems/Trivia/Tools), not a
+    // sub-screen of one of them. 9700-9799 is the Storyboard family, so
+    // this takes the next open hundred-block. Larry: every screen is a
+    // Touch Point, no exceptions.
+    registerPageNum('s-search', '9800');
 
     /* MAP — wired by tmap.js against its own injected elements, not here */
 
@@ -927,6 +939,13 @@
     wire('b-jmiro-back',function(){var e=document.getElementById('journal-miro-embed');if(e)e.src='';nav('s-journal-landing',false);});
     wire('b-jmiro-mg',goMG);
     wire('b-jmiro-full',function(){var e=document.getElementById('journal-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
+
+    /* SEARCH HUB — 🔍 Trivia + Gems (added July 20, 2026, replacing the old
+       direct Gems slot in the backpack's middle row) */
+    wire('b-search-back', returnToMG);
+    wire('b-search-mg',   goMG);
+    wire('b-search-trivia', function(){ nav('s-trivia', false); });
+    wire('b-search-gems',   function(){ nav('s-gems-board', false); });
 
     /* GEMS HUB */
     wire('b-gems-back',returnToMG);
