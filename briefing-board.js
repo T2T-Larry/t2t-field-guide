@@ -80,6 +80,22 @@
      shows read-only on the back of the card -- useful there even
      though it was pulled off the card face itself.
 
+   Review + Archive, July 20, 2026 -- "A DONE card remains on the board
+   until reviewed." Larry's own PRO/GROW vocabulary: a forced Verified
+   complete check (the gate -- nothing archives without it), an optional
+   PRO / Gold Star on top of that for superlative work, and GROW is just
+   the existing Notes field relabeled (it already asked "how could this
+   go better next time," which is exactly a GROW prompt -- no duplicate
+   field needed). "Reviewed by" is a plain text stand-in for now (no
+   real team roster yet -- see the held team-roster discussion); revisit
+   once real accounts/roles exist. Archiving hides a card from the board
+   entirely (out of the 4 columns, kept in storage as history) rather
+   than opening a full browsable Archive screen yet -- Touch Point 9380
+   stays reserved for that if/when it's wanted. Dragging a Done card
+   back out to any other column retracts the claim: completed date,
+   Verified, and Gold Star all clear (GROW notes stay -- feedback
+   doesn't expire just because the card reopened).
+
    Persistence: sessionStorage for now, same local-fallback pattern
    Journal already uses (loadEntriesLocal/saveEntryLocal in
    backpack.js). Real per-traveler storage (a Supabase table,
@@ -133,7 +149,7 @@
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none', hearts:0, priority:''}
+      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, reviewedBy:'', archived:false}
     ];
   }
   function _bbCardsList(){
@@ -341,6 +357,9 @@
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
       +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
+      +'#bb-d-verify.bb-flag-active{background:#3F6B3A;border-color:#3F6B3A}'
+      +'#bb-d-pro.bb-flag-active{background:#c9a230;border-color:#c9a230}'
+      +'#bb-d-archive:disabled{opacity:.4;cursor:not-allowed}'
       +'.bb-font-btn.bb-flag-active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
       +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
@@ -422,7 +441,7 @@
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Start date &mdash; leave blank to auto-stamp the moment it moves to Doing</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
-            +'<div class="bb-field"><label>Notes / plussing</label><textarea id="bb-d-notes" placeholder="How could this go better next time?"></textarea></div>'
+            +'<div class="bb-field"><label>GROW &mdash; suggestions for next time</label><textarea id="bb-d-notes" placeholder="What would make this even better next time?"></textarea></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITIES.map(function(p){ return '<button class="bb-pri-btn" data-pri="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
@@ -438,6 +457,12 @@
                 +'<span style="color:#a3372b;font-size:13px">❤</span><span id="bb-d-heart-count">0</span>'
               +'</button>'
             +'</div>'
+            +'<div class="bb-field"><label>Reviewed by</label><input id="bb-d-reviewer" type="text" placeholder="Who\'s signing off"></div>'
+            +'<div class="bb-field" style="text-align:center"><label>Review</label><div class="bb-flags">'
+              +'<button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified complete</button>'
+              +'<button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO / Gold Star</button>'
+            +'</div></div>'
+            +'<button class="jb" id="bb-d-archive" disabled>Archive to history</button>'
           +'</div>'
         +'</div>';
       fg.appendChild(detailOv);
@@ -502,7 +527,7 @@
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
-    var cards=_bbCardsList();
+    var cards=_bbCardsList().filter(function(c){ return !c.archived; });
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
       col.className='bb-col';
@@ -567,6 +592,7 @@
           c.col=zone.getAttribute('data-col');
           if(c.col==='doing' && wasCol==='do' && !c.startDate) c.startDate=_bbToday();
           if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
+          if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; }
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -616,6 +642,8 @@
     document.getElementById('bb-d-notes').value=c.notes||'';
     var heartCountEl=document.getElementById('bb-d-heart-count');
     if(heartCountEl) heartCountEl.textContent=c.hearts||0;
+    document.getElementById('bb-d-reviewer').value=c.reviewedBy||'';
+    _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
     var flags=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
     for(var i=0;i<flags.length;i++){
@@ -634,6 +662,7 @@
       c.startDate=document.getElementById('bb-d-start').value;
       c.budget=document.getElementById('bb-d-budget').value;
       c.notes=document.getElementById('bb-d-notes').value;
+      c.reviewedBy=document.getElementById('bb-d-reviewer').value;
       _bbSaveLocal(_bbCardsList());
     }
     _bbOpenCardId=null;
@@ -741,6 +770,41 @@
     });
   }
 
+  function _bbUpdateReviewUI(c){
+    var vBtn=document.getElementById('bb-d-verify');
+    var pBtn=document.getElementById('bb-d-pro');
+    var aBtn=document.getElementById('bb-d-archive');
+    if(vBtn) vBtn.classList.toggle('bb-flag-active', !!c.verified);
+    if(pBtn) pBtn.classList.toggle('bb-flag-active', !!c.pro);
+    if(aBtn) aBtn.disabled = !(c.verified && c.col==='done');
+  }
+
+  function wireReviewButtons(){
+    T().wire('bb-d-verify', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c) return;
+      c.verified=!c.verified;
+      if(!c.verified) c.pro=false; // can't be a Gold Star if it isn't even verified
+      _bbSaveLocal(_bbCardsList());
+      _bbUpdateReviewUI(c);
+    });
+    T().wire('bb-d-pro', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c) return;
+      c.pro=!c.pro;
+      if(c.pro) c.verified=true; // a Gold Star implies verified complete
+      _bbSaveLocal(_bbCardsList());
+      _bbUpdateReviewUI(c);
+    });
+    T().wire('bb-d-archive', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c || !c.verified || c.col!=='done') return;
+      c.archived=true;
+      _bbSaveLocal(_bbCardsList());
+      closeCardDetail();
+    });
+  }
+
   function wireBriefingBoard(){
     T().wire('b-bb-back', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
@@ -755,7 +819,7 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none', hearts:0, priority:''});
+      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, reviewedBy:'', archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
@@ -776,6 +840,7 @@
     }
     wireHeartPill();
     wirePriorityButtons();
+    wireReviewButtons();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
