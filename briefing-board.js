@@ -145,6 +145,8 @@
     {key:'clean',   label:'Clean',   head:'"Segoe UI",Helvetica,Arial,sans-serif', body:'"Segoe UI",Helvetica,Arial,sans-serif'}
   ];
 
+  var FLAG_COLOR = {red:'#a3372b', green:'#3F6B3A', blue:'#5b8fa3'};
+
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 
   var _bbCards = null;
@@ -216,12 +218,21 @@
   // this effective rank is for sort order only.
   function _priRank(c){
     var base = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
+    var rank = base;
     var daysUntil = _bbDaysUntilOrInf(c);
-    if(daysUntil===Infinity) return base;
-    if(daysUntil<=0) return Math.min(base, 0);   // due today or overdue -> at least HHH
-    if(daysUntil<=2) return Math.min(base, 1);   // due very soon -> at least HH
-    if(daysUntil<=5) return Math.min(base, 2);   // due soon -> at least H
-    return base;
+    if(daysUntil!==Infinity){
+      if(daysUntil<=0) rank=Math.min(rank, 0);      // due today or overdue -> at least HHH
+      else if(daysUntil<=2) rank=Math.min(rank, 1); // due very soon -> at least HH
+      else if(daysUntil<=5) rank=Math.min(rank, 2); // due soon -> at least H
+    }
+    // A Start Date that's arrived (or passed) while the card is still
+    // sitting in Do -- scheduled to begin, hasn't actually begun --
+    // "drop everything" and escalate it too.
+    if(c.col==='do'){
+      var sd=_bbParseDue(c.startDate);
+      if(sd && _bbDaysUntil(sd)<=0) rank=Math.min(rank, 1); // at least HH
+    }
+    return rank;
   }
 
   function _bbLoadTopic(){
@@ -368,7 +379,7 @@
       +'.bb-inline-field{display:flex;align-items:baseline;justify-content:center;gap:6px;white-space:nowrap}'
       +'.bb-inline-field label{display:inline;margin:0}'
       +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:16px;color:var(--bb-sub)}'
-      +'.bb-field input,.bb-field textarea{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
+      +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
       +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
@@ -472,9 +483,10 @@
                 +'<span style="color:#a3372b;font-size:13px">❤</span><span id="bb-d-heart-count">0</span>'
               +'</button>'
             +'</div>'
-            +'<div class="bb-field"><label>Reviewed by</label><input id="bb-d-reviewer" type="text" placeholder="Who\'s signing off"></div>'
+            +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button></div></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button></div></div>'
+            +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified complete</button></div></div>'
           +'</div>'
         +'</div>';
@@ -567,7 +579,9 @@
         el.className='bb-card';
         el.draggable=true;
         el.setAttribute('data-id', c.id);
-        var dot = c.flag==='red' ? '#a3372b' : '#3B2510';
+        var flagColor = FLAG_COLOR[c.flag];
+        var showDot = c.person || flagColor;
+        var dotHTML = showDot ? ('<span class="bb-dot" style="background:'+(flagColor||'#9c8b73')+'">'+_esc(c.person||'')+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+'">'+c.priority+'</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
@@ -576,7 +590,7 @@
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
@@ -656,7 +670,9 @@
     document.getElementById('bb-d-budget').value=c.budget||'';
     var heartCountEl=document.getElementById('bb-d-heart-count');
     if(heartCountEl) heartCountEl.textContent=c.hearts||0;
-    document.getElementById('bb-d-reviewer').value=c.reviewedBy||'';
+    document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
+    document.getElementById('bb-d-grow-note').value=c.growNote||'';
+    document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
     var flags=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
@@ -676,6 +692,7 @@
       c.startDate=document.getElementById('bb-d-start').value;
       c.budget=document.getElementById('bb-d-budget').value;
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
+      c.growNote=document.getElementById('bb-d-grow-note').value;
       _bbSaveLocal(_bbCardsList());
     }
     _bbOpenCardId=null;
@@ -809,6 +826,11 @@
       c.grow=!c.grow;
       _bbSaveLocal(_bbCardsList());
       _bbUpdateReviewUI(c);
+      var wrap=document.getElementById('bb-d-grow-note-wrap');
+      if(wrap){
+        wrap.style.display=c.grow?'':'none';
+        if(c.grow){ var ta=document.getElementById('bb-d-grow-note'); if(ta) ta.focus(); }
+      }
     });
     // Verified complete is the ONLY thing that signals removal to the
     // archive -- Larry, July 20: no separate Archive button needed.
