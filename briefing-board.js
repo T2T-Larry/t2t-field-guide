@@ -20,7 +20,10 @@
      9350  s-briefing-board    the board itself (4 fixed columns) --
                                 a real nav()'d screen.
      9360  bb-add-overlay      Add a Card
-     9370  bb-detail-overlay   Back of the Card
+     9370  bb-detail-overlay   Briefing Card (was "Back of the Card" --
+                                renamed July 20: it holds everything
+                                on or about the card now, not just a
+                                flipped-over back face)
    9360/9370 converted from nav()'d screens to overlays July 20, 2026,
    per Larry: the card should sit ON TOP of the board (board stays
    visible/live underneath, dimmed), closed via an explicit X or by
@@ -72,10 +75,12 @@
      (Hang-Ups red, flag colors, priority H-L gradient, heart red) stay
      fixed on purpose -- they carry meaning, a theme swap shouldn't
      change what "urgent" looks like.
-   - X (bb-close-x) sits next to the gear, upper-right, as another way
-     to close the board straight to the MG -- same action as the
-     existing bar2 back arrow, just also available at the top per
-     Larry's ask. The bar2 arrow stays too; not asked to remove it.
+   - X (bb-close-x) closes the board straight to the MG; the MG-jump
+     icon (b-bb-mg) rides along next to gear/X in the same header row.
+     The board's own separate bottom bar2 (the old back-arrow/MG-jump
+     pair) was dropped entirely July 20 -- Larry: it had become an
+     obsolete second toolbar once the header row could do the same job,
+     and it was eating vertical space the board itself could use.
    - Date Added (c.assigned, already silently stamped at creation) now
      shows read-only on the back of the card -- useful there even
      though it was pulled off the card face itself.
@@ -370,8 +375,8 @@
          bottom-right" convention as 9711's isx-trash-fixed. Anchored to
          #s-briefing-board itself (not #bb-board-wrap, which scrolls
          horizontally on narrow screens) so it never drifts off with the
-         columns and never has to fight the bar2 strip below it. */
-      +'.bb-trash{position:absolute;right:16px;bottom:76px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid var(--bb-ink);box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
+         columns. */
+      +'.bb-trash{position:absolute;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid var(--bb-ink);box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
       +'.bb-trash.bb-trash-dropready{outline:2px solid #a3372b;outline-offset:2px}'
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
@@ -391,7 +396,7 @@
       +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
       +'.bb-heart-pill{font-size:12px;padding:5px 10px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--bb-ink);font-family:var(--bb-body-font)}'
-      /* Overlay chrome for Add a Card (9360) / Back of the Card (9370) /
+      /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
          .sb-overlay. Lives at #fg-root level (see
@@ -423,6 +428,7 @@
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><span id="bb-topic-pill" contenteditable="true" spellcheck="false" data-placeholder="Name this board…"></span></div>'
             +'<div class="bb-mhead-actions">'
+              +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
@@ -431,11 +437,10 @@
         +'</div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
-        +'<div class="bar2"><button class="tb" id="b-bb-back">⬅️</button><button class="tb" id="b-bb-mg">🔍</button></div>'
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
-    // Add a Card (9360), Back of the Card (9370), the Trash confirm, and
+    // Add a Card (9360), the Briefing Card (9370), the Trash confirm, and
     // Board Settings -- all overlays, living as direct children of
     // #fg-root so they render regardless of whether #s-briefing-board
     // happens to be the active .sc screen.
@@ -460,7 +465,7 @@
       detailOv.id='bb-detail-overlay'; detailOv.className='bb-overlay';
       detailOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Back of the Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
@@ -469,7 +474,7 @@
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
-            +'<div class="bb-field"><label>Start date &mdash; leave blank to auto-stamp the moment it moves to Doing</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
+            +'<div class="bb-field"><label>Start date</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
             +'<div class="bb-field"><label>Signal flag</label><div class="bb-flags">'
               +'<button class="bb-flag-btn" data-flag="none">none</button>'
@@ -848,10 +853,6 @@
   }
 
   function wireBriefingBoard(){
-    T().wire('b-bb-back', function(){
-      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
-      T().returnToMG();
-    });
     T().wire('b-bb-mg', T().goMG);
 
     T().wire('bb-add-close', closeAddCard);
