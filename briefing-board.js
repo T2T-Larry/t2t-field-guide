@@ -128,7 +128,8 @@
   // convention. HHH is the most urgent thing on the board; LLL is the
   // least -- further from the center than plain H/L in both directions.
   var PRI_ORDER = {HHH:0, HH:1, H:2, M:3, L:4, LL:5, LLL:6};
-  var PRI_COLOR = {HHH:'#6b140c', HH:'#a3372b', H:'#c9673f', M:'#7A5C3A', L:'#c9a87c', LL:'#ddccae', LLL:'#efe7d6'};
+  var PRI_COLOR = {HHH:'#7a0000', HH:'#c0272a', H:'#e0776a', M:'#3F8F3F', L:'#e0c22e', LL:'#eeddaa', LLL:'#f8f2df'};
+  var PRI_TEXT = {HHH:'#fff', HH:'#fff', H:'#3B2510', M:'#fff', L:'#3B2510', LL:'#3B2510', LLL:'#3B2510'};
   // Click cycle per base letter -- each click on a button walks its own
   // sequence, wrapping to '' (cleared) at the end. Clicking a DIFFERENT
   // base letter always starts that one fresh at intensity 1, regardless
@@ -151,7 +152,35 @@
     {key:'clean',   label:'Clean',   head:'"Segoe UI",Helvetica,Arial,sans-serif', body:'"Segoe UI",Helvetica,Arial,sans-serif'}
   ];
 
-  var FLAG_COLOR = {red:'#a3372b', green:'#3F6B3A', blue:'#5b8fa3'};
+  var SIGNAL_SHAPES = ['circle','square','triangle','diamond','star'];
+  var SIGNAL_CLIP = {
+    triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+    diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+    star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+  };
+  function _bbShapeCSS(shape, color){
+    var css='background:'+color+';';
+    if(shape==='circle') css+='border-radius:50%;';
+    else if(shape==='square') css+='border-radius:2px;';
+    else if(SIGNAL_CLIP[shape]) css+='clip-path:'+SIGNAL_CLIP[shape]+';';
+    return css;
+  }
+  function _bbLoadSignalDef(){
+    var shape,color,meaning;
+    try{
+      shape=sessionStorage.getItem('bbSignalShape')||'circle';
+      color=sessionStorage.getItem('bbSignalColor')||'#a3372b';
+      meaning=sessionStorage.getItem('bbSignalMeaning')||'';
+    }catch(e){ shape='circle'; color='#a3372b'; meaning=''; }
+    return {shape:shape, color:color, meaning:meaning};
+  }
+  function _bbSaveSignalDef(def){
+    try{
+      sessionStorage.setItem('bbSignalShape', def.shape);
+      sessionStorage.setItem('bbSignalColor', def.color);
+      sessionStorage.setItem('bbSignalMeaning', def.meaning);
+    }catch(e){}
+  }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 
@@ -173,7 +202,7 @@
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, grow:false, reviewedBy:'', archived:false}
+      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', signal:false, priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
     ];
   }
   function _bbCardsList(){
@@ -367,7 +396,7 @@
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
       +'.bb-done-date{font-family:"Caveat",cursive;font-size:12px;color:#3F6B3A;text-align:right;margin-top:1px}'
-      +'.bb-heart-badge{position:absolute;bottom:2px;left:4px;font-size:13px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none}'
+      +'.bb-signal-badge{position:absolute;bottom:2px;left:4px;width:12px;height:12px;pointer-events:none;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:12px;color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
@@ -388,7 +417,8 @@
       +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
-      +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
+      +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn,.bb-shape-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font);display:flex;align-items:center;justify-content:center}'
+      +'.bb-shape-btn.bb-shape-active{background:var(--bb-bg);border-color:var(--bb-ink)}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
       +'#bb-d-verify.bb-flag-active{background:#3F6B3A;border-color:#3F6B3A}'
       +'#bb-d-pro.bb-flag-active{background:#c9a230;border-color:#c9a230}'
@@ -477,16 +507,10 @@
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Start date</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
-            +'<div class="bb-field"><label>Signal flag</label><div class="bb-flags">'
-              +'<button class="bb-flag-btn" data-flag="none">none</button>'
-              +'<button class="bb-flag-btn" data-flag="red">red</button>'
-              +'<button class="bb-flag-btn" data-flag="green">green</button>'
-              +'<button class="bb-flag-btn" data-flag="blue">blue</button>'
-            +'</div></div>'
             +'<div class="bb-field" style="text-align:center">'
-              +'<label>Resonance</label>'
-              +'<button class="bb-heart-pill" id="bb-d-heart" aria-label="Tap to add a heart, hold to remove one">'
-                +'<span style="color:#a3372b;font-size:13px">❤</span><span id="bb-d-heart-count">0</span>'
+              +'<label>Signal</label>'
+              +'<button class="bb-heart-pill" id="bb-d-signal">'
+                +'<span id="bb-d-signal-shape" style="display:inline-block;width:14px;height:14px"></span><span id="bb-d-signal-label">Tap to signal</span>'
               +'</button>'
             +'</div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
@@ -528,6 +552,11 @@
             +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
               +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
             +'</div></div>'
+            +'<div class="bb-field"><label>Signal shape</label><div class="bb-flags">'
+              +SIGNAL_SHAPES.map(function(s){ return '<button class="bb-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:inline-block;width:18px;height:18px;'+_bbShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
+            +'</div></div>'
+            +'<div class="bb-field"><label>Signal color</label><input type="color" id="bb-signal-color"></div>'
+            +'<div class="bb-field"><label>Signal meaning</label><input type="text" id="bb-signal-meaning" placeholder="What does this signal mean?"></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
@@ -558,6 +587,7 @@
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
+    var _signalDef=_bbLoadSignalDef();
     var cards=_bbCardsList().filter(function(c){ return !c.archived; });
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
@@ -585,10 +615,8 @@
         el.className='bb-card';
         el.draggable=true;
         el.setAttribute('data-id', c.id);
-        var flagColor = FLAG_COLOR[c.flag];
-        var showDot = c.person || flagColor;
-        var dotHTML = showDot ? ('<span class="bb-dot" style="background:'+(flagColor||'#9c8b73')+'">'+_esc(c.person||'')+'</span>') : '';
-        var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+'">'+c.priority+'</span>' : '';
+        var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73">'+_esc(c.person)+'</span>') : '';
+        var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -600,7 +628,7 @@
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
+          +(c.signal ? ('<div class="bb-signal-badge" style="'+_bbShapeCSS(_signalDef.shape,_signalDef.color)+'"></div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         target.appendChild(el);
@@ -655,7 +683,7 @@
       if(active){
         btns[i].style.background=PRI_COLOR[priority];
         btns[i].style.borderColor=PRI_COLOR[priority];
-        btns[i].style.color = priority==='LLL' ? '#7A5C3A' : '#fff'; // LLL's pale swatch needs dark text to stay legible
+        btns[i].style.color = PRI_TEXT[priority];
       } else {
         btns[i].style.background='';
         btns[i].style.borderColor='';
@@ -674,17 +702,12 @@
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-start').value=c.startDate||'';
     document.getElementById('bb-d-budget').value=c.budget||'';
-    var heartCountEl=document.getElementById('bb-d-heart-count');
-    if(heartCountEl) heartCountEl.textContent=c.hearts||0;
     document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
     document.getElementById('bb-d-grow-note').value=c.growNote||'';
     document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
-    var flags=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
-    for(var i=0;i<flags.length;i++){
-      flags[i].classList.toggle('bb-flag-active', flags[i].getAttribute('data-flag')===(c.flag||'none'));
-    }
+    _bbUpdateSignalUI(c);
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -745,26 +768,68 @@
     });
   }
 
-  function wireHeartPill(){
-    var heartBtn=document.getElementById('bb-d-heart');
-    var heartCountEl=document.getElementById('bb-d-heart-count');
-    if(!heartBtn) return;
-    var holdTimer=null, held=false;
-    function applyDelta(delta){
+  // Signal -- one traveler-defined shape+color+meaning per board (set in
+  // Board Settings), tapped on/off per card. Replaces the old Signal-flag
+  // (red/green/blue) and Resonance-heart systems -- Larry, July 20.
+  function _bbUpdateSignalUI(c){
+    var def=_bbLoadSignalDef();
+    var shapeEl=document.getElementById('bb-d-signal-shape');
+    var labelEl=document.getElementById('bb-d-signal-label');
+    var btn=document.getElementById('bb-d-signal');
+    if(shapeEl) shapeEl.setAttribute('style','display:inline-block;width:14px;height:14px;'+_bbShapeCSS(def.shape, def.color));
+    if(labelEl) labelEl.textContent = c.signal ? (def.meaning || 'Signaled') : 'Tap to signal';
+    if(btn) btn.classList.toggle('bb-flag-active', !!c.signal);
+  }
+
+  function wireSignalButton(){
+    T().wire('bb-d-signal', function(){
       var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
       if(!c) return;
-      c.hearts=Math.max(0,(c.hearts||0)+delta);
+      c.signal=!c.signal;
       _bbSaveLocal(_bbCardsList());
-      if(heartCountEl) heartCountEl.textContent=c.hearts;
+      _bbUpdateSignalUI(c);
+    });
+  }
+
+  function _bbHighlightSignalShape(shape){
+    var btns=document.querySelectorAll('#bb-settings-overlay .bb-shape-btn');
+    for(var i=0;i<btns.length;i++){
+      btns[i].classList.toggle('bb-shape-active', btns[i].getAttribute('data-shape')===shape);
     }
-    function startHold(){ held=false; holdTimer=setTimeout(function(){ held=true; applyDelta(-1); }, 550); }
-    function cancelHold(){ clearTimeout(holdTimer); }
-    heartBtn.addEventListener('mousedown', startHold);
-    heartBtn.addEventListener('touchstart', startHold);
-    heartBtn.addEventListener('mouseup', cancelHold);
-    heartBtn.addEventListener('mouseleave', cancelHold);
-    heartBtn.addEventListener('touchend', cancelHold);
-    heartBtn.addEventListener('click', function(){ if(!held) applyDelta(1); held=false; });
+  }
+
+  function wireSignalSettings(){
+    var def=_bbLoadSignalDef();
+    _bbHighlightSignalShape(def.shape);
+    var colorEl=document.getElementById('bb-signal-color');
+    var meaningEl=document.getElementById('bb-signal-meaning');
+    if(colorEl) colorEl.value=def.color;
+    if(meaningEl) meaningEl.value=def.meaning;
+
+    document.querySelectorAll('#bb-settings-overlay .bb-shape-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var d=_bbLoadSignalDef();
+        d.shape=btn.getAttribute('data-shape');
+        _bbSaveSignalDef(d);
+        _bbHighlightSignalShape(d.shape);
+        renderBoard();
+      });
+    });
+    if(colorEl){
+      colorEl.addEventListener('input', function(){
+        var d=_bbLoadSignalDef();
+        d.color=colorEl.value;
+        _bbSaveSignalDef(d);
+        renderBoard();
+      });
+    }
+    if(meaningEl){
+      meaningEl.addEventListener('blur', function(){
+        var d=_bbLoadSignalDef();
+        d.meaning=meaningEl.value;
+        _bbSaveSignalDef(d);
+      });
+    }
   }
 
   function wirePriorityButtons(){
@@ -863,28 +928,17 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, grow:false, reviewedBy:'', archived:false});
+      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', signal:false, priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
     });
 
     T().wire('bb-detail-close', closeCardDetail);
-    var flagBtns=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
-    for(var i=0;i<flagBtns.length;i++){
-      (function(btn){
-        btn.addEventListener('click', function(){
-          var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
-          if(c) c.flag=btn.getAttribute('data-flag');
-          var all=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
-          for(var j=0;j<all.length;j++) all[j].classList.remove('bb-flag-active');
-          btn.classList.add('bb-flag-active');
-        });
-      })(flagBtns[i]);
-    }
-    wireHeartPill();
+    wireSignalButton();
     wirePriorityButtons();
     wireReviewButtons();
+    wireSignalSettings();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
