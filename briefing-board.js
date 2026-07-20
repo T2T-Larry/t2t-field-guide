@@ -122,6 +122,7 @@
     {key:'hangups', label:'Hang-Ups'}
   ];
 
+  var REVIEWERS = ['Larry']; // stand-in list until the real roster exists
   var PRIORITY_BASE = ['H','M','L'];
   // Rank: lower number sorts higher (H-side), matching the old scale's
   // convention. HHH is the most urgent thing on the board; LLL is the
