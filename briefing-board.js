@@ -233,6 +233,50 @@
     });
   }
 
+  // Drag-by-header, July 20, 2026 -- Larry: New Card and Back of the
+  // Card should be movable "for visual convenience" (so the board
+  // underneath can be peeked at while one is open). Starts centered
+  // (the existing flex-centered default) every time it opens; only
+  // switches to an explicit fixed position once the traveler actually
+  // grabs the header bar and drags. Position resets on next open.
+  function _bbResetCardPosition(cardEl){
+    if(!cardEl) return;
+    cardEl.style.position=''; cardEl.style.left=''; cardEl.style.top=''; cardEl.style.margin='';
+  }
+  function _bbMakeDraggable(cardEl, headEl){
+    if(!cardEl || !headEl) return;
+    var dragging=false, startX=0, startY=0, startLeft=0, startTop=0;
+    function onDown(e){
+      if(e.target.closest('.bb-close')) return; // the X still just closes
+      var pt = e.touches ? e.touches[0] : e;
+      var rect=cardEl.getBoundingClientRect();
+      dragging=true;
+      startX=pt.clientX; startY=pt.clientY;
+      startLeft=rect.left; startTop=rect.top;
+      cardEl.style.position='fixed';
+      cardEl.style.margin='0';
+      cardEl.style.left=startLeft+'px';
+      cardEl.style.top=startTop+'px';
+      headEl.style.cursor='grabbing';
+      e.preventDefault();
+    }
+    function onMove(e){
+      if(!dragging) return;
+      var pt = e.touches ? e.touches[0] : e;
+      cardEl.style.left=(startLeft+(pt.clientX-startX))+'px';
+      cardEl.style.top=(startTop+(pt.clientY-startY))+'px';
+      e.preventDefault();
+    }
+    function onUp(){ dragging=false; headEl.style.cursor='grab'; }
+    headEl.style.cursor='grab';
+    headEl.addEventListener('mousedown', onDown);
+    headEl.addEventListener('touchstart', onDown, {passive:false});
+    document.addEventListener('mousemove', onMove, {passive:false});
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+  }
+
   function injectBriefingBoardStyles(){
     if(document.getElementById('bb-style')) return;
     var style=document.createElement('style');
@@ -262,7 +306,6 @@
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
       +'.bb-col-head{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
       +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
-      +'.bb-col-note{font-family:"Caveat",cursive;font-size:13px;color:var(--bb-sub);text-align:center;margin:0 0 6px}'
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
@@ -290,7 +333,7 @@
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
       +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
-      +'.bb-inline-field{display:flex;align-items:baseline;justify-content:center;gap:6px}'
+      +'.bb-inline-field{display:flex;align-items:baseline;justify-content:center;gap:6px;white-space:nowrap}'
       +'.bb-inline-field label{display:inline;margin:0}'
       +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:16px;color:var(--bb-sub)}'
       +'.bb-field input,.bb-field textarea{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
@@ -315,7 +358,7 @@
       +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
       +'.bb-overlay.active{display:flex}'
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
-      +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
+      +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:13px;color:var(--bb-ink)}'
       +'.bb-close:hover{background:var(--bb-bg)}';
@@ -364,6 +407,7 @@
         +'</div>';
       fg.appendChild(addOv);
       addOv.addEventListener('click', function(e){ if(e.target===addOv) closeAddCard(); });
+      _bbMakeDraggable(addOv.querySelector('.bb-overlay-card'), addOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-detail-overlay')){
       var detailOv=document.createElement('div');
@@ -398,6 +442,7 @@
         +'</div>';
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
+      _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-trash-overlay')){
       var trashOv=document.createElement('div');
@@ -462,9 +507,7 @@
       var col=document.createElement('div');
       col.className='bb-col';
       col.setAttribute('data-col', cd.key);
-      var note = cd.key==='done' ? '<div class="bb-col-note">stays here until reviewed</div>'
-               : cd.key==='hangups' ? '<div class="bb-col-note">a card here says &quot;help!&quot;</div>' : '';
-      col.innerHTML='<div class="bb-col-head">'+cd.label+'</div>'+note
+      col.innerHTML='<div class="bb-col-head">'+cd.label+'</div>'
         +'<div class="bb-col-cards" data-col="'+cd.key+'"></div>'
         +(cd.key==='do' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
@@ -498,7 +541,7 @@
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
-          +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">DONE: '+_esc(c.completedDate)+'</div>') : '')
+          +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
           +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
@@ -536,7 +579,8 @@
   function openAddCard(){
     var t=document.getElementById('bb-new-task'); if(t) t.value='';
     var d=document.getElementById('bb-new-due'); if(d) d.value='';
-    var ov=document.getElementById('bb-add-overlay'); if(ov) ov.classList.add('active');
+    var ov=document.getElementById('bb-add-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
 
   function closeAddCard(){
@@ -577,7 +621,8 @@
     for(var i=0;i<flags.length;i++){
       flags[i].classList.toggle('bb-flag-active', flags[i].getAttribute('data-flag')===(c.flag||'none'));
     }
-    var ov=document.getElementById('bb-detail-overlay'); if(ov) ov.classList.add('active');
+    var ov=document.getElementById('bb-detail-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
 
   function closeCardDetail(){
