@@ -105,7 +105,16 @@
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
       +'.bb-flags{display:flex;gap:6px}'
       +'.bb-flag-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid #C9A87C;background:#fff;cursor:pointer;color:#7A5C3A;font-family:Georgia,serif}'
-      +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}';
+      +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
+      /* Back of the Card (9370) and Add a Card (9360) inherit .isx-full's
+         100vw/100vh stage from the board (isx-full is never turned off
+         between these three screens, only when returning to the MG),
+         so the plain .card rule -- flex:1 in a flex column, no width cap --
+         stretched edge to edge. Pin these two to a width just past the
+         280px field frame (see .bb-field), centered, and let them use the
+         full-screen height instead of the normal 520px card cap: a tall,
+         narrow card, not a wide flat one. Logged July 20, 2026. */
+      +'#fg-root.isx-full #s-briefing-detail.active .card,#fg-root.isx-full #s-briefing-add.active .card{width:340px;max-width:340px;align-self:center;max-height:none}';
     document.head.appendChild(style);
   }
 
