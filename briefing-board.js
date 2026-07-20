@@ -117,9 +117,22 @@
     {key:'hangups', label:'Hang-Ups'}
   ];
 
-  var PRIORITIES = ['H','MH','M','ML','L'];
-  var PRI_ORDER = {H:0, MH:1, M:2, ML:3, L:4};
-  var PRI_COLOR = {H:'#a3372b', MH:'#c9743f', M:'#7A5C3A', ML:'#8fa9b8', L:'#c9a87c'};
+  var PRIORITY_BASE = ['H','M','L'];
+  // Rank: lower number sorts higher (H-side), matching the old scale's
+  // convention. HHH is the most urgent thing on the board; LLL is the
+  // least -- further from the center than plain H/L in both directions.
+  var PRI_ORDER = {HHH:0, HH:1, H:2, M:3, L:4, LL:5, LLL:6};
+  var PRI_COLOR = {HHH:'#6b140c', HH:'#a3372b', H:'#c9673f', M:'#7A5C3A', L:'#c9a87c', LL:'#ddccae', LLL:'#efe7d6'};
+  // Click cycle per base letter -- each click on a button walks its own
+  // sequence, wrapping to '' (cleared) at the end. Clicking a DIFFERENT
+  // base letter always starts that one fresh at intensity 1, regardless
+  // of what was selected before.
+  var PRI_CYCLE = { H:['H','HH','HHH',''], M:['M',''], L:['L','LL','LLL',''] };
+  function _bbNextPriority(current, base){
+    var seq=PRI_CYCLE[base];
+    var idx=seq.indexOf(current);
+    return idx===-1 ? seq[0] : seq[(idx+1)%seq.length];
+  }
 
   var THEMES = [
     {key:'gold',   label:'Gold',   bg:'#FDF6E8', accent:'#C9A87C', ink:'#3B2510', sub:'#7A5C3A'},
@@ -202,12 +215,12 @@
   // urgent. The card still shows whatever priority was actually set;
   // this effective rank is for sort order only.
   function _priRank(c){
-    var base = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 5;
+    var base = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
     var daysUntil = _bbDaysUntilOrInf(c);
     if(daysUntil===Infinity) return base;
-    if(daysUntil<=0) return Math.min(base, 0);   // due today or overdue -> at least H
-    if(daysUntil<=2) return Math.min(base, 1);   // due very soon -> at least MH
-    if(daysUntil<=5) return Math.min(base, 2);   // due soon -> at least M
+    if(daysUntil<=0) return Math.min(base, 0);   // due today or overdue -> at least HHH
+    if(daysUntil<=2) return Math.min(base, 1);   // due very soon -> at least HH
+    if(daysUntil<=5) return Math.min(base, 2);   // due soon -> at least H
     return base;
   }
 
@@ -440,7 +453,7 @@
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
-              +PRIORITIES.map(function(p){ return '<button class="bb-pri-btn" data-pri="'+p+'">'+p+'</button>'; }).join('')
+              +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
@@ -616,11 +629,13 @@
   function _bbHighlightPriority(priority){
     var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
     for(var i=0;i<btns.length;i++){
-      var p=btns[i].getAttribute('data-pri');
-      if(p===priority){
-        btns[i].style.background=PRI_COLOR[p];
-        btns[i].style.borderColor=PRI_COLOR[p];
-        btns[i].style.color='#fff';
+      var base=btns[i].getAttribute('data-pri-base');
+      var active = !!priority && priority.charAt(0)===base;
+      btns[i].textContent = active ? priority : base;
+      if(active){
+        btns[i].style.background=PRI_COLOR[priority];
+        btns[i].style.borderColor=PRI_COLOR[priority];
+        btns[i].style.color = priority==='LLL' ? '#7A5C3A' : '#fff'; // LLL's pale swatch needs dark text to stay legible
       } else {
         btns[i].style.background='';
         btns[i].style.borderColor='';
@@ -736,8 +751,8 @@
         btn.addEventListener('click', function(){
           var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
           if(!c) return;
-          var p=btn.getAttribute('data-pri');
-          c.priority = (c.priority===p) ? '' : p; // tap the active one again to clear it
+          var base=btn.getAttribute('data-pri-base');
+          c.priority=_bbNextPriority(c.priority||'', base);
           _bbSaveLocal(_bbCardsList());
           _bbHighlightPriority(c.priority);
           renderBoard();
