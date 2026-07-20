@@ -42,6 +42,15 @@
    count (tap to add, hold to remove, same gesture as the ISB's
    sb-heart-pill) on the back of the card, for resonance.
 
+   Priority, July 20, 2026 -- Larry's "3=5" principle: give a group
+   three choices (High/Medium/Low) and group discussion almost always
+   settles on five real answers, because disagreement between two
+   people's H and M becomes MH, between H and L becomes a clean M, etc.
+   So the scale here is H / MH / M / ML / L, not just three buttons.
+   Each column sorts by priority, H at the top, unset priority at the
+   bottom (not yet triaged) -- ties keep whatever order they already
+   had (stable sort), same as how the cards landed there.
+
    Persistence: sessionStorage for now, same local-fallback pattern
    Journal already uses (loadEntriesLocal/saveEntryLocal in
    backpack.js). Real per-traveler storage (a Supabase table,
@@ -59,6 +68,10 @@
     {key:'done',    label:'Done'},
     {key:'hangups', label:'Hang-Ups'}
   ];
+
+  var PRIORITIES = ['H','MH','M','ML','L'];
+  var PRI_ORDER = {H:0, MH:1, M:2, ML:3, L:4};
+  var PRI_COLOR = {H:'#a3372b', MH:'#c9743f', M:'#7A5C3A', ML:'#8fa9b8', L:'#c9a87c'};
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 
@@ -80,7 +93,7 @@
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none', hearts:0}
+      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none', hearts:0, priority:''}
     ];
   }
   function _bbCardsList(){
@@ -91,6 +104,8 @@
   function _esc(s){
     return String(s==null?'':s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
   }
+
+  function _priRank(c){ return PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 5; }
 
   function injectBriefingBoardStyles(){
     if(document.getElementById('bb-style')) return;
@@ -111,7 +126,9 @@
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed #C9A87C;outline-offset:2px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid #d9c9a3;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:Georgia,serif}'
-      +'.bb-card .bb-top{display:flex;justify-content:space-between;margin-bottom:3px}'
+      +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
+      +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
+      +'.bb-pri-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:13px;color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;flex-shrink:0}'
       +'.bb-card .bb-task{color:#3B2510;margin:2px 0 5px}'
@@ -134,8 +151,8 @@
       +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7A5C3A;margin-bottom:3px}'
       +'.bb-field input,.bb-field textarea{width:100%;font-family:Georgia,serif;font-size:14px;border:1.5px solid #C9A87C;border-radius:4px;padding:7px 8px;background:#fff;color:#3B2510;box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
-      +'.bb-flags{display:flex;gap:6px}'
-      +'.bb-flag-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid #C9A87C;background:#fff;cursor:pointer;color:#7A5C3A;font-family:Georgia,serif}'
+      +'.bb-flags,.bb-priorities{display:flex;gap:4px}'
+      +'.bb-flag-btn,.bb-pri-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid #C9A87C;background:#fff;cursor:pointer;color:#7A5C3A;font-family:Georgia,serif}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
       +'.bb-heart-pill{font-size:12px;padding:5px 10px;background:#fff;border:1.5px solid #C9A87C;border-radius:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#3B2510;font-family:Georgia,serif}'
       /* Overlay chrome for Add a Card (9360) / Back of the Card (9370),
@@ -165,7 +182,7 @@
     var div=document.createElement('div');
     div.innerHTML=
        '<div class="sc" id="s-briefing-board">'
-        +'<div class="bb-mhead"><div class="bb-mh">Briefing Board</div><div class="bb-mt">Do &middot; Doing &middot; Done &middot; Hang-Ups &mdash; what’s happening right now.</div></div>'
+        +'<div class="bb-mhead"><div class="bb-mh">Briefing Board</div><div class="bb-mt">A control and communication tool.</div></div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
         +'<div class="bar2"><button class="tb" id="b-bb-back">⬅️</button><button class="tb" id="b-bb-mg">🔍</button></div>'
@@ -203,6 +220,9 @@
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
             +'<div class="bb-field"><label>Notes / plussing</label><textarea id="bb-d-notes" placeholder="How could this go better next time?"></textarea></div>'
+            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
+              +PRIORITIES.map(function(p){ return '<button class="bb-pri-btn" data-pri="'+p+'">'+p+'</button>'; }).join('')
+            +'</div></div>'
             +'<div class="bb-field"><label>Signal flag</label><div class="bb-flags">'
               +'<button class="bb-flag-btn" data-flag="none">none</button>'
               +'<button class="bb-flag-btn" data-flag="red">red</button>'
@@ -264,21 +284,29 @@
         +(cd.key==='do' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
     });
-    cards.forEach(function(c){
-      var target=wrap.querySelector('.bb-col-cards[data-col="'+c.col+'"]');
+    // Each column sorts by priority -- H at the top, unset priority (not
+    // yet triaged) at the bottom -- ties keep their existing relative
+    // order (stable sort), same order the cards already landed in.
+    COLUMNS.forEach(function(cd){
+      var target=wrap.querySelector('.bb-col-cards[data-col="'+cd.key+'"]');
       if(!target) return;
-      var el=document.createElement('div');
-      el.className='bb-card';
-      el.draggable=true;
-      el.setAttribute('data-id', c.id);
-      var dot = c.flag==='red' ? '#a3372b' : '#3B2510';
-      el.innerHTML='<div class="bb-top"><span class="bb-date">'+_esc(c.assigned)+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
-        +'<div class="bb-task">'+_esc(c.task)+'</div>'
-        +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+_esc(c.due||'')+'</span></div>'
-        +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
-        +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
-      el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
-      target.appendChild(el);
+      var colCards=cards.filter(function(c){ return c.col===cd.key; });
+      colCards.sort(function(a,b){ return _priRank(a)-_priRank(b); });
+      colCards.forEach(function(c){
+        var el=document.createElement('div');
+        el.className='bb-card';
+        el.draggable=true;
+        el.setAttribute('data-id', c.id);
+        var dot = c.flag==='red' ? '#a3372b' : '#3B2510';
+        var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+'">'+c.priority+'</span>' : '';
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+'<span class="bb-date">'+_esc(c.assigned)+'</span></span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
+          +'<div class="bb-task">'+_esc(c.task)+'</div>'
+          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+_esc(c.due||'')+'</span></div>'
+          +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
+          +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
+        el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
+        target.appendChild(el);
+      });
     });
     wrap.querySelectorAll('.bb-corner').forEach(function(el){
       el.addEventListener('click', function(e){
@@ -318,6 +346,22 @@
     var ov=document.getElementById('bb-add-overlay'); if(ov) ov.classList.remove('active');
   }
 
+  function _bbHighlightPriority(priority){
+    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
+    for(var i=0;i<btns.length;i++){
+      var p=btns[i].getAttribute('data-pri');
+      if(p===priority){
+        btns[i].style.background=PRI_COLOR[p];
+        btns[i].style.borderColor=PRI_COLOR[p];
+        btns[i].style.color='#fff';
+      } else {
+        btns[i].style.background='';
+        btns[i].style.borderColor='';
+        btns[i].style.color='';
+      }
+    }
+  }
+
   function openCardDetail(id){
     _bbOpenCardId=id;
     var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
@@ -329,6 +373,7 @@
     document.getElementById('bb-d-notes').value=c.notes||'';
     var heartCountEl=document.getElementById('bb-d-heart-count');
     if(heartCountEl) heartCountEl.textContent=c.hearts||0;
+    _bbHighlightPriority(c.priority||'');
     var flags=document.querySelectorAll('#bb-detail-overlay .bb-flag-btn');
     for(var i=0;i<flags.length;i++){
       flags[i].classList.toggle('bb-flag-active', flags[i].getAttribute('data-flag')===(c.flag||'none'));
@@ -404,6 +449,23 @@
     heartBtn.addEventListener('click', function(){ if(!held) applyDelta(1); held=false; });
   }
 
+  function wirePriorityButtons(){
+    var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
+    for(var i=0;i<btns.length;i++){
+      (function(btn){
+        btn.addEventListener('click', function(){
+          var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+          if(!c) return;
+          var p=btn.getAttribute('data-pri');
+          c.priority = (c.priority===p) ? '' : p; // tap the active one again to clear it
+          _bbSaveLocal(_bbCardsList());
+          _bbHighlightPriority(c.priority);
+          renderBoard();
+        });
+      })(btns[i]);
+    }
+  }
+
   function wireBriefingBoard(){
     T().wire('b-bb-back', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
@@ -418,7 +480,7 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none', hearts:0});
+      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none', hearts:0, priority:''});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
@@ -438,6 +500,7 @@
       })(flagBtns[i]);
     }
     wireHeartPill();
+    wirePriorityButtons();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
