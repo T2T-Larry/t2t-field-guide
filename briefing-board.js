@@ -57,13 +57,12 @@
    down) even past its stated priority.
 
    Topic + appearance + Date Added, July 20, 2026:
-   - #bb-topic-bar: a large, centered, always-WHITE (not themeable --
-     deliberately the one constant regardless of color choice) title
-     bar above the existing "Briefing Board" wordmark, so whichever
+   - #bb-topic-pill: a rounded, always-WHITE (not themeable -- the one
+     constant regardless of color choice) fill-in-the-blank name, right
+     next to the "Briefing Board" title on the SAME row (not its own
+     bar -- folded in July 20 to save vertical board space) so whichever
      specific board this is (Personal / a project's / the company's /
-     a department's) reads unmistakably at a glance. Plain fill-in-the-
-     blank text (Larry, July 20: we don't care what KIND of board it
-     is, so no fixed category list) -- tap to edit, saved on blur.
+     a department's) reads at a glance. Tap to edit, saved on blur.
    - Gear icon opens bb-settings-overlay: a handful of preset color
      themes plus a Classic/Clean font choice, applied as CSS custom
      properties on #fg-root (so both the board and its sibling overlays
@@ -242,21 +241,22 @@
        '#fg-root{--bb-bg:#FDF6E8;--bb-accent:#C9A87C;--bb-ink:#3B2510;--bb-sub:#7A5C3A;--bb-head-font:"Playfair Display",serif;--bb-body-font:Georgia,serif}'
       +'#s-briefing-board{position:relative}'
       +'#fg-root.isx-full #s-briefing-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:column}'
-      /* Topic bar, July 20, 2026 -- deliberately always plain white
-         (not themeable) so it reads as a fixed nameplate regardless of
-         which color theme is active underneath it. Three-part flex row
-         (spacer / text / icons) so the centered text stays truly
-         centered no matter how many icons sit on the right. */
-      +'#bb-topic-bar{background:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:2px solid var(--bb-accent)}'
-      +'#bb-topic-spacer{width:72px;flex-shrink:0}'
-      +'#bb-topic-text{flex:1;text-align:center;font-family:var(--bb-head-font);font-size:26px;font-weight:700;color:var(--bb-ink);outline:none;cursor:text;padding:2px 8px;min-height:1.3em}'
-      +'#bb-topic-text:empty:before{content:attr(data-placeholder);color:#c2b8a3;font-style:italic;font-weight:400}'
-      +'#bb-topic-actions{display:flex;gap:8px;flex-shrink:0}'
-      +'.bb-icon-btn{width:32px;height:32px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--bb-ink);padding:0}'
+      /* Header, July 20 2026 -- Topic folded into the SAME row as the
+         title (a rounded pill, still always plain white so it stands
+         out against whichever theme background is active) instead of
+         its own bar above it, per Larry: don't spend a whole extra row
+         of vertical board space on it. Gear + X ride along on the
+         right of that same row. */
+      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px 8px;flex-shrink:0}'
+      +'.bb-mhead-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}'
+      +'.bb-mh-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
+      +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
+      +'#bb-topic-pill{background:#fff;border:1.5px solid var(--bb-accent);border-radius:999px;padding:4px 14px;font-family:var(--bb-head-font);font-size:15px;font-weight:700;color:var(--bb-ink);cursor:text;outline:none;min-width:40px}'
+      +'#bb-topic-pill:empty:before{content:attr(data-placeholder);color:#c2b8a3;font-style:italic;font-weight:400}'
+      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0}'
+      +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
-      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px 10px;flex-shrink:0}'
-      +'.bb-mh{color:var(--bb-ink);font-size:26px;font-weight:700;line-height:1;padding-bottom:6px;font-family:var(--bb-head-font)}'
-      +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic}'
+      +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic;padding-top:4px}'
       +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex}'
       +'#bb-cols{display:flex;gap:14px;height:100%}'
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
@@ -274,6 +274,7 @@
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
+      +'.bb-done-date{font-family:"Caveat",cursive;font-size:12px;color:#3F6B3A;text-align:right;margin-top:1px}'
       +'.bb-heart-badge{position:absolute;bottom:2px;left:4px;font-size:13px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
@@ -289,6 +290,9 @@
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
       +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
+      +'.bb-inline-field{display:flex;align-items:baseline;justify-content:center;gap:6px}'
+      +'.bb-inline-field label{display:inline;margin:0}'
+      +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:16px;color:var(--bb-sub)}'
       +'.bb-field input,.bb-field textarea{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
@@ -326,15 +330,16 @@
     var div=document.createElement('div');
     div.innerHTML=
        '<div class="sc" id="s-briefing-board">'
-        +'<div id="bb-topic-bar">'
-          +'<div id="bb-topic-spacer"></div>'
-          +'<div id="bb-topic-text" contenteditable="true" spellcheck="false" data-placeholder="Name this board…"></div>'
-          +'<div id="bb-topic-actions">'
-            +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
-            +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
+        +'<div class="bb-mhead">'
+          +'<div class="bb-mhead-top">'
+            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><span id="bb-topic-pill" contenteditable="true" spellcheck="false" data-placeholder="Name this board…"></span></div>'
+            +'<div class="bb-mhead-actions">'
+              +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
+              +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
+            +'</div>'
           +'</div>'
+          +'<div class="bb-mt">A control and communication tool.</div>'
         +'</div>'
-        +'<div class="bb-mhead"><div class="bb-mh">Briefing Board</div><div class="bb-mt">A control and communication tool.</div></div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
         +'<div class="bar2"><button class="tb" id="b-bb-back">⬅️</button><button class="tb" id="b-bb-mg">🔍</button></div>'
@@ -367,7 +372,7 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Back of the Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
-            +'<div class="bb-field" style="text-align:center"><label>Date Added</label><div id="bb-d-added" style="font-family:\'Caveat\',cursive;font-size:16px;color:var(--bb-sub)">&mdash;</div></div>'
+            +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
@@ -434,8 +439,8 @@
 
     // Restore the saved Topic name and appearance the moment the DOM
     // exists -- doesn't need to wait for the board to become the active
-    // screen, since #bb-topic-bar/settings live inside it regardless.
-    var topicEl=document.getElementById('bb-topic-text');
+    // screen, since #bb-topic-pill/settings live inside it regardless.
+    var topicEl=document.getElementById('bb-topic-pill');
     if(topicEl) topicEl.textContent=_bbLoadTopic();
     _bbApplyTheme(_bbCurrentTheme());
     _bbApplyFont(_bbCurrentFont());
@@ -492,7 +497,8 @@
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
-          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+_esc(c.due||'')+'</span></div>'
+          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
+          +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">DONE: '+_esc(c.completedDate)+'</div>') : '')
           +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
@@ -669,7 +675,7 @@
   }
 
   function wireTopicBar(){
-    var topicEl=document.getElementById('bb-topic-text');
+    var topicEl=document.getElementById('bb-topic-pill');
     if(topicEl){
       topicEl.addEventListener('blur', function(){ _bbSaveTopic(topicEl.textContent.trim()); });
       topicEl.addEventListener('keydown', function(e){
