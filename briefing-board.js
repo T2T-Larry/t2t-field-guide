@@ -81,20 +81,23 @@
      though it was pulled off the card face itself.
 
    Review + Archive, July 20, 2026 -- "A DONE card remains on the board
-   until reviewed." Larry's own PRO/GROW vocabulary: a forced Verified
-   complete check (the gate -- nothing archives without it), an optional
-   PRO / Gold Star on top of that for superlative work, and GROW is just
-   the existing Notes field relabeled (it already asked "how could this
-   go better next time," which is exactly a GROW prompt -- no duplicate
-   field needed). "Reviewed by" is a plain text stand-in for now (no
-   real team roster yet -- see the held team-roster discussion); revisit
-   once real accounts/roles exist. Archiving hides a card from the board
-   entirely (out of the 4 columns, kept in storage as history) rather
-   than opening a full browsable Archive screen yet -- Touch Point 9380
-   stays reserved for that if/when it's wanted. Dragging a Done card
-   back out to any other column retracts the claim: completed date,
-   Verified, and Gold Star all clear (GROW notes stay -- feedback
-   doesn't expire just because the card reopened).
+   until reviewed." Larry's own PRO/GROW vocabulary, refined same day:
+   PRO and GROW are both just performance-eval flags (click to tag,
+   same one-tap pattern as Signal flag) -- no separate free-text field,
+   they ARE the eval. Verified complete is the only thing that signals
+   removal to the archive -- no separate Archive button; checking it
+   while the card is actually sitting in Done archives it on the spot.
+   Elsewhere it's a quiet no-op -- another hidden Mickey, per Larry:
+   every action still exists for later without being explained. Priority
+   sits above Task now (first thing a reviewer or traveler sees).
+   "Reviewed by" is a plain text stand-in for now (no real team roster
+   yet -- see the held team-roster discussion); revisit once real
+   accounts/roles exist. Archiving hides a card from the board entirely
+   (out of the 4 columns, kept in storage as history) rather than
+   opening a full browsable Archive screen yet -- Touch Point 9380 stays
+   reserved for that if/when it's wanted. Dragging a Done card back out
+   to any other column retracts the whole judgment: completed date,
+   Verified, PRO, and GROW all clear together.
 
    Persistence: sessionStorage for now, same local-fallback pattern
    Journal already uses (loadEntriesLocal/saveEntryLocal in
@@ -149,7 +152,7 @@
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', notes:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, reviewedBy:'', archived:false}
+      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, grow:false, reviewedBy:'', archived:false}
     ];
   }
   function _bbCardsList(){
@@ -359,7 +362,7 @@
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
       +'#bb-d-verify.bb-flag-active{background:#3F6B3A;border-color:#3F6B3A}'
       +'#bb-d-pro.bb-flag-active{background:#c9a230;border-color:#c9a230}'
-      +'#bb-d-archive:disabled{opacity:.4;cursor:not-allowed}'
+      +'#bb-d-grow.bb-flag-active{background:#4a7a95;border-color:#4a7a95}'
       +'.bb-font-btn.bb-flag-active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
       +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
@@ -436,15 +439,14 @@
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Back of the Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
+            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
+              +PRIORITIES.map(function(p){ return '<button class="bb-pri-btn" data-pri="'+p+'">'+p+'</button>'; }).join('')
+            +'</div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Start date &mdash; leave blank to auto-stamp the moment it moves to Doing</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
-            +'<div class="bb-field"><label>GROW &mdash; suggestions for next time</label><textarea id="bb-d-notes" placeholder="What would make this even better next time?"></textarea></div>'
-            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
-              +PRIORITIES.map(function(p){ return '<button class="bb-pri-btn" data-pri="'+p+'">'+p+'</button>'; }).join('')
-            +'</div></div>'
             +'<div class="bb-field"><label>Signal flag</label><div class="bb-flags">'
               +'<button class="bb-flag-btn" data-flag="none">none</button>'
               +'<button class="bb-flag-btn" data-flag="red">red</button>'
@@ -458,11 +460,9 @@
               +'</button>'
             +'</div>'
             +'<div class="bb-field"><label>Reviewed by</label><input id="bb-d-reviewer" type="text" placeholder="Who\'s signing off"></div>'
-            +'<div class="bb-field" style="text-align:center"><label>Review</label><div class="bb-flags">'
-              +'<button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified complete</button>'
-              +'<button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO / Gold Star</button>'
-            +'</div></div>'
-            +'<button class="jb" id="bb-d-archive" disabled>Archive to history</button>'
+            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button></div></div>'
+            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button></div></div>'
+            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified complete</button></div></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(detailOv);
@@ -592,7 +592,7 @@
           c.col=zone.getAttribute('data-col');
           if(c.col==='doing' && wasCol==='do' && !c.startDate) c.startDate=_bbToday();
           if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
-          if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; }
+          if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -639,7 +639,6 @@
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-start').value=c.startDate||'';
     document.getElementById('bb-d-budget').value=c.budget||'';
-    document.getElementById('bb-d-notes').value=c.notes||'';
     var heartCountEl=document.getElementById('bb-d-heart-count');
     if(heartCountEl) heartCountEl.textContent=c.hearts||0;
     document.getElementById('bb-d-reviewer').value=c.reviewedBy||'';
@@ -661,7 +660,6 @@
       c.due=document.getElementById('bb-d-due').value;
       c.startDate=document.getElementById('bb-d-start').value;
       c.budget=document.getElementById('bb-d-budget').value;
-      c.notes=document.getElementById('bb-d-notes').value;
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
       _bbSaveLocal(_bbCardsList());
     }
@@ -773,32 +771,39 @@
   function _bbUpdateReviewUI(c){
     var vBtn=document.getElementById('bb-d-verify');
     var pBtn=document.getElementById('bb-d-pro');
-    var aBtn=document.getElementById('bb-d-archive');
+    var gBtn=document.getElementById('bb-d-grow');
     if(vBtn) vBtn.classList.toggle('bb-flag-active', !!c.verified);
     if(pBtn) pBtn.classList.toggle('bb-flag-active', !!c.pro);
-    if(aBtn) aBtn.disabled = !(c.verified && c.col==='done');
+    if(gBtn) gBtn.classList.toggle('bb-flag-active', !!c.grow);
   }
 
   function wireReviewButtons(){
-    T().wire('bb-d-verify', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
-      if(!c) return;
-      c.verified=!c.verified;
-      if(!c.verified) c.pro=false; // can't be a Gold Star if it isn't even verified
-      _bbSaveLocal(_bbCardsList());
-      _bbUpdateReviewUI(c);
-    });
+    // PRO and GROW are performance-eval tags -- click to flag, click
+    // again to clear, same pattern as Signal flag. Neither one gates
+    // anything; they just ride along on the card's history.
     T().wire('bb-d-pro', function(){
       var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
       if(!c) return;
       c.pro=!c.pro;
-      if(c.pro) c.verified=true; // a Gold Star implies verified complete
       _bbSaveLocal(_bbCardsList());
       _bbUpdateReviewUI(c);
     });
-    T().wire('bb-d-archive', function(){
+    T().wire('bb-d-grow', function(){
       var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
-      if(!c || !c.verified || c.col!=='done') return;
+      if(!c) return;
+      c.grow=!c.grow;
+      _bbSaveLocal(_bbCardsList());
+      _bbUpdateReviewUI(c);
+    });
+    // Verified complete is the ONLY thing that signals removal to the
+    // archive -- Larry, July 20: no separate Archive button needed.
+    // Only does anything while the card is actually sitting in Done;
+    // elsewhere it's a quiet no-op (another hidden Mickey -- the action
+    // exists for later, nothing to explain about it now).
+    T().wire('bb-d-verify', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c || c.col!=='done') return;
+      c.verified=true;
       c.archived=true;
       _bbSaveLocal(_bbCardsList());
       closeCardDetail();
@@ -819,7 +824,7 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', notes:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, reviewedBy:'', archived:false});
+      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', flag:'none', hearts:0, priority:'', verified:false, pro:false, grow:false, reviewedBy:'', archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
