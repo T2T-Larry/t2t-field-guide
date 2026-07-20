@@ -263,6 +263,7 @@
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
+            +'<div class="bb-field"><label>Start date &mdash; leave blank to auto-stamp the moment it moves to Doing</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
             +'<div class="bb-field"><label>Notes / plussing</label><textarea id="bb-d-notes" placeholder="How could this go better next time?"></textarea></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
@@ -348,7 +349,13 @@
         el.setAttribute('data-id', c.id);
         var dot = c.flag==='red' ? '#a3372b' : '#3B2510';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+'">'+c.priority+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+'<span class="bb-date">'+_esc(c.assigned)+'</span></span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
+        // Larry, July 20, 2026: no date shown at all until a START DATE
+        // exists (manually set in advance, or auto-stamped the moment
+        // this card first moves into Doing) -- the quieter "date added
+        // to the board" (c.assigned) is still recorded for later, just
+        // not displayed; not important enough to take up card-face space.
+        var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+_esc(c.due||'')+'</span></div>'
           +(c.hearts?('<div class="bb-heart-badge">'+(c.hearts>=2?'💕':'❤️')+'</div>'):'')
@@ -418,6 +425,7 @@
     document.getElementById('bb-d-task').value=c.task||'';
     document.getElementById('bb-d-person').value=c.person||'';
     document.getElementById('bb-d-due').value=c.due||'';
+    document.getElementById('bb-d-start').value=c.startDate||'';
     document.getElementById('bb-d-budget').value=c.budget||'';
     document.getElementById('bb-d-notes').value=c.notes||'';
     var heartCountEl=document.getElementById('bb-d-heart-count');
@@ -436,6 +444,7 @@
       c.task=document.getElementById('bb-d-task').value;
       c.person=document.getElementById('bb-d-person').value;
       c.due=document.getElementById('bb-d-due').value;
+      c.startDate=document.getElementById('bb-d-start').value;
       c.budget=document.getElementById('bb-d-budget').value;
       c.notes=document.getElementById('bb-d-notes').value;
       _bbSaveLocal(_bbCardsList());
