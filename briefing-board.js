@@ -28,7 +28,10 @@
    already uses for its own DETAILS card (sb-detail-overlay). Per the
    July 19 rule, overlay screens still get their own Touch Point number,
    they just don't call nav() to get it -- see backpack.js's page-toast
-   detection for where 9360/9370 get recognized while active.
+   detection for where 9360/9370 get recognized while active. A third
+   overlay, bb-settings-overlay (colors/fonts), joined July 20 -- it
+   never carries traveler data, just an appearance choice, so it isn't
+   its own Touch Point.
    9380/9390 held in reserve (a Done archive, automation settings,
    whatever earns its place later).
 
@@ -49,7 +52,34 @@
    So the scale here is H / MH / M / ML / L, not just three buttons.
    Each column sorts by priority, H at the top, unset priority at the
    bottom (not yet triaged) -- ties keep whatever order they already
-   had (stable sort), same as how the cards landed there.
+   had (stable sort), same as how the cards landed there. A near or
+   passed due date can also pull a card's effective sort rank up (never
+   down) even past its stated priority.
+
+   Topic + appearance + Date Added, July 20, 2026:
+   - #bb-topic-bar: a large, centered, always-WHITE (not themeable --
+     deliberately the one constant regardless of color choice) title
+     bar above the existing "Briefing Board" wordmark, so whichever
+     specific board this is (Personal / a project's / the company's /
+     a department's) reads unmistakably at a glance. Plain fill-in-the-
+     blank text (Larry, July 20: we don't care what KIND of board it
+     is, so no fixed category list) -- tap to edit, saved on blur.
+   - Gear icon opens bb-settings-overlay: a handful of preset color
+     themes plus a Classic/Clean font choice, applied as CSS custom
+     properties on #fg-root (so both the board and its sibling overlays
+     pick them up) and remembered in sessionStorage. Deliberately presets
+     rather than a full color/font picker -- keeps this buildable now;
+     revisit if Larry wants finer control later. The semantic colors
+     (Hang-Ups red, flag colors, priority H-L gradient, heart red) stay
+     fixed on purpose -- they carry meaning, a theme swap shouldn't
+     change what "urgent" looks like.
+   - X (bb-close-x) sits next to the gear, upper-right, as another way
+     to close the board straight to the MG -- same action as the
+     existing bar2 back arrow, just also available at the top per
+     Larry's ask. The bar2 arrow stays too; not asked to remove it.
+   - Date Added (c.assigned, already silently stamped at creation) now
+     shows read-only on the back of the card -- useful there even
+     though it was pulled off the card face itself.
 
    Persistence: sessionStorage for now, same local-fallback pattern
    Journal already uses (loadEntriesLocal/saveEntryLocal in
@@ -72,6 +102,17 @@
   var PRIORITIES = ['H','MH','M','ML','L'];
   var PRI_ORDER = {H:0, MH:1, M:2, ML:3, L:4};
   var PRI_COLOR = {H:'#a3372b', MH:'#c9743f', M:'#7A5C3A', ML:'#8fa9b8', L:'#c9a87c'};
+
+  var THEMES = [
+    {key:'gold',   label:'Gold',   bg:'#FDF6E8', accent:'#C9A87C', ink:'#3B2510', sub:'#7A5C3A'},
+    {key:'forest', label:'Forest', bg:'#EFF5EC', accent:'#8FBE8A', ink:'#1F3A1A', sub:'#3F6B3A'},
+    {key:'ocean',  label:'Ocean',  bg:'#EAF3FB', accent:'#6FA8D9', ink:'#16324A', sub:'#3A6485'},
+    {key:'rose',   label:'Rose',   bg:'#FBEFF2', accent:'#D98FA8', ink:'#4A1F2E', sub:'#7A4054'}
+  ];
+  var FONTS = [
+    {key:'classic', label:'Classic', head:'"Playfair Display",serif', body:'Georgia,serif'},
+    {key:'clean',   label:'Clean',   head:'"Segoe UI",Helvetica,Arial,sans-serif', body:'"Segoe UI",Helvetica,Arial,sans-serif'}
+  ];
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
 
@@ -152,70 +193,128 @@
     return base;
   }
 
+  function _bbLoadTopic(){
+    try{ return sessionStorage.getItem('bbTopic')||''; }catch(e){ return ''; }
+  }
+  function _bbSaveTopic(text){
+    try{ sessionStorage.setItem('bbTopic', text); }catch(e){}
+  }
+
+  function _bbApplyTheme(themeKey){
+    var t=THEMES.filter(function(x){ return x.key===themeKey; })[0]; if(!t) return;
+    var fgr=document.getElementById('fg-root'); if(!fgr) return;
+    fgr.style.setProperty('--bb-bg', t.bg);
+    fgr.style.setProperty('--bb-accent', t.accent);
+    fgr.style.setProperty('--bb-ink', t.ink);
+    fgr.style.setProperty('--bb-sub', t.sub);
+    try{ sessionStorage.setItem('bbTheme', themeKey); }catch(e){}
+    _bbHighlightAppearance();
+  }
+  function _bbApplyFont(fontKey){
+    var f=FONTS.filter(function(x){ return x.key===fontKey; })[0]; if(!f) return;
+    var fgr=document.getElementById('fg-root'); if(!fgr) return;
+    fgr.style.setProperty('--bb-head-font', f.head);
+    fgr.style.setProperty('--bb-body-font', f.body);
+    try{ sessionStorage.setItem('bbFont', fontKey); }catch(e){}
+    _bbHighlightAppearance();
+  }
+  function _bbCurrentTheme(){
+    try{ return sessionStorage.getItem('bbTheme')||'gold'; }catch(e){ return 'gold'; }
+  }
+  function _bbCurrentFont(){
+    try{ return sessionStorage.getItem('bbFont')||'classic'; }catch(e){ return 'classic'; }
+  }
+  function _bbHighlightAppearance(){
+    var curTheme=_bbCurrentTheme(), curFont=_bbCurrentFont();
+    document.querySelectorAll('.bb-theme-swatch').forEach(function(el){
+      el.classList.toggle('bb-swatch-active', el.getAttribute('data-theme')===curTheme);
+    });
+    document.querySelectorAll('.bb-font-btn').forEach(function(el){
+      el.classList.toggle('bb-flag-active', el.getAttribute('data-font')===curFont);
+    });
+  }
+
   function injectBriefingBoardStyles(){
     if(document.getElementById('bb-style')) return;
     var style=document.createElement('style');
     style.id='bb-style';
     style.textContent=
-       '#s-briefing-board{position:relative}'
+       '#fg-root{--bb-bg:#FDF6E8;--bb-accent:#C9A87C;--bb-ink:#3B2510;--bb-sub:#7A5C3A;--bb-head-font:"Playfair Display",serif;--bb-body-font:Georgia,serif}'
+      +'#s-briefing-board{position:relative}'
       +'#fg-root.isx-full #s-briefing-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:column}'
-      +'.bb-mhead{background:#FDF6E8;border-bottom:3px solid #C9A87C;padding:14px 20px 10px;flex-shrink:0}'
-      +'.bb-mh{color:#3B2510;font-size:32px;font-weight:700;line-height:1;padding-bottom:6px;font-family:"Playfair Display",serif}'
-      +'.bb-mt{color:#7A5C3A;font-size:13px;font-style:italic}'
-      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:#FDF6E8;display:flex}'
+      /* Topic bar, July 20, 2026 -- deliberately always plain white
+         (not themeable) so it reads as a fixed nameplate regardless of
+         which color theme is active underneath it. Three-part flex row
+         (spacer / text / icons) so the centered text stays truly
+         centered no matter how many icons sit on the right. */
+      +'#bb-topic-bar{background:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;border-bottom:2px solid var(--bb-accent)}'
+      +'#bb-topic-spacer{width:72px;flex-shrink:0}'
+      +'#bb-topic-text{flex:1;text-align:center;font-family:var(--bb-head-font);font-size:26px;font-weight:700;color:var(--bb-ink);outline:none;cursor:text;padding:2px 8px;min-height:1.3em}'
+      +'#bb-topic-text:empty:before{content:attr(data-placeholder);color:#c2b8a3;font-style:italic;font-weight:400}'
+      +'#bb-topic-actions{display:flex;gap:8px;flex-shrink:0}'
+      +'.bb-icon-btn{width:32px;height:32px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--bb-ink);padding:0}'
+      +'.bb-icon-btn:hover{background:var(--bb-bg)}'
+      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px 10px;flex-shrink:0}'
+      +'.bb-mh{color:var(--bb-ink);font-size:26px;font-weight:700;line-height:1;padding-bottom:6px;font-family:var(--bb-head-font)}'
+      +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic}'
+      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex}'
       +'#bb-cols{display:flex;gap:14px;height:100%}'
-      +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid #C9A87C;border-radius:8px;padding:8px}'
-      +'.bb-col-head{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FDF6E8;background:#3B2510;border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
-      +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b}'
-      +'.bb-col-note{font-family:"Caveat",cursive;font-size:13px;color:#7A5C3A;text-align:center;margin:0 0 6px}'
+      +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
+      +'.bb-col-head{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
+      +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
+      +'.bb-col-note{font-family:"Caveat",cursive;font-size:13px;color:var(--bb-sub);text-align:center;margin:0 0 6px}'
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
-      +'.bb-col-cards.bb-dragover{outline:2px dashed #C9A87C;outline-offset:2px}'
-      +'.bb-card{position:relative;background:#FFFDF7;border:1px solid #d9c9a3;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:Georgia,serif}'
+      +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
+      +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
       +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
       +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
       +'.bb-pri-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:13px;color:#6b4a2e}'
-      +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;flex-shrink:0}'
-      +'.bb-card .bb-task{color:#3B2510;margin:2px 0 5px}'
-      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:#7A5C3A;min-height:12px}'
+      +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
+      +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px}'
+      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
       +'.bb-heart-badge{position:absolute;bottom:2px;left:4px;font-size:13px;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:none}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
-      +'.bb-add-tile{border:1.5px dashed #C9A87C;border-radius:3px;text-align:center;padding:8px;font-size:12px;color:#6b4a2e;cursor:pointer;font-family:Georgia,serif}'
+      +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:12px;color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
       +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
       /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
          bottom-right" convention as 9711's isx-trash-fixed. Anchored to
          #s-briefing-board itself (not #bb-board-wrap, which scrolls
          horizontally on narrow screens) so it never drifts off with the
          columns and never has to fight the bar2 strip below it. */
-      +'.bb-trash{position:absolute;right:16px;bottom:76px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid #3B2510;box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
+      +'.bb-trash{position:absolute;right:16px;bottom:76px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid var(--bb-ink);box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
       +'.bb-trash.bb-trash-dropready{outline:2px solid #a3372b;outline-offset:2px}'
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
-      +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7A5C3A;margin-bottom:3px}'
-      +'.bb-field input,.bb-field textarea{width:100%;font-family:Georgia,serif;font-size:14px;border:1.5px solid #C9A87C;border-radius:4px;padding:7px 8px;background:#fff;color:#3B2510;box-sizing:border-box}'
+      +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
+      +'.bb-field input,.bb-field textarea{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
-      +'.bb-flags,.bb-priorities{display:flex;gap:4px}'
-      +'.bb-flag-btn,.bb-pri-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid #C9A87C;background:#fff;cursor:pointer;color:#7A5C3A;font-family:Georgia,serif}'
+      +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
+      +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
-      +'.bb-heart-pill{font-size:12px;padding:5px 10px;background:#fff;border:1.5px solid #C9A87C;border-radius:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:#3B2510;font-family:Georgia,serif}'
-      /* Overlay chrome for Add a Card (9360) / Back of the Card (9370),
-         July 20, 2026 -- same "fixed, dimmed backdrop, click-outside-
-         closes" pattern as idea-storyboard-9710.js's .sb-overlay. Lives
-         at #fg-root level (see injectBriefingBoardScreens), not inside
-         #s-briefing-board, for the same reason 9710's overlays live at
-         fg-root: a display:none ancestor (the board when it's not the
-         active screen) would hide a position:fixed child too. Card is
-         pinned to 340px -- just past the 280px field frame -- and tall
-         rather than wide, scrolling internally if content runs long. */
+      +'.bb-font-btn.bb-flag-active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
+      +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
+      +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
+      +'.bb-heart-pill{font-size:12px;padding:5px 10px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--bb-ink);font-family:var(--bb-body-font)}'
+      /* Overlay chrome for Add a Card (9360) / Back of the Card (9370) /
+         Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
+         click-outside-closes" pattern as idea-storyboard-9710.js's
+         .sb-overlay. Lives at #fg-root level (see
+         injectBriefingBoardScreens), not inside #s-briefing-board, for
+         the same reason 9710's overlays live at fg-root: a display:none
+         ancestor (the board when it's not the active screen) would hide
+         a position:fixed child too. Card is pinned to 340px -- just past
+         the 280px field frame -- and tall rather than wide, scrolling
+         internally if content runs long. */
       +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
       +'.bb-overlay.active{display:flex}'
-      +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid #C9A87C;box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
+      +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}'
-      +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#7A5C3A}'
-      +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #C9A87C;cursor:pointer;font-size:13px;color:#3B2510}'
-      +'.bb-close:hover{background:#FDF6E8}';
+      +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:13px;color:var(--bb-ink)}'
+      +'.bb-close:hover{background:var(--bb-bg)}';
     document.head.appendChild(style);
   }
 
@@ -227,6 +326,14 @@
     var div=document.createElement('div');
     div.innerHTML=
        '<div class="sc" id="s-briefing-board">'
+        +'<div id="bb-topic-bar">'
+          +'<div id="bb-topic-spacer"></div>'
+          +'<div id="bb-topic-text" contenteditable="true" spellcheck="false" data-placeholder="Name this board…"></div>'
+          +'<div id="bb-topic-actions">'
+            +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
+            +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
+          +'</div>'
+        +'</div>'
         +'<div class="bb-mhead"><div class="bb-mh">Briefing Board</div><div class="bb-mt">A control and communication tool.</div></div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
@@ -234,10 +341,10 @@
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
-    // Add a Card (9360), Back of the Card (9370) and the Trash confirm --
-    // all overlays, living as direct children of #fg-root so they render
-    // regardless of whether #s-briefing-board happens to be the active
-    // .sc screen.
+    // Add a Card (9360), Back of the Card (9370), the Trash confirm, and
+    // Board Settings -- all overlays, living as direct children of
+    // #fg-root so they render regardless of whether #s-briefing-board
+    // happens to be the active .sc screen.
     if(!document.getElementById('bb-add-overlay')){
       var addOv=document.createElement('div');
       addOv.id='bb-add-overlay'; addOv.className='bb-overlay';
@@ -260,6 +367,7 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Back of the Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
+            +'<div class="bb-field" style="text-align:center"><label>Date Added</label><div id="bb-d-added" style="font-family:\'Caveat\',cursive;font-size:16px;color:var(--bb-sub)">&mdash;</div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
@@ -301,10 +409,36 @@
       fg.appendChild(trashOv);
       trashOv.addEventListener('click', function(e){ if(e.target===trashOv) closeTrashConfirm(); });
     }
+    if(!document.getElementById('bb-settings-overlay')){
+      var setOv=document.createElement('div');
+      setOv.id='bb-settings-overlay'; setOv.className='bb-overlay';
+      setOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Board Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field"><label>Color theme</label><div class="bb-swatches">'
+              +THEMES.map(function(t){ return '<button class="bb-theme-swatch" data-theme="'+t.key+'" title="'+t.label+'" style="background:'+t.bg+';border-color:'+t.accent+'"></button>'; }).join('')
+            +'</div></div>'
+            +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
+              +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
+            +'</div></div>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(setOv);
+      setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
+    }
 
     T().registerPageNum('s-briefing-board', '9350');
     T().registerUtilScreen('s-briefing-board');
     T().registerCtx('s-briefing-board', 'Briefing Board');
+
+    // Restore the saved Topic name and appearance the moment the DOM
+    // exists -- doesn't need to wait for the board to become the active
+    // screen, since #bb-topic-bar/settings live inside it regardless.
+    var topicEl=document.getElementById('bb-topic-text');
+    if(topicEl) topicEl.textContent=_bbLoadTopic();
+    _bbApplyTheme(_bbCurrentTheme());
+    _bbApplyFont(_bbCurrentFont());
 
     T().registerScreenActivate('s-briefing-board', function(){
       var fgr=document.getElementById('fg-root');
@@ -353,7 +487,8 @@
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
         // to the board" (c.assigned) is still recorded for later, just
-        // not displayed; not important enough to take up card-face space.
+        // not displayed here; not important enough to take up card-face
+        // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span><span class="bb-dot" style="background:'+dot+'">'+_esc(c.person||'')+'</span></div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
@@ -422,6 +557,7 @@
     _bbOpenCardId=id;
     var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
     if(!c) return;
+    document.getElementById('bb-d-added').textContent=c.assigned||'—';
     document.getElementById('bb-d-task').value=c.task||'';
     document.getElementById('bb-d-person').value=c.person||'';
     document.getElementById('bb-d-due').value=c.due||'';
@@ -471,6 +607,14 @@
     _bbTrashPendingId=null;
     var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
     renderBoard();
+  }
+
+  function openSettings(){
+    _bbHighlightAppearance();
+    var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.add('active');
+  }
+  function closeSettings(){
+    var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.remove('active');
   }
 
   function wireTrashIcon(){
@@ -524,6 +668,28 @@
     }
   }
 
+  function wireTopicBar(){
+    var topicEl=document.getElementById('bb-topic-text');
+    if(topicEl){
+      topicEl.addEventListener('blur', function(){ _bbSaveTopic(topicEl.textContent.trim()); });
+      topicEl.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); topicEl.blur(); }
+      });
+    }
+    T().wire('bb-close-x', function(){
+      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
+      T().returnToMG();
+    });
+    T().wire('bb-gear', openSettings);
+    T().wire('bb-settings-close', closeSettings);
+    document.querySelectorAll('.bb-theme-swatch').forEach(function(btn){
+      btn.addEventListener('click', function(){ _bbApplyTheme(btn.getAttribute('data-theme')); });
+    });
+    document.querySelectorAll('.bb-font-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ _bbApplyFont(btn.getAttribute('data-font')); });
+    });
+  }
+
   function wireBriefingBoard(){
     T().wire('b-bb-back', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
@@ -563,6 +729,7 @@
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
     wireTrashIcon();
+    wireTopicBar();
   }
 
   document.addEventListener('DOMContentLoaded', function(){
