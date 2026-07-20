@@ -105,7 +105,52 @@
     return String(s==null?'':s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
   }
 
-  function _priRank(c){ return PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 5; }
+  // Due date parsing: the field is free text like "7/25" (no year).
+  // Assume the current year; if that reading would already be more than
+  // ~half a year in the past, it almost certainly means next year (e.g.
+  // typing "1/5" in December) rather than last January.
+  function _bbParseDue(s){
+    if(!s) return null;
+    var m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    if(!m) return null;
+    var mo=parseInt(m[1],10)-1, da=parseInt(m[2],10);
+    var now=new Date();
+    var yr=m[3] ? (m[3].length===2?2000+parseInt(m[3],10):parseInt(m[3],10)) : now.getFullYear();
+    var d=new Date(yr, mo, da);
+    if(isNaN(d.getTime())) return null;
+    if(!m[3]){
+      var today=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if(d-today < -182*86400000) d=new Date(yr+1, mo, da);
+    }
+    return d;
+  }
+  function _bbDaysUntil(d){
+    var now=new Date();
+    var today=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((d-today)/86400000);
+  }
+  function _bbDaysUntilOrInf(c){
+    var d=_bbParseDue(c.due);
+    return d ? _bbDaysUntil(d) : Infinity;
+  }
+
+  // Larry, July 20, 2026: anything WITH a priority outranks anything
+  // without one (unset already sorts last, rank 5, below L's 4). On top
+  // of that, a near or passed due date pulls a card's effective rank up
+  // for sorting purposes -- it might carry an L, but a due date due
+  // today (or overdue) says otherwise. This only ever moves a card UP
+  // (toward H), never down -- a due date can't make an H card less
+  // urgent. The card still shows whatever priority was actually set;
+  // this effective rank is for sort order only.
+  function _priRank(c){
+    var base = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 5;
+    var daysUntil = _bbDaysUntilOrInf(c);
+    if(daysUntil===Infinity) return base;
+    if(daysUntil<=0) return Math.min(base, 0);   // due today or overdue -> at least H
+    if(daysUntil<=2) return Math.min(base, 1);   // due very soon -> at least MH
+    if(daysUntil<=5) return Math.min(base, 2);   // due soon -> at least M
+    return base;
+  }
 
   function injectBriefingBoardStyles(){
     if(document.getElementById('bb-style')) return;
@@ -291,7 +336,11 @@
       var target=wrap.querySelector('.bb-col-cards[data-col="'+cd.key+'"]');
       if(!target) return;
       var colCards=cards.filter(function(c){ return c.col===cd.key; });
-      colCards.sort(function(a,b){ return _priRank(a)-_priRank(b); });
+      colCards.sort(function(a,b){
+        var ra=_priRank(a), rb=_priRank(b);
+        if(ra!==rb) return ra-rb;
+        return _bbDaysUntilOrInf(a)-_bbDaysUntilOrInf(b);
+      });
       colCards.forEach(function(c){
         var el=document.createElement('div');
         el.className='bb-card';
