@@ -454,6 +454,24 @@
     return String(s==null?'':s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
   }
 
+  // Initials for the card-face badge, July 21, 2026 (evening) -- Assigned
+  // To is a free-text stand-in field (e.g. "Doc (Larry E. Smithers)"),
+  // so the full name never fit in the small round badge. If the text
+  // has a parenthetical, that's treated as the real name to derive
+  // initials from (favoring "LS" over "D" for "Doc (Larry E. Smithers)");
+  // otherwise the initials come from the string as typed. First + last
+  // word, matching the same two-letter convention already used for the
+  // traveler roster (BF, JG, RB, LM, JB, LS).
+  function _bbInitials(person){
+    if(!person) return '';
+    var m=String(person).match(/\(([^)]+)\)/);
+    var src=(m?m[1]:person).trim();
+    var letters=src.split(/\s+/).map(function(w){ return w.replace(/[^A-Za-z]/g,''); }).filter(function(w){ return w.length>0; });
+    if(!letters.length) return '';
+    if(letters.length===1) return letters[0].charAt(0).toUpperCase();
+    return (letters[0].charAt(0)+letters[letters.length-1].charAt(0)).toUpperCase();
+  }
+
   // Due date parsing: the field is free text like "7/25" (no year).
   // Assume the current year; if that reading would already be more than
   // ~half a year in the past, it almost certainly means next year (e.g.
@@ -649,6 +667,7 @@
       +'.bb-trash{position:absolute;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid var(--bb-ink);box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
       +'.bb-trash.bb-trash-dropready{outline:2px solid #a3372b;outline-offset:2px}'
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
+      +'#bb-detail-overlay .bbw{align-items:flex-start}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
       +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
       +'.bb-inline-field{display:flex;align-items:baseline;justify-content:center;gap:6px;white-space:nowrap}'
@@ -893,7 +912,7 @@
         el.className='bb-card';
         el.draggable=true;
         el.setAttribute('data-id', c.id);
-        var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73">'+_esc(c.person)+'</span>') : '';
+        var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
