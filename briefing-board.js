@@ -128,6 +128,37 @@
    backpack.js). Real per-traveler storage (a Supabase table,
    matching how Journal/Idea persist) is a follow-up once that
    table exists -- flagged here rather than silently assumed.
+
+   Hang-Ups protocol, built July 21, 2026 -- Larry's framing: a card in
+   DOING assumes something is actually happening. When it isn't (for
+   whatever reason), it can't honestly stay in DOING, and it can't go
+   back to DO either (it already started). HANG-UPS is where it goes
+   instead -- in essence, "HELP, I'm stuck." Getting stuck isn't a
+   property of the task, it's specific to whoever's assigned -- moving
+   it here is meant to bring that out in the open so it can be talked
+   about, not to imply anyone else would necessarily be stuck too.
+   Three additions, on top of every other field a card already carries:
+   - Stuck since: auto-stamped (c.hangupSince) the moment a card is
+     dragged into HANG-UPS, same pattern as startDate/completedDate --
+     cleared if it's dragged back out, so the stamp always reflects the
+     card's *current* stuck streak, not its whole history.
+   - Situation: its own field (c.situation), deliberately separate from
+     Notes -- Notes is a running log, Situation is the one-line answer
+     to "why can't this move," so opening the card shows the ask for
+     help immediately rather than requiring a scroll through history.
+   - Talk it through: hands the Situation off to the Idea Storyboard
+     instead of re-inventing discussion tools here. Button creates (or
+     re-opens, via c.hangupHeaderId) a Storyboard Header named after the
+     card's own task -- the hang-up becomes the TOPIC, per Larry's own
+     framing -- seeded with the Situation text as its first idea. Other
+     Headers (things to think about/discuss) and Subbers (candidate
+     answers) get added from inside the Storyboard itself, same as any
+     other board. Built via window.T2TData.createHeader (header-data.js)
+     and window.T2TShared (idea-media-shared.js) -- both already
+     designed as the cross-module integration points other files use to
+     reach the Storyboard, so this reuses that plumbing rather than
+     reaching into idea-storyboard-9710.js directly, keeping the
+     deliberate separation between the two modules intact.
    ============================================================ */
 
 (function(){
@@ -302,7 +333,8 @@
       budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
-      key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null
+      key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
+      situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null
     };
   }
   function _bbRowToCard(row){
@@ -312,7 +344,8 @@
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
       budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
-      growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived
+      growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
+      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null
     };
   }
   function _bbSafeIdList(rows){
@@ -965,6 +998,11 @@
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
+            +'<div id="bb-d-hangup-wrap" style="display:none">'
+              +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
+              +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
+              +'<button class="jb" id="bb-d-talk-it-through" type="button" style="width:100%;margin-bottom:4px">&#128172; Talk it through</button>'
+            +'</div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
@@ -1194,6 +1232,12 @@
           if(c.col==='doing' && wasCol==='do' && !c.startDate) c.startDate=_bbToday();
           if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
           if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
+          // Hang-Ups, July 21, 2026: stamp when a card lands here, clear
+          // when it leaves -- the stamp tracks the *current* stuck streak.
+          // Situation and the linked storyboard Header are left alone on
+          // exit (that record stays even after it's unstuck).
+          if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
+          if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -1237,6 +1281,9 @@
     var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
     if(!c) return;
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
+    document.getElementById('bb-d-situation').value=c.situation||'';
+    document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
+    document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
     document.getElementById('bb-d-task').value=c.task||'';
     document.getElementById('bb-d-person').value=c.person||'';
     document.getElementById('bb-d-due').value=c.due||'';
@@ -1261,6 +1308,7 @@
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(c){
       c.task=document.getElementById('bb-d-task').value;
+      c.situation=document.getElementById('bb-d-situation').value;
       c.person=document.getElementById('bb-d-person').value;
       c.due=document.getElementById('bb-d-due').value;
       c.startDate=document.getElementById('bb-d-start').value;
@@ -1526,6 +1574,52 @@
     });
   }
 
+  // Talk it through, July 21, 2026 -- hands a Hang-Up card's Situation
+  // off to the Idea Storyboard rather than building a second discussion
+  // tool here. First click creates a Storyboard Header named after the
+  // card's own task (the hang-up becomes the TOPIC, per Larry's framing)
+  // with the Situation seeded in as its first idea, and remembers that
+  // Header on the card (c.hangupHeaderId) so later clicks just re-open
+  // it instead of spawning duplicates. Uses window.T2TData.createHeader
+  // (header-data.js) to create the Header safely, then window.T2TShared
+  // (idea-media-shared.js, the same shared state 9710/9711 already read
+  // and write from other files) plus a plain nav() to hand off into the
+  // Storyboard already drilled into that Header -- both are existing
+  // cross-module integration points, not a new reach into
+  // idea-storyboard-9710.js itself.
+  async function _bbTalkItThrough(){
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(!c) return;
+    var taskField=document.getElementById('bb-d-task');
+    var situationField=document.getElementById('bb-d-situation');
+    var situationText=situationField?situationField.value.trim():'';
+    c.situation=situationText;
+    var btn=document.getElementById('bb-d-talk-it-through');
+    if(btn){ btn.disabled=true; btn.textContent='Opening…'; }
+    try{
+      if(!c.hangupHeaderId){
+        if(!window.T2TData || !window.T2TData.createHeader) throw new Error('Storyboard not available yet');
+        var header=await window.T2TData.createHeader((taskField&&taskField.value.trim())||c.task||'Hang-Up', null);
+        c.hangupHeaderId=header.id;
+        if(situationText && T().sb){
+          var ures=await T().sb.auth.getUser();
+          var uid=ures && ures.data && ures.data.user && ures.data.user.id;
+          if(uid){
+            await T().sb.from('ideas').insert({user_id:uid, content_type:'text', text_content:situationText, cluster_id:header.id, created_at:new Date().toISOString()});
+          }
+        }
+      }
+      _bbSaveLocal(_bbCardsList());
+      if(window.T2TShared){ window.T2TShared.currentTopicId=c.hangupHeaderId; window.T2TShared.filter=c.hangupHeaderId; }
+      closeCardDetail();
+      T().nav('s-sea-of-ideas-cluster');
+    }catch(e){
+      console.error('Talk it through failed', e);
+      if(btn){ btn.disabled=false; btn.textContent='\u{1F4AC} Talk it through'; }
+      alert('Could not open the storyboard: '+(e&&e.message?e.message:'unknown error'));
+    }
+  }
+
   function _bbUpdateReviewUI(c){
     var vBtn=document.getElementById('bb-d-verify');
     var pBtn=document.getElementById('bb-d-pro');
@@ -1590,6 +1684,7 @@
     });
 
     T().wire('bb-detail-close', closeCardDetail);
+    T().wire('bb-d-talk-it-through', _bbTalkItThrough);
     wirePriorityButtons();
     wireReviewButtons();
     wireKeyBuilder();
