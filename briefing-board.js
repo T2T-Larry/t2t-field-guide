@@ -424,6 +424,43 @@
     });
   }
 
+  // Browsable Archive, added July 21, 2026 (evening) -- Touch Point 9380,
+  // held in reserve since the original Custom Keys work. Verified-
+  // complete cards never left storage, just the board's 4 columns --
+  // this is a read of the same in-memory card list already loaded for
+  // the current board (archived cards ride along in _bbCards, only
+  // filtered out at render time), so it needs no separate fetch.
+  function openArchive(){
+    var ov=document.getElementById('bb-archive-overlay'); if(ov) ov.classList.add('active');
+    _bbRenderArchiveList();
+  }
+  function closeArchive(){
+    var ov=document.getElementById('bb-archive-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function _bbRenderArchiveList(){
+    var list=document.getElementById('bb-archive-list'); if(!list) return;
+    var items=_bbCardsList().filter(function(c){ return c.archived; });
+    if(!items.length){
+      list.innerHTML='<div class="bb-key-pick-empty-msg">Nothing archived yet.</div>';
+      return;
+    }
+    list.innerHTML=items.map(function(c){
+      return '<div class="bb-archive-row">'
+        +'<div><div class="bb-archive-task">'+_esc(c.task)+'</div><div class="bb-archive-meta">Completed '+_esc(c.completedDate||'—')+'</div></div>'
+        +'<button class="bb-flag-btn bb-archive-unarchive" data-id="'+_esc(c.id)+'">Unarchive</button>'
+        +'</div>';
+    }).join('');
+    list.querySelectorAll('.bb-archive-unarchive').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id=btn.getAttribute('data-id');
+        var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
+        if(c){ c.archived=false; _bbSaveLocal(_bbCardsList()); }
+        _bbRenderArchiveList();
+        renderBoard();
+      });
+    });
+  }
+
   async function _bbCurrentUserId(){
     var sb=T().sb; if(!sb) return null;
     try{ var u=await sb.auth.getUser(); return (u&&u.data&&u.data.user)?u.data.user.id:null; }
@@ -789,6 +826,9 @@
       +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
       +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
       +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-archive-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--bb-accent)}'
+      +'.bb-archive-task{font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
+      +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub)}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -822,6 +862,7 @@
             +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
+              +'<button class="bb-icon-btn" id="bb-archive-btn" title="Archive">🗄️</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
@@ -915,6 +956,18 @@
         +'</div>';
       fg.appendChild(setOv);
       setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
+    }
+    if(!document.getElementById('bb-archive-overlay')){
+      var archOv=document.createElement('div');
+      archOv.id='bb-archive-overlay'; archOv.className='bb-overlay';
+      archOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Archive</span><button class="bb-close" id="bb-archive-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw"><div id="bb-archive-list" style="width:100%"></div></div>'
+        +'</div>';
+      fg.appendChild(archOv);
+      archOv.addEventListener('click', function(e){ if(e.target===archOv) closeArchive(); });
+      _bbMakeDraggable(archOv.querySelector('.bb-overlay-card'), archOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-keybuilder-overlay')){
       var kbOv=document.createElement('div');
@@ -1365,6 +1418,8 @@
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
     });
+    T().wire('bb-archive-btn', openArchive);
+    T().wire('bb-archive-close', closeArchive);
     T().wire('bb-gear', openSettings);
     T().wire('bb-settings-close', closeSettings);
     document.querySelectorAll('.bb-theme-swatch').forEach(function(btn){
