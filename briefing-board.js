@@ -209,6 +209,7 @@
   var _bbCurrentBoardId = null;
   var _bbBoards = [];
   var _bbKeyLibCache = [];
+  var _bbChecklistCache = [];
   var _bbInitStarted = false;
 
   function _bbUUID(){
@@ -333,6 +334,94 @@
         await sb.from('briefing_board_keys').delete().eq('board_id', _bbCurrentBoardId);
       }
     }catch(e){ console.error('Briefing Board: Supabase key sync failed', e); }
+  }
+
+  // Checklist, added July 21, 2026 (evening) -- sub-steps under a card.
+  // Lives in its own briefing_checklist_items table (one row per step),
+  // loaded/saved per open card rather than riding along with the card's
+  // own row. Same local-fallback shape as everything else: sessionStorage
+  // (keyed per card id) when there's no Supabase board active.
+  function _bbChecklistLocalKey(cardId){ return 'bbChecklist_'+cardId; }
+  function _bbLoadChecklistLocal(cardId){
+    try{ var r=sessionStorage.getItem(_bbChecklistLocalKey(cardId)); return r?JSON.parse(r):[]; }catch(e){ return []; }
+  }
+  function _bbSaveChecklistLocal(cardId, items){
+    try{ sessionStorage.setItem(_bbChecklistLocalKey(cardId), JSON.stringify(items)); }catch(e){}
+  }
+  async function _bbSyncChecklistToSupabase(cardId, items){
+    if(!_bbCurrentBoardId) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var rows=items.map(function(it,i){ return {id:it.id, card_id:cardId, item_text:it.text||'', done:!!it.done, sort_order:i}; });
+      if(rows.length){
+        var res=await sb.from('briefing_checklist_items').upsert(rows);
+        if(res.error) throw res.error;
+        await sb.from('briefing_checklist_items').delete().eq('card_id', cardId).not('id','in','('+_bbSafeIdList(rows).join(',')+')');
+      } else {
+        await sb.from('briefing_checklist_items').delete().eq('card_id', cardId);
+      }
+    }catch(e){ console.error('Briefing Board: checklist sync failed', e); }
+  }
+  function _bbSaveChecklist(cardId, items){
+    _bbChecklistCache = items;
+    _bbSaveChecklistLocal(cardId, items);
+    _bbSyncChecklistToSupabase(cardId, items);
+  }
+  async function _bbLoadChecklistForCard(cardId){
+    if(_bbCurrentBoardId){
+      var sb=T().sb;
+      try{
+        var res=await sb.from('briefing_checklist_items').select('*').eq('card_id',cardId).order('sort_order',{ascending:true});
+        if(!res.error){
+          var items=(res.data||[]).map(function(r){ return {id:r.id, text:r.item_text||'', done:!!r.done}; });
+          if(_bbOpenCardId===cardId){ _bbChecklistCache=items; _bbRenderChecklist(); }
+          return;
+        }
+      }catch(e){ console.error('Briefing Board: checklist load failed', e); }
+    }
+    var local=_bbLoadChecklistLocal(cardId);
+    if(_bbOpenCardId===cardId){ _bbChecklistCache=local; _bbRenderChecklist(); }
+  }
+  function _bbRenderChecklist(){
+    var list=document.getElementById('bb-d-checklist-list'); if(!list) return;
+    if(!_bbChecklistCache.length){
+      list.innerHTML='<div class="bb-key-pick-empty-msg">No steps yet.</div>';
+      return;
+    }
+    list.innerHTML=_bbChecklistCache.map(function(it){
+      return '<div class="bb-checklist-row">'
+        +'<input type="checkbox" class="bb-checklist-check" data-id="'+_esc(it.id)+'"'+(it.done?' checked':'')+'>'
+        +'<span class="bb-checklist-text'+(it.done?' bb-checklist-done':'')+'">'+_esc(it.text)+'</span>'
+        +'<button class="bb-checklist-remove" data-id="'+_esc(it.id)+'" title="Remove">&#10005;</button>'
+        +'</div>';
+    }).join('');
+    list.querySelectorAll('.bb-checklist-check').forEach(function(cb){
+      cb.addEventListener('change', function(){
+        var id=cb.getAttribute('data-id');
+        var it=_bbChecklistCache.filter(function(x){ return x.id===id; })[0];
+        if(it && _bbOpenCardId){ it.done=cb.checked; _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache); _bbRenderChecklist(); }
+      });
+    });
+    list.querySelectorAll('.bb-checklist-remove').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(!_bbOpenCardId) return;
+        var id=btn.getAttribute('data-id');
+        _bbChecklistCache=_bbChecklistCache.filter(function(x){ return x.id!==id; });
+        _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
+        _bbRenderChecklist();
+      });
+    });
+  }
+  function wireChecklist(){
+    T().wire('bb-d-checklist-add-btn', function(){
+      var input=document.getElementById('bb-d-checklist-new');
+      var text=input?input.value.trim():'';
+      if(!text || !_bbOpenCardId) return;
+      _bbChecklistCache.push({id:_bbUUID(), text:text, done:false});
+      _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
+      if(input) input.value='';
+      _bbRenderChecklist();
+    });
   }
 
   async function _bbCurrentUserId(){
@@ -694,6 +783,12 @@
       +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
       +'.bb-key-pick-empty-msg{font-size:12px;color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
+      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
+      +'.bb-checklist-text{flex:1}'
+      +'.bb-checklist-text.bb-checklist-done{text-decoration:line-through;color:var(--bb-sub)}'
+      +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
+      +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
+      +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -771,6 +866,7 @@
             +'</div></div>'
             +'<div class="bb-field"><label>Custom Keys</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
+            +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add a step..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Start date</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
@@ -1010,6 +1106,10 @@
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
     _bbRenderKeyRow(c);
+    _bbChecklistCache=[];
+    var clInput=document.getElementById('bb-d-checklist-new'); if(clInput) clInput.value='';
+    _bbRenderChecklist();
+    _bbLoadChecklistForCard(id);
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -1343,6 +1443,7 @@
     wireReviewButtons();
     wireKeyBuilder();
     wireKeyPicker();
+    wireChecklist();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
