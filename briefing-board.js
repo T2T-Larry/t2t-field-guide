@@ -184,13 +184,19 @@
     return css;
   }
   function _bbLoadKeyLibrary(){
+    if(_bbCurrentBoardId) return _bbKeyLibCache;
     try{
       var r=sessionStorage.getItem('bbKeyLibrary');
       return r?JSON.parse(r):[];
     }catch(e){ return []; }
   }
+  function _bbLoadKeyLibraryLegacy(){
+    try{ var r=sessionStorage.getItem('bbKeyLibrary'); return r?JSON.parse(r):[]; }catch(e){ return []; }
+  }
   function _bbSaveKeyLibrary(lib){
+    if(_bbCurrentBoardId) _bbKeyLibCache = lib;
     try{ sessionStorage.setItem('bbKeyLibrary', JSON.stringify(lib)); }catch(e){}
+    _bbSyncKeysToSupabase(lib);
   }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
@@ -198,6 +204,20 @@
   var _bbCards = null;
   var _bbOpenCardId = null;
   var _bbTrashPendingId = null;
+
+  // Supabase-backed multi-board state, added July 21, 2026 (evening).
+  var _bbCurrentBoardId = null;
+  var _bbBoards = [];
+  var _bbKeyLibCache = [];
+  var _bbInitStarted = false;
+
+  function _bbUUID(){
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+      var r=Math.random()*16|0, v=c==='x'?r:(r&0x3|0x8);
+      return v.toString(16);
+    });
+  }
 
   function _bbToday(){
     var d=new Date();
@@ -209,16 +229,225 @@
     catch(e){ return null; }
   }
   function _bbSaveLocal(cards){
+    _bbCards = cards;
     try{ sessionStorage.setItem('bbCards', JSON.stringify(cards)); }catch(e){}
+    _bbSyncCardsToSupabase(cards);
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
+      {id:_bbUUID(), col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
     ];
   }
   function _bbCardsList(){
     if(!_bbCards){ _bbCards = _bbLoadLocal() || _bbSeed(); }
     return _bbCards;
+  }
+
+  function _bbCurrentBoardDefaultAssignee(){
+    var b=_bbBoards.filter(function(x){ return x.id===_bbCurrentBoardId; })[0];
+    return (b && b.default_assignee) || '';
+  }
+
+  // ---- Supabase persistence, added July 21, 2026 (evening) -- boards,
+  // cards and the key library now live in real per-traveler Supabase
+  // tables (briefing_boards / briefing_cards / briefing_board_keys)
+  // instead of only sessionStorage. Every existing mutation in this
+  // file still just calls _bbSaveLocal/_bbSaveKeyLibrary exactly as
+  // before -- those two now ALSO push to Supabase in the background
+  // (fire-and-forget) whenever a Supabase board is active, so nothing
+  // else in this file had to change. If Supabase is unreachable, or
+  // nobody's signed in, the board quietly keeps working exactly as it
+  // always did, straight off sessionStorage.
+
+  function _bbToISODate(mdStr){
+    var d=_bbParseDue(mdStr);
+    if(!d) return null;
+    var mm=String(d.getMonth()+1); if(mm.length<2) mm='0'+mm;
+    var dd=String(d.getDate()); if(dd.length<2) dd='0'+dd;
+    return d.getFullYear()+'-'+mm+'-'+dd;
+  }
+  function _bbFromISODate(iso){
+    if(!iso) return '';
+    var parts=String(iso).split('-');
+    if(parts.length!==3) return '';
+    return parseInt(parts[1],10)+'/'+parseInt(parts[2],10);
+  }
+  function _bbMDFromTimestamp(ts){
+    if(!ts) return _bbToday();
+    var d=new Date(ts);
+    if(isNaN(d.getTime())) return _bbToday();
+    return (d.getMonth()+1)+'/'+d.getDate();
+  }
+
+  function _bbCardToRow(c, boardId){
+    var keys=c.keys||[];
+    return {
+      id: c.id, board_id: boardId, col: c.col,
+      task: c.task||'', person: c.person||null, reviewed_by: c.reviewedBy||null,
+      due_date: _bbToISODate(c.due), start_date: _bbToISODate(c.startDate), completed_date: _bbToISODate(c.completedDate),
+      budget: c.budget||null, priority: c.priority||'',
+      verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
+      archived: !!c.archived,
+      key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null
+    };
+  }
+  function _bbRowToCard(row){
+    return {
+      id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
+      task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
+      startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
+      budget: row.budget||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
+      priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
+      growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived
+    };
+  }
+  function _bbSafeIdList(rows){
+    return rows.map(function(r){ return String(r.id).replace(/[^a-zA-Z0-9-]/g,''); });
+  }
+
+  async function _bbSyncCardsToSupabase(cards){
+    if(!_bbCurrentBoardId) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var rows=cards.map(function(c){ return _bbCardToRow(c, _bbCurrentBoardId); });
+      if(rows.length){
+        var res=await sb.from('briefing_cards').upsert(rows);
+        if(res.error) throw res.error;
+        await sb.from('briefing_cards').delete().eq('board_id', _bbCurrentBoardId).not('id','in','('+_bbSafeIdList(rows).join(',')+')');
+      } else {
+        await sb.from('briefing_cards').delete().eq('board_id', _bbCurrentBoardId);
+      }
+    }catch(e){ console.error('Briefing Board: Supabase card sync failed', e); }
+  }
+
+  async function _bbSyncKeysToSupabase(lib){
+    if(!_bbCurrentBoardId) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var rows=lib.map(function(k){ return {id:k.id, board_id:_bbCurrentBoardId, shape:k.shape, color:k.color, meaning:k.meaning||''}; });
+      if(rows.length){
+        var res=await sb.from('briefing_board_keys').upsert(rows);
+        if(res.error) throw res.error;
+        await sb.from('briefing_board_keys').delete().eq('board_id', _bbCurrentBoardId).not('id','in','('+_bbSafeIdList(rows).join(',')+')');
+      } else {
+        await sb.from('briefing_board_keys').delete().eq('board_id', _bbCurrentBoardId);
+      }
+    }catch(e){ console.error('Briefing Board: Supabase key sync failed', e); }
+  }
+
+  async function _bbCurrentUserId(){
+    var sb=T().sb; if(!sb) return null;
+    try{ var u=await sb.auth.getUser(); return (u&&u.data&&u.data.user)?u.data.user.id:null; }
+    catch(e){ return null; }
+  }
+
+  async function _bbSwitchToBoard(boardId){
+    _bbCurrentBoardId=boardId;
+    try{ sessionStorage.setItem('bbCurrentBoardId', boardId); }catch(e){}
+    var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
+    var sb=T().sb;
+    var cardRows=[], keyRows=[];
+    try{
+      var cRes=await sb.from('briefing_cards').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
+      if(!cRes.error) cardRows=cRes.data||[];
+      var kRes=await sb.from('briefing_board_keys').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
+      if(!kRes.error) keyRows=kRes.data||[];
+    }catch(e){ console.error('Briefing Board: could not load board data', e); }
+
+    // One-time migration, July 21, 2026 (evening): the first time Field
+    // Guide BB is opened empty after named multi-board storage shipped,
+    // copy in whatever was still sitting in the old single-board
+    // sessionStorage version so nothing Larry already entered is lost.
+    if(cardRows.length===0 && board && /field guide/i.test(board.name||'')){
+      var already=false;
+      try{ already = sessionStorage.getItem('bbMigratedLegacy')==='1'; }catch(e){}
+      var legacyCards=_bbLoadLocal();
+      if(!already && legacyCards && legacyCards.length){
+        try{
+          var legacyKeys=_bbLoadKeyLibraryLegacy();
+          var keyIdMap={};
+          var remappedKeys=legacyKeys.map(function(k){
+            var newId=_bbUUID(); keyIdMap[k.id]=newId;
+            return {id:newId, shape:k.shape, color:k.color, meaning:k.meaning||''};
+          });
+          var remappedCards=legacyCards.map(function(c){
+            return Object.assign({}, c, {
+              id:_bbUUID(),
+              keys:(c.keys||[]).map(function(kid){ return kid?(keyIdMap[kid]||null):null; })
+            });
+          });
+          if(remappedKeys.length) await sb.from('briefing_board_keys').upsert(remappedKeys.map(function(k){ return {id:k.id, board_id:boardId, shape:k.shape, color:k.color, meaning:k.meaning}; }));
+          if(remappedCards.length) await sb.from('briefing_cards').upsert(remappedCards.map(function(c){ return _bbCardToRow(c, boardId); }));
+          try{ sessionStorage.setItem('bbMigratedLegacy','1'); }catch(e2){}
+          _bbCards=remappedCards;
+          _bbKeyLibCache=remappedKeys;
+          _bbRenderBoardPicker();
+          renderBoard();
+          return;
+        }catch(e){ console.error('Briefing Board: legacy migration failed', e); }
+      }
+    }
+
+    _bbCards = cardRows.length ? cardRows.map(_bbRowToCard) : _bbSeed();
+    _bbKeyLibCache = keyRows.map(function(r){ return {id:r.id, shape:r.shape, color:r.color, meaning:r.meaning}; });
+    _bbRenderBoardPicker();
+    renderBoard();
+  }
+
+  async function _bbInitBoardsAndData(){
+    var uid=await _bbCurrentUserId();
+    if(!uid){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    var sb=T().sb;
+    try{
+      var res=await sb.from('briefing_boards').select('*').eq('user_id',uid).order('created_at',{ascending:true});
+      if(res.error) throw res.error;
+      _bbBoards=res.data||[];
+    }catch(e){
+      console.error('Briefing Board: could not load boards, staying local', e);
+      _bbCurrentBoardId=null; _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard();
+      return;
+    }
+    if(!_bbBoards.length){
+      try{
+        var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:'personal', name:'My Board'}).select().single();
+        if(!ins.error && ins.data) _bbBoards=[ins.data];
+      }catch(e){}
+    }
+    if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    var remembered=null;
+    try{ remembered=sessionStorage.getItem('bbCurrentBoardId'); }catch(e){}
+    var match=_bbBoards.filter(function(b){ return b.id===remembered; })[0];
+    var fallback=_bbBoards.filter(function(b){ return /field guide/i.test(b.name||''); })[0] || _bbBoards[0];
+    await _bbSwitchToBoard((match||fallback).id);
+  }
+
+  function _bbRenderBoardPicker(){
+    var sel=document.getElementById('bb-board-picker'); if(!sel) return;
+    var opts=_bbBoards.map(function(b){
+      return '<option value="'+_esc(b.id)+'"'+(b.id===_bbCurrentBoardId?' selected':'')+'>'+_esc(b.name||'Untitled Board')+'</option>';
+    }).join('');
+    sel.innerHTML = opts + '<option value="__add__">+ Add a board&hellip;</option>';
+  }
+
+  function wireBoardPicker(){
+    var sel=document.getElementById('bb-board-picker'); if(!sel) return;
+    sel.addEventListener('change', async function(){
+      if(sel.value==='__add__'){
+        var name=window.prompt('Name for the new board:');
+        _bbRenderBoardPicker();
+        if(!name || !name.trim()) return;
+        var uid=await _bbCurrentUserId(); if(!uid) return;
+        var sb=T().sb;
+        try{
+          var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:'personal', name:name.trim()}).select().single();
+          if(ins.error || !ins.data) return;
+          _bbBoards.push(ins.data);
+          await _bbSwitchToBoard(ins.data.id);
+        }catch(e){ console.error('Briefing Board: could not create board', e); }
+        return;
+      }
+      await _bbSwitchToBoard(sel.value);
+    });
   }
 
   function _esc(s){
@@ -384,8 +613,7 @@
       +'.bb-mhead-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}'
       +'.bb-mh-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
       +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      +'#bb-topic-pill{background:#fff;border:1.5px solid var(--bb-accent);border-radius:999px;padding:4px 14px;font-family:var(--bb-head-font);font-size:15px;font-weight:700;color:var(--bb-ink);cursor:text;outline:none;min-width:40px}'
-      +'#bb-topic-pill:empty:before{content:attr(data-placeholder);color:#c2b8a3;font-style:italic;font-weight:400}'
+      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:999px;padding:4px 10px;font-family:var(--bb-head-font);font-size:14px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:160px}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
@@ -477,7 +705,7 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
-            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><span id="bb-topic-pill" contenteditable="true" spellcheck="false" data-placeholder="Name this board…"></span></div>'
+            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
@@ -614,18 +842,21 @@
     T().registerUtilScreen('s-briefing-board');
     T().registerCtx('s-briefing-board', 'Briefing Board');
 
-    // Restore the saved Topic name and appearance the moment the DOM
-    // exists -- doesn't need to wait for the board to become the active
-    // screen, since #bb-topic-pill/settings live inside it regardless.
-    var topicEl=document.getElementById('bb-topic-pill');
-    if(topicEl) topicEl.textContent=_bbLoadTopic();
+    // Appearance (theme/font) restores immediately -- a personal
+    // preference shared across all of a traveler's boards, independent
+    // of which board is active or whether Supabase is reachable.
     _bbApplyTheme(_bbCurrentTheme());
     _bbApplyFont(_bbCurrentFont());
 
     T().registerScreenActivate('s-briefing-board', function(){
       var fgr=document.getElementById('fg-root');
       if(fgr) fgr.classList.add('isx-full');
-      renderBoard();
+      if(!_bbInitStarted){
+        _bbInitStarted=true;
+        _bbInitBoardsAndData();
+      } else {
+        renderBoard();
+      }
     });
 
     wireBriefingBoard();
@@ -687,7 +918,7 @@
     wrap.querySelectorAll('.bb-corner').forEach(function(el){
       el.addEventListener('click', function(e){
         e.stopPropagation();
-        openCardDetail(Number(el.getAttribute('data-flip')));
+        openCardDetail(el.getAttribute('data-flip'));
       });
     });
     wrap.querySelectorAll('.bb-col-cards').forEach(function(zone){
@@ -696,7 +927,7 @@
       zone.addEventListener('drop', function(e){
         e.preventDefault();
         zone.classList.remove('bb-dragover');
-        var id=Number(e.dataTransfer.getData('text/plain'));
+        var id=e.dataTransfer.getData('text/plain');
         var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
         if(c){
           var wasCol=c.col;
@@ -813,7 +1044,7 @@
     trash.addEventListener('drop', function(e){
       e.preventDefault();
       trash.classList.remove('bb-trash-dropready');
-      var id=Number(e.dataTransfer.getData('text/plain'));
+      var id=e.dataTransfer.getData('text/plain');
       if(id) openTrashConfirm(id);
     });
   }
@@ -951,7 +1182,7 @@
     var meaningEl=document.getElementById('bb-keybuilder-meaning');
     var meaning=meaningEl?meaningEl.value.trim():'';
     if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
-    var newKey={id:String(Date.now()), shape:_bbKeyDraft.shape, color:_bbKeyDraft.color, meaning:meaning};
+    var newKey={id:_bbUUID(), shape:_bbKeyDraft.shape, color:_bbKeyDraft.color, meaning:meaning};
     lib.push(newKey);
     _bbSaveKeyLibrary(lib);
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
@@ -1007,13 +1238,7 @@
   }
 
   function wireTopicBar(){
-    var topicEl=document.getElementById('bb-topic-pill');
-    if(topicEl){
-      topicEl.addEventListener('blur', function(){ _bbSaveTopic(topicEl.textContent.trim()); });
-      topicEl.addEventListener('keydown', function(e){
-        if(e.key==='Enter'){ e.preventDefault(); topicEl.blur(); }
-      });
-    }
+    wireBoardPicker();
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
@@ -1085,7 +1310,7 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      cards.push({id:_bbUUID(), col:'do', assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
