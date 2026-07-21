@@ -736,6 +736,23 @@
   /* ── SIGN-IN / AUTH ── */
   var _sb = T.sb;
 
+  // Resume an existing session on load, July 21, 2026 (evening) --
+  // previously every reload or reopened tab forced a fresh sign-in even
+  // with a valid Supabase session already sitting in the browser,
+  // because nothing ever checked for one -- the app just always started
+  // on s-signin. Supabase already persists the session on its own; this
+  // just asks before defaulting to the sign-in screen.
+  (async function _resumeSession(){
+    try{
+      var res = await _sb.auth.getSession();
+      if(res && res.data && res.data.session && res.data.session.user){
+        await T.loadVisitedFromSupabase();
+        await T.loadMemberProfile(res.data.session.user.id);
+        T.nav('s-cover');
+      }
+    }catch(e){ console.error('Session resume failed', e); }
+  })();
+
   T.wire('b-signin-reset', function(){
     document.getElementById('si-email').value='';
     document.getElementById('si-password').value='';
