@@ -461,6 +461,52 @@
     });
   }
 
+  // History (HX) -- a landing page over both Archive and the Briefing
+  // Log, added July 21, 2026. Two different kinds of history: Archive
+  // is completed board cards, Briefing Log is who's been briefed and
+  // when. Kept as one entry point instead of two separate icons.
+  function openHX(){
+    var ov=document.getElementById('bb-hx-overlay'); if(ov) ov.classList.add('active');
+  }
+  function closeHX(){
+    var ov=document.getElementById('bb-hx-overlay'); if(ov) ov.classList.remove('active');
+  }
+
+  // Briefing Log -- read-only history of who's been briefed, when, and
+  // by what medium. Deliberately NOT scoped to just the current board:
+  // a person's briefing history can span every board, so this always
+  // pulls the full log regardless of which board HX was opened from.
+  // Absence of any row for a name means that person has never been
+  // briefed -- there's no placeholder row to fall out of date.
+  function openBriefingLog(){
+    var ov=document.getElementById('bb-briefinglog-overlay'); if(ov) ov.classList.add('active');
+    _bbRenderBriefingLogList();
+  }
+  function closeBriefingLog(){
+    var ov=document.getElementById('bb-briefinglog-overlay'); if(ov) ov.classList.remove('active');
+  }
+  async function _bbRenderBriefingLogList(){
+    var list=document.getElementById('bb-briefinglog-list'); if(!list) return;
+    list.innerHTML='<div class="bb-key-pick-empty-msg">Loading\u2026</div>';
+    var sb=T().sb; if(!sb){ list.innerHTML='<div class="bb-key-pick-empty-msg">Sign in to see the Briefing Log.</div>'; return; }
+    try{
+      var res=await sb.from('briefing_log').select('*').order('briefing_date',{ascending:false});
+      if(res.error){ list.innerHTML='<div class="bb-key-pick-empty-msg">Couldn\'t load the Briefing Log.</div>'; return; }
+      var rows=res.data||[];
+      if(!rows.length){ list.innerHTML='<div class="bb-key-pick-empty-msg">No briefings logged yet.</div>'; return; }
+      list.innerHTML=rows.map(function(r){
+        var board=_bbBoards.filter(function(b){ return b.id===r.board_id; })[0];
+        var boardLabel=board?board.name:'\u2014';
+        return '<div class="bb-archive-row">'
+          +'<div><div class="bb-archive-task">'+_esc(r.receiver)+' &mdash; '+_esc(r.briefing_date||'\u2014')+'</div>'
+          +'<div class="bb-archive-meta">From '+_esc(r.giver||'\u2014')+' &middot; '+_esc(r.medium||'\u2014')+' &middot; '+_esc(boardLabel)+'</div></div>'
+          +'</div>';
+      }).join('');
+    }catch(e){
+      list.innerHTML='<div class="bb-key-pick-empty-msg">Couldn\'t load the Briefing Log.</div>';
+    }
+  }
+
   async function _bbCurrentUserId(){
     var sb=T().sb; if(!sb) return null;
     try{ var u=await sb.auth.getUser(); return (u&&u.data&&u.data.user)?u.data.user.id:null; }
@@ -846,7 +892,10 @@
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:13px;color:var(--bb-ink)}'
-      +'.bb-close:hover{background:var(--bb-bg)}';
+      +'.bb-close:hover{background:var(--bb-bg)}'
+      +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
+      +'.bb-hx-back:hover{background:var(--bb-bg)}'
+      +'.bb-hx-landing-btn{margin-bottom:12px}';
     document.head.appendChild(style);
   }
 
@@ -863,7 +912,7 @@
             +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
-              +'<button class="bb-icon-btn" id="bb-archive-btn" title="Archive">🗄️</button>'
+              +'<button class="bb-icon-btn" id="bb-hx-btn" title="History">HX</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
@@ -958,17 +1007,44 @@
       fg.appendChild(setOv);
       setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
     }
+    if(!document.getElementById('bb-hx-overlay')){
+      var hxOv=document.createElement('div');
+      hxOv.id='bb-hx-overlay'; hxOv.className='bb-overlay';
+      hxOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">History</span><button class="bb-close" id="bb-hx-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<button class="jb bb-hx-landing-btn" id="bb-hx-archive-btn" style="width:100%">📁 Archive</button>'
+            +'<button class="jb bb-hx-landing-btn" id="bb-hx-briefinglog-btn" style="width:100%">📣 Briefing Log</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(hxOv);
+      hxOv.addEventListener('click', function(e){ if(e.target===hxOv) closeHX(); });
+      _bbMakeDraggable(hxOv.querySelector('.bb-overlay-card'), hxOv.querySelector('.bb-overlay-head'));
+    }
     if(!document.getElementById('bb-archive-overlay')){
       var archOv=document.createElement('div');
       archOv.id='bb-archive-overlay'; archOv.className='bb-overlay';
       archOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Archive</span><button class="bb-close" id="bb-archive-close" aria-label="Close">✕</button></div>'
+          +'<div class="bb-overlay-head"><button class="bb-hx-back" id="bb-archive-back" title="Back to History">←</button><span class="bb-overlay-title">Archive</span><button class="bb-close" id="bb-archive-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw"><div id="bb-archive-list" style="width:100%"></div></div>'
         +'</div>';
       fg.appendChild(archOv);
       archOv.addEventListener('click', function(e){ if(e.target===archOv) closeArchive(); });
       _bbMakeDraggable(archOv.querySelector('.bb-overlay-card'), archOv.querySelector('.bb-overlay-head'));
+    }
+    if(!document.getElementById('bb-briefinglog-overlay')){
+      var blOv=document.createElement('div');
+      blOv.id='bb-briefinglog-overlay'; blOv.className='bb-overlay';
+      blOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><button class="bb-hx-back" id="bb-briefinglog-back" title="Back to History">←</button><span class="bb-overlay-title">Briefing Log</span><button class="bb-close" id="bb-briefinglog-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw"><div id="bb-briefinglog-list" style="width:100%"></div></div>'
+        +'</div>';
+      fg.appendChild(blOv);
+      blOv.addEventListener('click', function(e){ if(e.target===blOv) closeBriefingLog(); });
+      _bbMakeDraggable(blOv.querySelector('.bb-overlay-card'), blOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-keybuilder-overlay')){
       var kbOv=document.createElement('div');
@@ -1419,8 +1495,14 @@
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
     });
-    T().wire('bb-archive-btn', openArchive);
+    T().wire('bb-hx-btn', openHX);
+    T().wire('bb-hx-close', closeHX);
+    T().wire('bb-hx-archive-btn', function(){ closeHX(); openArchive(); });
+    T().wire('bb-hx-briefinglog-btn', function(){ closeHX(); openBriefingLog(); });
     T().wire('bb-archive-close', closeArchive);
+    T().wire('bb-archive-back', function(){ closeArchive(); openHX(); });
+    T().wire('bb-briefinglog-close', closeBriefingLog);
+    T().wire('bb-briefinglog-back', function(){ closeBriefingLog(); openHX(); });
     T().wire('bb-gear', openSettings);
     T().wire('bb-settings-close', closeSettings);
     document.querySelectorAll('.bb-theme-swatch').forEach(function(btn){
