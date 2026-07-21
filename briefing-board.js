@@ -24,6 +24,9 @@
                                 renamed July 20: it holds everything
                                 on or about the card now, not just a
                                 flipped-over back face)
+     9390  bb-keybuilder-overlay  Add a Key -- builds one Custom Keys
+                                library entry (shape+color+meaning).
+                                9380 stays reserved for the Done archive.
    9360/9370 converted from nav()'d screens to overlays July 20, 2026,
    per Larry: the card should sit ON TOP of the board (board stays
    visible/live underneath, dimmed), closed via an explicit X or by
@@ -152,11 +155,21 @@
     {key:'clean',   label:'Clean',   head:'"Segoe UI",Helvetica,Arial,sans-serif', body:'"Segoe UI",Helvetica,Arial,sans-serif'}
   ];
 
-  var SIGNAL_SHAPES = ['circle','square','triangle','diamond','star'];
+  // Custom Keys, July 21, 2026 -- replaces the old one-per-board Signal.
+  // A board-wide library of up to 6 traveler-defined keys (shape + color
+  // + meaning), built from a fixed set of 6 shapes and 6 curated colors
+  // so any two library entries stay visually distinct at card-face size.
+  // Each card carries up to 3 of them (c.keys, an array of library ids)
+  // -- see Larry's July 21 design chat for the 6/6/6/3 reasoning.
+  var SIGNAL_SHAPES = ['circle','square','triangle','diamond','star','heart'];
+  var KEY_COLORS = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
+  var MAX_KEY_LIBRARY = 6;
+  var MAX_KEYS_PER_CARD = 3;
   var SIGNAL_CLIP = {
     triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
     diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-    star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+    star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+    heart: 'polygon(50% 15%, 61% 5%, 75% 5%, 88% 18%, 88% 32%, 50% 70%, 12% 32%, 12% 18%, 25% 5%, 39% 5%)'
   };
   function _bbShapeCSS(shape, color){
     var css='background:'+color+';';
@@ -165,21 +178,20 @@
     else if(SIGNAL_CLIP[shape]) css+='clip-path:'+SIGNAL_CLIP[shape]+';';
     return css;
   }
-  function _bbLoadSignalDef(){
-    var shape,color,meaning;
+  function _bbLoadKeyLibrary(){
     try{
-      shape=sessionStorage.getItem('bbSignalShape')||'circle';
-      color=sessionStorage.getItem('bbSignalColor')||'#a3372b';
-      meaning=sessionStorage.getItem('bbSignalMeaning')||'';
-    }catch(e){ shape='circle'; color='#a3372b'; meaning=''; }
-    return {shape:shape, color:color, meaning:meaning};
+      var r=sessionStorage.getItem('bbKeyLibrary');
+      return r?JSON.parse(r):[];
+    }catch(e){ return []; }
   }
-  function _bbSaveSignalDef(def){
-    try{
-      sessionStorage.setItem('bbSignalShape', def.shape);
-      sessionStorage.setItem('bbSignalColor', def.color);
-      sessionStorage.setItem('bbSignalMeaning', def.meaning);
-    }catch(e){}
+  function _bbSaveKeyLibrary(lib){
+    try{ sessionStorage.setItem('bbKeyLibrary', JSON.stringify(lib)); }catch(e){}
+  }
+  function _bbToggleCardKey(c, keyId){
+    c.keys = c.keys || [];
+    var idx=c.keys.indexOf(keyId);
+    if(idx>=0){ c.keys.splice(idx,1); }
+    else { if(c.keys.length>=MAX_KEYS_PER_CARD) return; c.keys.push(keyId); }
   }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
@@ -202,7 +214,7 @@
   }
   function _bbSeed(){
     return [
-      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', signal:false, priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
+      {id:1, col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:'', due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
     ];
   }
   function _bbCardsList(){
@@ -396,7 +408,8 @@
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
       +'.bb-done-date{font-family:"Caveat",cursive;font-size:12px;color:#3F6B3A;text-align:right;margin-top:1px}'
-      +'.bb-signal-badge{position:absolute;bottom:2px;left:4px;width:12px;height:12px;pointer-events:none;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
+      +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:3px;pointer-events:none}'
+      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:12px;color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
@@ -426,7 +439,12 @@
       +'.bb-font-btn.bb-flag-active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
       +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
-      +'.bb-heart-pill{font-size:12px;padding:5px 10px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;color:var(--bb-ink);font-family:var(--bb-body-font)}'
+      +'.bb-key-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}'
+      +'.bb-key-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}'
+      +'.bb-key-btn.bb-key-disabled{opacity:.3;pointer-events:none}'
+      +'.bb-key-add{font-size:16px;color:var(--bb-sub);border-style:dashed}'
+      +'.bb-key-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}'
+      +'.bb-key-swatch.bb-swatch-active{border-color:#3B2510}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -502,17 +520,12 @@
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
+            +'<div class="bb-field" style="text-align:center"><label>Custom Keys</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Start date</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
-            +'<div class="bb-field" style="text-align:center">'
-              +'<label>Signal</label>'
-              +'<button class="bb-heart-pill" id="bb-d-signal">'
-                +'<span id="bb-d-signal-shape" style="display:inline-block;width:14px;height:14px"></span><span id="bb-d-signal-label">Tap to signal</span>'
-              +'</button>'
-            +'</div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button></div></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button></div></div>'
@@ -552,15 +565,31 @@
             +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
               +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
             +'</div></div>'
-            +'<div class="bb-field"><label>Signal shape</label><div class="bb-flags">'
-              +SIGNAL_SHAPES.map(function(s){ return '<button class="bb-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:inline-block;width:18px;height:18px;'+_bbShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
-            +'</div></div>'
-            +'<div class="bb-field"><label>Signal color</label><input type="color" id="bb-signal-color"></div>'
-            +'<div class="bb-field"><label>Signal meaning</label><input type="text" id="bb-signal-meaning" placeholder="What does this signal mean?"></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
       setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
+    }
+    if(!document.getElementById('bb-keybuilder-overlay')){
+      var kbOv=document.createElement('div');
+      kbOv.id='bb-keybuilder-overlay'; kbOv.className='bb-overlay';
+      kbOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Key</span><button class="bb-close" id="bb-keybuilder-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field"><label>Shape</label><div class="bb-flags">'
+              +SIGNAL_SHAPES.map(function(s){ return '<button class="bb-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:inline-block;width:18px;height:18px;'+_bbShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
+            +'</div></div>'
+            +'<div class="bb-field"><label>Color</label><div class="bb-swatches">'
+              +KEY_COLORS.map(function(col){ return '<button class="bb-key-swatch" data-color="'+col+'" style="background:'+col+'"></button>'; }).join('')
+            +'</div></div>'
+            +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this key mean?"></div>'
+            +'<button class="bb-flag-btn" id="bb-keybuilder-save" style="width:100%">Save</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(kbOv);
+      kbOv.addEventListener('click', function(e){ if(e.target===kbOv) closeKeyBuilder(); });
+      _bbMakeDraggable(kbOv.querySelector('.bb-overlay-card'), kbOv.querySelector('.bb-overlay-head'));
     }
 
     T().registerPageNum('s-briefing-board', '9350');
@@ -587,7 +616,7 @@
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
-    var _signalDef=_bbLoadSignalDef();
+    var _keyLib=_bbLoadKeyLibrary();
     var cards=_bbCardsList().filter(function(c){ return !c.archived; });
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
@@ -628,7 +657,10 @@
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +(c.signal ? ('<div class="bb-signal-badge" style="'+_bbShapeCSS(_signalDef.shape,_signalDef.color)+'"></div>') : '')
+          +((c.keys && c.keys.length) ? ('<div class="bb-key-badges">'+c.keys.map(function(kid){
+              var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
+              return k ? '<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'" title="'+_esc(k.meaning||'')+'"></span>' : '';
+            }).join('')+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         target.appendChild(el);
@@ -707,7 +739,7 @@
     document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
-    _bbUpdateSignalUI(c);
+    _bbRenderKeyRow(c);
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -768,68 +800,90 @@
     });
   }
 
-  // Signal -- one traveler-defined shape+color+meaning per board (set in
-  // Board Settings), tapped on/off per card. Replaces the old Signal-flag
-  // (red/green/blue) and Resonance-heart systems -- Larry, July 20.
-  function _bbUpdateSignalUI(c){
-    var def=_bbLoadSignalDef();
-    var shapeEl=document.getElementById('bb-d-signal-shape');
-    var labelEl=document.getElementById('bb-d-signal-label');
-    var btn=document.getElementById('bb-d-signal');
-    if(shapeEl) shapeEl.setAttribute('style','display:inline-block;width:14px;height:14px;'+_bbShapeCSS(def.shape, def.color));
-    if(labelEl) labelEl.textContent = c.signal ? (def.meaning || 'Signaled') : 'Tap to signal';
-    if(btn) btn.classList.toggle('bb-flag-active', !!c.signal);
-  }
+  // Custom Keys -- a board-wide library of up to 6 traveler-defined
+  // keys (shape+color+meaning), built in the Add-a-Key overlay (9390),
+  // up to 3 tapped on per card right on the Briefing Card back. Replaces
+  // the old one-per-board Signal (and, before that, the Signal-flag and
+  // Resonance-heart systems) -- Larry, July 21, 2026. Three-strikes rule:
+  // once a card has 3 keys checked, the rest quietly disable rather than
+  // erroring -- uncheck one to free a slot.
+  var _bbKeyDraft = {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
 
-  function wireSignalButton(){
-    T().wire('bb-d-signal', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
-      if(!c) return;
-      c.signal=!c.signal;
-      _bbSaveLocal(_bbCardsList());
-      _bbUpdateSignalUI(c);
-    });
-  }
-
-  function _bbHighlightSignalShape(shape){
-    var btns=document.querySelectorAll('#bb-settings-overlay .bb-shape-btn');
-    for(var i=0;i<btns.length;i++){
-      btns[i].classList.toggle('bb-shape-active', btns[i].getAttribute('data-shape')===shape);
-    }
-  }
-
-  function wireSignalSettings(){
-    var def=_bbLoadSignalDef();
-    _bbHighlightSignalShape(def.shape);
-    var colorEl=document.getElementById('bb-signal-color');
-    var meaningEl=document.getElementById('bb-signal-meaning');
-    if(colorEl) colorEl.value=def.color;
-    if(meaningEl) meaningEl.value=def.meaning;
-
-    document.querySelectorAll('#bb-settings-overlay .bb-shape-btn').forEach(function(btn){
+  function _bbRenderKeyRow(c){
+    var row=document.getElementById('bb-d-key-row'); if(!row) return;
+    var lib=_bbLoadKeyLibrary();
+    var active=c.keys||[];
+    var atMax = active.length>=MAX_KEYS_PER_CARD;
+    row.innerHTML = lib.map(function(k){
+      var isActive = active.indexOf(k.id)>=0;
+      var disabled = atMax && !isActive;
+      var shapeColor = isActive ? k.color : '#d8d0c0';
+      return '<button class="bb-key-btn'+(disabled?' bb-key-disabled':'')+'" data-key-id="'+k.id+'" title="'+_esc(k.meaning||'')+'">'
+        +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, shapeColor)+'"></span>'
+        +'</button>';
+    }).join('') + (lib.length<MAX_KEY_LIBRARY ? '<button class="bb-key-btn bb-key-add" id="bb-d-key-add" title="Add a key">+</button>' : '');
+    row.querySelectorAll('.bb-key-btn[data-key-id]').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var d=_bbLoadSignalDef();
-        d.shape=btn.getAttribute('data-shape');
-        _bbSaveSignalDef(d);
-        _bbHighlightSignalShape(d.shape);
+        if(btn.classList.contains('bb-key-disabled')) return;
+        _bbToggleCardKey(c, btn.getAttribute('data-key-id'));
+        _bbSaveLocal(_bbCardsList());
+        _bbRenderKeyRow(c);
         renderBoard();
       });
     });
-    if(colorEl){
-      colorEl.addEventListener('input', function(){
-        var d=_bbLoadSignalDef();
-        d.color=colorEl.value;
-        _bbSaveSignalDef(d);
-        renderBoard();
+    var addBtn=document.getElementById('bb-d-key-add');
+    if(addBtn) addBtn.addEventListener('click', openKeyBuilder);
+  }
+
+  function openKeyBuilder(){
+    _bbKeyDraft = {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
+    var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value='';
+    _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
+    _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
+    var ov=document.getElementById('bb-keybuilder-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeKeyBuilder(){
+    var ov=document.getElementById('bb-keybuilder-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function _bbHighlightKeyBuilderShape(shape){
+    document.querySelectorAll('#bb-keybuilder-overlay .bb-shape-btn').forEach(function(btn){
+      btn.classList.toggle('bb-shape-active', btn.getAttribute('data-shape')===shape);
+    });
+  }
+  function _bbHighlightKeyBuilderColor(color){
+    document.querySelectorAll('#bb-keybuilder-overlay .bb-key-swatch').forEach(function(btn){
+      btn.classList.toggle('bb-swatch-active', btn.getAttribute('data-color')===color);
+    });
+  }
+  function saveNewKey(){
+    var lib=_bbLoadKeyLibrary();
+    if(lib.length>=MAX_KEY_LIBRARY) return;
+    var meaningEl=document.getElementById('bb-keybuilder-meaning');
+    var meaning=meaningEl?meaningEl.value.trim():'';
+    if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
+    lib.push({id:String(Date.now()), shape:_bbKeyDraft.shape, color:_bbKeyDraft.color, meaning:meaning});
+    _bbSaveKeyLibrary(lib);
+    closeKeyBuilder();
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(c) _bbRenderKeyRow(c);
+    renderBoard();
+  }
+  function wireKeyBuilder(){
+    document.querySelectorAll('#bb-keybuilder-overlay .bb-shape-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        _bbKeyDraft.shape=btn.getAttribute('data-shape');
+        _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
       });
-    }
-    if(meaningEl){
-      meaningEl.addEventListener('blur', function(){
-        var d=_bbLoadSignalDef();
-        d.meaning=meaningEl.value;
-        _bbSaveSignalDef(d);
+    });
+    document.querySelectorAll('#bb-keybuilder-overlay .bb-key-swatch').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        _bbKeyDraft.color=btn.getAttribute('data-color');
+        _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
       });
-    }
+    });
+    T().wire('bb-keybuilder-save', saveNewKey);
+    T().wire('bb-keybuilder-close', closeKeyBuilder);
   }
 
   function wirePriorityButtons(){
@@ -928,17 +982,16 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', signal:false, priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      cards.push({id:Date.now(), col:'do', assigned:_bbToday(), task:text, person:'', due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
     });
 
     T().wire('bb-detail-close', closeCardDetail);
-    wireSignalButton();
     wirePriorityButtons();
     wireReviewButtons();
-    wireSignalSettings();
+    wireKeyBuilder();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);

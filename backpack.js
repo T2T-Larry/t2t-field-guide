@@ -412,7 +412,12 @@
         var bbAddOpen = !!(bbAddOv && bbAddOv.classList.contains('active'));
         var bbDetailOv=document.getElementById('bb-detail-overlay');
         var bbDetailOpen = !!(bbDetailOv && bbDetailOv.classList.contains('active'));
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (_pageNums[cur] || '—')))))));
+        // Add a Key (9390) has the same "sits on top without calling nav()"
+        // situation as the other Briefing Board overlays above -- same fix.
+        // Larry, July 21, 2026.
+        var bbKeyBuilderOv=document.getElementById('bb-keybuilder-overlay');
+        var bbKeyBuilderOpen = !!(bbKeyBuilderOv && bbKeyBuilderOv.classList.contains('active'));
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (_pageNums[cur] || '—'))))))));
         showPageToast(num);
       }
     });
