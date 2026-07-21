@@ -56,16 +56,22 @@
    count (tap to add, hold to remove, same gesture as the ISB's
    sb-heart-pill) on the back of the card, for resonance.
 
-   Priority, July 20, 2026, corrected July 21 -- Larry's "3=5"
+   Priority, July 20, 2026, corrected July 21 (twice) -- Larry's "3=5"
    principle: give a group three choices (High/Medium/Low) and group
    discussion almost always settles on five real answers, because
    disagreement between two people's H and M becomes MH, between M and
-   L becomes ML, etc. So the scale is the seven direct-pick levels HH /
-   H / MH / M / ML / L / LL, HH and LL being the extremes beyond plain
-   H and L -- not three buttons that cycle through repeated letters.
-   (The first build of this, July 20, shipped a repeated-letter cycle
-   -- H/HH/HHH and L/LL/LLL -- which drifted from this very principle;
-   fixed July 21 to the blended scale actually described here.)
+   L becomes ML. Landed UI: just 3 buttons (H, M, L, not 5 or 7), each
+   its own 3-click cycle that always escalates toward more urgent --
+   H: H -> HH -> off. M: M -> MH -> off. L: L -> ML -> off. HH is H's
+   own escalation (nothing sits above H to blend toward); M and L each
+   escalate by blending one step toward H. No LL -- there's no
+   direction to escalate a low priority further away from center, and
+   Larry didn't want the extra choice anyway ("trying to avoid all
+   those choices"). Six real values total: HH, H, MH, M, ML, L.
+   (First built July 20 as a repeated-letter cycle -- H/HH/HHH,
+   L/LL/LLL -- then briefly rebuilt July 21 as 7 always-visible direct-
+   pick buttons; both missed the mark. This 3-button escalating cycle
+   is what Larry actually wanted.)
    Each column sorts by priority, HH at the top, unset priority at the
    bottom (not yet triaged) -- ties keep whatever order they already
    had (stable sort), same as how the cards landed there. A near or
@@ -136,20 +142,24 @@
   ];
 
   var REVIEWERS = ['Larry']; // stand-in list until the real roster exists
-  // Priority, corrected July 21, 2026 -- seven direct-pick levels, not
-  // a repeated-letter cycle. HH/H/MH sort toward urgent (red family),
-  // M is the true middle (green), ML/L/LL sort toward not-urgent
-  // (yellow family). Clicking a level selects it outright; clicking the
-  // already-selected level clears it (unset).
-  var PRIORITY_LEVELS = ['HH','H','MH','M','ML','L','LL'];
+  // Priority, corrected July 21, 2026 (second pass) -- 3 buttons (H, M,
+  // L), each its own 3-click cycle that always escalates toward more
+  // urgent: H:[H,HH,off], M:[M,MH,off], L:[L,ML,off]. PRI_BASE_OF maps
+  // any stored value back to which of the 3 buttons "owns" it -- needed
+  // because ML starts with the letter M but belongs to the L button.
+  var PRIORITY_BASE = ['H','M','L'];
+  var PRI_CYCLE = { H:['H','HH',''], M:['M','MH',''], L:['L','ML',''] };
+  var PRI_BASE_OF = { H:'H', HH:'H', M:'M', MH:'M', L:'L', ML:'L' };
   // Rank: lower number sorts higher (H-side). HH is the most urgent
-  // thing on the board; LL is the least -- further from the center
-  // than plain H/L in both directions.
-  var PRI_ORDER = {HH:0, H:1, MH:2, M:3, ML:4, L:5, LL:6};
-  var PRI_COLOR = {HH:'#7a0000', H:'#c0272a', MH:'#e0776a', M:'#3F8F3F', ML:'#e0c22e', L:'#eeddaa', LL:'#f8f2df'};
-  var PRI_TEXT = {HH:'#fff', H:'#fff', MH:'#3B2510', M:'#fff', ML:'#3B2510', L:'#3B2510', LL:'#3B2510'};
-  function _bbNextPriority(current, level){
-    return current===level ? '' : level;
+  // thing on the board; L is the least -- there's no lower rung than
+  // plain L, since nothing escalates a low priority further down.
+  var PRI_ORDER = {HH:0, H:1, MH:2, M:3, ML:4, L:5};
+  var PRI_COLOR = {HH:'#7a0000', H:'#c0272a', MH:'#e0776a', M:'#3F8F3F', ML:'#e0c22e', L:'#eeddaa'};
+  var PRI_TEXT = {HH:'#fff', H:'#fff', MH:'#3B2510', M:'#fff', ML:'#3B2510', L:'#3B2510'};
+  function _bbNextPriority(current, base){
+    var seq=PRI_CYCLE[base];
+    var idx = PRI_BASE_OF[current]===base ? seq.indexOf(current) : -1;
+    return idx===-1 ? seq[0] : seq[(idx+1)%seq.length];
   }
 
   var THEMES = [
@@ -677,7 +687,7 @@
   }
 
   // Larry, July 20, 2026: anything WITH a priority outranks anything
-  // without one (unset already sorts last, rank 7, below LL's 6). On top
+  // without one (unset already sorts last, rank 7, below L's 5). On top
   // of that, a near or passed due date pulls a card's effective rank up
   // for sorting purposes -- it might carry an L, but a due date due
   // today (or overdue) says otherwise. This only ever moves a card UP
@@ -956,7 +966,7 @@
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
-              +PRIORITY_LEVELS.map(function(p){ return '<button class="bb-pri-btn" data-pri-level="'+p+'" style="background:'+PRI_COLOR[p]+';color:'+PRI_TEXT[p]+';border-color:'+PRI_COLOR[p]+'">'+p+'</button>'; }).join('')
+              +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
             +'<div class="bb-field"><label>Custom Keys</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
@@ -1207,10 +1217,18 @@
   function _bbHighlightPriority(priority){
     var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
     for(var i=0;i<btns.length;i++){
-      var level=btns[i].getAttribute('data-pri-level');
-      var active = priority===level;
-      btns[i].style.boxShadow = active ? '0 0 0 2px var(--bb-ink, #3B2510) inset' : '';
-      btns[i].style.opacity = (!priority || active) ? '1' : '0.55';
+      var base=btns[i].getAttribute('data-pri-base');
+      var active = !!priority && PRI_BASE_OF[priority]===base;
+      btns[i].textContent = active ? priority : base;
+      if(active){
+        btns[i].style.background=PRI_COLOR[priority];
+        btns[i].style.borderColor=PRI_COLOR[priority];
+        btns[i].style.color = PRI_TEXT[priority];
+      } else {
+        btns[i].style.background='';
+        btns[i].style.borderColor='';
+        btns[i].style.color='';
+      }
     }
   }
 
@@ -1474,8 +1492,8 @@
         btn.addEventListener('click', function(){
           var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
           if(!c) return;
-          var level=btn.getAttribute('data-pri-level');
-          c.priority=_bbNextPriority(c.priority||'', level);
+          var base=btn.getAttribute('data-pri-base');
+          c.priority=_bbNextPriority(c.priority||'', base);
           _bbSaveLocal(_bbCardsList());
           _bbHighlightPriority(c.priority);
           renderBoard();
