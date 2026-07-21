@@ -366,6 +366,13 @@
       var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
       if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
       T2TShared.currentTopicId=null; T2TShared.filter=null;
+      // Return override, added July 21, 2026 for the Briefing Board's
+      // Unhooking Ideas hand-off -- if whoever sent us here asked to be
+      // returned to specifically (e.g. the Hang-Up card that opened
+      // this board), honor that before falling back to the normal
+      // chapter-flow / backpack rules below.
+      var returnOverride = T().consumeReturnOverride && T().consumeReturnOverride();
+      if(returnOverride){ returnOverride(); return; }
       var viaChapter = T().consumeSeaChapterEntry();
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
       else { T().returnToMG(); }

@@ -42,7 +42,16 @@
   var primaryPage = null;
   var mgOrigin    = null;
   var seaChapterEntry = false; /* true only when ISB was entered via the normal CREATE chapter flow (not via the ☰ backpack) */
+  // Generic exit-return override, added July 21, 2026 for the Briefing
+  // Board's Unhooking Ideas hand-off -- lets a screen say "when the
+  // Storyboard closes via X, come back to ME specifically" instead of
+  // always falling back to the backpack menu. A plain function (not a
+  // screen id string) so the caller can also restore whatever state it
+  // needs (e.g. reopening a specific card), not just navigate. Same
+  // shape as seaChapterEntry just above -- set on the way in, consumed
+  // (read-once) on the way out.
   var _primaryPages = [];
+  var _returnOverride = null;
 
   (function restoreNavState(){
     try {
@@ -1045,6 +1054,8 @@
     markSeaChapterEntry:function(){ seaChapterEntry = true; },
     getSeaChapterEntry:function(){ return seaChapterEntry; },
     consumeSeaChapterEntry:function(){ var v=seaChapterEntry; seaChapterEntry=false; return v; },
+    markReturnOverride:function(fn){ _returnOverride = (typeof fn==='function') ? fn : null; },
+    consumeReturnOverride:function(){ var f=_returnOverride; _returnOverride=null; return f; },
     openSeaTrash:function(){
       if (window.T2TSea) return window.T2TSea.openTrash();
     },

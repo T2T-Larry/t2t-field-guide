@@ -146,7 +146,7 @@
      Notes -- Notes is a running log, Situation is the one-line answer
      to "why can't this move," so opening the card shows the ask for
      help immediately rather than requiring a scroll through history.
-   - Talk it through: hands the Situation off to the Idea Storyboard
+   - Unhooking Ideas: hands the Situation off to the Idea Storyboard
      instead of re-inventing discussion tools here. Button creates (or
      re-opens, via c.hangupHeaderId) a Storyboard Header named after the
      card's own task -- the hang-up becomes the TOPIC, per Larry's own
@@ -935,8 +935,10 @@
       +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
       +'.bb-overlay.active{display:flex}'
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
+      +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.bb-overlay-card.bb-hangup-active .bb-overlay-title{color:#a3372b}'
       +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:13px;color:var(--bb-ink)}'
       +'.bb-close:hover{background:var(--bb-bg)}'
       +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
@@ -1001,7 +1003,7 @@
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
-              +'<button class="jb" id="bb-d-talk-it-through" type="button" style="width:100%;margin-bottom:4px">&#128172; Talk it through</button>'
+              +'<button class="jb" id="bb-d-unhook-ideas" type="button" style="width:100%;margin-bottom:4px">&#129437; Unhooking Ideas</button>'
             +'</div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
@@ -1284,6 +1286,20 @@
     document.getElementById('bb-d-situation').value=c.situation||'';
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
+    // Problem-red back, July 21, 2026 (evening) -- Larry: the card back
+    // itself should read as a problem card while it's sitting in
+    // HANG-UPS, not just the field that's revealed. Reuses the same
+    // fixed Hang-Ups red (#a3372b) already used on the column header and
+    // flag buttons -- one semantic color for "this is stuck," everywhere.
+    var _bbDetailCard=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+    if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
+    // Unhooking Ideas button, July 21, 2026 (evening) -- this is a
+    // permanent overlay element, never re-created between cards, so its
+    // disabled/"Opening…" state from a previous click has to be reset
+    // explicitly here or it stays stuck disabled on the next card opened
+    // (the bug Larry hit working his way back to the card).
+    var _bbUnhookBtn=document.getElementById('bb-d-unhook-ideas');
+    if(_bbUnhookBtn){ _bbUnhookBtn.disabled=false; _bbUnhookBtn.textContent='\u{1FA9D} Unhooking Ideas'; }
     document.getElementById('bb-d-task').value=c.task||'';
     document.getElementById('bb-d-person').value=c.person||'';
     document.getElementById('bb-d-due').value=c.due||'';
@@ -1574,7 +1590,7 @@
     });
   }
 
-  // Talk it through, July 21, 2026 -- hands a Hang-Up card's Situation
+  // Unhooking Ideas, July 21, 2026 -- hands a Hang-Up card's Situation
   // off to the Idea Storyboard rather than building a second discussion
   // tool here. First click creates a Storyboard Header named after the
   // card's own task (the hang-up becomes the TOPIC, per Larry's framing)
@@ -1587,14 +1603,14 @@
   // Storyboard already drilled into that Header -- both are existing
   // cross-module integration points, not a new reach into
   // idea-storyboard-9710.js itself.
-  async function _bbTalkItThrough(){
+  async function _bbUnhookIdeas(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c) return;
     var taskField=document.getElementById('bb-d-task');
     var situationField=document.getElementById('bb-d-situation');
     var situationText=situationField?situationField.value.trim():'';
     c.situation=situationText;
-    var btn=document.getElementById('bb-d-talk-it-through');
+    var btn=document.getElementById('bb-d-unhook-ideas');
     if(btn){ btn.disabled=true; btn.textContent='Opening…'; }
     try{
       if(!c.hangupHeaderId){
@@ -1611,11 +1627,23 @@
       }
       _bbSaveLocal(_bbCardsList());
       if(window.T2TShared){ window.T2TShared.currentTopicId=c.hangupHeaderId; window.T2TShared.filter=c.hangupHeaderId; }
+      // Return override, July 21, 2026 -- without this, X on the
+      // Storyboard always fell back to the backpack menu, not back to
+      // the Hang-Up card that sent you there (confusing, per Larry).
+      // Captures the card id now, since _bbOpenCardId gets cleared by
+      // closeCardDetail() right below.
+      var _bbReturnCardId=c.id;
+      if(T().markReturnOverride){
+        T().markReturnOverride(function(){
+          T().nav('s-briefing-board');
+          openCardDetail(_bbReturnCardId);
+        });
+      }
       closeCardDetail();
       T().nav('s-sea-of-ideas-cluster');
     }catch(e){
-      console.error('Talk it through failed', e);
-      if(btn){ btn.disabled=false; btn.textContent='\u{1F4AC} Talk it through'; }
+      console.error('Unhooking Ideas failed', e);
+      if(btn){ btn.disabled=false; btn.textContent='\u{1FA9D} Unhooking Ideas'; }
       alert('Could not open the storyboard: '+(e&&e.message?e.message:'unknown error'));
     }
   }
@@ -1684,7 +1712,7 @@
     });
 
     T().wire('bb-detail-close', closeCardDetail);
-    T().wire('bb-d-talk-it-through', _bbTalkItThrough);
+    T().wire('bb-d-unhook-ideas', _bbUnhookIdeas);
     wirePriorityButtons();
     wireReviewButtons();
     wireKeyBuilder();
