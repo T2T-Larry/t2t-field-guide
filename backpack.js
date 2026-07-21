@@ -417,7 +417,10 @@
         // Larry, July 21, 2026.
         var bbKeyBuilderOv=document.getElementById('bb-keybuilder-overlay');
         var bbKeyBuilderOpen = !!(bbKeyBuilderOv && bbKeyBuilderOv.classList.contains('active'));
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (_pageNums[cur] || '—'))))))));
+        // Choose a Key (9395) -- same situation as 9390 above.
+        var bbKeyPickerOv=document.getElementById('bb-keypicker-overlay');
+        var bbKeyPickerOpen = !!(bbKeyPickerOv && bbKeyPickerOv.classList.contains('active'));
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : (_pageNums[cur] || '—')))))))));
         showPageToast(num);
       }
     });

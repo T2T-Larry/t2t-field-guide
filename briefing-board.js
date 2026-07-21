@@ -27,6 +27,11 @@
      9390  bb-keybuilder-overlay  Add a Key -- builds one Custom Keys
                                 library entry (shape+color+meaning).
                                 9380 stays reserved for the Done archive.
+     9395  bb-keypicker-overlay   Choose a Key -- opened by tapping any
+                                of a card's 3 fixed key-slot circles.
+                                Lists the library to pick from, Remove
+                                (if the slot's filled), or Build a new
+                                key (drops into 9390, slot-aware).
    9360/9370 converted from nav()'d screens to overlays July 20, 2026,
    per Larry: the card should sit ON TOP of the board (board stays
    visible/live underneath, dimmed), closed via an explicit X or by
@@ -186,12 +191,6 @@
   }
   function _bbSaveKeyLibrary(lib){
     try{ sessionStorage.setItem('bbKeyLibrary', JSON.stringify(lib)); }catch(e){}
-  }
-  function _bbToggleCardKey(c, keyId){
-    c.keys = c.keys || [];
-    var idx=c.keys.indexOf(keyId);
-    if(idx>=0){ c.keys.splice(idx,1); }
-    else { if(c.keys.length>=MAX_KEYS_PER_CARD) return; c.keys.push(keyId); }
   }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
@@ -441,10 +440,13 @@
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
       +'.bb-key-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}'
       +'.bb-key-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}'
-      +'.bb-key-btn.bb-key-disabled{opacity:.3;pointer-events:none}'
       +'.bb-key-add{font-size:16px;color:var(--bb-sub);border-style:dashed}'
       +'.bb-key-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}'
       +'.bb-key-swatch.bb-swatch-active{border-color:#3B2510}'
+      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;width:100%;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;margin-bottom:6px;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);text-align:left}'
+      +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
+      +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
+      +'.bb-key-pick-empty-msg{font-size:12px;color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -591,6 +593,22 @@
       kbOv.addEventListener('click', function(e){ if(e.target===kbOv) closeKeyBuilder(); });
       _bbMakeDraggable(kbOv.querySelector('.bb-overlay-card'), kbOv.querySelector('.bb-overlay-head'));
     }
+    if(!document.getElementById('bb-keypicker-overlay')){
+      var kpOv=document.createElement('div');
+      kpOv.id='bb-keypicker-overlay'; kpOv.className='bb-overlay';
+      kpOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Choose a Key</span><button class="bb-close" id="bb-keypicker-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field" id="bb-keypicker-list"></div>'
+            +'<button class="bb-flag-btn" id="bb-keypicker-remove" style="width:100%;margin-bottom:8px">Remove this key</button>'
+            +'<button class="bb-flag-btn" id="bb-keypicker-new" style="width:100%">Build a new key</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(kpOv);
+      kpOv.addEventListener('click', function(e){ if(e.target===kpOv) closeKeyPicker(); });
+      _bbMakeDraggable(kpOv.querySelector('.bb-overlay-card'), kpOv.querySelector('.bb-overlay-head'));
+    }
 
     T().registerPageNum('s-briefing-board', '9350');
     T().registerUtilScreen('s-briefing-board');
@@ -657,7 +675,7 @@
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +((c.keys && c.keys.length) ? ('<div class="bb-key-badges">'+c.keys.map(function(kid){
+          +((c.keys && c.keys.some(function(k){ return k; })) ? ('<div class="bb-key-badges">'+c.keys.filter(function(kid){ return kid; }).map(function(kid){
               var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
               return k ? '<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'" title="'+_esc(k.meaning||'')+'"></span>' : '';
             }).join('')+'</div>') : '')
@@ -801,38 +819,105 @@
   }
 
   // Custom Keys -- a board-wide library of up to 6 traveler-defined
-  // keys (shape+color+meaning), built in the Add-a-Key overlay (9390),
-  // up to 3 tapped on per card right on the Briefing Card back. Replaces
-  // the old one-per-board Signal (and, before that, the Signal-flag and
-  // Resonance-heart systems) -- Larry, July 21, 2026. Three-strikes rule:
-  // once a card has 3 keys checked, the rest quietly disable rather than
-  // erroring -- uncheck one to free a slot.
+  // keys (shape+color+meaning), built in the Add-a-Key overlay (9390).
+  // July 21, 2026 (afternoon), Larry: the card back always shows exactly
+  // 3 fixed circles -- not the whole library -- one per slot. An empty
+  // slot reads as a dashed "+"; tapping ANY circle (empty or filled)
+  // opens Choose a Key (9395), which now does triple duty: assign an
+  // existing library entry, remove what's there, or jump into building
+  // a brand new one. Meanings stay hover-only by design ("can't
+  // remember what it means? hover over it") -- no separate legend, kept
+  // intentionally intuitive. Replaces the earlier "show all 6, tap to
+  // toggle, three-strikes disable" version from earlier today, which
+  // worked but left meanings undiscoverable without a hover, and had no
+  // way to browse the library before committing to a new one.
   var _bbKeyDraft = {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
+  var _bbOpenSlotIndex = null;
 
   function _bbRenderKeyRow(c){
     var row=document.getElementById('bb-d-key-row'); if(!row) return;
     var lib=_bbLoadKeyLibrary();
-    var active=c.keys||[];
-    var atMax = active.length>=MAX_KEYS_PER_CARD;
-    row.innerHTML = lib.map(function(k){
-      var isActive = active.indexOf(k.id)>=0;
-      var disabled = atMax && !isActive;
-      var shapeColor = isActive ? k.color : '#d8d0c0';
-      return '<button class="bb-key-btn'+(disabled?' bb-key-disabled':'')+'" data-key-id="'+k.id+'" title="'+_esc(k.meaning||'')+'">'
-        +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, shapeColor)+'"></span>'
-        +'</button>';
-    }).join('') + (lib.length<MAX_KEY_LIBRARY ? '<button class="bb-key-btn bb-key-add" id="bb-d-key-add" title="Add a key">+</button>' : '');
-    row.querySelectorAll('.bb-key-btn[data-key-id]').forEach(function(btn){
+    var keys=c.keys||[];
+    var html='';
+    for(var i=0;i<MAX_KEYS_PER_CARD;i++){
+      var kid=keys[i];
+      var k = kid ? lib.filter(function(x){ return x.id===kid; })[0] : null;
+      if(k){
+        html += '<button class="bb-key-btn" data-slot="'+i+'" title="'+_esc(k.meaning||'')+'">'
+          +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, k.color)+'"></span>'
+          +'</button>';
+      } else {
+        html += '<button class="bb-key-btn bb-key-add" data-slot="'+i+'" title="Add a key">+</button>';
+      }
+    }
+    row.innerHTML = html;
+    row.querySelectorAll('.bb-key-btn').forEach(function(btn){
       btn.addEventListener('click', function(){
-        if(btn.classList.contains('bb-key-disabled')) return;
-        _bbToggleCardKey(c, btn.getAttribute('data-key-id'));
-        _bbSaveLocal(_bbCardsList());
-        _bbRenderKeyRow(c);
-        renderBoard();
+        openKeyPicker(Number(btn.getAttribute('data-slot')));
       });
     });
-    var addBtn=document.getElementById('bb-d-key-add');
-    if(addBtn) addBtn.addEventListener('click', openKeyBuilder);
+  }
+
+  function openKeyPicker(slotIndex){
+    _bbOpenSlotIndex = slotIndex;
+    _bbRenderKeyPickerList();
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var hasKey = !!(c && c.keys && c.keys[slotIndex]);
+    var removeBtn=document.getElementById('bb-keypicker-remove');
+    if(removeBtn) removeBtn.style.display = hasKey ? '' : 'none';
+    var ov=document.getElementById('bb-keypicker-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeKeyPicker(){
+    var ov=document.getElementById('bb-keypicker-overlay'); if(ov) ov.classList.remove('active');
+  }
+  // Shows the whole library every time a slot is tapped -- Larry's "so
+  // you know what is already possible" ask -- greying out any entry
+  // already sitting in one of this card's OTHER two slots, since one
+  // card showing the same key twice would just be confusing.
+  function _bbRenderKeyPickerList(){
+    var list=document.getElementById('bb-keypicker-list'); if(!list) return;
+    var lib=_bbLoadKeyLibrary();
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var keys=(c && c.keys) || [];
+    if(!lib.length){
+      list.innerHTML='<div class="bb-key-pick-empty-msg">No keys yet &mdash; build your first one below.</div>';
+    } else {
+      list.innerHTML = lib.map(function(k){
+        var usedElsewhere = keys.indexOf(k.id)>=0 && keys[_bbOpenSlotIndex]!==k.id;
+        return '<button class="bb-key-pick-row'+(usedElsewhere?' bb-key-pick-disabled':'')+'" data-key-id="'+k.id+'">'
+          +'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>'
+          +'<span class="bb-key-pick-meaning">'+_esc(k.meaning||'')+'</span>'
+          +'</button>';
+      }).join('');
+      list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if(btn.classList.contains('bb-key-pick-disabled')) return;
+          assignKeyToSlot(btn.getAttribute('data-key-id'));
+        });
+      });
+    }
+    var newBtn=document.getElementById('bb-keypicker-new');
+    if(newBtn) newBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
+  }
+  function assignKeyToSlot(keyId){
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(!c) return;
+    c.keys = c.keys || [];
+    c.keys[_bbOpenSlotIndex] = keyId;
+    _bbSaveLocal(_bbCardsList());
+    closeKeyPicker();
+    _bbRenderKeyRow(c);
+    renderBoard();
+  }
+  function removeKeyFromSlot(){
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(!c || !c.keys) return;
+    c.keys[_bbOpenSlotIndex] = null;
+    _bbSaveLocal(_bbCardsList());
+    closeKeyPicker();
+    _bbRenderKeyRow(c);
+    renderBoard();
   }
 
   function openKeyBuilder(){
@@ -856,16 +941,26 @@
       btn.classList.toggle('bb-swatch-active', btn.getAttribute('data-color')===color);
     });
   }
+  // Always reached through Choose a Key now, so _bbOpenSlotIndex is
+  // already set to the slot that triggered it -- saving both grows the
+  // library AND fills that slot in one step, no need to reopen the
+  // picker afterward.
   function saveNewKey(){
     var lib=_bbLoadKeyLibrary();
     if(lib.length>=MAX_KEY_LIBRARY) return;
     var meaningEl=document.getElementById('bb-keybuilder-meaning');
     var meaning=meaningEl?meaningEl.value.trim():'';
     if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
-    lib.push({id:String(Date.now()), shape:_bbKeyDraft.shape, color:_bbKeyDraft.color, meaning:meaning});
+    var newKey={id:String(Date.now()), shape:_bbKeyDraft.shape, color:_bbKeyDraft.color, meaning:meaning};
+    lib.push(newKey);
     _bbSaveKeyLibrary(lib);
-    closeKeyBuilder();
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(c){
+      c.keys = c.keys || [];
+      c.keys[_bbOpenSlotIndex] = newKey.id;
+      _bbSaveLocal(_bbCardsList());
+    }
+    closeKeyBuilder();
     if(c) _bbRenderKeyRow(c);
     renderBoard();
   }
@@ -884,6 +979,14 @@
     });
     T().wire('bb-keybuilder-save', saveNewKey);
     T().wire('bb-keybuilder-close', closeKeyBuilder);
+  }
+  function wireKeyPicker(){
+    T().wire('bb-keypicker-close', closeKeyPicker);
+    T().wire('bb-keypicker-remove', removeKeyFromSlot);
+    T().wire('bb-keypicker-new', function(){
+      closeKeyPicker();
+      openKeyBuilder();
+    });
   }
 
   function wirePriorityButtons(){
@@ -992,6 +1095,7 @@
     wirePriorityButtons();
     wireReviewButtons();
     wireKeyBuilder();
+    wireKeyPicker();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
