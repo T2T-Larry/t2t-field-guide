@@ -285,7 +285,7 @@
       id: c.id, board_id: boardId, col: c.col,
       task: c.task||'', person: c.person||null, reviewed_by: c.reviewedBy||null,
       due_date: _bbToISODate(c.due), start_date: _bbToISODate(c.startDate), completed_date: _bbToISODate(c.completedDate),
-      budget: c.budget||null, priority: c.priority||'',
+      budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null
@@ -296,7 +296,7 @@
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
-      budget: row.budget||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
+      budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived
     };
@@ -775,6 +775,7 @@
             +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
             +'<div class="bb-field"><label>Start date</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
+            +'<div class="bb-field"><label>Notes</label><textarea id="bb-d-notes" placeholder="Context, decisions, why this is built the way it is..."></textarea></div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button></div></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button></div></div>'
@@ -1002,6 +1003,7 @@
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-start').value=c.startDate||'';
     document.getElementById('bb-d-budget').value=c.budget||'';
+    document.getElementById('bb-d-notes').value=c.notes||'';
     document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
     document.getElementById('bb-d-grow-note').value=c.growNote||'';
     document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
@@ -1020,6 +1022,7 @@
       c.due=document.getElementById('bb-d-due').value;
       c.startDate=document.getElementById('bb-d-start').value;
       c.budget=document.getElementById('bb-d-budget').value;
+      c.notes=document.getElementById('bb-d-notes').value;
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
       c.growNote=document.getElementById('bb-d-grow-note').value;
       _bbSaveLocal(_bbCardsList());
