@@ -1381,35 +1381,42 @@
 
   // Custom Keys -- a board-wide library of up to 6 traveler-defined
   // keys (shape+color+meaning), built in the Add-a-Key overlay (9390).
-  // July 21, 2026 (afternoon), Larry: the card back always shows exactly
-  // 3 fixed circles -- not the whole library -- one per slot. An empty
-  // slot reads as a dashed "+"; tapping ANY circle (empty or filled)
-  // opens Choose a Key (9395), which now does triple duty: assign an
-  // existing library entry, remove what's there, or jump into building
-  // a brand new one. Meanings stay hover-only by design ("can't
-  // remember what it means? hover over it") -- no separate legend, kept
-  // intentionally intuitive. Replaces the earlier "show all 6, tap to
-  // toggle, three-strikes disable" version from earlier today, which
-  // worked but left meanings undiscoverable without a hover, and had no
-  // way to browse the library before committing to a new one.
+  // A card holds up to 3 (c.keys, always kept gap-free -- see
+  // removeKeyFromSlot). Tapping ANY circle (empty or filled) opens
+  // Choose a Key (9395), which does triple duty: assign an existing
+  // library entry, remove what's there, or jump into building a brand
+  // new one. Meanings stay hover-only by design ("can't remember what
+  // it means? hover over it") -- no separate legend, kept intentionally
+  // intuitive.
+  // July 22, 2026, Larry: only ONE open "+" shows at a time, never all
+  // 3 circles up front -- a fresh card shows a single +, filling it
+  // reveals the next, filling that reveals the third. Once all 3 are
+  // filled, no separate + appears; tapping any of the 3 still swaps
+  // that slot for a different key (or removes it, or builds a new one
+  // in its place) -- same picker as always, just no 4th add icon.
+  // Before this, all 3 circles (empty ones dashed "+") showed at once
+  // per Larry's July 21 (afternoon) call -- replaced today per his ask
+  // to keep only one + visible.
   var _bbKeyDraft = {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
   var _bbOpenSlotIndex = null;
 
   function _bbRenderKeyRow(c){
     var row=document.getElementById('bb-d-key-row'); if(!row) return;
     var lib=_bbLoadKeyLibrary();
-    var keys=c.keys||[];
+    // July 22, 2026, Larry: show filled slots plus exactly ONE open "+" --
+    // never all 3 circles up front. c.keys is kept gap-free (see
+    // removeKeyFromSlot), so "next open slot" is always keys.length.
+    var keys=(c.keys||[]).filter(function(id){ return !!id; });
     var html='';
-    for(var i=0;i<MAX_KEYS_PER_CARD;i++){
-      var kid=keys[i];
-      var k = kid ? lib.filter(function(x){ return x.id===kid; })[0] : null;
-      if(k){
-        html += '<button class="bb-key-btn" data-slot="'+i+'" title="'+_esc(k.meaning||'')+'">'
-          +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, k.color)+'"></span>'
-          +'</button>';
-      } else {
-        html += '<button class="bb-key-btn bb-key-add" data-slot="'+i+'" title="Add a key">+</button>';
-      }
+    for(var i=0;i<keys.length;i++){
+      var k = lib.filter(function(x){ return x.id===keys[i]; })[0];
+      if(!k) continue;
+      html += '<button class="bb-key-btn" data-slot="'+i+'" title="'+_esc(k.meaning||'')+'">'
+        +'<span class="bb-key-shape" style="display:block;width:16px;height:16px;'+_bbShapeCSS(k.shape, k.color)+'"></span>'
+        +'</button>';
+    }
+    if(keys.length < MAX_KEYS_PER_CARD){
+      html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a key">+</button>';
     }
     row.innerHTML = html;
     row.querySelectorAll('.bb-key-btn').forEach(function(btn){
@@ -1474,7 +1481,10 @@
   function removeKeyFromSlot(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c || !c.keys) return;
-    c.keys[_bbOpenSlotIndex] = null;
+    // Splice, don't null out -- keeps the array gap-free so the next
+    // render shows the remaining keys packed left plus one "+", instead
+    // of a hole where the removed key used to sit.
+    c.keys.splice(_bbOpenSlotIndex, 1);
     _bbSaveLocal(_bbCardsList());
     closeKeyPicker();
     _bbRenderKeyRow(c);
