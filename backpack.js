@@ -74,6 +74,32 @@
     } catch(e) {}
   }
 
+  // July 22, 2026, Larry: called after a session resume (see index.html's
+  // _resumeSession and this file's own DOMContentLoaded) instead of always
+  // landing on a fixed screen -- tries the last screen actually visited
+  // first (by page number, so it works the same regardless of which file
+  // registered it), and only falls back to fallbackId if there's nothing
+  // saved yet or that screen isn't available in this file.
+  function resumeToLastPageOr(fallbackId){
+    var lastNum=null;
+    try{ lastNum=localStorage.getItem('bpLastPageNum'); }catch(e){}
+    if(lastNum){
+      var localId=_pageNumsReverse[lastNum];
+      if(localId && document.getElementById(localId)){ nav(localId); return; }
+    }
+    if(document.getElementById(fallbackId)) nav(fallbackId);
+  }
+
+  // The actual "reset" shortcut -- Larry: a button to reload the site and
+  // land back on the current page, instead of the manual reload-then-
+  // re-navigate dance. bpLastPageNum is already kept fresh by nav() above,
+  // so there's nothing extra to stash here; a plain reload is enough, and
+  // resumeToLastPageOr (run from the session-resume flow on the other
+  // side of the reload) does the actual returning.
+  function resetAndReturn(){
+    window.location.reload();
+  }
+
   /* ── GEMS REGISTRY ── */
   var _gemsRegistry = {};
 
@@ -229,6 +255,12 @@
     cur=id;
     if (_primaryPages.indexOf(id)!==-1) primaryPage=id;
     var pn=_pageNums[id]; if(pn) addVisited(pn);
+    // July 22, 2026, Larry: wants a shortcut to reload the site (to pick
+    // up a fresh code push) and land back on the same screen, instead of
+    // manually re-navigating every time. Track the most recent numbered
+    // screen continuously (not just on an explicit "reset" click) so it's
+    // always current, however the reload actually happens.
+    if(pn){ try{ localStorage.setItem('bpLastPageNum', pn); }catch(e){} }
     showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
     if (id==='s-journal-landing') { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
@@ -805,7 +837,7 @@
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('mg-overlay')) return;
     var div=document.createElement('div');
-    div.innerHTML='<div class="mg-overlay" id="mg-overlay"><div class="mg-modal"><div class="mg-wrap"><div class="mg-head"><div class="mg-ring">☰</div><div class="mg-ttl">Details</div><div class="mg-desc">Plus places to keep what matters.</div></div><div class="mg-hrule"></div><div class="mg-body"><div class="mg-row"><div class="mg-btn" id="b-mg-map">🧭</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-idea">💡</div><div class="mg-btn" id="b-mg-journal">✏️</div><div class="mg-btn" id="b-mg-search">🔍</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-tools">🛠️</div></div></div></div><div class="mg-bar"><div class="mg-ret" id="b-mg-ret">⬅️</div></div></div></div>';
+    div.innerHTML='<div class="mg-overlay" id="mg-overlay"><div class="mg-modal"><div class="mg-wrap"><div class="mg-head"><div class="mg-ring">☰</div><div class="mg-ttl">Details</div><div class="mg-desc">Plus places to keep what matters.</div></div><div class="mg-hrule"></div><div class="mg-body"><div class="mg-row"><div class="mg-btn" id="b-mg-map">🧭</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-idea">💡</div><div class="mg-btn" id="b-mg-journal">✏️</div><div class="mg-btn" id="b-mg-search">🔍</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-tools">🛠️</div></div></div></div><div class="mg-bar"><div class="mg-ret" id="b-mg-ret">⬅️</div><div class="mg-ret" id="b-mg-reset" title="Reload and return here">🔄</div></div></div></div>';
     fg.appendChild(div.firstChild);
     wireMGOverlay();
   }
@@ -846,6 +878,7 @@
     wire('b-trivia-back', returnToMG);
     wire('b-trivia-mg',   goMG);
     wire('b-mg-tools',  function(){closeMG();nav('s-tools',  false);});
+    wire('b-mg-reset', resetAndReturn);
   }
 
   /* ── BACKPACK SCREEN WIRING ── */
@@ -1077,7 +1110,8 @@
     navToPageNum:navToPageNum, currentFile:currentFile,
     getCurNum:function(){ return _pageNums[cur]||null; },
     setPhOpen:setPhOpen,
-    getPageNumsReverse:function(){ return _pageNumsReverse; }
+    getPageNumsReverse:function(){ return _pageNumsReverse; },
+    resumeToLastPageOr:resumeToLastPageOr
   };
 
   document.addEventListener('DOMContentLoaded',function(){
