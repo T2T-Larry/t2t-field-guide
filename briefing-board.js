@@ -378,6 +378,8 @@
       id: c.id, board_id: boardId, col: c.col,
       task: c.task||'', person: c.person||null, reviewed_by: c.reviewedBy||null,
       due_date: _bbToISODate(c.due), start_date: _bbToISODate(c.startDate), completed_date: _bbToISODate(c.completedDate),
+      due_time: c.dueTime||null, start_time: c.startTime||null,
+      is_routine: !!c.routine, routine_freq: c.routineFreq||null, routine_custom: c.routineCustom||null,
       budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
@@ -391,6 +393,8 @@
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
+      dueTime: row.due_time||'', startTime: row.start_time||'',
+      routine: !!row.is_routine, routineFreq: row.routine_freq||'', routineCustom: row.routine_custom||'',
       budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
@@ -1096,6 +1100,16 @@
       +'.bb-close:hover{background:var(--bb-bg)}'
       +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
       +'.bb-hx-back:hover{background:var(--bb-bg)}'
+      +'.bb-routine-toggle{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
+      +'.bb-routine-toggle:hover{background:var(--bb-bg)}'
+      +'.bb-routine-toggle.bb-routine-on{background:var(--bb-accent);color:#fff}'
+      +'.bb-overlay-card.bb-routine-active{border-top-color:#4a7a95}'
+      +'.bb-date-row{display:flex;gap:6px;align-items:stretch}'
+      +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
+      +'.bb-date-time{width:60px;flex:none}'
+      +'.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:12px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
+      +'.bb-routine-badge{font-size:11px;line-height:1}'
       +'.bb-hx-landing-btn{margin-bottom:12px}';
     document.head.appendChild(style);
   }
@@ -1151,7 +1165,7 @@
       detailOv.id='bb-detail-overlay'; detailOv.className='bb-overlay';
       detailOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-routine-toggle" id="bb-d-routine-toggle" title="Routine card" aria-label="Toggle routine">🔄</button><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
@@ -1166,15 +1180,13 @@
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
-            +'<div class="bb-field"><label>Due date</label><input id="bb-d-due" type="text"></div>'
-            +'<div class="bb-field"><label>Start date</label><input id="bb-d-start" type="text" placeholder="e.g. 7/22"></div>'
+            +'<div class="bb-field"><label>Due date</label><div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><select id="bb-d-routine" class="bb-routine-select"><option value="">Routine</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select></div><input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none"></div>'
+            +'<div class="bb-field"><label>Start date</label><div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"></div></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
             +'<div class="bb-field"><label>Notes</label><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
-            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button></div></div>'
-            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button></div></div>'
+            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
-            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified complete</button></div></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(detailOv);
@@ -1364,6 +1376,7 @@
         el.setAttribute('data-id', c.id);
         var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
+        var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -1371,7 +1384,7 @@
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
@@ -1511,7 +1524,15 @@
     document.getElementById('bb-d-task').value=c.task||'';
     document.getElementById('bb-d-person').value=c.person||'';
     document.getElementById('bb-d-due').value=c.due||'';
+    document.getElementById('bb-d-due-time').value=c.dueTime||'';
     document.getElementById('bb-d-start').value=c.startDate||'';
+    document.getElementById('bb-d-start-time').value=c.startTime||'';
+    document.getElementById('bb-d-routine').value=c.routineFreq||'';
+    document.getElementById('bb-d-routine-custom').value=c.routineCustom||'';
+    document.getElementById('bb-d-routine-custom').style.display=(c.routineFreq==='custom')?'':'none';
+    document.getElementById('bb-d-routine-toggle').classList.toggle('bb-routine-on', !!c.routine);
+    var _bbDetailCardR=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+    if(_bbDetailCardR) _bbDetailCardR.classList.toggle('bb-routine-active', !!c.routine);
     document.getElementById('bb-d-budget').value=c.budget||'';
     document.getElementById('bb-d-notes').value=c.notes||'';
     document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
@@ -1535,7 +1556,11 @@
       c.situation=document.getElementById('bb-d-situation').value;
       c.person=document.getElementById('bb-d-person').value;
       c.due=document.getElementById('bb-d-due').value;
+      c.dueTime=document.getElementById('bb-d-due-time').value;
       c.startDate=document.getElementById('bb-d-start').value;
+      c.startTime=document.getElementById('bb-d-start-time').value;
+      c.routineFreq=document.getElementById('bb-d-routine').value;
+      c.routineCustom=document.getElementById('bb-d-routine-custom').value;
       c.budget=document.getElementById('bb-d-budget').value;
       c.notes=document.getElementById('bb-d-notes').value;
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
@@ -1933,6 +1958,42 @@
     });
   }
 
+  function wireRoutineControls(){
+    T().wire('bb-d-routine-toggle', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c) return;
+      c.routine=!c.routine;
+      _bbSaveLocal(_bbCardsList());
+      document.getElementById('bb-d-routine-toggle').classList.toggle('bb-routine-on', !!c.routine);
+      var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+      if(card) card.classList.toggle('bb-routine-active', !!c.routine);
+      renderBoard();
+    });
+    var sel=document.getElementById('bb-d-routine');
+    if(sel) sel.addEventListener('change', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c) return;
+      c.routineFreq=sel.value;
+      var custom=document.getElementById('bb-d-routine-custom');
+      if(custom) custom.style.display = (sel.value==='custom') ? '' : 'none';
+      if(sel.value){
+        c.routine=true;
+        document.getElementById('bb-d-routine-toggle').classList.add('bb-routine-on');
+        var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+        if(card) card.classList.add('bb-routine-active');
+      }
+      _bbSaveLocal(_bbCardsList());
+      renderBoard();
+    });
+    var custom=document.getElementById('bb-d-routine-custom');
+    if(custom) custom.addEventListener('change', function(){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(!c) return;
+      c.routineCustom=custom.value;
+      _bbSaveLocal(_bbCardsList());
+    });
+  }
+
   function wireBriefingBoard(){
     T().wire('b-bb-mg', T().goMG);
     // July 22, 2026, Larry: the Briefing Board is "one of the most
@@ -1964,6 +2025,7 @@
     T().wire('bb-d-unhook-ideas', _bbUnhookIdeas);
     wirePriorityButtons();
     wireReviewButtons();
+    wireRoutineControls();
     wireKeyBuilder();
     wireKeyPicker();
     wireChecklist();
