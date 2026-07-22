@@ -1034,7 +1034,7 @@
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
-              +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (F3)">🔄</button>'
+              +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Ctrl+Alt+R)">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
               +'<button class="bb-icon-btn" id="bb-hx-btn" title="History">HX</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
