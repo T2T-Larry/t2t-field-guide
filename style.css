@@ -216,7 +216,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .gc-status{font-size:12px;font-style:italic;color:var(--brand-purple);text-align:center;padding:4px 0;min-height:20px}
 .xw{flex:1;display:flex;flex-direction:column;background:var(--brand-white)}
 .tools-wrap{flex:1;display:flex;flex-direction:column;background:#f9f5ef}
-.tools-orbital{display:flex;align-items:center;justify-content:center;padding:12px 0 8px;flex-shrink:0}
+.tools-orbital{display:flex;align-items:center;justify-content:center;padding:4px 0;flex-shrink:0}
 .orb-svg{overflow:visible}
 .btn-group{cursor:pointer}
 .btn-group rect{transition:fill .15s}
