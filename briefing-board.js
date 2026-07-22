@@ -973,9 +973,16 @@
          its own bar above it, per Larry: don't spend a whole extra row
          of vertical board space on it. Gear + X ride along on the
          right of that same row. */
-      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:14px 20px 8px;flex-shrink:0}'
+      // Header tightened, July 22 2026 -- Larry: "tighten up the screen
+      // header ... more room for the body." Title + description now
+      // stack together in the left column instead of the description
+      // running the full width below the row, so they center as one
+      // block against the topic's height. Top/bottom padding matched
+      // (10px each) so the divider sits as close under the topic as
+      // the topic sits under the top edge -- no more dead space.
+      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px;flex-shrink:0}'
       +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}'
-      +'.bb-mh-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-self:start}'
+      +'.bb-mh-group{display:flex;flex-direction:column;align-items:flex-start;gap:2px;justify-self:start}'
       +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
       // BB TOPIC, July 22 2026 -- Larry: "move BB TOPIC to center justify
       // in large font size," then "with the colorful headers, the TOPIC
@@ -989,8 +996,11 @@
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
-      +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic;padding-top:4px}'
-      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex}'
+      +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic}'
+      // Center the board's columns as a group (Larry, July 22 2026)
+      // instead of always hugging the left edge -- still scrolls
+      // normally once there are enough columns to overflow.
+      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex;justify-content:center}'
       +'#bb-cols{display:flex;gap:14px;height:100%}'
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
       +'.bb-col-head{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
@@ -1100,7 +1110,7 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
-            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span></div>'
+            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mh-topic"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
@@ -1110,7 +1120,6 @@
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
           +'</div>'
-          +'<div class="bb-mt">A control and communication tool.</div>'
         +'</div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
