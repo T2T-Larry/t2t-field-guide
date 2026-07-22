@@ -780,7 +780,14 @@
     else{
       await T.loadVisitedFromSupabase();
       await T.loadMemberProfile(res.data.user.id);
-      T.nav('s-cover');
+      // July 22, 2026, Larry: the reset shortcut (\U0001F504 / F3) needs a
+      // manual sign-in to still land back on the current page, not just
+      // the automatic session-resume path above -- the browser doing the
+      // reload doesn't always keep the Supabase session alive across a
+      // hard reload (e.g. Claude in Chrome re-signs in on every fresh
+      // page load), so whoever just typed their password in should get
+      // the same "return to where you were" treatment.
+      T.resumeToLastPageOr('s-cover');
     }
   });
 
