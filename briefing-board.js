@@ -1302,7 +1302,7 @@
             +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
               +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
             +'</div>'
-            +'<div class="bb-field"><label>Team</label><div id="bb-team-list"></div><button class="jb" id="bb-team-add" type="button" style="width:100%;margin-top:6px">+ Add a team member</button></div>'
+            +'<div class="bb-field"><label>Team</label><div id="bb-team-list"></div><div style="font-size:11px;color:var(--bb-sub);margin-top:6px;font-style:italic">To add someone new, they need a real account first -- this only edits or removes existing team members.</div></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
@@ -1953,16 +1953,6 @@
         await _bbLoadTeam();
       });
     }
-    T().wire('bb-team-add', async function(){
-      var name=window.prompt('Full name for the new team member:'); if(!name || !name.trim()) return;
-      var email=window.prompt('Email for '+name.trim()+':'); if(!email || !email.trim()) return;
-      var initials=_bbInitialsFromName(name);
-      var sb=T().sb; if(!sb) return;
-      var ins=await sb.from('members').insert({email:email.trim().toLowerCase(), name:name.trim(), initials:initials, membership_status:'active'});
-      if(ins.error){ alert('Could not add team member: '+ins.error.message); return; }
-      await _bbLoadMembers();
-      await _bbLoadTeam();
-    });
   }
 
   // Unhooking Ideas, July 21, 2026 -- hands a Hang-Up card's Situation
