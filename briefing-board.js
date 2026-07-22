@@ -302,6 +302,7 @@
   var _bbBoards = [];
   var _bbKeyLibCache = [];
   var _bbMembersCache = [];
+  var _bbTeamCache = [];
   var _bbChecklistCache = [];
   var _bbInitStarted = false;
 
@@ -778,6 +779,33 @@
     }).join('') + '<option value="__add__">+ Add a name&hellip;</option>';
   }
 
+  // Team roster management, July 22, 2026 -- edit/remove entries in
+  // the real members table (not just the read-only briefing_roster
+  // view used by the per-card picker). Only works for Larry once his
+  // admin_all_members RLS policy points at his actual login email --
+  // see that migration's notes. Deactivating (not deleting) a member
+  // keeps their account/history intact; they just stop appearing as
+  // an assignee.
+  async function _bbLoadTeam(){
+    var sb=T().sb; if(!sb) return;
+    try{
+      var res=await sb.from('members').select('email,name,initials').eq('membership_status','active').order('name',{ascending:true});
+      if(!res.error && res.data) _bbTeamCache = res.data;
+    }catch(e){ console.error('Briefing Board: could not load team', e); }
+    _bbRenderTeamList();
+  }
+
+  function _bbRenderTeamList(){
+    var wrap=document.getElementById('bb-team-list'); if(!wrap) return;
+    wrap.innerHTML = _bbTeamCache.map(function(m){
+      return '<div class="bb-team-row" data-email="'+_esc(m.email)+'">'
+        +'<input type="text" class="bb-team-name" value="'+_esc(m.name)+'">'
+        +'<input type="text" class="bb-team-initials" value="'+_esc(m.initials)+'" maxlength="4">'
+        +'<button class="bb-checklist-remove" type="button" title="Remove from team">&#10005;</button>'
+        +'</div>';
+    }).join('');
+  }
+
   function _bbInitials(person){
     if(!person) return '';
     var m=String(person).match(/\(([^)]+)\)/);
@@ -1154,6 +1182,9 @@
       +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:12px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:11px;line-height:1}'
+      +'.bb-team-row{display:flex;gap:6px;align-items:center;padding:4px 0}'
+      +'.bb-team-row input.bb-team-name{flex:1.6;min-width:0}'
+      +'.bb-team-row input.bb-team-initials{width:50px;flex:none;text-transform:uppercase}'
       +'.bb-hx-landing-btn{margin-bottom:12px}';
     document.head.appendChild(style);
   }
@@ -1271,6 +1302,7 @@
             +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
               +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
             +'</div>'
+            +'<div class="bb-field"><label>Team</label><div id="bb-team-list"></div><button class="jb" id="bb-team-add" type="button" style="width:100%;margin-top:6px">+ Add a team member</button></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
@@ -1639,6 +1671,7 @@
     _bbHighlightAppearance();
     var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
     var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
+    _bbLoadTeam();
     var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.add('active');
   }
   function closeSettings(){
@@ -1894,6 +1927,41 @@
       _bbSetDueWarnDays(dueWarnEl.value);
       dueWarnEl.value=_bbDueWarnDays();
       renderBoard();
+    });
+    var teamList=document.getElementById('bb-team-list');
+    if(teamList){
+      teamList.addEventListener('change', async function(e){
+        var row=e.target.closest('.bb-team-row'); if(!row) return;
+        var email=row.getAttribute('data-email');
+        var name=row.querySelector('.bb-team-name').value.trim();
+        var initials=row.querySelector('.bb-team-initials').value.trim().toUpperCase();
+        if(!name || !initials) return;
+        var sb=T().sb; if(!sb) return;
+        await sb.from('members').update({name:name, initials:initials}).eq('email', email);
+        await _bbLoadMembers();
+        await _bbLoadTeam();
+      });
+      teamList.addEventListener('click', async function(e){
+        var btn=e.target.closest('.bb-checklist-remove'); if(!btn) return;
+        var row=btn.closest('.bb-team-row'); if(!row) return;
+        var email=row.getAttribute('data-email');
+        var name=row.querySelector('.bb-team-name').value;
+        if(!window.confirm('Remove '+name+' from the team? They will stop showing up as an assignee (their account is untouched).')) return;
+        var sb=T().sb; if(!sb) return;
+        await sb.from('members').update({membership_status:'inactive'}).eq('email', email);
+        await _bbLoadMembers();
+        await _bbLoadTeam();
+      });
+    }
+    T().wire('bb-team-add', async function(){
+      var name=window.prompt('Full name for the new team member:'); if(!name || !name.trim()) return;
+      var email=window.prompt('Email for '+name.trim()+':'); if(!email || !email.trim()) return;
+      var initials=_bbInitialsFromName(name);
+      var sb=T().sb; if(!sb) return;
+      var ins=await sb.from('members').insert({email:email.trim().toLowerCase(), name:name.trim(), initials:initials, membership_status:'active'});
+      if(ins.error){ alert('Could not add team member: '+ins.error.message); return; }
+      await _bbLoadMembers();
+      await _bbLoadTeam();
     });
   }
 
