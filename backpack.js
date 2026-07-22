@@ -92,7 +92,10 @@
       try{ lastNum=localStorage.getItem('bpLastPageNum'); }catch(e){}
       if(lastNum){
         var localId=_pageNumsReverse[lastNum];
-        if(localId && document.getElementById(localId)){ nav(localId); return; }
+        // Belt-and-suspenders alongside the nav() guard above -- never
+        // "return" to the sign-in screen itself, even if an older stored
+        // value somehow still points there.
+        if(localId && localId!=='s-signin' && document.getElementById(localId)){ nav(localId); return; }
       }
       if(document.getElementById(fallbackId)) nav(fallbackId);
     }catch(e){
@@ -284,7 +287,11 @@
     // manually re-navigating every time. Track the most recent numbered
     // screen continuously (not just on an explicit "reset" click) so it's
     // always current, however the reload actually happens.
-    if(pn){ try{ localStorage.setItem('bpLastPageNum', pn); }catch(e){} }
+    // Never record s-signin itself -- otherwise landing there (signed
+    // out, or before a fresh sign-in) becomes "the page to return to,"
+    // and a successful sign-in immediately bounces right back to it --
+    // an infinite sign-in loop Larry hit in practice.
+    if(pn && id!=='s-signin'){ try{ localStorage.setItem('bpLastPageNum', pn); }catch(e){} }
     showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
     if (id==='s-journal-landing') { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
