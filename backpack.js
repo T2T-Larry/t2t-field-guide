@@ -392,6 +392,19 @@
 
   function goMG() {
     if (_utilScreens.indexOf(cur)===-1) { mgOrigin=cur; _triviaOverride=null; }
+    else if (!mgOrigin) {
+      // Safety net, July 22 2026 -- Larry: "closing screens is not
+      // working, stuck on menu screen 9000." Root cause: if the
+      // traveler lands directly on a utility screen (e.g. the Briefing
+      // Board resumed on reload) without ever passing through the
+      // backpack first, mgOrigin is never recorded. Pressing back then
+      // closed the backpack only to have goBack() reopen it immediately
+      // (still sitting on that same utility screen), an invisible loop
+      // that looked like the menu was simply stuck. Falling back to the
+      // traveler's home screen here means there's always somewhere real
+      // to land.
+      mgOrigin = primaryPage || _primaryPages[0] || null;
+    }
     var ov=document.getElementById('mg-overlay');
     if (ov) ov.classList.add('active');
   }
