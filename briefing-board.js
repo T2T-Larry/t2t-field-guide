@@ -301,6 +301,7 @@
   var _bbCurrentBoardId = null;
   var _bbBoards = [];
   var _bbKeyLibCache = [];
+  var _bbMembersCache = [];
   var _bbChecklistCache = [];
   var _bbInitStarted = false;
 
@@ -625,6 +626,7 @@
       var kRes=await sb.from('briefing_board_keys').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
       if(!kRes.error) keyRows=kRes.data||[];
     }catch(e){ console.error('Briefing Board: could not load board data', e); }
+    _bbLoadMembers();
 
     // One-time migration, July 21, 2026 (evening): the first time Field
     // Guide BB is opened empty after named multi-board storage shipped,
@@ -734,6 +736,48 @@
   // otherwise the initials come from the string as typed. First + last
   // word, matching the same two-letter convention already used for the
   // traveler roster (BF, JG, RB, LM, JB, LS).
+  function _bbInitialsFromName(name){
+    var letters=String(name||'').trim().split(/\s+/).map(function(w){ return w.replace(/[^A-Za-z]/g,''); }).filter(function(w){ return w.length>0; });
+    if(!letters.length) return '';
+    if(letters.length===1) return letters[0].charAt(0).toUpperCase();
+    return (letters[0].charAt(0)+letters[letters.length-1].charAt(0)).toUpperCase();
+  }
+
+  // Member roster picker for Assigned To, July 22, 2026 -- pulled from
+  // the real members table (the same roster used for login), formatted
+  // "II Full Name" (e.g. "LS Larry Smithers") to match the initials
+  // convention _bbInitials already parses. Loaded once per board
+  // switch and cached; a card can still carry a person value that
+  // isn't in the roster (typed in before this existed, or added via
+  // "+ Add a name..."), so the select always includes whatever's
+  // currently on the card even if it's not a known member.
+  async function _bbLoadMembers(){
+    var sb=T().sb; if(!sb) return;
+    try{
+      var res=await sb.from('members').select('name,initials,membership_status').eq('membership_status','active').order('name',{ascending:true});
+      if(!res.error && res.data){
+        _bbMembersCache = res.data.map(function(m){
+          var initials=(m.initials||_bbInitialsFromName(m.name)).toUpperCase();
+          return initials+' '+(m.name||'');
+        });
+      }
+    }catch(e){ console.error('Briefing Board: could not load members', e); }
+    var sel=document.getElementById('bb-d-person');
+    if(sel && _bbOpenCardId){
+      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      if(c) _bbRenderPersonSelect(c.person||'');
+    }
+  }
+
+  function _bbRenderPersonSelect(currentValue){
+    var sel=document.getElementById('bb-d-person'); if(!sel) return;
+    var list=_bbMembersCache.slice();
+    if(currentValue && list.indexOf(currentValue)===-1) list.unshift(currentValue);
+    sel.innerHTML = list.map(function(v){
+      return '<option value="'+_esc(v)+'"'+(v===currentValue?' selected':'')+'>'+_esc(v)+'</option>';
+    }).join('') + '<option value="__add__">+ Add a name&hellip;</option>';
+  }
+
   function _bbInitials(person){
     if(!person) return '';
     var m=String(person).match(/\(([^)]+)\)/);
@@ -1179,7 +1223,7 @@
             +'<div class="bb-field"><label>Custom Keys</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
-            +'<div class="bb-field"><label>Assigned to</label><input id="bb-d-person" type="text"></div>'
+            +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
             +'<div class="bb-field"><label>Due date</label><div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><select id="bb-d-routine" class="bb-routine-select"><option value="">Routine</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select></div><input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none"></div>'
             +'<div class="bb-field"><label>Start date</label><div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"></div></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
@@ -1522,7 +1566,7 @@
     var _bbUnhookBtn=document.getElementById('bb-d-unhook-ideas');
     if(_bbUnhookBtn){ _bbUnhookBtn.disabled=false; _bbUnhookBtn.textContent='\u{1FA9D} Unhooking Ideas'; }
     document.getElementById('bb-d-task').value=c.task||'';
-    document.getElementById('bb-d-person').value=c.person||'';
+    _bbRenderPersonSelect(c.person||'');
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-due-time').value=c.dueTime||'';
     document.getElementById('bb-d-start').value=c.startDate||'';
@@ -1958,6 +2002,19 @@
     });
   }
 
+  function wirePersonSelect(){
+    var sel=document.getElementById('bb-d-person'); if(!sel) return;
+    sel.addEventListener('change', function(){
+      if(sel.value!=='__add__') return;
+      var name=window.prompt('Full name for the new person:');
+      if(!name || !name.trim()){ _bbRenderPersonSelect(''); return; }
+      var initials=_bbInitialsFromName(name);
+      var display=initials+' '+name.trim();
+      if(_bbMembersCache.indexOf(display)===-1) _bbMembersCache.push(display);
+      _bbRenderPersonSelect(display);
+    });
+  }
+
   function wireRoutineControls(){
     T().wire('bb-d-routine-toggle', function(){
       var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
@@ -2026,6 +2083,7 @@
     wirePriorityButtons();
     wireReviewButtons();
     wireRoutineControls();
+    wirePersonSelect();
     wireKeyBuilder();
     wireKeyPicker();
     wireChecklist();
