@@ -231,6 +231,20 @@
     's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
     's-configure','s-change-password','s-sea-of-ideas','s-sea-of-ideas-cluster'
   ];
+  // Screens that legitimately take over #fg-root as position:fixed
+  // full-viewport (isx-full) -- each one adds the class itself on entry
+  // (see briefing-board.js, gems.js, idea-storyboard-9710.js, session.js)
+  // but only removed it via its OWN dedicated close button (X / end
+  // session). Any other way of leaving -- the 🔍 "jump to menu" icon,
+  // the backpack, the Alt+C reset-and-return shortcut -- skipped that
+  // cleanup and left isx-full stuck, so whatever screen you landed on
+  // next (e.g. Tools) rendered full-viewport too, since the CSS rule is
+  // unconditional on #fg-root, not scoped to these screens. Larry hit
+  // this July 22, 2026 ("screen is once again full and not widget
+  // size?") after jumping from the Briefing Board to Tools via the
+  // menu. Fixed centrally in nav() below instead of chasing every exit
+  // path individually.
+  var _fullScreenScreens = ['s-briefing-board','s-gems-board','s-sea-of-ideas-cluster','s-idea-session'];
   function registerUtilScreen(screenId) {
     if (_utilScreens.indexOf(screenId) === -1) _utilScreens.push(screenId);
   }
@@ -285,6 +299,13 @@
     if(pool&&fg&&t.parentNode===pool){ fg.appendChild(t); }
     document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
     t.classList.add('active');
+    // Safety net for the isx-full full-viewport takeover -- see
+    // _fullScreenScreens above. Landing anywhere that isn't one of
+    // those screens means any leftover isx-full is stale.
+    if (_fullScreenScreens.indexOf(id)===-1 && fg && fg.classList.contains('isx-full')) {
+      fg.classList.remove('isx-full');
+      fg.classList.remove('sb-wide');
+    }
     if (push!==false) stack.push(cur);
     cur=id;
     if (_primaryPages.indexOf(id)!==-1) primaryPage=id;
