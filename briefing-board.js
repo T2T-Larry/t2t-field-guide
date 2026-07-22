@@ -328,7 +328,7 @@
   }
   function _bbSeed(){
     return [
-      {id:_bbUUID(), col:'do-l', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
+      {id:_bbUUID(), col:'do-l', sortOrder:0, assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
     ];
   }
   function _bbCardsList(){
@@ -382,7 +382,8 @@
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
-      situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null
+      situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
+      sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null
     };
   }
   function _bbRowToCard(row){
@@ -393,7 +394,8 @@
       budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
-      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null
+      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
+      sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null
     };
   }
   function _bbSafeIdList(rows){
@@ -1316,14 +1318,23 @@
         +(cd.key==='do-l' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
     });
-    // Each column sorts by priority -- H at the top, unset priority (not
-    // yet triaged) at the bottom -- ties keep their existing relative
-    // order (stable sort), same order the cards already landed in.
+    // July 22, 2026 (later), Larry: wants to freely drag a card to a
+    // new position WITHIN a column, not just between columns. Position
+    // is now c.sortOrder (manual, set by dragging -- see the drop
+    // handler below), primary sort key. Priority/due-date rank is only
+    // the fallback for a card that doesn't have a sortOrder yet (brand
+    // new, or not yet migrated) -- it no longer governs position for
+    // anything that's actually been placed. Which Do column a card is
+    // IN is still priority-driven (see _bbDoColKey); this only affects
+    // order WITHIN whichever column it's already in.
     COLUMNS.forEach(function(cd){
       var target=wrap.querySelector('.bb-col-cards[data-col="'+cd.key+'"]');
       if(!target) return;
       var colCards=cards.filter(function(c){ return c.col===cd.key; });
       colCards.sort(function(a,b){
+        var soa=(typeof a.sortOrder==='number')?a.sortOrder:Infinity;
+        var sob=(typeof b.sortOrder==='number')?b.sortOrder:Infinity;
+        if(soa!==sob) return soa-sob;
         var ra=_priRank(a), rb=_priRank(b);
         if(ra!==rb) return ra-rb;
         return _bbDaysUntilOrInf(a)-_bbDaysUntilOrInf(b);
@@ -1361,6 +1372,23 @@
         openCardDetail(el.getAttribute('data-flip'));
       });
     });
+    // July 22, 2026, Larry: dragging a card should be able to land it at
+    // a specific spot within a column, not just change which column it's
+    // in. Standard "closest sibling by vertical midpoint" technique --
+    // compares the drop's Y position against each existing card's
+    // midpoint to find which one it belongs before (null = belongs at
+    // the end, after everything).
+    function _bbCardBefore(zone, y, excludeId){
+      var els=Array.prototype.slice.call(zone.querySelectorAll('.bb-card'))
+        .filter(function(el){ return el.getAttribute('data-id')!==excludeId; });
+      var closest={offset:-Infinity, el:null};
+      els.forEach(function(el){
+        var box=el.getBoundingClientRect();
+        var offset=y-box.top-box.height/2;
+        if(offset<0 && offset>closest.offset) closest={offset:offset, el:el};
+      });
+      return closest.el;
+    }
     wrap.querySelectorAll('.bb-col-cards').forEach(function(zone){
       zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('bb-dragover'); });
       zone.addEventListener('dragleave', function(){ zone.classList.remove('bb-dragover'); });
@@ -1387,6 +1415,21 @@
           // exit (that record stays even after it's unstuck).
           if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
           if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
+          // Land it at the exact drop position, then renumber this
+          // column's sortOrder sequentially so everyone's position is
+          // consistent (avoids float-precision drift from repeated
+          // between-two-numbers interpolation over many reorders).
+          var beforeEl=_bbCardBefore(zone, e.clientY, id);
+          var order=Array.prototype.slice.call(zone.querySelectorAll('.bb-card'))
+            .map(function(el){ return el.getAttribute('data-id'); })
+            .filter(function(cid){ return cid!==id; });
+          var insertAt=beforeEl ? order.indexOf(beforeEl.getAttribute('data-id')) : order.length;
+          order.splice(insertAt, 0, id);
+          var allCards=_bbCardsList();
+          order.forEach(function(cid, idx){
+            var cc=allCards.filter(function(x){ return x.id===cid; })[0];
+            if(cc) cc.sortOrder=idx;
+          });
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -1889,7 +1932,11 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:_bbUUID(), col:'do-l', assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      // Appends at the end of L DO -- max existing sortOrder in that
+      // column, plus one (0 if it's the first card ever to land there).
+      var maxOrder=cards.filter(function(c){ return c.col==='do-l' && typeof c.sortOrder==='number'; })
+        .reduce(function(m,c){ return Math.max(m,c.sortOrder); }, -1);
+      cards.push({id:_bbUUID(), col:'do-l', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
