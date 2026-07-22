@@ -1227,7 +1227,6 @@
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Card</span><button class="bb-close" id="bb-add-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
-            +'<div class="bb-field"><label>Due date &mdash; only if it’s real</label><input id="bb-new-due" type="text" placeholder="e.g. 7/25"></div>'
             +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
           +'</div>'
         +'</div>';
@@ -1548,7 +1547,6 @@
 
   function openAddCard(){
     var t=document.getElementById('bb-new-task'); if(t) t.value='';
-    var d=document.getElementById('bb-new-due'); if(d) d.value='';
     var ov=document.getElementById('bb-add-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -2122,7 +2120,6 @@
     T().wire('bb-add-close', closeAddCard);
     T().wire('b-bb-save-card', function(){
       var t=document.getElementById('bb-new-task');
-      var d=document.getElementById('bb-new-due');
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
@@ -2130,7 +2127,11 @@
       // column, plus one (0 if it's the first card ever to land there).
       var maxOrder=cards.filter(function(c){ return c.col==='do-l' && typeof c.sortOrder==='number'; })
         .reduce(function(m,c){ return Math.max(m,c.sortOrder); }, -1);
-      cards.push({id:_bbUUID(), col:'do-l', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      // Due date, July 22, 2026 -- dropped from the quick-add form:
+      // it's set on the full Briefing Card (9370) instead, since that's
+      // where it already lives alongside Start date and the Routine
+      // controls. No sense asking twice.
+      cards.push({id:_bbUUID(), col:'do-l', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
