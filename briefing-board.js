@@ -171,8 +171,22 @@
 
   function T(){ return window.T2T; }
 
+  // July 22, 2026, Larry: Do split into 3 side-by-side columns by
+  // priority family, so priority is visible on the board itself instead
+  // of needing to flip a card -- "makes more visible on the BB screen."
+  // Grouping is by RANK, not by which button owns a value (that's a
+  // different split -- see PRI_BASE_OF, still used for the 3-click
+  // cycle buttons themselves): H DO = HH/H (the top 2), M DO = MH/M/ML
+  // (the middle 3 -- both blended values land here, not split across
+  // H DO and L DO), L DO = L and no-priority-yet ("as an incentive to
+  // select a higher one," Larry's words). Doing/Done/Hang-Ups stay
+  // single columns. See _bbDoFamily/_bbDoColKey/_bbIsDoCol just below
+  // COLUMNS for the shared logic every other place in this file uses
+  // to stay in sync with this split.
   var COLUMNS = [
-    {key:'do',      label:'Do'},
+    {key:'do-h',    label:'H DO'},
+    {key:'do-m',    label:'M DO'},
+    {key:'do-l',    label:'L DO'},
     {key:'doing',   label:'Doing'},
     {key:'done',    label:'Done'},
     {key:'hangups', label:'Hang-Ups'}
@@ -197,6 +211,31 @@
     var seq=PRI_CYCLE[base];
     var idx = PRI_BASE_OF[current]===base ? seq.indexOf(current) : -1;
     return idx===-1 ? seq[0] : seq[(idx+1)%seq.length];
+  }
+
+  // July 22, 2026, Larry: the 3 Do columns (H DO / M DO / L DO). Family
+  // is by RANK (see COLUMNS comment above), a different split than
+  // PRI_BASE_OF's button-ownership grouping -- don't reuse PRI_BASE_OF
+  // here, they answer different questions.
+  function _bbDoFamily(priority){
+    var rank = PRI_ORDER.hasOwnProperty(priority) ? PRI_ORDER[priority] : 7;
+    if(rank<=1) return 'h';  // HH, H
+    if(rank<=4) return 'm';  // MH, M, ML
+    return 'l';              // L, unset
+  }
+  function _bbDoColKey(priority){ return 'do-'+_bbDoFamily(priority); }
+  function _bbIsDoCol(colKey){ return colKey==='do-h' || colKey==='do-m' || colKey==='do-l'; }
+  // The representative priority a drag-drop into a given Do column sets
+  // -- coarse (family only); the H/M/L buttons on the card back remain
+  // the fine control for HH vs H, MH vs M vs ML, etc. Only overwrites
+  // when the card's CURRENT priority isn't already in the target family,
+  // so dragging a card within the family it's already in (reordering,
+  // or a drop that lands back in the same column) never resets an
+  // escalated value like HH or ML back down to its base.
+  var _bbDoColBasePriority = {'do-h':'H', 'do-m':'M', 'do-l':''};
+  function _bbPriorityForDrop(colKey, currentPriority){
+    if(_bbDoFamily(currentPriority)===colKey.slice(3)) return currentPriority;
+    return _bbDoColBasePriority[colKey];
   }
 
   var THEMES = [
@@ -286,7 +325,7 @@
   }
   function _bbSeed(){
     return [
-      {id:_bbUUID(), col:'do', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
+      {id:_bbUUID(), col:'do-l', assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
     ];
   }
   function _bbCardsList(){
@@ -781,18 +820,28 @@
     var startWarn=_bbStartWarnDays(), dueWarn=_bbDueWarnDays();
     all.forEach(function(c){
       if(c.archived) return;
-      if(c.col==='do' && c.startDate){
+      // July 22, 2026: c.col is now one of do-h/do-m/do-l, not a single
+      // 'do' -- _bbIsDoCol covers all 3. When priority changes here,
+      // also move the card into whichever Do column now matches (if
+      // it's still in Do at all -- Due Date's HH bump can fire from
+      // Doing too, and a card sitting in Doing doesn't jump back into
+      // a Do column just because its priority changed).
+      if(_bbIsDoCol(c.col) && c.startDate){
         var sd=_bbParseDue(c.startDate);
         if(sd && _bbDaysUntil(sd)<=startWarn){
           var curRank=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
-          if(curRank>PRI_ORDER.H){ c.priority='H'; changed=true; }
+          if(curRank>PRI_ORDER.H){ c.priority='H'; c.col=_bbDoColKey(c.priority); changed=true; }
         }
       }
-      if((c.col==='do' || c.col==='doing') && c.due){
+      if((_bbIsDoCol(c.col) || c.col==='doing') && c.due){
         var dd=_bbParseDue(c.due);
         if(dd && _bbDaysUntil(dd)<=dueWarn){
           var curRank2=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
-          if(curRank2>PRI_ORDER.HH){ c.priority='HH'; changed=true; }
+          if(curRank2>PRI_ORDER.HH){
+            c.priority='HH';
+            if(_bbIsDoCol(c.col)) c.col=_bbDoColKey(c.priority);
+            changed=true;
+          }
         }
       }
     });
@@ -933,6 +982,12 @@
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
       +'.bb-col-head{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
       +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
+      // July 22, 2026, Larry: color the 3 Do column headers red/green/
+      // yellow (H/M/L, in that order) so priority reads at a glance
+      // across the board, not just on each card's own badge.
+      +'.bb-col[data-col="do-h"] .bb-col-head{background:#c0272a;color:#fff}'
+      +'.bb-col[data-col="do-m"] .bb-col-head{background:#3F8F3F;color:#fff}'
+      +'.bb-col[data-col="do-l"] .bb-col-head{background:#e0c22e;color:#3B2510}'
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
@@ -1255,7 +1310,7 @@
       col.setAttribute('data-col', cd.key);
       col.innerHTML='<div class="bb-col-head">'+cd.label+'</div>'
         +'<div class="bb-col-cards" data-col="'+cd.key+'"></div>'
-        +(cd.key==='do' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
+        +(cd.key==='do-l' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
     });
     // Each column sorts by priority -- H at the top, unset priority (not
@@ -1314,7 +1369,13 @@
         if(c){
           var wasCol=c.col;
           c.col=zone.getAttribute('data-col');
-          if(c.col==='doing' && wasCol==='do' && !c.startDate) c.startDate=_bbToday();
+          // July 22, 2026: dropping a card into one of the 3 Do columns
+          // sets its priority to match (coarse -- H DO/M DO/L DO), same
+          // as the H/M/L buttons but reachable by drag now too. Doesn't
+          // touch priority when dragging into Doing/Done/Hang-Ups --
+          // only the 3 Do columns are priority-linked.
+          if(_bbIsDoCol(c.col)) c.priority=_bbPriorityForDrop(c.col, c.priority);
+          if(c.col==='doing' && _bbIsDoCol(wasCol) && !c.startDate) c.startDate=_bbToday();
           if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
           if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
           // Hang-Ups, July 21, 2026: stamp when a card lands here, clear
@@ -1653,6 +1714,12 @@
           if(!c) return;
           var base=btn.getAttribute('data-pri-base');
           c.priority=_bbNextPriority(c.priority||'', base);
+          // July 22, 2026: keep the card in the Do column matching its
+          // new priority family, IF it's currently sitting in one of
+          // the 3 Do columns at all (a card in Doing/Done/Hang-Ups can
+          // still have its priority changed here without being yanked
+          // back into Do).
+          if(_bbIsDoCol(c.col)) c.col=_bbDoColKey(c.priority);
           _bbSaveLocal(_bbCardsList());
           _bbHighlightPriority(c.priority);
           renderBoard();
@@ -1819,7 +1886,7 @@
       var text=t?t.value.trim():'';
       if(!text) return;
       var cards=_bbCardsList();
-      cards.push({id:_bbUUID(), col:'do', assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      cards.push({id:_bbUUID(), col:'do-l', assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:d?d.value.trim():'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
