@@ -590,8 +590,18 @@
 </div>
 
 <!-- 🛠️ TOOLS -->
-<div class="sc" id="s-tools">
-  <div class="card"><div class="tools-wrap">
+<!-- s-tools restructured July 22 2026 -- Larry: "not the same size as
+     0100" (the Cover screen). Cover puts .card directly on the .sc
+     element and keeps its bottom bar (.bar3) INSIDE that same fixed
+     520px box, so the whole screen -- buttons included -- is exactly
+     520px tall. Tools instead nested a separate .card div and put its
+     .bar2 OUTSIDE it as a sibling, adding that bar's own ~58px on
+     top of the fixed 520 -- 578px total, taller than every screen
+     that follows the Cover pattern. Flattened to match: .card is now
+     on the .sc element itself, and .bar2 lives inside it alongside
+     .tools-wrap, same as .bar3 does inside .cover's parent. -->
+<div class="sc card" id="s-tools">
+  <div class="tools-wrap">
     <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
     <div class="tools-orbital">
       <svg class="orb-svg" id="orb-svg" width="390" height="278" viewBox="-35 8 390 278" xmlns="http://www.w3.org/2000/svg">
@@ -615,7 +625,7 @@
         <g class="btn-group" id="pb-dare" transform="translate(42.1,121.7)"><rect x="-65" y="-23" width="130" height="46" rx="12" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">DARE</text></g>
       </svg>
     </div>
-  </div></div>
+  </div>
   <div class="bar2"><button class="tb" id="b-tools-back">⬅️</button><button class="tb" id="b-tools-mg">☰</button></div>
 </div>
 
