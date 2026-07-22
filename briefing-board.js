@@ -184,9 +184,12 @@
   // COLUMNS for the shared logic every other place in this file uses
   // to stay in sync with this split.
   var COLUMNS = [
-    {key:'do-h',    label:'H DO'},
-    {key:'do-m',    label:'M DO'},
-    {key:'do-l',    label:'L DO'},
+    // July 22, 2026 (later): Larry likes the red/green/yellow header
+    // colors enough to drop the H/M/L letters entirely -- color alone
+    // reads as priority now, plain "DO" on all 3.
+    {key:'do-h',    label:'DO'},
+    {key:'do-m',    label:'DO'},
+    {key:'do-l',    label:'DO'},
     {key:'doing',   label:'Doing'},
     {key:'done',    label:'Done'},
     {key:'hangups', label:'Hang-Ups'}
