@@ -973,18 +973,20 @@
          its own bar above it, per Larry: don't spend a whole extra row
          of vertical board space on it. Gear + X ride along on the
          right of that same row. */
-      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px 8px;flex-shrink:0}'
+      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:14px 20px 8px;flex-shrink:0}'
       +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}'
       +'.bb-mh-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-self:start}'
       +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
       // BB TOPIC, July 22 2026 -- Larry: "move BB TOPIC to center justify
-      // in large font size." Given its own grid column so it sits
-      // centered in the header regardless of how long the title on the
-      // left or the icon row on the right end up being, and bumped well
-      // past the old small pill size so it actually reads as the topic.
+      // in large font size," then "with the colorful headers, the TOPIC
+      // needs to be very large" -- given its own grid column so it sits
+      // centered regardless of how long the title on the left or the
+      // icon row on the right get, and sized to lead the header now
+      // (34px, bigger than the "Briefing Board" title itself) so it
+      // holds up against a themed color background.
       +'.bb-mh-topic{justify-self:center;min-width:0}'
-      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:999px;padding:6px 16px;font-family:var(--bb-head-font);font-size:22px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:260px;text-align:center;text-align-last:center}'
-      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0}'
+      +'.bb-board-picker{background:#fff;border:2px solid var(--bb-accent);border-radius:999px;padding:8px 22px;font-family:var(--bb-head-font);font-size:34px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:320px;text-align:center;text-align-last:center}'
+      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
       +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic;padding-top:4px}'
