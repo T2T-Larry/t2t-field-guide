@@ -1034,6 +1034,7 @@
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
+              +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
               +'<button class="bb-icon-btn" id="bb-hx-btn" title="History">HX</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
@@ -1803,6 +1804,13 @@
 
   function wireBriefingBoard(){
     T().wire('b-bb-mg', T().goMG);
+    // July 22, 2026, Larry: the Briefing Board is "one of the most
+    // important places" for the reload-and-return shortcut -- burying
+    // it one tap deep inside the \U0001F50D Jump-to-menu overlay (where it
+    // first landed) wasn't good enough. Same T().resetAndReturn() as the
+    // backpack menu's \U0001F504, just surfaced directly in this board's
+    // own icon row alongside HX/gear/close.
+    T().wire('bb-reset', T().resetAndReturn);
 
     T().wire('bb-add-close', closeAddCard);
     T().wire('b-bb-save-card', function(){

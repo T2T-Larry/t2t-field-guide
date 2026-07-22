@@ -1111,7 +1111,8 @@
     getCurNum:function(){ return _pageNums[cur]||null; },
     setPhOpen:setPhOpen,
     getPageNumsReverse:function(){ return _pageNumsReverse; },
-    resumeToLastPageOr:resumeToLastPageOr
+    resumeToLastPageOr:resumeToLastPageOr,
+    resetAndReturn:resetAndReturn
   };
 
   document.addEventListener('DOMContentLoaded',function(){
