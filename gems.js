@@ -43,7 +43,8 @@
      (bookmark) passes page_num — same mechanism the Map already
      uses. Add future curated Gems here as new pages lock. */
   var CURATED = [
-    { page_num:'0200', text:'Every great invention started as a thought.', attr:'Curated · from 0200' }
+    { page_num:'0200', text:'Every great invention started as a thought.', attr:'Curated · from 0200' },
+    { page_num:null, text:'Magic & Memorable', attr:'Curated' }
   ];
 
   /* ── REUSABLE TILE RENDERER — plug-and-play ──
@@ -183,9 +184,12 @@
           '<button id="gb-add">＋ New Gem</button>' +
         '</div>' +
         '<div style="position:relative;flex:1;width:100%;background:#EFE7FB;overflow:hidden">' +
-          '<div style="position:absolute;top:16px;left:16px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed;z-index:1">Gems</div>' +
+          '<div style="position:absolute;top:16px;left:16px;z-index:1">' +
+            '<div style="font-size:32px;font-weight:700;line-height:1;color:#5B21B6">💎 GEMS</div>' +
+            '<div style="font-size:13px;font-style:italic;color:#7c3aed;margin-top:4px">Flashes of potential value</div>' +
+          '</div>' +
           '<button id="gb-close" aria-label="Close" style="position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
-          '<div id="gb-pile" style="position:absolute;top:56px;left:16px;right:16px;bottom:16px"></div>' +
+          '<div id="gb-pile" style="position:absolute;top:96px;left:16px;right:16px;bottom:16px"></div>' +
           '<div id="gb-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;color:#7c3aed;text-align:center;padding:40px;box-sizing:border-box">' +
             '<div style="font-size:15px;line-height:1.6">No Gems yet.<br>They surface when you\'re ready.</div>' +
           '</div>' +
@@ -240,7 +244,7 @@
     var sb = T().sb;
     if (!sb) return;
     var visited = (T().getVisited ? T().getVisited() : []);
-    var due = CURATED.filter(function(c){ return visited.indexOf(c.page_num) !== -1; });
+    var due = CURATED.filter(function(c){ return !c.page_num || visited.indexOf(c.page_num) !== -1; });
     if (!due.length) return;
     try {
       var uid = await currentUserId(); if (!uid) return;
