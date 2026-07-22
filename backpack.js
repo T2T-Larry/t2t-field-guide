@@ -870,8 +870,10 @@
     var arrowG=document.getElementById('orb-arrows'); if(!arrowG) return;
     // r matches the pentagon button radius in index.html's #s-tools
     // orbital SVG -- keep both in sync if that radius ever changes
-    // again (bumped 105->155 July 22 2026 to fit the doubled button font).
-    var cx=160,cy=160,r=155,ns='http://www.w3.org/2000/svg';
+    // again (105->155->138 July 22 2026: first widened to fit the
+    // doubled button font, then pulled back in once that made the
+    // screen taller than the card and needed a scroll).
+    var cx=160,cy=160,r=138,ns='http://www.w3.org/2000/svg';
     for(var i=0;i<5;i++){
       var midRad=(-90+i*72+36)*Math.PI/180;
       var px=cx+r*Math.cos(midRad),py=cy+r*Math.sin(midRad);
