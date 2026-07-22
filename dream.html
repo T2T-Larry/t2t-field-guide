@@ -1713,7 +1713,7 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'Creativity = making something new by rearranging the old in a new way.', attr:'T2T Field Guide · CREATE'}
   ]);
   T.registerTrivia('s-create-hub', [
-    { label: 'CREATE', id: 's-create-trivia' }
+    { label: 'CREATE', target: 's-create-trivia' }
   ]);
   T.wire('b-create-hub-back', function(){ T.nav('s-dream'); });
   T.wire('b-create-hub-mg',   T.goMG);
@@ -1727,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerPageNum('s-create-toc', '1101');
   T.registerCtx('s-create-toc', 'CREATE');
   T.registerTrivia('s-create-toc', [
-    { label: 'What If?', id: 's-what-if' }
+    { label: 'What If?', target: 's-what-if' }
   ]);
   T.wire('b-create-toc-back', function(){ T.nav('s-create-hub'); });
   T.wire('b-create-toc-mg',   T.goMG);
@@ -1747,7 +1747,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerPageNum('s-what-if-pp', '1102');
   T.registerCtx('s-what-if-pp', 'What If?');
   T.registerTrivia('s-what-if-pp', [
-    { label: 'What If?', id: 's-what-if' }
+    { label: 'What If?', target: 's-what-if' }
   ]);
   T.wire('b-what-if-pp-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-what-if-pp-mg',   T.goMG);
@@ -1760,10 +1760,10 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'You are allowed to want this. No justification required. No guarantee needed. Just — you are allowed.', attr:'T2T Field Guide · Wishing License'}
   ]);
   T.registerTrivia('s-wl-intro', [
-    { label: 'Purpose', id: 's-wl-purpose' },
-    { label: 'What It Means', id: 's-wl-what-it-means' },
-    { label: 'Why Permission Doesn\'t Come Naturally', id: 's-wl-why' },
-    { label: 'Creative Blocks', id: 's-wl-blocks' }
+    { label: 'Purpose', target: 's-wl-purpose' },
+    { label: 'What It Means', target: 's-wl-what-it-means' },
+    { label: 'Why Permission Doesn\'t Come Naturally', target: 's-wl-why' },
+    { label: 'Creative Blocks', target: 's-wl-blocks' }
   ]);
   T.wire('b-wl-intro-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-wl-intro-mg',   T.goMG);
@@ -1806,13 +1806,13 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'Ideas are fragile. Analytical thinking will destroy them before they have a chance to survive.', attr:'T2T Field Guide · No Meetings Principle'}
   ]);
   T.registerTrivia('s-no-meetings', [
-    { label: 'Why Is This Important?', id: 's-nm-why' },
-    { label: 'Creative Mode vs Analytical Mode', id: 's-nm-modes' },
-    { label: 'Why Separate Creative From Analytical?', id: 's-nm-separate' },
-    { label: 'Why Separation Creates Safety', id: 's-nm-safety' },
-    { label: 'What Happens in a Meeting?', id: 's-nm-meeting' },
-    { label: 'Four Types of Sessions', id: 's-nm-sessions' },
-    { label: 'Mode Drift', id: 's-nm-drift' }
+    { label: 'Why Is This Important?', target: 's-nm-why' },
+    { label: 'Creative Mode vs Analytical Mode', target: 's-nm-modes' },
+    { label: 'Why Separate Creative From Analytical?', target: 's-nm-separate' },
+    { label: 'Why Separation Creates Safety', target: 's-nm-safety' },
+    { label: 'What Happens in a Meeting?', target: 's-nm-meeting' },
+    { label: 'Four Types of Sessions', target: 's-nm-sessions' },
+    { label: 'Mode Drift', target: 's-nm-drift' }
   ]);
   T.wire('b-no-meetings-back', function(){ T.nav('s-wl-educated'); });
   T.wire('b-no-meetings-mg',   T.goMG);
@@ -1830,12 +1830,12 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'No Criticism. The more ideas, the better. The wilder the ideas, the better. Hitch-hike off other ideas.', attr:'T2T Field Guide · Rules of Creative Thinking'}
   ]);
   T.registerTrivia('s-rules-ct', [
-    { label: 'Rules of Creative Thinking', id: 's-cr-purpose' },
-    { label: 'Rule 1 · No Criticism', id: 's-cr-rule1' },
-    { label: 'Rule 2 · The More the Better', id: 's-cr-rule2' },
-    { label: 'Rule 3 · The Wilder the Better', id: 's-cr-rule3' },
-    { label: 'Rule 4 · Hitchhike', id: 's-cr-rule4' },
-    { label: 'Honor Ideas', id: 's-cr-honor' }
+    { label: 'Rules of Creative Thinking', target: 's-cr-purpose' },
+    { label: 'Rule 1 · No Criticism', target: 's-cr-rule1' },
+    { label: 'Rule 2 · The More the Better', target: 's-cr-rule2' },
+    { label: 'Rule 3 · The Wilder the Better', target: 's-cr-rule3' },
+    { label: 'Rule 4 · Hitchhike', target: 's-cr-rule4' },
+    { label: 'Honor Ideas', target: 's-cr-honor' }
   ]);
   T.wire('b-rules-ct-back', function(){ T.nav('s-no-meetings'); });
   T.wire('b-rules-ct-mg',   T.goMG);
@@ -2067,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', function(){
     {text:'Even if you don\'t reach the full sky, you\'ll land somewhere higher than you started.', attr:'T2T Field Guide · Blue Sky'}
   ]);
   T.registerTrivia('s-bluesky-intro', [
-    { label: 'Why Blue Sky Is Vital', id: 's-bluesky-trivia' }
+    { label: 'Why Blue Sky Is Vital', target: 's-bluesky-trivia' }
   ]);
   T.wire('b-bluesky-intro-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-bluesky-intro-mg',   T.goMG);
