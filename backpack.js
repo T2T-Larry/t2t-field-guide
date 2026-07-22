@@ -81,13 +81,24 @@
   // registered it), and only falls back to fallbackId if there's nothing
   // saved yet or that screen isn't available in this file.
   function resumeToLastPageOr(fallbackId){
-    var lastNum=null;
-    try{ lastNum=localStorage.getItem('bpLastPageNum'); }catch(e){}
-    if(lastNum){
-      var localId=_pageNumsReverse[lastNum];
-      if(localId && document.getElementById(localId)){ nav(localId); return; }
+    // Wrapped in its own try/catch, July 22, 2026 -- Larry hit a case
+    // where something in this path (or whatever a screen's own activate
+    // callback does once nav() reaches it) left the sign-in button
+    // stuck forever on "Signing in..." because nothing downstream ever
+    // got a chance to reset it. This must never throw back to a caller
+    // that isn't expecting it -- worst case, fall back to fallbackId.
+    try{
+      var lastNum=null;
+      try{ lastNum=localStorage.getItem('bpLastPageNum'); }catch(e){}
+      if(lastNum){
+        var localId=_pageNumsReverse[lastNum];
+        if(localId && document.getElementById(localId)){ nav(localId); return; }
+      }
+      if(document.getElementById(fallbackId)) nav(fallbackId);
+    }catch(e){
+      console.error('resumeToLastPageOr failed, falling back to', fallbackId, e);
+      try{ if(document.getElementById(fallbackId)) nav(fallbackId); }catch(e2){}
     }
-    if(document.getElementById(fallbackId)) nav(fallbackId);
   }
 
   // The actual "reset" shortcut -- Larry: a button to reload the site and

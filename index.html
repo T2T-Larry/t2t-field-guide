@@ -22,7 +22,7 @@
 <script src="idea-storyboard-9710.js?v=20260719b"></script>
 <script src="session.js?v=20260719a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260722c"></script>
+<script src="backpack.js?v=20260722d"></script>
 <script src="briefing-board.js?v=20260722e"></script>
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -776,18 +776,31 @@
     var btn=document.getElementById('b-signin');
     btn.textContent='Signing in\u2026'; btn.disabled=true;
     var res=await _sb.auth.signInWithPassword({email,password});
-    if(res.error){btn.textContent='Sign In';btn.disabled=false;alert('Incorrect email or password.');}
-    else{
+    if(res.error){btn.textContent='Sign In';btn.disabled=false;alert('Incorrect email or password.');return;}
+    // July 22, 2026, Larry: hit a case where the button froze on
+    // "Signing in..." forever even though sign-in itself had already
+    // succeeded -- something after it (loading the profile, or landing
+    // on the last page) failed silently with nothing to reset the
+    // button or get the traveler anywhere. Wrapped the whole rest of
+    // this in try/catch/finally so that can't happen again: whatever
+    // goes wrong, the button always comes back to life and you always
+    // end up SOMEWHERE (s-cover at worst), never stuck on this screen.
+    try{
       await T.loadVisitedFromSupabase();
       await T.loadMemberProfile(res.data.user.id);
-      // July 22, 2026, Larry: the reset shortcut (\U0001F504 / F3) needs a
-      // manual sign-in to still land back on the current page, not just
-      // the automatic session-resume path above -- the browser doing the
-      // reload doesn't always keep the Supabase session alive across a
-      // hard reload (e.g. Claude in Chrome re-signs in on every fresh
-      // page load), so whoever just typed their password in should get
-      // the same "return to where you were" treatment.
+      // The reset shortcut (\U0001F504 / F3) needs a manual sign-in to
+      // still land back on the current page, not just the automatic
+      // session-resume path above -- the browser doing the reload
+      // doesn't always keep the Supabase session alive across a hard
+      // reload (e.g. Claude in Chrome re-signs in on every fresh page
+      // load), so whoever just typed their password in should get the
+      // same "return to where you were" treatment.
       T.resumeToLastPageOr('s-cover');
+    }catch(e){
+      console.error('Post-sign-in setup failed, falling back to cover', e);
+      try{ T.nav('s-cover'); }catch(e2){}
+    }finally{
+      btn.textContent='Sign In'; btn.disabled=false;
     }
   });
 
