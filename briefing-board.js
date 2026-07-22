@@ -82,7 +82,7 @@
    in Do is different -- that one actually rewrites c.priority to H
    (never downgrades an already-more-urgent H/HH), so the card's own
    badge shows why it jumped, not just its spot in the list. See
-   _bbAutoEscalateStartDates.
+   _bbAutoEscalateDates (also covers Due Date -> HH, added same day).
 
    Topic + appearance + Date Added, July 20, 2026:
    - #bb-topic-pill: a rounded, always-WHITE (not themeable -- the one
@@ -735,7 +735,7 @@
   // this effective rank is for sort order only.
   // (A Start Date that's arrived while still in Do used to get this
   // same sort-only treatment -- July 22, 2026, Larry asked for that one
-  // to be a real change instead: see _bbAutoEscalateStartDates, called
+  // to be a real change instead: see _bbAutoEscalateDates, called
   // from renderBoard, which actually sets c.priority to H so the card's
   // own badge tells the truth, not just its position in the list.)
   function _priRank(c){
@@ -759,19 +759,42 @@
   // from re-triggering (the card just keeps whatever priority it had
   // when it moved). Runs every render; harmless to repeat since once a
   // card is at H or HH this is a no-op.
-  function _bbAutoEscalateStartDates(){
+  function _bbAutoEscalateDates(){
     // Always scans + saves the FULL unfiltered list (not whatever
     // subset renderBoard happens to be working with) -- _bbSaveLocal
     // replaces _bbCards wholesale, so handing it a filtered array would
     // quietly drop every archived card from storage.
+    // July 22, 2026, Larry: extended same day to Due Date -> HH (while
+    // still in Do or Doing -- due date matters right up until the work
+    // is actually done, not just before it starts), and made the
+    // advance notice a traveler choice in Gear instead of a fixed "on
+    // the day" rule -- "how much advance notice do I need to get
+    // something done?" differs by person. bb-start-warn-days /
+    // bb-due-warn-days (0 by default, matching the original on-the-day
+    // behavior) control how many days BEFORE the date each fires. This
+    // sits alongside, not instead of, the older graduated due-date
+    // sort-only nudges in _priRank (5 days / 2 days out) -- those still
+    // just nudge sort position; this is the point the badge itself
+    // actually changes.
     var all=_bbCardsList();
     var changed=false;
+    var startWarn=_bbStartWarnDays(), dueWarn=_bbDueWarnDays();
     all.forEach(function(c){
-      if(c.archived || c.col!=='do' || !c.startDate) return;
-      var sd=_bbParseDue(c.startDate);
-      if(!sd || _bbDaysUntil(sd)>0) return;
-      var curRank = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
-      if(curRank > PRI_ORDER.H){ c.priority='H'; changed=true; }
+      if(c.archived) return;
+      if(c.col==='do' && c.startDate){
+        var sd=_bbParseDue(c.startDate);
+        if(sd && _bbDaysUntil(sd)<=startWarn){
+          var curRank=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
+          if(curRank>PRI_ORDER.H){ c.priority='H'; changed=true; }
+        }
+      }
+      if((c.col==='do' || c.col==='doing') && c.due){
+        var dd=_bbParseDue(c.due);
+        if(dd && _bbDaysUntil(dd)<=dueWarn){
+          var curRank2=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
+          if(curRank2>PRI_ORDER.HH){ c.priority='HH'; changed=true; }
+        }
+      }
     });
     if(changed) _bbSaveLocal(all);
     return changed;
@@ -807,6 +830,26 @@
   }
   function _bbCurrentFont(){
     try{ return sessionStorage.getItem('bbFont')||'classic'; }catch(e){ return 'classic'; }
+  }
+  // July 22, 2026, Larry: advance-warning windows are a traveler choice,
+  // not a fixed rule -- "how much advance notice do I need to get
+  // something done?" differs by person. Stored in localStorage (unlike
+  // theme/font, which are session-only) since this is a "set it and
+  // forget it" preference, not a quick per-visit pick. 0 reproduces the
+  // original hardcoded behavior (escalate exactly on/after the date).
+  function _bbStartWarnDays(){
+    try{ var v=parseInt(localStorage.getItem('bbStartWarnDays'),10); return isNaN(v)?0:Math.max(0,v); }
+    catch(e){ return 0; }
+  }
+  function _bbDueWarnDays(){
+    try{ var v=parseInt(localStorage.getItem('bbDueWarnDays'),10); return isNaN(v)?0:Math.max(0,v); }
+    catch(e){ return 0; }
+  }
+  function _bbSetStartWarnDays(n){
+    try{ localStorage.setItem('bbStartWarnDays', String(Math.max(0, parseInt(n,10)||0))); }catch(e){}
+  }
+  function _bbSetDueWarnDays(n){
+    try{ localStorage.setItem('bbDueWarnDays', String(Math.max(0, parseInt(n,10)||0))); }catch(e){}
   }
   function _bbHighlightAppearance(){
     var curTheme=_bbCurrentTheme(), curFont=_bbCurrentFont();
@@ -1087,6 +1130,12 @@
             +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
               +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
             +'</div></div>'
+            +'<div class="bb-field"><label>Start Date warning (days before, auto-sets H)</label>'
+              +'<input type="number" min="0" step="1" id="bb-start-warn-days" style="width:80px">'
+            +'</div>'
+            +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
+              +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
+            +'</div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
@@ -1197,7 +1246,7 @@
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
     var _keyLib=_bbLoadKeyLibrary();
-    _bbAutoEscalateStartDates();
+    _bbAutoEscalateDates();
     var cards=_bbCardsList().filter(function(c){ return !c.archived; });
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
@@ -1393,6 +1442,8 @@
 
   function openSettings(){
     _bbHighlightAppearance();
+    var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
+    var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
     var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.add('active');
   }
   function closeSettings(){
@@ -1630,6 +1681,18 @@
     });
     document.querySelectorAll('.bb-font-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ _bbApplyFont(btn.getAttribute('data-font')); });
+    });
+    var startWarnEl=document.getElementById('bb-start-warn-days');
+    if(startWarnEl) startWarnEl.addEventListener('change', function(){
+      _bbSetStartWarnDays(startWarnEl.value);
+      startWarnEl.value=_bbStartWarnDays();
+      renderBoard();
+    });
+    var dueWarnEl=document.getElementById('bb-due-warn-days');
+    if(dueWarnEl) dueWarnEl.addEventListener('change', function(){
+      _bbSetDueWarnDays(dueWarnEl.value);
+      dueWarnEl.value=_bbDueWarnDays();
+      renderBoard();
     });
   }
 
