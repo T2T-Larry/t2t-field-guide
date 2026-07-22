@@ -76,7 +76,13 @@
    bottom (not yet triaged) -- ties keep whatever order they already
    had (stable sort), same as how the cards landed there. A near or
    passed due date can also pull a card's effective sort rank up (never
-   down) even past its stated priority.
+   down) even past its stated priority -- sort-only, the badge doesn't
+   change.
+   July 22, 2026, Larry: an arrived Start Date on a card still sitting
+   in Do is different -- that one actually rewrites c.priority to H
+   (never downgrades an already-more-urgent H/HH), so the card's own
+   badge shows why it jumped, not just its spot in the list. See
+   _bbAutoEscalateStartDates.
 
    Topic + appearance + Date Added, July 20, 2026:
    - #bb-topic-pill: a rounded, always-WHITE (not themeable -- the one
@@ -727,6 +733,11 @@
   // (toward HH), never down -- a due date can't make an HH card less
   // urgent. The card still shows whatever priority was actually set;
   // this effective rank is for sort order only.
+  // (A Start Date that's arrived while still in Do used to get this
+  // same sort-only treatment -- July 22, 2026, Larry asked for that one
+  // to be a real change instead: see _bbAutoEscalateStartDates, called
+  // from renderBoard, which actually sets c.priority to H so the card's
+  // own badge tells the truth, not just its position in the list.)
   function _priRank(c){
     var base = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
     var rank = base;
@@ -736,14 +747,34 @@
       else if(daysUntil<=2) rank=Math.min(rank, 1); // due very soon -> at least H
       else if(daysUntil<=5) rank=Math.min(rank, 2); // due soon -> at least MH
     }
-    // A Start Date that's arrived (or passed) while the card is still
-    // sitting in Do -- scheduled to begin, hasn't actually begun --
-    // "drop everything" and escalate it too.
-    if(c.col==='do'){
-      var sd=_bbParseDue(c.startDate);
-      if(sd && _bbDaysUntil(sd)<=0) rank=Math.min(rank, 1); // at least HH
-    }
     return rank;
+  }
+
+  // July 22, 2026, Larry: an arrived Start Date while a card sits in Do
+  // ("scheduled to begin, hasn't actually begun") now bumps its ACTUAL
+  // priority to H, not just its sort position -- the badge itself
+  // should say H, so anyone glancing at the card sees why it jumped.
+  // Only escalates (never overrides an already-more-urgent H or HH),
+  // and only touches Do -- moving into Doing/Done stops the escalation
+  // from re-triggering (the card just keeps whatever priority it had
+  // when it moved). Runs every render; harmless to repeat since once a
+  // card is at H or HH this is a no-op.
+  function _bbAutoEscalateStartDates(){
+    // Always scans + saves the FULL unfiltered list (not whatever
+    // subset renderBoard happens to be working with) -- _bbSaveLocal
+    // replaces _bbCards wholesale, so handing it a filtered array would
+    // quietly drop every archived card from storage.
+    var all=_bbCardsList();
+    var changed=false;
+    all.forEach(function(c){
+      if(c.archived || c.col!=='do' || !c.startDate) return;
+      var sd=_bbParseDue(c.startDate);
+      if(!sd || _bbDaysUntil(sd)>0) return;
+      var curRank = PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
+      if(curRank > PRI_ORDER.H){ c.priority='H'; changed=true; }
+    });
+    if(changed) _bbSaveLocal(all);
+    return changed;
   }
 
   function _bbLoadTopic(){
@@ -1166,6 +1197,7 @@
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
     var _keyLib=_bbLoadKeyLibrary();
+    _bbAutoEscalateStartDates();
     var cards=_bbCardsList().filter(function(c){ return !c.archived; });
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
