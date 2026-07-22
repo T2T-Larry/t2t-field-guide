@@ -754,7 +754,7 @@
   async function _bbLoadMembers(){
     var sb=T().sb; if(!sb) return;
     try{
-      var res=await sb.from('members').select('name,initials,membership_status').eq('membership_status','active').order('name',{ascending:true});
+      var res=await sb.from('briefing_roster').select('name,initials').order('name',{ascending:true});
       if(!res.error && res.data){
         _bbMembersCache = res.data.map(function(m){
           var initials=(m.initials||_bbInitialsFromName(m.name)).toUpperCase();
