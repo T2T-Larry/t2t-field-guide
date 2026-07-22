@@ -974,10 +974,16 @@
          of vertical board space on it. Gear + X ride along on the
          right of that same row. */
       +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px 8px;flex-shrink:0}'
-      +'.bb-mhead-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}'
-      +'.bb-mh-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}'
+      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}'
+      +'.bb-mh-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-self:start}'
       +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:999px;padding:4px 10px;font-family:var(--bb-head-font);font-size:14px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:160px}'
+      // BB TOPIC, July 22 2026 -- Larry: "move BB TOPIC to center justify
+      // in large font size." Given its own grid column so it sits
+      // centered in the header regardless of how long the title on the
+      // left or the icon row on the right end up being, and bumped well
+      // past the old small pill size so it actually reads as the topic.
+      +'.bb-mh-topic{justify-self:center;min-width:0}'
+      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:999px;padding:6px 16px;font-family:var(--bb-head-font);font-size:22px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:260px;text-align:center;text-align-last:center}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
@@ -1092,7 +1098,8 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
-            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
+            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span></div>'
+            +'<div class="bb-mh-topic"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
