@@ -100,6 +100,19 @@
     window.location.reload();
   }
 
+  // July 22, 2026, Larry: wants a keyboard shortcut too, not just the
+  // button -- F3, since it's not already claimed by anything in this
+  // app. Global (works from any screen, matching the button living in
+  // both the backpack menu and, more importantly per Larry, right on
+  // the Briefing Board itself). preventDefault so browsers that treat
+  // F3 as "find next" don't also try to do their own thing with it.
+  document.addEventListener('keydown', function(e){
+    if(e.key==='F3'){
+      e.preventDefault();
+      resetAndReturn();
+    }
+  });
+
   /* ── GEMS REGISTRY ── */
   var _gemsRegistry = {};
 
@@ -837,7 +850,7 @@
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('mg-overlay')) return;
     var div=document.createElement('div');
-    div.innerHTML='<div class="mg-overlay" id="mg-overlay"><div class="mg-modal"><div class="mg-wrap"><div class="mg-head"><div class="mg-ring">☰</div><div class="mg-ttl">Details</div><div class="mg-desc">Plus places to keep what matters.</div></div><div class="mg-hrule"></div><div class="mg-body"><div class="mg-row"><div class="mg-btn" id="b-mg-map">🧭</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-idea">💡</div><div class="mg-btn" id="b-mg-journal">✏️</div><div class="mg-btn" id="b-mg-search">🔍</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-tools">🛠️</div></div></div></div><div class="mg-bar"><div class="mg-ret" id="b-mg-ret">⬅️</div><div class="mg-ret" id="b-mg-reset" title="Reload and return here">🔄</div></div></div></div>';
+    div.innerHTML='<div class="mg-overlay" id="mg-overlay"><div class="mg-modal"><div class="mg-wrap"><div class="mg-head"><div class="mg-ring">☰</div><div class="mg-ttl">Details</div><div class="mg-desc">Plus places to keep what matters.</div></div><div class="mg-hrule"></div><div class="mg-body"><div class="mg-row"><div class="mg-btn" id="b-mg-map">🧭</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-idea">💡</div><div class="mg-btn" id="b-mg-journal">✏️</div><div class="mg-btn" id="b-mg-search">🔍</div></div><div class="mg-row"><div class="mg-btn" id="b-mg-tools">🛠️</div></div></div></div><div class="mg-bar"><div class="mg-ret" id="b-mg-ret">⬅️</div><div class="mg-ret" id="b-mg-reset" title="Reload and return here (F3)">🔄</div></div></div></div>';
     fg.appendChild(div.firstChild);
     wireMGOverlay();
   }
