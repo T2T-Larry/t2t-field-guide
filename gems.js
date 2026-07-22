@@ -44,7 +44,8 @@
      uses. Add future curated Gems here as new pages lock. */
   var CURATED = [
     { page_num:'0200', text:'Every great invention started as a thought.', attr:'Curated · from 0200' },
-    { page_num:null, text:'Magic & Memorable', attr:'Curated' }
+    { page_num:null, text:'Magic & Memorable', attr:'Curated' },
+    { page_num:null, text:'Hidden Mickeys make life interesting.', attr:'Curated' }
   ];
 
   /* ── REUSABLE TILE RENDERER — plug-and-play ──
