@@ -22,7 +22,7 @@
 <script src="idea-storyboard-9710.js?v=20260719b"></script>
 <script src="session.js?v=20260719a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260722h"></script>
+<script src="backpack.js?v=20260722i"></script>
 <script src="briefing-board.js?v=20260722m"></script>
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -594,17 +594,23 @@
   <div class="card"><div class="tools-wrap">
     <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
     <div class="tools-orbital">
-      <svg class="orb-svg" id="orb-svg" width="320" height="320" viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
+      <svg class="orb-svg" id="orb-svg" width="480" height="480" viewBox="-80 -80 480 480" xmlns="http://www.w3.org/2000/svg">
         <defs><filter id="btn-glow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.28)"/><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.18)"/></filter></defs>
-        <circle cx="160" cy="160" r="105" fill="none" stroke="#c8b89a" stroke-width="1" stroke-dasharray="4,6"/>
+        <circle cx="160" cy="160" r="155" fill="none" stroke="#c8b89a" stroke-width="1" stroke-dasharray="4,6"/>
         <g id="orb-arrows" fill="#c8b89a"></g>
         <circle cx="160" cy="160" r="34" fill="#0a4a38" stroke="#1a7a5e" stroke-width="2" filter="url(#btn-glow)" id="btn-configure" style="cursor:pointer"/>
         <text x="160" y="169" text-anchor="middle" font-size="26" dominant-baseline="middle" style="pointer-events:none">⚙️</text>
-        <g class="btn-group" id="pb-question" transform="translate(160,55)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" style="pointer-events:none">?</text></g>
-        <g class="btn-group" id="pb-create" transform="translate(259.8,130.3)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">CREATE</text></g>
-        <g class="btn-group" id="pb-shape" transform="translate(221.8,245.7)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHAPE</text></g>
-        <g class="btn-group" id="pb-share" transform="translate(98.2,245.7)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHARE</text></g>
-        <g class="btn-group" id="pb-dare" transform="translate(60.2,130.3)"><rect x="-39" y="-19" width="78" height="38" rx="10" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="13" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">DARE</text></g>
+        <!-- 5 category buttons, July 22 2026 -- Larry: "double the font size on
+             each button." Font sizes doubled (22->44 for the "?", 13->26 for
+             the labels); boxes grown to fit the bigger text and the whole
+             pentagon widened (radius 105->155, viewBox grown to match) so
+             the enlarged SHAPE/SHARE boxes at the bottom still clear each
+             other -- otherwise they'd collide at the old spacing. -->
+        <g class="btn-group" id="pb-question" transform="translate(160,5)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="44" font-weight="700" fill="#3B2510" style="pointer-events:none">?</text></g>
+        <g class="btn-group" id="pb-create" transform="translate(307.4,112.1)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">CREATE</text></g>
+        <g class="btn-group" id="pb-shape" transform="translate(251.1,285.4)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHAPE</text></g>
+        <g class="btn-group" id="pb-share" transform="translate(68.9,285.4)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHARE</text></g>
+        <g class="btn-group" id="pb-dare" transform="translate(12.6,112.1)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">DARE</text></g>
       </svg>
     </div>
   </div></div>

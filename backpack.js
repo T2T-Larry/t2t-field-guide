@@ -868,11 +868,14 @@
   /* ── TOOLS PENTAGON ── */
   function drawPentagonArrows(){
     var arrowG=document.getElementById('orb-arrows'); if(!arrowG) return;
-    var cx=160,cy=160,r=105,ns='http://www.w3.org/2000/svg';
+    // r matches the pentagon button radius in index.html's #s-tools
+    // orbital SVG -- keep both in sync if that radius ever changes
+    // again (bumped 105->155 July 22 2026 to fit the doubled button font).
+    var cx=160,cy=160,r=155,ns='http://www.w3.org/2000/svg';
     for(var i=0;i<5;i++){
       var midRad=(-90+i*72+36)*Math.PI/180;
       var px=cx+r*Math.cos(midRad),py=cy+r*Math.sin(midRad);
-      var tx=-Math.sin(midRad),ty=Math.cos(midRad),nx=Math.cos(midRad),ny=Math.sin(midRad),s=7;
+      var tx=-Math.sin(midRad),ty=Math.cos(midRad),nx=Math.cos(midRad),ny=Math.sin(midRad),s=9;
       var poly=document.createElementNS(ns,'polygon');
       poly.setAttribute('points',(px+tx*s)+','+(py+ty*s)+' '+(px-tx*s-nx*(s*.7))+','+(py-ty*s-ny*(s*.7))+' '+(px-tx*s+nx*(s*.7))+','+(py-ty*s+ny*(s*.7)));
       arrowG.appendChild(poly);
