@@ -1106,8 +1106,8 @@
       +'.bb-overlay-card.bb-routine-active{border-top-color:#4a7a95}'
       +'.bb-date-row{display:flex;gap:6px;align-items:stretch}'
       +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
-      +'.bb-date-time{width:60px;flex:none}'
-      +'.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:12px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-date-row input.bb-date-time{width:60px;flex:none;min-width:0}'
+      +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:12px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:11px;line-height:1}'
       +'.bb-hx-landing-btn{margin-bottom:12px}';
