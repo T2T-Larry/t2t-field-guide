@@ -22,7 +22,7 @@
 <script src="idea-storyboard-9710.js?v=20260719b"></script>
 <script src="session.js?v=20260719a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260722j"></script>
+<script src="backpack.js?v=20260722k"></script>
 <script src="briefing-board.js?v=20260722m"></script>
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -594,26 +594,25 @@
   <div class="card"><div class="tools-wrap">
     <div class="mg-mhead"><div class="mg-mh" style="font-size:48px;font-weight:700;line-height:1;padding-bottom:6px">🛠️ Tools</div><div class="mg-mt">The T2T process. Choose where you are.</div></div>
     <div class="tools-orbital">
-      <svg class="orb-svg" id="orb-svg" width="436" height="325" viewBox="-58 -15 436 325" xmlns="http://www.w3.org/2000/svg">
+      <svg class="orb-svg" id="orb-svg" width="390" height="295" viewBox="-35 0 390 295" xmlns="http://www.w3.org/2000/svg">
         <defs><filter id="btn-glow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.28)"/><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.18)"/></filter></defs>
-        <circle cx="160" cy="160" r="138" fill="none" stroke="#c8b89a" stroke-width="1" stroke-dasharray="4,6"/>
+        <circle cx="160" cy="160" r="124" fill="none" stroke="#c8b89a" stroke-width="1" stroke-dasharray="4,6"/>
         <g id="orb-arrows" fill="#c8b89a"></g>
         <circle cx="160" cy="160" r="34" fill="#0a4a38" stroke="#1a7a5e" stroke-width="2" filter="url(#btn-glow)" id="btn-configure" style="cursor:pointer"/>
         <text x="160" y="169" text-anchor="middle" font-size="26" dominant-baseline="middle" style="pointer-events:none">⚙️</text>
-        <!-- 5 category buttons, July 22 2026 -- Larry: "double the font size on
-             each button," then "shrink the extra space to get it all visible
-             at the same time" once the wider pentagon meant a scroll. Buttons
-             stay the same size (150x54, 44/26px text) -- only the orbit
-             radius shrank (155->138, the tightest value that still keeps
-             every pair of adjacent boxes clear, incl. SHAPE/SHARE at the
-             bottom) and the SVG's own canvas got cropped to a snug,
-             non-square box around the actual pentagon shape instead of a
-             big square with dead margin on every side. -->
-        <g class="btn-group" id="pb-question" transform="translate(160,22)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="44" font-weight="700" fill="#3B2510" style="pointer-events:none">?</text></g>
-        <g class="btn-group" id="pb-create" transform="translate(291.2,117.4)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">CREATE</text></g>
-        <g class="btn-group" id="pb-shape" transform="translate(241.1,271.6)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHAPE</text></g>
-        <g class="btn-group" id="pb-share" transform="translate(78.9,271.6)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHARE</text></g>
-        <g class="btn-group" id="pb-dare" transform="translate(28.8,117.4)"><rect x="-75" y="-27" width="150" height="54" rx="14" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="26" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">DARE</text></g>
+        <!-- 5 category buttons, July 22 2026 -- Larry: doubled, then shrunk to
+             stop the scroll, then "the buttons might now be a little too big
+             ... bring them down in size a touch" once seen at the actual
+             widget (680px) size. Backed off from 150x54/44px-26px down to
+             130x46/36px-22px, and pulled the radius in to match (138->124,
+             again the tightest value that keeps SHAPE/SHARE clear at the
+             bottom with real margin). Still comfortably bigger than the
+             original 78x38/22px-13px it started at. -->
+        <g class="btn-group" id="pb-question" transform="translate(160,36)"><rect x="-65" y="-23" width="130" height="46" rx="12" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="36" font-weight="700" fill="#3B2510" style="pointer-events:none">?</text></g>
+        <g class="btn-group" id="pb-create" transform="translate(277.9,121.7)"><rect x="-65" y="-23" width="130" height="46" rx="12" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">CREATE</text></g>
+        <g class="btn-group" id="pb-shape" transform="translate(232.9,260.3)"><rect x="-65" y="-23" width="130" height="46" rx="12" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHAPE</text></g>
+        <g class="btn-group" id="pb-share" transform="translate(87.1,260.3)"><rect x="-65" y="-23" width="130" height="46" rx="12" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">SHARE</text></g>
+        <g class="btn-group" id="pb-dare" transform="translate(42.1,121.7)"><rect x="-65" y="-23" width="130" height="46" rx="12" fill="#C9A87C" stroke="#1a1a1a" stroke-width="2" filter="url(#btn-glow)"/><text x="0" y="1" text-anchor="middle" dominant-baseline="middle" font-family="Playfair Display,serif" font-size="22" font-weight="700" fill="#3B2510" letter-spacing="1" style="pointer-events:none">DARE</text></g>
       </svg>
     </div>
   </div></div>
