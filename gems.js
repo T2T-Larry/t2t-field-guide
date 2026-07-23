@@ -6,7 +6,7 @@
    button. Replaces the previous fixed-height, purple-default,
    static-layout version.
 
-   Legacy Gems hub — s-gems, s-gem-add, s-gems-list, s-gems-miro —
+   Legacy Gems hub — s-gems, s-gem-add, s-gems-list —
    still untouched, still not deleted.
 
    Talks to backpack.js ONLY through window.T2T. Loads AFTER

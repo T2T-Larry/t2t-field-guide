@@ -37,7 +37,7 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260714a"></script>
-<script src="backpack.js?v=20260722l"></script>
+<script src="backpack.js?v=20260723b"></script>
 <script src="briefing-board.js?v=20260723a"></script>
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -45,7 +45,7 @@
 <script src="idea-media-shared.js?v=20260718n"></script>
 <script src="idea-storyboard-9710.js?v=20260718q"></script>
 <script src="session.js?v=20260718p"></script>
-<script src="gems.js?v=20260722b"></script>
+<script src="gems.js?v=20260723b"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">
@@ -1436,10 +1436,6 @@
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="jb" id="b-add-note">Add Note to Journal</button>
       <button class="jb" id="b-view-journal">View Journal</button>
-      <div id="journal-view-choices" style="display:none;flex-direction:row;gap:12px;margin-top:4px">
-        <button class="jb" id="b-jview-list" style="width:100px;font-size:13px;margin-bottom:0;background:#F6EBD2;border-color:#C9A87C">List</button>
-        <button class="jb" id="b-jview-miro" style="width:100px;font-size:13px;margin-bottom:0;background:#FFF3C4;border-color:#E8C547;color:#6B5208">Miro</button>
-      </div>
     </div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-journal-back">⬅️</button><button class="tb" id="b-journal-mg">☰</button></div>
@@ -1509,22 +1505,6 @@
   <div class="bar2"><button class="tb" id="b-jentry-back">⬅️</button><button class="tb" id="b-jentry-mg">☰</button></div>
 </div>
 
-<!-- JOURNAL MIRO -->
-<div class="sc" id="s-journal-miro">
-  <div class="card" style="background:#FDF6E8">
-    <div class="mg-mhead" style="background:#FDF6E8;border-bottom:3px solid #C9A87C;flex-shrink:0">
-      <div class="mg-mh" style="color:#3B2510">✏️ Journal Board</div>
-      <div class="mg-mt" style="color:#7A5C3A">Your journal entries, live on the board.</div>
-    </div>
-    <iframe id="journal-miro-embed" src="" style="flex:1;border:none;min-height:360px" allowfullscreen></iframe>
-  </div>
-  <div class="bar2" style="gap:6px">
-    <button class="tb" id="b-jmiro-back">⬅️</button>
-    <button class="tb" id="b-jmiro-mg">☰</button>
-    <button class="tb" id="b-jmiro-full"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
-  </div>
-</div>
-
 <!-- 🔍 SEARCH HUB (9800) -- Trivia + Gems live one step behind the
      magnifying glass now (Larry, July 20, 2026): "using a magnifying glass
      along the path in the forest where you might find interesting flowers
@@ -1550,10 +1530,6 @@
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-bottom:24px">
       <button class="gb" id="b-add-gem">Add a Gem</button>
       <button class="gb" id="b-view-gems">View Gems</button>
-      <div id="gems-view-choices" style="display:none;flex-direction:row;gap:12px;margin-top:4px">
-        <button class="gb" id="b-gview-list" style="width:100px;font-size:13px;margin-bottom:0;background:#F1E9FF;border-color:#7c3aed">List</button>
-        <button class="gb" id="b-gview-miro" style="width:100px;font-size:13px;margin-bottom:0;background:#FFF3C4;border-color:#E8C547;color:#6B5208">Miro</button>
-      </div>
     </div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-gems-back">⬅️</button><button class="tb" id="b-gems-mg">☰</button></div>
@@ -1589,22 +1565,6 @@
     <div id="gv-entries-list"><div class="gv-empty">No Gems yet.<br>They surface when you're ready.</div></div>
   </div></div>
   <div class="bar2"><button class="tb" id="b-glist-back">⬅️</button><button class="tb" id="b-glist-mg">☰</button></div>
-</div>
-
-<!-- 💎 GEMS MIRO -->
-<div class="sc" id="s-gems-miro">
-  <div class="card" style="background:#F5F3FF">
-    <div class="mg-mhead" style="background:#F5F3FF;border-bottom:3px solid #7c3aed;flex-shrink:0">
-      <div class="mg-mh" style="color:#5B21B6">💎 Gems Board</div>
-      <div class="mg-mt" style="color:#7c3aed">Your gems, live on the board.</div>
-    </div>
-    <iframe id="gems-miro-embed" src="" style="flex:1;border:none;min-height:360px" allowfullscreen></iframe>
-  </div>
-  <div class="bar2" style="gap:6px">
-    <button class="tb" id="b-gmiro-back">⬅️</button>
-    <button class="tb" id="b-gmiro-mg">☰</button>
-    <button class="tb" id="b-gmiro-full"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
-  </div>
 </div>
 
 <!-- 🌸 TRIVIA -->

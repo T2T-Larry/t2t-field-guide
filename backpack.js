@@ -11,13 +11,10 @@
   const SB_KEY = 'sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh';
   const _sb = supabase.createClient(SB_URL, SB_KEY);
 
-  const MIRO_TOKEN = "eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_Iy_RI5tvgF-kztbeMcvBiJUU50I";
-
   /* ── MEMBER PROFILE ── */
   var _member = {
     user_id:null, email:null, display_name:null,
-    miro_board_id:null, journal_board_id:null,
-    gems_board_id:null, briefing_board_id:null
+    briefing_board_id:null
   };
 
   async function loadMemberProfile(userId) {
@@ -26,9 +23,6 @@
       if (res.data) {
         _member.user_id          = userId;
         _member.display_name     = res.data.display_name      || '';
-        _member.miro_board_id    = res.data.miro_board_id     || null;
-        _member.journal_board_id = res.data.journal_board_id  || null;
-        _member.gems_board_id    = res.data.gems_board_id     || null;
         _member.briefing_board_id= res.data.briefing_board_id || null;
         var nameEl = document.getElementById('jcov-member-name');
         if (nameEl && _member.display_name) nameEl.textContent = _member.display_name.toUpperCase();
@@ -225,8 +219,8 @@
     's-thoughts-1','s-thoughts-2','s-thoughts-3',
     's-idea',
     's-journal','s-journal-landing','s-journal-capture','s-journal-cover',
-    's-journal-view','s-journal-entry','s-journal-miro',
-    's-gems','s-gem-add','s-gems-list','s-gems-miro',
+    's-journal-view','s-journal-entry',
+    's-gems','s-gem-add','s-gems-list',
     's-search',
     's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
     's-configure','s-change-password','s-sea-of-ideas','s-sea-of-ideas-cluster'
@@ -322,8 +316,6 @@
     if(pn && id!=='s-signin'){ try{ localStorage.setItem('bpLastPageNum', pn); }catch(e){} }
     showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
-    if (id==='s-journal-landing') { var jc=document.getElementById('journal-view-choices'); if(jc) jc.style.display='none'; }
-    if (id==='s-gems')            { var gc=document.getElementById('gems-view-choices');    if(gc) gc.style.display='none'; }
     if (id==='s-journal-view')    renderJournalView();
     if (id==='s-journal-cover')   initJournalCover();
     if (id==='s-gems-list')       renderGemsView();
@@ -562,162 +554,10 @@
      below so tmap.js (and optionally dmap.js) can build the Map screen
      without needing backpack.js's private closure state directly. */
 
-  /* ── MIRO HELPERS ── */
-  function _bid(id){ if(!id) return null; return id.endsWith('=')?id:id+'='; }
-
-  async function postIdeaToMiro(text,ctx) {
-    var boardId=_bid(_member.miro_board_id); if(!boardId) return false;
-    var statusEl=document.getElementById('idea-status');
-    if(statusEl) statusEl.textContent='Sending to ISB\u2026';
-    var COLORS=['light_yellow','yellow','light_green','cyan','light_pink','light_blue','orange'];
-    var color=COLORS[Math.floor(Math.random()*COLORS.length)];
-    var content='<p>\uD83D\uDCA1</p><p>'+text+'</p>';
-    try {
-      var res=await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-        body:JSON.stringify({
-          data:{content:content,shape:'square'},
-          style:{fillColor:color,textAlign:'left',textAlignVertical:'top'},
-          geometry:{width:220},
-          position:{x:Math.floor(Math.random()*1200)-600,y:Math.floor(Math.random()*800)-400,origin:'center'}
-        })
-      });
-      if(statusEl){ statusEl.textContent=res.ok?'\uD83C\uDF0A In your ISB!':''; if(res.ok) setTimeout(function(){if(statusEl)statusEl.textContent='';},3000); }
-      return res.ok;
-    } catch(e){ if(statusEl) statusEl.textContent=''; return false; }
-  }
-
-  async function postImageToMiro(imageUrl,credit) {
-    var boardId=_bid(_member.miro_board_id); if(!boardId) return false;
-    var x=Math.floor(Math.random()*1200)-600, y=Math.floor(Math.random()*800)-400;
-    try {
-      var res=await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/images',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-        body:JSON.stringify({
-          data:{url:imageUrl},
-          position:{x:x,y:y,origin:'center'},
-          geometry:{width:300}
-        })
-      });
-      if(res.ok && credit){
-        await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/texts',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-          body:JSON.stringify({
-            data:{content:'<p>'+credit+'</p>'},
-            style:{fontSize:'10',color:'#888888'},
-            position:{x:x,y:y+170,origin:'center'},
-            geometry:{width:300}
-          })
-        });
-      }
-      return res.ok;
-    } catch(e){ return false; }
-  }
-
-  async function postGemToMiro(text,attr) {
-    var boardId=_bid(_member.gems_board_id); if(!boardId) return;
-    var attrLine=(attr&&attr!==_member.display_name&&attr!=='T2T Field Guide')?'<p><em>\u2014 '+attr+'</em></p>':'';
-    var content='<p>\uD83D\uDC8E</p><p>'+text+'</p>'+attrLine;
-    try {
-      await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-        body:JSON.stringify({
-          data:{content:content,shape:'square'},
-          style:{fillColor:'violet',textAlign:'left',textAlignVertical:'top'},
-          geometry:{width:440},
-          position:{x:Math.floor(Math.random()*1200)-600,y:Math.floor(Math.random()*800)-400,origin:'center'}
-        })
-      });
-    } catch(e){}
-  }
-
-  async function postJournalToMiro(text,topic) {
-    var boardId=_bid(_member.journal_board_id); if(!boardId) return null;
-    var topicLine=topic?'<p><strong>'+topic.toUpperCase()+'</strong></p>':'';
-    var content=topicLine+'<p>'+text+'</p>';
-    try {
-      var res=await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-        body:JSON.stringify({
-          data:{content:content,shape:'rectangle'},
-          style:{fillColor:'light_yellow',textAlign:'left',textAlignVertical:'top'},
-          geometry:{width:260},
-          position:{x:Math.floor(Math.random()*1200)-600,y:Math.floor(Math.random()*800)-400,origin:'center'}
-        })
-      });
-      if(res.ok){ var saved=await res.json(); return saved&&saved.id||null; }
-    } catch(e){}
-    return null;
-  }
-
-  /* ── ESC REMINDER CARD ── black/white sticky, posted once per board.
-     Checks for an existing one first so repeat visits (and multiple
-     embeds of the same board) never duplicate it — and repositions an
-     existing card if it's drifted from the visible spot. */
-  var _reminderChecked = {};
-  var _reminderPos = {x:0,y:-560,origin:'center'};
-  async function ensureMiroReminder(boardId) {
-    if (!boardId || _reminderChecked[boardId]) return;
-    _reminderChecked[boardId] = true;
-    var marker = 'Press ESC to exit fullscreen';
-    try {
-      var res = await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes?limit=50',{
-        headers:{'Authorization':'Bearer '+MIRO_TOKEN}
-      });
-      if (res.ok) {
-        var listed = await res.json();
-        var items = (listed && listed.data) || [];
-        var existing = items.find(function(item){
-          return item.data && item.data.content && item.data.content.indexOf(marker)!==-1;
-        });
-        if (existing) {
-          try {
-            await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes/'+existing.id,{
-              method:'PATCH',
-              headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-              body:JSON.stringify({position:_reminderPos})
-            });
-          } catch(e){}
-          return;
-        }
-      }
-    } catch(e){ return; }
-    try {
-      await fetch('https://api.miro.com/v2/boards/'+encodeURIComponent(boardId)+'/sticky_notes',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+MIRO_TOKEN},
-        body:JSON.stringify({
-          data:{content:'<p>\u238B <strong>'+marker+'</strong></p>',shape:'rectangle'},
-          style:{fillColor:'black',textAlign:'center',textAlignVertical:'middle'},
-          geometry:{width:260},
-          position:_reminderPos
-        })
-      });
-    } catch(e){}
-  }
-
-  /* ── MIRO EMBED OPENERS ── */
-  function openJournalMiro() {
-    var boardId=_bid(_member.journal_board_id);
-    if(!boardId){alert('No Journal board connected yet. Contact your facilitator.');return;}
-    var embed=document.getElementById('journal-miro-embed');
-    if(embed) embed.src='https://miro.com/app/live-embed/'+boardId+'/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
-    ensureMiroReminder(boardId);
-    nav('s-journal-miro');
-  }
-  function openGemsMiro() {
-    var boardId=_bid(_member.gems_board_id);
-    if(!boardId){alert('No Gems board connected yet. Contact your facilitator.');return;}
-    var embed=document.getElementById('gems-miro-embed');
-    if(embed) embed.src='https://miro.com/app/live-embed/'+boardId+'/?embedAutoplay=true&moveToViewport=-2000,-1000,4000,2000';
-    ensureMiroReminder(boardId);
-    nav('s-gems-miro');
-  }
+  // July 23, 2026, Larry: Miro is no longer part of the Field Guide --
+  // removed the sticky-note posting, board embeds, and board-id plumbing
+  // that used to live here (postIdeaToMiro/postImageToMiro/postGemToMiro/
+  // postJournalToMiro/ensureMiroReminder/openJournalMiro/openGemsMiro).
 
 
   /* ── JOURNAL ── */
@@ -985,13 +825,11 @@
     // multiplication of siblings.
     registerPageNum('s-journal-cover',  '9320.1');
     registerPageNum('s-journal-entry',  '9320.2');
-    registerPageNum('s-journal-miro',   '9330');
     registerPageNum('s-gems',      '9400');
     registerPageNum('s-gem-add',   '9410');
     /* s-gems-list previously held 9420 — freed for the new gems.js
        board (July 9, 2026). s-gems-list itself is untouched, just
        no longer numbered/reachable from the default backpack path. */
-    registerPageNum('s-gems-miro', '9430');
     registerPageNum('s-trivia', '9500');
     registerPageNum('s-tools',  '9600');
     registerPageNum('s-question', '9610');
@@ -1048,7 +886,6 @@
       },50);
     });
     wire('b-view-journal',openJournalView);
-    wire('b-jview-list',openJournalView); wire('b-jview-miro',openJournalMiro);
     wire('b-jcap-back',function(){nav('s-journal-landing');}); wire('b-jcap-mg',goMG);
     wire('b-jcov-back',function(){nav('s-journal-landing');}); wire('b-jcov-mg',goMG);
     wire('b-jcov-next',function(){if(_jeEntries.length>0){showEntryAt(_jeEntries,0);nav('s-journal-entry');}});
@@ -1065,15 +902,11 @@
       var noteId=await saveEntryToSupabase(text,ctx,topic);
       if(noteId){if(!topic)suggestTopic(noteId,text);}
       else{saveEntryLocal({text:text,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),page:ctx,topic:topic});}
-      postJournalToMiro(text,topic);
       t.value='';if(topicEl)topicEl.value='';
       var btn=document.getElementById('b-save-journal');if(btn)btn.classList.remove('active');
     });
     var journalTA=document.getElementById('journal-text');
     if(journalTA) journalTA.addEventListener('input',function(){var b=document.getElementById('b-save-journal');if(b)b.classList.toggle('active',this.value.trim().length>0);});
-    wire('b-jmiro-back',function(){var e=document.getElementById('journal-miro-embed');if(e)e.src='';nav('s-journal-landing',false);});
-    wire('b-jmiro-mg',goMG);
-    wire('b-jmiro-full',function(){var e=document.getElementById('journal-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
     /* SEARCH HUB — 🔍 Trivia + Gems (added July 20, 2026, replacing the old
        direct Gems slot in the backpack's middle row) */
@@ -1097,10 +930,10 @@
       for(var i=0;i<checked.length;i++){
         var idx=parseInt(checked[i].getAttribute('data-idx'));
         var c=candidates[idx];
-        if(c){await saveGemToSupabase(c.text,c.attr);await postGemToMiro(c.text,c.attr);saved++;}
+        if(c){await saveGemToSupabase(c.text,c.attr);saved++;}
       }
       var ownText=(document.getElementById('gc-own-text')||{}).value||'';
-      if(ownText.trim()){await saveGemToSupabase(ownText.trim(),null);await postGemToMiro(ownText.trim(),_member.display_name||null);saved++;}
+      if(ownText.trim()){await saveGemToSupabase(ownText.trim(),null);saved++;}
       btn.textContent='SAVE';
       if(status) status.textContent=saved+(saved===1?' Gem saved.':' Gems saved.');
       setTimeout(function(){
@@ -1113,11 +946,7 @@
     });
     wire('b-view-gems',function(){nav('s-gems-list');renderGemsView();});
     wire('b-gview-list',function(){nav('s-gems-list');renderGemsView();});
-    wire('b-gview-miro',openGemsMiro);
     wire('b-glist-back',function(){nav('s-gems');}); wire('b-glist-mg',goMG);
-    wire('b-gmiro-back',function(){var e=document.getElementById('gems-miro-embed');if(e)e.src='';nav('s-gems',false);});
-    wire('b-gmiro-mg',goMG);
-    wire('b-gmiro-full',function(){var e=document.getElementById('gems-miro-embed');if(!e)return;if(e.requestFullscreen)e.requestFullscreen();else if(e.webkitRequestFullscreen)e.webkitRequestFullscreen();});
 
     /* TOOLS */
     wire('b-tools-back',returnToMG); wire('b-tools-mg',goMG);
@@ -1179,11 +1008,8 @@
     getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
     getCtx:getCtx,
-    openJournalMiro:openJournalMiro,
-    openGemsMiro:openGemsMiro, openGemAdd:openGemAdd,
-    ensureMiroReminder:ensureMiroReminder,
+    openGemAdd:openGemAdd,
     openJournalView:openJournalView,
-    postIdeaToMiro:postIdeaToMiro, postImageToMiro:postImageToMiro,
     navToPageNum:navToPageNum, currentFile:currentFile,
     getCurNum:function(){ return _pageNums[cur]||null; },
     setPhOpen:setPhOpen,
