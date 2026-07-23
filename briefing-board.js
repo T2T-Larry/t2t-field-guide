@@ -184,6 +184,12 @@
   // COLUMNS for the shared logic every other place in this file uses
   // to stay in sync with this split.
   var COLUMNS = [
+    // July 23, 2026, Larry: DO-L used to double as the no-priority
+    // bucket ("as an incentive to prioritize"), but Larry wants a real
+    // 4th column for it instead -- NEW now holds anything that hasn't
+    // been given a priority yet, and DO-L goes back to meaning plain L
+    // only. Sits first so an untriaged card is the first thing seen.
+    {key:'new',     label:'NEW'},
     // July 22, 2026 (later): Larry likes the red/green/yellow header
     // colors enough to drop the H/M/L letters entirely -- color alone
     // reads as priority now, plain "DO" on all 3.
@@ -222,12 +228,18 @@
   // here, they answer different questions.
   function _bbDoFamily(priority){
     var rank = PRI_ORDER.hasOwnProperty(priority) ? PRI_ORDER[priority] : 7;
-    if(rank<=1) return 'h';  // HH, H
-    if(rank<=4) return 'm';  // MH, M, ML
-    return 'l';              // L, unset
+    if(rank<=1) return 'h';   // HH, H
+    if(rank<=4) return 'm';   // MH, M, ML
+    if(rank===5) return 'l';  // L
+    return 'new';             // unset -- no priority chosen yet (July 23, 2026)
   }
-  function _bbDoColKey(priority){ return 'do-'+_bbDoFamily(priority); }
-  function _bbIsDoCol(colKey){ return colKey==='do-h' || colKey==='do-m' || colKey==='do-l'; }
+  // July 23, 2026: 'new' is the one family whose column key isn't
+  // 'do-'+family (there's no "do-new") -- it's just 'new'.
+  function _bbDoColKey(priority){
+    var fam=_bbDoFamily(priority);
+    return fam==='new' ? 'new' : 'do-'+fam;
+  }
+  function _bbIsDoCol(colKey){ return colKey==='new' || colKey==='do-h' || colKey==='do-m' || colKey==='do-l'; }
   // The representative priority a drag-drop into a given Do column sets
   // -- coarse (family only); the H/M/L buttons on the card back remain
   // the fine control for HH vs H, MH vs M vs ML, etc. Only overwrites
@@ -235,9 +247,12 @@
   // so dragging a card within the family it's already in (reordering,
   // or a drop that lands back in the same column) never resets an
   // escalated value like HH or ML back down to its base.
-  var _bbDoColBasePriority = {'do-h':'H', 'do-m':'M', 'do-l':''};
+  // July 23, 2026: DO-L's base is now 'L' (it no longer doubles as the
+  // no-priority bucket -- that's NEW's job, base '').
+  var _bbDoColBasePriority = {'new':'', 'do-h':'H', 'do-m':'M', 'do-l':'L'};
   function _bbPriorityForDrop(colKey, currentPriority){
-    if(_bbDoFamily(currentPriority)===colKey.slice(3)) return currentPriority;
+    var fam = colKey==='new' ? 'new' : colKey.slice(3);
+    if(_bbDoFamily(currentPriority)===fam) return currentPriority;
     return _bbDoColBasePriority[colKey];
   }
 
@@ -330,7 +345,7 @@
   }
   function _bbSeed(){
     return [
-      {id:_bbUUID(), col:'do-l', sortOrder:0, assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
+      {id:_bbUUID(), col:'new', sortOrder:0, assigned:_bbToday(), task:'Drag this card to Doing when you start it', person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false}
     ];
   }
   function _bbCardsList(){
@@ -620,6 +635,17 @@
     try{ sessionStorage.setItem('bbCurrentBoardId', boardId); }catch(e){}
     var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
     var sb=T().sb;
+    // July 23, 2026, Larry: persist the active board to the database (not
+    // just this tab's sessionStorage) so "which board is this person on"
+    // is a plain, queryable column -- profiles.active_briefing_board_id,
+    // a real foreign key to briefing_boards.id. Fire-and-forget; sessionStorage
+    // above remains the fast path the UI actually reads from.
+    (async function(){
+      try{
+        var uid=await _bbCurrentUserId();
+        if(uid && sb) await sb.from('profiles').update({active_briefing_board_id: boardId}).eq('user_id', uid);
+      }catch(e){ console.error('Briefing Board: could not persist active board', e); }
+    })();
     var cardRows=[], keyRows=[];
     try{
       var cRes=await sb.from('briefing_cards').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
@@ -689,8 +715,17 @@
       }catch(e){}
     }
     if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    // July 23, 2026, Larry: prefer the persisted database pointer over the
+    // tab-only sessionStorage one -- it's what makes "which board is active"
+    // work from a fresh tab, a different device, or a plain SQL lookup, not
+    // just the browser tab that last switched boards. sessionStorage stays
+    // as the fallback for a signed-out/local-only session.
     var remembered=null;
-    try{ remembered=sessionStorage.getItem('bbCurrentBoardId'); }catch(e){}
+    try{
+      var profRes=await sb.from('profiles').select('active_briefing_board_id').eq('user_id',uid).single();
+      if(!profRes.error && profRes.data) remembered=profRes.data.active_briefing_board_id;
+    }catch(e){}
+    if(!remembered){ try{ remembered=sessionStorage.getItem('bbCurrentBoardId'); }catch(e){} }
     var match=_bbBoards.filter(function(b){ return b.id===remembered; })[0];
     var fallback=_bbBoards.filter(function(b){ return /field guide/i.test(b.name||''); })[0] || _bbBoards[0];
     await _bbSwitchToBoard((match||fallback).id);
@@ -1084,6 +1119,9 @@
       // July 22, 2026, Larry: color the 3 Do column headers red/green/
       // yellow (H/M/L, in that order) so priority reads at a glance
       // across the board, not just on each card's own badge.
+      // July 23, 2026: NEW gets a neutral tone (not on the H/M/L
+      // red/green/yellow scale) since it isn't a priority itself.
+      +'.bb-col[data-col="new"] .bb-col-head{background:#9c8b73;color:#fff}'
       +'.bb-col[data-col="do-h"] .bb-col-head{background:#c0272a;color:#fff}'
       +'.bb-col[data-col="do-m"] .bb-col-head{background:#3F8F3F;color:#fff}'
       +'.bb-col[data-col="do-l"] .bb-col-head{background:#e0c22e;color:#3B2510}'
@@ -1421,7 +1459,7 @@
       col.setAttribute('data-col', cd.key);
       col.innerHTML='<div class="bb-col-head">'+cd.label+'</div>'
         +'<div class="bb-col-cards" data-col="'+cd.key+'"></div>'
-        +(cd.key==='do-l' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
+        +(cd.key==='new' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
     });
     // July 22, 2026 (later), Larry: wants to freely drag a card to a
@@ -1537,6 +1575,32 @@
             var cc=allCards.filter(function(x){ return x.id===cid; })[0];
             if(cc) cc.sortOrder=idx;
           });
+          // July 23, 2026, Larry: landing a card at the very top or
+          // bottom of one of the 3 Do columns (H/M/L) further escalates
+          // or de-escalates its priority within that column's family --
+          // on top of the coarse family already set by _bbPriorityForDrop
+          // above. Top always pushes toward the family's most urgent
+          // value (H->HH, M->MH); bottom pushes toward its least urgent
+          // (M->ML). H has nothing below H to fall to (HH is its only
+          // escalation), so H's bottom just stays H. L's family holds
+          // only L itself (ML ranks into the M family, not L -- see
+          // _bbDoFamily), so there's nothing to escalate/de-escalate
+          // there either. A single-card column counts as "top" (escalate
+          // wins the tie), not bottom. Landing in the middle leaves
+          // whatever priority the card already carries alone.
+          if(_bbIsDoCol(c.col) && c.col!=='new' && order.length>0){
+            var famKey=c.col.slice(3); // 'h' | 'm' | 'l'
+            var isTop=(insertAt===0);
+            var isBottom=(!isTop && insertAt===order.length-1);
+            if(famKey==='h'){
+              if(isTop) c.priority='HH';
+              else if(isBottom) c.priority='H';
+            } else if(famKey==='m'){
+              if(isTop) c.priority='MH';
+              else if(isBottom) c.priority='ML';
+            }
+            // famKey 'l' -- single-value family, nothing to do.
+          }
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -2126,13 +2190,13 @@
       var cards=_bbCardsList();
       // Appends at the end of L DO -- max existing sortOrder in that
       // column, plus one (0 if it's the first card ever to land there).
-      var maxOrder=cards.filter(function(c){ return c.col==='do-l' && typeof c.sortOrder==='number'; })
+      var maxOrder=cards.filter(function(c){ return c.col==='new' && typeof c.sortOrder==='number'; })
         .reduce(function(m,c){ return Math.max(m,c.sortOrder); }, -1);
       // Due date, July 22, 2026 -- dropped from the quick-add form:
       // it's set on the full Briefing Card (9370) instead, since that's
       // where it already lives alongside Start date and the Routine
       // controls. No sense asking twice.
-      cards.push({id:_bbUUID(), col:'do-l', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      cards.push({id:_bbUUID(), col:'new', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
