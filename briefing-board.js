@@ -909,6 +909,36 @@
     return rank;
   }
 
+  // July 23, 2026 (later), Larry: caught a real bug -- an ML card had
+  // drifted to sort_order 0 in DO-M, tied with an MH card and sitting
+  // above two plain M cards. Escalating/de-escalating a card's priority
+  // (drag-to-top/bottom, the H/M/L buttons, or the date auto-escalation
+  // below) was only ever changing the badge, never its actual position
+  // -- "HH over H" / "MH over M over ML" was true in theory but not
+  // enforced on the board. This re-sorts one Do column by priority rank
+  // (HH/H in do-h, MH/M/ML in do-m -- do-l and new are single-value
+  // families, always a no-op) and renumbers sort_order sequentially.
+  // Stable sort, so cards that share a priority keep whatever relative
+  // order they already had -- this only fixes rank violations, it
+  // doesn't reshuffle same-priority cards against each other. Called
+  // after anything that can change a Do-column card's priority.
+  function _bbResortDoColumnByPriority(colKey){
+    if(!_bbIsDoCol(colKey) || colKey==='new') return;
+    var all=_bbCardsList();
+    var colCards=all.filter(function(c){ return !c.archived && c.col===colKey; });
+    colCards.sort(function(a,b){
+      var soa=(typeof a.sortOrder==='number')?a.sortOrder:Infinity;
+      var sob=(typeof b.sortOrder==='number')?b.sortOrder:Infinity;
+      return (soa-sob) || 0;
+    });
+    colCards.sort(function(a,b){
+      var ra=PRI_ORDER.hasOwnProperty(a.priority)?PRI_ORDER[a.priority]:7;
+      var rb=PRI_ORDER.hasOwnProperty(b.priority)?PRI_ORDER[b.priority]:7;
+      return ra-rb; // stable -- ties keep the sortOrder-based order set above
+    });
+    colCards.forEach(function(c, idx){ c.sortOrder=idx; });
+  }
+
   // July 22, 2026, Larry: an arrived Start Date while a card sits in Do
   // ("scheduled to begin, hasn't actually begun") now bumps its ACTUAL
   // priority to H, not just its sort position -- the badge itself
@@ -965,7 +995,12 @@
         }
       }
     });
-    if(changed) _bbSaveLocal(all);
+    if(changed){
+      _bbResortDoColumnByPriority('do-h');
+      _bbResortDoColumnByPriority('do-m');
+      _bbResortDoColumnByPriority('do-l');
+      _bbSaveLocal(all);
+    }
     return changed;
   }
 
@@ -1606,6 +1641,7 @@
             }
             // famKey 'l' -- single-value family, nothing to do.
           }
+          if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -1953,7 +1989,7 @@
           // the 3 Do columns at all (a card in Doing/Done/Hang-Ups can
           // still have its priority changed here without being yanked
           // back into Do).
-          if(_bbIsDoCol(c.col)) c.col=_bbDoColKey(c.priority);
+          if(_bbIsDoCol(c.col)){ c.col=_bbDoColKey(c.priority); _bbResortDoColumnByPriority(c.col); }
           _bbSaveLocal(_bbCardsList());
           _bbHighlightPriority(c.priority);
           renderBoard();
