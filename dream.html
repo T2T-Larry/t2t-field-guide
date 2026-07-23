@@ -153,7 +153,7 @@
       <div id="toc-sea" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">6</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">ISB</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">The goal of CREATE</div></div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Idea Storyboard</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">The goal of CREATE</div></div>
         </div>
         <div style="font-size:16px;color:#C9A87C">›</div>
       </div>
@@ -1732,12 +1732,30 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-create-toc-back', function(){ T.nav('s-create-hub'); });
   T.wire('b-create-toc-mg',   T.goMG);
   T.wire('b-create-toc-fwd',  function(){ T.nav('s-what-if-pp'); });
+  // Shared entry point for every "normal CREATE chapter flow" doorway into
+  // ISB (TOC item 6, Creative Sparks forward, Idea Button back) -- added
+  // July 23, 2026. These used to nav() straight into ISB with no Topic set,
+  // which left the traveler looking at the root prompt ("What do you
+  // want?") instead of a real project, reading like a broken/nonexistent
+  // project. Now resolves to Wish Tank first, same as every other ISB
+  // entry point that sets a Topic.
+  function _enterSeaChapterFlow(){
+    T.markSeaChapterEntry();
+    if(window.T2TMedia && window.T2TMedia.ensureWishTank && window.T2TShared){
+      T2TMedia.ensureWishTank().then(function(r){
+        if(r && r.id){ T2TShared.currentTopicId=r.id; T2TShared.filter=r.id; }
+        T.nav('s-sea-of-ideas-cluster');
+      });
+    } else {
+      T.nav('s-sea-of-ideas-cluster');
+    }
+  }
   document.getElementById('toc-whatif')   && document.getElementById('toc-whatif').addEventListener('click',   function(){ T.nav('s-what-if-pp'); });
   document.getElementById('toc-wl')       && document.getElementById('toc-wl').addEventListener('click',       function(){ T.nav('s-wl-intro'); });
   document.getElementById('toc-ftf')      && document.getElementById('toc-ftf').addEventListener('click',      function(){ T.nav('s-ftf-intro'); });
   document.getElementById('toc-sparks')   && document.getElementById('toc-sparks').addEventListener('click',   function(){ T.nav('s-sparks'); });
   document.getElementById('toc-bluesky')  && document.getElementById('toc-bluesky').addEventListener('click',  function(){ T.nav('s-bluesky-intro'); });
-  document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ T.markSeaChapterEntry(); T.nav('s-sea-of-ideas-cluster'); });
+  document.getElementById('toc-sea')      && document.getElementById('toc-sea').addEventListener('click',      function(){ _enterSeaChapterFlow(); });
 
   T.registerPageNum('s-what-if', '1102T');
   T.wire('b-what-if-back', function(){ T.goBack(); });
@@ -2142,7 +2160,7 @@ document.addEventListener('DOMContentLoaded', function(){
   ]);
   T.wire('b-sparks-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-sparks-mg',   T.goMG);
-  T.wire('b-sparks-fwd',  function(){ T.markSeaChapterEntry(); T.nav('s-sea-of-ideas-cluster'); });
+  T.wire('b-sparks-fwd',  function(){ _enterSeaChapterFlow(); });
 
   (function(){
     var UNSPLASH_KEY = 'ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
@@ -2258,7 +2276,7 @@ document.addEventListener('DOMContentLoaded', function(){
   /* ── 1161 · IDEA BUTTON ── */
   T.registerPageNum('s-idea-button', '1151');
   T.registerCtx('s-idea-button', 'ISB');
-  T.wire('b-ib-back', function(){ T.markSeaChapterEntry(); T.nav('s-sea-of-ideas-cluster'); });
+  T.wire('b-ib-back', function(){ _enterSeaChapterFlow(); });
   T.wire('b-ib-mg',   T.goMG);
   T.wire('b-ib-fwd',  function(){ T.nav('s-shape'); });
 
