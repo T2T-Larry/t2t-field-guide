@@ -174,15 +174,18 @@
   // July 22, 2026, Larry: Do split into 3 side-by-side columns by
   // priority family, so priority is visible on the board itself instead
   // of needing to flip a card -- "makes more visible on the BB screen."
-  // Grouping is by RANK, not by which button owns a value (that's a
-  // different split -- see PRI_BASE_OF, still used for the 3-click
-  // cycle buttons themselves): H DO = HH/H (the top 2), M DO = MH/M/ML
-  // (the middle 3 -- both blended values land here, not split across
-  // H DO and L DO), L DO = L and no-priority-yet ("as an incentive to
-  // select a higher one," Larry's words). Doing/Done/Hang-Ups stay
+  // H DO = HH/H, M DO = MH/M, L DO = ML/L. Doing/Done/Hang-Ups stay
   // single columns. See _bbDoFamily/_bbDoColKey/_bbIsDoCol just below
   // COLUMNS for the shared logic every other place in this file uses
   // to stay in sync with this split.
+  // July 23, 2026 (later), Larry: originally ML lived in the M DO
+  // column (rank-based split put HH/H | MH/M/ML | L). Larry now wants
+  // dragging a card to the top of L DO to escalate it too ("L becomes
+  // ML," same as H->HH and M->MH), so the split now matches the H/M/L
+  // priority buttons' own pairing (PRI_BASE_OF / PRI_CYCLE below,
+  // which already treated L:[L,ML] as a pair) -- H DO = HH/H, M DO =
+  // MH/M, L DO = ML/L. Keeps the buttons and the drag columns agreeing
+  // on where a card lands instead of fighting each other.
   var COLUMNS = [
     // July 23, 2026, Larry: DO-L used to double as the no-priority
     // bucket ("as an incentive to prioritize"), but Larry wants a real
@@ -233,8 +236,8 @@
   function _bbDoFamily(priority){
     var rank = PRI_ORDER.hasOwnProperty(priority) ? PRI_ORDER[priority] : 7;
     if(rank<=1) return 'h';   // HH, H
-    if(rank<=4) return 'm';   // MH, M, ML
-    if(rank===5) return 'l';  // L
+    if(rank<=3) return 'm';   // MH, M
+    if(rank<=5) return 'l';   // ML, L
     return 'new';             // unset -- no priority chosen yet (July 23, 2026)
   }
   // July 23, 2026: 'new' is the one family whose column key isn't
@@ -1634,14 +1637,13 @@
           // or de-escalates its priority within that column's family --
           // on top of the coarse family already set by _bbPriorityForDrop
           // above. Top always pushes toward the family's most urgent
-          // value (H->HH, M->MH); bottom pushes toward its least urgent
-          // (M->ML). H has nothing below H to fall to (HH is its only
-          // escalation), so H's bottom just stays H. L's family holds
-          // only L itself (ML ranks into the M family, not L -- see
-          // _bbDoFamily), so there's nothing to escalate/de-escalate
-          // there either. A single-card column counts as "top" (escalate
-          // wins the tie), not bottom. Landing in the middle leaves
-          // whatever priority the card already carries alone.
+          // value (H->HH, M->MH, L->ML); bottom pushes toward its least
+          // urgent (H->H, M->M, L->L). Each family's top value has
+          // nothing further to escalate to, so top just stays there;
+          // same for each family's bottom value. A single-card column
+          // counts as "top" (escalate wins the tie), not bottom.
+          // Landing in the middle leaves whatever priority the card
+          // already carries alone.
           if(_bbIsDoCol(c.col) && c.col!=='new' && order.length>0){
             var famKey=c.col.slice(3); // 'h' | 'm' | 'l'
             var isTop=(insertAt===0);
@@ -1651,9 +1653,11 @@
               else if(isBottom) c.priority='H';
             } else if(famKey==='m'){
               if(isTop) c.priority='MH';
-              else if(isBottom) c.priority='ML';
+              else if(isBottom) c.priority='M';
+            } else if(famKey==='l'){
+              if(isTop) c.priority='ML';
+              else if(isBottom) c.priority='L';
             }
-            // famKey 'l' -- single-value family, nothing to do.
           }
           if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
           _bbSaveLocal(_bbCardsList());
