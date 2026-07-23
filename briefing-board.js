@@ -406,7 +406,8 @@
       archived: !!c.archived,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
-      sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null
+      sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
+      start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor)
     };
   }
   function _bbRowToCard(row){
@@ -420,7 +421,8 @@
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
-      sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null
+      sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
+      startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for)
     };
   }
   function _bbSafeIdList(rows){
@@ -965,6 +967,16 @@
     // sort-only nudges in _priRank (5 days / 2 days out) -- those still
     // just nudge sort position; this is the point the badge itself
     // actually changes.
+    // July 23, 2026 (later), Larry: real bug -- this ran on every
+    // render, so a card with a past-due start/due date got pulled back
+    // to H/HH and DO-H the instant a traveler dragged it anywhere else
+    // ("Items in H cannot be moved to other priorities"). It's meant to
+    // be a one-time nudge the moment a date arrives, not a standing rule
+    // that overrides a manual decision forever. c.startEscalatedFor /
+    // c.dueEscalatedFor now remember which date value already triggered
+    // the bump, so it only fires again if the date itself changes to
+    // something new -- a traveler's manual drag/reprioritization after
+    // the nudge sticks.
     var all=_bbCardsList();
     var changed=false;
     var startWarn=_bbStartWarnDays(), dueWarn=_bbDueWarnDays();
@@ -976,14 +988,15 @@
       // it's still in Do at all -- Due Date's HH bump can fire from
       // Doing too, and a card sitting in Doing doesn't jump back into
       // a Do column just because its priority changed).
-      if(_bbIsDoCol(c.col) && c.startDate){
+      if(_bbIsDoCol(c.col) && c.startDate && c.startEscalatedFor!==c.startDate){
         var sd=_bbParseDue(c.startDate);
         if(sd && _bbDaysUntil(sd)<=startWarn){
           var curRank=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
           if(curRank>PRI_ORDER.H){ c.priority='H'; c.col=_bbDoColKey(c.priority); changed=true; }
+          c.startEscalatedFor=c.startDate;
         }
       }
-      if((_bbIsDoCol(c.col) || c.col==='doing') && c.due){
+      if((_bbIsDoCol(c.col) || c.col==='doing') && c.due && c.dueEscalatedFor!==c.due){
         var dd=_bbParseDue(c.due);
         if(dd && _bbDaysUntil(dd)<=dueWarn){
           var curRank2=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
@@ -992,6 +1005,7 @@
             if(_bbIsDoCol(c.col)) c.col=_bbDoColKey(c.priority);
             changed=true;
           }
+          c.dueEscalatedFor=c.due;
         }
       }
     });
