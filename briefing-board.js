@@ -214,8 +214,12 @@
   // thing on the board; L is the least -- there's no lower rung than
   // plain L, since nothing escalates a low priority further down.
   var PRI_ORDER = {HH:0, H:1, MH:2, M:3, ML:4, L:5};
-  var PRI_COLOR = {HH:'#7a0000', H:'#c0272a', MH:'#e0776a', M:'#3F8F3F', ML:'#e0c22e', L:'#eeddaa'};
-  var PRI_TEXT = {HH:'#fff', H:'#fff', MH:'#3B2510', M:'#fff', ML:'#3B2510', L:'#3B2510'};
+  // July 23, 2026 (later), Larry: MH/ML recolored off the H/L blend
+  // onto a straight green gradient with M -- dark green (MH) -> medium
+  // green (M, unchanged) -> light green (ML) -- easier to read at a
+  // glance than the old red/yellow-tinted versions.
+  var PRI_COLOR = {HH:'#7a0000', H:'#c0272a', MH:'#1f5c1f', M:'#3F8F3F', ML:'#b8ddb0', L:'#eeddaa'};
+  var PRI_TEXT = {HH:'#fff', H:'#fff', MH:'#fff', M:'#fff', ML:'#1f3a1a', L:'#3B2510'};
   function _bbNextPriority(current, base){
     var seq=PRI_CYCLE[base];
     var idx = PRI_BASE_OF[current]===base ? seq.indexOf(current) : -1;
@@ -1119,9 +1123,10 @@
       // July 22, 2026, Larry: color the 3 Do column headers red/green/
       // yellow (H/M/L, in that order) so priority reads at a glance
       // across the board, not just on each card's own badge.
-      // July 23, 2026: NEW gets a neutral tone (not on the H/M/L
-      // red/green/yellow scale) since it isn't a priority itself.
-      +'.bb-col[data-col="new"] .bb-col-head{background:#9c8b73;color:#fff}'
+      // July 23, 2026 (later): NEW dropped its own tone -- Larry wants
+      // it to read the same as DOING/DONE (both use the base
+      // .bb-col-head styling below, var(--bb-ink)/var(--bb-bg)), so no
+      // override here at all.
       +'.bb-col[data-col="do-h"] .bb-col-head{background:#c0272a;color:#fff}'
       +'.bb-col[data-col="do-m"] .bb-col-head{background:#3F8F3F;color:#fff}'
       +'.bb-col[data-col="do-l"] .bb-col-head{background:#e0c22e;color:#3B2510}'
