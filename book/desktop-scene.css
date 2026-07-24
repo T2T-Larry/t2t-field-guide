@@ -31,7 +31,7 @@
 }
 
 .desk-brand-mark {
-  font-size: clamp(10px, 1.6vh, 16px);
+  font-size: clamp(17px, 3vh, 29px);
   font-weight: 700;
   letter-spacing: 3px;
   color: var(--nameplate-border);
@@ -40,11 +40,12 @@
 }
 
 .desk-brand-title {
-  font-size: clamp(20px, 3.2vh, 32px);
+  font-size: clamp(34px, 6vh, 58px);
   font-weight: 700;
   color: var(--nameplate-border);
   letter-spacing: 0.5px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .desk-topic-title {
