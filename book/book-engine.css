@@ -10,7 +10,7 @@
 .book-frame {
   position: relative;
   width: 100%;
-  max-width: 760px;
+  max-width: min(620px, 46vh * 1.294);
   perspective: 2200px;
 }
 
@@ -19,19 +19,21 @@
   background: var(--book-page-bg-alt);
   border-radius: 12px;
   border: 2px solid var(--book-border);
-  box-shadow: 0 6px 28px rgba(0,0,0,.20);
+  box-shadow: 0 6px 28px rgba(0,0,0,.20), 0 0 34px 6px rgba(201,168,124,.35);
   overflow: hidden;
-  min-height: 420px;
+  width: 100%;
+  aspect-ratio: 1.294 / 1;
 }
 
 .book-page {
   flex: 1;
-  padding: 44px 40px;
+  padding: 5% 7%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
   background: var(--book-page-bg);
+  min-width: 0;
 }
 
 .book-page.left {
