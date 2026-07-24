@@ -238,13 +238,16 @@
   color: var(--brass-icon);
 }
 
-.round-btn-blue {
-  background: radial-gradient(circle at 35% 30%, var(--gem-blue-in), var(--gem-blue-mid) 55%, var(--gem-blue-out) 100%);
-  border-color: var(--gem-blue-out);
+.round-btn[data-tool="idea"] .icon-svg {
+  color: #f4c430;
 }
 
-.round-btn-blue .icon-svg {
-  color: #eaf4ff;
+.round-btn[data-tool="gems"] .icon-svg {
+  color: #2f6fb0;
+}
+
+.round-btn[data-tool="trivia"] .icon-svg {
+  color: #d6336c;
 }
 
 .desk-map-row {
