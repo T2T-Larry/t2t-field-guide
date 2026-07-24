@@ -8,6 +8,7 @@
 }
 
 .book-cover {
+  position: relative;
   width: 100%;
   max-width: min(60%, 60vh * 0.667);
   aspect-ratio: 2 / 3;
@@ -17,14 +18,6 @@
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 34px 6px rgba(201,168,124,.35);
   border: 2px solid var(--book-border);
-  background: linear-gradient(180deg, #163b3f, #0c2426);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: #f2ead7;
-  font-family: 'Playfair Display', Georgia, serif;
   transition: transform .2s ease;
 }
 
@@ -32,28 +25,26 @@
   transform: scale(1.015);
 }
 
-.book-cover-art {
-  font-size: clamp(16px, 2.6vh, 26px);
-  font-weight: 700;
-  line-height: 1.5;
-  padding: 0 12%;
-}
-
-.book-cover-art span {
+.book-cover-img {
   display: block;
-  margin-top: 10px;
-  font-size: 12px;
-  font-weight: 400;
-  opacity: .6;
-  letter-spacing: .5px;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .book-cover-hint {
-  margin-top: 18px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 0 12px;
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  opacity: .7;
+  text-align: center;
+  color: #f2ead7;
+  font-family: 'Playfair Display', Georgia, serif;
+  background: linear-gradient(0deg, rgba(0,0,0,.55), rgba(0,0,0,0));
 }
 
 .book-frame {
