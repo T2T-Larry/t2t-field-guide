@@ -1,4 +1,8 @@
 
+.desk-notebook:active, .desk-nameplate:active, .desk-book-slot:active {
+  cursor: grabbing;
+}
+
 .desktop-scene {
   position: relative;
   width: 100%;
@@ -71,6 +75,7 @@
 }
 
 .desk-nameplate {
+  cursor: grab;
   margin-top: 10px;
   position: relative;
   display: flex;
@@ -124,6 +129,7 @@
 }
 
 .desk-notebook {
+  cursor: grab;
   width: 11vh;
   height: 15.4vh;
   max-width: 125px;
@@ -175,6 +181,7 @@
 }
 
 .desk-book-slot {
+  cursor: grab;
   justify-self: center;
   width: 100%;
 }

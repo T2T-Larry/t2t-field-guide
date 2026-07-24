@@ -82,9 +82,6 @@
             </div>
             <div class="book-turn-page"></div>
           </div>
-          <button class="book-arrow prev" aria-label="Previous page">‹</button>
-          <button class="book-arrow next" aria-label="Next page">›</button>
-          <button class="book-close" id="bookClose" aria-label="Close book">×</button>
         </div>
       </div>
     </div>
@@ -104,9 +101,11 @@
 
     <div class="desk-toolbar-center">
       <div class="desk-round-btns">
+        <button class="book-arrow prev" aria-label="Previous page">‹</button>
         <div class="round-btn" data-tool="idea"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2c.6.4 1 1.1 1 1.8h4c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></div>
         <div class="round-btn" data-tool="gems"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/></svg></div>
         <div class="round-btn" data-tool="trivia"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M12 2a3 3 0 0 1 0 6 3 3 0 0 1 0-6zM12 16a3 3 0 0 1 0 6 3 3 0 0 1 0-6zM2 12a3 3 0 0 1 6 0 3 3 0 0 1-6 0zM16 12a3 3 0 0 1 6 0 3 3 0 0 1-6 0z"/></svg></div>
+        <button class="book-arrow next" aria-label="Next page">›</button>
       </div>
     </div>
 
@@ -147,11 +146,11 @@
   ];
 
   var deskRoot = document.querySelector('.desktop-scene');
-  var bookRoot = document.querySelector('.book-wrap');
   var bookCover = document.getElementById('bookCover');
   var bookWrap = document.getElementById('bookWrap');
-  var bookClose = document.getElementById('bookClose');
-  var bookApi = T2TBook.createBook(bookRoot, pages, []);
+  // rootEl is the whole scene now, not just .book-wrap, so the page-nav
+  // arrows (relocated next to the round buttons) can still be found and wired.
+  var bookApi = T2TBook.createBook(deskRoot, pages, []);
   function openBook() {
     bookCover.style.display = 'none';
     bookWrap.style.display = 'flex';
@@ -165,13 +164,21 @@
   bookCover.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBook(); }
   });
-  bookClose.addEventListener('click', closeBook);
 
   var topicFrame = document.getElementById('topicFrame');
   topicFrame.addEventListener('click', openBook);
   topicFrame.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBook(); }
   });
+
+  // No close (x) button anymore — clicking "previous" once past the first
+  // page closes the book back to the cover, like flipping past the front cover.
+  var pageNavPrev = document.querySelector('.desk-round-btns .book-arrow.prev');
+  if (pageNavPrev) {
+    pageNavPrev.addEventListener('click', function () {
+      if (bookApi.getIndex() === 0) closeBook();
+    });
+  }
 
   T2TDesktopScene.setNameplate(deskRoot, 'MEMBER NAME');
   T2TBookAuth.getMemberDisplayName('MEMBER NAME').then(function(name){
@@ -185,6 +192,10 @@
   T2TDesktopScene.wireRoundButtons(deskRoot, function (toolId) {
     console.log('Round button pressed:', toolId);
   });
+
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-nameplate'), 't2t-drag-nameplate', deskRoot);
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-notebook'), 't2t-drag-notebook', deskRoot);
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-book-slot'), 't2t-drag-bookslot', deskRoot);
 
   var notesPages = ['', '', ''];
   var notesIdx = 0;

@@ -39,7 +39,8 @@
       var pair = pairAt(idx);
       fillSide(leftEye, leftTitle, leftBody, leftFolio, pair[0]);
       fillSide(rightEye, rightTitle, rightBody, rightFolio, pair[1]);
-      prevBtn.disabled = idx <= 0;
+      // prevBtn stays enabled even at the first page — one more click closes
+      // the book back to the cover (see closeBook() wiring in the page script).
       nextBtn.disabled = idx + 2 >= pages.length;
     }
 
@@ -70,7 +71,7 @@
     nextBtn.addEventListener('click', function () { flip(1); });
     render();
 
-    return { goTo: function (i) { idx = i; render(); } };
+    return { goTo: function (i) { idx = i; render(); }, getIndex: function () { return idx; } };
   }
 
   window.T2TBook = { createBook: createBook };
