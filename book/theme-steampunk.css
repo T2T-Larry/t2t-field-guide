@@ -36,3 +36,39 @@
 
   --ornament-opacity: 0.65;
 }
+
+.theme-steampunk {
+  --desk-bg: #f2e8d4;
+  --nameplate-in: #e8c878;
+  --nameplate-mid: #b8923e;
+  --nameplate-out: #8a6a26;
+  --nameplate-border: #6b4a2c;
+  --nameplate-text: #4a3418;
+
+  --notebook-cover: #3d2817;
+  --notebook-border: #241608;
+  --notebook-spiral: #b8a888;
+  --notebook-label-border: #C9A87C;
+  --notebook-label-text: #C9A87C;
+
+  --brass-face-in: #f3d98a;
+  --brass-face-mid: #c9973a;
+  --brass-face-out: #8a6420;
+  --brass-ring: #5c4322;
+  --brass-ring-outer: #d9b968;
+  --brass-icon: #5a3d15;
+
+  --tool-frame-in: #e0b060;
+  --tool-frame-out: #8a6420;
+  --tool-face-in: #f3d98a;
+  --tool-face-mid: #c9973a;
+  --tool-face-out: #8a6420;
+  --tool-text: #4a3418;
+
+  --map-track-in: #d9b968;
+  --map-track-out: #a9822e;
+  --map-track-border: #6b4a2c;
+  --map-rail: #6b4a2c;
+  --map-marker-in: #f3d98a;
+  --map-marker-out: #8a6420;
+}

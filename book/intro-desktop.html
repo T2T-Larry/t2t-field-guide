@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T2T Field Guide — Introduction (Desktop Scene Pilot)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<link rel="stylesheet" href="theme-steampunk.css">
+<link rel="stylesheet" href="book-engine.css">
+<link rel="stylesheet" href="desktop-scene.css">
+<style>
+  body { margin:0; background:#fdf8f0; }
+  .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
+  .notes-overlay.open { display:flex; }
+  .notes-panel { background:#fdf8f0; border:2px solid #C9A87C; border-radius:10px; padding:20px; width:340px; max-width:90%; }
+  .notes-panel h3 { font-family:'Playfair Display',Georgia,serif; margin:0 0 10px; font-size:16px; color:#3B2510; }
+  .notes-panel textarea { width:100%; min-height:160px; box-sizing:border-box; font-family:'Caveat',cursive; font-size:18px; border:1px solid #C9A87C; border-radius:6px; padding:10px; resize:vertical; }
+  .notes-panel button { margin-top:10px; padding:8px 16px; border-radius:6px; border:1px solid #6b4a2c; background:#C9A87C; cursor:pointer; font-family:'Playfair Display',Georgia,serif; }
+</style>
+</head>
+<body class="theme-steampunk">
+
+<div class="desktop-scene theme-steampunk">
+
+  <div class="desk-nameplate-row">
+    <div class="desk-nameplate">
+      <div class="desk-nameplate-text" id="nameplateText">MEMBER NAME</div>
+    </div>
+  </div>
+
+  <div class="desk-map-row" id="mapRow" style="display:none">
+    <div class="desk-map-track">
+      <div class="desk-map-marker"></div>
+    </div>
+    <div class="desk-map-ticks">
+      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+    </div>
+  </div>
+
+  <div class="desk-body">
+    <div class="desk-notebook" tabindex="0" role="button" aria-label="Open Notes">
+      <div class="desk-notebook-spiral"><span></span><span></span><span></span><span></span></div>
+      <div class="desk-notebook-label"><span>Notes</span></div>
+    </div>
+
+    <div class="desk-book-slot">
+      <div class="book-wrap" style="padding:0">
+        <div class="book-frame">
+          <div class="book-spread">
+            <div class="book-page left">
+              <div class="book-eyebrow"></div>
+              <div class="book-title"></div>
+              <div class="book-body"></div>
+              <div class="book-folio"></div>
+            </div>
+            <div class="book-page right">
+              <div class="book-eyebrow"></div>
+              <div class="book-title"></div>
+              <div class="book-body"></div>
+              <div class="book-folio"></div>
+            </div>
+            <div class="book-turn-page"></div>
+          </div>
+          <button class="book-arrow prev" aria-label="Previous page">‹</button>
+          <button class="book-arrow next" aria-label="Next page">›</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="desk-tools">
+      <div class="desk-tools-label">TOOLS</div>
+      <button class="tool-btn" data-tool="map"><div class="tool-btn-face">MAP</div></button>
+      <button class="tool-btn" data-tool="idea-storyboard"><div class="tool-btn-face">Idea Storyboard</div></button>
+      <button class="tool-btn" data-tool="planning"><div class="tool-btn-face">Planning</div></button>
+      <button class="tool-btn" data-tool="organization"><div class="tool-btn-face">Organization</div></button>
+      <button class="tool-btn" data-tool="storytelling"><div class="tool-btn-face">Storytelling</div></button>
+      <button class="tool-btn" data-tool="briefing-board"><div class="tool-btn-face">Briefing Board</div></button>
+    </div>
+  </div>
+
+  <div class="desk-round-row">
+    <div class="round-btn" data-tool="idea"><i class="ti ti-bulb" aria-hidden="true"></i></div>
+    <div class="round-btn" data-tool="gems"><i class="ti ti-diamond" aria-hidden="true"></i></div>
+    <div class="round-btn" data-tool="trivia"><i class="ti ti-flower" aria-hidden="true"></i></div>
+  </div>
+
+</div>
+
+<div class="notes-overlay" id="notesOverlay">
+  <div class="notes-panel">
+    <h3>Notes</h3>
+    <textarea id="notesText" placeholder="Write anything, any time..."></textarea>
+    <div>
+      <button id="notesClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="book-engine.js"></script>
+<script src="desktop-scene.js"></script>
+<script>
+  var pages = [
+    { eyebrow: 'T2T', title: 'T2T', body: 'Thoughts to Things — A Choose Your Own Adventure Experience. By Larry Smithers & Bill Fritsch. Every great journey starts with a single step.', folio: '1' },
+    { eyebrow: 'T2T', title: 'What is T2T?', body: 'T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.', folio: '2' },
+    { eyebrow: 'T2T', title: 'T2T Goals', body: 'May you find a clear Vision of what you really want, the Pursuit of Excellence in everything you do, and a Beautiful Journey for everyone involved.', folio: '3' },
+    { eyebrow: '', title: 'Every great invention started as a thought.', body: 'The light bulb. The airplane. The internet. The vaccine. The symphony. Every single one — thought first. And every one of them began the same way. Someone answered one question.', folio: '4' },
+    { eyebrow: 'THOUGHT', title: 'Thoughts happen.', body: 'We are constantly thinking. Thoughts occur both consciously and subconsciously.', folio: '5' },
+    { eyebrow: 'THOUGHT', title: '5% conscious, 60,000 a day.', body: 'Conscious thoughts make up only about 5% of our total thoughts. Even at 5%, humans have more than 60,000 conscious thoughts per day.', folio: '6' },
+    { eyebrow: 'THOUGHT', title: 'Thoughts with imagination.', body: 'But, don’t worry. Scientists tell us that 98 percent of those 60,000 thoughts are repeats from the day before. The other 2% are new thoughts. Walt Disney was fired from his first newspaper job for “lacking imagination and having no original ideas.”', folio: '7' },
+    { eyebrow: '', title: 'What do you want?', body: '“Most people don’t know what they want, but they’re pretty sure they haven’t got it.” — Alfred E. Neuman', folio: '8' }
+  ];
+
+  var deskRoot = document.querySelector('.desktop-scene');
+  var bookRoot = document.querySelector('.book-wrap');
+  T2TBook.createBook(bookRoot, pages, []);
+
+  // TODO: wire to real member/profile data (e.g. Supabase profiles table) instead of this placeholder.
+  T2TDesktopScene.setNameplate(deskRoot, 'MEMBER NAME');
+
+  T2TDesktopScene.wireToolButtons(deskRoot, function (toolId) {
+    console.log('Tool pressed:', toolId);
+  });
+
+  T2TDesktopScene.wireRoundButtons(deskRoot, function (toolId) {
+    console.log('Round button pressed:', toolId);
+  });
+
+  T2TDesktopScene.wireNotebook(deskRoot, function () {
+    document.getElementById('notesOverlay').classList.add('open');
+  });
+  document.getElementById('notesClose').addEventListener('click', function () {
+    document.getElementById('notesOverlay').classList.remove('open');
+  });
+</script>
+
+</body>
+</html>

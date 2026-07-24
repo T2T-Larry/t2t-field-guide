@@ -1,0 +1,200 @@
+
+.desktop-scene {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--desk-bg);
+  padding: 36px 30px;
+  box-sizing: border-box;
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.desk-nameplate-row {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.desk-nameplate {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--nameplate-in), var(--nameplate-mid) 50%, var(--nameplate-out) 100%);
+  border: 2px solid var(--nameplate-border);
+  border-radius: 6px;
+  padding: 8px 26px;
+  box-shadow: 2px 3px 6px rgba(0,0,0,.25);
+}
+
+.desk-nameplate-text {
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--nameplate-text);
+  text-shadow: 1px 1px 0 rgba(255,240,200,.5);
+}
+
+.desk-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.desk-notebook {
+  flex-shrink: 0;
+  width: 100px;
+  height: 140px;
+  background: var(--notebook-cover);
+  border: 2px solid var(--notebook-border);
+  border-radius: 3px;
+  box-shadow: 4px 6px 10px rgba(0,0,0,.4);
+  position: relative;
+  transform: rotate(-4deg);
+  cursor: pointer;
+}
+
+.desk-notebook-spiral {
+  position: absolute;
+  left: -9px;
+  top: 6px;
+  bottom: 6px;
+  width: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.desk-notebook-spiral span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--notebook-spiral);
+  display: block;
+}
+
+.desk-notebook-label {
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  transform: translateX(-50%);
+  border: 1px solid var(--notebook-label-border);
+  padding: 5px 10px;
+  border-radius: 2px;
+}
+
+.desk-notebook-label span {
+  font-size: 11px;
+  color: var(--notebook-label-text);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.desk-book-slot {
+  max-width: 480px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.desk-tools {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.desk-tools-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--nameplate-border);
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.tool-btn {
+  width: 88px;
+  padding: 3px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--tool-frame-in), var(--tool-frame-out));
+  box-shadow: 2px 3px 6px rgba(0,0,0,.3);
+  cursor: pointer;
+  border: none;
+}
+
+.tool-btn-face {
+  padding: 7px 6px;
+  border-radius: 4px;
+  background: radial-gradient(circle at 35% 30%, var(--tool-face-in), var(--tool-face-mid) 55%, var(--tool-face-out) 100%);
+  text-align: center;
+  font-size: 10px;
+  color: var(--tool-text);
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.tool-btn.pressed .tool-btn-face {
+  box-shadow: 0 0 10px 2px rgba(255,214,120,.65), inset 0 0 4px rgba(0,0,0,.3);
+}
+
+.desk-round-row {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 26px;
+}
+
+.round-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-face-in), var(--brass-face-mid) 55%, var(--brass-face-out) 100%);
+  border: 3px solid var(--brass-ring);
+  box-shadow: 0 0 0 2px var(--brass-ring-outer), inset 0 0 5px rgba(0,0,0,.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.round-btn i {
+  font-size: 16px;
+  color: var(--brass-icon);
+}
+
+.desk-map-row {
+  max-width: 420px;
+  margin: 0 auto 18px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--map-track-in), var(--map-track-out));
+  border: 1px solid var(--map-track-border);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,.4), 0 2px 5px rgba(0,0,0,.25);
+  position: relative;
+}
+
+.desk-map-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--map-rail);
+  position: relative;
+}
+
+.desk-map-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--map-marker-in), var(--map-marker-out));
+  border: 2px solid var(--nameplate-text);
+  box-shadow: 0 1px 3px rgba(0,0,0,.4);
+}
+
+.desk-map-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.desk-map-ticks span {
+  font-size: 8px;
+  color: var(--nameplate-text);
+}
