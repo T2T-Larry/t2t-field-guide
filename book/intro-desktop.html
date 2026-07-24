@@ -87,6 +87,7 @@
     <div class="round-btn" data-tool="trivia"><i class="ti ti-flower" aria-hidden="true"></i></div>
   </div>
 
+  <div style="text-align:center;margin-top:18px"><a href="../index.html" style="font-size:11px;color:#8B6914;font-family:'Playfair Display',Georgia,serif">Switch to classic view</a></div>
 </div>
 
 <div class="notes-overlay" id="notesOverlay">
@@ -99,6 +100,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="book-auth.js"></script>
 <script src="book-engine.js"></script>
 <script src="desktop-scene.js"></script>
 <script>
@@ -117,8 +120,10 @@
   var bookRoot = document.querySelector('.book-wrap');
   T2TBook.createBook(bookRoot, pages, []);
 
-  // TODO: wire to real member/profile data (e.g. Supabase profiles table) instead of this placeholder.
   T2TDesktopScene.setNameplate(deskRoot, 'MEMBER NAME');
+  T2TBookAuth.getMemberDisplayName('MEMBER NAME').then(function(name){
+    T2TDesktopScene.setNameplate(deskRoot, name);
+  });
 
   T2TDesktopScene.wireToolButtons(deskRoot, function (toolId) {
     console.log('Tool pressed:', toolId);

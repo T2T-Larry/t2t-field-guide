@@ -64,6 +64,19 @@
   </div>
 </div>
 
+<!-- VIEW TOGGLE (pilot -- book-view-project branch only) -->
+<div class="sc card" id="s-view-toggle">
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:22px">
+      <div class="reader-eyebrow">T2T</div>
+      <div class="reader-line bold" style="font-size:24px">Choose your view</div>
+      <div class="reader-line small" style="line-height:1.7;color:#666">You can switch any time you sign in.</div>
+      <button id="b-view-new" style="font-family:'Playfair Display',Georgia,serif;font-size:16px;padding:16px 20px;border-radius:10px;border:2px solid #C9A87C;background:linear-gradient(135deg,#f3d98a,#c9973a);color:#4a3418;cursor:pointer">New view (recommended)</button>
+      <button id="b-view-classic" style="font-family:'Playfair Display',Georgia,serif;font-size:14px;padding:12px 18px;border-radius:10px;border:1px solid #ccc;background:#fff;color:#555;cursor:pointer">Classic view</button>
+    </div>
+  </div>
+</div>
+
 <!-- 0.10 COVER -->
 <div class="sc card" id="s-cover">
   <div class="cover">
@@ -773,13 +786,23 @@
       // reload (e.g. Claude in Chrome re-signs in on every fresh page
       // load), so whoever just typed their password in should get the
       // same "return to where you were" treatment.
-      T.resumeToLastPageOr('s-cover');
+      T.nav('s-view-toggle');
     }catch(e){
       console.error('Post-sign-in setup failed, falling back to cover', e);
       try{ T.nav('s-cover'); }catch(e2){}
     }finally{
       btn.textContent='Sign In'; btn.disabled=false;
     }
+  });
+
+  /* ── VIEW TOGGLE (pilot) ── */
+  T.wire('b-view-classic', function(){
+    try{ localStorage.setItem('fgViewPref','classic'); }catch(e){}
+    T.resumeToLastPageOr('s-cover');
+  });
+  T.wire('b-view-new', function(){
+    try{ localStorage.setItem('fgViewPref','new'); }catch(e){}
+    window.location.href = 'book/intro-desktop.html';
   });
 
   /* ── COVER ── */
