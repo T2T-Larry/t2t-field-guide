@@ -77,6 +77,18 @@
 
     el.style.touchAction = 'none';
 
+    // Registered once, up front, in the capture phase. This must exist
+    // before any other click handler is wired to this same element (e.g.
+    // wireNotebook's open-on-click) so that a drag reliably suppresses the
+    // click that follows it, regardless of what else later binds to `el`.
+    el.addEventListener('click', function (ce) {
+      if (el.dataset.justDragged) {
+        delete el.dataset.justDragged;
+        ce.stopPropagation();
+        ce.preventDefault();
+      }
+    }, true);
+
     el.addEventListener('pointerdown', function (e) {
       if (e.button !== undefined && e.button !== 0) return;
       dragging = true;
@@ -120,12 +132,7 @@
           left: parseFloat(el.style.left),
           top: parseFloat(el.style.top)
         }));
-        var swallow = function (ce) {
-          ce.stopImmediatePropagation();
-          ce.preventDefault();
-          el.removeEventListener('click', swallow, true);
-        };
-        el.addEventListener('click', swallow, true);
+        el.dataset.justDragged = '1';
       }
     }
 
