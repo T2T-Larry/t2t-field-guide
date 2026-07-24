@@ -15,8 +15,24 @@
   gap: 1.2vh;
 }
 
-.desk-nameplate-row {
-  text-align: center;
+.desk-header-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.desk-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7vh;
+}
+
+.desk-brand-title {
+  font-size: clamp(20px, 3.2vh, 32px);
+  font-weight: 700;
+  color: var(--nameplate-border);
+  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
 .desk-nameplate {
@@ -100,7 +116,16 @@
 .desk-book-slot {
   justify-self: center;
   width: 100%;
-  max-width: 620px;
+  max-width: 680px;
+  text-align: center;
+}
+
+.desk-book-title {
+  font-size: clamp(24px, 4vh, 40px);
+  font-weight: 700;
+  color: var(--nameplate-border);
+  letter-spacing: 1px;
+  margin-bottom: 0.4vh;
 }
 
 .desk-tools {

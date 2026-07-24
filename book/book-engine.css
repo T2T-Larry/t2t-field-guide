@@ -10,7 +10,7 @@
 .book-frame {
   position: relative;
   width: 100%;
-  max-width: min(620px, 46vh * 1.294);
+  max-width: min(680px, 44vh * 1.294);
   perspective: 2200px;
 }
 
