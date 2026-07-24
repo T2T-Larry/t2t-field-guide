@@ -744,7 +744,13 @@
         // actually open, not always the cover -- see resumeToLastPageOr
         // in backpack.js. Falls back to s-cover exactly like before if
         // there's no saved screen (or it isn't one this file has).
-        T.resumeToLastPageOr('s-cover');
+        //
+        // book-view-project pilot: an auto-resumed session (Supabase
+        // token already sitting in this browser) was skipping the new
+        // view-toggle screen entirely, since only the manual sign-in
+        // button used to route there. Sending both paths through the
+        // toggle so it's genuinely "every sign-in," resumed or fresh.
+        T.nav('s-view-toggle');
       }
     }catch(e){ console.error('Session resume failed', e); }
   })();
