@@ -76,6 +76,8 @@
 
 .desk-nameplate {
   cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
   margin-top: 10px;
   position: relative;
   display: flex;
@@ -130,6 +132,8 @@
 
 .desk-notebook {
   cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
   width: 11vh;
   height: 15.4vh;
   max-width: 125px;
@@ -182,6 +186,8 @@
 
 .desk-book-slot {
   cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
   justify-self: center;
   width: 100%;
 }
