@@ -101,13 +101,13 @@
   opacity: .55;
 }
 
-.desk-notebook, .desk-book-slot, .desk-tools {
+.desk-notebook, .desk-book-slot, .desk-tools-empty-slot {
   position: relative;
 }
 
 .desk-notebook::before,
 .desk-book-slot::before,
-.desk-tools::before {
+.desk-tools-empty-slot::before {
   position: absolute;
   top: -24px;
   font-size: 10px;
@@ -129,7 +129,7 @@
   transform: translateX(-50%);
 }
 
-.desk-tools::before {
+.desk-tools-empty-slot::before {
   content: "TOOLS CONTENT FIELD";
   right: 0;
 }
@@ -282,19 +282,11 @@
 }
 
 .desk-tools {
-  justify-self: end;
-  margin-right: clamp(6px, 2vw, 22px);
   display: flex;
-  flex-direction: column;
-  gap: 0.8vh;
-}
-
-.desk-tools-label {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--nameplate-border);
-  text-align: center;
-  margin-bottom: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 420px;
 }
 
 .tool-btn {
@@ -308,6 +300,10 @@
 }
 
 .tool-btn-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   padding: 6px 4px;
   border-radius: 4px;
   background: radial-gradient(circle at 35% 30%, var(--tool-face-in), var(--tool-face-mid) 55%, var(--tool-face-out) 100%);
@@ -316,6 +312,10 @@
   color: var(--tool-text);
   font-family: 'Playfair Display', Georgia, serif;
   white-space: nowrap;
+}
+
+.tool-btn-face i {
+  font-size: 14px;
 }
 
 .tool-btn.pressed .tool-btn-face {
@@ -332,6 +332,13 @@
 
 .desk-toolbar-center {
   justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8vh;
+}
+
+.desk-round-btns {
   display: flex;
   justify-content: center;
   gap: 22px;

@@ -94,15 +94,7 @@
 
     <div class="dbg-divider" aria-hidden="true"></div>
 
-    <div class="desk-tools">
-      <div class="desk-tools-label">TOOLS</div>
-      <button class="tool-btn" data-tool="map"><div class="tool-btn-face">MAP</div></button>
-      <button class="tool-btn" data-tool="idea-board"><div class="tool-btn-face">Idea Board</div></button>
-      <button class="tool-btn" data-tool="planning"><div class="tool-btn-face">Planning</div></button>
-      <button class="tool-btn" data-tool="organization"><div class="tool-btn-face">Organization</div></button>
-      <button class="tool-btn" data-tool="storytelling"><div class="tool-btn-face">Storytelling</div></button>
-      <button class="tool-btn" data-tool="briefing-board"><div class="tool-btn-face">Briefing Board</div></button>
-    </div>
+    <div class="desk-tools-empty-slot"></div>
   </div>
 
   <div class="desk-round-row">
@@ -111,9 +103,20 @@
     <div class="dbg-divider" aria-hidden="true"></div>
 
     <div class="desk-toolbar-center">
-      <div class="round-btn" data-tool="idea"><i class="ti ti-bulb" aria-hidden="true"></i></div>
-      <div class="round-btn round-btn-blue" data-tool="gems"><i class="ti ti-diamond" aria-hidden="true"></i></div>
-      <div class="round-btn" data-tool="trivia"><i class="ti ti-flower" aria-hidden="true"></i></div>
+      <div class="desk-round-btns">
+        <div class="round-btn" data-tool="idea"><i class="ti ti-bulb" aria-hidden="true"></i></div>
+        <div class="round-btn round-btn-blue" data-tool="gems"><i class="ti ti-diamond" aria-hidden="true"></i></div>
+        <div class="round-btn" data-tool="trivia"><i class="ti ti-flower" aria-hidden="true"></i></div>
+      </div>
+
+      <div class="desk-tools">
+        <button class="tool-btn" data-tool="map"><div class="tool-btn-face"><i class="ti ti-map" aria-hidden="true"></i><span>MAP</span></div></button>
+        <button class="tool-btn" data-tool="idea-board"><div class="tool-btn-face"><i class="ti ti-layout-board" aria-hidden="true"></i><span>Idea Board</span></div></button>
+        <button class="tool-btn" data-tool="planning"><div class="tool-btn-face"><i class="ti ti-calendar-event" aria-hidden="true"></i><span>Planning</span></div></button>
+        <button class="tool-btn" data-tool="organization"><div class="tool-btn-face"><i class="ti ti-folders" aria-hidden="true"></i><span>Organization</span></div></button>
+        <button class="tool-btn" data-tool="storytelling"><div class="tool-btn-face"><i class="ti ti-book-2" aria-hidden="true"></i><span>Storytelling</span></div></button>
+        <button class="tool-btn" data-tool="briefing-board"><div class="tool-btn-face"><i class="ti ti-presentation" aria-hidden="true"></i><span>Briefing Board</span></div></button>
+      </div>
     </div>
 
     <div class="dbg-divider" aria-hidden="true"></div>
@@ -122,8 +125,6 @@
   </div>
 
   <div class="dbg-hdivider" aria-hidden="true"></div>
-
-  <div style="text-align:center;margin-top:18px"><a href="../index.html" style="font-size:11px;color:#8B6914;font-family:'Playfair Display',Georgia,serif">Switch to classic view</a></div>
 </div>
 
 <div class="notes-overlay" id="notesOverlay">
