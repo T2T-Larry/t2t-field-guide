@@ -104,7 +104,8 @@
 }
 
 .desk-tools {
-  justify-self: center;
+  justify-self: end;
+  margin-right: clamp(6px, 2vw, 22px);
   display: flex;
   flex-direction: column;
   gap: 0.8vh;
