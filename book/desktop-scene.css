@@ -101,13 +101,13 @@
   opacity: .55;
 }
 
-.desk-notebook, .desk-book-slot, .desk-tools-empty-slot {
+.desk-notebook, .desk-book-slot, .desk-tools {
   position: relative;
 }
 
 .desk-notebook::before,
 .desk-book-slot::before,
-.desk-tools-empty-slot::before {
+.desk-tools::before {
   position: absolute;
   top: -24px;
   font-size: 10px;
@@ -129,7 +129,7 @@
   transform: translateX(-50%);
 }
 
-.desk-tools-empty-slot::before {
+.desk-tools::before {
   content: "TOOLS CONTENT FIELD";
   right: 0;
 }
@@ -282,11 +282,12 @@
 }
 
 .desk-tools {
+  position: relative;
+  justify-self: end;
+  margin-right: clamp(6px, 2vw, 22px);
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  max-width: 420px;
+  flex-direction: column;
+  gap: 0.8vh;
 }
 
 .tool-btn {
