@@ -1,0 +1,38 @@
+
+.theme-steampunk {
+  --book-page-bg: #fffdf8;
+  --book-page-bg-alt: #ffffff;
+  --book-border: #C9A87C;
+  --book-divider: #e8ddc9;
+  --book-eyebrow: #8B6914;
+  --book-title: #111111;
+  --book-body: #555555;
+  --book-folio: #8B6914;
+  --book-illustration: #C9A87C;
+
+  --table-bg: linear-gradient(180deg, #3a2a1a, #241a10);
+  --button-ring: #5c4322;
+  --button-ring-outer: #d9b968;
+  --button-label: #d6eaf8;
+
+  --gem-gold-in: #f3d98a;
+  --gem-gold-mid: #c9973a;
+  --gem-gold-out: #8a6420;
+
+  --gem-teal-in: #7fd4c9;
+  --gem-teal-mid: #1d9e8a;
+  --gem-teal-out: #0c5f52;
+
+  --gem-blue-in: #88b8ea;
+  --gem-blue-mid: #2f6fb0;
+  --gem-blue-out: #1a3f66;
+
+  --gem-red-in: #c96b6b;
+  --gem-red-mid: #8a2e2e;
+  --gem-red-out: #5c1a1a;
+
+  --arrow-bg: #C9A87C;
+  --arrow-fg: #4A3418;
+
+  --ornament-opacity: 0.65;
+}
