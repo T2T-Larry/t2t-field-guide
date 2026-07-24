@@ -32,15 +32,13 @@
 
   <div class="desk-header-field">
     <div class="desk-brand">
-      <div class="desk-brand-mark">T2T</div>
-      <div class="desk-brand-title">Thoughts to Things</div>
       <div class="desk-nameplate">
         <div class="desk-nameplate-header">Thoughts to Things</div>
         <div class="desk-nameplate-text" id="nameplateText">MEMBER NAME</div>
       </div>
     </div>
 
-    <div class="desk-topic-frame">
+    <div class="desk-topic-frame" id="topicFrame" role="button" tabindex="0" aria-label="Open the Field Guide">
       <div class="desk-topic-title">Field Guide</div>
     </div>
 
@@ -65,7 +63,6 @@
     <div class="desk-book-slot">
       <div class="book-cover" id="bookCover" role="button" tabindex="0" aria-label="Open the Field Guide">
         <img class="book-cover-img" src="assets/cover.jpg" alt="T2T Thoughts to Things — Field Guide cover">
-        <div class="book-cover-hint">Tap to open</div>
       </div>
 
       <div class="book-wrap" id="bookWrap" style="padding:0;display:none">
@@ -169,6 +166,12 @@
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBook(); }
   });
   bookClose.addEventListener('click', closeBook);
+
+  var topicFrame = document.getElementById('topicFrame');
+  topicFrame.addEventListener('click', openBook);
+  topicFrame.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBook(); }
+  });
 
   T2TDesktopScene.setNameplate(deskRoot, 'MEMBER NAME');
   T2TBookAuth.getMemberDisplayName('MEMBER NAME').then(function(name){

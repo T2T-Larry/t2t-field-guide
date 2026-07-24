@@ -25,45 +25,19 @@
 }
 
 .desk-brand {
-  justify-self: center;
+  justify-self: start;
   align-self: start;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5vh;
-}
-
-.desk-brand-mark,
-.desk-brand-title {
-  background: linear-gradient(180deg, var(--nameplate-in) 20%, var(--nameplate-mid) 55%, var(--nameplate-out) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  text-shadow: 1px 1px 0 rgba(0,0,0,.4), -1px -1px 0 rgba(255,244,214,.45);
-}
-
-.desk-brand-mark {
-  align-self: flex-start;
-  font-size: clamp(17px, 3vh, 29px);
-  font-weight: 700;
-  letter-spacing: 3px;
-  line-height: 1;
-}
-
-.desk-brand-title {
-  margin-top: -6px;
-  font-size: clamp(22px, 4vh, 40px);
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .desk-topic-frame {
   justify-self: center;
   align-self: end;
   position: relative;
+  cursor: pointer;
   padding: 10px 40px;
   border: 3px double var(--nameplate-border);
   border-radius: 6px;
@@ -123,10 +97,15 @@
 }
 
 .desk-nameplate-text {
+  background: linear-gradient(180deg, var(--nameplate-in) 20%, var(--nameplate-mid) 55%, var(--nameplate-out) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: 1px 1px 0 rgba(0,0,0,.4), -1px -1px 0 rgba(255,244,214,.45);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: #2c1c0c;
   text-align: center;
   padding: 6px 18px 8px;
 }
@@ -283,7 +262,6 @@
   width: 18px;
   height: 18px;
   color: #1a1208;
-  filter: drop-shadow(-1px -1px 0 rgba(0,0,0,.4)) drop-shadow(1px 1px 0 rgba(255,244,214,.5));
 }
 
 .desk-map-row {

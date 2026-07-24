@@ -32,21 +32,6 @@
   object-fit: cover;
 }
 
-.book-cover-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 10px 0 12px;
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  text-align: center;
-  color: #f2ead7;
-  font-family: 'Playfair Display', Georgia, serif;
-  background: linear-gradient(0deg, rgba(0,0,0,.55), rgba(0,0,0,0));
-}
-
 .book-frame {
   position: relative;
   width: 100%;
