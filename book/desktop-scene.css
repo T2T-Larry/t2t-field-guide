@@ -16,15 +16,27 @@
 }
 
 .desk-header-row {
-  display: flex;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  column-gap: 12px;
 }
 
 .desk-brand {
+  grid-column: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.7vh;
+  gap: 0.5vh;
+}
+
+.desk-brand-mark {
+  font-size: clamp(10px, 1.6vh, 16px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--nameplate-border);
+  opacity: .8;
+  line-height: 1;
 }
 
 .desk-brand-title {
@@ -33,6 +45,22 @@
   color: var(--nameplate-border);
   letter-spacing: 0.5px;
   line-height: 1;
+}
+
+.desk-topic-title {
+  grid-column: 2;
+  justify-self: center;
+  align-self: center;
+  text-align: center;
+  font-size: clamp(18px, 2.8vh, 28px);
+  font-weight: 700;
+  color: var(--nameplate-border);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.desk-header-spacer {
+  grid-column: 3;
 }
 
 .desk-nameplate {
@@ -53,7 +81,7 @@
 
 .desk-body {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr 2fr 1fr;
   align-items: center;
   column-gap: 12px;
   width: 100%;
@@ -64,10 +92,11 @@
 }
 
 .desk-notebook {
-  width: 9vh;
-  height: 12.6vh;
-  max-width: 100px;
-  max-height: 140px;
+  width: 11vh;
+  height: 15.4vh;
+  max-width: 125px;
+  max-height: 175px;
+  margin-left: 14%;
   background: var(--notebook-cover);
   border: 2px solid var(--notebook-border);
   border-radius: 3px;
@@ -116,16 +145,6 @@
 .desk-book-slot {
   justify-self: center;
   width: 100%;
-  max-width: 680px;
-  text-align: center;
-}
-
-.desk-book-title {
-  font-size: clamp(24px, 4vh, 40px);
-  font-weight: 700;
-  color: var(--nameplate-border);
-  letter-spacing: 1px;
-  margin-bottom: 0.4vh;
 }
 
 .desk-tools {
