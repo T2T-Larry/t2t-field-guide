@@ -10,11 +10,13 @@
 .book-frame {
   position: relative;
   width: 100%;
-  max-width: min(46vw, 44vh * 1.294);
+  max-width: min(97%, 47vh * 1.294);
   perspective: 2200px;
 }
 
 .book-spread {
+  position: relative;
+  z-index: 2;
   display: flex;
   background: var(--book-page-bg-alt);
   border-radius: 12px;
@@ -87,6 +89,7 @@
   right: 0;
   width: 50%;
   height: 100%;
+  z-index: 3;
   background: var(--book-page-bg);
   transform-origin: left center;
   transform: rotateY(0deg);
@@ -99,6 +102,7 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 1;
   width: 44px;
   height: 44px;
   border-radius: 50%;
