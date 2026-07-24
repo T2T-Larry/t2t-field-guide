@@ -53,9 +53,31 @@
   white-space: nowrap;
 }
 
-.desk-topic-title {
+.desk-topic-frame {
   justify-self: center;
   align-self: end;
+  position: relative;
+  padding: 10px 40px;
+  border: 3px double var(--nameplate-border);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #fffdf6, #f3e8cc);
+  box-shadow: 0 0 0 2px var(--nameplate-in), 0 8px 20px rgba(0,0,0,.25), inset 0 0 14px rgba(139,105,20,.25);
+}
+
+.desk-topic-frame::before,
+.desk-topic-frame::after {
+  content: "\2767";
+  position: absolute;
+  top: 4px;
+  font-size: 14px;
+  color: var(--nameplate-border);
+  opacity: .75;
+}
+
+.desk-topic-frame::before { left: 8px; }
+.desk-topic-frame::after { right: 8px; transform: scaleX(-1); }
+
+.desk-topic-title {
   font-size: clamp(40px, 7vh, 66px);
   font-weight: 700;
   color: var(--nameplate-border);
@@ -68,20 +90,51 @@
 }
 
 .desk-nameplate {
-  margin-top: 6px;
-  display: inline-block;
-  background: linear-gradient(135deg, var(--nameplate-in), var(--nameplate-mid) 50%, var(--nameplate-out) 100%);
-  border: 2px solid var(--nameplate-border);
+  margin-top: 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 170px;
+  background: #fdf8ec;
+  border: 1px solid var(--nameplate-border);
   border-radius: 6px;
-  padding: 0.6vh 26px;
-  box-shadow: 2px 3px 6px rgba(0,0,0,.25);
+  overflow: hidden;
+  box-shadow: 2px 4px 10px rgba(0,0,0,.3);
+}
+
+.desk-nameplate-clip {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nameplate-in), var(--nameplate-out));
+  border: 2px solid var(--nameplate-border);
+  box-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+
+.desk-nameplate-header {
+  background: linear-gradient(135deg, var(--nameplate-in), var(--nameplate-mid) 50%, var(--nameplate-out) 100%);
+  color: var(--nameplate-text);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 4px 14px;
+  text-shadow: 1px 1px 0 rgba(255,240,200,.5);
 }
 
 .desk-nameplate-text {
-  font-size: 13px;
-  letter-spacing: 2px;
-  color: var(--nameplate-text);
-  text-shadow: 1px 1px 0 rgba(255,240,200,.5);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #2c1c0c;
+  text-align: center;
+  padding: 6px 18px 8px;
 }
 
 .desk-body {
