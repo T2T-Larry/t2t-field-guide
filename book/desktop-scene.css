@@ -15,15 +15,11 @@
   gap: 1.2vh;
 }
 
-.desk-header-row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: start;
-  column-gap: 12px;
+.desk-header-field {
+  position: relative;
 }
 
 .desk-brand {
-  grid-column: 1;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -48,20 +44,17 @@
   white-space: nowrap;
 }
 
-.desk-topic-title {
-  grid-column: 2;
-  justify-self: center;
-  align-self: center;
+.desk-topic-row {
   text-align: center;
+}
+
+.desk-topic-title {
+  display: inline-block;
   font-size: clamp(18px, 2.8vh, 28px);
   font-weight: 700;
   color: var(--nameplate-border);
   letter-spacing: 1px;
   line-height: 1;
-}
-
-.desk-header-spacer {
-  grid-column: 3;
 }
 
 .desk-nameplate {
@@ -114,19 +107,57 @@
 }
 
 .desk-notebook::before {
-  content: "LEFT \2013 SECONDARY";
+  content: "NOTES FIELD";
   left: 0;
 }
 
 .desk-book-slot::before {
-  content: "CENTER \2013 FIELD GUIDE";
+  content: "CONTENT FIELD";
   left: 50%;
   transform: translateX(-50%);
 }
 
 .desk-tools::before {
-  content: "RIGHT \2013 TOOLS";
+  content: "TOOLS FIELD";
   right: 0;
+}
+
+.dbg-hdivider {
+  width: 100%;
+  height: 0;
+  border-top: 2px dashed #cc3333;
+  opacity: .55;
+}
+
+.desk-header-field::before {
+  content: "HEADER FIELD";
+  position: absolute;
+  top: -18px;
+  left: 0;
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+  letter-spacing: 1px;
+  color: #cc3333;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.desk-round-row {
+  position: relative;
+}
+
+.desk-round-row::before {
+  content: "TOOLBAR FIELD";
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-family: Arial, sans-serif;
+  letter-spacing: 1px;
+  color: #cc3333;
+  white-space: nowrap;
+  z-index: 5;
 }
 /* ===== END TEMPORARY layout-debug dividers ===== */
 
