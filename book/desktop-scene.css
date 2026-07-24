@@ -18,7 +18,7 @@
 .desk-header-field {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr auto 2fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) 2fr minmax(0, 1fr);
   align-items: stretch;
   column-gap: 12px;
   width: 100%;
@@ -33,13 +33,21 @@
   gap: 0.5vh;
 }
 
+.desk-brand-mark,
+.desk-brand-title {
+  background: linear-gradient(180deg, var(--nameplate-in) 20%, var(--nameplate-mid) 55%, var(--nameplate-out) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: 1px 1px 0 rgba(0,0,0,.4), -1px -1px 0 rgba(255,244,214,.45);
+}
+
 .desk-brand-mark {
   align-self: flex-start;
   font-size: clamp(17px, 3vh, 29px);
   font-weight: 700;
   letter-spacing: 3px;
-  color: var(--nameplate-border);
-  opacity: .8;
   line-height: 1;
 }
 
@@ -47,7 +55,6 @@
   margin-top: -6px;
   font-size: clamp(22px, 4vh, 40px);
   font-weight: 700;
-  color: var(--nameplate-border);
   letter-spacing: 0.5px;
   line-height: 1;
   white-space: nowrap;
@@ -103,19 +110,6 @@
   box-shadow: 2px 4px 10px rgba(0,0,0,.3);
 }
 
-.desk-nameplate-clip {
-  position: absolute;
-  top: -7px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--nameplate-in), var(--nameplate-out));
-  border: 2px solid var(--nameplate-border);
-  box-shadow: 0 1px 2px rgba(0,0,0,.35);
-}
-
 .desk-nameplate-header {
   background: linear-gradient(135deg, var(--nameplate-in), var(--nameplate-mid) 50%, var(--nameplate-out) 100%);
   color: var(--nameplate-text);
@@ -139,7 +133,7 @@
 
 .desk-body {
   display: grid;
-  grid-template-columns: 1fr auto 2fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) 2fr minmax(0, 1fr);
   align-items: center;
   column-gap: 12px;
   width: 100%;
@@ -252,7 +246,7 @@
 
 .desk-round-row {
   display: grid;
-  grid-template-columns: 1fr auto 2fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) 2fr minmax(0, 1fr);
   align-items: center;
   column-gap: 12px;
   width: 100%;
@@ -288,19 +282,8 @@
 .round-btn .icon-svg {
   width: 18px;
   height: 18px;
-  color: var(--brass-icon);
-}
-
-.round-btn[data-tool="idea"] .icon-svg {
-  color: #f4c430;
-}
-
-.round-btn[data-tool="gems"] .icon-svg {
-  color: #2f6fb0;
-}
-
-.round-btn[data-tool="trivia"] .icon-svg {
-  color: #d6336c;
+  color: #1a1208;
+  filter: drop-shadow(-1px -1px 0 rgba(0,0,0,.4)) drop-shadow(1px 1px 0 rgba(255,244,214,.5));
 }
 
 .desk-map-row {
