@@ -156,6 +156,33 @@
 .book-arrow.prev { left: -22px; }
 .book-arrow.next { right: -22px; }
 
+.icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.book-close {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  z-index: 4;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--arrow-bg);
+  border: 2px solid var(--book-border);
+  color: var(--arrow-fg);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,.3);
+}
+
 .book-table {
   width: 100%;
   max-width: 800px;
