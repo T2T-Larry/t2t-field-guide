@@ -69,7 +69,12 @@
     <div class="dbg-divider" aria-hidden="true"></div>
 
     <div class="desk-book-slot">
-      <div class="book-wrap" style="padding:0">
+      <div class="book-cover" id="bookCover" role="button" tabindex="0" aria-label="Open the Field Guide">
+        <div class="book-cover-art">T2T<br>Thoughts to Things<br><span>(cover art goes here)</span></div>
+        <div class="book-cover-hint">Tap to open</div>
+      </div>
+
+      <div class="book-wrap" id="bookWrap" style="padding:0;display:none">
         <div class="book-frame">
           <div class="book-spread">
             <div class="book-page left">
@@ -162,6 +167,17 @@
   var deskRoot = document.querySelector('.desktop-scene');
   var bookRoot = document.querySelector('.book-wrap');
   T2TBook.createBook(bookRoot, pages, []);
+
+  var bookCover = document.getElementById('bookCover');
+  var bookWrap = document.getElementById('bookWrap');
+  function openBook() {
+    bookCover.style.display = 'none';
+    bookWrap.style.display = 'flex';
+  }
+  bookCover.addEventListener('click', openBook);
+  bookCover.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openBook(); }
+  });
 
   T2TDesktopScene.setNameplate(deskRoot, 'MEMBER NAME');
   T2TBookAuth.getMemberDisplayName('MEMBER NAME').then(function(name){

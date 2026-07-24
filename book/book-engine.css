@@ -7,6 +7,55 @@
   font-family: 'Playfair Display', Georgia, serif;
 }
 
+.book-cover {
+  width: 100%;
+  max-width: min(60%, 60vh * 0.667);
+  aspect-ratio: 2 / 3;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), 0 0 34px 6px rgba(201,168,124,.35);
+  border: 2px solid var(--book-border);
+  background: linear-gradient(180deg, #163b3f, #0c2426);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #f2ead7;
+  font-family: 'Playfair Display', Georgia, serif;
+  transition: transform .2s ease;
+}
+
+.book-cover:hover {
+  transform: scale(1.015);
+}
+
+.book-cover-art {
+  font-size: clamp(16px, 2.6vh, 26px);
+  font-weight: 700;
+  line-height: 1.5;
+  padding: 0 12%;
+}
+
+.book-cover-art span {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 400;
+  opacity: .6;
+  letter-spacing: .5px;
+}
+
+.book-cover-hint {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: .7;
+}
+
 .book-frame {
   position: relative;
   width: 100%;
