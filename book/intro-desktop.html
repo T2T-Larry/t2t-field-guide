@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css">
-<link rel="stylesheet" href="desktop-scene.css?v=8">
+<link rel="stylesheet" href="book-engine.css?v=1">
+<link rel="stylesheet" href="desktop-scene.css?v=9">
 <style>
   body { margin:0; background:#fdf8f0; }
   .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
@@ -84,6 +84,13 @@
           </div>
         </div>
       </div>
+
+      <!-- Lives with the book now (was in the round-button row) so the
+           page controls travel with it wherever it's dragged. -->
+      <div class="book-nav-row">
+        <button class="book-arrow prev" aria-label="Previous page">‹</button>
+        <button class="book-arrow next" aria-label="Next page">›</button>
+      </div>
     </div>
 
     <div class="desk-tools">
@@ -101,11 +108,9 @@
 
     <div class="desk-toolbar-center">
       <div class="desk-round-btns">
-        <button class="book-arrow prev" aria-label="Previous page">‹</button>
         <div class="round-btn" data-tool="idea"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2c.6.4 1 1.1 1 1.8h4c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></div>
         <div class="round-btn" data-tool="gems"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/></svg></div>
         <div class="round-btn" data-tool="trivia"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.5"/><path d="M12 2a3 3 0 0 1 0 6 3 3 0 0 1 0-6zM12 16a3 3 0 0 1 0 6 3 3 0 0 1 0-6zM2 12a3 3 0 0 1 6 0 3 3 0 0 1-6 0zM16 12a3 3 0 0 1 6 0 3 3 0 0 1-6 0z"/></svg></div>
-        <button class="book-arrow next" aria-label="Next page">›</button>
       </div>
     </div>
 
@@ -201,9 +206,17 @@
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-book-slot'), 't2t-drag-bookslot', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-topic-frame'), 't2t-drag-topicframe', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-tools'), 't2t-drag-tools', deskRoot);
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-round-btns'), 't2t-drag-roundbtns', deskRoot);
   // Draw a selection box over empty desk space to select several objects
   // at once; dragging any one of them afterward moves the whole group.
   T2TDesktopScene.enableLasso(deskRoot);
+
+  // The page arrows now live inside the book itself (so they travel with
+  // it) -- keep a press on them from also being read as "start dragging
+  // the book."
+  document.querySelectorAll('.book-nav-row .book-arrow').forEach(function (btn) {
+    btn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  });
 
   var notesPages = ['', '', ''];
   var notesIdx = 0;

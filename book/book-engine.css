@@ -140,6 +140,13 @@
   cursor: default;
 }
 
+.book-nav-row {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 10px;
+}
+
 .icon-svg {
   display: inline-block;
   vertical-align: middle;
