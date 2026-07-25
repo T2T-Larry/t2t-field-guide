@@ -328,6 +328,25 @@
     document.addEventListener('pointercancel', endLasso);
   }
 
+  /* Reserves each row's current natural height (measured before any of
+     its objects have gone absolute) as an explicit min-height. Every
+     draggable object now gets *some* position applied on load (its own
+     saved spot, or the shared default) via makeDraggable's
+     applySavedPosition -- which pulls it out of normal layout flow the
+     moment that runs. Without this, whichever row that object used to
+     give its height to quietly shrinks, and because the whole desk is a
+     vertically-centered flex column, every row below it visibly jumps
+     to re-center. Call this once at startup, before any makeDraggable()
+     calls run, so it captures the pre-drag layout. */
+  function reserveRowHeights(selectors) {
+    selectors.forEach(function (sel) {
+      var rowEl = document.querySelector(sel);
+      if (!rowEl) return;
+      var h = rowEl.getBoundingClientRect().height;
+      if (h > 0) rowEl.style.minHeight = h + 'px';
+    });
+  }
+
   window.T2TDesktopScene = {
     wireToolButtons: wireToolButtons,
     wireNotebook: wireNotebook,
@@ -335,6 +354,7 @@
     setNameplate: setNameplate,
     setMapPosition: setMapPosition,
     makeDraggable: makeDraggable,
-    enableLasso: enableLasso
+    enableLasso: enableLasso,
+    reserveRowHeights: reserveRowHeights
   };
 })();

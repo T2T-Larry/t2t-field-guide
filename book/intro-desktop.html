@@ -135,7 +135,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
 <script src="book-engine.js"></script>
-<script src="desktop-scene.js?v=4"></script>
+<script src="desktop-scene.js?v=5"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
 <script src="refresh-light.js?v=3"></script>
@@ -198,6 +198,12 @@
   T2TDesktopScene.wireRoundButtons(deskRoot, function (toolId) {
     console.log('Round button pressed:', toolId);
   });
+
+  // Lock in each row's height before any object goes absolute, so
+  // picking one up (or loading it already in its saved/default spot)
+  // doesn't shrink its row and shift everything else on the desk to
+  // re-center.
+  T2TDesktopScene.reserveRowHeights(['.desk-header-field', '.desk-body', '.desk-round-row']);
 
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-nameplate'), 't2t-drag-nameplate', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-notebook'), 't2t-drag-notebook', deskRoot);
