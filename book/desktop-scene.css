@@ -4,6 +4,18 @@
   cursor: grabbing;
 }
 
+/* Picking an object up sets an explicit pixel width/height (see
+   desktop-scene.js) measured from the *outside* of the object, borders
+   and padding included. Without border-box sizing here, that measured
+   number gets applied as the *inside* size instead, and padding/border
+   get added back on top -- the object visibly grows the instant it's
+   picked up. The topic card (40px of side padding) made this obvious;
+   applying it to every draggable object keeps all of them honest. */
+.desk-nameplate, .desk-notebook, .desk-book-slot,
+.desk-topic-frame, .desk-tools {
+  box-sizing: border-box;
+}
+
 .desktop-scene {
   position: relative;
   width: 100%;
