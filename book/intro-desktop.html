@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
 <link rel="stylesheet" href="book-engine.css?v=14">
-<link rel="stylesheet" href="desktop-scene.css?v=13">
+<link rel="stylesheet" href="desktop-scene.css?v=14">
 <style>
   body { margin:0; background:#fdf8f0; }
   .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
@@ -56,7 +56,6 @@
 
   <div class="desk-body">
     <div class="desk-notebook" tabindex="0" role="button" aria-label="Open Notes">
-      <div class="desk-notebook-spiral"><span></span><span></span><span></span><span></span></div>
       <div class="desk-notebook-label"><span>Notes</span></div>
     </div>
 
@@ -115,7 +114,7 @@
     </div>
 
     <div class="desk-tools">
-      <button class="tool-btn" data-tool="map"><div class="tool-btn-face"><span>MAP</span></div></button>
+      <button class="tool-btn" data-tool="map"><div class="tool-btn-face"><span>Field Guide</span></div></button>
       <button class="tool-btn" data-tool="idea-board"><div class="tool-btn-face"><span>Idea Board</span></div></button>
       <button class="tool-btn" data-tool="planning"><div class="tool-btn-face"><span>Planning</span></div></button>
       <button class="tool-btn" data-tool="organization"><div class="tool-btn-face"><span>Organization</span></div></button>
@@ -145,7 +144,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
 <script src="book-engine.js?v=7"></script>
-<script src="desktop-scene.js?v=8"></script>
+<script src="desktop-scene.js?v=9"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
 <script src="refresh-light.js?v=5"></script>

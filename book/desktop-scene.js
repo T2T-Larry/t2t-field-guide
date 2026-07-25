@@ -41,6 +41,8 @@
     var buttons = rootEl.querySelectorAll('.round-btn');
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function () {
+        buttons.forEach(function (b) { b.classList.remove('pressed'); });
+        btn.classList.add('pressed');
         if (onPress) onPress(btn.getAttribute('data-tool'));
       });
     });
@@ -164,18 +166,31 @@
       try { saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); }
       catch (e) { saved = null; }
       if (!saved) saved = DEFAULT_POSITIONS[storageKey] || null;
-      if (saved) {
-        var r = el.getBoundingClientRect();
-        el.style.width = r.width + 'px';
-        el.style.height = r.height + 'px';
-        el.style.position = 'absolute';
-        el.style.right = 'auto';
-        el.style.bottom = 'auto';
-        el.style.left = saved.left + 'px';
-        el.style.top = saved.top + 'px';
-        el.style.margin = '0';
-        el.style.zIndex = '10';
-      }
+      if (!saved) return;
+      var r = el.getBoundingClientRect();
+      // Nothing real to measure yet -- this fires at page load for
+      // EVERY registered draggable, including ones nested inside the
+      // still-closed binder, and a hidden (display:none ancestor)
+      // element measures as a flat 0x0 rect. Pinning that as the
+      // element's permanent inline size used to be the bug behind
+      // tabs/buttons shrinking to nothing: it would bake in width:0;
+      // height:0, and since a later reapply() call re-measures whatever
+      // the element ALREADY is (now already pinned at 0x0, no longer
+      // sized by its normal CSS at all), it just re-confirmed the same
+      // broken size instead of correcting it. Bailing out here instead
+      // leaves the element alone -- still correctly sized by its own
+      // CSS -- until something calls reapply() once it's actually
+      // visible (see openBook()).
+      if (r.width === 0 && r.height === 0) return;
+      el.style.width = r.width + 'px';
+      el.style.height = r.height + 'px';
+      el.style.position = 'absolute';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      el.style.left = saved.left + 'px';
+      el.style.top = saved.top + 'px';
+      el.style.margin = '0';
+      el.style.zIndex = '10';
     }
     applySavedPosition();
 
