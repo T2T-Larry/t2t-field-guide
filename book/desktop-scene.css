@@ -21,7 +21,12 @@
 }
 
 .desk-header-field {
-  position: relative;
+  /* No position:relative here on purpose -- this row sits inside
+     .desktop-scene (which already anchors absolute positioning for the
+     whole desk). Making this row itself a positioning context would
+     quietly become the containing block for anything inside it that
+     goes absolute (the nameplate, the topic card), throwing off their
+     dragged coordinates and how far they can travel. */
   display: grid;
   grid-template-columns: minmax(0, 1fr) 2fr minmax(0, 1fr);
   align-items: stretch;
