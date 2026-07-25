@@ -18,7 +18,7 @@
 (function () {
   var REPO = 'T2T-Larry/t2t-field-guide';
   var BRANCH = 'book-view-project';
-  var WATCH_FILES = ['book/desktop-scene.js', 'book/desktop-scene.css', 'book/book-engine.css', 'book/intro-desktop.html'];
+  var WATCH_FILES = ['book/desktop-scene.js', 'book/desktop-scene.css', 'book/book-engine.css', 'book/book-engine.js', 'book/intro-desktop.html'];
   var POLL_MS = 90000;
 
   var light = document.createElement('div');

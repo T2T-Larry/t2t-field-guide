@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=2">
+<link rel="stylesheet" href="book-engine.css?v=3">
 <link rel="stylesheet" href="desktop-scene.css?v=9">
 <style>
   body { margin:0; background:#fdf8f0; }
@@ -66,21 +66,36 @@
       </div>
 
       <div class="book-wrap" id="bookWrap" style="padding:0;display:none">
-        <div class="book-frame">
-          <div class="book-spread">
-            <div class="book-page left">
-              <div class="book-eyebrow"></div>
-              <div class="book-title"></div>
-              <div class="book-body"></div>
-              <div class="book-folio"></div>
-            </div>
-            <div class="book-page right">
+        <div class="book-frame binder">
+          <!-- Binder mode: one page at a time (see book-engine.js),
+               shaped like the live site's own screens (rounded top,
+               flat bottom -- matches .card in style.css) instead of
+               the old two-page spread. -->
+          <div class="binder-rings" aria-hidden="true">
+            <span class="binder-ring"></span>
+            <span class="binder-ring"></span>
+            <span class="binder-ring"></span>
+            <span class="binder-ring"></span>
+          </div>
+          <div class="book-spread single">
+            <div class="book-page">
               <div class="book-eyebrow"></div>
               <div class="book-title"></div>
               <div class="book-body"></div>
               <div class="book-folio"></div>
             </div>
             <div class="book-turn-page"></div>
+          </div>
+          <!-- Phase dividers. Question and Dream jump to real pages;
+               Believe/Share/Journey are placeholders until those
+               phases have their own Field Guide pages written --
+               dimmed and inert rather than faked. -->
+          <div class="binder-tabs">
+            <button class="binder-tab" id="tabQuestion" data-phase="question">Question</button>
+            <button class="binder-tab" id="tabDream" data-phase="dream">Dream</button>
+            <button class="binder-tab" id="tabBelieve" data-phase="believe" disabled>Believe</button>
+            <button class="binder-tab" id="tabShare" data-phase="share" disabled>Share</button>
+            <button class="binder-tab" id="tabJourney" data-phase="journey" disabled>Journey</button>
           </div>
           <!-- Tucked under the book's own bottom corners so they travel
                with it wherever it's dragged, and only exist while the
@@ -134,22 +149,32 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
-<script src="book-engine.js"></script>
+<script src="book-engine.js?v=2"></script>
 <script src="desktop-scene.js?v=5"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
-<script src="refresh-light.js?v=3"></script>
+<script src="refresh-light.js?v=4"></script>
 <script>
+  // Primary Field Guide pages only -- the site's own registered screen
+  // numbers (see index.html's T.registerPageNum calls) in order, real
+  // copy pulled straight from the live site, not invented filler.
   var pages = [
     { eyebrow: 'T2T', title: 'T2T', body: 'Thoughts to Things — A Choose Your Own Adventure Experience. By Larry Smithers & Bill Fritsch. Every great journey starts with a single step.', folio: '1' },
-    { eyebrow: 'T2T', title: 'What is T2T?', body: 'T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.', folio: '2' },
-    { eyebrow: 'T2T', title: 'T2T Goals', body: 'May you find a clear Vision of what you really want, the Pursuit of Excellence in everything you do, and a Beautiful Journey for everyone involved.', folio: '3' },
-    { eyebrow: '', title: 'Every great invention started as a thought.', body: 'The light bulb. The airplane. The internet. The vaccine. The symphony. Every single one — thought first. And every one of them began the same way. Someone answered one question.', folio: '4' },
-    { eyebrow: 'THOUGHT', title: 'Thoughts happen.', body: 'We are constantly thinking. Thoughts occur both consciously and subconsciously.', folio: '5' },
-    { eyebrow: 'THOUGHT', title: '5% conscious, 60,000 a day.', body: 'Conscious thoughts make up only about 5% of our total thoughts. Even at 5%, humans have more than 60,000 conscious thoughts per day.', folio: '6' },
-    { eyebrow: 'THOUGHT', title: 'Thoughts with imagination.', body: 'But, don’t worry. Scientists tell us that 98 percent of those 60,000 thoughts are repeats from the day before. The other 2% are new thoughts. Walt Disney was fired from his first newspaper job for “lacking imagination and having no original ideas.”', folio: '7' },
-    { eyebrow: '', title: 'What do you want?', body: '“Most people don’t know what they want, but they’re pretty sure they haven’t got it.” — Alfred E. Neuman', folio: '8' }
+    { eyebrow: '', title: 'The Question', body: 'Spans all phases — the question is always present.', folio: '2' },
+    { eyebrow: 'T2T', title: 'What is T2T?', body: 'T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.', folio: '3' },
+    { eyebrow: 'T2T', title: 'T2T Goals', body: 'May you find a clear Vision of what you really want, the Pursuit of Excellence in everything you do, and a Beautiful Journey for everyone involved.', folio: '4' },
+    { eyebrow: '', title: 'Every great invention started as a thought.', body: 'The light bulb. The airplane. The internet. The vaccine. The symphony. Every single one — thought first. And every one of them began the same way. Someone answered one question.', folio: '5' },
+    { eyebrow: 'THOUGHT', title: 'Thoughts happen.', body: 'We are constantly thinking. Thoughts occur both consciously and subconsciously.', folio: '6' },
+    { eyebrow: 'THOUGHT', title: '5% conscious, 60,000 a day.', body: 'Conscious thoughts make up only about 5% of our total thoughts. Even at 5%, humans have more than 60,000 conscious thoughts per day.', folio: '7' },
+    { eyebrow: 'THOUGHT', title: 'Thoughts with imagination.', body: 'But, don’t worry. Scientists tell us that 98 percent of those 60,000 thoughts are repeats from the day before. The other 2% are new thoughts. Walt Disney was fired from his first newspaper job for “lacking imagination and having no original ideas.”', folio: '8' },
+    { eyebrow: '', title: 'What do you want?', body: '“Most people don’t know what they want, but they’re pretty sure they haven’t got it.” — Alfred E. Neuman', folio: '9' },
+    { eyebrow: '', title: 'Do you know what you want?', body: 'Some people do. Most people don’t — not yet, and that’s completely fine. Either way, it’s time to dream a little. What if there were no limitations?', folio: '10' },
+    { eyebrow: 'PHASE 1', title: 'Dream Phase', body: 'You are about to discover what you want — maybe for the first time.', folio: '11' }
   ];
+
+  // Which page each built phase tab opens to. Believe/Share/Journey
+  // stay disabled in the markup until those phases have real pages.
+  var TAB_PAGE = { question: 1, dream: 10 };
 
   var deskRoot = document.querySelector('.desktop-scene');
   var bookCover = document.getElementById('bookCover');
@@ -220,6 +245,33 @@
   // the book."
   document.querySelectorAll('.book-frame .book-arrow').forEach(function (btn) {
     btn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  });
+
+  // Phase tabs: same drag-guard as the page arrows, plus jump-to-page
+  // and a "current" highlight that stays in sync with prev/next too.
+  var binderTabs = Array.prototype.slice.call(document.querySelectorAll('.binder-tab'));
+  function updateCurrentTab() {
+    var i = bookApi.getIndex();
+    binderTabs.forEach(function (tab) {
+      var target = TAB_PAGE[tab.dataset.phase];
+      tab.classList.toggle('current', target !== undefined && target === i);
+    });
+  }
+  binderTabs.forEach(function (tab) {
+    tab.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    tab.addEventListener('click', function () {
+      var target = TAB_PAGE[tab.dataset.phase];
+      if (target === undefined) return;
+      bookApi.goTo(target);
+      updateCurrentTab();
+    });
+  });
+  updateCurrentTab();
+  // Keep the tab highlight in sync when paging manually with the
+  // corner arrows too, not just when clicking a tab directly. The
+  // flip animation in book-engine.js takes 520ms before idx updates.
+  document.querySelectorAll('.book-frame .book-arrow').forEach(function (btn) {
+    btn.addEventListener('click', function () { setTimeout(updateCurrentTab, 540); });
   });
 
   var notesPages = ['', '', ''];
