@@ -83,7 +83,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  min-width: 170px;
+  min-width: 150px;
   background: linear-gradient(180deg, var(--nameplate-in), var(--nameplate-mid) 55%, var(--nameplate-out) 100%);
   border: 1px solid var(--nameplate-border);
   border-radius: 6px;
@@ -98,7 +98,7 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
   text-align: center;
-  padding: 4px 14px;
+  padding: 3px 12px 0;
   text-shadow: 1px 1px 0 rgba(255,240,200,.5);
 }
 
@@ -110,7 +110,7 @@
   font-weight: 700;
   letter-spacing: 1px;
   text-align: center;
-  padding: 6px 18px 8px;
+  padding: 0 14px 4px;
 }
 
 .desk-body {
