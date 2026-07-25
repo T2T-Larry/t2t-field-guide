@@ -123,7 +123,14 @@
   box-sizing: border-box;
 }
 
+/* Sit just under the book's own bottom corners, like a pair of
+   page-turn tabs peeking out from underneath, rather than floating in a
+   row elsewhere on the desk. .book-frame (their positioned ancestor)
+   travels with the book when it's dragged, so these travel with it too,
+   and they're only in the DOM while the book is open. */
 .book-arrow {
+  position: absolute;
+  bottom: -18px;
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -133,18 +140,15 @@
   font-size: 16px;
   cursor: pointer;
   box-shadow: 0 0 0 2px var(--brass-ring-outer, transparent), 2px 3px 6px rgba(0,0,0,.3);
+  z-index: 4;
 }
+
+.book-arrow.prev { left: 4%; }
+.book-arrow.next { right: 4%; }
 
 .book-arrow:disabled {
   opacity: .35;
   cursor: default;
-}
-
-.book-nav-row {
-  display: flex;
-  justify-content: center;
-  gap: 22px;
-  margin-top: 10px;
 }
 
 .icon-svg {

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=1">
+<link rel="stylesheet" href="book-engine.css?v=2">
 <link rel="stylesheet" href="desktop-scene.css?v=9">
 <style>
   body { margin:0; background:#fdf8f0; }
@@ -82,14 +82,12 @@
             </div>
             <div class="book-turn-page"></div>
           </div>
+          <!-- Tucked under the book's own bottom corners so they travel
+               with it wherever it's dragged, and only exist while the
+               book is open. -->
+          <button class="book-arrow prev" aria-label="Previous page">‹</button>
+          <button class="book-arrow next" aria-label="Next page">›</button>
         </div>
-      </div>
-
-      <!-- Lives with the book now (was in the round-button row) so the
-           page controls travel with it wherever it's dragged. -->
-      <div class="book-nav-row">
-        <button class="book-arrow prev" aria-label="Previous page">‹</button>
-        <button class="book-arrow next" aria-label="Next page">›</button>
       </div>
     </div>
 
@@ -181,7 +179,7 @@
 
   // No close (x) button anymore — clicking "previous" once past the first
   // page closes the book back to the cover, like flipping past the front cover.
-  var pageNavPrev = document.querySelector('.desk-round-btns .book-arrow.prev');
+  var pageNavPrev = document.querySelector('.book-frame .book-arrow.prev');
   if (pageNavPrev) {
     pageNavPrev.addEventListener('click', function () {
       if (bookApi.getIndex() === 0) closeBook();
@@ -214,7 +212,7 @@
   // The page arrows now live inside the book itself (so they travel with
   // it) -- keep a press on them from also being read as "start dragging
   // the book."
-  document.querySelectorAll('.book-nav-row .book-arrow').forEach(function (btn) {
+  document.querySelectorAll('.book-frame .book-arrow').forEach(function (btn) {
     btn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
   });
 
