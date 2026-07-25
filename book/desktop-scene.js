@@ -1,5 +1,20 @@
 
 (function () {
+  /* Baseline layout for anyone loading the page with nothing saved yet
+     (a fresh browser, or localStorage cleared) -- captured from Larry's
+     own arrangement on the desk so a first-time load already looks
+     right instead of starting from the old grid default. Dragging still
+     works exactly as before and still overrides this per-browser via
+     localStorage the moment something is moved. */
+  var DEFAULT_POSITIONS = {
+    't2t-drag-nameplate':  { left: 15.7846, top: 15.2483 },
+    't2t-drag-notebook':   { left: 1140.97, top: 294.153 },
+    't2t-drag-bookslot':   { left: 583.126, top: 130.38 },
+    't2t-drag-topicframe': { left: 562.123, top: 16.2062 },
+    't2t-drag-tools':      { left: 52.3269, top: 197.582 },
+    't2t-drag-roundbtns':  { left: 613.487, top: 558.007 }
+  };
+
   function wireToolButtons(rootEl, onPress) {
     var buttons = rootEl.querySelectorAll('.tool-btn');
     buttons.forEach(function (btn) {
@@ -139,6 +154,7 @@
       var saved;
       try { saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); }
       catch (e) { saved = null; }
+      if (!saved) saved = DEFAULT_POSITIONS[storageKey] || null;
       if (saved) {
         var r = el.getBoundingClientRect();
         el.style.width = r.width + 'px';

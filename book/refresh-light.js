@@ -1,9 +1,11 @@
 /* TEMPORARY dev-only widget for the book-view-project pilot. Shows a
-   small light in the corner that turns green once the live preview
-   link has actually caught up to the latest pushed change -- the
-   preview runs through a caching proxy that can lag behind a push by
-   anywhere from under a minute to several minutes. Click the light for
-   a fresh, cache-busting reload once it's green.
+   small light in the corner while the live preview link is still
+   catching up to the latest pushed change -- the preview runs through
+   a caching proxy that can lag behind a push by anywhere from under a
+   minute to several minutes. Once it's caught up, the light blends
+   into the page background instead of staying lit, so it disappears
+   rather than sitting there as a permanent green dot. Click it any
+   time for a fresh, cache-busting reload.
 
    Safe to delete this whole file plus its <script> tag in
    intro-desktop.html once the pilot is done -- nothing else on the
@@ -16,7 +18,7 @@
 (function () {
   var REPO = 'T2T-Larry/t2t-field-guide';
   var BRANCH = 'book-view-project';
-  var WATCH_FILES = ['book/desktop-scene.js', 'book/desktop-scene.css', 'book/intro-desktop.html'];
+  var WATCH_FILES = ['book/desktop-scene.js', 'book/desktop-scene.css', 'book/book-engine.css', 'book/intro-desktop.html'];
   var POLL_MS = 90000;
 
   var light = document.createElement('div');
@@ -66,7 +68,10 @@
       var results = await Promise.all(WATCH_FILES.map(fileIsFresh));
       if (results.some(function (r) { return r === null; })) return;
       var allFresh = results.every(Boolean);
-      light.style.background = allFresh ? '#3fae4d' : '#999';
+      // Blend into the page background instead of glowing green -- the
+      // point is that it disappears once there's nothing to wait for.
+      var bg = getComputedStyle(document.body).backgroundColor;
+      light.style.background = allFresh ? bg : '#999';
       light.title = allFresh
         ? 'The preview is caught up to the latest change. Click to refresh.'
         : 'Still waiting for the preview to catch up to the latest change...';
