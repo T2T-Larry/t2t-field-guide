@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=3">
+<link rel="stylesheet" href="book-engine.css?v=4">
 <link rel="stylesheet" href="desktop-scene.css?v=9">
 <style>
   body { margin:0; background:#fdf8f0; }
@@ -67,34 +67,31 @@
 
       <div class="book-wrap" id="bookWrap" style="padding:0;display:none">
         <div class="book-frame binder">
-          <!-- Binder mode: one page at a time (see book-engine.js),
-               shaped like the live site's own screens (rounded top,
-               flat bottom -- matches .card in style.css) instead of
-               the old two-page spread. -->
+          <!-- Real open two-page spread again -- each page embeds an
+               actual Field Guide screen (see the pages array below and
+               .site-embed in book-engine.css) instead of the book's
+               own simplified type. Bound like a real 3-ring binder:
+               rings down the center seam, phase tabs down the right
+               outer edge. -->
+          <div class="book-spread">
+            <div class="book-page left"></div>
+            <div class="book-page right"></div>
+            <div class="book-turn-page"></div>
+          </div>
           <div class="binder-rings" aria-hidden="true">
             <span class="binder-ring"></span>
             <span class="binder-ring"></span>
             <span class="binder-ring"></span>
-            <span class="binder-ring"></span>
           </div>
-          <div class="book-spread single">
-            <div class="book-page">
-              <div class="book-eyebrow"></div>
-              <div class="book-title"></div>
-              <div class="book-body"></div>
-              <div class="book-folio"></div>
-            </div>
-            <div class="book-turn-page"></div>
-          </div>
-          <!-- Phase dividers. Question and Dream jump to real pages;
-               Believe/Share/Journey are placeholders until those
+          <!-- Phase dividers. Introduction and Dream jump to real
+               pages; Believe/Dare/Journey are placeholders until those
                phases have their own Field Guide pages written --
                dimmed and inert rather than faked. -->
           <div class="binder-tabs">
-            <button class="binder-tab" id="tabQuestion" data-phase="question">Question</button>
+            <button class="binder-tab" id="tabIntroduction" data-phase="introduction">Introduction</button>
             <button class="binder-tab" id="tabDream" data-phase="dream">Dream</button>
             <button class="binder-tab" id="tabBelieve" data-phase="believe" disabled>Believe</button>
-            <button class="binder-tab" id="tabShare" data-phase="share" disabled>Share</button>
+            <button class="binder-tab" id="tabDare" data-phase="dare" disabled>Dare</button>
             <button class="binder-tab" id="tabJourney" data-phase="journey" disabled>Journey</button>
           </div>
           <!-- Tucked under the book's own bottom corners so they travel
@@ -149,32 +146,125 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
-<script src="book-engine.js?v=2"></script>
+<script src="book-engine.js?v=3"></script>
 <script src="desktop-scene.js?v=5"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
 <script src="refresh-light.js?v=4"></script>
 <script>
   // Primary Field Guide pages only -- the site's own registered screen
-  // numbers (see index.html's T.registerPageNum calls) in order, real
-  // copy pulled straight from the live site, not invented filler.
+  // numbers (see index.html's T.registerPageNum calls), embedded with
+  // their own real markup and classes (see .site-embed in
+  // book-engine.css) so each page looks like the actual live-site
+  // screen, just shrunk to fit -- not the book's own simplified type.
+  function embed(inner, folio) {
+    return '<div class="site-embed">' + inner + '</div><div class="book-folio">' + folio + '</div>';
+  }
+
   var pages = [
-    { eyebrow: 'T2T', title: 'T2T', body: 'Thoughts to Things — A Choose Your Own Adventure Experience. By Larry Smithers & Bill Fritsch. Every great journey starts with a single step.', folio: '1' },
-    { eyebrow: '', title: 'The Question', body: 'Spans all phases — the question is always present.', folio: '2' },
-    { eyebrow: 'T2T', title: 'What is T2T?', body: 'T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.', folio: '3' },
-    { eyebrow: 'T2T', title: 'T2T Goals', body: 'May you find a clear Vision of what you really want, the Pursuit of Excellence in everything you do, and a Beautiful Journey for everyone involved.', folio: '4' },
-    { eyebrow: '', title: 'Every great invention started as a thought.', body: 'The light bulb. The airplane. The internet. The vaccine. The symphony. Every single one — thought first. And every one of them began the same way. Someone answered one question.', folio: '5' },
-    { eyebrow: 'THOUGHT', title: 'Thoughts happen.', body: 'We are constantly thinking. Thoughts occur both consciously and subconsciously.', folio: '6' },
-    { eyebrow: 'THOUGHT', title: '5% conscious, 60,000 a day.', body: 'Conscious thoughts make up only about 5% of our total thoughts. Even at 5%, humans have more than 60,000 conscious thoughts per day.', folio: '7' },
-    { eyebrow: 'THOUGHT', title: 'Thoughts with imagination.', body: 'But, don’t worry. Scientists tell us that 98 percent of those 60,000 thoughts are repeats from the day before. The other 2% are new thoughts. Walt Disney was fired from his first newspaper job for “lacking imagination and having no original ideas.”', folio: '8' },
-    { eyebrow: '', title: 'What do you want?', body: '“Most people don’t know what they want, but they’re pretty sure they haven’t got it.” — Alfred E. Neuman', folio: '9' },
-    { eyebrow: '', title: 'Do you know what you want?', body: 'Some people do. Most people don’t — not yet, and that’s completely fine. Either way, it’s time to dream a little. What if there were no limitations?', folio: '10' },
-    { eyebrow: 'PHASE 1', title: 'Dream Phase', body: 'You are about to discover what you want — maybe for the first time.', folio: '11' }
+    // 0100 Cover
+    embed(
+      '<div class="cover">' +
+        '<div class="t2t">T2T</div>' +
+        '<div class="sub">Thoughts to Things</div>' +
+        '<div class="rul"></div>' +
+        '<div class="sm">A Choose Your Own Adventure Experience</div>' +
+        '<div class="aut">By Larry Smithers &amp; Bill Fritsch</div>' +
+        '<div class="tag">Every great journey starts with a single step.</div>' +
+      '</div>', '1'),
+    // 0100.1 What is T2T?
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-eyebrow">T2T</div>' +
+        '<div class="reader-line bold" style="font-size:28px">What is T2T?</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line small">T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.</div>' +
+      '</div></div>', '2'),
+    // 0100.2 T2T Goals
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-eyebrow">T2T</div>' +
+        '<div class="reader-line bold" style="font-size:28px">T2T Goals</div>' +
+        '<div class="reader-line italic small">May you find…</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line">🔹 A clear Vision of what you really want.</div>' +
+        '<div class="reader-line">🔹 The Pursuit of Excellence in everything you do.</div>' +
+        '<div class="reader-line">🔹 A Beautiful Journey for everyone involved.</div>' +
+      '</div></div>', '3'),
+    // 0200 Invention
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-line bold" style="font-size:26px">🔹 Every great invention started as a thought.</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line small">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line bold">Every single one — thought first.</div>' +
+      '</div></div>', '4'),
+    // 0210 Thoughts 1
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-eyebrow">THOUGHT</div>' +
+        '<div class="reader-line bold">Thoughts happen.</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line">We are constantly thinking.</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line">Thoughts occur both consciously<br>and subconsciously.</div>' +
+      '</div></div>', '5'),
+    // 0211 Thoughts 2
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-eyebrow">THOUGHT</div>' +
+        '<div class="reader-line small">Conscious thoughts make up only about</div>' +
+        '<div class="reader-line bold" style="font-size:40px">5%</div>' +
+        '<div class="reader-line small">of our total thoughts. Even at 5%, humans have more than</div>' +
+        '<div class="reader-line bold" style="font-size:28px">60,000</div>' +
+        '<div class="reader-line small">conscious thoughts per day.</div>' +
+      '</div></div>', '6'),
+    // 0212 Thoughts 3
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-eyebrow">THOUGHT</div>' +
+        '<div class="reader-line italic small">But, don’t worry.</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line small">Scientists tell us that <strong>98 percent</strong> of those 60,000 thoughts are repeats from the day before. The other <strong>2%</strong> are new thoughts.</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line accent">🔹 Thoughts with imagination.</div>' +
+      '</div></div>', '7'),
+    // 0300 Want
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-line bold" style="font-size:30px">What do you want?</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line italic small">🔹 “Most people don’t know what they want, but they’re pretty sure they haven’t got it.”</div>' +
+        '<div class="reader-line small">— Alfred E. Neuman</div>' +
+      '</div></div>', '8'),
+    // 0400 Know -- real buttons kept for the real look, not wired to
+    // branch anywhere; the book reads straight through instead.
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-line bold" style="font-size:24px">Do you know what you want?</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div style="display:flex;gap:10px;justify-content:center">' +
+          '<button style="padding:10px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;background:#E24B4A;color:#fff">No</button>' +
+          '<button style="padding:10px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;background:#EF9F27;color:#fff">Sort of</button>' +
+          '<button style="padding:10px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;background:#0F6E56;color:#fff">Yes</button>' +
+        '</div>' +
+      '</div></div>', '9'),
+    // 0490 Dream Phase intro
+    embed(
+      '<div class="reader-wrap"><div class="reader-body">' +
+        '<div class="reader-eyebrow">PHASE 1</div>' +
+        '<div class="reader-line bold" style="font-size:26px">Dream Phase</div>' +
+        '<div class="reader-spacer"></div>' +
+        '<div class="reader-line italic small">You are about to discover what you want — maybe for the first time.</div>' +
+      '</div></div>', '10')
   ];
 
-  // Which page each built phase tab opens to. Believe/Share/Journey
-  // stay disabled in the markup until those phases have real pages.
-  var TAB_PAGE = { question: 1, dream: 10 };
+  // Which spread each built phase tab opens to (the left index of the
+  // pair -- pairAt(i) shows pages[i] and pages[i+1] together). Believe/
+  // Dare/Journey stay disabled in the markup until those phases have
+  // real pages of their own.
+  var TAB_PAGE = { introduction: 0, dream: 8 };
 
   var deskRoot = document.querySelector('.desktop-scene');
   var bookCover = document.getElementById('bookCover');

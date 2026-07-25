@@ -39,27 +39,31 @@
   perspective: 2200px;
 }
 
-/* Binder mode: one page at a time, bound by rings down the left edge,
-   with phase-tab dividers stacked down the right edge -- matching the
-   flat-bottomed, rounded-top shape of a screen on the live site (see
-   .card in style.css) instead of the old two-page spread. */
+/* Binder mode: a real open two-page spread again (not one page at a
+   time) -- but each page now embeds the Field Guide's own actual
+   screens (see .site-embed below) instead of the book's own simplified
+   type, and it's bound like a real 3-ring binder: rings down the
+   CENTER seam between the two pages, with a punched-notch look bitten
+   into each page's inner edge, and phase-tab dividers down the right
+   outer edge. Sized a bit larger than the old spread so the embedded
+   real screens (designed for the live site's own width) stay legible
+   once shrunk to fit -- see .site-embed's zoom. */
+.book-frame.binder {
+  max-width: min(97%, 62vh * 1.294);
+}
+
 .book-frame.binder .book-spread {
   border-radius: 12px 12px 0 0;
 }
 
-.book-spread.single .book-turn-page {
-  left: 0;
-  right: auto;
-  width: 100%;
-}
-
 .binder-rings {
   position: absolute;
-  left: -9px;
-  top: 8%;
-  bottom: 8%;
-  width: 18px;
-  z-index: 3;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 6%;
+  bottom: 6%;
+  width: 22px;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -67,12 +71,15 @@
 }
 
 .binder-ring {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--brass-face-in, #e8d9b0), var(--brass-face-out, #9a7c3f));
-  border: 2px solid var(--brass-ring, #6b4a2c);
-  box-shadow: 0 0 0 2px var(--brass-ring-outer, transparent), 1px 2px 3px rgba(0,0,0,.35);
+  background: radial-gradient(circle at 35% 30%, #e8e2d8, #b9b2a4 55%, #8a8378);
+  border: 2px solid #5c574e;
+  /* The lighter ring around the ring itself reads as a punched notch
+     bitten out of both pages' inner edges, without needing to actually
+     clip either page's shape. */
+  box-shadow: 0 0 0 5px var(--book-page-bg-alt), 1px 2px 3px rgba(0,0,0,.4), inset 0 0 4px rgba(0,0,0,.45);
 }
 
 .binder-tabs {
@@ -138,18 +145,53 @@
 
 .book-page {
   flex: 1;
-  padding: 5% 7%;
+  padding: 3% 3%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
   background: var(--book-page-bg);
   min-width: 0;
+  overflow: hidden;
 }
 
 .book-page.left {
   border-right: 1px solid var(--book-divider);
 }
+
+/* Scoped, shrunk copies of the live site's own widget styles (see
+   style.css's .cover/.reader-wrap families) so an embedded Field Guide
+   screen renders like its real counterpart instead of the book's own
+   plain type. Scoped under .site-embed rather than linking style.css
+   page-wide -- style.css resets *{margin:0;padding:0;box-sizing:
+   border-box} and sets its own body layout, which would leak into the
+   rest of the desk scene if loaded globally. zoom (not transform, so
+   it still participates in normal layout and sizing) shrinks the whole
+   real-widget block, type included, to fit the smaller binder page --
+   this is a first pass, expect to tune the exact factor live. */
+.site-embed {
+  zoom: 0.6;
+  font-family: 'Playfair Display', Georgia, serif;
+  text-align: center;
+  width: 100%;
+}
+.site-embed, .site-embed * { box-sizing: border-box; }
+.site-embed .cover { background: #0F6E56; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 30px; text-align: center; border-radius: 8px; }
+.site-embed .t2t { font-size: 76px; font-weight: 700; color: #C9A87C; letter-spacing: 6px; line-height: 1; text-shadow: 3px 4px 0 #07402F; margin-bottom: 14px; }
+.site-embed .sub { font-size: 15px; color: #C9A87C; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 18px; text-shadow: 2px 3px 0 #07402F; }
+.site-embed .rul { width: 100px; height: .5px; background: #5DCAA5; margin: 0 auto 22px; }
+.site-embed .sm { font-size: 10px; color: #9FE1CB; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px; }
+.site-embed .aut { font-size: 11px; color: #9FE1CB; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+.site-embed .tag { font-size: 17px; font-style: italic; color: #C9A87C; }
+.site-embed .reader-wrap { display: flex; flex-direction: column; background: #fff; border-radius: 8px; }
+.site-embed .reader-body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 26px 28px; text-align: center; }
+.site-embed .reader-eyebrow { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #888; margin-bottom: 16px; }
+.site-embed .reader-line { font-size: 19px; font-weight: 400; color: #111; line-height: 1.7; margin-bottom: 0; }
+.site-embed .reader-line.bold { font-weight: 700; }
+.site-embed .reader-line.italic { font-style: italic; }
+.site-embed .reader-line.accent { color: #0F6E56; font-weight: 700; }
+.site-embed .reader-line.small { font-size: 15px; color: #555; }
+.site-embed .reader-spacer { height: 16px; }
 
 .book-eyebrow {
   font-size: 11px;
