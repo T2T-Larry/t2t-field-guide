@@ -7,6 +7,23 @@
   font-family: 'Playfair Display', Georgia, serif;
 }
 
+/* The desktop pilot's open book (id, not just the shared class) breaks
+   out of .desk-book-slot's own size on purpose: that slot's width gets
+   pinned in pixels by the drag system (see reserveRowHeights/
+   applySavedPosition in desktop-scene.js) based on the *closed* cover's
+   small size, which is far too narrow for the open binder's two
+   3/4-scale pages. Going absolute and centering on the slot lets the
+   open book claim whatever room .book-frame's own sizing calls for,
+   instead of being trapped inside the cover's pinned box. */
+#bookWrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(92vw, 1100px);
+  z-index: 20;
+}
+
 .book-cover {
   position: relative;
   width: 100%;
