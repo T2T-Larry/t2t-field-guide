@@ -85,6 +85,37 @@
     el.style.zIndex = '10';
   }
 
+  /* Same idea as ensureAbsolute, but for a whole group at once. Reads
+     every element's position FIRST, then writes them all -- doing this
+     one element at a time (read, write, read, write...) lets the first
+     write's reflow (e.g. a header row shrinking once one item leaves
+     the grid) quietly shift where the *next* element in the group
+     measures itself, so the group drifts apart instead of moving as
+     one. Reading everything up front before writing anything avoids
+     that. */
+  function ensureAllAbsolute(els, sceneEl) {
+    var pending = els.filter(function (el) { return el.style.position !== 'absolute'; });
+    if (!pending.length) return;
+    var sceneRect = sceneEl.getBoundingClientRect();
+    var snapshots = pending.map(function (el) {
+      var r = el.getBoundingClientRect();
+      return {
+        el: el,
+        width: r.width, height: r.height,
+        left: r.left - sceneRect.left, top: r.top - sceneRect.top
+      };
+    });
+    snapshots.forEach(function (s) {
+      s.el.style.width = s.width + 'px';
+      s.el.style.height = s.height + 'px';
+      s.el.style.position = 'absolute';
+      s.el.style.left = s.left + 'px';
+      s.el.style.top = s.top + 'px';
+      s.el.style.margin = '0';
+      s.el.style.zIndex = '10';
+    });
+  }
+
   /* Lets a desk object (nameplate, notebook, book, topic card, tools
      panel) be picked up and moved around the scene, like a real object
      on a desk. A plain click (no real movement) still passes through
@@ -167,8 +198,8 @@
       var dy = e.clientY - startY;
       if (!moved && Math.hypot(dx, dy) > 5) {
         moved = true;
+        ensureAllAbsolute(frames.map(function (f) { return f.el; }), sceneEl);
         frames.forEach(function (f) {
-          ensureAbsolute(f.el, sceneEl);
           f.startLeft = parseFloat(f.el.style.left) || f.startLeft;
           f.startTop = parseFloat(f.el.style.top) || f.startTop;
         });
