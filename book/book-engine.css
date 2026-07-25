@@ -115,7 +115,7 @@
   width: 46%;
   aspect-ratio: 680 / 520;
   padding: 0;
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0,0,0,.35);
   overflow: hidden;
 }
@@ -298,7 +298,7 @@
    and padding need to match that real page card here. */
 .book-frame.binder .book-turn-page {
   padding: 0;
-  border-radius: 12px 12px 0 0;
+  border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0,0,0,.35);
 }
 
