@@ -158,7 +158,7 @@
   // book-engine.css) so each page looks like the actual live-site
   // screen, just shrunk to fit -- not the book's own simplified type.
   function embed(inner, folio) {
-    return '<div class="site-embed">' + inner + '</div><div class="book-folio">' + folio + '</div>';
+    return { html: '<div class="site-embed">' + inner + '</div><div class="book-folio">' + folio + '</div>' };
   }
 
   var pages = [
