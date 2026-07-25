@@ -55,6 +55,13 @@
       try { saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); }
       catch (e) { saved = null; }
       if (saved) {
+        // Lock in the object's current (in-flow) size before switching to
+        // absolute -- otherwise an element sized by its layout (e.g. a grid
+        // cell's width:100%) silently resizes to fill the whole scene the
+        // moment it goes absolute, which then traps it against one edge.
+        var elRect = el.getBoundingClientRect();
+        el.style.width = elRect.width + 'px';
+        el.style.height = elRect.height + 'px';
         el.style.position = 'absolute';
         el.style.left = saved.left + 'px';
         el.style.top = saved.top + 'px';
@@ -68,6 +75,8 @@
       if (el.style.position === 'absolute') return;
       var sceneRect = sceneEl.getBoundingClientRect();
       var elRect = el.getBoundingClientRect();
+      el.style.width = elRect.width + 'px';
+      el.style.height = elRect.height + 'px';
       el.style.position = 'absolute';
       el.style.left = (elRect.left - sceneRect.left) + 'px';
       el.style.top = (elRect.top - sceneRect.top) + 'px';
