@@ -1,6 +1,6 @@
 
-.desk-notebook:active, .desk-nameplate:active, .desk-book-slot:active,
-.desk-topic-frame:active, .desk-tools:active, .desk-round-btns:active {
+.desk-notebook:active, .desk-nameplate:active,
+.desk-topic-frame:active, .desk-tools:active {
   cursor: grabbing;
 }
 
@@ -201,9 +201,6 @@
 }
 
 .desk-book-slot {
-  cursor: grab;
-  user-select: none;
-  -webkit-user-drag: none;
   justify-self: center;
   width: 100%;
 }
@@ -275,9 +272,6 @@
   display: flex;
   justify-content: center;
   gap: 22px;
-  cursor: grab;
-  user-select: none;
-  -webkit-user-drag: none;
 }
 
 .round-btn {

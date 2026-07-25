@@ -9,10 +9,8 @@
   var DEFAULT_POSITIONS = {
     't2t-drag-nameplate':  { left: 15.7846, top: 15.2483 },
     't2t-drag-notebook':   { left: 1140.97, top: 294.153 },
-    't2t-drag-bookslot':   { left: 583.126, top: 130.38 },
     't2t-drag-topicframe': { left: 562.123, top: 16.2062 },
-    't2t-drag-tools':      { left: 52.3269, top: 197.582 },
-    't2t-drag-roundbtns':  { left: 613.487, top: 558.007 }
+    't2t-drag-tools':      { left: 52.3269, top: 197.582 }
   };
 
   function wireToolButtons(rootEl, onPress) {
