@@ -1,5 +1,6 @@
 
-.desk-notebook:active, .desk-nameplate:active, .desk-book-slot:active {
+.desk-notebook:active, .desk-nameplate:active, .desk-book-slot:active,
+.desk-topic-frame:active, .desk-tools:active {
   cursor: grabbing;
 }
 
@@ -41,7 +42,9 @@
   justify-self: center;
   align-self: end;
   position: relative;
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
   padding: 10px 40px;
   border: 3px double var(--nameplate-border);
   border-radius: 6px;
@@ -195,6 +198,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.8vh;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .tool-btn {
@@ -312,4 +318,18 @@
 .desk-map-ticks span {
   font-size: 8px;
   color: var(--nameplate-text);
+}
+
+.desk-lasso {
+  position: absolute;
+  border: 1px dashed #8a6d1f;
+  background: rgba(201, 168, 124, 0.15);
+  pointer-events: none;
+  z-index: 50;
+}
+
+.desk-selected {
+  outline: 2px dashed #8a6d1f;
+  outline-offset: 3px;
+  border-radius: 4px;
 }

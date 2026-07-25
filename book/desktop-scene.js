@@ -40,28 +40,78 @@
     marker.style.left = pct + '%';
   }
 
-  /* Lets a desk object (nameplate, notebook, book) be picked up and moved
-     around the scene, like a real object on a desk. A plain click (no real
-     movement) still passes through untouched, so existing open/close
-     behavior on these same elements keeps working. Final position is
-     remembered per element via localStorage. */
+  /* ------------------------------------------------------------------
+     Shared drag/selection state for one scene (the desk). Every object
+     made draggable via makeDraggable registers itself here, so a lasso
+     drawn over empty desk space can find them, and a group of selected
+     objects can be moved together as one.
+     ------------------------------------------------------------------ */
+  function dragState(sceneEl) {
+    if (!sceneEl._t2tDrag) {
+      sceneEl._t2tDrag = { items: [], selected: new Set() };
+    }
+    return sceneEl._t2tDrag;
+  }
+
+  function setSelected(sceneEl, els) {
+    var state = dragState(sceneEl);
+    state.selected.forEach(function (el) { el.classList.remove('desk-selected'); });
+    state.selected = new Set(els);
+    state.selected.forEach(function (el) { el.classList.add('desk-selected'); });
+  }
+
+  function storageKeyFor(state, el) {
+    for (var i = 0; i < state.items.length; i++) {
+      if (state.items[i].el === el) return state.items[i].storageKey;
+    }
+    return null;
+  }
+
+  /* Picks an element up out of normal document flow and pins it to its
+     current on-screen size before switching to position:absolute --
+     otherwise an element sized by its layout (e.g. a grid cell's
+     width:100%) silently resizes to fill the whole scene the moment it
+     goes absolute, which then traps it against one edge. */
+  function ensureAbsolute(el, sceneEl) {
+    if (el.style.position === 'absolute') return;
+    var sceneRect = sceneEl.getBoundingClientRect();
+    var r = el.getBoundingClientRect();
+    el.style.width = r.width + 'px';
+    el.style.height = r.height + 'px';
+    el.style.position = 'absolute';
+    el.style.left = (r.left - sceneRect.left) + 'px';
+    el.style.top = (r.top - sceneRect.top) + 'px';
+    el.style.margin = '0';
+    el.style.zIndex = '10';
+  }
+
+  /* Lets a desk object (nameplate, notebook, book, topic card, tools
+     panel) be picked up and moved around the scene, like a real object
+     on a desk. A plain click (no real movement) still passes through
+     untouched, so existing open/close behavior on these same elements
+     keeps working. Final position is remembered per element via
+     localStorage.
+
+     If the object being picked up is part of a multi-object selection
+     (made by lassoing), the whole selected group moves together,
+     keeping each object's position relative to the others. */
   function makeDraggable(el, storageKey, sceneEl) {
     if (!el || !sceneEl) return;
+    var state = dragState(sceneEl);
+    state.items.push({ el: el, storageKey: storageKey });
+
     var dragging = false, moved = false;
-    var startX, startY, startLeft, startTop;
+    var startX, startY;
+    var frames = [];
 
     function applySavedPosition() {
       var saved;
       try { saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); }
       catch (e) { saved = null; }
       if (saved) {
-        // Lock in the object's current (in-flow) size before switching to
-        // absolute -- otherwise an element sized by its layout (e.g. a grid
-        // cell's width:100%) silently resizes to fill the whole scene the
-        // moment it goes absolute, which then traps it against one edge.
-        var elRect = el.getBoundingClientRect();
-        el.style.width = elRect.width + 'px';
-        el.style.height = elRect.height + 'px';
+        var r = el.getBoundingClientRect();
+        el.style.width = r.width + 'px';
+        el.style.height = r.height + 'px';
         el.style.position = 'absolute';
         el.style.left = saved.left + 'px';
         el.style.top = saved.top + 'px';
@@ -70,19 +120,6 @@
       }
     }
     applySavedPosition();
-
-    function toAbsolute() {
-      if (el.style.position === 'absolute') return;
-      var sceneRect = sceneEl.getBoundingClientRect();
-      var elRect = el.getBoundingClientRect();
-      el.style.width = elRect.width + 'px';
-      el.style.height = elRect.height + 'px';
-      el.style.position = 'absolute';
-      el.style.left = (elRect.left - sceneRect.left) + 'px';
-      el.style.top = (elRect.top - sceneRect.top) + 'px';
-      el.style.margin = '0';
-      el.style.zIndex = '10';
-    }
 
     el.style.touchAction = 'none';
 
@@ -104,32 +141,49 @@
       moved = false;
       startX = e.clientX;
       startY = e.clientY;
+
+      var isGroup = state.selected.has(el) && state.selected.size > 1;
+      var targets = isGroup ? Array.from(state.selected) : [el];
       var sceneRect = sceneEl.getBoundingClientRect();
-      var elRect = el.getBoundingClientRect();
-      startLeft = elRect.left - sceneRect.left;
-      startTop = elRect.top - sceneRect.top;
-      if (el.setPointerCapture) { try { el.setPointerCapture(e.pointerId); } catch (err) {} }
+      frames = targets.map(function (t) {
+        var r = t.getBoundingClientRect();
+        return {
+          el: t,
+          storageKey: storageKeyFor(state, t),
+          startLeft: r.left - sceneRect.left,
+          startTop: r.top - sceneRect.top
+        };
+      });
+      // Keep the lasso (bound on the scene) from starting on top of this.
+      e.stopPropagation();
     });
 
-    el.addEventListener('pointermove', function (e) {
+    // Move/up listen on the document, not the element itself, so a fast
+    // or imprecise drag gesture (trackpad, etc.) keeps tracking the
+    // pointer even once the cursor has outrun the object being dragged.
+    document.addEventListener('pointermove', function (e) {
       if (!dragging) return;
       var dx = e.clientX - startX;
       var dy = e.clientY - startY;
       if (!moved && Math.hypot(dx, dy) > 5) {
         moved = true;
-        toAbsolute();
-        startLeft = parseFloat(el.style.left) || startLeft;
-        startTop = parseFloat(el.style.top) || startTop;
+        frames.forEach(function (f) {
+          ensureAbsolute(f.el, sceneEl);
+          f.startLeft = parseFloat(f.el.style.left) || f.startLeft;
+          f.startTop = parseFloat(f.el.style.top) || f.startTop;
+        });
       }
       if (moved) {
         var sceneRect = sceneEl.getBoundingClientRect();
-        var elRect = el.getBoundingClientRect();
-        var maxLeft = Math.max(sceneRect.width - elRect.width, 0);
-        var maxTop = Math.max(sceneRect.height - elRect.height, 0);
-        var newLeft = Math.min(Math.max(startLeft + dx, 0), maxLeft);
-        var newTop = Math.min(Math.max(startTop + dy, 0), maxTop);
-        el.style.left = newLeft + 'px';
-        el.style.top = newTop + 'px';
+        frames.forEach(function (f) {
+          var r = f.el.getBoundingClientRect();
+          var maxLeft = Math.max(sceneRect.width - r.width, 0);
+          var maxTop = Math.max(sceneRect.height - r.height, 0);
+          var newLeft = Math.min(Math.max(f.startLeft + dx, 0), maxLeft);
+          var newTop = Math.min(Math.max(f.startTop + dy, 0), maxTop);
+          f.el.style.left = newLeft + 'px';
+          f.el.style.top = newTop + 'px';
+        });
       }
     });
 
@@ -137,16 +191,94 @@
       if (!dragging) return;
       dragging = false;
       if (moved) {
-        localStorage.setItem(storageKey, JSON.stringify({
-          left: parseFloat(el.style.left),
-          top: parseFloat(el.style.top)
-        }));
-        el.dataset.justDragged = '1';
+        frames.forEach(function (f) {
+          if (f.storageKey) {
+            localStorage.setItem(f.storageKey, JSON.stringify({
+              left: parseFloat(f.el.style.left),
+              top: parseFloat(f.el.style.top)
+            }));
+          }
+          f.el.dataset.justDragged = '1';
+        });
+      } else {
+        // A plain click on this object, not a drag -- select just it.
+        setSelected(sceneEl, [el]);
       }
     }
 
-    el.addEventListener('pointerup', endDrag);
-    el.addEventListener('pointercancel', endDrag);
+    document.addEventListener('pointerup', endDrag);
+    document.addEventListener('pointercancel', endDrag);
+  }
+
+  /* Draw a selection box over empty desk space (a "lasso") to select
+     several objects at once. Anything the box touches gets selected;
+     dragging any one selected object afterward moves the whole group.
+     A plain click on empty desk space (no drag) clears the selection. */
+  function enableLasso(sceneEl) {
+    if (!sceneEl) return;
+    var state = dragState(sceneEl);
+    var active = false, lassoMoved = false, lassoBox = null;
+    var startX, startY;
+
+    function isInteractive(target) {
+      return !!target.closest(
+        '.desk-nameplate, .desk-notebook, .desk-book-slot, .desk-tools, ' +
+        '.desk-topic-frame, .desk-round-btns, .tool-btn, button, ' +
+        '.book-arrow, .notes-overlay'
+      );
+    }
+
+    function positionLasso(x1, y1, x2, y2) {
+      var sceneRect = sceneEl.getBoundingClientRect();
+      var left = Math.min(x1, x2) - sceneRect.left;
+      var top = Math.min(y1, y2) - sceneRect.top;
+      var w = Math.abs(x2 - x1);
+      var h = Math.abs(y2 - y1);
+      lassoBox.style.left = left + 'px';
+      lassoBox.style.top = top + 'px';
+      lassoBox.style.width = w + 'px';
+      lassoBox.style.height = h + 'px';
+      return { left: left, top: top, right: left + w, bottom: top + h };
+    }
+
+    sceneEl.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (isInteractive(e.target)) return;
+      active = true;
+      lassoMoved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      setSelected(sceneEl, []);
+    });
+
+    document.addEventListener('pointermove', function (e) {
+      if (!active) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if (!lassoMoved && Math.hypot(dx, dy) > 4) {
+        lassoMoved = true;
+        lassoBox = document.createElement('div');
+        lassoBox.className = 'desk-lasso';
+        sceneEl.appendChild(lassoBox);
+      }
+      if (!lassoMoved) return;
+      var box = positionLasso(startX, startY, e.clientX, e.clientY);
+      var sceneRect = sceneEl.getBoundingClientRect();
+      var hits = state.items.filter(function (item) {
+        var r = item.el.getBoundingClientRect();
+        var iL = r.left - sceneRect.left, iT = r.top - sceneRect.top;
+        var iR = iL + r.width, iB = iT + r.height;
+        return !(iR < box.left || iL > box.right || iB < box.top || iT > box.bottom);
+      }).map(function (item) { return item.el; });
+      setSelected(sceneEl, hits);
+    });
+
+    function endLasso() {
+      if (!active) return;
+      active = false;
+      if (lassoBox) { lassoBox.remove(); lassoBox = null; }
+    }
+    document.addEventListener('pointerup', endLasso);
+    document.addEventListener('pointercancel', endLasso);
   }
 
   window.T2TDesktopScene = {
@@ -155,6 +287,7 @@
     wireRoundButtons: wireRoundButtons,
     setNameplate: setNameplate,
     setMapPosition: setMapPosition,
-    makeDraggable: makeDraggable
+    makeDraggable: makeDraggable,
+    enableLasso: enableLasso
   };
 })();

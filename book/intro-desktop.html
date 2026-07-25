@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
 <link rel="stylesheet" href="book-engine.css">
-<link rel="stylesheet" href="desktop-scene.css?v=5">
+<link rel="stylesheet" href="desktop-scene.css?v=6">
 <style>
   body { margin:0; background:#fdf8f0; }
   .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
@@ -132,7 +132,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
 <script src="book-engine.js"></script>
-<script src="desktop-scene.js?v=1"></script>
+<script src="desktop-scene.js?v=2"></script>
 <script>
   var pages = [
     { eyebrow: 'T2T', title: 'T2T', body: 'Thoughts to Things — A Choose Your Own Adventure Experience. By Larry Smithers & Bill Fritsch. Every great journey starts with a single step.', folio: '1' },
@@ -196,6 +196,11 @@
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-nameplate'), 't2t-drag-nameplate', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-notebook'), 't2t-drag-notebook', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-book-slot'), 't2t-drag-bookslot', deskRoot);
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-topic-frame'), 't2t-drag-topicframe', deskRoot);
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-tools'), 't2t-drag-tools', deskRoot);
+  // Draw a selection box over empty desk space to select several objects
+  // at once; dragging any one of them afterward moves the whole group.
+  T2TDesktopScene.enableLasso(deskRoot);
 
   var notesPages = ['', '', ''];
   var notesIdx = 0;
