@@ -42,8 +42,14 @@
 
     function render() {
       var pair = pairAt(idx);
-      if (leftContainer) leftContainer.innerHTML = pageHTML(pair[0]);
-      if (rightContainer) rightContainer.innerHTML = pageHTML(pair[1]);
+      if (leftContainer) {
+        leftContainer.innerHTML = pageHTML(pair[0]);
+        leftContainer.classList.toggle('blank', !!(pair[0] && pair[0].blank));
+      }
+      if (rightContainer) {
+        rightContainer.innerHTML = pageHTML(pair[1]);
+        rightContainer.classList.toggle('blank', !!(pair[1] && pair[1].blank));
+      }
       // prevBtn stays enabled even at the first page — one more click closes
       // the book back to the cover (see closeBook() wiring in the page script).
       nextBtn.disabled = idx + step >= pages.length;

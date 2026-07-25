@@ -201,6 +201,13 @@
 }
 
 .desk-book-slot {
+  /* Pinned to the grid's middle column explicitly -- its siblings
+     (notebook, tools) are still draggable and go position:absolute the
+     moment the page loads, which pulls them out of the grid's normal
+     flow. Left to auto-placement, this element (the only one still in
+     flow) would get swept into the grid's first track instead of its
+     intended middle one. */
+  grid-column: 2;
   justify-self: center;
   width: 100%;
 }
@@ -252,26 +259,14 @@
   box-shadow: 0 0 10px 2px rgba(255,214,120,.65), inset 0 0 4px rgba(0,0,0,.3);
 }
 
-.desk-round-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 2fr minmax(0, 1fr);
-  align-items: center;
-  column-gap: 12px;
-  width: 100%;
-}
-
-.desk-toolbar-center {
-  justify-self: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.8vh;
-}
-
+/* The round buttons now live inside #bookWrap (see book-engine.css /
+   intro-desktop.html) so they're attached to the binder itself, rather
+   than in their own separate desk row. */
 .desk-round-btns {
   display: flex;
   justify-content: center;
   gap: 22px;
+  margin-top: 16px;
 }
 
 .round-btn {

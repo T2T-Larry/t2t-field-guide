@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=11">
-<link rel="stylesheet" href="desktop-scene.css?v=10">
+<link rel="stylesheet" href="book-engine.css?v=12">
+<link rel="stylesheet" href="desktop-scene.css?v=11">
 <style>
   body { margin:0; background:#fdf8f0; }
   .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
@@ -76,6 +76,12 @@
                look along the frame's bottom edge instead of a custom
                book-styled arrow. -->
           <div class="book-spread">
+            <!-- Two thin gold hinge lines, 8in in from each edge of the
+                 binder, standing in for where a real ring-binder's
+                 covers would fold on either side of the spine
+                 mechanism -- purely decorative, doesn't affect layout. -->
+            <div class="binder-hinge left"></div>
+            <div class="binder-hinge right"></div>
             <div class="book-page left"></div>
             <div class="book-page right"></div>
             <div class="book-turn-page"></div>
@@ -97,6 +103,14 @@
             <button class="binder-tab" id="tabJourney" data-phase="journey">Journey</button>
           </div>
         </div>
+
+        <!-- Attached to the binder itself (a child of #bookWrap, not a
+             separate draggable desk object) so it's always mounted
+             right under the open binder and moves/centers with it. -->
+        <div class="desk-round-btns">
+          <div class="round-btn" data-tool="idea"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2c.6.4 1 1.1 1 1.8h4c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></div>
+          <div class="round-btn" data-tool="trivia"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="6.5" r="3"/><circle cx="16.76" cy="9.25" r="3"/><circle cx="16.76" cy="14.75" r="3"/><circle cx="12" cy="17.5" r="3"/><circle cx="7.24" cy="14.75" r="3"/><circle cx="7.24" cy="9.25" r="3"/></svg></div>
+        </div>
       </div>
     </div>
 
@@ -110,18 +124,6 @@
     </div>
   </div>
 
-  <div class="desk-round-row">
-    <div class="desk-toolbar-slot"></div>
-
-    <div class="desk-toolbar-center">
-      <div class="desk-round-btns">
-        <div class="round-btn" data-tool="idea"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2c.6.4 1 1.1 1 1.8h4c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></div>
-        <div class="round-btn" data-tool="trivia"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="6.5" r="3"/><circle cx="16.76" cy="9.25" r="3"/><circle cx="16.76" cy="14.75" r="3"/><circle cx="12" cy="17.5" r="3"/><circle cx="7.24" cy="14.75" r="3"/><circle cx="7.24" cy="9.25" r="3"/></svg></div>
-      </div>
-    </div>
-
-    <div class="desk-toolbar-slot"></div>
-  </div>
 </div>
 
 <div class="notes-overlay" id="notesOverlay">
@@ -142,8 +144,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
-<script src="book-engine.js?v=5"></script>
-<script src="desktop-scene.js?v=6"></script>
+<script src="book-engine.js?v=6"></script>
+<script src="desktop-scene.js?v=7"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
 <script src="refresh-light.js?v=4"></script>
@@ -168,7 +170,7 @@
   // whatever content happens to come next. This is also what makes a
   // phase tab reveal just the one page it stands for rather than a
   // full two-page spread.
-  var BLANK = { html: '' };
+  var BLANK = { html: '', blank: true };
 
   var pages = [
     BLANK,
@@ -337,7 +339,7 @@
   // picking one up (or loading it already in its saved/default spot)
   // doesn't shrink its row and shift everything else on the desk to
   // re-center.
-  T2TDesktopScene.reserveRowHeights(['.desk-header-field', '.desk-body', '.desk-round-row']);
+  T2TDesktopScene.reserveRowHeights(['.desk-header-field', '.desk-body']);
 
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-nameplate'), 't2t-drag-nameplate', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-notebook'), 't2t-drag-notebook', deskRoot);

@@ -124,10 +124,33 @@
   border-right: none;
 }
 
+/* Marks a leaf with no real content -- the inside-of-the-binder page
+   revealed on the left when the binder first opens (and again before
+   the Dream Phase intro). Colored to match the binder shell itself
+   (--cover-color) instead of the plain white/cream used by every
+   other page, since there's no printed page here, just the binder's
+   own interior. */
+.book-frame.binder .book-page.blank {
+  background: var(--cover-color);
+}
+
+.binder-hinge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--book-border);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.binder-hinge.left { left: 8in; }
+.binder-hinge.right { right: 8in; }
+
 .binder-tabs {
   position: absolute;
-  right: 0;
-  top: 6%;
+  right: 0.5in;
+  top: 0;
   bottom: 20%;
   width: 34px;
   z-index: 4;
