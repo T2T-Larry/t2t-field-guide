@@ -63,6 +63,26 @@
       turnPage.style.height = rightContainer.offsetHeight + 'px';
     }
 
+    // Puts the prev/next arrows directly under the page they belong to --
+    // prev centered under the left page's folio number, next centered
+    // under the right page's -- instead of grouped in the middle of the
+    // frame. Only meaningful in two-page (binder) mode, and only accurate
+    // once the book is actually visible (display isn't none), so callers
+    // should invoke this after the book is shown, not just at creation.
+    function syncNavArrows() {
+      if (single || !rightContainer || !leftContainer) return;
+      var leftCenter = leftContainer.offsetLeft + leftContainer.offsetWidth / 2;
+      var rightCenter = rightContainer.offsetLeft + rightContainer.offsetWidth / 2;
+      prevBtn.style.position = 'absolute';
+      prevBtn.style.left = leftCenter + 'px';
+      prevBtn.style.right = 'auto';
+      prevBtn.style.transform = 'translateX(-50%)';
+      nextBtn.style.position = 'absolute';
+      nextBtn.style.left = rightCenter + 'px';
+      nextBtn.style.right = 'auto';
+      nextBtn.style.transform = 'translateX(-50%)';
+    }
+
     function flip(dir) {
       var nextIdx = idx + dir * step;
       if (nextIdx < 0 || nextIdx >= pages.length) return;
@@ -90,7 +110,8 @@
 
     return {
       goTo: function (i) { idx = i; render(); },
-      getIndex: function () { return idx; }
+      getIndex: function () { return idx; },
+      syncNavArrows: syncNavArrows
     };
   }
 
