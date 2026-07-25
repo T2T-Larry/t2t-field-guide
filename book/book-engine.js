@@ -1,6 +1,6 @@
 
 (function () {
-  function createBook(rootEl, pages, tableButtons) {
+  function createBook(rootEl, pages, tableButtons, onRender) {
     var idx = 0;
     // Single-page (binder-single) markup has just one .book-page with no
     // left/right split; two-page (spread) markup -- the desktop pilot's
@@ -47,6 +47,20 @@
       // prevBtn stays enabled even at the first page — one more click closes
       // the book back to the cover (see closeBook() wiring in the page script).
       nextBtn.disabled = idx + step >= pages.length;
+      if (onRender) onRender(idx, pages.length);
+    }
+
+    // The green placeholder frame lays the two pages out with a gap
+    // between them (not a single continuous spread), so the flipping
+    // overlay's box has to be measured from the real right-hand page
+    // each time rather than assumed to be a fixed "right half" via CSS.
+    function syncTurnPageBox() {
+      if (single || !rightContainer) return;
+      turnPage.style.left = rightContainer.offsetLeft + 'px';
+      turnPage.style.top = rightContainer.offsetTop + 'px';
+      turnPage.style.right = 'auto';
+      turnPage.style.width = rightContainer.offsetWidth + 'px';
+      turnPage.style.height = rightContainer.offsetHeight + 'px';
     }
 
     function flip(dir) {
@@ -54,6 +68,7 @@
       if (nextIdx < 0 || nextIdx >= pages.length) return;
       var nextPair = pairAt(nextIdx);
       var showPage = single ? nextPair[0] : (dir > 0 ? nextPair[0] : nextPair[1]);
+      syncTurnPageBox();
       turnPage.innerHTML = pageHTML(showPage);
       turnPage.style.display = 'block';
       turnPage.style.transition = 'none';

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=4">
+<link rel="stylesheet" href="book-engine.css?v=5">
 <link rel="stylesheet" href="desktop-scene.css?v=9">
 <style>
   body { margin:0; background:#fdf8f0; }
@@ -67,21 +67,23 @@
 
       <div class="book-wrap" id="bookWrap" style="padding:0;display:none">
         <div class="book-frame binder">
-          <!-- Real open two-page spread again -- each page embeds an
-               actual Field Guide screen (see the pages array below and
-               .site-embed in book-engine.css) instead of the book's
-               own simplified type. Bound like a real 3-ring binder:
-               rings down the center seam, phase tabs down the right
-               outer edge. -->
+          <!-- Two 3/4-scale replicas of the live site's own widget
+               shape (see the pages array below and .site-embed in
+               book-engine.css), resting side by side on a plain dark
+               green frame -- a placeholder standing in for a proper
+               3-ring-binder object, which is its own project for
+               later. Page-turn controls reuse the site's own .pg-btn
+               look along the frame's bottom edge instead of a custom
+               book-styled arrow. -->
           <div class="book-spread">
             <div class="book-page left"></div>
             <div class="book-page right"></div>
             <div class="book-turn-page"></div>
-          </div>
-          <div class="binder-rings" aria-hidden="true">
-            <span class="binder-ring"></span>
-            <span class="binder-ring"></span>
-            <span class="binder-ring"></span>
+            <div class="binder-nav-row">
+              <button class="book-arrow prev" aria-label="Previous page"><svg viewBox="0 0 14 14"><polygon points="10,2 4,7 10,12"/></svg></button>
+              <span class="binder-page-indicator" id="binderPageIndicator"></span>
+              <button class="book-arrow next" aria-label="Next page"><svg viewBox="0 0 14 14"><polygon points="4,2 10,7 4,12"/></svg></button>
+            </div>
           </div>
           <!-- Phase dividers. Introduction and Dream jump to real
                pages; Believe/Dare/Journey are placeholders until those
@@ -94,11 +96,6 @@
             <button class="binder-tab" id="tabDare" data-phase="dare" disabled>Dare</button>
             <button class="binder-tab" id="tabJourney" data-phase="journey" disabled>Journey</button>
           </div>
-          <!-- Tucked under the book's own bottom corners so they travel
-               with it wherever it's dragged, and only exist while the
-               book is open. -->
-          <button class="book-arrow prev" aria-label="Previous page">‹</button>
-          <button class="book-arrow next" aria-label="Next page">›</button>
         </div>
       </div>
     </div>
@@ -146,7 +143,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
-<script src="book-engine.js?v=3"></script>
+<script src="book-engine.js?v=4"></script>
 <script src="desktop-scene.js?v=5"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
@@ -269,9 +266,37 @@
   var deskRoot = document.querySelector('.desktop-scene');
   var bookCover = document.getElementById('bookCover');
   var bookWrap = document.getElementById('bookWrap');
+
+  // Phase tabs and the page indicator both need to react on every
+  // render (a tab click, the nav arrows, goTo(0) on close -- anything
+  // that changes the current page), so this is wired as book-engine.js's
+  // onRender callback instead of guessed at with a timeout after the
+  // fact.
+  var binderTabs = Array.prototype.slice.call(document.querySelectorAll('.binder-tab'));
+  var pageIndicatorEl = document.getElementById('binderPageIndicator');
+  function onBookRender(idx, total) {
+    binderTabs.forEach(function (tab) {
+      var target = TAB_PAGE[tab.dataset.phase];
+      tab.classList.toggle('current', target !== undefined && target === idx);
+    });
+    if (pageIndicatorEl) {
+      var shown = Math.min(idx + 2, total);
+      pageIndicatorEl.textContent = (idx + 1) + (shown > idx + 1 ? '–' + shown : '') + ' of ' + total;
+    }
+  }
+
   // rootEl is the whole scene now, not just .book-wrap, so the page-nav
   // arrows (relocated next to the round buttons) can still be found and wired.
-  var bookApi = T2TBook.createBook(deskRoot, pages, []);
+  var bookApi = T2TBook.createBook(deskRoot, pages, [], onBookRender);
+  binderTabs.forEach(function (tab) {
+    tab.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+    tab.addEventListener('click', function () {
+      var target = TAB_PAGE[tab.dataset.phase];
+      if (target === undefined) return;
+      bookApi.goTo(target);
+    });
+  });
+
   function openBook() {
     bookCover.style.display = 'none';
     bookWrap.style.display = 'flex';
@@ -335,33 +360,6 @@
   // the book."
   document.querySelectorAll('.book-frame .book-arrow').forEach(function (btn) {
     btn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-  });
-
-  // Phase tabs: same drag-guard as the page arrows, plus jump-to-page
-  // and a "current" highlight that stays in sync with prev/next too.
-  var binderTabs = Array.prototype.slice.call(document.querySelectorAll('.binder-tab'));
-  function updateCurrentTab() {
-    var i = bookApi.getIndex();
-    binderTabs.forEach(function (tab) {
-      var target = TAB_PAGE[tab.dataset.phase];
-      tab.classList.toggle('current', target !== undefined && target === i);
-    });
-  }
-  binderTabs.forEach(function (tab) {
-    tab.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-    tab.addEventListener('click', function () {
-      var target = TAB_PAGE[tab.dataset.phase];
-      if (target === undefined) return;
-      bookApi.goTo(target);
-      updateCurrentTab();
-    });
-  });
-  updateCurrentTab();
-  // Keep the tab highlight in sync when paging manually with the
-  // corner arrows too, not just when clicking a tab directly. The
-  // flip animation in book-engine.js takes 520ms before idx updates.
-  document.querySelectorAll('.book-frame .book-arrow').forEach(function (btn) {
-    btn.addEventListener('click', function () { setTimeout(updateCurrentTab, 540); });
   });
 
   var notesPages = ['', '', ''];
