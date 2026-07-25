@@ -202,26 +202,29 @@
    plain type. Scoped under .site-embed rather than linking style.css
    page-wide -- style.css resets *{margin:0;padding:0;box-sizing:
    border-box} and sets its own body layout, which would leak into the
-   rest of the desk scene if loaded globally. zoom (not transform, so
-   it still participates in normal layout and sizing) shrinks the whole
-   real-widget block, type included, to fit the smaller binder page --
-   this is a first pass, expect to tune the exact factor live. */
+   rest of the desk scene if loaded globally. Positioned to fill the
+   whole page card edge to edge (inset:0) instead of zoom-shrinking and
+   floating centered with visible gaps above/below -- font sizes and
+   padding here are already hand-reduced from the live site's own
+   values instead of relying on a scale trick. */
 .site-embed {
-  zoom: 0.75;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   font-family: 'Playfair Display', Georgia, serif;
   text-align: center;
-  width: 100%;
 }
 .site-embed, .site-embed * { box-sizing: border-box; }
-.site-embed .cover { background: #0F6E56; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 30px; text-align: center; border-radius: 8px; }
+.site-embed .cover { flex: 1; background: #0F6E56; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px 30px; text-align: center; }
 .site-embed .t2t { font-size: 76px; font-weight: 700; color: #C9A87C; letter-spacing: 6px; line-height: 1; text-shadow: 3px 4px 0 #07402F; margin-bottom: 14px; }
 .site-embed .sub { font-size: 15px; color: #C9A87C; letter-spacing: 6px; text-transform: uppercase; margin-bottom: 18px; text-shadow: 2px 3px 0 #07402F; }
 .site-embed .rul { width: 100px; height: .5px; background: #5DCAA5; margin: 0 auto 22px; }
 .site-embed .sm { font-size: 10px; color: #9FE1CB; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 8px; }
 .site-embed .aut { font-size: 11px; color: #9FE1CB; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
 .site-embed .tag { font-size: 17px; font-style: italic; color: #C9A87C; }
-.site-embed .reader-wrap { display: flex; flex-direction: column; background: #fff; border-radius: 8px; }
-.site-embed .reader-body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 26px 28px; text-align: center; }
+.site-embed .reader-wrap { flex: 1; display: flex; flex-direction: column; background: #fff; }
+.site-embed .reader-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 26px 28px; text-align: center; }
 .site-embed .reader-eyebrow { font-size: 10px; letter-spacing: 4px; text-transform: uppercase; color: #888; margin-bottom: 16px; }
 .site-embed .reader-line { font-size: 19px; font-weight: 400; color: #111; line-height: 1.7; margin-bottom: 0; }
 .site-embed .reader-line.bold { font-weight: 700; }

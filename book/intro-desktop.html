@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=7">
+<link rel="stylesheet" href="book-engine.css?v=8">
 <link rel="stylesheet" href="desktop-scene.css?v=9">
 <style>
   body { margin:0; background:#fdf8f0; }
@@ -158,6 +158,9 @@
     return { html: '<div class="site-embed">' + inner + '</div><div class="book-folio">' + folio + '</div>' };
   }
 
+  // Decimal-numbered screens (0100.1, 0100.2, ...) are Trivia, not
+  // primary pages -- What is T2T and T2T Goals live there instead of
+  // in this whole-number primary sequence.
   var pages = [
     // 0100 Cover
     embed(
@@ -169,25 +172,6 @@
         '<div class="aut">By Larry Smithers &amp; Bill Fritsch</div>' +
         '<div class="tag">Every great journey starts with a single step.</div>' +
       '</div>', '1'),
-    // 0100.1 What is T2T?
-    embed(
-      '<div class="reader-wrap"><div class="reader-body">' +
-        '<div class="reader-eyebrow">T2T</div>' +
-        '<div class="reader-line bold" style="font-size:28px">What is T2T?</div>' +
-        '<div class="reader-spacer"></div>' +
-        '<div class="reader-line small">T2T — Thoughts to Things — is a system for transforming imagination into reality. Not a philosophy. Not something you have to believe in before it works. A system. It works the first time you try it.</div>' +
-      '</div></div>', '2'),
-    // 0100.2 T2T Goals
-    embed(
-      '<div class="reader-wrap"><div class="reader-body">' +
-        '<div class="reader-eyebrow">T2T</div>' +
-        '<div class="reader-line bold" style="font-size:28px">T2T Goals</div>' +
-        '<div class="reader-line italic small">May you find…</div>' +
-        '<div class="reader-spacer"></div>' +
-        '<div class="reader-line">🔹 A clear Vision of what you really want.</div>' +
-        '<div class="reader-line">🔹 The Pursuit of Excellence in everything you do.</div>' +
-        '<div class="reader-line">🔹 A Beautiful Journey for everyone involved.</div>' +
-      '</div></div>', '3'),
     // 0200 Invention
     embed(
       '<div class="reader-wrap"><div class="reader-body">' +
@@ -196,7 +180,7 @@
         '<div class="reader-line small">The light bulb… The airplane… The internet…<br>The vaccine… The symphony.</div>' +
         '<div class="reader-spacer"></div>' +
         '<div class="reader-line bold">Every single one — thought first.</div>' +
-      '</div></div>', '4'),
+      '</div></div>', '2'),
     // 0210 Thoughts 1
     embed(
       '<div class="reader-wrap"><div class="reader-body">' +
@@ -206,7 +190,7 @@
         '<div class="reader-line">We are constantly thinking.</div>' +
         '<div class="reader-spacer"></div>' +
         '<div class="reader-line">Thoughts occur both consciously<br>and subconsciously.</div>' +
-      '</div></div>', '5'),
+      '</div></div>', '3'),
     // 0211 Thoughts 2
     embed(
       '<div class="reader-wrap"><div class="reader-body">' +
@@ -216,7 +200,7 @@
         '<div class="reader-line small">of our total thoughts. Even at 5%, humans have more than</div>' +
         '<div class="reader-line bold" style="font-size:28px">60,000</div>' +
         '<div class="reader-line small">conscious thoughts per day.</div>' +
-      '</div></div>', '6'),
+      '</div></div>', '4'),
     // 0212 Thoughts 3
     embed(
       '<div class="reader-wrap"><div class="reader-body">' +
@@ -226,7 +210,7 @@
         '<div class="reader-line small">Scientists tell us that <strong>98 percent</strong> of those 60,000 thoughts are repeats from the day before. The other <strong>2%</strong> are new thoughts.</div>' +
         '<div class="reader-spacer"></div>' +
         '<div class="reader-line accent">🔹 Thoughts with imagination.</div>' +
-      '</div></div>', '7'),
+      '</div></div>', '5'),
     // 0300 Want
     embed(
       '<div class="reader-wrap"><div class="reader-body">' +
@@ -234,7 +218,7 @@
         '<div class="reader-spacer"></div>' +
         '<div class="reader-line italic small">🔹 “Most people don’t know what they want, but they’re pretty sure they haven’t got it.”</div>' +
         '<div class="reader-line small">— Alfred E. Neuman</div>' +
-      '</div></div>', '8'),
+      '</div></div>', '6'),
     // 0400 Know -- real buttons kept for the real look, not wired to
     // branch anywhere; the book reads straight through instead.
     embed(
@@ -246,7 +230,7 @@
           '<button style="padding:10px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;background:#EF9F27;color:#fff">Sort of</button>' +
           '<button style="padding:10px 18px;font-size:13px;font-weight:600;border-radius:8px;border:none;background:#0F6E56;color:#fff">Yes</button>' +
         '</div>' +
-      '</div></div>', '9'),
+      '</div></div>', '7'),
     // 0490 Dream Phase intro
     embed(
       '<div class="reader-wrap"><div class="reader-body">' +
@@ -254,14 +238,14 @@
         '<div class="reader-line bold" style="font-size:26px">Dream Phase</div>' +
         '<div class="reader-spacer"></div>' +
         '<div class="reader-line italic small">You are about to discover what you want — maybe for the first time.</div>' +
-      '</div></div>', '10')
+      '</div></div>', '8')
   ];
 
   // Which spread each built phase tab opens to (the left index of the
   // pair -- pairAt(i) shows pages[i] and pages[i+1] together). Believe/
   // Dare/Journey stay disabled in the markup until those phases have
   // real pages of their own.
-  var TAB_PAGE = { introduction: 0, dream: 8 };
+  var TAB_PAGE = { introduction: 0, dream: 6 };
 
   var deskRoot = document.querySelector('.desktop-scene');
   var bookCover = document.getElementById('bookCover');
