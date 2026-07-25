@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=12">
-<link rel="stylesheet" href="desktop-scene.css?v=11">
+<link rel="stylesheet" href="book-engine.css?v=13">
+<link rel="stylesheet" href="desktop-scene.css?v=12">
 <style>
   body { margin:0; background:#fdf8f0; }
   .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
@@ -76,12 +76,13 @@
                look along the frame's bottom edge instead of a custom
                book-styled arrow. -->
           <div class="book-spread">
-            <!-- Two thin gold hinge lines, 8in in from each edge of the
-                 binder, standing in for where a real ring-binder's
-                 covers would fold on either side of the spine
-                 mechanism -- purely decorative, doesn't affect layout. -->
-            <div class="binder-hinge left"></div>
-            <div class="binder-hinge right"></div>
+            <!-- Two thin gold hinge lines, standing in for where a real
+                 ring-binder's covers would fold on either side of the
+                 spine mechanism. Individually draggable like everything
+                 else in the binder -- 8in-from-edge is just their
+                 starting spot, not a fixed rule. -->
+            <div class="binder-hinge left" id="hingeLeft"></div>
+            <div class="binder-hinge right" id="hingeRight"></div>
             <div class="book-page left"></div>
             <div class="book-page right"></div>
             <div class="book-turn-page"></div>
@@ -104,12 +105,12 @@
           </div>
         </div>
 
-        <!-- Attached to the binder itself (a child of #bookWrap, not a
-             separate draggable desk object) so it's always mounted
-             right under the open binder and moves/centers with it. -->
+        <!-- Attached to the binder itself (children of #bookWrap, not a
+             separate desk object) -- start out mounted right under it,
+             but each button is individually draggable from there. -->
         <div class="desk-round-btns">
-          <div class="round-btn" data-tool="idea"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2c.6.4 1 1.1 1 1.8h4c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></div>
-          <div class="round-btn" data-tool="trivia"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="6.5" r="3"/><circle cx="16.76" cy="9.25" r="3"/><circle cx="16.76" cy="14.75" r="3"/><circle cx="12" cy="17.5" r="3"/><circle cx="7.24" cy="14.75" r="3"/><circle cx="7.24" cy="9.25" r="3"/></svg></div>
+          <div class="round-btn" id="roundBtnIdea" data-tool="idea"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2c.6.4 1 1.1 1 1.8h4c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></div>
+          <div class="round-btn" id="roundBtnTrivia" data-tool="trivia"><svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="6.5" r="3"/><circle cx="16.76" cy="9.25" r="3"/><circle cx="16.76" cy="14.75" r="3"/><circle cx="12" cy="17.5" r="3"/><circle cx="7.24" cy="14.75" r="3"/><circle cx="7.24" cy="9.25" r="3"/></svg></div>
         </div>
       </div>
     </div>
@@ -144,11 +145,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="book-auth.js"></script>
-<script src="book-engine.js?v=6"></script>
-<script src="desktop-scene.js?v=7"></script>
+<script src="book-engine.js?v=7"></script>
+<script src="desktop-scene.js?v=8"></script>
 <!-- TEMPORARY pilot-only dev tool -- safe to delete this line and
      refresh-light.js once the book-view pilot is done. -->
-<script src="refresh-light.js?v=4"></script>
+<script src="refresh-light.js?v=5"></script>
 <script>
   // Primary Field Guide pages only -- the site's own registered screen
   // numbers (see index.html's T.registerPageNum calls), embedded with
@@ -295,7 +296,14 @@
     // Arrow positions depend on real pixel measurements of the page
     // boxes, which only exist once the book is actually visible --
     // measuring while display:none was still set would zero everything.
-    requestAnimationFrame(function () { bookApi.syncNavArrows(); });
+    // Same reasoning applies to every draggable living inside the
+    // binder (tabs, hinge lines, round buttons): binderDragHandles is
+    // populated further down this same script, but by the time a user
+    // can actually click to open the book, that's long since run.
+    requestAnimationFrame(function () {
+      bookApi.syncNavArrows();
+      binderDragHandles.forEach(function (h) { if (h) h.reapply(); });
+    });
   }
   function closeBook() {
     bookWrap.style.display = 'none';
@@ -345,11 +353,27 @@
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-notebook'), 't2t-drag-notebook', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-topic-frame'), 't2t-drag-topicframe', deskRoot);
   T2TDesktopScene.makeDraggable(document.querySelector('.desk-tools'), 't2t-drag-tools', deskRoot);
-  // The binder itself is left out of the draggable set on purpose --
-  // it's large enough once open that moving it around the desk doesn't
-  // add anything, and the round buttons below it are meant to read as
-  // attached to it rather than as their own separately-moved object, so
-  // they're left un-draggable too and simply stay put beneath it.
+  T2TDesktopScene.makeDraggable(document.querySelector('.desk-book-slot'), 't2t-drag-bookslot', deskRoot);
+
+  // Everything living inside the binder itself is individually
+  // draggable too, per Larry's request -- each tab, each hinge line,
+  // each round button on its own, not as a fixed group -- so all of it
+  // can be hand-placed and then locked in (see the "Lock Layout" button
+  // below) instead of guessing coordinates from a text description.
+  // These all live inside #bookWrap, which starts display:none, so
+  // their saved/default spot can't be measured yet at this point in the
+  // page load -- openBook() (above) calls each handle's .reapply once
+  // the binder is actually visible, so the real position lands
+  // correctly the first time it's opened, not just the second.
+  var binderDragHandles = [];
+  binderDragHandles.push(T2TDesktopScene.makeDraggable(document.getElementById('hingeLeft'), 't2t-drag-hinge-left', deskRoot));
+  binderDragHandles.push(T2TDesktopScene.makeDraggable(document.getElementById('hingeRight'), 't2t-drag-hinge-right', deskRoot));
+  binderTabs.forEach(function (tab) {
+    binderDragHandles.push(T2TDesktopScene.makeDraggable(tab, 't2t-drag-tab-' + tab.dataset.phase, deskRoot));
+  });
+  binderDragHandles.push(T2TDesktopScene.makeDraggable(document.getElementById('roundBtnIdea'), 't2t-drag-roundbtn-idea', deskRoot));
+  binderDragHandles.push(T2TDesktopScene.makeDraggable(document.getElementById('roundBtnTrivia'), 't2t-drag-roundbtn-trivia', deskRoot));
+
   // Draw a selection box over empty desk space to select several objects
   // at once; dragging any one of them afterward moves the whole group.
   T2TDesktopScene.enableLasso(deskRoot);

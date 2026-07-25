@@ -140,8 +140,21 @@
   bottom: 0;
   width: 2px;
   background: var(--book-border);
-  pointer-events: none;
-  z-index: 1;
+  /* Was pointer-events:none as a purely decorative line; now grabbable
+     so it can be dragged into place like everything else. Sitting
+     behind the pages (see z-index below) means it's only actually
+     clickable where it peeks out from behind them, in the gap/margin --
+     which matches the real object: you can't grab a binder hinge
+     through the paper sitting on top of it either. */
+  cursor: grab;
+  /* .book-page is itself position:relative with no z-index of its own,
+     which puts it in the z-index:auto layer -- a POSITIVE z-index here
+     (as this used to be) paints on top of that layer, i.e. in front of
+     the pages. A negative one paints after .book-spread's own
+     background (so still in front of the green binder shell) but
+     before that auto layer, landing the line where it belongs: behind
+     the pages, in front of the binder. */
+  z-index: -1;
 }
 
 .binder-hinge.left { left: 8in; }

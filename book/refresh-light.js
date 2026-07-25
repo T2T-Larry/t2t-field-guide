@@ -18,7 +18,7 @@
 (function () {
   var REPO = 'T2T-Larry/t2t-field-guide';
   var BRANCH = 'book-view-project';
-  var WATCH_FILES = ['book/desktop-scene.js', 'book/desktop-scene.css', 'book/book-engine.css', 'book/book-engine.js', 'book/intro-desktop.html'];
+  var WATCH_FILES = ['book/desktop-scene.js', 'book/desktop-scene.css', 'book/book-engine.css', 'book/book-engine.js', 'book/intro-desktop.html', 'book/refresh-light.js'];
   var POLL_MS = 90000;
 
   var light = document.createElement('div');
@@ -33,6 +33,43 @@
 
   light.addEventListener('click', function () {
     location.href = location.pathname + '?r=' + Date.now();
+  });
+
+  // Second half of the drag-everything-into-place workflow: once
+  // Larry's dragged the binder and everything in it to where he wants,
+  // clicking this copies down exactly what's saved in THIS browser's
+  // localStorage for every draggable object, formatted as a ready-to-
+  // paste DEFAULT_POSITIONS block -- so those spots become the new
+  // baseline for everyone instead of staying a one-browser-only
+  // override. Sits right next to the sync light since both are the
+  // same kind of temporary pilot tooling.
+  var lockBtn = document.createElement('button');
+  lockBtn.type = 'button';
+  lockBtn.textContent = 'Lock Layout';
+  lockBtn.style.cssText = [
+    'position:fixed', 'left:34px', 'bottom:9px', 'padding:4px 10px',
+    'font:11px \'Playfair Display\', Georgia, serif', 'border-radius:12px',
+    'border:1px solid rgba(0,0,0,.3)', 'background:#fff', 'color:#333',
+    'cursor:pointer', 'z-index:99999', 'box-shadow:0 0 4px rgba(0,0,0,.25)'
+  ].join(';');
+  lockBtn.title = 'Copy every dragged object\'s current position, ready to paste into DEFAULT_POSITIONS.';
+  document.body.appendChild(lockBtn);
+
+  lockBtn.addEventListener('click', function () {
+    var sceneEl = document.querySelector('.desktop-scene');
+    var code = sceneEl && window.T2TDesktopScene
+      ? window.T2TDesktopScene.exportPositions(sceneEl)
+      : '';
+    var done = function (ok) {
+      lockBtn.textContent = ok ? 'Copied!' : 'Copy failed -- see console';
+      if (!ok) console.log(code);
+      setTimeout(function () { lockBtn.textContent = 'Lock Layout'; }, 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(function () { done(true); }, function () { done(false); });
+    } else {
+      done(false);
+    }
   });
 
   async function gitBlobSha1(text) {

@@ -9,8 +9,13 @@
   var DEFAULT_POSITIONS = {
     't2t-drag-nameplate':  { left: 15.7846, top: 15.2483 },
     't2t-drag-notebook':   { left: 1140.97, top: 294.153 },
+    't2t-drag-bookslot':   { left: 583.126, top: 130.38 },
     't2t-drag-topicframe': { left: 562.123, top: 16.2062 },
     't2t-drag-tools':      { left: 52.3269, top: 197.582 }
+    // No defaults yet for the binder's own internal pieces (hinges,
+    // tabs, round buttons) -- those are brand new to dragging, so they
+    // simply start at whatever spot their normal CSS already puts them
+    // until Larry places them and this list gets updated to match.
   };
 
   function wireToolButtons(rootEl, onPress) {
@@ -80,48 +85,51 @@
     return null;
   }
 
-  /* Picks an element up out of normal document flow and pins it to its
-     current on-screen size before switching to position:absolute --
-     otherwise an element sized by its layout (e.g. a grid cell's
-     width:100%) silently resizes to fill the whole scene the moment it
-     goes absolute, which then traps it against one edge. */
-  function ensureAbsolute(el, sceneEl) {
-    if (el.style.position === 'absolute') return;
-    var sceneRect = sceneEl.getBoundingClientRect();
-    var r = el.getBoundingClientRect();
-    el.style.width = r.width + 'px';
-    el.style.height = r.height + 'px';
-    el.style.position = 'absolute';
-    el.style.left = (r.left - sceneRect.left) + 'px';
-    el.style.top = (r.top - sceneRect.top) + 'px';
-    el.style.margin = '0';
-    el.style.zIndex = '10';
+  /* Whatever CSS will actually use as an element's containing block
+     once it's switched to position:absolute -- its nearest positioned
+     ancestor -- rather than always assuming the whole scene. Most
+     draggables (nameplate, notebook, tools...) sit directly in the
+     scene today so this resolves to sceneEl for them either way, but
+     objects nested inside another positioned piece (a binder tab
+     living inside the tab strip, a hinge line living inside the page
+     spread) need their OWN nearby ancestor, or they render at the
+     wrong spot the moment they go absolute. */
+  function containerFor(el, sceneEl) {
+    return el.offsetParent || sceneEl;
   }
 
-  /* Same idea as ensureAbsolute, but for a whole group at once. Reads
-     every element's position FIRST, then writes them all -- doing this
-     one element at a time (read, write, read, write...) lets the first
-     write's reflow (e.g. a header row shrinking once one item leaves
-     the grid) quietly shift where the *next* element in the group
-     measures itself, so the group drifts apart instead of moving as
-     one. Reading everything up front before writing anything avoids
-     that. */
+  /* Same idea, but for a whole group at once. Reads every element's
+     position FIRST, then writes them all -- doing this one element at
+     a time (read, write, read, write...) lets the first write's reflow
+     (e.g. a header row shrinking once one item leaves the grid)
+     quietly shift where the *next* element in the group measures
+     itself, so the group drifts apart instead of moving as one.
+     Reading everything up front before writing anything avoids that.
+     Position is captured in on-screen (viewport) terms and only
+     converted to each element's own local container space at the very
+     end, since getBoundingClientRect() is meaningful regardless of
+     what's still in normal flow vs already absolute, while raw
+     left/top values are only meaningful relative to one specific
+     container. */
   function ensureAllAbsolute(els, sceneEl) {
     var pending = els.filter(function (el) { return el.style.position !== 'absolute'; });
     if (!pending.length) return;
-    var sceneRect = sceneEl.getBoundingClientRect();
     var snapshots = pending.map(function (el) {
+      var container = containerFor(el, sceneEl);
+      var containerRect = container.getBoundingClientRect();
       var r = el.getBoundingClientRect();
       return {
         el: el,
         width: r.width, height: r.height,
-        left: r.left - sceneRect.left, top: r.top - sceneRect.top
+        left: r.left - containerRect.left, top: r.top - containerRect.top
       };
     });
     snapshots.forEach(function (s) {
       s.el.style.width = s.width + 'px';
       s.el.style.height = s.height + 'px';
       s.el.style.position = 'absolute';
+      s.el.style.right = 'auto';
+      s.el.style.bottom = 'auto';
       s.el.style.left = s.left + 'px';
       s.el.style.top = s.top + 'px';
       s.el.style.margin = '0';
@@ -148,6 +156,9 @@
     var startX, startY;
     var frames = [];
 
+    // storageKey's saved (or default) left/top are always in the space
+    // of whatever containerFor(el) resolves to -- see endDrag, which is
+    // the only place that ever writes them.
     function applySavedPosition() {
       var saved;
       try { saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); }
@@ -158,6 +169,8 @@
         el.style.width = r.width + 'px';
         el.style.height = r.height + 'px';
         el.style.position = 'absolute';
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
         el.style.left = saved.left + 'px';
         el.style.top = saved.top + 'px';
         el.style.margin = '0';
@@ -206,6 +219,17 @@
     // Move/up listen on the document, not the element itself, so a fast
     // or imprecise drag gesture (trackpad, etc.) keeps tracking the
     // pointer even once the cursor has outrun the object being dragged.
+    //
+    // All the delta/clamp math below works in on-screen (viewport)
+    // terms, exactly like the pointerdown capture above -- getBoundingClientRect()
+    // stays meaningful whether an element is still in normal flow or
+    // already absolute, so there's no need to re-derive anything from
+    // inline styles partway through a drag. Freedom of movement is
+    // clamped against the WHOLE desk (sceneRect), not each element's own
+    // small local container, so a tab or hinge line can still be picked
+    // up and carried anywhere on the desk -- only the final write to
+    // style.left/top gets converted into that element's own local
+    // container space, since that's the only place it actually matters.
     document.addEventListener('pointermove', function (e) {
       if (!dragging) return;
       var dx = e.clientX - startX;
@@ -213,10 +237,6 @@
       if (!moved && Math.hypot(dx, dy) > 5) {
         moved = true;
         ensureAllAbsolute(frames.map(function (f) { return f.el; }), sceneEl);
-        frames.forEach(function (f) {
-          f.startLeft = parseFloat(f.el.style.left) || f.startLeft;
-          f.startTop = parseFloat(f.el.style.top) || f.startTop;
-        });
       }
       if (moved) {
         var sceneRect = sceneEl.getBoundingClientRect();
@@ -224,10 +244,11 @@
           var r = f.el.getBoundingClientRect();
           var maxLeft = Math.max(sceneRect.width - r.width, 0);
           var maxTop = Math.max(sceneRect.height - r.height, 0);
-          var newLeft = Math.min(Math.max(f.startLeft + dx, 0), maxLeft);
-          var newTop = Math.min(Math.max(f.startTop + dy, 0), maxTop);
-          f.el.style.left = newLeft + 'px';
-          f.el.style.top = newTop + 'px';
+          var newLeftScene = Math.min(Math.max(f.startLeft + dx, 0), maxLeft);
+          var newTopScene = Math.min(Math.max(f.startTop + dy, 0), maxTop);
+          var containerRect = containerFor(f.el, sceneEl).getBoundingClientRect();
+          f.el.style.left = (newLeftScene + sceneRect.left - containerRect.left) + 'px';
+          f.el.style.top = (newTopScene + sceneRect.top - containerRect.top) + 'px';
         });
       }
     });
@@ -253,6 +274,13 @@
 
     document.addEventListener('pointerup', endDrag);
     document.addEventListener('pointercancel', endDrag);
+
+    // Exposed so a binder-internal draggable (a tab, a hinge line, a
+    // round button) can be re-positioned once the binder actually
+    // becomes visible -- it lives inside #bookWrap, which starts
+    // display:none, so applySavedPosition()'s own measurements are all
+    // zero the first time this runs at page load.
+    return { reapply: applySavedPosition };
   }
 
   /* Draw a selection box over empty desk space (a "lasso") to select
@@ -345,6 +373,30 @@
     });
   }
 
+  /* TEMPORARY pilot-only helper -- reads back whatever's actually saved
+     for every registered draggable (in this browser's own localStorage)
+     and formats it as a ready-to-paste DEFAULT_POSITIONS block. This is
+     the "lock it in" half of the drag-everything-into-place workflow:
+     once Larry likes where things sit, this is how those exact spots
+     turn into the new baseline for everyone, instead of guessing
+     numbers from a description. Items never actually dragged (still
+     sitting at their plain CSS position) are left out, since there's
+     nothing meaningful saved for them yet. Safe to delete alongside
+     refresh-light.js once the pilot is done. */
+  function exportPositions(sceneEl) {
+    var state = dragState(sceneEl);
+    var lines = [];
+    state.items.forEach(function (item) {
+      var raw = localStorage.getItem(item.storageKey);
+      if (!raw) return;
+      var pos;
+      try { pos = JSON.parse(raw); } catch (e) { return; }
+      if (!pos) return;
+      lines.push("    '" + item.storageKey + "': { left: " + pos.left.toFixed(4) + ", top: " + pos.top.toFixed(4) + " }");
+    });
+    return "var DEFAULT_POSITIONS = {\n" + lines.join(',\n') + "\n};";
+  }
+
   window.T2TDesktopScene = {
     wireToolButtons: wireToolButtons,
     wireNotebook: wireNotebook,
@@ -353,6 +405,7 @@
     setMapPosition: setMapPosition,
     makeDraggable: makeDraggable,
     enableLasso: enableLasso,
-    reserveRowHeights: reserveRowHeights
+    reserveRowHeights: reserveRowHeights,
+    exportPositions: exportPositions
   };
 })();
