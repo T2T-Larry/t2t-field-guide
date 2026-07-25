@@ -176,7 +176,9 @@
   margin-bottom: 3px;
   border: none;
   border-radius: 0 6px 6px 0;
-  background: var(--book-page-bg);
+  /* Same cream/gold parchment as the Field Guide topic-frame at the
+     top of the screen -- plain white read wrong against the page. */
+  background: linear-gradient(180deg, #fffdf6, #f3e8cc);
   color: #000;
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 10px;

@@ -87,6 +87,18 @@
     return null;
   }
 
+  // undefined means "not a registered draggable at all" (caller should
+  // fall back to a sane default); null is a real, deliberate answer --
+  // "this element manages its own z-index in CSS, never touch it" --
+  // see the hinge lines, which have to stay behind the pages always,
+  // not just pop above the desk background whenever they're absolute.
+  function zIndexFor(state, el) {
+    for (var i = 0; i < state.items.length; i++) {
+      if (state.items[i].el === el) return state.items[i].zIndex;
+    }
+    return undefined;
+  }
+
   /* Whatever CSS will actually use as an element's containing block
      once it's switched to position:absolute -- its nearest positioned
      ancestor -- rather than always assuming the whole scene. Most
@@ -112,7 +124,14 @@
      end, since getBoundingClientRect() is meaningful regardless of
      what's still in normal flow vs already absolute, while raw
      left/top values are only meaningful relative to one specific
-     container. */
+     container.
+
+     Doesn't touch z-index -- that's each element's own registered
+     preference (see zIndexFor), applied by the caller once this
+     returns, since a shared helper acting on a mixed group has no way
+     to know which of them, if any, need to keep a deliberate CSS
+     z-index (like a hinge line staying behind the pages) instead of
+     just popping to the top the moment they're absolute. */
   function ensureAllAbsolute(els, sceneEl) {
     var pending = els.filter(function (el) { return el.style.position !== 'absolute'; });
     if (!pending.length) return;
@@ -135,7 +154,6 @@
       s.el.style.left = s.left + 'px';
       s.el.style.top = s.top + 'px';
       s.el.style.margin = '0';
-      s.el.style.zIndex = '10';
     });
   }
 
@@ -149,10 +167,18 @@
      If the object being picked up is part of a multi-object selection
      (made by lassoing), the whole selected group moves together,
      keeping each object's position relative to the others. */
-  function makeDraggable(el, storageKey, sceneEl) {
+  // opts.zIndex overrides the elevated z-index normally applied once an
+  // element goes absolute (default '10', matching prior behavior).
+  // Pass null for an element that manages its own stacking in CSS and
+  // must never get one stomped in over it -- the hinge lines are the
+  // reason this exists: they need to stay behind the pages always, and
+  // an inline z-index:10 applied the instant they're dragged/positioned
+  // silently overrides their CSS z-index:-1 regardless of specificity.
+  function makeDraggable(el, storageKey, sceneEl, opts) {
     if (!el || !sceneEl) return;
+    var zIndexValue = (opts && 'zIndex' in opts) ? opts.zIndex : '10';
     var state = dragState(sceneEl);
-    state.items.push({ el: el, storageKey: storageKey });
+    state.items.push({ el: el, storageKey: storageKey, zIndex: zIndexValue });
 
     var dragging = false, moved = false;
     var startX, startY;
@@ -190,7 +216,7 @@
       el.style.left = saved.left + 'px';
       el.style.top = saved.top + 'px';
       el.style.margin = '0';
-      el.style.zIndex = '10';
+      if (zIndexValue !== null) el.style.zIndex = zIndexValue;
     }
     applySavedPosition();
 
@@ -252,6 +278,10 @@
       if (!moved && Math.hypot(dx, dy) > 5) {
         moved = true;
         ensureAllAbsolute(frames.map(function (f) { return f.el; }), sceneEl);
+        frames.forEach(function (f) {
+          var z = zIndexFor(state, f.el);
+          if (z !== null) f.el.style.zIndex = (z === undefined ? '10' : z);
+        });
       }
       if (moved) {
         var sceneRect = sceneEl.getBoundingClientRect();
@@ -388,30 +418,6 @@
     });
   }
 
-  /* TEMPORARY pilot-only helper -- reads back whatever's actually saved
-     for every registered draggable (in this browser's own localStorage)
-     and formats it as a ready-to-paste DEFAULT_POSITIONS block. This is
-     the "lock it in" half of the drag-everything-into-place workflow:
-     once Larry likes where things sit, this is how those exact spots
-     turn into the new baseline for everyone, instead of guessing
-     numbers from a description. Items never actually dragged (still
-     sitting at their plain CSS position) are left out, since there's
-     nothing meaningful saved for them yet. Safe to delete alongside
-     refresh-light.js once the pilot is done. */
-  function exportPositions(sceneEl) {
-    var state = dragState(sceneEl);
-    var lines = [];
-    state.items.forEach(function (item) {
-      var raw = localStorage.getItem(item.storageKey);
-      if (!raw) return;
-      var pos;
-      try { pos = JSON.parse(raw); } catch (e) { return; }
-      if (!pos) return;
-      lines.push("    '" + item.storageKey + "': { left: " + pos.left.toFixed(4) + ", top: " + pos.top.toFixed(4) + " }");
-    });
-    return "var DEFAULT_POSITIONS = {\n" + lines.join(',\n') + "\n};";
-  }
-
   window.T2TDesktopScene = {
     wireToolButtons: wireToolButtons,
     wireNotebook: wireNotebook,
@@ -420,7 +426,6 @@
     setMapPosition: setMapPosition,
     makeDraggable: makeDraggable,
     enableLasso: enableLasso,
-    reserveRowHeights: reserveRowHeights,
-    exportPositions: exportPositions
+    reserveRowHeights: reserveRowHeights
   };
 })();
