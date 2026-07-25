@@ -89,6 +89,28 @@
       nextBtn.style.transform = 'translateX(-50%)';
     }
 
+    // Puts the phase-tab rail's own top/height so it exactly spans the
+    // right-hand page's real top-to-bottom extent, instead of guessing
+    // at a percentage/pixel offset from the frame -- percentages for an
+    // absolutely positioned top/bottom are resolved against the
+    // containing block's HEIGHT, while the page's own padding-driven
+    // inset is resolved against its WIDTH, so the two were never
+    // actually comparable numbers to begin with. rightContainer's
+    // offsetParent is .book-spread, which itself sits flush at (0,0)
+    // inside .book-frame (.binder-tabs' own offsetParent) with no
+    // margin or padding between them, so rightContainer's offsetTop/
+    // offsetHeight are already valid numbers for .binder-tabs too.
+    // Same visibility caveat as syncNavArrows -- only accurate once the
+    // book is actually shown.
+    function syncTabRail() {
+      if (single || !rightContainer) return;
+      var tabs = rootEl.querySelector('.binder-tabs');
+      if (!tabs) return;
+      tabs.style.top = rightContainer.offsetTop + 'px';
+      tabs.style.bottom = 'auto';
+      tabs.style.height = rightContainer.offsetHeight + 'px';
+    }
+
     function flip(dir) {
       var nextIdx = idx + dir * step;
       if (nextIdx < 0 || nextIdx >= pages.length) return;
@@ -117,7 +139,8 @@
     return {
       goTo: function (i) { idx = i; render(); },
       getIndex: function () { return idx; },
-      syncNavArrows: syncNavArrows
+      syncNavArrows: syncNavArrows,
+      syncTabRail: syncTabRail
     };
   }
 

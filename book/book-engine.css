@@ -169,11 +169,22 @@
   z-index: 4;
   display: flex;
   flex-direction: column;
+  /* Tabs are a fixed compact size now (not flex:1 stretched), so this
+     is what pins the first one to the top of the rail, the last one to
+     the bottom, and spreads any leftover room out as gaps between them
+     instead of inflating every tab to fill the whole rail. Actual
+     top/height get set precisely in JS (see syncTabRail in
+     book-engine.js) to match the real page edges once the book is
+     open; the values above are just the pre-JS fallback. */
+  justify-content: space-between;
 }
 
 .binder-tab {
-  flex: 1;
-  margin-bottom: 3px;
+  /* Fixed-ish compact height (won't grow past 80px when there's extra
+     room -- that's what justify-content:space-between on the rail is
+     for) but CAN shrink if a shorter page doesn't have room for four
+     tabs at full size, instead of just overflowing past the bottom. */
+  flex: 0 1 80px;
   border: none;
   border-radius: 0 6px 6px 0;
   /* Same cream/gold parchment as the Field Guide topic-frame at the
@@ -195,7 +206,6 @@
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
-.binder-tab:last-child { margin-bottom: 0; }
 
 .binder-tab:hover { transform: translateX(2px); }
 
