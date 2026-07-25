@@ -68,9 +68,11 @@
       var results = await Promise.all(WATCH_FILES.map(fileIsFresh));
       if (results.some(function (r) { return r === null; })) return;
       var allFresh = results.every(Boolean);
-      // Blend into the page background instead of glowing green -- the
-      // point is that it disappears once there's nothing to wait for.
-      var bg = getComputedStyle(document.body).backgroundColor;
+      // Blend into whatever is actually painted behind the light --
+      // that's the desk scene's own background, not the plain page
+      // body, since the desk covers the full viewport underneath it.
+      var bgEl = document.querySelector('.desktop-scene') || document.body;
+      var bg = getComputedStyle(bgEl).backgroundColor;
       light.style.background = allFresh ? bg : '#999';
       light.title = allFresh
         ? 'The preview is caught up to the latest change. Click to refresh.'
