@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme-steampunk.css">
-<link rel="stylesheet" href="book-engine.css?v=13">
-<link rel="stylesheet" href="desktop-scene.css?v=12">
+<link rel="stylesheet" href="book-engine.css?v=14">
+<link rel="stylesheet" href="desktop-scene.css?v=13">
 <style>
   body { margin:0; background:#fdf8f0; }
   .notes-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:50; }
@@ -97,7 +97,6 @@
                just don't go anywhere yet, rather than looking
                disabled, until those phases have real pages. -->
           <div class="binder-tabs">
-            <button class="binder-tab" id="tabIntroduction" data-phase="introduction">Introduction</button>
             <button class="binder-tab" id="tabDream" data-phase="dream">Dream</button>
             <button class="binder-tab" id="tabBelieve" data-phase="believe">Believe</button>
             <button class="binder-tab" id="tabDare" data-phase="dare">Dare</button>
@@ -256,10 +255,12 @@
   ];
 
   // Which spread each built phase tab opens to (the left index of the
-  // pair -- pairAt(i) shows pages[i] and pages[i+1] together). Believe/
-  // Dare/Journey stay disabled in the markup until those phases have
-  // real pages of their own.
-  var TAB_PAGE = { introduction: 0, dream: 8 };
+  // pair -- pairAt(i) shows pages[i] and pages[i+1] together). No
+  // Introduction tab -- opening the binder already lands on the cover
+  // by default, so a tab for it was redundant. Believe/Dare/Journey
+  // stay disabled in the markup until those phases have real pages of
+  // their own.
+  var TAB_PAGE = { dream: 8 };
 
   var deskRoot = document.querySelector('.desktop-scene');
   var bookCover = document.getElementById('bookCover');

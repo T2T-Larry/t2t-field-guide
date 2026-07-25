@@ -273,12 +273,12 @@
 }
 
 .round-btn {
-  width: 42px;
-  height: 42px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, var(--brass-face-in), var(--brass-face-mid) 55%, var(--brass-face-out) 100%);
-  border: 3px solid var(--brass-ring);
-  box-shadow: 0 0 0 2px var(--brass-ring-outer), inset 0 0 5px rgba(0,0,0,.35);
+  border: 2px solid var(--brass-ring);
+  box-shadow: 0 0 0 2px var(--brass-ring-outer), inset 0 0 4px rgba(0,0,0,.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -286,8 +286,8 @@
 }
 
 .round-btn .icon-svg {
-  width: 18px;
-  height: 18px;
+  width: 13px;
+  height: 13px;
   color: #1a1208;
 }
 

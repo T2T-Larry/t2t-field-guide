@@ -139,7 +139,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--book-border);
+  background: var(--hinge-brown);
   /* Was pointer-events:none as a purely decorative line; now grabbable
      so it can be dragged into place like everything else. Sitting
      behind the pages (see z-index below) means it's only actually
@@ -164,7 +164,7 @@
   position: absolute;
   right: 0.5in;
   top: 0;
-  bottom: 20%;
+  bottom: 68px;
   width: 34px;
   z-index: 4;
   display: flex;
@@ -176,7 +176,7 @@
   margin-bottom: 3px;
   border: none;
   border-radius: 0 6px 6px 0;
-  background: #C9A87C;
+  background: var(--book-page-bg);
   color: #000;
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 10px;
@@ -193,21 +193,12 @@
   transition: transform .15s ease, box-shadow .15s ease;
 }
 
-/* Same gold as the T2T cover text (#C9A87C), stepping one shade darker
-   per tab going down the stack -- Introduction lightest, Journey
-   darkest -- instead of five identical brass tabs. */
-.binder-tab:nth-child(1) { background: #C9A87C; }
-.binder-tab:nth-child(2) { background: #B99B72; }
-.binder-tab:nth-child(3) { background: #AA8E69; }
-.binder-tab:nth-child(4) { background: #9D8361; }
-.binder-tab:nth-child(5) { background: #907859; }
-
 .binder-tab:last-child { margin-bottom: 0; }
 
 .binder-tab:hover { transform: translateX(2px); }
 
 .binder-tab.current {
-  box-shadow: 2px 2px 5px rgba(0,0,0,.25), inset 0 0 0 2px rgba(255,255,255,.55);
+  box-shadow: 2px 2px 5px rgba(0,0,0,.25), inset 0 0 0 2px var(--book-border);
 }
 
 .binder-tab:disabled {
