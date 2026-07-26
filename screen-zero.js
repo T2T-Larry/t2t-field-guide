@@ -58,19 +58,31 @@
   function injectStyle(){
     if (document.getElementById('sz-style')) return;
     var css = ''
-      + '#sz-navbar{position:fixed;width:' + RAIL_WIDTH + 'px;max-height:calc(100vh - 32px);'
+      + '#sz-navbar{position:fixed;top:0;bottom:0;width:' + RAIL_WIDTH + 'px;'
       +   CARD_LOOK + ';z-index:9998;'
       +   'display:flex;flex-direction:column;align-items:center;'
       +   'padding:16px 10px 14px;box-sizing:border-box;font-family:"Playfair Display",Georgia,serif;'
-      +   'transition:width .18s ease, padding .18s ease}'
-      + '#sz-navbar.sz-collapsed{width:' + RAIL_COLLAPSED_W + 'px;padding:12px 4px}'
-      + '#sz-navbar.sz-collapsed #sz-nameplate,#sz-navbar.sz-collapsed #sz-navmid{display:none}'
+      +   'transition:width .18s ease, padding .18s ease, background .18s ease, box-shadow .18s ease}'
+      // Collapsed hides the whole tray -- background, border, shadow, and
+      // every child (nameplate/tools/gear) -- leaving only the toggle nub
+      // sitting right on the screen edge. Larry, July 26: "why not just
+      // have the toggle visible on the edge of the screen?"
+      + '#sz-navbar.sz-collapsed{width:0;padding:0;border:none;box-shadow:none;background:transparent}'
+      + '#sz-navbar.sz-collapsed #sz-nameplate,#sz-navbar.sz-collapsed #sz-navmid,'
+      +   '#sz-navbar.sz-collapsed #sz-gear{display:none}'
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'right:-18px;width:18px;height:40px;'
       +   'border-radius:0 20px 20px 0;border:2px solid #999;border-left:none;'
       +   'background:#fdf8f0;cursor:pointer;'
       +   'box-shadow:2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
+      // Docked to the right side: the tray anchors from the right instead
+      // of the left, and the toggle mirrors onto the rail's LEFT edge so
+      // it still pokes into open screen space, not off past the browser
+      // edge. Larry, July 26: "if it is placed on the right side of the
+      // screen, the toggle must switch to the left side."
+      + '#sz-navbar.sz-dock-right #sz-navbar-toggle{right:auto;left:-18px;'
+      +   'border-radius:20px 0 0 20px;border-left:2px solid #999;border-right:none}'
       + '#sz-nameplate{width:100%;display:flex;flex-direction:column;align-items:stretch;'
       +   'background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);'
       +   'border:1px solid #6b4a2c;border-radius:6px;overflow:hidden;cursor:grab;'
@@ -230,7 +242,7 @@
      shrink to a thin strip and give the current screen more room,
      per Larry's "opens and closes for more screen space." ---------- */
 
-  function buildToggle(bar){
+  function buildToggle(bar, onChange){
     var t = document.createElement('button');
     t.id = 'sz-navbar-toggle';
     t.type = 'button';
@@ -240,6 +252,7 @@
       var collapsed = bar.classList.toggle('sz-collapsed');
       t.textContent = collapsed ? '›' : '‹'; // › vs ‹
       try { localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0'); } catch(e){}
+      if (onChange) onChange();
     });
     return t;
   }
@@ -333,6 +346,109 @@
     '.mg-btn, .mg-ret, .spark-door, .ib, .jb, .gb, .tb, .more-link, ' +
     '.tool-row, .save-btn, .jsave-btn, .gsave-btn';
 
+  var DOCK_KEY = 't2t-navbar-dock';
+  var NOTEBOOK_KEY = 't2t-notebook-pos';
+
+  function notebookIsClaimed(){
+    try { return !!localStorage.getItem(NOTEBOOK_KEY); } catch(e){ return false; }
+  }
+
+  /* ---------- The rail (tray): full height top-to-bottom by default,
+     drags horizontally only (Larry's own words: "drag from right to
+     left or back"), and always ends up flush against one edge or the
+     other on release -- a real dock, not a threshold you have to hit
+     exactly. The notebook rides along with the tray (unless a traveler
+     has manually dragged it off the tray to its own spot). ---------- */
+
+  function dockRail(bar, notebook){
+    var dockSide = 'left';
+    try { dockSide = localStorage.getItem(DOCK_KEY) || 'left'; } catch(e){}
+
+    var dragging = false, moved = false, startX = 0, startLeft = 0;
+
+    function currentWidth(){ return bar.classList.contains('sz-collapsed') ? 0 : RAIL_WIDTH; }
+
+    function railLeftFor(side, width){
+      return side === 'right' ? (window.innerWidth - width) : 0;
+    }
+
+    function repositionNotebook(railLeft){
+      if (!notebook || notebookIsClaimed()) return;
+      notebook.style.position = 'fixed';
+      notebook.style.left = (railLeft + 12) + 'px';
+      notebook.style.top = (window.innerHeight - 132) + 'px';
+      notebook.style.right = 'auto';
+      notebook.style.bottom = 'auto';
+      notebook.style.margin = '0';
+    }
+
+    function apply(side, left){
+      bar.style.position = 'fixed';
+      bar.style.top = '0';
+      bar.style.bottom = '0';
+      bar.style.left = left + 'px';
+      bar.style.right = 'auto';
+      bar.classList.toggle('sz-dock-right', side === 'right');
+      repositionNotebook(left);
+    }
+
+    function applyDock(side){
+      dockSide = side;
+      try { localStorage.setItem(DOCK_KEY, side); } catch(e){}
+      apply(side, railLeftFor(side, currentWidth()));
+    }
+
+    // Initial placement, and re-applied whenever the collapsed width
+    // changes (buildToggle calls this directly -- see below).
+    apply(dockSide, railLeftFor(dockSide, currentWidth()));
+
+    function pointOf(e){ return e.touches ? e.touches[0] : e; }
+
+    function onDown(e){
+      if (NAVBAR_EXCLUDE && e.target.closest(NAVBAR_EXCLUDE)) return;
+      if (bar.classList.contains('sz-collapsed')) return; // nothing to grab while collapsed
+      var p = pointOf(e);
+      dragging = true; moved = false;
+      startLeft = bar.getBoundingClientRect().left;
+      startX = p.clientX;
+      document.body.style.userSelect = 'none';
+    }
+
+    function onMove(e){
+      if (!dragging) return;
+      var p = pointOf(e);
+      var dx = p.clientX - startX;
+      if (Math.abs(dx) > 3) moved = true;
+      if (!moved) return;
+      if (e.cancelable) e.preventDefault();
+      var left = startLeft + dx;
+      bar.style.left = left + 'px';
+      bar.style.right = 'auto';
+      repositionNotebook(left); // the tray carries the notebook as it slides
+    }
+
+    function onUp(){
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.userSelect = '';
+      if (!moved) return;
+      var rect = bar.getBoundingClientRect();
+      // Always stick to whichever side is nearer -- a real magnetic dock,
+      // not "only if you happen to release within N px of the edge."
+      var center = rect.left + rect.width / 2;
+      applyDock(center < window.innerWidth / 2 ? 'left' : 'right');
+    }
+
+    bar.addEventListener('mousedown', onDown);
+    bar.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+
+    return { applyDock: applyDock, getSide: function(){ return dockSide; } };
+  }
+
   function buildNavBar(){
     if (document.getElementById('sz-navbar')) return; // idempotent
     injectStyle();
@@ -347,32 +463,35 @@
     bar.appendChild(buildNameplate());
     bar.appendChild(mid);
     bar.appendChild(buildGear());
-    bar.appendChild(buildToggle(bar));
+
+    var notebook = buildNotebook();
+
+    var toggle = buildToggle(bar, function(){
+      // Collapsing/expanding changes the tray's width, which changes
+      // where a right-docked tray's left edge needs to sit -- and the
+      // notebook riding on it needs to follow either way.
+      rail.applyDock(rail.getSide());
+    });
+    bar.appendChild(toggle);
 
     try {
       if (localStorage.getItem(COLLAPSE_KEY) === '1') {
         bar.classList.add('sz-collapsed');
-        var toggleBtn = bar.querySelector('#sz-navbar-toggle');
-        if (toggleBtn) toggleBtn.textContent = '›';
+        toggle.textContent = '›';
       }
     } catch(e){}
 
     document.body.appendChild(bar);
-
-    // Rail free-drags left-to-right (and back) instead of pinning to
-    // the left edge; default position starts it where it always was.
-    makeDraggable(bar, 't2t-navbar-pos', NAVBAR_EXCLUDE, 16, 16, { snapEdges: true, snapThreshold: 48 });
-
-    // Notebook is its own object now -- detached from the rail's markup,
-    // but its DEFAULT spot (before a traveler ever drags it) still reads as
-    // "on the nav bar, near the bottom," right by the gear, same place it
-    // always was. Dragging elsewhere is a traveler option, not the default.
-    var notebook = buildNotebook();
     document.body.appendChild(notebook);
-    var railRect = bar.getBoundingClientRect();
-    var nbDefaultLeft = railRect.left + 12;
-    var nbDefaultTop = railRect.bottom - 132;
-    makeDraggable(notebook, 't2t-notebook-pos', null, nbDefaultLeft, nbDefaultTop);
+
+    var rail = dockRail(bar, notebook);
+
+    // Notebook's default spot (before a traveler ever drags it) is
+    // computed by dockRail/repositionNotebook above -- "on the nav bar,
+    // near the bottom," same place it always visually sat. Dragging it
+    // elsewhere is a traveler option: once moved, it keeps its own
+    // saved spot and stops riding the tray.
+    makeDraggable(notebook, NOTEBOOK_KEY, null, notebook.style.left ? parseFloat(notebook.style.left) : 16, notebook.style.top ? parseFloat(notebook.style.top) : 16);
   }
 
   /* ---------- Dragging the widget (#fg-root) -- unchanged mechanics,
