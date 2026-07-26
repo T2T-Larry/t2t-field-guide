@@ -68,7 +68,10 @@
       // sitting right on the screen edge. Larry, July 26: "why not just
       // have the toggle visible on the edge of the screen?"
       + '#sz-navbar.sz-collapsed{width:0;padding:0;border:none;box-shadow:none;background:transparent}'
-      + '#sz-navbar.sz-collapsed #sz-nameplate,#sz-navbar.sz-collapsed #sz-navmid,'
+      // Larry, July 26 (later note): the nameplate moved OUT of the
+      // drawer entirely -- it's a persistent label, not drawer content,
+      // so it no longer hides with the drawer's collapse state at all.
+      + '#sz-navbar.sz-collapsed #sz-navmid,'
       +   '#sz-navbar.sz-collapsed #sz-menu,#sz-navbar.sz-collapsed #sz-gear{display:none}'
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'right:-18px;width:18px;height:40px;'
@@ -83,10 +86,15 @@
       // screen, the toggle must switch to the left side."
       + '#sz-navbar.sz-dock-right #sz-navbar-toggle{right:auto;left:-18px;'
       +   'border-radius:20px 0 0 20px;border-left:2px solid #999;border-right:none}'
-      + '#sz-nameplate{width:100%;display:flex;flex-direction:column;align-items:stretch;'
+      // Was `width:100%` while it lived inside the 200px rail -- now
+      // that it's `position:fixed` and free-standing, 100% would
+      // stretch it across the whole viewport, so it needs a real width
+      // of its own instead.
+      + '#sz-nameplate{width:180px;display:flex;flex-direction:column;align-items:stretch;'
       +   'background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);'
       +   'border:1px solid #6b4a2c;border-radius:6px;overflow:hidden;cursor:grab;'
-      +   'box-shadow:2px 4px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5)}'
+      +   'box-shadow:2px 4px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5);'
+      +   'z-index:9999}'
       + '#sz-nameplate-header{color:#4a3418;font-size:9px;font-weight:700;letter-spacing:1.5px;'
       +   'text-transform:uppercase;text-align:center;padding:5px 8px 0;'
       +   'text-shadow:1px 1px 0 rgba(255,240,200,.5)}'
@@ -205,7 +213,16 @@
   /* ---------- The nametag: ported from the binder pilot, filled in
      with the real signed-in member's name once backpack.js's profile
      load finishes (same data it already uses for the Journal cover's
-     own name display). Also doubles as the rail's drag handle. ---- */
+     own name display).
+
+     Larry, July 26 (later note): "the nametag does not go into a
+     drawer -- it's like a custom label on every screen." Moved out of
+     the rail entirely -- its own free-floating draggable object on
+     0000, same mechanics as the notebook (position remembered,
+     independent of the drawer's collapse/dock state from here on).
+     Default spot matches where it always visually sat (top-left,
+     where the rail's own padding used to place it) so nothing looks
+     like it jumped on its own the first time anyone sees this. ---- */
 
   function buildNameplate(){
     var wrap = document.createElement('div');
@@ -556,6 +573,7 @@
 
   var DOCK_KEY = 't2t-navbar-dock';
   var NOTEBOOK_KEY = 't2t-notebook-pos';
+  var NAMEPLATE_KEY = 't2t-nameplate-pos';
 
   function notebookIsClaimed(){
     try { return !!localStorage.getItem(NOTEBOOK_KEY); } catch(e){ return false; }
@@ -718,11 +736,11 @@
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
 
-    bar.appendChild(buildNameplate());
     bar.appendChild(mid);
     bar.appendChild(buildMenuButton());
     bar.appendChild(buildGear());
 
+    var nameplate = buildNameplate();
     var notebook = buildNotebook();
 
     var toggle = document.createElement('button');
@@ -740,6 +758,7 @@
     } catch(e){}
 
     document.body.appendChild(bar);
+    document.body.appendChild(nameplate);
     document.body.appendChild(notebook);
 
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'LEFT_DRAWER_MODE', COLLAPSE_KEY, { open: '‹', closed: '›' }, function(){
@@ -786,6 +805,19 @@
           updateNotebookVisibility(bar, notebook);
         }
       }
+    );
+
+    // Nameplate: free-standing now, drag purely optional -- "make it
+    // drag if desired." No reattachTo/onReattach here at all, unlike
+    // the notebook -- Larry was clear this isn't drawer content, so
+    // there's no drawer state for it to ride with or return to.
+    // Default spot (10, 16) matches the rail's own top-left padding,
+    // where the nameplate always visually sat while it lived inside
+    // the bar.
+    makeDraggable(
+      nameplate, NAMEPLATE_KEY, null,
+      nameplate.style.left ? parseFloat(nameplate.style.left) : 10,
+      nameplate.style.top ? parseFloat(nameplate.style.top) : 16
     );
   }
 
