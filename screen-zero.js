@@ -65,9 +65,11 @@
       +   'transition:width .18s ease, padding .18s ease}'
       + '#sz-navbar.sz-collapsed{width:' + RAIL_COLLAPSED_W + 'px;padding:12px 4px}'
       + '#sz-navbar.sz-collapsed #sz-nameplate,#sz-navbar.sz-collapsed #sz-navmid{display:none}'
-      + '#sz-navbar-toggle{position:absolute;top:8px;right:-14px;width:28px;height:28px;'
-      +   'border-radius:50%;border:2px solid #999;background:#fff;cursor:pointer;'
-      +   'box-shadow:0 3px 8px rgba(0,0,0,.25);font-size:13px;line-height:1;'
+      + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
+      +   'right:-18px;width:18px;height:40px;'
+      +   'border-radius:0 20px 20px 0;border:2px solid #999;border-left:none;'
+      +   'background:#fdf8f0;cursor:pointer;'
+      +   'box-shadow:2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
       + '#sz-nameplate{width:100%;display:flex;flex-direction:column;align-items:stretch;'
       +   'background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);'
@@ -249,7 +251,7 @@
      (e.g. notebook opening the Journal, or clicking a tool button
      inside the rail). ---------- */
 
-  function makeDraggable(el, storeKey, excludeSelector, defaultLeft, defaultTop){
+  function makeDraggable(el, storeKey, excludeSelector, defaultLeft, defaultTop, opts){
     var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
     function applyPos(left, top){
@@ -299,6 +301,20 @@
       document.body.style.userSelect = '';
       if (!moved) return;
       var rect = el.getBoundingClientRect();
+
+      // "Stick to the side when close to it" -- snap flush against
+      // whichever screen edge the rail was dragged near, same idea as
+      // a window magnetizing to the edge of a desktop.
+      if (opts && opts.snapEdges) {
+        var threshold = opts.snapThreshold || 48;
+        if (rect.left <= threshold) {
+          applyPos(0, rect.top);
+        } else if (window.innerWidth - rect.right <= threshold) {
+          applyPos(window.innerWidth - rect.width, rect.top);
+        }
+        rect = el.getBoundingClientRect();
+      }
+
       try { localStorage.setItem(storeKey, JSON.stringify({ left: rect.left, top: rect.top })); }
       catch(e){}
     }
@@ -345,7 +361,7 @@
 
     // Rail free-drags left-to-right (and back) instead of pinning to
     // the left edge; default position starts it where it always was.
-    makeDraggable(bar, 't2t-navbar-pos', NAVBAR_EXCLUDE, 16, 16);
+    makeDraggable(bar, 't2t-navbar-pos', NAVBAR_EXCLUDE, 16, 16, { snapEdges: true, snapThreshold: 48 });
 
     // Notebook is its own object now -- detached from the rail's markup,
     // but its DEFAULT spot (before a traveler ever drags it) still reads as
