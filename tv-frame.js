@@ -92,10 +92,14 @@
     var idea = knob('idea', '💡', 'Ideas');
     var trivia = knob('trivia', '🌸', 'Trivia');
 
+    // Larry, July 26: "the next arrow should be on the far right" --
+    // Prev anchors the left end, Next anchors the right end, Idea/Trivia
+    // sit in the middle, like a remote's channel controls bookending the
+    // row instead of being bunched together.
     controls.appendChild(prev);
-    controls.appendChild(next);
     controls.appendChild(idea);
     controls.appendChild(trivia);
+    controls.appendChild(next);
     frame.appendChild(controls);
 
     return frame;

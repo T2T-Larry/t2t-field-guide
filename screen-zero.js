@@ -449,6 +449,17 @@
     return { applyDock: applyDock, getSide: function(){ return dockSide; } };
   }
 
+  // Larry, July 26: "the notebook slides into the wall with everything
+  // else on the bar" -- when the drawer closes, anything still resting
+  // on it (i.e. the notebook, as long as it hasn't been dragged off to
+  // its own spot) goes into the wall too, same as the nameplate/tools/
+  // gear. A notebook a traveler has claimed for its own spot elsewhere
+  // on the desk is unaffected either way.
+  function updateNotebookVisibility(bar, notebook){
+    var hideWithDrawer = bar.classList.contains('sz-collapsed') && !notebookIsClaimed();
+    notebook.style.display = hideWithDrawer ? 'none' : '';
+  }
+
   function buildNavBar(){
     if (document.getElementById('sz-navbar')) return; // idempotent
     injectStyle();
@@ -471,6 +482,7 @@
       // where a right-docked tray's left edge needs to sit -- and the
       // notebook riding on it needs to follow either way.
       rail.applyDock(rail.getSide());
+      updateNotebookVisibility(bar, notebook);
     });
     bar.appendChild(toggle);
 
@@ -485,6 +497,7 @@
     document.body.appendChild(notebook);
 
     var rail = dockRail(bar, notebook);
+    updateNotebookVisibility(bar, notebook);
 
     // Notebook's default spot (before a traveler ever drags it) is
     // computed by dockRail/repositionNotebook above -- "on the nav bar,
