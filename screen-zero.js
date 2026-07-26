@@ -69,7 +69,7 @@
       // have the toggle visible on the edge of the screen?"
       + '#sz-navbar.sz-collapsed{width:0;padding:0;border:none;box-shadow:none;background:transparent}'
       + '#sz-navbar.sz-collapsed #sz-nameplate,#sz-navbar.sz-collapsed #sz-navmid,'
-      +   '#sz-navbar.sz-collapsed #sz-gear{display:none}'
+      +   '#sz-navbar.sz-collapsed #sz-menu,#sz-navbar.sz-collapsed #sz-gear{display:none}'
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'right:-18px;width:18px;height:40px;'
       +   'border-radius:0 20px 20px 0;border:2px solid #999;border-left:none;'
@@ -118,6 +118,10 @@
       +   'background:#fff;font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
       +   'display:flex;align-items:center;justify-content:center;margin-top:6px}'
+      + '#sz-menu{width:36px;height:36px;border-radius:50%;border:2px solid #999;'
+      +   'background:#fff;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;'
+      +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
+      +   'display:flex;align-items:center;justify-content:center;margin-top:10px}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -246,6 +250,27 @@
       showZeroToast('Custom options — coming later.');
     });
     return gear;
+  }
+
+  /* ---------- The MAP (☰) button -- Larry, July 26: a safety measure
+     for retiring every screen's own bottom toolbar (see style.css --
+     .bar2/.bar3 hidden entirely now, not just the paging arrows).
+     Those toolbars each carried their own "☰" button opening the Field
+     Guide backpack (Map/Idea/Journal/Search/Tools) -- goMG(), the same
+     shared function on every one of them. One of these on the drawer
+     covers that for every screen at once, so hiding all the per-screen
+     ones loses nothing. ---------- */
+
+  function buildMenuButton(){
+    var m = document.createElement('button');
+    m.id = 'sz-menu';
+    m.type = 'button';
+    m.title = 'Menu (Map / Idea / Journal / Search / Tools)';
+    m.textContent = '☰';
+    m.addEventListener('click', function(){
+      if (window.T2T) window.T2T.goMG();
+    });
+    return m;
   }
 
   /* ---------- Collapse / expand toggle for the rail, so it can
@@ -525,6 +550,7 @@
 
     bar.appendChild(buildNameplate());
     bar.appendChild(mid);
+    bar.appendChild(buildMenuButton());
     bar.appendChild(buildGear());
 
     var notebook = buildNotebook();

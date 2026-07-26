@@ -39,9 +39,21 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
    every screen's own paging arrows, so the in-screen arrows are
    redundant and hidden -- but still real, clickable-by-script elements
    (tv-frame.js proxies to them), so nothing underneath had to change.
-   The MAP button (id ending -mg) stays visible: nothing on the desktop
-   replaces it yet. */
+   The MAP button (id ending -mg) stayed visible at first, since
+   nothing on the desktop replaced it -- until the nav drawer got its
+   own MAP button (see screen-zero.js), which finally covered that too.
+
+   Later same-day follow-up: with both jobs now covered by the frame
+   and the drawer, the whole bottom toolbar (.bar2 / .bar3, whichever
+   a screen uses) is hidden entirely -- not just the individual
+   buttons -- which also drops the screen's height back down to the
+   card's own standard 520px (the toolbar was the only thing adding
+   height beyond that). The buttons themselves, and their real wiring,
+   are untouched underneath: tv-frame.js's proxy-click still finds and
+   clicks them the exact same way, since a hidden ancestor doesn't stop
+   a script-triggered click from working. */
 .pg-btn,.tb[id$="-back"],.tb[id$="-next"],.tb[id$="-fwd"]{display:none!important}
+.bar2,.bar3{display:none!important}
 .mg-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.52);z-index:100;align-items:center;justify-content:center;border-radius:12px}
 .mg-overlay.active{display:flex}
 .mg-modal{width:300px;max-width:90%;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3)}
