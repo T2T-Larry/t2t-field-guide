@@ -525,7 +525,17 @@
         // Choose a Key (9395) -- same situation as 9390 above.
         var bbKeyPickerOv=document.getElementById('bb-keypicker-overlay');
         var bbKeyPickerOpen = !!(bbKeyPickerOv && bbKeyPickerOv.classList.contains('active'));
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : (_pageNums[cur] || '—')))))))));
+        // Screen 0000 (the plain gray backdrop) and 0020 (the nav bar
+        // that rides on top of it) both live OUTSIDE the widget
+        // (#fg-root), so neither one has a `cur` screen id to look up in
+        // _pageNums. Larry, July 26 2026: triple-tapping the backdrop
+        // itself should read 0000; triple-tapping the nav bar (its own
+        // background, not its gear button -- that's already excluded
+        // above like any other button) should read 0020.
+        var onNavBar = !!e.target.closest('#sz-navbar');
+        var outsideWidget = !e.target.closest('#fg-root');
+        var outsideNum = onNavBar ? '0020' : (outsideWidget ? '0000' : (_pageNums[cur] || '—'));
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : outsideNum))))))));
         showPageToast(num);
       }
     });

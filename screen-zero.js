@@ -1,32 +1,39 @@
 /* ============================================================
    screen-zero.js — Screen 0000 (the gray backdrop behind every
-   screen) and the widget it holds.
+   screen), the nav bar that rides on top of it (0020), and the
+   widget the nav bar and 0000 both sit behind.
 
-   Larry's numbering, July 26 2026: 0000 is the gray page itself,
-   always underneath everything else; 0010 (sign-in) and 0100
-   (Cover) and every screen after them are cards that sit on top
-   of it inside #fg-root ("the widget"). This file owns two
-   things that belong to 0000, not to any individual screen:
+   Larry's numbering, July 26 2026: 0000 is the plain gray page
+   itself, always underneath everything else. 0020 is the nav
+   bar — a persistent strip that lives outside the widget, same
+   as 0000, and doesn't change no matter which screen (0010
+   sign-in, 0100 Cover, etc.) is currently showing inside the
+   widget. The gear button that used to float directly on 0000
+   now lives inside the 0020 nav bar instead (Larry, July 26:
+   "gear is always on the nav bar and not on 0000").
 
-   1) A gear button fixed in 0000's own lower-right corner (not
-      inside the widget, so it stays put no matter which screen
-      is showing on top). For now it's a placeholder — tapping it
-      just says custom options are coming later. No real settings
-      live behind it yet.
+   This file owns:
+   1) The 0020 nav bar itself, and the placeholder gear button
+      inside it (tapping it just says custom options are coming
+      later — nothing real behind it yet).
+   2) Making the widget (#fg-root) draggable, so a traveler can
+      grab it (anywhere except its own buttons/links/inputs) and
+      move it around on the gray backdrop. Position is
+      remembered per-browser (localStorage).
 
-   2) Making the widget itself (#fg-root) draggable, so a
-      traveler can grab it (anywhere except its buttons/links/
-      inputs) and move it around on the gray backdrop. Position
-      is remembered per-browser (localStorage) so it stays where
-      it was left after a reload — same "sticks around" behavior
-      as the desk objects in the book-view-project prototype.
+   The actual "which number does triple-tap reveal" logic lives
+   in backpack.js's Hidden Mickey handler (the one shared
+   triple-click system for the whole app — see that file). This
+   file only has to make sure #fg-root and #sz-navbar exist with
+   those exact ids so backpack.js can tell 0000 / 0020 / whatever
+   screen is showing apart.
 
    Loaded on every phase file, same as backpack.js/tmap.js.
    ============================================================ */
 
 (function(){
 
-  /* ---------- 1) Screen 0000's gear button ---------- */
+  /* ---------- 1) The 0020 nav bar + its gear button ---------- */
 
   function showZeroToast(msg){
     var existing = document.getElementById('sz-toast');
@@ -35,7 +42,7 @@
     toast.id = 'sz-toast';
     toast.textContent = msg;
     toast.style.cssText = [
-      'position:fixed','bottom:84px','right:20px',
+      'position:fixed','bottom:64px','right:20px',
       'background:rgba(10,74,56,0.92)','color:#C9A87C',
       'font-family:Playfair Display,Georgia,serif','font-size:13px','font-weight:700',
       'letter-spacing:1px','padding:10px 18px','border-radius:20px',
@@ -53,28 +60,36 @@
     });
   }
 
-  function buildGearButton(){
-    if (document.getElementById('sz-gear')) return; // idempotent
-    var btn = document.createElement('button');
-    btn.id = 'sz-gear';
-    btn.type = 'button';
-    btn.title = 'Custom options (coming later)';
-    btn.textContent = '⚙️'; // ⚙️
-    btn.style.cssText = [
-      'position:fixed','right:16px','bottom:16px',
-      'width:44px','height:44px','border-radius:50%',
-      'border:2px solid rgba(0,0,0,0.15)',
-      'background:rgba(255,255,255,0.85)',
-      'font-size:20px','line-height:1','cursor:pointer',
-      'box-shadow:0 2px 10px rgba(0,0,0,0.2)',
-      'z-index:9998','display:flex','align-items:center','justify-content:center'
+  function buildNavBar(){
+    if (document.getElementById('sz-navbar')) return; // idempotent
+
+    var bar = document.createElement('div');
+    bar.id = 'sz-navbar';
+    bar.style.cssText = [
+      'position:fixed','left:0','right:0','bottom:0','height:48px',
+      'background:rgba(255,255,255,0.9)','border-top:1px solid rgba(0,0,0,0.12)',
+      'box-shadow:0 -2px 10px rgba(0,0,0,0.12)',
+      'display:flex','align-items:center','justify-content:flex-end',
+      'padding:0 14px','z-index:9998','box-sizing:border-box'
     ].join(';');
-    btn.addEventListener('mouseenter', function(){ btn.style.background='rgba(255,255,255,1)'; });
-    btn.addEventListener('mouseleave', function(){ btn.style.background='rgba(255,255,255,0.85)'; });
-    btn.addEventListener('click', function(){
+
+    var gear = document.createElement('button');
+    gear.id = 'sz-gear';
+    gear.type = 'button';
+    gear.title = 'Custom options (coming later)';
+    gear.textContent = '⚙️';
+    gear.style.cssText = [
+      'width:36px','height:36px','border-radius:50%',
+      'border:2px solid rgba(0,0,0,0.15)','background:#fff',
+      'font-size:18px','line-height:1','cursor:pointer',
+      'display:flex','align-items:center','justify-content:center'
+    ].join(';');
+    gear.addEventListener('click', function(){
       showZeroToast('Custom options — coming later.');
     });
-    document.body.appendChild(btn);
+
+    bar.appendChild(gear);
+    document.body.appendChild(bar);
   }
 
   /* ---------- 2) Dragging the widget (#fg-root) ---------- */
@@ -150,7 +165,7 @@
   }
 
   function init(){
-    buildGearButton();
+    buildNavBar();
     makeWidgetDraggable();
   }
 
