@@ -1,0 +1,39 @@
+--- nav rail ---
+yet): a VALUES feature will extract meaning across a traveler's collected Gems — don't design the notebook in a way that precludes this later **Left nav rail** - Top to bottom: nametag, compass, tools list, notes - Collapsible, to hand screen space back to the current topic - Traveler can move it from t
+
+--- nav-rail ---
+table (email, name, initials) already serves as the project's team/recipient roster. No separate table was built for this. ## Desktop concept — TV / nav-rail model (replaces earlier book/binder concept, Session 144) Superseded: the two-page book and later the tabbed binder desk object. Desk scene, namepla
+
+--- fg-root ---
+ally, not just at the top level). New is never a stored row — nothing to create or go missing. - **Real full-screen, not just a wider container.** `#fg-root` breaks out of the normal 680×520 Field Guide card frame entirely (`position:fixed;inset:0`) while this screen is open — genuinely fills the traveler
+
+--- fg-root ---
+REATE built the detail card correctly but it was invisible, trapped inside a hidden ancestor. Fixed by moving the overlay to live at the app-shell (`#fg-root`) level instead, so it renders from any screen. **General lesson — check this pattern anywhere else an overlay/popup is nested inside a single ****`.
+
+--- nametag ---
+xtract meaning across a traveler's collected Gems — don't design the notebook in a way that precludes this later **Left nav rail** - Top to bottom: nametag, compass, tools list, notes - Collapsible, to hand screen space back to the current topic - Traveler can move it from the left side to the right si
+
+--- draggable ---
+e collapse to a \"+N more here\" chip until tapped open. Tapping any node jumps the ladder straight there. - **Board behaviors:** cards are manually draggable (session-only position cache, same precedent as CLUSTER's own starburst — not persisted server-side yet). Double-click empty board space opens an 8-c
+
+--- draggable ---
+apture pop-ups (9211 Idea · 9212 Image · 9213 Link · 9214 Rules)** float over the live board rather than navigating to a separate screen, and are all draggable so a traveler can slide one aside to see what's already on the board underneath. Image (9212) folds Paste/Upload, Unsplash, and Generate into one pan
+
+--- draggable ---
+ordering.** Purpose, the Ideas bucket, and MISC used to be excluded from drag entirely and weren't part of the position-tracking array even when made draggable. Now unified into one unordered-until-dragged row with ordinary content headers: anything without a real `sort_order` yet falls back to a priority ti
+
+--- draggable ---
+ - **9711 SESSION — freeform pile canvas, redesigned July 18, 2026.** 9711 is a focused/freeform sibling of 9710: headers (and MISC/Trash) render as draggable, lassoable piles on a canvas at their own persisted position (`canvas_x`/`canvas_y` on `ideas`, shared by loose ideas too), instead of a fixed header
+
+--- draggable ---
+ visible slivers plus a \"+N\" badge, inert. Single click OPENS it — the same real cards scatter loosely around the pile, fully interactive/lassoable/draggable; click again to gather them back into the cascade. A 250ms hold disambiguates the open/close click from double-click, which keeps its unrelated exist
+
+--- draggable ---
+ Larry, not a gap to fill: double-clicking that header to make it the current TOPIC promotes its former children to ordinary top-level board content, draggable via the exact same code path as any other card. The restriction only ever applies to content viewed nested from outside, never once you've stepped in
+
+--- draggable ---
+-select is still wired only to `#isx-canvas` — it won't currently pick up ring-layer headers in the same drag. Each ring header is still individually draggable on its own.n- Confirm-skip preferences (`isxSkipTrashConfirm`, `isxSkipResetConfirm`) are stored in browser `localStorage` for now, not Supabase — a 
+
+--- floating ---
+itional:** only appears when the card is a bucket — a named header, an unnamed stack, or a nested subheader-level stack, at any fractal depth. A lone floating card never shows CLUSTER (absent, not grayed out). - **CLUSTER screen layout — two populations, two visual grammars:** \t- **Center** — the bucket'
+

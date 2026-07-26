@@ -1,0 +1,28 @@
+roster. No separate table was built for this.
+## Desktop concept — TV / nav-rail model (replaces earlier book/binder concept, Session 144)
+Superseded: the two-page book and later the tabbed binder desk object. Desk scene, nameplate, notebook, and Tools panel remain; only the centerpiece object changes.
+**TV and channels**
+- A TV screen sits where the book/binder used to be, framed by the old binder-style double border as its bezel
+- The TV shows INPUT content — the walkthrough/story screens (What is T2T, Goals, Invention, Thoughts, Want, Know, Dream phase intro, etc.) — as changeable channels
+- Channel-change controls replace page-turn arrows and replace the need for a separate MAP screen
+**Inputs vs outputs**
+- INPUTS = walkthrough content, shown on the TV
+- OUTPUTS = the tools that already exist live on the site (Storyboard, Briefing Board, Idea Board, Planning, Organization) — these already split naturally into creative and analytical, no new grouping needed
+- Outputs take over the entire screen when opened, exactly as they do today
+- Trivia is a document that lies temporarily on the desk surface, not a TV channel
+- Backpack screen is retired — its contents now live directly on the desktop
+**Notebook (Notes)**
+- One consistent icon everywhere, so it's always recognizable
+- Feels like a notebook; opens to pages; printable at any time
+- Every FG screen and every Trivia doc supports highlight-to-copy directly into the notebook
+- Gems can be marked at review time inside the notebook, not only at the moment of entry — a Gem is a value judgment by the traveler, not just a captured note
+- Future (not building yet): a VALUES feature will extract meaning across a traveler's collected Gems — don't design the notebook in a way that precludes this later
+**Left nav rail**
+- Top to bottom: nametag, compass, tools list, notes
+- Collapsible, to hand screen space back to the current topic
+- Traveler can move it from the left side to the right side (low-effort — same position-memory pattern already used for desk objects)
+- Trivia and Ideas buttons live outside the rail, always available on the FG view; Trivia lights up only when the current page has content attached
+- Compass is likely a new icon treatment for the existing \"return to Field Guide\" round button (previously MAP) — not yet confirmed
+**Customization philosophy**
+- Within limits, travelers can change colors, change font, copy text out, save to their computer, print, and move things around on screen
+- Extends the existing \"look (t

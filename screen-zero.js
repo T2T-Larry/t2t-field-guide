@@ -90,9 +90,9 @@
       +   'color:#4a3418;font-family:"Playfair Display",Georgia,serif;white-space:nowrap;'
       +   'background:radial-gradient(circle at 35% 30%,#f3d98a,#c9973a 55%,#8a6420 100%)}'
       + '#sz-notebook{position:fixed;width:70px;height:98px;background:#3d2817;'
-      +   'border:2px solid #241608;border-radius:14px;'
+      +   'border:2px solid #241608;border-radius:4px;'
       +   'box-shadow:0 4px 24px rgba(0,0,0,.35);cursor:grab;'
-      +   'transform:rotate(-4deg);z-index:9997}'
+      +   'transform:rotate(-4deg);z-index:9999}'
       + '#sz-notebook-label{position:absolute;left:50%;top:26%;transform:translateX(-50%);'
       +   'border:1px solid #C9A87C;padding:4px 8px;border-radius:2px}'
       + '#sz-notebook-label span{font-size:10px;color:#C9A87C;letter-spacing:1px;white-space:nowrap}'
@@ -347,12 +347,16 @@
     // the left edge; default position starts it where it always was.
     makeDraggable(bar, 't2t-navbar-pos', NAVBAR_EXCLUDE, 16, 16);
 
-    // Notebook is its own object now -- append straight to 0000, not
-    // nested inside the rail, and give it a default spot clear of the
-    // rail and the widget (top-right corner).
+    // Notebook is its own object now -- detached from the rail's markup,
+    // but its DEFAULT spot (before a traveler ever drags it) still reads as
+    // "on the nav bar, near the bottom," right by the gear, same place it
+    // always was. Dragging elsewhere is a traveler option, not the default.
     var notebook = buildNotebook();
     document.body.appendChild(notebook);
-    makeDraggable(notebook, 't2t-notebook-pos', null, Math.max(16, window.innerWidth - 110), 24);
+    var railRect = bar.getBoundingClientRect();
+    var nbDefaultLeft = railRect.left + 12;
+    var nbDefaultTop = railRect.bottom - 132;
+    makeDraggable(notebook, 't2t-notebook-pos', null, nbDefaultLeft, nbDefaultTop);
   }
 
   /* ---------- Dragging the widget (#fg-root) -- unchanged mechanics,
