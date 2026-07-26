@@ -531,6 +531,14 @@
     // saved spot and stops riding the tray -- unless it's dragged back
     // onto the drawer itself, which re-claims it for the drawer (see
     // reattachTo/onReattach below).
+    //
+    // Larry, July 26 (bug fix): re-attaching must NOT jump the
+    // notebook to the drawer's canned "near the gear" spot -- it stays
+    // exactly wherever it was released, anywhere on screen. All
+    // re-attaching does is drop the claim and update hide-with-drawer
+    // visibility; the notebook only starts tracking the drawer's own
+    // position again the next time the drawer itself is dragged or
+    // docked (dockRail's repositionNotebook, unchanged).
     makeDraggable(
       notebook, NOTEBOOK_KEY, null,
       notebook.style.left ? parseFloat(notebook.style.left) : 16,
@@ -538,7 +546,6 @@
       {
         reattachTo: bar,
         onReattach: function(){
-          rail.applyDock(rail.getSide());
           updateNotebookVisibility(bar, notebook);
         }
       }
