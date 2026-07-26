@@ -105,7 +105,11 @@
       +   'background:radial-gradient(circle at 35% 30%,#f3d98a,#c9973a 55%,#8a6420 100%)}'
       + '#sz-notebook{position:fixed;width:70px;height:98px;background:#3d2817;'
       +   'border:2px solid #241608;border-radius:4px;'
-      +   'box-shadow:0 4px 24px rgba(0,0,0,.35);cursor:grab;'
+      // Larry, July 26: notebook needed more "splash" -- reads as
+      // properly floating above the desk/drawer, not just another flat
+      // card. A layered shadow (tight+dark close in, soft+wide further
+      // out) instead of the single flat shadow every other object uses.
+      +   'box-shadow:0 3px 8px rgba(0,0,0,.4), 0 18px 40px rgba(0,0,0,.4);cursor:grab;'
       +   'transform:rotate(-4deg);z-index:9999}'
       + '#sz-notebook-label{position:absolute;left:50%;top:26%;transform:translateX(-50%);'
       +   'border:1px solid #C9A87C;padding:4px 8px;border-radius:2px}'
@@ -397,11 +401,34 @@
       return side === 'right' ? (window.innerWidth - width) : 0;
     }
 
+    // Larry, July 26 (bug fix, round 2): the notebook was snapping back
+    // to a hardcoded "near the gear" spot every time the drawer opened,
+    // closed, dragged, or docked -- not just on the initial re-attach
+    // drop. Reposition now tracks a *relative offset* from the rail's
+    // left edge instead of a fixed formula: wherever the notebook was
+    // last resting (its default spot, or wherever it was dropped when
+    // re-attached) becomes the offset it keeps from then on, so the
+    // drawer moving only carries it sideways by the same amount the
+    // drawer itself moved -- it never jumps back to one canned spot.
+    // Vertical position is never touched here at all.
+    var notebookOffsetX = 12; // default: matches the original resting spot
+
+    function captureNotebookOffset(){
+      if (!notebook) return;
+      var railRect = bar.getBoundingClientRect();
+      var nbRect = notebook.getBoundingClientRect();
+      notebookOffsetX = nbRect.left - railRect.left;
+    }
+
     function repositionNotebook(railLeft){
       if (!notebook || notebookIsClaimed()) return;
       notebook.style.position = 'fixed';
-      notebook.style.left = (railLeft + 12) + 'px';
-      notebook.style.top = (window.innerHeight - 132) + 'px';
+      notebook.style.left = (railLeft + notebookOffsetX) + 'px';
+      if (!notebook.style.top) {
+        // Only the very first placement (nothing set yet) needs a
+        // vertical default -- same spot it always visually sat.
+        notebook.style.top = (window.innerHeight - 132) + 'px';
+      }
       notebook.style.right = 'auto';
       notebook.style.bottom = 'auto';
       notebook.style.margin = '0';
@@ -471,7 +498,7 @@
     document.addEventListener('mouseup', onUp);
     document.addEventListener('touchend', onUp);
 
-    return { applyDock: applyDock, getSide: function(){ return dockSide; } };
+    return { applyDock: applyDock, getSide: function(){ return dockSide; }, captureNotebookOffset: captureNotebookOffset };
   }
 
   // Larry, July 26: "the notebook slides into the wall with everything
@@ -546,6 +573,7 @@
       {
         reattachTo: bar,
         onReattach: function(){
+          rail.captureNotebookOffset();
           updateNotebookVisibility(bar, notebook);
         }
       }
