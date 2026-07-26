@@ -209,15 +209,21 @@
   /* ---------- Notebook: ported look, now fully detached from the
      rail -- its own free-floating draggable object straight on
      0000, same drag mechanics as the widget. Opens the real
-     Journal (0300 / s-journal), not the binder pilot's placeholder
-     notes panel. ---------- */
+     Journal (9300 / s-journal), not the binder pilot's placeholder
+     notes panel.
+
+     Larry, July 26 (later same-day follow-up): a single click is
+     the drag handle only -- it no longer opens anything by itself,
+     since a real drag ends in a mouseup on the same element too and
+     was popping the Journal open by accident. Opening now takes a
+     double-click. ---------- */
 
   function buildNotebook(){
     var nb = document.createElement('div');
     nb.id = 'sz-notebook';
-    nb.title = 'Notebook';
+    nb.title = 'Notebook (double-click to open)';
     nb.innerHTML = '<div id="sz-notebook-label"><span>Notes</span></div>';
-    nb.addEventListener('click', function(){
+    nb.addEventListener('dblclick', function(){
       if (window.T2T) window.T2T.nav('s-journal');
     });
     return nb;
@@ -261,8 +267,13 @@
      notebook -- one object, one localStorage key, same mouse/touch
      handling for both. Position is remembered per browser; a plain
      click (no movement) still fires the element's own click handler
-     (e.g. notebook opening the Journal, or clicking a tool button
-     inside the rail). ---------- */
+     (e.g. clicking a tool button inside the rail).
+
+     opts.reattachTo / opts.onReattach -- Larry, July 26: dropping a
+     traveler-claimed object back onto the drop target (the nav
+     drawer, for the notebook) un-claims it instead of saving it as
+     its own independent spot, so it goes back to riding the drawer
+     (including hiding with it when closed) from here on. ---------- */
 
   function makeDraggable(el, storeKey, excludeSelector, defaultLeft, defaultTop, opts){
     var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
@@ -326,6 +337,20 @@
           applyPos(window.innerWidth - rect.width, rect.top);
         }
         rect = el.getBoundingClientRect();
+      }
+
+      // Dropped onto the reattach target (the nav drawer, for the
+      // notebook) -- un-claim it so it rides the drawer again instead
+      // of keeping this drop as its own independent spot.
+      if (opts && opts.reattachTo) {
+        var t = opts.reattachTo.getBoundingClientRect();
+        var overlaps = !(rect.right < t.left || rect.left > t.right ||
+                          rect.bottom < t.top || rect.top > t.bottom);
+        if (overlaps) {
+          try { localStorage.removeItem(storeKey); } catch(e){}
+          if (opts.onReattach) opts.onReattach();
+          return;
+        }
       }
 
       try { localStorage.setItem(storeKey, JSON.stringify({ left: rect.left, top: rect.top })); }
@@ -503,8 +528,21 @@
     // computed by dockRail/repositionNotebook above -- "on the nav bar,
     // near the bottom," same place it always visually sat. Dragging it
     // elsewhere is a traveler option: once moved, it keeps its own
-    // saved spot and stops riding the tray.
-    makeDraggable(notebook, NOTEBOOK_KEY, null, notebook.style.left ? parseFloat(notebook.style.left) : 16, notebook.style.top ? parseFloat(notebook.style.top) : 16);
+    // saved spot and stops riding the tray -- unless it's dragged back
+    // onto the drawer itself, which re-claims it for the drawer (see
+    // reattachTo/onReattach below).
+    makeDraggable(
+      notebook, NOTEBOOK_KEY, null,
+      notebook.style.left ? parseFloat(notebook.style.left) : 16,
+      notebook.style.top ? parseFloat(notebook.style.top) : 16,
+      {
+        reattachTo: bar,
+        onReattach: function(){
+          rail.applyDock(rail.getSide());
+          updateNotebookVisibility(bar, notebook);
+        }
+      }
+    );
   }
 
   /* ---------- Dragging the widget (#fg-root) -- unchanged mechanics,
