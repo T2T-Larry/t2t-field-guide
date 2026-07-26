@@ -532,9 +532,31 @@
         // itself should read 0000; triple-tapping the nav bar (its own
         // background, not its gear button -- that's already excluded
         // above like any other button) should read 0020.
+        //
+        // Later same-day follow-up: both side drawers now show one of
+        // three "mode" panels depending on how many quick taps their
+        // own toggle got (screen-zero.js's wireModeToggle) -- 0001/0002/
+        // 0003 for the left drawer's slots, 0004/0005/0006 for the new
+        // right drawer's. "Related to 0000 more than any phase or other
+        // screen" per Larry, July 26 -- these live in the 000x block,
+        // same as 0000/0020, not registered via the normal per-screen
+        // _pageNums system. Collapsed still just reads as the drawer's
+        // own base number (0020 for the left, same as before; the right
+        // drawer didn't have a number before it existed, so collapsed
+        // there just falls through to 0000 like empty backdrop always
+        // has).
+        var leftBar = document.getElementById('sz-navbar');
+        var rightBar = document.getElementById('sz-drawer-r');
         var onNavBar = !!e.target.closest('#sz-navbar');
+        var onRightDrawer = !!e.target.closest('#sz-drawer-r');
         var outsideWidget = !e.target.closest('#fg-root');
-        var outsideNum = onNavBar ? '0020' : (outsideWidget ? '0000' : (_pageNums[cur] || '—'));
+        var LEFT_MODE_NUMS = { '1':'0001', '2':'0002', '3':'0003' };
+        var RIGHT_MODE_NUMS = { '1':'0004', '2':'0005', '3':'0006' };
+        var leftNum = (leftBar && !leftBar.classList.contains('sz-collapsed'))
+          ? (LEFT_MODE_NUMS[leftBar.dataset.mode] || '0020') : '0020';
+        var rightNum = (rightBar && !rightBar.classList.contains('sz-collapsed'))
+          ? (RIGHT_MODE_NUMS[rightBar.dataset.mode] || '0000') : '0000';
+        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (outsideWidget ? '0000' : (_pageNums[cur] || '—')));
         var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : outsideNum))))))));
         showPageToast(num);
       }

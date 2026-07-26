@@ -122,6 +122,52 @@
       +   'background:#fff;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
       +   'display:flex;align-items:center;justify-content:center;margin-top:10px}'
+      // Larry, July 26: "single/double/triple click drawers on the
+      // sides of 0000" -- both the left drawer (0001/0002/0003) and a
+      // new right drawer (0004/0005/0006) show one of three "mode"
+      // panels depending on how many quick taps the toggle got. Using
+      // !important here on purpose (matches the .sc/.bar2 convention
+      // elsewhere in this codebase) since #sz-tools already carries its
+      // own ID-level `display:flex`, which would otherwise always beat
+      // a plain class rule regardless of which mode is active.
+      + '.sz-mode-panel{display:none!important}'
+      + '.sz-mode-panel.sz-mode-active{display:flex!important}'
+      + '.sz-mode-placeholder{flex-direction:column;align-items:center;justify-content:center;'
+      +   'gap:6px;width:150px;min-height:80px;border:2px dashed #b89968;border-radius:8px;'
+      +   'padding:14px 10px;text-align:center;color:#7a5c3a;font-size:11px;'
+      +   'font-family:"Playfair Display",Georgia,serif;box-sizing:border-box}'
+      // The one-off "you found it" celebration for the triple-tap
+      // surprise slot -- the content behind it is meant to rotate over
+      // time (see buildSurprisePanel), but the little burst itself can
+      // be consistent every time, per Larry's "fireworks or something
+      // hidden" note.
+      + '.sz-flourish{position:absolute;font-size:22px;pointer-events:none;'
+      +   'animation:sz-flourish-pop .9s ease forwards;left:50%;top:8px;'
+      +   'transform:translateX(-50%)}'
+      + '@keyframes sz-flourish-pop{'
+      +   '0%{opacity:0;transform:translateX(-50%) scale(.4)}'
+      +   '30%{opacity:1;transform:translateX(-50%) scale(1.2)}'
+      +   '100%{opacity:0;transform:translateX(-50%) scale(1) translateY(-16px)}}'
+      // The new right-side drawer -- same family look as the left rail,
+      // no nameplate/notebook/menu/gear, just the toggle + mode panels,
+      // since its actual contents aren't designated yet.
+      + '#sz-drawer-r{position:fixed;top:0;bottom:0;width:' + RAIL_WIDTH + 'px;'
+      +   CARD_LOOK + ';z-index:9998;'
+      +   'display:flex;flex-direction:column;align-items:center;justify-content:center;'
+      +   'padding:16px 10px 14px;box-sizing:border-box;font-family:"Playfair Display",Georgia,serif;'
+      +   'transition:width .18s ease, padding .18s ease, background .18s ease, box-shadow .18s ease}'
+      + '#sz-drawer-r.sz-collapsed{width:0;padding:0;border:none;box-shadow:none;background:transparent}'
+      + '#sz-drawer-r.sz-collapsed #sz-drawer-r-mid{display:none}'
+      + '#sz-drawer-r-mid{flex:1;width:100%;display:flex;flex-direction:column;'
+      +   'align-items:center;justify-content:center;gap:16px;overflow-y:auto;padding:10px 0;position:relative}'
+      + '#sz-drawer-r-toggle{position:absolute;top:50%;transform:translateY(-50%);'
+      +   'left:-18px;width:18px;height:40px;'
+      +   'border-radius:20px 0 0 20px;border:2px solid #999;border-right:none;'
+      +   'background:#fdf8f0;cursor:pointer;'
+      +   'box-shadow:-2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
+      +   'display:flex;align-items:center;justify-content:center;z-index:1}'
+      + '#sz-drawer-r.sz-dock-left #sz-drawer-r-toggle{left:auto;right:-18px;'
+      +   'border-radius:0 20px 20px 0;border-left:none;border-right:2px solid #999}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -290,6 +336,114 @@
       if (onChange) onChange();
     });
     return t;
+  }
+
+  /* ---------- Tap counter: counts a quick burst of clicks on one
+     element and reports the final tally once the burst pauses, same
+     "count, then reset after a gap" idea as backpack.js's Hidden Mickey
+     triple-tap -- just scoped to one button instead of the whole
+     document, and reporting every count (1/2/3+) instead of only
+     caring about hitting 3. ---------- */
+
+  function makeTapCounter(el, onResolve, windowMs){
+    var count = 0, timer = null;
+    el.addEventListener('click', function(){
+      count++;
+      clearTimeout(timer);
+      timer = setTimeout(function(){
+        var n = count; count = 0;
+        onResolve(n);
+      }, windowMs || 450);
+    });
+  }
+
+  /* ---------- Mode panels for the two "magic" drawers -- Larry, July
+     26: "single tap one drawer, double tap second drawer, triple tap
+     for surprising trivia." Slot 1 is always the drawer's real,
+     reliable content (the left rail's existing tools, for now); slots
+     2 and 3 are placeholders on purpose -- contents not designated yet,
+     per Larry's own words starting this build. Slot 3 also gets the
+     little "you found it" flourish, with the label text drawn from a
+     small rotating pool so the surprise slot doesn't calcify into
+     always showing the exact same thing. ---------- */
+
+  var SURPRISE_POOL = [
+    '🎉 Surprise slot -- what lands here is still undecided',
+    '✨ Something will live here -- rotating placeholder for now',
+    '🎈 A future surprise goes here -- not designed yet'
+  ];
+
+  function buildModePlaceholder(label){
+    var p = document.createElement('div');
+    p.className = 'sz-mode-panel sz-mode-placeholder';
+    p.textContent = label;
+    return p;
+  }
+
+  function buildSurprisePanel(){
+    var wrap = document.createElement('div');
+    wrap.className = 'sz-mode-panel sz-mode-placeholder';
+    wrap.style.position = 'relative';
+    var text = document.createElement('div');
+    text.className = 'sz-surprise-text';
+    wrap.appendChild(text);
+    return { el: wrap, textEl: text };
+  }
+
+  function triggerFlourish(container){
+    var f = document.createElement('div');
+    f.className = 'sz-flourish';
+    f.textContent = '🎆';
+    container.appendChild(f);
+    setTimeout(function(){ f.remove(); }, 950);
+  }
+
+  /* ---------- Wires a drawer's toggle button to the tap counter above,
+     switching between however many mode panels it has instead of a
+     plain collapse/expand. Single tap while already open still just
+     collapses it (today's exact existing behavior, unchanged); double
+     or triple tap while open switches the visible mode instead, without
+     closing anything. While collapsed, any tap count opens it straight
+     to that mode. Mode is remembered per drawer via localStorage, same
+     as dock side and collapsed state already are. ---------- */
+
+  function wireModeToggle(toggleBtn, bar, panels, modeKey, collapseKey, glyphs, onChange){
+    var mode = 1;
+    try { mode = parseInt(localStorage.getItem(modeKey), 10) || 1; } catch(e){}
+    var openGlyph = (glyphs && glyphs.open) || '‹';
+    var closedGlyph = (glyphs && glyphs.closed) || '›';
+
+    function showMode(n){
+      mode = Math.max(1, Math.min(panels.length, n));
+      bar.dataset.mode = String(mode);
+      try { localStorage.setItem(modeKey, String(mode)); } catch(e){}
+      panels.forEach(function(p, i){
+        p.classList.toggle('sz-mode-active', i === (mode - 1));
+      });
+      if (mode === panels.length && panels.length >= 3) {
+        triggerFlourish(bar);
+      }
+    }
+    showMode(mode); // apply the remembered (or default) mode on load
+
+    makeTapCounter(toggleBtn, function(n){
+      var collapsed = bar.classList.contains('sz-collapsed');
+      if (!collapsed && n === 1) {
+        // Exactly today's old single-tap behavior: close it.
+        bar.classList.add('sz-collapsed');
+        try { localStorage.setItem(collapseKey, '1'); } catch(e){}
+      } else {
+        if (collapsed) {
+          bar.classList.remove('sz-collapsed');
+          try { localStorage.setItem(collapseKey, '0'); } catch(e){}
+        }
+        showMode(n);
+      }
+      toggleBtn.textContent = bar.classList.contains('sz-collapsed') ? closedGlyph : openGlyph;
+      if (onChange) onChange();
+    });
+
+    return { getMode: function(){ return mode; } };
   }
 
   /* ---------- Generic free-drag, shared by the rail and the
@@ -544,9 +698,25 @@
     var bar = document.createElement('div');
     bar.id = 'sz-navbar';
 
+    // Larry, July 26: "single tap one drawer, double tap second
+    // drawer, triple tap for surprising trivia." Mode 1 is the rail's
+    // real, already-working content (the tool stack) -- untouched.
+    // Modes 2 and 3 are placeholders on purpose; nothing's been
+    // designated for them yet. Nameplate/menu/gear deliberately sit
+    // OUTSIDE this mid area -- Larry, July 26 (later note): the
+    // nameplate isn't drawer content, it's a persistent label, so it
+    // (and the always-needed ☰/gear) stay visible no matter which mode
+    // is showing.
     var mid = document.createElement('div');
     mid.id = 'sz-navmid';
-    mid.appendChild(buildTools());
+    var mode1 = buildTools();
+    mode1.classList.add('sz-mode-panel', 'sz-mode-active');
+    var mode2 = buildModePlaceholder('Left drawer -- slot 2 (not yet designated)');
+    var surprise = buildSurprisePanel();
+    surprise.textEl.textContent = SURPRISE_POOL[0]; // initial text, in case mode 3 restores on load
+    mid.appendChild(mode1);
+    mid.appendChild(mode2);
+    mid.appendChild(surprise.el);
 
     bar.appendChild(buildNameplate());
     bar.appendChild(mid);
@@ -555,13 +725,11 @@
 
     var notebook = buildNotebook();
 
-    var toggle = buildToggle(bar, function(){
-      // Collapsing/expanding changes the tray's width, which changes
-      // where a right-docked tray's left edge needs to sit -- and the
-      // notebook riding on it needs to follow either way.
-      rail.applyDock(rail.getSide());
-      updateNotebookVisibility(bar, notebook);
-    });
+    var toggle = document.createElement('button');
+    toggle.id = 'sz-navbar-toggle';
+    toggle.type = 'button';
+    toggle.title = 'Collapse / expand (tap 1/2/3 times for the different slots)';
+    toggle.textContent = '‹';
     bar.appendChild(toggle);
 
     try {
@@ -573,6 +741,21 @@
 
     document.body.appendChild(bar);
     document.body.appendChild(notebook);
+
+    wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'LEFT_DRAWER_MODE', COLLAPSE_KEY, { open: '‹', closed: '›' }, function(){
+      // Only re-roll the surprise text when slot 3 is the one actually
+      // showing -- not on every mode switch, so it doesn't waste a
+      // pick nobody sees.
+      if (bar.dataset.mode === '3') {
+        var idx = Math.floor(Math.random() * SURPRISE_POOL.length);
+        surprise.textEl.textContent = SURPRISE_POOL[idx];
+      }
+      // Collapsing/expanding (or switching mode) changes the tray's
+      // width/dock math the same way the old plain toggle did -- the
+      // notebook riding on it needs to follow either way.
+      rail.applyDock(rail.getSide());
+      updateNotebookVisibility(bar, notebook);
+    });
 
     var rail = dockRail(bar, notebook);
     updateNotebookVisibility(bar, notebook);
@@ -672,8 +855,143 @@
     document.addEventListener('touchend', onUp);
   }
 
+  /* ---------- The new right-side drawer -- Larry, July 26: "only 2
+     drawers BUT they are magic," mirroring the nav drawer's mechanics
+     on the right instead of the left. No nameplate/notebook/menu/gear
+     here -- nothing's been designated for what belongs in it yet, so
+     it's just the toggle + three placeholder mode panels for now, same
+     tap-count rule as the left drawer (1/2/3 taps = slot 1/2/3, single
+     tap while open just closes it).
+
+     This deliberately duplicates dockRail's drag/dock logic rather
+     than generalizing dockRail to serve both drawers -- safer, given
+     dockRail is already carrying real, tested behavior (the notebook
+     riding along, its offset-tracking fix, etc.) that a shared
+     refactor could risk disturbing. Worth unifying into one real
+     "drawer" building block later, once this one's settled -- flagged,
+     not guessed at here. ---------- */
+
+  var RIGHT_DOCK_KEY = 't2t-drawer-r-dock';
+  var RIGHT_COLLAPSE_KEY = 't2t-drawer-r-collapsed';
+
+  function dockRightDrawer(bar){
+    var dockSide = 'right';
+    try { dockSide = localStorage.getItem(RIGHT_DOCK_KEY) || 'right'; } catch(e){}
+
+    var dragging = false, moved = false, startX = 0, startLeft = 0;
+
+    function currentWidth(){ return bar.classList.contains('sz-collapsed') ? 0 : RAIL_WIDTH; }
+    function railLeftFor(side, width){ return side === 'left' ? 0 : (window.innerWidth - width); }
+
+    function apply(side, left){
+      bar.style.position = 'fixed';
+      bar.style.top = '0';
+      bar.style.bottom = '0';
+      bar.style.left = left + 'px';
+      bar.style.right = 'auto';
+      bar.classList.toggle('sz-dock-left', side === 'left');
+    }
+
+    function applyDock(side){
+      dockSide = side;
+      try { localStorage.setItem(RIGHT_DOCK_KEY, side); } catch(e){}
+      apply(side, railLeftFor(side, currentWidth()));
+    }
+
+    apply(dockSide, railLeftFor(dockSide, currentWidth()));
+
+    function pointOf(e){ return e.touches ? e.touches[0] : e; }
+
+    function onDown(e){
+      if (NAVBAR_EXCLUDE && e.target.closest(NAVBAR_EXCLUDE)) return;
+      if (bar.classList.contains('sz-collapsed')) return;
+      var p = pointOf(e);
+      dragging = true; moved = false;
+      startLeft = bar.getBoundingClientRect().left;
+      startX = p.clientX;
+      document.body.style.userSelect = 'none';
+    }
+
+    function onMove(e){
+      if (!dragging) return;
+      var p = pointOf(e);
+      var dx = p.clientX - startX;
+      if (Math.abs(dx) > 3) moved = true;
+      if (!moved) return;
+      if (e.cancelable) e.preventDefault();
+      bar.style.left = (startLeft + dx) + 'px';
+      bar.style.right = 'auto';
+    }
+
+    function onUp(){
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.userSelect = '';
+      if (!moved) return;
+      var rect = bar.getBoundingClientRect();
+      var center = rect.left + rect.width / 2;
+      applyDock(center < window.innerWidth / 2 ? 'left' : 'right');
+    }
+
+    bar.addEventListener('mousedown', onDown);
+    bar.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+
+    return { applyDock: applyDock, getSide: function(){ return dockSide; } };
+  }
+
+  function buildRightDrawer(){
+    if (document.getElementById('sz-drawer-r')) return; // idempotent
+    injectStyle();
+
+    var bar = document.createElement('div');
+    bar.id = 'sz-drawer-r';
+
+    var mid = document.createElement('div');
+    mid.id = 'sz-drawer-r-mid';
+    var mode1 = buildModePlaceholder('Right drawer -- slot 1 (not yet designated)');
+    mode1.classList.add('sz-mode-active');
+    var mode2 = buildModePlaceholder('Right drawer -- slot 2 (not yet designated)');
+    var surprise = buildSurprisePanel();
+    surprise.textEl.textContent = SURPRISE_POOL[0];
+    mid.appendChild(mode1);
+    mid.appendChild(mode2);
+    mid.appendChild(surprise.el);
+    bar.appendChild(mid);
+
+    var toggle = document.createElement('button');
+    toggle.id = 'sz-drawer-r-toggle';
+    toggle.type = 'button';
+    toggle.title = 'Collapse / expand (tap 1/2/3 times for the different slots)';
+    toggle.textContent = '›';
+    bar.appendChild(toggle);
+
+    try {
+      if (localStorage.getItem(RIGHT_COLLAPSE_KEY) === '1') {
+        bar.classList.add('sz-collapsed');
+        toggle.textContent = '‹';
+      }
+    } catch(e){}
+
+    document.body.appendChild(bar);
+
+    var drawer = dockRightDrawer(bar);
+
+    wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'RIGHT_DRAWER_MODE', RIGHT_COLLAPSE_KEY, { open: '›', closed: '‹' }, function(){
+      if (bar.dataset.mode === '3') {
+        var idx = Math.floor(Math.random() * SURPRISE_POOL.length);
+        surprise.textEl.textContent = SURPRISE_POOL[idx];
+      }
+      drawer.applyDock(drawer.getSide());
+    });
+  }
+
   function init(){
     buildNavBar();
+    buildRightDrawer();
     makeWidgetDraggable();
   }
 
