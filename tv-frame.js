@@ -118,7 +118,7 @@
   function findProxyTarget(kind){
     var active = document.querySelector('.sc.active');
     if (!active) return null;
-    var pattern = kind === 'next' ? /-next(-|\d|$)/i : /-(prev|back)(-|\d|$)/i;
+    var pattern = kind === 'next' ? /-(next|fwd)(-|\d|$)/i : /-(prev|back)(-|\d|$)/i;
     var candidates = active.querySelectorAll('button[id]');
     for (var i = 0; i < candidates.length; i++){
       var b = candidates[i];
