@@ -153,8 +153,14 @@
       // the frame paints behind it -- a shadow ON the frame would never
       // actually show. Fades in just inside the widget's own border,
       // reads as the bezel casting a shadow onto the screen beneath it.
+      // Strengthened July 27 2026 -- Larry: "the vignette is not enough
+      // yet." Went from one soft inset to a layered pair (tight+dark
+      // close against the edge, then a second wider/softer one further
+      // in), same "layered shadow" technique already used for the
+      // notebook's own floating look, instead of just cranking one
+      // shadow's numbers up.
       + '#fg-root.tv-vignette{box-shadow:0 4px 24px rgba(0,0,0,.18),'
-      +   'inset 0 0 26px 7px rgba(0,0,0,.4)}'
+      +   'inset 0 0 14px 4px rgba(0,0,0,.55), inset 0 0 46px 14px rgba(0,0,0,.4)}'
       // Color-options picker (double-click the frame ring, screen 0007) --
       // Larry, July 27 2026: "definitely need a selection of color options
       // for the TV frame on double click." Reuses the site's existing

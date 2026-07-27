@@ -14,7 +14,15 @@
   --brand-brown-mid: #7A5C3A;
   --brand-purple: #7c3aed;
   --brand-purple-deep: #5B21B6;
-  --brand-teal-deep: #0F6E56;
+  /* Lightened #0F6E56 -> #15805F, July 27 2026 -- Larry figured out
+     the "0010 flash to darker" report: it wasn't a flash at all, it
+     was 0010 (already the light shade) handing off to 0100 (Cover),
+     which was still on the OLD dark teal via this one shared
+     variable. Same value 0010's .siw already uses directly, so the
+     two screens (and everything else fed by this variable -- the MG
+     backpack header, reader accent color/links, etc.) now actually
+     match instead of just looking close. */
+  --brand-teal-deep: #15805F;
   --brand-gray: #888;
   --brand-gray-light: #ccc;
   --brand-cream: #FDF6E8;
