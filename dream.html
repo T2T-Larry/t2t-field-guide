@@ -11,9 +11,10 @@
 <link rel="stylesheet" href="style.css?v=20260727a">
 <style>
 .fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default}
-/* Kept in sync with index.html's text-selection fix, July 27 2026 --
-   this page never loads screen-zero.js, so there's no widget-drag
-   gesture here to conflict with in the first place. */
+/* Kept in sync with index.html's text-selection fix, July 27 2026.
+   Note: this page NOW loads screen-zero.js/tv-frame.js too (added
+   same day, fixing the 1000 dead-end) -- dragging is the TV frame's
+   job here too, same as index.html, not a separate concern. */
 #fg-root:not(.isx-full){user-select:text;-webkit-user-select:text}
 .card.rnd{border-radius:12px}
 /* Kept in sync with index.html's 0010 lighten, July 27 2026 -- dead here today (no #s-signin on this page) but left matching so it can't drift and cause a surprise later if a gate ever gets added to phase pages. */
