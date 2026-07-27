@@ -174,14 +174,22 @@
       + '.sz-mode-panel{display:none!important}'
       + '.sz-mode-panel.sz-mode-active{display:flex!important}'
       + '.sz-mode-placeholder{flex-direction:column;align-items:center;justify-content:center;'
-      +   'gap:6px;width:150px;min-height:80px;border:2px dashed #b89968;border-radius:8px;'
+      +   'gap:6px;width:150px;min-height:80px;border-radius:8px;'
       +   'padding:14px 10px;text-align:center;color:#7a5c3a;font-size:11px;'
       +   'font-family:"Playfair Display",Georgia,serif;box-sizing:border-box}'
+      // Mode 2 is still genuinely undesigned -- keeps the dashed "not
+      // built yet" look. Mode 3 (the surprise slot) now holds a real
+      // object (the monkey GIF), so Larry, July 27 2026: "No dotted
+      // lines" -- it no longer gets this treatment (see .sz-surprise-
+      // panel below, which overrides border back to none).
+      + '.sz-mode-tbd{border:2px dashed #b89968}'
       // Surprise slot (mode 3) needs a bit more room than the plain
-      // text placeholders, now that it holds a real image too.
-      + '.sz-surprise-panel{min-height:150px}'
+      // text placeholders, now that it holds a real image too, and no
+      // dashed border since it's real content, not a TBD placeholder.
+      + '.sz-surprise-panel{min-height:150px;border:none}'
       + '.sz-surprise-gif{width:72px;height:72px;border-radius:8px;object-fit:cover;'
-      +   'border:2px solid #b89968;box-shadow:0 3px 8px rgba(0,0,0,.3)}'
+      +   'border:2px solid #b89968;box-shadow:0 3px 8px rgba(0,0,0,.3);cursor:grab}'
+      + '.sz-surprise-gif.sz-dragging{cursor:grabbing}'
       // The one-off "you found it" celebration for the triple-tap
       // surprise slot -- the content behind it is meant to rotate over
       // time (see buildSurprisePanel), but the little burst itself can
@@ -411,28 +419,60 @@
   // flowing back into the list, not floating next to it. Larry, July
   // 27 2026: "Tool button stack should drag from drawer if desired.
   // Flexibility!"
+  // Larry, July 27 2026 (mid-turn interrupt): "Tool stack must
+  // either stay as a unit or have a default reset if one is moved by
+  // accident." Rather than force the 6 buttons to move as a rigid
+  // group (which would undercut "Tool button stack should drag from
+  // drawer if desired -- Flexibility!" from earlier the same day),
+  // the gear button becomes an easy one-tap undo: every tool button
+  // snaps back to its home spot in the list, regardless of what's
+  // currently claimed or independently placed.
+  var _toolButtonRecs = [];
+
+  function resetToolStack(){
+    _toolButtonRecs.forEach(function(rec){
+      setRidingSlot(rec.storeKey, null);
+      try { localStorage.removeItem(rec.storeKey); } catch(e){}
+      restoreHomeParent(rec);
+      rec.el.style.position = '';
+      rec.el.style.left = ''; rec.el.style.top = '';
+      rec.el.style.right = ''; rec.el.style.bottom = ''; rec.el.style.margin = '';
+      rec.el.style.display = '';
+    });
+    showZeroToast('Tool stack reset.');
+  }
+
   function wireToolButtonDrag(btn, leftBar, idx){
     var storeKey = 't2t_toolBtnPos_' + idx;
     var rec = registerClaimable(btn, storeKey, 16);
+    _toolButtonRecs.push(rec);
     makeDraggable(btn, storeKey, null, 40, 40, {
       skipDefaultPos: true,
       reattachTargets: [
         { el: leftBar, side: 'left' },
         { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
       ],
+      onIndependent: function(){
+        if (btn.parentNode !== document.body) document.body.appendChild(btn);
+      },
       onReattach: function(side, barEl){
-        if (side === 'left') {
-          // Home drawer -- return to flowing in the list instead of
-          // floating next to it.
-          setRidingSide(storeKey, null);
+        var mode = barEl.dataset.mode || '1';
+        // "Home" only means the left drawer's OWN native slot (mode
+        // 1) -- dropping it on the left drawer while a different tap
+        // -slot is showing still needs to claim that specific slot,
+        // same as the right drawer, otherwise it would vanish the
+        // moment the left drawer's mode changed.
+        if (side === 'left' && mode === '1') {
+          setRidingSlot(storeKey, null);
+          restoreHomeParent(rec);
           btn.style.position = '';
           btn.style.left = ''; btn.style.top = '';
           btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
           btn.style.display = '';
         } else {
-          setRidingSide(storeKey, side);
+          setRidingSlot(storeKey, slotKey(side, mode));
           captureRidingOffset(rec, barEl);
-          refreshRidersForSide(side, barEl);
+          refreshRidersForSlot(side, mode, barEl);
         }
       }
     });
@@ -494,10 +534,10 @@
     var gear = document.createElement('button');
     gear.id = 'sz-gear';
     gear.type = 'button';
-    gear.title = 'Custom options (coming later)';
+    gear.title = 'Reset tool stack to its default spots';
     gear.textContent = '⚙️';
     gear.addEventListener('click', function(){
-      showZeroToast('Custom options — coming later.');
+      resetToolStack();
     });
     return gear;
   }
@@ -571,25 +611,63 @@
      small rotating pool so the surprise slot doesn't calcify into
      always showing the exact same thing. ---------- */
 
-  var SURPRISE_POOL = [
-    '🎉 Surprise slot -- what lands here is still undecided',
-    '✨ Something will live here -- rotating placeholder for now',
-    '🎈 A future surprise goes here -- not designed yet'
-  ];
-
   function buildModePlaceholder(label){
     var p = document.createElement('div');
-    p.className = 'sz-mode-panel sz-mode-placeholder';
+    p.className = 'sz-mode-panel sz-mode-placeholder sz-mode-tbd';
     p.textContent = label;
     return p;
   }
 
   // Larry, July 27 2026: "a monkey playing cymbals to put into a
-  // triple click drawer" -- the real surprise content for mode 3,
-  // alongside the rotating text that was already there.
+  // triple click drawer" -- the real surprise content for mode 3.
+  // The rotating "not designed yet" placeholder text that used to
+  // share this slot is gone (Larry, same day: "no pin with A future
+  // surprise comment") now that there's a real object living here.
   var SURPRISE_GIF_URL = 'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3dsdTg4cm9jcmllcTd2c3JxZjhxaDEwM3N3Z2JtdGh4eHpsaTM1aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/k5cnWfaRTPgze/giphy.gif';
 
-  function buildSurprisePanel(){
+  // The monkey should "drag out of the drawer and stay there if
+  // desired" (Larry, July 27 2026), and stick to whichever slot it's
+  // dropped into rather than following every mode switch -- same
+  // slot-claim machinery as the nameplate/notebook/tool buttons.
+  // Left and right drawers each build their own independent GIF
+  // (buildSurprisePanel is called once per drawer), so each gets its
+  // own storage key and can be claimed to a different slot from the
+  // other.
+  function wireSurpriseGifDrag(img, storeKey, ownBar, ownSide){
+    var rec = registerClaimable(img, storeKey, 60);
+    var otherSide = ownSide === 'left' ? 'right' : 'left';
+    var otherId = ownSide === 'left' ? 'sz-drawer-r' : 'sz-navbar';
+    makeDraggable(img, storeKey, null, 40, 40, {
+      skipDefaultPos: true,
+      reattachTargets: [
+        { el: ownBar, side: ownSide },
+        { get el(){ return document.getElementById(otherId); }, side: otherSide }
+      ],
+      onIndependent: function(){
+        if (img.parentNode !== document.body) document.body.appendChild(img);
+      },
+      onReattach: function(side, barEl){
+        var mode = barEl.dataset.mode || '1';
+        // Home is specifically ITS OWN drawer's mode-3 slot, the one
+        // it was originally built into -- anywhere else (including
+        // its own drawer's OTHER modes) is a real slot claim.
+        if (side === ownSide && mode === '3') {
+          setRidingSlot(storeKey, null);
+          restoreHomeParent(rec);
+          img.style.position = '';
+          img.style.left = ''; img.style.top = '';
+          img.style.right = ''; img.style.bottom = ''; img.style.margin = '';
+          img.style.display = '';
+        } else {
+          setRidingSlot(storeKey, slotKey(side, mode));
+          captureRidingOffset(rec, barEl);
+          refreshRidersForSlot(side, mode, barEl);
+        }
+      }
+    });
+  }
+
+  function buildSurprisePanel(bar, side){
     var wrap = document.createElement('div');
     wrap.className = 'sz-mode-panel sz-mode-placeholder sz-surprise-panel';
     wrap.style.position = 'relative';
@@ -598,10 +676,8 @@
     img.src = SURPRISE_GIF_URL;
     img.alt = 'A monkey playing cymbals';
     wrap.appendChild(img);
-    var text = document.createElement('div');
-    text.className = 'sz-surprise-text';
-    wrap.appendChild(text);
-    return { el: wrap, textEl: text };
+    wireSurpriseGifDrag(img, 't2t_surpriseGif_' + side, bar, side);
+    return { el: wrap };
   }
 
   function triggerFlourish(container){
@@ -781,6 +857,14 @@
 
       try { localStorage.setItem(storeKey, JSON.stringify({ left: rect.left, top: rect.top })); }
       catch(e){}
+      // opts.onIndependent -- for objects natively nested inside a
+      // conditionally-hidden container (a mode panel), dropping them
+      // on open desk space still needs to escape that container the
+      // same way claiming a drawer slot does (see refreshRidersForSlot),
+      // otherwise it silently vanishes the instant its old panel's
+      // mode/side stops being the active one, even though it's not
+      // riding anything anymore.
+      if (opts && opts.onIndependent) opts.onIndependent();
     }
 
     el.addEventListener('mousedown', onDown);
@@ -815,19 +899,32 @@
      is deliberately the mirror of notebookIsClaimed above -- here
      "riding" means still attached to a drawer (the notebook's
      "unclaimed" state), to avoid the two meaning opposite things
-     under similar names. ---------- */
+     under similar names.
+
+     Rebuilt per-SLOT rather than per-side, same day, after Larry
+     caught the bug: "Nametag and Notes were placed in drawer 1 but
+     now appear in drawer 3? Object stay in whichever drawer they are
+     placed!" The first pass only tracked which SIDE an object rode,
+     so it followed the bar around regardless of which of the 3
+     tap-slots was showing -- looked like it "moved" the moment you
+     switched modes, when really it just never had a specific slot to
+     begin with. A slot key is now "side-mode", e.g. "left-3", and an
+     object is only shown while ITS slot is the one currently active
+     on that side; any other mode on the same side hides it, same as
+     the mode panels' own content already does. ---------- */
 
   function isRidingDrawer(storeKey){
     try { return !localStorage.getItem(storeKey); } catch(e){ return true; }
   }
-  function claimSideStoreKey(storeKey){ return 't2t_claimSide_' + storeKey; }
-  function getRidingSide(storeKey){
-    try { return localStorage.getItem(claimSideStoreKey(storeKey)); } catch(e){ return null; }
+  function slotKey(side, mode){ return side + '-' + (mode || '1'); }
+  function claimSlotStoreKey(storeKey){ return 't2t_claimSlot_' + storeKey; }
+  function getRidingSlot(storeKey){
+    try { return localStorage.getItem(claimSlotStoreKey(storeKey)); } catch(e){ return null; }
   }
-  function setRidingSide(storeKey, side){
+  function setRidingSlot(storeKey, slot){
     try {
-      if (side) localStorage.setItem(claimSideStoreKey(storeKey), side);
-      else localStorage.removeItem(claimSideStoreKey(storeKey));
+      if (slot) localStorage.setItem(claimSlotStoreKey(storeKey), slot);
+      else localStorage.removeItem(claimSlotStoreKey(storeKey));
     } catch(e){}
   }
 
@@ -837,7 +934,13 @@
   // wherever it was released, not some fixed formula spot.
   var _claimRegistry = [];
   function registerClaimable(el, storeKey, defaultTop){
-    var rec = { el: el, storeKey: storeKey, offsetX: 12, defaultTop: defaultTop };
+    // homeParent/homeNext -- where this object natively lives in the
+    // DOM (nameplate/notebook are already top-level body children, so
+    // this is a no-op for them; the tool buttons and the surprise GIF
+    // live nested inside a mode-panel div, which is what makes
+    // reparenting below actually matter for them).
+    var rec = { el: el, storeKey: storeKey, offsetX: 12, defaultTop: defaultTop,
+                homeParent: el.parentNode, homeNext: el.nextSibling };
     _claimRegistry.push(rec);
     return rec;
   }
@@ -846,17 +949,55 @@
     var elRect = rec.el.getBoundingClientRect();
     rec.offsetX = elRect.left - barRect.left;
   }
+  // An object that's home again needs to go back to its ORIGINAL
+  // spot in the DOM, not just have its inline styles cleared -- an
+  // object still parked inside a mode-panel div while riding some
+  // other slot would otherwise never actually escape that panel's
+  // own display:none once a different mode is showing (see
+  // refreshRidersForSlot's own reparent-to-body below, which this
+  // undoes on the way back home).
+  function restoreHomeParent(rec){
+    // appendChild (not insertBefore rec.homeNext) deliberately -- if
+    // ANOTHER sibling that used to be the "next" reference has since
+    // been reparented out to document.body itself (a realistic case
+    // when several tool buttons have all been dragged around),
+    // insertBefore would throw trying to reference a node that's no
+    // longer actually a child of homeParent. Falling back to "append
+    // at the end" only costs perfect original ordering in that edge
+    // case, never correctness. resetToolStack() below restores all 6
+    // in their original idx order anyway, which re-sorts them
+    // correctly regardless.
+    if (rec.el.parentNode !== rec.homeParent) {
+      rec.homeParent.appendChild(rec.el);
+    }
+  }
 
-  // Called by whichever drawer just moved, docked, or toggled --
-  // repositions + shows/hides every registered object CURRENTLY
-  // riding THIS side, ignores everything else. Cheap enough to call
-  // on every drag tick, same as the notebook's own repositionNotebook
-  // this generalizes.
-  function refreshRidersForSide(side, barEl){
+  // Called by whichever drawer just moved, docked, toggled, OR
+  // changed mode -- repositions + shows every registered object
+  // CURRENTLY riding THIS EXACT (side, mode) slot; hides anything
+  // riding a DIFFERENT slot on the same side (it's "in another
+  // drawer" right now); ignores anything riding the other side
+  // entirely, leaving its visibility exactly as that side last set it.
+  function refreshRidersForSlot(side, mode, barEl){
+    var slot = slotKey(side, mode);
     var barRect = barEl.getBoundingClientRect();
     var collapsed = barEl.classList.contains('sz-collapsed');
     _claimRegistry.forEach(function(rec){
-      if (!isRidingDrawer(rec.storeKey) || getRidingSide(rec.storeKey) !== side) return;
+      if (!isRidingDrawer(rec.storeKey)) return;
+      var ridingSlot = getRidingSlot(rec.storeKey);
+      if (!ridingSlot) return;
+      var ridingSide = ridingSlot.split('-')[0];
+      if (ridingSide !== side) return; // belongs to the other drawer, not this refresh's concern
+      if (ridingSlot !== slot) {
+        rec.el.style.display = 'none'; // a different slot on this same side is showing right now
+        return;
+      }
+      // Escape whatever mode-panel div it natively lives in (if any)
+      // -- otherwise a display:none!important ancestor from a
+      // now-inactive mode/side would hide it regardless of its own
+      // position:fixed. Top-level objects (nameplate, notebook) are
+      // already document.body children, so this is a no-op for them.
+      if (rec.el.parentNode !== document.body) document.body.appendChild(rec.el);
       rec.el.style.position = 'fixed';
       rec.el.style.left = (barRect.left + rec.offsetX) + 'px';
       if (!rec.el.style.top) rec.el.style.top = rec.defaultTop + 'px';
@@ -906,7 +1047,11 @@
     }
 
     function repositionNotebook(railLeft){
-      if (!notebook || notebookIsClaimed()) return;
+      // Bails if the notebook has its own independent spot (fully
+      // claimed) OR is riding a specific drawer SLOT (July 27 2026
+      // slot-claim fix, below) -- either way it's no longer this
+      // "always follows the tray, every mode" native-default path.
+      if (!notebook || notebookIsClaimed() || getRidingSlot(NOTEBOOK_KEY)) return;
       notebook.style.position = 'fixed';
       notebook.style.left = (railLeft + notebookOffsetX) + 'px';
       if (!notebook.style.top) {
@@ -927,7 +1072,7 @@
       bar.style.right = 'auto';
       bar.classList.toggle('sz-dock-right', side === 'right');
       repositionNotebook(left);
-      refreshRidersForSide('left', bar);
+      refreshRidersForSlot('left', bar.dataset.mode || '1', bar);
     }
 
     function applyDock(side){
@@ -963,7 +1108,7 @@
       bar.style.left = left + 'px';
       bar.style.right = 'auto';
       repositionNotebook(left); // the tray carries the notebook as it slides
-      refreshRidersForSide('left', bar); // ...and any other rider claimed by this drawer
+      refreshRidersForSlot('left', bar.dataset.mode || '1', bar); // ...and any other rider claimed by this drawer's active slot
     }
 
     function onUp(){
@@ -995,6 +1140,7 @@
   // gear. A notebook a traveler has claimed for its own spot elsewhere
   // on the desk is unaffected either way.
   function updateNotebookVisibility(bar, notebook){
+    if (getRidingSlot(NOTEBOOK_KEY)) return; // slot system now owns visibility
     var hideWithDrawer = bar.classList.contains('sz-collapsed') && !notebookIsClaimed();
     notebook.style.display = hideWithDrawer ? 'none' : '';
   }
@@ -1020,8 +1166,7 @@
     var mode1 = buildTools(bar);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = buildModePlaceholder('Left drawer -- slot 2 (not yet designated)');
-    var surprise = buildSurprisePanel();
-    surprise.textEl.textContent = SURPRISE_POOL[0]; // initial text, in case mode 3 restores on load
+    var surprise = buildSurprisePanel(bar, 'left');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
@@ -1054,13 +1199,6 @@
     wireDrawerColorGesture(bar, LEFT_DRAWER_COLOR_PREFIX, 'Left');
 
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'LEFT_DRAWER_MODE', COLLAPSE_KEY, { open: '‹', closed: '›' }, function(){
-      // Only re-roll the surprise text when slot 3 is the one actually
-      // showing -- not on every mode switch, so it doesn't waste a
-      // pick nobody sees.
-      if (bar.dataset.mode === '3') {
-        var idx = Math.floor(Math.random() * SURPRISE_POOL.length);
-        surprise.textEl.textContent = SURPRISE_POOL[idx];
-      }
       // Each slot keeps its own color (Larry, July 27 2026) -- the
       // drawer's visible background needs to follow along every time
       // the active slot changes, not just at initial load.
@@ -1094,15 +1232,37 @@
     // visibility; the notebook only starts tracking the drawer's own
     // position again the next time the drawer itself is dragged or
     // docked (dockRail's repositionNotebook, unchanged).
+    var notebookRec = registerClaimable(notebook, NOTEBOOK_KEY, 200);
     makeDraggable(
       notebook, NOTEBOOK_KEY, null,
       notebook.style.left ? parseFloat(notebook.style.left) : 16,
       notebook.style.top ? parseFloat(notebook.style.top) : 16,
       {
-        reattachTo: bar,
-        onReattach: function(){
-          rail.captureNotebookOffset();
-          updateNotebookVisibility(bar, notebook);
+        // Both drawers now, not just the left one -- Larry, July 27
+        // 2026 bug report: "Nametag and Notes were placed in drawer 1
+        // but now appear in drawer 3? Object stay in whichever drawer
+        // they are placed!" Dropping onto the left drawer's OWN native
+        // slot (mode 1) is still "true home" -- reverts to the
+        // original always-visible-in-every-mode tray-riding behavior.
+        // Dropping anywhere else (the right drawer, or the left
+        // drawer while a different slot is showing) files it into
+        // that exact slot instead, via the same slot system every
+        // other draggable object now uses.
+        reattachTargets: [
+          { el: bar, side: 'left' },
+          { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
+        ],
+        onReattach: function(side, barEl){
+          var mode = barEl.dataset.mode || '1';
+          if (side === 'left' && mode === '1') {
+            setRidingSlot(NOTEBOOK_KEY, null);
+            rail.captureNotebookOffset();
+            updateNotebookVisibility(bar, notebook);
+          } else {
+            setRidingSlot(NOTEBOOK_KEY, slotKey(side, mode));
+            captureRidingOffset(notebookRec, barEl);
+            refreshRidersForSlot(side, mode, barEl);
+          }
         }
       }
     );
@@ -1131,9 +1291,10 @@
           { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
         ],
         onReattach: function(side, barEl){
-          setRidingSide(NAMEPLATE_KEY, side);
+          var mode = barEl.dataset.mode || '1';
+          setRidingSlot(NAMEPLATE_KEY, slotKey(side, mode));
           captureRidingOffset(nameplateRec, barEl);
-          refreshRidersForSide(side, barEl);
+          refreshRidersForSlot(side, mode, barEl);
         }
       }
     );
@@ -1244,7 +1405,7 @@
       bar.style.left = left + 'px';
       bar.style.right = 'auto';
       bar.classList.toggle('sz-dock-left', side === 'left');
-      refreshRidersForSide('right', bar);
+      refreshRidersForSlot('right', bar.dataset.mode || '1', bar);
     }
 
     function applyDock(side){
@@ -1276,7 +1437,7 @@
       if (e.cancelable) e.preventDefault();
       bar.style.left = (startLeft + dx) + 'px';
       bar.style.right = 'auto';
-      refreshRidersForSide('right', bar);
+      refreshRidersForSlot('right', bar.dataset.mode || '1', bar);
     }
 
     function onUp(){
@@ -1311,8 +1472,7 @@
     var mode1 = buildModePlaceholder('Right drawer -- slot 1 (not yet designated)');
     mode1.classList.add('sz-mode-active');
     var mode2 = buildModePlaceholder('Right drawer -- slot 2 (not yet designated)');
-    var surprise = buildSurprisePanel();
-    surprise.textEl.textContent = SURPRISE_POOL[0];
+    var surprise = buildSurprisePanel(bar, 'right');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
@@ -1339,10 +1499,6 @@
     var drawer = dockRightDrawer(bar);
 
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'RIGHT_DRAWER_MODE', RIGHT_COLLAPSE_KEY, { open: '›', closed: '‹' }, function(){
-      if (bar.dataset.mode === '3') {
-        var idx = Math.floor(Math.random() * SURPRISE_POOL.length);
-        surprise.textEl.textContent = SURPRISE_POOL[idx];
-      }
       // Each slot keeps its own color (Larry, July 27 2026).
       refreshDrawerColorForMode(bar, RIGHT_DRAWER_COLOR_PREFIX);
       drawer.applyDock(drawer.getSide());
@@ -1367,8 +1523,8 @@
     // next drag/dock/toggle.
     var leftBarEl = document.getElementById('sz-navbar');
     var rightBarEl = document.getElementById('sz-drawer-r');
-    if (leftBarEl) refreshRidersForSide('left', leftBarEl);
-    if (rightBarEl) refreshRidersForSide('right', rightBarEl);
+    if (leftBarEl) refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
+    if (rightBarEl) refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
   }
 
   if (document.readyState === 'loading') {
