@@ -1003,6 +1003,17 @@
       }
     } catch(e){}
 
+    // Body-drag retired here, July 27 2026 -- Larry: "drag tv frame
+    // but not content." Now that reading content is highlight/copy-
+    // selectable (see the #fg-root:not(.isx-full) rule in index.html),
+    // grabbing the widget's own body to move it would fight with
+    // selecting text in the same gesture. Moving the widget is now the
+    // TV frame's own job instead (tv-frame.js's wireFrameDrag, same
+    // 't2t-widget-pos' storage key so it's one continuous position,
+    // not two separate systems). This function still restores a saved
+    // position on load, and onDown/onMove/onUp stay defined below in
+    // case a future screen wants body-dragging back -- just not wired
+    // to any listener for now.
     function pointOf(e){ return e.touches ? e.touches[0] : e; }
 
     function onDown(e){
@@ -1034,13 +1045,6 @@
       try { localStorage.setItem('t2t-widget-pos', JSON.stringify({ left: rect.left, top: rect.top })); }
       catch(e){}
     }
-
-    el.addEventListener('mousedown', onDown);
-    el.addEventListener('touchstart', onDown, { passive: true });
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('mouseup', onUp);
-    document.addEventListener('touchend', onUp);
   }
 
   /* ---------- The new right-side drawer -- Larry, July 26: "only 2

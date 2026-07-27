@@ -13,6 +13,18 @@
    Larry: needed a slightly lighter teal, now that the TV frame (0007)
    bezel uses the original --brand-teal-deep shade too. */
 .fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default;align-self:flex-start}
+/* Larry, July 27 2026: "traveler should be able to highlight and copy
+   anything in content." .fg above blocks selection everywhere, on
+   purpose originally (needed for the widget's own drag gestures) --
+   this re-enables it, but only while an INPUT/reading screen is
+   showing (i.e. NOT .isx-full, the class Storyboard/Session/Briefing
+   Board/Gems add when they take over full-screen and need their own
+   drag gestures to keep working). Content and OUTPUT tools never
+   overlap -- the TV frame hides itself during .isx-full -- so this
+   line is exact, not a guess. Dragging the widget itself moved to the
+   TV frame's own bezel instead (tv-frame.js) so grabbing text to
+   select it doesn't also drag the picture out from under you. */
+#fg-root:not(.isx-full){user-select:text;-webkit-user-select:text}
 .card.rnd{border-radius:12px;min-height:0;flex:0 0 auto}
 .siw{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#15805F;text-align:center;flex-shrink:0}
 .si-t2t{font-family:'Playfair Display',serif;font-size:60px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:6px}
@@ -30,8 +42,8 @@
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260723b"></script>
-<script src="screen-zero.js?v=20260727b"></script>
-<script src="tv-frame.js?v=20260727e"></script>
+<script src="screen-zero.js?v=20260727c"></script>
+<script src="tv-frame.js?v=20260727f"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">

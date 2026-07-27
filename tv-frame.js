@@ -112,13 +112,24 @@
       // reused here now that brown is reserved for the notebook. White
       // top highlight kept as-is (Larry: "I like the white frame on
       // the tv window").
-      + '#tv-frame{position:fixed;pointer-events:none;'
+      //
+      // pointer-events switched none -> auto, July 27 2026 -- Larry:
+      // "drag tv frame but not content." The frame ring is now the
+      // widget's own drag handle (see wireFrameDrag below); the ring
+      // and the knob-gaps both being real click targets is fine and
+      // even helpful for that. #tv-controls below still needs its OWN
+      // pointer-events:none so double-click/triple-click detection
+      // (which checks ring geometry, not e.target) and the new drag
+      // both still reach the frame itself through the gaps between
+      // knobs, not just the knobs.
+      + '#tv-frame{position:fixed;pointer-events:auto;cursor:grab;'
       +   'background:linear-gradient(160deg,var(--tv-top,' + savedP.top + '),var(--tv-mid,' + savedP.mid + ') 55%,var(--tv-bottom,' + savedP.bottom + ') 100%);'
       +   'border:2px solid var(--tv-border,' + savedP.border + ');border-radius:26px;'
       +   'box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.08),'
       +     'inset 0 -2px 0 rgba(0,0,0,.5);'
       +   'transition:opacity .15s ease, background .2s ease, border-color .2s ease;}'
       + '#tv-frame.tv-frame-hidden{opacity:0}'
+      + '#tv-frame.tv-frame-dragging{cursor:grabbing}'
       // pointer-events:none here (was auto) -- Larry, July 27 2026:
       // "double click 0007 did not offer color options." Root cause:
       // this div spans the frame's FULL WIDTH (left:0;right:0), so
@@ -128,7 +139,8 @@
       // that the frame's shorter. Only the individual knob buttons
       // need to catch clicks, so pointer-events is re-enabled just on
       // .tv-knob below, and everything else in this strip now passes
-      // through to the ring-detection in wireColorGesture.
+      // through to the frame itself underneath (drag + the existing
+      // ring-detection in wireColorGesture).
       + '#tv-controls{position:absolute;left:0;right:0;bottom:8px;'
       +   'display:flex;align-items:center;justify-content:center;gap:14px;'
       +   'pointer-events:none}'
@@ -389,16 +401,14 @@
     requestAnimationFrame(tick);
   }
 
-  /* ---------- Double-click detection for the frame ring. Same
-     situation as the 0007 triple-click number in backpack.js: the
-     frame has pointer-events:none so native events pass through it,
-     so this checks click geometry against the frame's own rect
-     (self-contained here rather than piggybacking on backpack.js's
-     Hidden Mickey handler, since this is purely this module's own
-     gesture). Excludes the knob row (its own pointer-events:auto
-     buttons, and dblclick there shouldn't open a color picker) and
-     the nav rail/drawers in case their rects ever overlap the
-     frame's. Only counts while the frame is actually visible. ------ */
+  /* ---------- Double-click detection for the frame ring. Kept as a
+     geometry check (frame rect vs. click point) rather than switching
+     to e.target.closest('#tv-frame') now that pointer-events is auto
+     -- it already worked and doesn't care either way, so there was no
+     reason to touch it while making the frame draggable below.
+     Excludes the knob row and the nav rail/drawers in case their rects
+     ever overlap the frame's. Only counts while the frame is actually
+     visible. ------ */
 
   function wireColorGesture(frame){
     document.addEventListener('dblclick', function(e){
@@ -409,6 +419,65 @@
       var inRing = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
       if (inRing) openColorPicker(frame);
     });
+  }
+
+  /* ---------- Dragging the widget by its frame instead of its body --
+     Larry, July 27 2026: "drag tv frame but not content." Same
+     't2t-widget-pos' storage key screen-zero.js's makeWidgetDraggable
+     used to write to, so this is a continuation of that one position,
+     not a second competing one -- makeWidgetDraggable still restores
+     it on load, this just replaces how a NEW position gets set. Since
+     #tv-frame now has pointer-events:auto, this can wire directly to
+     the frame element rather than needing a geometry check like the
+     double/triple-click detection above. ---------- */
+
+  function wireFrameDrag(frame, fg){
+    var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+
+    function pointOf(e){ return e.touches ? e.touches[0] : e; }
+
+    function onDown(e){
+      if (e.target.closest('.tv-knob')) return;
+      if (frame.classList.contains('tv-frame-hidden')) return;
+      var p = pointOf(e);
+      dragging = true; moved = false;
+      var rect = fg.getBoundingClientRect();
+      startLeft = rect.left; startTop = rect.top;
+      startX = p.clientX; startY = p.clientY;
+      frame.classList.add('tv-frame-dragging');
+      document.body.style.userSelect = 'none';
+    }
+
+    function onMove(e){
+      if (!dragging) return;
+      var p = pointOf(e);
+      var dx = p.clientX - startX, dy = p.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      if (!moved) return;
+      if (e.cancelable) e.preventDefault();
+      fg.style.position = 'fixed';
+      fg.style.left = (startLeft + dx) + 'px';
+      fg.style.top = (startTop + dy) + 'px';
+      fg.style.margin = '0';
+    }
+
+    function onUp(){
+      if (!dragging) return;
+      dragging = false;
+      frame.classList.remove('tv-frame-dragging');
+      document.body.style.userSelect = '';
+      if (!moved) return;
+      var rect = fg.getBoundingClientRect();
+      try { localStorage.setItem('t2t-widget-pos', JSON.stringify({ left: rect.left, top: rect.top })); }
+      catch(e){}
+    }
+
+    frame.addEventListener('mousedown', onDown);
+    frame.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
   }
 
   function init(){
@@ -435,6 +504,7 @@
 
     applyColor(frame, getSavedColorKey());
     wireColorGesture(frame);
+    wireFrameDrag(frame, fg);
 
     trackLoop(frame, fg, vignette);
   }
