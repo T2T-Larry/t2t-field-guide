@@ -57,6 +57,41 @@
   // cabinet's lower edge, not by shrinking the knobs themselves.
   var BEZEL_BOTTOM = 56; // px -- extra room at the bottom for the control ledge
 
+  // Made-up starter palette for the frame's double-click color options --
+  // Larry, July 27 2026: "just make up some interesting ones for now."
+  // Not a themed/branded set, just six distinct cabinet looks. Emerald
+  // (the current teal-green) stays the default so nothing changes for a
+  // traveler who never opens the picker. Same 3-stop gradient + border
+  // shape as the original brown bezel, just re-colored per swatch.
+  var TV_COLOR_KEY = 't2t_tvFrameColor';
+  var TV_PALETTE = [
+    { key:'emerald',  name:'Emerald',    top:'#14806A', mid:'#0F6E56', bottom:'#093B2F', border:'#06231C' },
+    { key:'rust',     name:'Rust',       top:'#D9713F', mid:'#C1502E', bottom:'#7A2E17', border:'#4A1B0E' },
+    { key:'navy',     name:'Navy',       top:'#2E4F73', mid:'#1B3A5C', bottom:'#0E2038', border:'#081422' },
+    { key:'wine',     name:'Wine',       top:'#8A3153', mid:'#6B1E3C', bottom:'#3E0F22', border:'#250913' },
+    { key:'mustard',  name:'Mustard',    top:'#DDA83B', mid:'#C9973A', bottom:'#7A5A1C', border:'#4A3610' },
+    { key:'charcoal', name:'Charcoal',   top:'#4A4A4A', mid:'#2B2B2B', bottom:'#151515', border:'#0A0A0A' }
+  ];
+
+  function getSavedColorKey(){
+    try { return localStorage.getItem(TV_COLOR_KEY) || 'emerald'; } catch(e){ return 'emerald'; }
+  }
+  function saveColorKey(key){
+    try { localStorage.setItem(TV_COLOR_KEY, key); } catch(e){}
+  }
+  function paletteEntry(key){
+    for (var i = 0; i < TV_PALETTE.length; i++) if (TV_PALETTE[i].key === key) return TV_PALETTE[i];
+    return TV_PALETTE[0];
+  }
+  function applyColor(frame, key){
+    var p = paletteEntry(key);
+    frame.style.setProperty('--tv-top', p.top);
+    frame.style.setProperty('--tv-mid', p.mid);
+    frame.style.setProperty('--tv-bottom', p.bottom);
+    frame.style.setProperty('--tv-border', p.border);
+    frame.dataset.colorKey = p.key;
+  }
+
   function injectStyle(){
     if (document.getElementById('tv-frame-style')) return;
     var css = ''
@@ -66,11 +101,11 @@
       // top highlight kept as-is (Larry: "I like the white frame on
       // the tv window").
       + '#tv-frame{position:fixed;pointer-events:none;'
-      +   'background:linear-gradient(160deg,#14806A,#0F6E56 55%,#093B2F 100%);'
-      +   'border:2px solid #06231C;border-radius:26px;'
+      +   'background:linear-gradient(160deg,var(--tv-top,#14806A),var(--tv-mid,#0F6E56) 55%,var(--tv-bottom,#093B2F) 100%);'
+      +   'border:2px solid var(--tv-border,#06231C);border-radius:26px;'
       +   'box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.08),'
       +     'inset 0 -2px 0 rgba(0,0,0,.5);'
-      +   'transition:opacity .15s ease;}'
+      +   'transition:opacity .15s ease, background .2s ease, border-color .2s ease;}'
       + '#tv-frame.tv-frame-hidden{opacity:0}'
       + '#tv-controls{position:absolute;left:0;right:0;bottom:8px;'
       +   'display:flex;align-items:center;justify-content:center;gap:14px;'
@@ -88,6 +123,28 @@
       // reads as the bezel casting a shadow onto the screen beneath it.
       + '#fg-root.tv-vignette{box-shadow:0 4px 24px rgba(0,0,0,.18),'
       +   'inset 0 0 26px 7px rgba(0,0,0,.4)}'
+      // Color-options picker (double-click the frame ring, screen 0007) --
+      // Larry, July 27 2026: "definitely need a selection of color options
+      // for the TV frame on double click." Reuses the site's existing
+      // dimmed-backdrop overlay pattern (.sb-overlay in idea-storyboard-
+      // 9710.js) so it reads as the same family of picker as everywhere
+      // else, rather than a one-off look just for this frame.
+      + '#tv-color-overlay{position:fixed;inset:0;z-index:9997;'
+      +   'background:rgba(9,20,17,0.5);display:none;align-items:center;'
+      +   'justify-content:center;padding:20px;box-sizing:border-box}'
+      + '#tv-color-overlay.active{display:flex}'
+      + '#tv-color-card{background:#fdf8f0;border-radius:14px;padding:18px;'
+      +   'width:min(280px,90%);box-shadow:0 10px 30px rgba(0,0,0,.4);text-align:center}'
+      + '#tv-color-card .tv-color-title{font-family:"Playfair Display",Georgia,serif;'
+      +   'font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:2px}'
+      + '#tv-color-card .tv-color-sub{font-size:11px;color:#888;font-style:italic;margin-bottom:12px}'
+      + '#tv-color-swatches{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:14px}'
+      + '.tv-color-swatch{width:44px;height:44px;border-radius:10px;cursor:pointer;'
+      +   'border:2px solid rgba(0,0,0,.25);box-shadow:0 3px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.2);'
+      +   'padding:0;position:relative}'
+      + '.tv-color-swatch.tv-color-active{border-color:#1a3a5c;box-shadow:0 0 0 2px #fdf8f0,0 0 0 4px #1a3a5c}'
+      + '#tv-color-close{border:1px solid #cfe4f2;background:#fff;padding:6px 16px;'
+      +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#5b9bd5}'
       ;
     var style = document.createElement('style');
     style.id = 'tv-frame-style';
@@ -172,6 +229,60 @@
     });
   }
 
+  /* ---------- Color-options picker: double-click the frame ring
+     (screen 0007) opens a swatch picker, same "double-click is
+     color options everywhere" standard as every other screen.
+     ---------- */
+
+  function buildColorPicker(frame){
+    var overlay = document.createElement('div');
+    overlay.id = 'tv-color-overlay';
+
+    var card = document.createElement('div');
+    card.id = 'tv-color-card';
+    card.innerHTML = ''
+      + '<div class="tv-color-title">TV frame color</div>'
+      + '<div class="tv-color-sub">Pick a look for the cabinet. Stays until you change it.</div>'
+      + '<div id="tv-color-swatches"></div>'
+      + '<button id="tv-color-close" type="button">✕</button>';
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    var swatchRow = card.querySelector('#tv-color-swatches');
+    TV_PALETTE.forEach(function(p){
+      var sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = 'tv-color-swatch';
+      sw.title = p.name;
+      sw.style.background = 'linear-gradient(160deg,' + p.top + ',' + p.mid + ' 55%,' + p.bottom + ' 100%)';
+      sw.addEventListener('click', function(){
+        applyColor(frame, p.key);
+        saveColorKey(p.key);
+        closeColorPicker();
+      });
+      swatchRow.appendChild(sw);
+    });
+
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeColorPicker(); });
+    card.querySelector('#tv-color-close').addEventListener('click', closeColorPicker);
+
+    return overlay;
+  }
+
+  function openColorPicker(frame){
+    var overlay = document.getElementById('tv-color-overlay') || buildColorPicker(frame);
+    var cur = frame.dataset.colorKey || getSavedColorKey();
+    overlay.querySelectorAll('.tv-color-swatch').forEach(function(sw, i){
+      sw.classList.toggle('tv-color-active', TV_PALETTE[i].key === cur);
+    });
+    overlay.classList.add('active');
+  }
+
+  function closeColorPicker(){
+    var overlay = document.getElementById('tv-color-overlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+
   /* ---------- Track #fg-root continuously (drag, resize, screen
      changes) so the frame always reads as floating just behind
      whatever the widget is currently showing. Hides itself
@@ -215,6 +326,28 @@
     requestAnimationFrame(tick);
   }
 
+  /* ---------- Double-click detection for the frame ring. Same
+     situation as the 0007 triple-click number in backpack.js: the
+     frame has pointer-events:none so native events pass through it,
+     so this checks click geometry against the frame's own rect
+     (self-contained here rather than piggybacking on backpack.js's
+     Hidden Mickey handler, since this is purely this module's own
+     gesture). Excludes the knob row (its own pointer-events:auto
+     buttons, and dblclick there shouldn't open a color picker) and
+     the nav rail/drawers in case their rects ever overlap the
+     frame's. Only counts while the frame is actually visible. ------ */
+
+  function wireColorGesture(frame){
+    document.addEventListener('dblclick', function(e){
+      if (e.target.closest('#tv-controls, #sz-navbar, #sz-drawer-r, #tv-color-overlay')) return;
+      if (frame.classList.contains('tv-frame-hidden')) return;
+      if (e.target.closest('#fg-root')) return;
+      var r = frame.getBoundingClientRect();
+      var inRing = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (inRing) openColorPicker(frame);
+    });
+  }
+
   function init(){
     var fg = document.getElementById('fg-root');
     if (!fg) return;
@@ -228,6 +361,8 @@
     // covers the frame's middle, leaving only the bezel ring visible.
     fg.parentNode.insertBefore(frame, fg);
     fg.classList.add('tv-vignette');
+    applyColor(frame, getSavedColorKey());
+    wireColorGesture(frame);
 
     trackLoop(frame, fg);
   }
