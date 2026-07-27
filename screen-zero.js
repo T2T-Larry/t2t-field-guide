@@ -136,7 +136,11 @@
       +   'overflow-wrap:break-word}'
       + '#sz-navmid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;'
       +   'justify-content:center;gap:16px;overflow-y:auto;padding:10px 0}'
-      + '#sz-tools{display:flex;flex-direction:column;gap:8px;align-items:center}'
+      + '#sz-tools{display:flex;flex-direction:column;align-items:center}'
+      + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab}'
+      + '.sz-tool-stack-grip{width:150px;padding:3px 4px;border-radius:6px;text-align:center;'
+      +   'font-size:9px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
+      +   'border:1px dashed #c9a86a;background:rgba(255,255,255,.35)}'
       + '.sz-tool-btn{width:150px;padding:3px;border-radius:6px;border:none;cursor:pointer;'
       +   'background:linear-gradient(135deg,#e0b060,#8a6420);box-shadow:2px 3px 6px rgba(0,0,0,.3);'
       +   'transition:transform .1s ease, box-shadow .1s ease}'
@@ -188,7 +192,8 @@
       // dashed border since it's real content, not a TBD placeholder.
       + '.sz-surprise-panel{min-height:150px;border:none}'
       + '.sz-surprise-gif{width:72px;height:72px;border-radius:8px;object-fit:cover;'
-      +   'border:2px solid #b89968;box-shadow:0 3px 8px rgba(0,0,0,.3);cursor:grab}'
+      +   'border:2px solid #b89968;box-shadow:0 3px 8px rgba(0,0,0,.3);cursor:grab;'
+      +   '-webkit-user-drag:none;user-select:none}'
       + '.sz-surprise-gif.sz-dragging{cursor:grabbing}'
       // The one-off "you found it" celebration for the triple-tap
       // surprise slot -- the content behind it is meant to rotate over
@@ -428,6 +433,8 @@
   // snaps back to its home spot in the list, regardless of what's
   // currently claimed or independently placed.
   var _toolButtonRecs = [];
+  var TOOL_STACK_KEY = 't2t_toolStackPos';
+  var _toolStackRec = null;
 
   function resetToolStack(){
     _toolButtonRecs.forEach(function(rec){
@@ -439,6 +446,19 @@
       rec.el.style.right = ''; rec.el.style.bottom = ''; rec.el.style.margin = '';
       rec.el.style.display = '';
     });
+    // The stack-as-a-unit grip (below) gets the same reset treatment
+    // as every individual button, so one gear-tap always returns
+    // everything to its default spot regardless of which way it left.
+    if (_toolStackRec) {
+      setRidingSlot(TOOL_STACK_KEY, null);
+      try { localStorage.removeItem(TOOL_STACK_KEY); } catch(e){}
+      restoreHomeParent(_toolStackRec);
+      var se = _toolStackRec.el;
+      se.style.position = '';
+      se.style.left = ''; se.style.top = '';
+      se.style.right = ''; se.style.bottom = ''; se.style.margin = '';
+      se.style.display = '';
+    }
     showZeroToast('Tool stack reset.');
   }
 
@@ -478,9 +498,62 @@
     });
   }
 
+  // Larry, July 27 2026: "Tool stack is an object and should move
+  // out of drawer as a unit if desired." Individual buttons already
+  // drag out one at a time (wireToolButtonDrag above); this is a
+  // second, independent way to grab the whole stack at once via its
+  // own grip strip, without changing how a lone button behaves --
+  // grabbing a button still moves just that button (excludeSelector
+  // below), grabbing the grip (or the gaps around it) moves all six
+  // together. The grip lives INSIDE the existing #sz-tools mode-1
+  // panel rather than replacing it, so mode-switching/visibility
+  // keeps working exactly like it already does for every other
+  // mode-1 object.
+  function wireToolStackDrag(stack, leftBar){
+    var rec = registerClaimable(stack, TOOL_STACK_KEY, 16);
+    _toolStackRec = rec;
+    makeDraggable(stack, TOOL_STACK_KEY, '.sz-tool-btn', 40, 40, {
+      skipDefaultPos: true,
+      reattachTargets: [
+        { el: leftBar, side: 'left' },
+        { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
+      ],
+      onIndependent: function(){
+        if (stack.parentNode !== document.body) document.body.appendChild(stack);
+      },
+      onReattach: function(side, barEl){
+        var mode = barEl.dataset.mode || '1';
+        // "Home" is the left drawer's own native slot (mode 1) --
+        // same rule individual tool buttons already use.
+        if (side === 'left' && mode === '1') {
+          setRidingSlot(TOOL_STACK_KEY, null);
+          restoreHomeParent(rec);
+          stack.style.position = '';
+          stack.style.left = ''; stack.style.top = '';
+          stack.style.right = ''; stack.style.bottom = ''; stack.style.margin = '';
+          stack.style.display = '';
+        } else {
+          setRidingSlot(TOOL_STACK_KEY, slotKey(side, mode));
+          captureRidingOffset(rec, barEl);
+          refreshRidersForSlot(side, mode, barEl);
+        }
+      }
+    });
+  }
+
   function buildTools(leftBar){
     var wrap = document.createElement('div');
     wrap.id = 'sz-tools';
+
+    var stack = document.createElement('div');
+    stack.id = 'sz-tool-stack';
+    stack.className = 'sz-drawer-drag-exclude';
+
+    var grip = document.createElement('div');
+    grip.className = 'sz-tool-stack-grip';
+    grip.title = 'Drag to move the whole tool stack';
+    grip.textContent = '\u22EE\u22EE Tools';
+    stack.appendChild(grip);
 
     var items = [
       { label: 'Field Guide',     action: function(){ if (window.T2T) window.T2T.goMG(); } },
@@ -497,9 +570,12 @@
       btn.className = 'sz-tool-btn';
       btn.innerHTML = '<div class="sz-tool-face"><span>' + item.label + '</span></div>';
       btn.addEventListener('click', item.action);
-      wrap.appendChild(btn);
+      stack.appendChild(btn);
       wireToolButtonDrag(btn, leftBar, idx);
     });
+
+    wrap.appendChild(stack);
+    wireToolStackDrag(stack, leftBar);
 
     return wrap;
   }
@@ -672,9 +748,21 @@
     wrap.className = 'sz-mode-panel sz-mode-placeholder sz-surprise-panel';
     wrap.style.position = 'relative';
     var img = document.createElement('img');
-    img.className = 'sz-surprise-gif';
+    img.className = 'sz-surprise-gif sz-drawer-drag-exclude';
     img.src = SURPRISE_GIF_URL;
     img.alt = 'A monkey playing cymbals';
+    // Larry, July 27 2026 (bug report): the monkey wouldn't budge out
+    // of the drawer. Root cause: <img> elements are natively
+    // draggable in every browser by default, so a mousedown-drag on
+    // it was being hijacked by the browser's own ghost-image drag
+    // before the custom mouse-drag logic below ever saw a real
+    // mousemove -- it just snapped back on release, looking stuck.
+    // Killing native drag here (the attribute for Chrome/Firefox,
+    // dragstart preventDefault as backup for Safari) lets the real
+    // drag take over, same as the corner-flip tabs elsewhere in this
+    // codebase already do for their own elements.
+    img.draggable = false;
+    img.addEventListener('dragstart', function(e){ e.preventDefault(); });
     wrap.appendChild(img);
     wireSurpriseGifDrag(img, 't2t_surpriseGif_' + side, bar, side);
     return { el: wrap };
@@ -876,7 +964,7 @@
   }
 
   var COLLAPSE_KEY = 't2t-navbar-collapsed';
-  var NAVBAR_EXCLUDE = 'button, a, input, textarea, select, [role="button"]';
+  var NAVBAR_EXCLUDE = 'button, a, input, textarea, select, [role="button"], .sz-drawer-drag-exclude';
   var WIDGET_EXCLUDE = 'button, a, input, textarea, select, [role="button"], ' +
     '.mg-btn, .mg-ret, .spark-door, .ib, .jb, .gb, .tb, .more-link, ' +
     '.tool-row, .save-btn, .jsave-btn, .gsave-btn';
@@ -1253,16 +1341,18 @@
           { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
         ],
         onReattach: function(side, barEl){
+          // Larry, July 27 2026 (bug report, round 2): "Put in one
+          // drawer; stay in one drawer." Dropping onto the left
+          // drawer's own mode 1 used to be a special case ("true
+          // home", visible in every mode of that drawer) -- that
+          // special case was exactly what read as the notebook
+          // "drifting" to other drawer taps. Every drop now claims
+          // the exact slot it landed on, mode 1 included, no
+          // exceptions -- matching how the nameplate already works.
           var mode = barEl.dataset.mode || '1';
-          if (side === 'left' && mode === '1') {
-            setRidingSlot(NOTEBOOK_KEY, null);
-            rail.captureNotebookOffset();
-            updateNotebookVisibility(bar, notebook);
-          } else {
-            setRidingSlot(NOTEBOOK_KEY, slotKey(side, mode));
-            captureRidingOffset(notebookRec, barEl);
-            refreshRidersForSlot(side, mode, barEl);
-          }
+          setRidingSlot(NOTEBOOK_KEY, slotKey(side, mode));
+          captureRidingOffset(notebookRec, barEl);
+          refreshRidersForSlot(side, mode, barEl);
         }
       }
     );
