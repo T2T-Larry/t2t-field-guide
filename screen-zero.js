@@ -177,6 +177,11 @@
       +   'gap:6px;width:150px;min-height:80px;border:2px dashed #b89968;border-radius:8px;'
       +   'padding:14px 10px;text-align:center;color:#7a5c3a;font-size:11px;'
       +   'font-family:"Playfair Display",Georgia,serif;box-sizing:border-box}'
+      // Surprise slot (mode 3) needs a bit more room than the plain
+      // text placeholders, now that it holds a real image too.
+      + '.sz-surprise-panel{min-height:150px}'
+      + '.sz-surprise-gif{width:72px;height:72px;border-radius:8px;object-fit:cover;'
+      +   'border:2px solid #b89968;box-shadow:0 3px 8px rgba(0,0,0,.3)}'
       // The one-off "you found it" celebration for the triple-tap
       // surprise slot -- the content behind it is meant to rotate over
       // time (see buildSurprisePanel), but the little burst itself can
@@ -579,10 +584,20 @@
     return p;
   }
 
+  // Larry, July 27 2026: "a monkey playing cymbals to put into a
+  // triple click drawer" -- the real surprise content for mode 3,
+  // alongside the rotating text that was already there.
+  var SURPRISE_GIF_URL = 'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3dsdTg4cm9jcmllcTd2c3JxZjhxaDEwM3N3Z2JtdGh4eHpsaTM1aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/k5cnWfaRTPgze/giphy.gif';
+
   function buildSurprisePanel(){
     var wrap = document.createElement('div');
-    wrap.className = 'sz-mode-panel sz-mode-placeholder';
+    wrap.className = 'sz-mode-panel sz-mode-placeholder sz-surprise-panel';
     wrap.style.position = 'relative';
+    var img = document.createElement('img');
+    img.className = 'sz-surprise-gif';
+    img.src = SURPRISE_GIF_URL;
+    img.alt = 'A monkey playing cymbals';
+    wrap.appendChild(img);
     var text = document.createElement('div');
     text.className = 'sz-surprise-text';
     wrap.appendChild(text);

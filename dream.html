@@ -51,6 +51,16 @@
 <script src="idea-storyboard-9710.js?v=20260727b"></script>
 <script src="session.js?v=20260727b"></script>
 <script src="gems.js?v=20260723b"></script>
+<!-- Missing until now, July 27 2026 -- Larry: landing on 1000 left him
+     completely stuck, no drawers, no TV frame, no nav buttons. The
+     July 26 refactor hid every screen's own paging/menu buttons
+     site-wide (style.css's .bar2,.bar3{display:none!important}) on
+     the assumption the TV frame + nav drawer would always be there to
+     replace them -- true on index.html, never actually true here.
+     Adding the same two scripts index.html loads restores that parity
+     instead of relying on the old hidden buttons still working. -->
+<script src="screen-zero.js?v=20260727e"></script>
+<script src="tv-frame.js?v=20260727f"></script>
 </head>
 <body>
 <div class="fg" id="fg-root">
