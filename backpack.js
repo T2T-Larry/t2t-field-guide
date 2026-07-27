@@ -556,7 +556,24 @@
           ? (LEFT_MODE_NUMS[leftBar.dataset.mode] || '0020') : '0020';
         var rightNum = (rightBar && !rightBar.classList.contains('sz-collapsed'))
           ? (RIGHT_MODE_NUMS[rightBar.dataset.mode] || '0000') : '0000';
-        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (outsideWidget ? '0000' : (_pageNums[cur] || '—')));
+        // TV frame is 0007 -- Larry's confirmed direction, July 27 2026.
+        // The frame ring (#tv-frame) has pointer-events:none so it can
+        // let clicks pass through to whatever's underneath (the widget
+        // drag surface, the 0000 backdrop); that means e.target.closest
+        // never actually lands on it, unlike sz-navbar/sz-drawer-r
+        // above. So this checks geometry instead: is the click inside
+        // the frame's own visible rect, but outside the widget and off
+        // both drawers? Only counts while the frame is actually shown
+        // (it hides itself during full-screen outputs).
+        var tvFrameEl = document.getElementById('tv-frame');
+        var onTvFrameRing = false;
+        if (tvFrameEl && outsideWidget && !onNavBar && !onRightDrawer &&
+            !tvFrameEl.classList.contains('tv-frame-hidden')) {
+          var tvR = tvFrameEl.getBoundingClientRect();
+          onTvFrameRing = e.clientX >= tvR.left && e.clientX <= tvR.right &&
+                          e.clientY >= tvR.top && e.clientY <= tvR.bottom;
+        }
+        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (onTvFrameRing ? '0007' : (outsideWidget ? '0000' : (_pageNums[cur] || '—'))));
         var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : outsideNum))))))));
         showPageToast(num);
       }

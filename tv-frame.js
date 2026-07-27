@@ -51,19 +51,28 @@
 (function(){
 
   var BEZEL_SIDE = 22;   // px -- extra bezel width on left/right/top
-  var BEZEL_BOTTOM = 78; // px -- extra room at the bottom for the control ledge
+  // BEZEL_BOTTOM narrowed 78 -> 56 and the knob row's own bottom offset
+  // 12 -> 8, per Larry, July 27 2026: shorten the frame's overall
+  // vertical height by tightening the gap between the knobs and the
+  // cabinet's lower edge, not by shrinking the knobs themselves.
+  var BEZEL_BOTTOM = 56; // px -- extra room at the bottom for the control ledge
 
   function injectStyle(){
     if (document.getElementById('tv-frame-style')) return;
     var css = ''
+      // Recolored brown/wood -> dark teal-green per Larry, July 27
+      // 2026: #0F6E56 is the old (pre-TV) binder's own frame color --
+      // reused here now that brown is reserved for the notebook. White
+      // top highlight kept as-is (Larry: "I like the white frame on
+      // the tv window").
       + '#tv-frame{position:fixed;pointer-events:none;'
-      +   'background:linear-gradient(160deg,#4a3826,#2b1f14 55%,#1c130b 100%);'
-      +   'border:2px solid #0d0a06;border-radius:26px;'
+      +   'background:linear-gradient(160deg,#14806A,#0F6E56 55%,#093B2F 100%);'
+      +   'border:2px solid #06231C;border-radius:26px;'
       +   'box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.08),'
       +     'inset 0 -2px 0 rgba(0,0,0,.5);'
       +   'transition:opacity .15s ease;}'
       + '#tv-frame.tv-frame-hidden{opacity:0}'
-      + '#tv-controls{position:absolute;left:0;right:0;bottom:12px;'
+      + '#tv-controls{position:absolute;left:0;right:0;bottom:8px;'
       +   'display:flex;align-items:center;justify-content:center;gap:14px;'
       +   'pointer-events:auto}'
       + '.tv-knob{width:34px;height:34px;border-radius:50%;cursor:pointer;'
@@ -73,6 +82,12 @@
       +   'color:#f3e6cf;transition:transform .1s ease}'
       + '.tv-knob:active{transform:translateY(1px)}'
       + '.tv-knob.dim{opacity:.35;cursor:default;pointer-events:none}'
+      // Vignette lives on the widget (#fg-root), not the frame, since
+      // the frame paints behind it -- a shadow ON the frame would never
+      // actually show. Fades in just inside the widget's own border,
+      // reads as the bezel casting a shadow onto the screen beneath it.
+      + '#fg-root.tv-vignette{box-shadow:0 4px 24px rgba(0,0,0,.18),'
+      +   'inset 0 0 26px 7px rgba(0,0,0,.4)}'
       ;
     var style = document.createElement('style');
     style.id = 'tv-frame-style';
@@ -172,10 +187,12 @@
       var isFull = fg.classList.contains('isx-full');
       if (isFull){
         frame.classList.add('tv-frame-hidden');
+        fg.classList.remove('tv-vignette');
         requestAnimationFrame(tick);
         return;
       }
       frame.classList.remove('tv-frame-hidden');
+      fg.classList.add('tv-vignette');
 
       var r = fg.getBoundingClientRect();
       var left = r.left - BEZEL_SIDE;
@@ -210,6 +227,7 @@
     // keeps the frame behind the widget -- the widget's own content
     // covers the frame's middle, leaving only the bezel ring visible.
     fg.parentNode.insertBefore(frame, fg);
+    fg.classList.add('tv-vignette');
 
     trackLoop(frame, fg);
   }
