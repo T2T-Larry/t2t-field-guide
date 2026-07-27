@@ -398,7 +398,42 @@
      show the same "coming later" toast as the gear, so nothing
      looks silently broken. ---------- */
 
-  function buildTools(){
+  // Each tool button can be dragged out of the drawer onto the desk
+  // (becomes its own independent floating object, still clickable),
+  // dropped onto the RIGHT drawer to be stored there (rides it, hides
+  // when it collapses, same as the nameplate), or dropped back onto
+  // its OWN drawer (leftBar) to return home -- which means actually
+  // flowing back into the list, not floating next to it. Larry, July
+  // 27 2026: "Tool button stack should drag from drawer if desired.
+  // Flexibility!"
+  function wireToolButtonDrag(btn, leftBar, idx){
+    var storeKey = 't2t_toolBtnPos_' + idx;
+    var rec = registerClaimable(btn, storeKey, 16);
+    makeDraggable(btn, storeKey, null, 40, 40, {
+      skipDefaultPos: true,
+      reattachTargets: [
+        { el: leftBar, side: 'left' },
+        { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
+      ],
+      onReattach: function(side, barEl){
+        if (side === 'left') {
+          // Home drawer -- return to flowing in the list instead of
+          // floating next to it.
+          setRidingSide(storeKey, null);
+          btn.style.position = '';
+          btn.style.left = ''; btn.style.top = '';
+          btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
+          btn.style.display = '';
+        } else {
+          setRidingSide(storeKey, side);
+          captureRidingOffset(rec, barEl);
+          refreshRidersForSide(side, barEl);
+        }
+      }
+    });
+  }
+
+  function buildTools(leftBar){
     var wrap = document.createElement('div');
     wrap.id = 'sz-tools';
 
@@ -411,13 +446,14 @@
       { label: 'Storytelling',    action: function(){ showZeroToast('Storytelling — coming later.'); } }
     ];
 
-    items.forEach(function(item){
+    items.forEach(function(item, idx){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'sz-tool-btn';
       btn.innerHTML = '<div class="sz-tool-face"><span>' + item.label + '</span></div>';
       btn.addEventListener('click', item.action);
       wrap.appendChild(btn);
+      wireToolButtonDrag(btn, leftBar, idx);
     });
 
     return wrap;
@@ -641,7 +677,15 @@
         restored = true;
       }
     } catch(e){}
-    if (!restored) applyPos(defaultLeft, defaultTop);
+    // skipDefaultPos -- for objects whose "home" is normal document
+    // flow (the tool buttons riding inside the drawer's own list),
+    // not a floating desk spot. Without a saved independent position,
+    // leave position/left/top alone entirely instead of forcing
+    // position:fixed via defaultLeft/defaultTop, so CSS layout keeps
+    // rendering it wherever it naturally sits until it's actually
+    // dragged out. Larry, July 27 2026: "Tool button stack should drag
+    // from drawer if desired."
+    if (!restored && !(opts && opts.skipDefaultPos)) applyPos(defaultLeft, defaultTop);
 
     function pointOf(e){ return e.touches ? e.touches[0] : e; }
 
@@ -699,6 +743,27 @@
         }
       }
 
+      // General version of the same idea, for objects that can be
+      // claimed by EITHER drawer, not just one fixed target -- Larry,
+      // July 27 2026: "every object on a screen should be movable...
+      // drag it onto a drawer to put it away." Checks each candidate
+      // target in turn; first overlap wins, same drop-detection math
+      // as the single-target version above.
+      if (opts && opts.reattachTargets) {
+        for (var ri = 0; ri < opts.reattachTargets.length; ri++) {
+          var target = opts.reattachTargets[ri];
+          if (!target || !target.el) continue;
+          var tr = target.el.getBoundingClientRect();
+          var ov = !(rect.right < tr.left || rect.left > tr.right ||
+                     rect.bottom < tr.top || rect.top > tr.bottom);
+          if (ov) {
+            try { localStorage.removeItem(storeKey); } catch(e){}
+            if (opts.onReattach) opts.onReattach(target.side, target.el);
+            return;
+          }
+        }
+      }
+
       try { localStorage.setItem(storeKey, JSON.stringify({ left: rect.left, top: rect.top })); }
       catch(e){}
     }
@@ -723,6 +788,68 @@
 
   function notebookIsClaimed(){
     try { return !!localStorage.getItem(NOTEBOOK_KEY); } catch(e){ return false; }
+  }
+
+  /* ---------- Generalized drawer-storage, July 27 2026 -- Larry:
+     "every object in a drawer should be draggable onto the screen...
+     every object on a screen should be movable... drag it onto a
+     drawer to put it away when drawer is closed." This is the same
+     idea the notebook already used above (riding a drawer = no
+     independent saved position), generalized so ANY object can ride
+     EITHER drawer, not just the notebook riding the left one. Naming
+     is deliberately the mirror of notebookIsClaimed above -- here
+     "riding" means still attached to a drawer (the notebook's
+     "unclaimed" state), to avoid the two meaning opposite things
+     under similar names. ---------- */
+
+  function isRidingDrawer(storeKey){
+    try { return !localStorage.getItem(storeKey); } catch(e){ return true; }
+  }
+  function claimSideStoreKey(storeKey){ return 't2t_claimSide_' + storeKey; }
+  function getRidingSide(storeKey){
+    try { return localStorage.getItem(claimSideStoreKey(storeKey)); } catch(e){ return null; }
+  }
+  function setRidingSide(storeKey, side){
+    try {
+      if (side) localStorage.setItem(claimSideStoreKey(storeKey), side);
+      else localStorage.removeItem(claimSideStoreKey(storeKey));
+    } catch(e){}
+  }
+
+  // rec: { el, storeKey, offsetX, defaultTop }. offsetX starts at a
+  // sane default and gets overwritten the moment the object is first
+  // actually dropped onto a drawer (captureRidingOffset), so it rides
+  // wherever it was released, not some fixed formula spot.
+  var _claimRegistry = [];
+  function registerClaimable(el, storeKey, defaultTop){
+    var rec = { el: el, storeKey: storeKey, offsetX: 12, defaultTop: defaultTop };
+    _claimRegistry.push(rec);
+    return rec;
+  }
+  function captureRidingOffset(rec, barEl){
+    var barRect = barEl.getBoundingClientRect();
+    var elRect = rec.el.getBoundingClientRect();
+    rec.offsetX = elRect.left - barRect.left;
+  }
+
+  // Called by whichever drawer just moved, docked, or toggled --
+  // repositions + shows/hides every registered object CURRENTLY
+  // riding THIS side, ignores everything else. Cheap enough to call
+  // on every drag tick, same as the notebook's own repositionNotebook
+  // this generalizes.
+  function refreshRidersForSide(side, barEl){
+    var barRect = barEl.getBoundingClientRect();
+    var collapsed = barEl.classList.contains('sz-collapsed');
+    _claimRegistry.forEach(function(rec){
+      if (!isRidingDrawer(rec.storeKey) || getRidingSide(rec.storeKey) !== side) return;
+      rec.el.style.position = 'fixed';
+      rec.el.style.left = (barRect.left + rec.offsetX) + 'px';
+      if (!rec.el.style.top) rec.el.style.top = rec.defaultTop + 'px';
+      rec.el.style.right = 'auto';
+      rec.el.style.bottom = 'auto';
+      rec.el.style.margin = '0';
+      rec.el.style.display = collapsed ? 'none' : '';
+    });
   }
 
   /* ---------- The rail (tray): full height top-to-bottom by default,
@@ -785,6 +912,7 @@
       bar.style.right = 'auto';
       bar.classList.toggle('sz-dock-right', side === 'right');
       repositionNotebook(left);
+      refreshRidersForSide('left', bar);
     }
 
     function applyDock(side){
@@ -820,6 +948,7 @@
       bar.style.left = left + 'px';
       bar.style.right = 'auto';
       repositionNotebook(left); // the tray carries the notebook as it slides
+      refreshRidersForSide('left', bar); // ...and any other rider claimed by this drawer
     }
 
     function onUp(){
@@ -873,7 +1002,7 @@
     // is showing.
     var mid = document.createElement('div');
     mid.id = 'sz-navmid';
-    var mode1 = buildTools();
+    var mode1 = buildTools(bar);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = buildModePlaceholder('Left drawer -- slot 2 (not yet designated)');
     var surprise = buildSurprisePanel();
@@ -963,17 +1092,35 @@
       }
     );
 
-    // Nameplate: free-standing now, drag purely optional -- "make it
-    // drag if desired." No reattachTo/onReattach here at all, unlike
-    // the notebook -- Larry was clear this isn't drawer content, so
-    // there's no drawer state for it to ride with or return to.
-    // Default spot (10, 16) matches the rail's own top-left padding,
-    // where the nameplate always visually sat while it lived inside
-    // the bar.
+    // Nameplate: free-standing, drag purely optional -- "make it
+    // drag if desired." Default spot (10, 16) matches the rail's own
+    // top-left padding, where the nameplate always visually sat while
+    // it lived inside the bar. Nothing claims it by default -- it
+    // only starts riding a drawer once a traveler actually drops it
+    // on one (see reattachTargets below), same opt-in Larry described:
+    // "if desired," not a forced new behavior for anyone who never
+    // touches this.
+    //
+    // The right drawer's element is looked up lazily via a getter
+    // (not captured directly) because buildRightDrawer() hasn't run
+    // yet at this point in buildNavBar() -- by the time a traveler
+    // actually drops the nameplate on it, it will exist.
+    var nameplateRec = registerClaimable(nameplate, NAMEPLATE_KEY, 16);
     makeDraggable(
       nameplate, NAMEPLATE_KEY, null,
       nameplate.style.left ? parseFloat(nameplate.style.left) : 10,
-      nameplate.style.top ? parseFloat(nameplate.style.top) : 16
+      nameplate.style.top ? parseFloat(nameplate.style.top) : 16,
+      {
+        reattachTargets: [
+          { el: bar, side: 'left' },
+          { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
+        ],
+        onReattach: function(side, barEl){
+          setRidingSide(NAMEPLATE_KEY, side);
+          captureRidingOffset(nameplateRec, barEl);
+          refreshRidersForSide(side, barEl);
+        }
+      }
     );
   }
 
@@ -1082,6 +1229,7 @@
       bar.style.left = left + 'px';
       bar.style.right = 'auto';
       bar.classList.toggle('sz-dock-left', side === 'left');
+      refreshRidersForSide('right', bar);
     }
 
     function applyDock(side){
@@ -1113,6 +1261,7 @@
       if (e.cancelable) e.preventDefault();
       bar.style.left = (startLeft + dx) + 'px';
       bar.style.right = 'auto';
+      refreshRidersForSide('right', bar);
     }
 
     function onUp(){
@@ -1192,6 +1341,19 @@
     buildNavBar();
     buildRightDrawer();
     makeWidgetDraggable();
+
+    // Final sync pass, after both drawers definitely exist: some
+    // claimable objects (the nameplate, tool buttons) get registered
+    // partway through buildNavBar, before dockRail's own initial
+    // apply() call had a chance to see them, and the right drawer
+    // doesn't exist at all until buildRightDrawer runs. This catches
+    // anyone loading with a saved claim from a previous session so
+    // they land in the right spot on first paint, not just after the
+    // next drag/dock/toggle.
+    var leftBarEl = document.getElementById('sz-navbar');
+    var rightBarEl = document.getElementById('sz-drawer-r');
+    if (leftBarEl) refreshRidersForSide('left', leftBarEl);
+    if (rightBarEl) refreshRidersForSide('right', rightBarEl);
   }
 
   if (document.readyState === 'loading') {
