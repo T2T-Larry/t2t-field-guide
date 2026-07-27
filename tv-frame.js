@@ -149,18 +149,28 @@
       + '.tv-knob:focus-visible{box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15),'
       +   '0 0 0 3px #f3e6cf}'
       + '.tv-knob.dim{opacity:.35;cursor:default;pointer-events:none}'
-      // Vignette lives on the widget (#fg-root), not the frame, since
-      // the frame paints behind it -- a shadow ON the frame would never
-      // actually show. Fades in just inside the widget's own border,
-      // reads as the bezel casting a shadow onto the screen beneath it.
-      // Strengthened July 27 2026 -- Larry: "the vignette is not enough
-      // yet." Went from one soft inset to a layered pair (tight+dark
-      // close against the edge, then a second wider/softer one further
-      // in), same "layered shadow" technique already used for the
-      // notebook's own floating look, instead of just cranking one
-      // shadow's numbers up.
-      + '#fg-root.tv-vignette{box-shadow:0 4px 24px rgba(0,0,0,.18),'
-      +   'inset 0 0 14px 4px rgba(0,0,0,.55), inset 0 0 46px 14px rgba(0,0,0,.4)}'
+      // Vignette rebuilt as its OWN overlay element, July 27 2026 --
+      // Larry: "just went to 0200 but do not see any vignette at the
+      // content/TV frame junction." Root cause: it was an inset
+      // box-shadow ON #fg-root itself, which paints BEHIND #fg-root's
+      // own children -- so any screen whose card content is opaque
+      // and runs flush to the widget's edges (most of them, including
+      // 0200) painted right over it, hiding it completely. That also
+      // explains the "not enough yet" feedback before this -- it was
+      // never fully invisible, just inconsistently masked screen to
+      // screen depending on each one's own content shape.
+      //
+      // #tv-vignette is a separate, transparent, pointer-events:none
+      // layer, inserted AFTER #fg-root in the DOM (see init()) so it
+      // paints on TOP of the widget and whatever screen it's showing,
+      // no matter that screen's own background. It's sized/positioned
+      // to match #fg-root exactly (see trackLoop) and carries only the
+      // inset shadows themselves -- nothing to paint in the middle, so
+      // the screen underneath still reads through clearly there.
+      + '#tv-vignette{position:fixed;pointer-events:none;border-radius:14px;'
+      +   'box-shadow:inset 0 0 14px 4px rgba(0,0,0,.55), inset 0 0 46px 14px rgba(0,0,0,.4);'
+      +   'transition:opacity .15s ease}'
+      + '#tv-vignette.tv-frame-hidden{opacity:0}'
       // Color-options picker (double-click the frame ring, screen 0007) --
       // Larry, July 27 2026: "definitely need a selection of color options
       // for the TV frame on double click." Reuses the site's existing
@@ -328,20 +338,21 @@
      (`.isx-full`), since outputs take over the whole screen and a
      TV bezel around them wouldn't make sense. ---------- */
 
-  function trackLoop(frame, fg){
+  function trackLoop(frame, fg, vignette){
     var lastKey = '';
+    var lastVKey = '';
     function tick(){
-      if (!document.body.contains(fg)) { frame.remove(); return; }
+      if (!document.body.contains(fg)) { frame.remove(); if (vignette) vignette.remove(); return; }
 
       var isFull = fg.classList.contains('isx-full');
       if (isFull){
         frame.classList.add('tv-frame-hidden');
-        fg.classList.remove('tv-vignette');
+        if (vignette) vignette.classList.add('tv-frame-hidden');
         requestAnimationFrame(tick);
         return;
       }
       frame.classList.remove('tv-frame-hidden');
-      fg.classList.add('tv-vignette');
+      if (vignette) vignette.classList.remove('tv-frame-hidden');
 
       var r = fg.getBoundingClientRect();
       var left = r.left - BEZEL_SIDE;
@@ -356,6 +367,20 @@
         frame.style.width = width + 'px';
         frame.style.height = height + 'px';
         lastKey = key;
+      }
+
+      // Vignette matches #fg-root's own box exactly (not the bezel-
+      // expanded frame rect above) -- it needs to sit precisely over
+      // the widget itself to darken its edges, not the ring around it.
+      if (vignette) {
+        var vKey = r.left + ',' + r.top + ',' + r.width + ',' + r.height;
+        if (vKey !== lastVKey) {
+          vignette.style.left = r.left + 'px';
+          vignette.style.top = r.top + 'px';
+          vignette.style.width = r.width + 'px';
+          vignette.style.height = r.height + 'px';
+          lastVKey = vKey;
+        }
       }
 
       updateDimStates(frame);
@@ -398,11 +423,20 @@
     // keeps the frame behind the widget -- the widget's own content
     // covers the frame's middle, leaving only the bezel ring visible.
     fg.parentNode.insertBefore(frame, fg);
-    fg.classList.add('tv-vignette');
+
+    // Vignette goes immediately AFTER #fg-root instead -- opposite
+    // side, on purpose: it needs to paint ON TOP of the widget and
+    // whatever screen content it's showing, not behind it (see the
+    // injectStyle comment on #tv-vignette for why the old
+    // inset-shadow-on-#fg-root approach didn't work).
+    var vignette = document.createElement('div');
+    vignette.id = 'tv-vignette';
+    fg.parentNode.insertBefore(vignette, fg.nextSibling);
+
     applyColor(frame, getSavedColorKey());
     wireColorGesture(frame);
 
-    trackLoop(frame, fg);
+    trackLoop(frame, fg, vignette);
   }
 
   if (document.readyState === 'loading') {
