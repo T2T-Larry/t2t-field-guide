@@ -825,7 +825,7 @@
       +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%">Close</button>'
+      +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('isx-gear-recolor', function(){ T2TStoryboard.closeDetail(); _isxOpenRecolorAll(); });

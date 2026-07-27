@@ -539,7 +539,7 @@
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Root prompt</div>'
       +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px">Shown when no Topic is selected yet.</div>'
       +'<textarea id="sb-rootprompt-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;min-height:50px">'+cur+'</textarea>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-rootprompt-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-rootprompt-close" style="flex:1">Close</button></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-rootprompt-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-rootprompt-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-rootprompt-save', function(){
@@ -588,7 +588,7 @@
       +'<label for="sb-bg-custom" style="font-size:11px;font-weight:700;color:#1a3a5c">Custom:</label>'
       +'<input type="color" id="sb-bg-custom" value="'+cur+'" style="width:44px;height:36px;border:1.5px solid #cfe4f2;border-radius:8px;padding:0;cursor:pointer">'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-bg-close">Close</button>'
+      +'<button class="sc-ov-btn" id="sb-bg-close" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     Array.prototype.forEach.call(ov.querySelectorAll('.sb-bg-swatch'), function(btn){
@@ -1616,7 +1616,7 @@
       +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Nest under</label>'
       +'<select id="sb-h-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
       +'<div id="sb-h-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-h-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-h-close" style="flex:1">Close</button></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-h-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-h-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
     var sel=document.getElementById('sb-h-parent');
@@ -1694,7 +1694,7 @@
       +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:4px;min-height:70px"></textarea>'
       +'<div style="font-size:9px;font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? to make it a Header automatically</div>'
       +'<div id="qa-idea-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="qa-idea-save" style="flex:1">Save</button><button class="sc-ov-btn" id="qa-idea-close" style="flex:1">Close</button></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="qa-idea-save" style="flex:1">Save</button><button class="sc-ov-btn" id="qa-idea-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
     var ta=document.getElementById('qa-idea-text');
@@ -1759,7 +1759,7 @@
         ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
           +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to fix</div>'
           +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">No orphaned Purpose or Ideas headers found at the shared root.</div>'
-          +'<button class="sc-ov-btn" id="sb-fix-close" style="width:100%">Close</button></div>';
+          +'<button class="sc-ov-btn" id="sb-fix-close" style="width:100%" aria-label="Close">✕</button></div>';
         ov2.classList.add('active');
         T().wire('sb-fix-close', closeSbDetail);
         return;
@@ -1841,7 +1841,7 @@
       +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%">Close</button>'
+      +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
@@ -1946,7 +1946,7 @@
         + '<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
         + '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+rSwatches+'</div>'
         + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;flex:1"></textarea>'
-        + '<button class="sb-close-btn" id="sb-close">Close</button>'
+        + '<button class="sb-close-btn" id="sb-close" aria-label="Close">✕</button>'
         + '</div>';
       ov.classList.add('active');
       ov.querySelectorAll('.sb-swatch').forEach(function(sw){
@@ -2452,6 +2452,17 @@
 
     T().wire('sb-close', closeSbDetail);
   }
+  // Traveler color-options shortcut -- opens the normal DETAILS back but
+  // auto-expands the swatch row so a double-click lands directly on color
+  // choices instead of requiring an extra tap on the Appearance gear.
+  // Reserved system headers (Trash/MISC/NEW) already show swatches with
+  // no gear at all, so the extra step is a harmless no-op there.
+  function openSbDetailToColor(item){
+    openSbDetail(item);
+    var row=document.getElementById('sb-swatch-row');
+    if(row) row.style.display='flex';
+  }
+
   function closeSbDetail(){
     var ov=document.getElementById('sb-detail-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; ov.style.justifyContent=''; ov.style.paddingLeft=''; }
@@ -2796,7 +2807,12 @@
       hb.textContent=item.heart_count>=2?'💕':'❤️';
       tile.appendChild(hb);
     }
-    tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
+    // Double-click is the traveler color-options shortcut (locked July 27,
+    // 2026) -- opens the same DETAILS back the corner-flip does, but jumps
+    // straight to the color swatches instead of leaving them collapsed
+    // behind the Appearance gear. The corner-flip remains the only way to
+    // open the back generally; this dblclick used to just duplicate it.
+    tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(item); });
     tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
     tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });
     tile.addEventListener('drop', function(e){
