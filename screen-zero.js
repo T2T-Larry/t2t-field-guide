@@ -52,8 +52,36 @@
      so every object on 0000 reads as one consistent family of
      raised objects instead of some looking like page furniture. ---- */
 
+  // Background switched to a CSS var (falls back to the original
+  // parchment #fdf8f0) so each drawer's own pastel color picker can
+  // override just itself -- Larry, July 27 2026, "let's make a pastel
+  // drawer color option for each drawer."
   var CARD_LOOK = 'border:2px solid #999;border-radius:14px;' +
-    'box-shadow:0 4px 24px rgba(0,0,0,.18);background:#fdf8f0';
+    'box-shadow:0 4px 24px rgba(0,0,0,.18);background:var(--sz-bg,#fdf8f0)';
+
+  var DRAWER_COLOR_PALETTE = [
+    { key:'parchment', name:'Parchment', c:'#fdf8f0' },
+    { key:'blush',     name:'Blush',     c:'#F7D9DC' },
+    { key:'sky',       name:'Sky',       c:'#D6E9F5' },
+    { key:'lilac',     name:'Lilac',     c:'#E3D9F2' },
+    { key:'mint',      name:'Mint',      c:'#D8F0E1' },
+    { key:'butter',    name:'Butter',    c:'#FBF0C9' },
+    { key:'peach',     name:'Peach',     c:'#FBE0CC' }
+  ];
+
+  function drawerPaletteEntry(key){
+    for (var i = 0; i < DRAWER_COLOR_PALETTE.length; i++) if (DRAWER_COLOR_PALETTE[i].key === key) return DRAWER_COLOR_PALETTE[i];
+    return DRAWER_COLOR_PALETTE[0];
+  }
+  function getSavedDrawerColorKey(storageKey){
+    try { return localStorage.getItem(storageKey) || 'parchment'; } catch(e){ return 'parchment'; }
+  }
+  function applyDrawerColor(bar, key){
+    bar.style.setProperty('--sz-bg', drawerPaletteEntry(key).c);
+    bar.dataset.colorKey = key;
+  }
+  var LEFT_DRAWER_COLOR_KEY = 't2t_leftDrawerColor';
+  var RIGHT_DRAWER_COLOR_KEY = 't2t_rightDrawerColor';
 
   function injectStyle(){
     if (document.getElementById('sz-style')) return;
@@ -76,7 +104,7 @@
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'right:-18px;width:18px;height:40px;'
       +   'border-radius:0 20px 20px 0;border:2px solid #999;border-left:none;'
-      +   'background:#fdf8f0;cursor:pointer;'
+      +   'background:var(--sz-bg,#fdf8f0);cursor:pointer;'
       +   'box-shadow:2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
       // Docked to the right side: the tray anchors from the right instead
@@ -171,11 +199,32 @@
       + '#sz-drawer-r-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'left:-18px;width:18px;height:40px;'
       +   'border-radius:20px 0 0 20px;border:2px solid #999;border-right:none;'
-      +   'background:#fdf8f0;cursor:pointer;'
+      +   'background:var(--sz-bg,#fdf8f0);cursor:pointer;'
       +   'box-shadow:-2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
       + '#sz-drawer-r.sz-dock-left #sz-drawer-r-toggle{left:auto;right:-18px;'
       +   'border-radius:0 20px 20px 0;border-left:none;border-right:2px solid #999}'
+      // Pastel color-options picker (double-click a drawer's own
+      // background, not one of its buttons) -- Larry, July 27 2026.
+      // Same dimmed-backdrop overlay family as the TV frame's picker
+      // (tv-frame.js) and the Storyboard/Briefing Board swatch pickers,
+      // kept self-contained here since screen-zero.js loads on every
+      // phase file and shouldn't depend on tv-frame.js being present.
+      + '#sz-color-overlay{position:fixed;inset:0;z-index:9997;'
+      +   'background:rgba(74,52,24,0.4);display:none;align-items:center;'
+      +   'justify-content:center;padding:20px;box-sizing:border-box}'
+      + '#sz-color-overlay.active{display:flex}'
+      + '#sz-color-card{background:#fdf8f0;border-radius:14px;padding:18px;'
+      +   'width:min(280px,90%);box-shadow:0 10px 30px rgba(0,0,0,.4);text-align:center}'
+      + '#sz-color-card .sz-color-title{font-family:"Playfair Display",Georgia,serif;'
+      +   'font-size:15px;font-weight:700;color:#4a3418;margin-bottom:2px}'
+      + '#sz-color-card .sz-color-sub{font-size:11px;color:#888;font-style:italic;margin-bottom:12px}'
+      + '#sz-color-swatches{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:14px}'
+      + '.sz-color-swatch{width:40px;height:40px;border-radius:50%;cursor:pointer;'
+      +   'border:2px solid rgba(0,0,0,.15);box-shadow:0 3px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.4)}'
+      + '.sz-color-swatch.sz-color-active{border-color:#4a3418;box-shadow:0 0 0 2px #fdf8f0,0 0 0 4px #4a3418}'
+      + '#sz-color-close{border:1px solid #b89968;background:#fff;padding:6px 16px;'
+      +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#4a3418}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -207,6 +256,72 @@
         toast.style.opacity = '0';
         setTimeout(function(){ toast.remove(); }, 220);
       }, 1800);
+    });
+  }
+
+  /* ---------- Drawer color picker: double-click a drawer's own
+     background (its padding/mid area, not a button inside it) opens
+     a pastel swatch picker, same "double-click is color options
+     everywhere" standard as the rest of the site. One shared overlay
+     element, reused by whichever drawer opened it last -- left and
+     right each keep their own saved choice via a different
+     storageKey, same pattern as the TV frame's picker (tv-frame.js),
+     just self-contained here instead. ---------- */
+
+  function buildDrawerColorOverlay(){
+    var overlay = document.createElement('div');
+    overlay.id = 'sz-color-overlay';
+
+    var card = document.createElement('div');
+    card.id = 'sz-color-card';
+    card.innerHTML = ''
+      + '<div class="sz-color-title">Drawer color</div>'
+      + '<div class="sz-color-sub">Pick a pastel for this drawer. Stays until you change it.</div>'
+      + '<div id="sz-color-swatches"></div>'
+      + '<button id="sz-color-close" type="button">✕</button>';
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeDrawerColorPicker(); });
+    card.querySelector('#sz-color-close').addEventListener('click', closeDrawerColorPicker);
+
+    return overlay;
+  }
+
+  function openDrawerColorPicker(bar, storageKey){
+    var overlay = document.getElementById('sz-color-overlay') || buildDrawerColorOverlay();
+    var swatchRow = overlay.querySelector('#sz-color-swatches');
+    swatchRow.innerHTML = '';
+    var cur = bar.dataset.colorKey || getSavedDrawerColorKey(storageKey);
+    DRAWER_COLOR_PALETTE.forEach(function(p){
+      var sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = 'sz-color-swatch' + (p.key === cur ? ' sz-color-active' : '');
+      sw.title = p.name;
+      sw.style.background = p.c;
+      sw.addEventListener('click', function(){
+        applyDrawerColor(bar, p.key);
+        try { localStorage.setItem(storageKey, p.key); } catch(e){}
+        closeDrawerColorPicker();
+      });
+      swatchRow.appendChild(sw);
+    });
+    overlay.classList.add('active');
+  }
+
+  function closeDrawerColorPicker(){
+    var overlay = document.getElementById('sz-color-overlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+
+  // Wires the gesture onto a drawer bar: double-click its own
+  // background (excludes real buttons -- gear/menu/toggle/tool
+  // buttons -- same "not a card/control" exclusion the Storyboard's
+  // board-background double-click already uses).
+  function wireDrawerColorGesture(bar, storageKey){
+    bar.addEventListener('dblclick', function(e){
+      if (e.target.closest('button')) return;
+      openDrawerColorPicker(bar, storageKey);
     });
   }
 
@@ -761,6 +876,9 @@
     document.body.appendChild(nameplate);
     document.body.appendChild(notebook);
 
+    applyDrawerColor(bar, getSavedDrawerColorKey(LEFT_DRAWER_COLOR_KEY));
+    wireDrawerColorGesture(bar, LEFT_DRAWER_COLOR_KEY);
+
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'LEFT_DRAWER_MODE', COLLAPSE_KEY, { open: '‹', closed: '›' }, function(){
       // Only re-roll the surprise text when slot 3 is the one actually
       // showing -- not on every mode switch, so it doesn't waste a
@@ -1009,6 +1127,9 @@
     } catch(e){}
 
     document.body.appendChild(bar);
+
+    applyDrawerColor(bar, getSavedDrawerColorKey(RIGHT_DRAWER_COLOR_KEY));
+    wireDrawerColorGesture(bar, RIGHT_DRAWER_COLOR_KEY);
 
     var drawer = dockRightDrawer(bar);
 
