@@ -2031,6 +2031,16 @@
     T().wire('bb-briefinglog-close', closeBriefingLog);
     T().wire('bb-briefinglog-back', function(){ closeBriefingLog(); openHX(); });
     T().wire('bb-gear', openSettings);
+    // Double-click the board's own background (not a card) opens the same
+    // Board Settings the gear does -- Color Theme is the first field in that
+    // panel, so this is BB's version of the traveler color-options shortcut
+    // locked July 27, 2026 (matches the Storyboard/Session board-background
+    // double-click, which opens its own bg picker the same way).
+    var bbBoardWrapEl=document.getElementById('bb-board-wrap');
+    if(bbBoardWrapEl) bbBoardWrapEl.addEventListener('dblclick', function(e){
+      if(e.target.closest('.bb-card')) return;
+      openSettings();
+    });
     T().wire('bb-settings-close', closeSettings);
     document.querySelectorAll('.bb-theme-swatch').forEach(function(btn){
       btn.addEventListener('click', function(){ _bbApplyTheme(btn.getAttribute('data-theme')); });
