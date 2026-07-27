@@ -1248,6 +1248,10 @@
     isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
     isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     t.appendChild(isxCornerFlip);
+    // Double-click is the color-options shortcut every card has (locked
+    // July 27, 2026) -- this loose-idea tile never had a double-click job
+    // of its own before, so this is a straight addition, not a migration.
+    t.addEventListener('dblclick', function(e){ e.stopPropagation(); T2TStoryboard.openDetailToColor(row); });
     // Reversed July 18, 2026 (was: gated off while ephemeral — see git
     // history). Larry hit this live ("Michael Vance ... cannot be moved")
     // and it read as a bug, not an acceptable limit. Dragging now always
@@ -1299,11 +1303,14 @@
       isxStackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     }
     // Single click = toggle this pile open/closed (spread its real cards
-    // out to view/reorganize, or gather them back into the cascade).
-    // Double-click still drills into the header as a Topic — a plain
-    // click waits ~250ms to make sure a second one isn't coming before it
-    // acts, so a genuine double-click never flashes the pile open first.
-    // Larry, July 18, 2026.
+    // out to view/reorganize, or gather them back into the cascade) -- a
+    // plain click waits ~250ms to make sure a second one isn't coming
+    // before it acts, so a genuine double-click never flashes the pile
+    // open first. Larry, July 18, 2026. Double-click used to drill into
+    // the header as a Topic; that's now done by dragging the pile onto
+    // the TOPIC box instead (already-working drop target below), freeing
+    // double-click to be the color-options shortcut every other card has
+    // -- locked July 27, 2026.
     t.addEventListener('click', function(e){
       if(e.target.closest('.isx-corner-flip')) return;
       e.stopPropagation();
@@ -1317,8 +1324,7 @@
     t.addEventListener('dblclick', function(e){
       e.stopPropagation();
       if(_isxClickTimers[row.id]){ clearTimeout(_isxClickTimers[row.id]); delete _isxClickTimers[row.id]; }
-      delete _isxFanned[row.id];
-      _isxPromoteCardToTopic(row.id);
+      T2TStoryboard.openDetailToColor(row);
     });
     // Ring-anchored headers (forcedPos given) detach into the freeform
     // canvas the instant they're dragged — see _isxWireTileDrag's ringMode

@@ -394,6 +394,30 @@
       }
     });
 
+    // Drag any card (header or plain idea) onto the TOPIC box to make it
+    // the viewed board -- replaces double-click-to-drill-in (locked July
+    // 27, 2026), reusing the .dragover outline that was already sitting
+    // here unused. Distinct from the old chrome drag-drop system removed
+    // above (that one relocated a card's filing; this one only changes
+    // what's currently being viewed, same job double-click used to do).
+    (function(){
+      var topicBoxEl=document.getElementById('sc-topic-box');
+      if(!topicBoxEl) return;
+      topicBoxEl.addEventListener('dragover', function(e){ e.preventDefault(); topicBoxEl.classList.add('dragover'); });
+      topicBoxEl.addEventListener('dragleave', function(){ topicBoxEl.classList.remove('dragover'); });
+      topicBoxEl.addEventListener('drop', function(e){
+        e.preventDefault();
+        topicBoxEl.classList.remove('dragover');
+        var raw=e.dataTransfer.getData('text/plain');
+        if(!raw) return;
+        var id = raw.indexOf('header:')===0 ? raw.slice(7)
+               : raw.indexOf('group:')===0 ? (raw.slice(6).split(',')[0]||null)
+               : raw;
+        var row = id && _sboardAllRowsById[id];
+        if(row) _sboardDrillInto(row);
+      });
+    })();
+
     // PROJECT opens the switcher — lets you move to a different top-level
     // project entirely (Wish Tank -> Field Guide), not just back to the
     // current one's own root.
@@ -898,7 +922,11 @@
     front.appendChild(stackCornerFlip);
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
-    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
+    // Drilling in is now done by dragging this card onto the TOPIC box
+    // (locked July 27, 2026, replacing double-click so double-click can
+    // mean color everywhere with zero header exceptions). Double-click here
+    // is the same color-options shortcut every other card has.
+    wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
     wrap.addEventListener('dragover', function(e){ e.preventDefault(); front.style.outline='2px solid #5b9bd5'; });
     wrap.addEventListener('dragleave', function(){ front.style.outline='none'; });
     wrap.addEventListener('drop', function(e){
@@ -1176,7 +1204,9 @@
         // Purpose used to have its own separate corner-flip editor; as of
         // July 17, 2026 it's treated exactly like any other header — same
         // dblclick-to-drill-in, same corner-flip into openSbDetail().
-        hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(headerRow); });
+        // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
+        // is the color-options shortcut, same as every other card.
+        hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
         var hdCornerFlip=document.createElement('div');
         hdCornerFlip.className='sc-corner-flip';
         hdCornerFlip.title='Flip card';
@@ -1251,7 +1281,9 @@
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
-          hd.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardDrillInto(newRow); });
+          // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
+          // is the color-options shortcut, same as every other card.
+          hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(newRow); });
           var newCornerFlip=document.createElement('div');
           newCornerFlip.className='sc-corner-flip';
           newCornerFlip.title='Flip card';
@@ -2999,7 +3031,9 @@
     // 18, 2026 ("unable to drop some of the ideas into an existing
     // header, nor can I move it on the back of the card").
     setVisibleHeaders: function(list){ _sboardVisibleHeaders = list||[]; },
-    setIsxContext: function(ctx){ _isxDetailCtx = ctx||null; }
+    setIsxContext: function(ctx){ _isxDetailCtx = ctx||null; },
+    openDetailToColor: openSbDetailToColor,
+    drillInto: _sboardDrillInto
   };
 
   document.addEventListener('DOMContentLoaded', function(){
