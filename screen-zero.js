@@ -80,8 +80,13 @@
     bar.style.setProperty('--sz-bg', drawerPaletteEntry(key).c);
     bar.dataset.colorKey = key;
   }
-  var LEFT_DRAWER_COLOR_KEY = 't2t_leftDrawerColor';
-  var RIGHT_DRAWER_COLOR_KEY = 't2t_rightDrawerColor';
+  // Prefixes, not single keys -- Larry, July 27 2026: each of a
+  // drawer's 3 tap-slots (1/2/3) gets its OWN color, not one shared
+  // color for the whole drawer. Real key is prefix + mode number,
+  // e.g. 't2t_leftDrawerColor_2' for the left drawer's slot 2.
+  var LEFT_DRAWER_COLOR_PREFIX = 't2t_leftDrawerColor_';
+  var RIGHT_DRAWER_COLOR_PREFIX = 't2t_rightDrawerColor_';
+  function drawerColorKey(prefix, mode){ return prefix + (mode || '1'); }
 
   function injectStyle(){
     if (document.getElementById('sz-style')) return;
@@ -261,12 +266,17 @@
 
   /* ---------- Drawer color picker: double-click a drawer's own
      background (its padding/mid area, not a button inside it) opens
-     a pastel swatch picker, same "double-click is color options
-     everywhere" standard as the rest of the site. One shared overlay
-     element, reused by whichever drawer opened it last -- left and
-     right each keep their own saved choice via a different
-     storageKey, same pattern as the TV frame's picker (tv-frame.js),
-     just self-contained here instead. ---------- */
+     a pastel swatch picker for WHICHEVER of the 3 tap-slots is
+     currently showing -- Larry, July 27 2026, after the first pass
+     colored the whole drawer (all 3 slots) at once: "each of the 3
+     slots should have its own color." So the picker now reads
+     bar.dataset.mode fresh every time it opens rather than being
+     handed one fixed storageKey, and the drawer's visible background
+     switches to match whichever slot's saved color as taps cycle
+     through modes (see the refreshDrawerColorForMode calls wired into
+     each drawer's wireModeToggle onChange, further down). One shared
+     overlay element, reused by whichever drawer opened it last, same
+     pattern as the TV frame's picker (tv-frame.js). ---------- */
 
   function buildDrawerColorOverlay(){
     var overlay = document.createElement('div');
@@ -275,8 +285,8 @@
     var card = document.createElement('div');
     card.id = 'sz-color-card';
     card.innerHTML = ''
-      + '<div class="sz-color-title">Drawer color</div>'
-      + '<div class="sz-color-sub">Pick a pastel for this drawer. Stays until you change it.</div>'
+      + '<div class="sz-color-title" id="sz-color-title">Drawer color</div>'
+      + '<div class="sz-color-sub">Pick a pastel for this slot. Stays until you change it.</div>'
       + '<div id="sz-color-swatches"></div>'
       + '<button id="sz-color-close" type="button">✕</button>';
     overlay.appendChild(card);
@@ -288,11 +298,23 @@
     return overlay;
   }
 
-  function openDrawerColorPicker(bar, storageKey){
+  // Applies + persists color for whichever slot is active RIGHT NOW
+  // on this bar (bar.dataset.mode), so the drawer's own background
+  // updates live the instant a swatch is picked.
+  function applyAndSaveDrawerColor(bar, prefix, key){
+    var mode = bar.dataset.mode || '1';
+    applyDrawerColor(bar, key);
+    try { localStorage.setItem(drawerColorKey(prefix, mode), key); } catch(e){}
+  }
+
+  function openDrawerColorPicker(bar, prefix, sideLabel){
     var overlay = document.getElementById('sz-color-overlay') || buildDrawerColorOverlay();
+    var mode = bar.dataset.mode || '1';
+    var titleEl = overlay.querySelector('#sz-color-title');
+    if (titleEl) titleEl.textContent = sideLabel + ' drawer color -- slot ' + mode;
     var swatchRow = overlay.querySelector('#sz-color-swatches');
     swatchRow.innerHTML = '';
-    var cur = bar.dataset.colorKey || getSavedDrawerColorKey(storageKey);
+    var cur = getSavedDrawerColorKey(drawerColorKey(prefix, mode));
     DRAWER_COLOR_PALETTE.forEach(function(p){
       var sw = document.createElement('button');
       sw.type = 'button';
@@ -300,8 +322,7 @@
       sw.title = p.name;
       sw.style.background = p.c;
       sw.addEventListener('click', function(){
-        applyDrawerColor(bar, p.key);
-        try { localStorage.setItem(storageKey, p.key); } catch(e){}
+        applyAndSaveDrawerColor(bar, prefix, p.key);
         closeDrawerColorPicker();
       });
       swatchRow.appendChild(sw);
@@ -318,11 +339,21 @@
   // background (excludes real buttons -- gear/menu/toggle/tool
   // buttons -- same "not a card/control" exclusion the Storyboard's
   // board-background double-click already uses).
-  function wireDrawerColorGesture(bar, storageKey){
+  function wireDrawerColorGesture(bar, prefix, sideLabel){
     bar.addEventListener('dblclick', function(e){
       if (e.target.closest('button')) return;
-      openDrawerColorPicker(bar, storageKey);
+      openDrawerColorPicker(bar, prefix, sideLabel);
     });
+  }
+
+  // Re-reads whichever slot is active on this bar right now and
+  // applies THAT slot's own saved color -- called once at build time
+  // (after the drawer's remembered mode is restored) and again every
+  // time a tap changes modes, so the drawer's visible background
+  // always matches the slot currently showing.
+  function refreshDrawerColorForMode(bar, prefix){
+    var mode = bar.dataset.mode || '1';
+    applyDrawerColor(bar, getSavedDrawerColorKey(drawerColorKey(prefix, mode)));
   }
 
   /* ---------- The nametag: ported from the binder pilot, filled in
@@ -876,8 +907,7 @@
     document.body.appendChild(nameplate);
     document.body.appendChild(notebook);
 
-    applyDrawerColor(bar, getSavedDrawerColorKey(LEFT_DRAWER_COLOR_KEY));
-    wireDrawerColorGesture(bar, LEFT_DRAWER_COLOR_KEY);
+    wireDrawerColorGesture(bar, LEFT_DRAWER_COLOR_PREFIX, 'Left');
 
     wireModeToggle(toggle, bar, [mode1, mode2, surprise.el], 'LEFT_DRAWER_MODE', COLLAPSE_KEY, { open: '‹', closed: '›' }, function(){
       // Only re-roll the surprise text when slot 3 is the one actually
@@ -887,12 +917,20 @@
         var idx = Math.floor(Math.random() * SURPRISE_POOL.length);
         surprise.textEl.textContent = SURPRISE_POOL[idx];
       }
+      // Each slot keeps its own color (Larry, July 27 2026) -- the
+      // drawer's visible background needs to follow along every time
+      // the active slot changes, not just at initial load.
+      refreshDrawerColorForMode(bar, LEFT_DRAWER_COLOR_PREFIX);
       // Collapsing/expanding (or switching mode) changes the tray's
       // width/dock math the same way the old plain toggle did -- the
       // notebook riding on it needs to follow either way.
       rail.applyDock(rail.getSide());
       updateNotebookVisibility(bar, notebook);
     });
+    // wireModeToggle already restored the remembered slot (or
+    // defaulted to 1) into bar.dataset.mode by the time it returns --
+    // apply that slot's own saved color now, before first paint.
+    refreshDrawerColorForMode(bar, LEFT_DRAWER_COLOR_PREFIX);
 
     var rail = dockRail(bar, notebook);
     updateNotebookVisibility(bar, notebook);
@@ -1128,8 +1166,7 @@
 
     document.body.appendChild(bar);
 
-    applyDrawerColor(bar, getSavedDrawerColorKey(RIGHT_DRAWER_COLOR_KEY));
-    wireDrawerColorGesture(bar, RIGHT_DRAWER_COLOR_KEY);
+    wireDrawerColorGesture(bar, RIGHT_DRAWER_COLOR_PREFIX, 'Right');
 
     var drawer = dockRightDrawer(bar);
 
@@ -1138,8 +1175,13 @@
         var idx = Math.floor(Math.random() * SURPRISE_POOL.length);
         surprise.textEl.textContent = SURPRISE_POOL[idx];
       }
+      // Each slot keeps its own color (Larry, July 27 2026).
+      refreshDrawerColorForMode(bar, RIGHT_DRAWER_COLOR_PREFIX);
       drawer.applyDock(drawer.getSide());
     });
+    // Apply the restored slot's own saved color before first paint,
+    // same reasoning as the left drawer above.
+    refreshDrawerColorForMode(bar, RIGHT_DRAWER_COLOR_PREFIX);
   }
 
   function init(){
