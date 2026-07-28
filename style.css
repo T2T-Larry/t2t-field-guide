@@ -32,13 +32,18 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#d0d0d0}
+html,body{height:100%;background:var(--t2t-desk-bg,#d0d0d0)}
 body{display:flex;align-items:center;justify-content:center;padding:16px;min-height:100%}
 .fg input,.fg textarea{user-select:text;-webkit-user-select:text;cursor:text}
 .sc{display:none!important;pointer-events:none}
 .sc.active{display:flex!important;flex-direction:column;pointer-events:auto}
 /* 0010 Sign In has no desk chrome around it yet -- Larry, July 28 2026 */
 body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook{display:none!important}
+/* Sign In never reflects member preferences (Larry, July 28 2026) --
+   forces the plain default regardless of any saved desk color, via
+   CSS alone so it can't race with JS load order like the widget
+   position did. */
+body.t2t-bare-screen{background:#d0d0d0!important}
 .card{min-height:520px;max-height:520px;border-radius:12px 12px 0 0;overflow-x:hidden;overflow-y:auto;flex:1;display:flex;flex-direction:column}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}

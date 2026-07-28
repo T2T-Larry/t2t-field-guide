@@ -1426,9 +1426,18 @@
     }
 
     try {
-      var saved = JSON.parse(localStorage.getItem('t2t-widget-pos'));
-      if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
-        applyPos(saved.left, saved.top);
+      // Never on Sign In -- Larry, July 28 2026: "sign in page should
+      // never reflect member preferences." nav() already clears/
+      // restores this on every screen change, but this file's own
+      // init() runs independently afterward and was re-applying the
+      // saved position regardless of screen, which is what made
+      // sign-in visibly re-center itself and then jump. Same guard as
+      // nav()'s now uses.
+      if (!document.body.classList.contains('t2t-bare-screen')) {
+        var saved = JSON.parse(localStorage.getItem('t2t-widget-pos'));
+        if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
+          applyPos(saved.left, saved.top);
+        }
       }
     } catch(e){}
 
@@ -1663,7 +1672,12 @@
   function saveBgKey(key){ try { localStorage.setItem(BG_COLOR_KEY, key); } catch(e){} }
   function applyBgColor(key){
     var p = BG_PALETTE.filter(function(x){ return x.key===key; })[0] || BG_PALETTE[0];
-    document.body.style.background = p.color;
+    // Set as a CSS variable rather than a direct body style -- style.css's
+    // body.t2t-bare-screen rule overrides it back to the plain default on
+    // Sign In purely through CSS, so this can never race with load order
+    // or leak a member's saved color onto a screen that has no member yet.
+    // Larry, July 28 2026.
+    document.documentElement.style.setProperty('--t2t-desk-bg', p.color);
   }
 
   function buildBgColorPicker(){
