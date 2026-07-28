@@ -330,6 +330,13 @@
     // and a successful sign-in immediately bounces right back to it --
     // an infinite sign-in loop Larry hit in practice.
     if(pn && id!=='s-signin'){ try{ localStorage.setItem('bpLastPageNum', pn); }catch(e){} }
+    // Separate from bpLastPageNum above (which must never point at
+    // sign-in -- that's the loop guard for right after a successful
+    // sign-in). This one tracks the literal current screen, sign-in
+    // included, purely so a refresh can return to the exact screen it
+    // came from instead of always bouncing a signed-in traveler
+    // forward. Larry, July 28 2026.
+    if(pn){ try{ localStorage.setItem('bpCurrentScreenNum', pn); }catch(e){} }
     showTravelSpinner();
     if (id==='s-trivia')          renderTrivia();
     if (id==='s-journal-view')    renderJournalView();

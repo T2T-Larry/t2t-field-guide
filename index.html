@@ -37,7 +37,7 @@
 <script src="idea-storyboard-9710.js?v=20260727b"></script>
 <script src="session.js?v=20260727b"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260728b"></script>
+<script src="backpack.js?v=20260728c"></script>
 <script src="briefing-board.js?v=20260727a"></script>
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -748,7 +748,20 @@
         // actually open, not always the cover -- see resumeToLastPageOr
         // in backpack.js. Falls back to s-cover exactly like before if
         // there's no saved screen (or it isn't one this file has).
-        T.resumeToLastPageOr('s-cover');
+        // July 28 2026, Larry (bug report): refreshing while signed in
+        // and sitting on Sign In (reached deliberately, e.g. Cover's
+        // Back button) was bouncing forward to the last real page
+        // instead of staying put -- resumeToLastPageOr deliberately
+        // never returns to Sign In, since that's what stops the OTHER
+        // loop (landing back on Sign In right after a successful sign-
+        // in). So a refresh now returns to the literal last screen
+        // (bpCurrentScreenNum, sign-in included) if one was recorded,
+        // and only falls back to the old sign-in-safe behavior when
+        // there's nothing to return to.
+        var curNum = null;
+        try{ curNum = localStorage.getItem('bpCurrentScreenNum'); }catch(e){}
+        if(curNum){ T.navToPageNum(curNum); }
+        else{ T.resumeToLastPageOr('s-cover'); }
       }
     }catch(e){ console.error('Session resume failed', e); }
   })();
