@@ -304,6 +304,11 @@
     if(pool&&fg&&t.parentNode===pool){ fg.appendChild(t); }
     document.querySelectorAll('.sc').forEach(function(s){ s.classList.remove('active'); });
     t.classList.add('active');
+    // Sign-in (0010) has no desk around it yet -- it's the gate before
+    // the Desktop chrome exists for this traveler, so the nav rail,
+    // right drawer, and TV frame all stay hidden while it's showing.
+    // Larry, July 28 2026.
+    document.body.classList.toggle('t2t-bare-screen', id === 's-signin');
     // Safety net for the isx-full full-viewport takeover -- see
     // _fullScreenScreens above. Landing anywhere that isn't one of
     // those screens means any leftover isx-full is stale.
