@@ -1614,7 +1614,7 @@
     refreshDrawerColorForMode(bar, RIGHT_DRAWER_COLOR_PREFIX);
   }
 
-  /* ---------- Desk backdrop (A001) color picker -- double-click the
+  /* ---------- Desk backdrop (C001) color picker -- double-click the
      empty backdrop (outside the widget, both drawers, the TV frame
      ring, the notebook, and the nameplate) opens a swatch picker,
      same "double-click is color options everywhere" standard as
