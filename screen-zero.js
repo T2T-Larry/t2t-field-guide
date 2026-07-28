@@ -1614,10 +1614,126 @@
     refreshDrawerColorForMode(bar, RIGHT_DRAWER_COLOR_PREFIX);
   }
 
+  /* ---------- Desk backdrop (A001) color picker -- double-click the
+     empty backdrop (outside the widget, both drawers, the TV frame
+     ring, the notebook, and the nameplate) opens a swatch picker,
+     same "double-click is color options everywhere" standard as
+     every other screen. Made-up starter palette for now, same
+     approach as the TV frame's own picker -- real swatches are a
+     later Art-Director decision (Style Book). Larry, July 28 2026.
+     Not shown at all on 0010 Sign In -- see t2t-bare-screen, there's
+     no desk yet for a traveler who hasn't signed in. ---------- */
+  var BG_COLOR_KEY = 't2t_deskBgColor';
+  var BG_PALETTE = [
+    { key:'fog',   name:'Fog (default)', color:'#D0D0D0' },
+    { key:'slate', name:'Slate',   color:'#8792A2' },
+    { key:'putty', name:'Putty',   color:'#C9BFA8' },
+    { key:'sage',  name:'Sage',    color:'#9CAF88' },
+    { key:'dusk',  name:'Dusk',    color:'#6E6A85' },
+    { key:'clay',  name:'Clay',    color:'#B57B5D' }
+  ];
+
+  function injectBgColorStyle(){
+    if (document.getElementById('sz-bg-color-style')) return;
+    var css = ''
+      + '#sz-bg-color-overlay{position:fixed;inset:0;z-index:9997;'
+      +   'display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}'
+      + '#sz-bg-color-overlay.active{display:flex}'
+      + '#sz-bg-color-card{background:#fdf8f0;border-radius:14px;padding:18px;'
+      +   'width:280px;max-width:88vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)}'
+      + '#sz-bg-color-card .sz-bg-color-title{font-family:"Playfair Display",Georgia,serif;'
+      +   'font-size:16px;font-weight:700;color:#2b2b2b;margin-bottom:4px}'
+      + '#sz-bg-color-card .sz-bg-color-sub{font-size:11px;color:#888;font-style:italic;margin-bottom:12px}'
+      + '#sz-bg-color-swatches{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:14px}'
+      + '.sz-bg-color-swatch{width:44px;height:44px;border-radius:10px;cursor:pointer;'
+      +   'border:3px solid transparent}'
+      + '.sz-bg-color-swatch.sz-bg-color-active{border-color:#1a3a5c;'
+      +   'box-shadow:0 0 0 2px #fdf8f0,0 0 0 4px #1a3a5c}'
+      + '#sz-bg-color-close{border:1px solid #cfe4f2;background:#fff;padding:6px 16px;'
+      +   'border-radius:8px;cursor:pointer;font-size:13px}';
+    var style = document.createElement('style');
+    style.id = 'sz-bg-color-style';
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  function getSavedBgKey(){
+    try { return localStorage.getItem(BG_COLOR_KEY) || 'fog'; } catch(e){ return 'fog'; }
+  }
+  function saveBgKey(key){ try { localStorage.setItem(BG_COLOR_KEY, key); } catch(e){} }
+  function applyBgColor(key){
+    var p = BG_PALETTE.filter(function(x){ return x.key===key; })[0] || BG_PALETTE[0];
+    document.body.style.background = p.color;
+  }
+
+  function buildBgColorPicker(){
+    injectBgColorStyle();
+    var overlay = document.createElement('div');
+    overlay.id = 'sz-bg-color-overlay';
+    var card = document.createElement('div');
+    card.id = 'sz-bg-color-card';
+    card.innerHTML = ''
+      + '<div class="sz-bg-color-title">Desk color</div>'
+      + '<div class="sz-bg-color-sub">Pick a look for the desk itself. Stays until you change it.</div>'
+      + '<div id="sz-bg-color-swatches"></div>'
+      + '<button id="sz-bg-color-close" type="button">\u2715</button>';
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    var row = card.querySelector('#sz-bg-color-swatches');
+    BG_PALETTE.forEach(function(p){
+      var sw = document.createElement('button');
+      sw.type = 'button';
+      sw.className = 'sz-bg-color-swatch';
+      sw.title = p.name;
+      sw.style.background = p.color;
+      sw.addEventListener('click', function(){
+        applyBgColor(p.key);
+        saveBgKey(p.key);
+        closeBgColorPicker();
+      });
+      row.appendChild(sw);
+    });
+
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeBgColorPicker(); });
+    card.querySelector('#sz-bg-color-close').addEventListener('click', closeBgColorPicker);
+    return overlay;
+  }
+
+  function openBgColorPicker(){
+    var overlay = document.getElementById('sz-bg-color-overlay') || buildBgColorPicker();
+    var cur = getSavedBgKey();
+    overlay.querySelectorAll('.sz-bg-color-swatch').forEach(function(sw, i){
+      sw.classList.toggle('sz-bg-color-active', BG_PALETTE[i].key === cur);
+    });
+    overlay.classList.add('active');
+  }
+
+  function closeBgColorPicker(){
+    var overlay = document.getElementById('sz-bg-color-overlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+
+  function wireBgColorGesture(){
+    document.addEventListener('dblclick', function(e){
+      if (document.body.classList.contains('t2t-bare-screen')) return; // no desk on 0010
+      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-nameplate, #sz-notebook, #sz-bg-color-overlay')) return;
+      var tvFrameEl = document.getElementById('tv-frame');
+      if (tvFrameEl && !tvFrameEl.classList.contains('tv-frame-hidden')) {
+        var r = tvFrameEl.getBoundingClientRect();
+        var inRing = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        if (inRing) return; // TV frame's own dblclick picker owns that area
+      }
+      openBgColorPicker();
+    });
+  }
+
   function init(){
     buildNavBar();
     buildRightDrawer();
     makeWidgetDraggable();
+    applyBgColor(getSavedBgKey());
+    wireBgColorGesture();
 
     // Final sync pass, after both drawers definitely exist: some
     // claimable objects (the nameplate, tool buttons) get registered

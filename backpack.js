@@ -589,7 +589,7 @@
           onTvFrameRing = e.clientX >= tvR.left && e.clientX <= tvR.right &&
                           e.clientY >= tvR.top && e.clientY <= tvR.bottom;
         }
-        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (onTvFrameRing ? '0007' : (outsideWidget ? '0000' : (_pageNums[cur] || '—'))));
+        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (onTvFrameRing ? '0007' : (outsideWidget ? 'A001' : (_pageNums[cur] || '—')))); // backdrop is Component A001, not a screen -- Larry, July 28 2026
         var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : outsideNum))))))));
         showPageToast(num);
       }
