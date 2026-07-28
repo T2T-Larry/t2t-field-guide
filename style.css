@@ -38,7 +38,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .sc{display:none!important;pointer-events:none}
 .sc.active{display:flex!important;flex-direction:column;pointer-events:auto}
 /* 0010 Sign In has no desk chrome around it yet -- Larry, July 28 2026 */
-body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette{display:none!important}
+body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook{display:none!important}
 .card{min-height:520px;max-height:520px;border-radius:12px 12px 0 0;overflow-x:hidden;overflow-y:auto;flex:1;display:flex;flex-direction:column}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
@@ -64,6 +64,11 @@ body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-
    a script-triggered click from working. */
 .pg-btn,.tb[id$="-back"],.tb[id$="-next"],.tb[id$="-fwd"]{display:none!important}
 .bar2,.bar3{display:none!important}
+/* Sign-in's own bar2 isn't a retired paging toolbar like every other
+   screen's -- it's the one-off home for Forgot password?, with no
+   TV-frame equivalent, so it's exempted from the blanket hide above.
+   Larry, July 28 2026 (bug report: link had gone missing). */
+#s-signin .bar2{display:flex!important}
 .mg-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.52);z-index:100;align-items:center;justify-content:center;border-radius:12px}
 .mg-overlay.active{display:flex}
 .mg-modal{width:300px;max-width:90%;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.3)}
