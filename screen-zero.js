@@ -395,16 +395,32 @@
       '<div id="sz-nameplate-header">Thoughts to Things</div>' +
       '<div id="sz-nameplate-text">Traveler</div>';
 
+    function applyName(m){
+      var textEl = document.getElementById('sz-nameplate-text');
+      if (m && m.display_name && textEl) textEl.textContent = m.display_name.toUpperCase();
+    }
+
+    // Larry, July 27 2026 (bug report): "Why does nametag say Traveler
+    // instead of my name? I signed in!" Root cause: this was a pure
+    // poll-and-give-up -- if sign-in took longer than the ~20 second
+    // window (typing an email and password easily does), the poll had
+    // already quit before the profile ever loaded, and nothing told
+    // the nametag to look again. backpack.js now fires a real event
+    // the moment the profile actually finishes loading, however long
+    // that takes, so this is correct no matter how long sign-in takes.
+    // The poll below stays as a fast path for the common case (a
+    // restored session already loading on page load).
+    window.addEventListener('t2t:member-loaded', function(e){ applyName(e.detail); });
+
     var tries = 0;
     var timer = setInterval(function(){
       tries++;
       var m = window.T2T && window.T2T.getMember && window.T2T.getMember();
-      var textEl = document.getElementById('sz-nameplate-text');
-      if (m && m.display_name && textEl) {
-        textEl.textContent = m.display_name.toUpperCase();
+      if (m && m.display_name) {
+        applyName(m);
         clearInterval(timer);
       } else if (tries > 20) {
-        clearInterval(timer); // give up quietly after ~20s, stays "Traveler"
+        clearInterval(timer); // give up quietly for now -- the event listener above still catches a later sign-in
       }
     }, 1000);
 

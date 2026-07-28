@@ -26,6 +26,17 @@
         _member.briefing_board_id= res.data.briefing_board_id || null;
         var nameEl = document.getElementById('jcov-member-name');
         if (nameEl && _member.display_name) nameEl.textContent = _member.display_name.toUpperCase();
+        // Larry, July 27 2026 (bug report): the desk nametag stayed
+        // stuck on "Traveler" even after a real sign-in -- it used to
+        // just poll this profile for ~20 seconds and quietly give up,
+        // so anyone who took longer than that to type their email and
+        // password (normal) never got their name filled in, even
+        // though sign-in itself worked fine. Firing a real event here
+        // whenever the profile actually finishes loading -- whether
+        // that's on page load or well after a slow manual sign-in --
+        // lets the nametag (and anything else that wants it) update
+        // immediately instead of guessing at a timeout.
+        window.dispatchEvent(new CustomEvent('t2t:member-loaded', { detail: _member }));
       }
     } catch(e) {}
   }
@@ -1056,6 +1067,15 @@
     loadVisitedFromSupabase:loadVisitedFromSupabase,
     getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
+    // Larry, July 27 2026: "Trivia button should light up if there are
+    // any trivia docs [for the current page]." Mirrors renderTrivia's
+    // own priority exactly (hub override, then primary page, then
+    // mgOrigin) so "does the current page have trivia" always means
+    // the same thing here as it does inside the actual Trivia hub.
+    hasTrivia:function(){
+      var links = (_triviaOverride && _triviaRegistry[_triviaOverride]) || _triviaRegistry[primaryPage] || _triviaRegistry[mgOrigin] || [];
+      return links.length > 0;
+    },
     getCtx:getCtx,
     openGemAdd:openGemAdd,
     openJournalView:openJournalView,

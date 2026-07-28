@@ -36,14 +36,18 @@
      screen has none, same visual language as the site's existing
      `.dim` convention.
 
-   Not yet built (flagging honestly rather than guessing):
    Trivia "lights up only when the current page has content
-   attached" (a Session 144 decision) needs a data model for
-   which pages carry trivia -- doesn't exist yet, so for now the
-   Trivia knob is always live. The original arrows/back/menu
-   buttons already inside each screen are left in place for now
-   too -- retiring 30+ screens' own controls in favor of the
-   frame alone is a bigger follow-up, not part of this pass.
+   attached" (a Session 144 decision) shipped July 27 2026 --
+   T2T.hasTrivia() reads the same per-page trivia registry the
+   Trivia hub itself renders from, and the knob slowly flashes
+   brown to yellow-brown (see updateTriviaLit) whenever the
+   current page has any trivia links attached.
+
+   Not yet built (flagging honestly rather than guessing): the
+   original arrows/back/menu buttons already inside each screen
+   are left in place for now -- retiring 30+ screens' own
+   controls in favor of the frame alone is a bigger follow-up,
+   not part of this pass.
 
    Loaded after screen-zero.js.
    ============================================================ */
@@ -161,6 +165,18 @@
       + '.tv-knob:focus-visible{box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15),'
       +   '0 0 0 3px #f3e6cf}'
       + '.tv-knob.dim{opacity:.35;cursor:default;pointer-events:none}'
+      // Larry, July 27 2026: "Trivia button should turn brownish
+      // yellow if there are any trivia docs [for the current page] --
+      // maybe slowly flash from brown to yellow brown like a flashing
+      // message light." This is the Session 144 "Trivia lights up only
+      // when attached" decision, now wired to the real per-page trivia
+      // registry via T2T.hasTrivia() (see updateTriviaLit below).
+      + '.tv-knob[data-kind="trivia"].tv-lit{border-color:#a97c2f;'
+      +   'animation:tv-trivia-flash 2.2s ease-in-out infinite alternate}'
+      + '@keyframes tv-trivia-flash{'
+      +   '0%{background:radial-gradient(circle at 35% 30%,#8a7358,#4a3826 70%)}'
+      +   '100%{background:radial-gradient(circle at 35% 30%,#f0c869,#8a6420 70%)}'
+      +   '}'
       // Vignette rebuilt as its OWN overlay element, July 27 2026 --
       // Larry: "just went to 0200 but do not see any vignette at the
       // content/TV frame junction." Root cause: it was an inset
@@ -289,6 +305,18 @@
     });
   }
 
+  // Larry, July 27 2026: "Trivia lights up only when attached" (the
+  // Session 144 decision this was always meant to build toward, per
+  // this file's own top-of-file note). Same live-tracking treatment
+  // as updateDimStates above -- called every tick so it picks up a
+  // navigation change immediately, no separate nav hook needed.
+  function updateTriviaLit(frame){
+    var btn = frame.querySelector('.tv-knob[data-kind="trivia"]');
+    if (!btn) return;
+    var lit = !!(window.T2T && window.T2T.hasTrivia && window.T2T.hasTrivia());
+    btn.classList.toggle('tv-lit', lit);
+  }
+
   /* ---------- Color-options picker: double-click the frame ring
      (screen 0007) opens a swatch picker, same "double-click is
      color options everywhere" standard as every other screen.
@@ -396,6 +424,7 @@
       }
 
       updateDimStates(frame);
+      updateTriviaLit(frame);
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
