@@ -95,7 +95,7 @@ body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-
 .si-input::placeholder{color:#aaa;opacity:1}
 .si-btn{width:100%;padding:14px 0;font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid var(--brand-ink);background:var(--brand-gold);color:var(--brand-ink);display:block}
 .cover{background:var(--brand-teal-deep);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
-.t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:var(--brand-gold);letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px}
+.t2t{font-family:'Playfair Display',serif;font-size:112px;font-weight:700;color:var(--brand-gold);letter-spacing:8px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:16px;user-select:none;-webkit-user-select:none;cursor:default}
 .sub{font-size:17px;color:var(--brand-gold);letter-spacing:8px;text-transform:uppercase;margin-bottom:20px;text-shadow:2px 3px 0 #07402F}
 .rul{width:120px;height:.5px;background:#5DCAA5;margin-bottom:28px}
 .sm{font-size:11px;color:#9FE1CB;letter-spacing:5px;text-transform:uppercase;margin-bottom:8px}

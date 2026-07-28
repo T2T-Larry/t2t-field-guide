@@ -309,6 +309,23 @@
     // right drawer, and TV frame all stay hidden while it's showing.
     // Larry, July 28 2026.
     document.body.classList.toggle('t2t-bare-screen', id === 's-signin');
+    // 0010 predates the desk entirely -- render centered regardless of
+    // wherever the widget was last dragged to on a real (signed-in)
+    // screen, and restore that saved spot the moment nav() leaves
+    // sign-in again. Larry, July 28 2026 (bug report: sign-in
+    // rendering high on screen instead of centered, because the TV
+    // frame's last drag position was still being force-applied even
+    // though sign-in has no TV frame to drag it back with).
+    if (id === 's-signin') {
+      if (fg) { fg.style.position=''; fg.style.left=''; fg.style.top=''; fg.style.margin=''; }
+    } else {
+      try {
+        var savedPos = JSON.parse(localStorage.getItem('t2t-widget-pos'));
+        if (fg && savedPos && typeof savedPos.left==='number' && typeof savedPos.top==='number') {
+          fg.style.position='fixed'; fg.style.left=savedPos.left+'px'; fg.style.top=savedPos.top+'px'; fg.style.margin='0';
+        }
+      } catch(e){}
+    }
     // Safety net for the isx-full full-viewport takeover -- see
     // _fullScreenScreens above. Landing anywhere that isn't one of
     // those screens means any leftover isx-full is stale.
