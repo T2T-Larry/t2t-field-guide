@@ -966,14 +966,27 @@
 
   // Larry, July 29 2026: "Nothing is in a drawer unless it is
   // completely in it. Partially out of the drawer is OUT of the
-  // drawer." Every drawer-docking check below (reattachTo and
-  // reattachTargets) used to fire on ANY overlap between the dragged
-  // object and the drawer -- a corner clipping the drawer counted as
-  // "in" it. This requires the dragged object's whole rect to sit
-  // inside the target's rect before it's treated as docked.
-  function rectFullyInside(inner, outer){
-    return inner.left >= outer.left && inner.right <= outer.right &&
-           inner.top >= outer.top && inner.bottom <= outer.bottom;
+  // drawer." First pass required the dragged object's WHOLE rect to
+  // fit inside the target's rect -- correct for a corner-clip (a
+  // sliver of overlap no longer counts as docked), but too strict as
+  // the actual drop test: a 150px tool button has to land within a
+  // ~50px-wide margin of a 200px drawer to register at all, and a
+  // 180px nameplate only has ~20px of room to work with -- Larry, July
+  // 29 2026 (same day, later): "Tried to move Field Guide to drawer on
+  // the right side but it would not go there." Fixed by testing the
+  // dragged object's CENTER POINT against the target's rect instead of
+  // its whole box -- still refuses a corner-clip (the center has to be
+  // genuinely over the drawer, not just touching it), but gives a drop
+  // the same forgiving hit-area every other drag target already gets.
+  // Once something IS riding a drawer, refreshRidersForSlot always
+  // places it at an exact offset inside the drawer's own bounds, so it
+  // never sits half-in/half-out while docked either way -- this only
+  // changes how generous the initial drop itself is.
+  function dropHitsTarget(dragRect, targetRect){
+    var cx = dragRect.left + dragRect.width / 2;
+    var cy = dragRect.top + dragRect.height / 2;
+    return cx >= targetRect.left && cx <= targetRect.right &&
+           cy >= targetRect.top && cy <= targetRect.bottom;
   }
 
   function makeDraggable(el, storeKey, excludeSelector, defaultLeft, defaultTop, opts){
@@ -1087,7 +1100,7 @@
       // of keeping this drop as its own independent spot.
       if (opts && opts.reattachTo) {
         var t = opts.reattachTo.getBoundingClientRect();
-        var overlaps = rectFullyInside(rect, t);
+        var overlaps = dropHitsTarget(rect, t);
         if (overlaps) {
           try { localStorage.removeItem(storeKey); } catch(e){}
           if (opts.onReattach) opts.onReattach();
@@ -1106,7 +1119,7 @@
           var target = opts.reattachTargets[ri];
           if (!target || !target.el) continue;
           var tr = target.el.getBoundingClientRect();
-          var ov = rectFullyInside(rect, tr);
+          var ov = dropHitsTarget(rect, tr);
           if (ov) {
             try { localStorage.removeItem(storeKey); } catch(e){}
             if (opts.onReattach) opts.onReattach(target.side, target.el);
