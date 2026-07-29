@@ -281,18 +281,16 @@
 
   function onKnob(kind){
     if (kind === 'idea'){
-      // 9220 (legacy Sea of Ideas grid) retired as this knob's target —
-      // Larry, July 29 2026: pressing 💡 should always drop the traveler
-      // straight into adding an idea, same destination as the backpack's
-      // own 💡 entry (b-mg-idea above): 9712 CAPTURE auto-opened on top
-      // of 9711, not the old grid view.
+      // 9220 (legacy Sea of Ideas grid) retired as this knob's target.
+      // Larry, July 29 2026: loading the full 9711 board just to auto-pop
+      // 9712 on top of it (the previous fix) felt bulky and slow for
+      // what's meant to be a quick jot — go straight to 9712 instead, no
+      // board underneath, quickAddIdea (session.js) handles resolving
+      // where the idea lands.
       if (window.T2T) window.T2T.closeMG();
-      if (window.T2TSea && window.T2TSea.openIdeaCapture){
-        var ideaCtx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
-        ideaCtx=ideaCtx||{};
-        ideaCtx.autoOpenCapture=true;
-        window.T2TSea.openIdeaCapture(ideaCtx);
-      } else console.error('Idea capture unavailable — window.T2TSea.openIdeaCapture is missing (session.js failed to load?).');
+      if (window.T2TSea && window.T2TSea.quickAddIdea){
+        window.T2TSea.quickAddIdea();
+      } else console.error('Idea capture unavailable — window.T2TSea.quickAddIdea is missing (session.js failed to load?).');
       return;
     }
     if (kind === 'trivia'){

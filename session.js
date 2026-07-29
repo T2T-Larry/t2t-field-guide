@@ -1780,6 +1780,31 @@
       T2TShared.returnBoardId=(ctx&&ctx.boardId!==undefined)?ctx.boardId:null;
       T().nav('s-idea-session');
     },
+    // Larry, July 29 2026: the TV remote's 💡 knob used to call
+    // openIdeaCapture above, which loads the full 9711 board (fetching
+    // the sticky Topic, rendering the ladder + canvas) just so it could
+    // auto-pop 9712 on top a moment later — slow and "bulky" for what's
+    // meant to be a quick jot. This skips 9711 entirely: resolves the
+    // same sticky target (last-used Topic, or the Wish Tank apex on a
+    // first visit — identical logic to _isxInit, just without rendering
+    // anything) and opens 9712 directly on the global isx-popup-layer,
+    // exactly the way 9710's own [+] circles already do via
+    // _sboardOpenQuickCapture. No board underneath means no board to
+    // refresh, so no onSaved callback is needed — the save itself is
+    // already silent (resets the card for the next idea, no dialog).
+    quickAddIdea: async function(){
+      try{
+        await _isxInit(null);
+      }catch(e){
+        console.error('Quick idea add: could not resolve a target Topic', e);
+        return;
+      }
+      window.IdeaCapture.open({
+        headerId: T2TShared.isxHeaderId,
+        headerLabel: T2TShared.isxHeaderLabel,
+        boardId: _isxCurrentTopicId()
+      });
+    },
     getCurrentBoardContext: function(){ return T2TShared.currentTopicId?{boardId:T2TShared.currentTopicId}:null; },
     getDefaultHeaderId: T2TMedia.getDefaultHeaderId,
     resolveOEmbed: T2TMedia.resolveOEmbed,
