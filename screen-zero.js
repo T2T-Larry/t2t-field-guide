@@ -181,15 +181,12 @@
       +   'gap:6px;width:150px;min-height:80px;border-radius:8px;'
       +   'padding:14px 10px;text-align:center;color:#7a5c3a;font-size:11px;'
       +   'font-family:"Playfair Display",Georgia,serif;box-sizing:border-box}'
-      // Mode 2 is still genuinely undesigned -- keeps the dashed "not
-      // built yet" look. Mode 3 (the surprise slot) now holds a real
-      // object (the monkey GIF), so Larry, July 27 2026: "No dotted
-      // lines" -- it no longer gets this treatment (see .sz-surprise-
-      // panel below, which overrides border back to none).
-      + '.sz-mode-tbd{border:2px dashed #b89968}'
-      // Surprise slot (mode 3) needs a bit more room than the plain
-      // text placeholders, now that it holds a real image too, and no
-      // dashed border since it's real content, not a TBD placeholder.
+      // Larry, July 29 2026: "delete dotted lines too!" -- both
+      // drawers' still-undesignated slots (left's old slot 2, right's
+      // slots 1 and 2) are bare panels now, no dashed "not built yet"
+      // border. .sz-mode-tbd is retired along with it -- nothing uses
+      // it anymore. Surprise slot (mode 3) needs a bit more room than
+      // the plain placeholders, now that it holds a real image too.
       + '.sz-surprise-panel{min-height:150px;border:none}'
       + '.sz-surprise-gif{width:72px;height:72px;border-radius:8px;object-fit:cover;'
       +   'border:2px solid #b89968;box-shadow:0 3px 8px rgba(0,0,0,.3);cursor:grab;'
@@ -705,11 +702,13 @@
 
   function buildModePlaceholder(label){
     var p = document.createElement('div');
-    p.className = 'sz-mode-panel sz-mode-placeholder sz-mode-tbd';
-    // Larry, July 29 2026: right drawer's slots 1 and 2 keep the dashed
-    // "not built yet" look (still genuinely undesignated) but lose the
-    // "Right drawer -- slot N (not yet designated)" statement -- callers
-    // now pass no label for an empty TBD box.
+    // Larry, July 29 2026: right drawer's slots 1 and 2 lose both the
+    // "Right drawer -- slot N (not yet designated)" statement and the
+    // dashed "not built yet" border (sz-mode-tbd) -- same bare-panel
+    // treatment left drawer's slot 2 already got. Only buildModePlaceholder
+    // callers left are these two, so this drops the border for good
+    // rather than special-casing it per call site.
+    p.className = 'sz-mode-panel sz-mode-placeholder';
     if (label) p.textContent = label;
     return p;
   }
