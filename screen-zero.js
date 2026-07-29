@@ -139,6 +139,9 @@
       + '#sz-tools{display:flex;flex-direction:column;align-items:center}'
       + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab;'
       +   'z-index:9999}'
+      + '#sz-phases{display:flex;flex-direction:column;align-items:center}'
+      + '#sz-phase-stack{display:flex;flex-direction:column;gap:8px;align-items:center;'
+      +   'z-index:9999}'
       + '.sz-tool-stack-grip{width:150px;padding:3px 4px;border-radius:6px;text-align:center;'
       +   'font-size:9px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
       +   'border:1px dashed #c9a86a;background:rgba(255,255,255,.35)}'
@@ -680,6 +683,56 @@
     wrap.appendChild(stack);
     wireToolStackDrag(stack, leftBar);
 
+    return wrap;
+  }
+
+  /* ---------- Phase tray -- Larry, July 29 2026: "phase buttons like
+     the tools tray but in the right top drawer." Lives in the right
+     drawer's slot 1 (the "top" single-tap slot), styled with the same
+     .sz-tool-btn/.sz-tool-face look as the left rail's tool stack so
+     it reads as the same family of object. Deliberately simpler than
+     buildTools() for now -- no drag-out-onto-desk, no reorder, no
+     per-button docking to either drawer -- just a static stack that
+     jumps the traveler straight to a phase's entry screen. Only
+     Introduction/Dream are real destinations today; Believe/Dare/
+     Journey resolve once their phase-entry screens + Supabase page
+     rows exist (this same session). Flagged as an MVP, not the full
+     tool-tray engine -- worth revisiting if Larry wants these
+     draggable/reorderable too. */
+  var PHASE_ITEMS = [
+    { id:'intro',   label:'🚪 Introduction', num:'0100' },
+    { id:'dream',   label:'🌈 Dream',        num:'1000' },
+    { id:'believe', label:'🔬 Believe',      num:'2000' },
+    { id:'dare',    label:'⚖️ Dare',         num:'3000' },
+    { id:'journey', label:'🚀 Journey',      num:'4000' }
+  ];
+
+  function buildPhaseTray(){
+    var wrap = document.createElement('div');
+    wrap.id = 'sz-phases';
+
+    var stack = document.createElement('div');
+    stack.id = 'sz-phase-stack';
+    stack.className = 'sz-drawer-drag-exclude';
+
+    var grip = document.createElement('div');
+    grip.className = 'sz-tool-stack-grip';
+    grip.textContent = 'Phases';
+    stack.appendChild(grip);
+
+    PHASE_ITEMS.forEach(function(item){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sz-tool-btn';
+      btn.dataset.phaseId = item.id;
+      btn.innerHTML = '<div class="sz-tool-face"><span>' + item.label + '</span></div>';
+      btn.addEventListener('click', function(){
+        if (window.T2T) window.T2T.navToPageNum(item.num);
+      });
+      stack.appendChild(btn);
+    });
+
+    wrap.appendChild(stack);
     return wrap;
   }
 
@@ -1815,8 +1868,12 @@
 
     var mid = document.createElement('div');
     mid.id = 'sz-drawer-r-mid';
-    var mode1 = buildModePlaceholder();
-    mode1.classList.add('sz-mode-active');
+    // Larry, July 29 2026: right drawer's slot 1 (the top,
+    // single-tap slot) is no longer undesignated -- it's the
+    // phase tray, mirroring the left rail's tool stack look.
+    // Slot 2 remains bare/undesignated.
+    var mode1 = buildPhaseTray();
+    mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = buildModePlaceholder();
     var surprise = buildSurprisePanel(bar, 'right');
     mid.appendChild(mode1);

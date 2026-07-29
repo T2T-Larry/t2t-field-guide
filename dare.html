@@ -1,0 +1,114 @@
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T2T Field Guide — Dare Phase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<style>@media print{@page{size:landscape;margin:0.3in}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html,body{height:100%!important;width:100%!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;margin:0!important;width:100%!important;max-width:none!important;height:100%!important}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:visible!important}#cl-print-area{width:100%!important;height:100%!important;padding:0!important}#cl-cert-svg{max-height:none!important;width:100%!important;height:auto!important}.bar2{display:none!important}button[onclick]{display:none!important}}</style>
+<link rel="stylesheet" href="style.css?v=20260729h">
+<style>
+.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default}
+/* Kept in sync with index.html's text-selection fix, July 27 2026.
+   Note: this page NOW loads screen-zero.js/tv-frame.js too (added
+   same day, fixing the 1000 dead-end) -- dragging is the TV frame's
+   job here too, same as index.html, not a separate concern. */
+#fg-root:not(.isx-full){user-select:text;-webkit-user-select:text}
+.card.rnd{border-radius:12px}
+/* Kept in sync with index.html's 0010 lighten, July 27 2026 -- dead here today (no #s-signin on this page) but left matching so it can't drift and cause a surprise later if a gate ever gets added to phase pages. */
+.siw{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#15805F;text-align:center}
+.si-t2t{font-family:'Playfair Display',serif;font-size:96px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:8px}
+.si-input{width:100%;padding:13px 16px;border-radius:10px;font-size:15px;color:#111;outline:none;font-family:sans-serif;display:block;margin-bottom:16px;background:#ffffff;border-top:2.5px solid #031910;border-left:2px solid #031910;border-right:1.5px solid #aaa;border-bottom:1.5px solid #aaa}
+.phase-header{background:#fdf8f0;padding:12px 16px 10px;text-align:center;border-bottom:2px solid #5b9bd5;flex-shrink:0}
+.ph-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6040}
+.ph-chapter{font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#8B6914;letter-spacing:1px;margin-top:3px}
+
+  /* ── SPARK DOORS ── */
+  .spark-door{padding:16px 6px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid #111;background:#faf6ee;color:#1a3a5c;box-shadow:0 3px 8px rgba(0,0,0,.22),0 1px 3px rgba(0,0,0,.14);transition:all .15s;text-align:center;display:flex;align-items:center;justify-content:center}
+  .spark-door:hover{background:#e8e4dc;box-shadow:0 0 8px 2px rgba(0,0,0,.18),0 3px 6px rgba(0,0,0,.15);transform:translateY(-1px)}
+  .spark-door:active{transform:scale(.97)}
+
+  /* ── DREAM PHASE OVERRIDES ── */
+  .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}
+  .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}
+  .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}
+  .title-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 20px;background:#ffffff;text-align:center}
+  .phase-eyebrow{font-size:12px;letter-spacing:5px;text-transform:uppercase;color:#3B2510;margin-bottom:28px}
+  .phase-the{font-size:28px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.1}
+  .phase-name{font-size:82px;font-weight:700;color:#1a3a5c;line-height:1.0;letter-spacing:-2px}
+  .phase-word{font-size:28px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.2}
+  .phase-sub{font-size:14px;letter-spacing:4px;color:#3B2510;margin-top:32px;text-transform:uppercase}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="header-data.js?v=20260714a"></script>
+<script src="backpack.js?v=20260729c"></script>
+<script src="briefing-board.js?v=20260727a"></script>
+<script src="tmap.js?v=20260729b"></script>
+<script src="dmap.js?v=20260714a"></script>
+<script src="idea-capture.js?v=20260729d"></script>
+<script src="notebook-open.js?v=20260729g"></script>
+<script src="idea-media-shared.js?v=20260729c"></script>
+<script src="idea-storyboard-9710.js?v=20260729e"></script>
+<script src="session.js?v=20260729c"></script>
+<script src="gems.js?v=20260723b"></script>
+<!-- Missing until now, July 27 2026 -- Larry: landing on 1000 left him
+     completely stuck, no drawers, no TV frame, no nav buttons. The
+     July 26 refactor hid every screen's own paging/menu buttons
+     site-wide (style.css's .bar2,.bar3{display:none!important}) on
+     the assumption the TV frame + nav drawer would always be there to
+     replace them -- true on index.html, never actually true here.
+     Adding the same two scripts index.html loads restores that parity
+     instead of relying on the old hidden buttons still working. -->
+<script src="screen-zero.js?v=20260729m"></script>
+<script src="tv-frame.js?v=20260729b"></script>
+</head>
+<body>
+<div class="fg" id="fg-root">
+
+<!-- ══ 3000 · THE DARE PHASE ══ -->
+<div class="sc card active" id="s-dare-phase">
+  <div class="title-stage">
+    <div class="phase-eyebrow">· Phase Three ·</div>
+    <div class="phase-the">The</div>
+    <div class="phase-name">Dare</div>
+    <div class="phase-word">Phase</div>
+    <div class="phase-sub">Am I willing?</div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="b-dare-back">⬅️</button>
+    <button class="tb" id="b-dare-mg">☰</button>
+    <button class="tb dim" id="b-dare-fwd">➡️</button>
+  </div>
+</div>
+
+</div><!-- /.fg -->
+<div id="nb-layer"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var T = window.T2T;
+
+  /* ── 3000 · THE DARE PHASE ──
+     Phase-entry screen only -- built July 29 2026 alongside Dream/
+     Believe/Dare/Journey Map wiring. Mirrors 1000's own title-stage
+     pattern exactly. No chapter breakdown (Create/Shape/Share-style)
+     exists yet for this phase, so the subtitle uses the phase's
+     Design Notes tagline instead of chapter names. Forward stays dim
+     on purpose -- no next content built yet; wiring it to a screen
+     that doesn't exist would just silently fail (same convention as
+     dream.html's b-shape-toc-fwd). */
+  T.setPrimaryPages(['s-dare-phase']);
+  T.registerPageNum('s-dare-phase', '3000');
+  T.registerCtx('s-dare-phase', 'Dare Phase');
+  T.registerGems('s-dare-phase', [
+    {text:'Belief without willingness is just a nice idea. This is where you decide.', attr:'T2T Field Guide · Dare'}
+  ]);
+  T.wire('b-dare-back', function(){ sessionStorage.setItem('bp_target','2000'); T.goPhase('believe.html'); });
+  T.wire('b-dare-mg',   T.goMG);
+  /* b-dare-fwd stays dim -- Dare Phase has no chapters built yet. */
+
+  T.nav('s-dare-phase', false);
+});
+</script>
+</body>
+</html>

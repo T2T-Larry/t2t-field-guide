@@ -35,11 +35,11 @@
           '<div class="pr tap" id="tog-map-dream"><span class="pl2">🌈 Phase 1: Dream</span><span class="ptg" id="map-dream-tog">▼</span></div>'+
           '<div id="map-dream" class="ps phd"></div>'+
           '<div class="pr tap" id="tog-map-believe"><span class="pl2">🔬 Phase 2: Believe</span><span class="ptg" id="map-believe-tog">▼</span></div>'+
-          '<div id="map-believe" class="ps phd"><div class="cm">Coming soon.</div></div>'+
+          '<div id="map-believe" class="ps phd"></div>'+
           '<div class="pr tap" id="tog-map-dare"><span class="pl2">⚖️ Phase 3: Dare</span><span class="ptg" id="map-dare-tog">▼</span></div>'+
-          '<div id="map-dare" class="ps phd"><div class="cm">Coming soon.</div></div>'+
+          '<div id="map-dare" class="ps phd"></div>'+
           '<div class="pr tap" id="tog-map-journey"><span class="pl2">🚀 Phase 4: Journey</span><span class="ptg" id="map-journey-tog">▼</span></div>'+
-          '<div id="map-journey" class="ps phd"><div class="cm">Coming soon.</div></div>'+
+          '<div id="map-journey" class="ps phd"></div>'+
         '</div></div>'+
         '<div class="bar2">'+
           '<button class="tb" id="b-map-back">⬅️</button>'+
@@ -76,6 +76,18 @@
     {num:'1130',label:'Inklings',          id:'s-what-i-want'},
     {num:'1140',label:'Creative Sparks',   id:'s-lightning-bug'},
     {num:'1160',label:'PLUSing',           id:'s-plusing'}
+  ];
+
+  var _believeSteps = [
+    {num:'2000',label:'The Believe Phase', id:'s-believe-phase'} // Larry, July 29 2026: phase-entry screen only -- no chapter breakdown built yet
+  ];
+
+  var _dareSteps = [
+    {num:'3000',label:'The Dare Phase',    id:'s-dare-phase'}
+  ];
+
+  var _journeySteps = [
+    {num:'4000',label:'The Journey Phase', id:'s-journey-phase'}
   ];
 
   function renderStepList(containerId, steps, curNum, visited) {
@@ -116,6 +128,9 @@
     if(curNum===undefined) curNum=T.getCurNum();
     renderStepList('map-intro-steps', _introSteps, curNum, visited);
     renderStepList('map-dream',       _dreamSteps, curNum, visited);
+    renderStepList('map-believe',     _believeSteps, curNum, visited);
+    renderStepList('map-dare',        _dareSteps, curNum, visited);
+    renderStepList('map-journey',     _journeySteps, curNum, visited);
     autoOpenMapPhase(curNum);
     _mapExtensions.forEach(function(fn){
       try { fn(curNum); } catch(e){ console.warn('Map extension error:', e); }
