@@ -29,6 +29,19 @@
 .siw{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 40px 28px;background:#15805F;text-align:center;flex-shrink:0}
 .si-t2t{font-family:'Playfair Display',serif;font-size:60px;font-weight:700;color:#C9A87C;letter-spacing:6px;line-height:1;text-shadow:3px 4px 0 #07402F;margin-bottom:6px;user-select:none;-webkit-user-select:none;cursor:default}
 .si-input{width:100%;padding:10px 16px;border-radius:10px;font-size:15px;color:#111;outline:none;font-family:sans-serif;display:block;margin-bottom:16px;background:#ffffff;border-top:2.5px solid #031910;border-left:2px solid #031910;border-right:1.5px solid #aaa;border-bottom:1.5px solid #aaa}
+/* 0010 password-visibility eye toggle, July 29 2026 -- wrapper keeps
+   the eye button pinned to the input's right edge and vertically
+   centered regardless of the input's own margin. */
+.si-pw-wrap{position:relative}
+.si-pw-wrap .si-input{padding-right:44px}
+.si-eye{position:absolute;top:50%;right:6px;transform:translateY(-50%);height:26px;width:26px;padding:0;border:none;background:none;cursor:pointer;font-size:16px;line-height:1;color:#555;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.si-eye:hover{background:rgba(0,0,0,.06)}
+.si-eye:focus-visible{outline:2px solid #15805F;outline-offset:2px}
+/* 0010 Sign In button, July 29 2026 -- Larry: center it in the space
+   between the password field and the bottom toolbar instead of
+   hugging the password field. 60px measured live to land the button
+   equidistant from both (siw's centering does the rest). */
+#b-signin{margin-top:60px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260714a"></script>
@@ -72,7 +85,10 @@
       <label class="si-lbl">Email</label>
       <input class="si-input" style="margin-bottom:10px" type="email" id="si-email" placeholder="your@email.com">
       <label class="si-lbl">Password</label>
-      <input class="si-input" style="margin-bottom:10px" type="password" id="si-password" placeholder="password">
+      <div class="si-pw-wrap" style="margin-bottom:10px">
+        <input class="si-input" style="margin-bottom:0" type="password" id="si-password" placeholder="password">
+        <button type="button" class="si-eye" id="si-pw-toggle" aria-label="Show password">👁️</button>
+      </div>
       <button class="si-btn" id="b-signin">Sign In</button>
     </div>
   </div>
@@ -766,6 +782,14 @@
     }catch(e){ console.error('Session resume failed', e); }
   })();
 
+  T.wire('si-pw-toggle', function(){
+    var f=document.getElementById('si-password');
+    var btn=document.getElementById('si-pw-toggle');
+    var showing = f.type === 'text';
+    f.type = showing ? 'password' : 'text';
+    btn.textContent = showing ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDE48';
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
   T.wire('b-signin-reset', function(){
     document.getElementById('si-email').value='';
     document.getElementById('si-password').value='';
