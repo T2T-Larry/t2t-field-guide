@@ -706,7 +706,11 @@
   function buildModePlaceholder(label){
     var p = document.createElement('div');
     p.className = 'sz-mode-panel sz-mode-placeholder sz-mode-tbd';
-    p.textContent = label;
+    // Larry, July 29 2026: right drawer's slots 1 and 2 keep the dashed
+    // "not built yet" look (still genuinely undesignated) but lose the
+    // "Right drawer -- slot N (not yet designated)" statement -- callers
+    // now pass no label for an empty TBD box.
+    if (label) p.textContent = label;
     return p;
   }
 
@@ -1590,9 +1594,9 @@
 
     var mid = document.createElement('div');
     mid.id = 'sz-drawer-r-mid';
-    var mode1 = buildModePlaceholder('Right drawer -- slot 1 (not yet designated)');
+    var mode1 = buildModePlaceholder();
     mode1.classList.add('sz-mode-active');
-    var mode2 = buildModePlaceholder('Right drawer -- slot 2 (not yet designated)');
+    var mode2 = buildModePlaceholder();
     var surprise = buildSurprisePanel(bar, 'right');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
