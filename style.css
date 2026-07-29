@@ -522,7 +522,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      anywhere, including on top of the TV, without losing the ability
      to write in it. Added July 29, 2026, reworked same day once Larry
      clarified it must float over the TV, not block it. ── */
-  .nb-pcard{width:min(660px,94%);max-height:88vh;background:linear-gradient(180deg,#4a3018,#2a1a0e);
+  .nb-pcard{width:min(495px,94%);max-height:66vh;background:linear-gradient(180deg,#4a3018,#2a1a0e);
     border-radius:14px;border:2px solid #241608;box-shadow:0 10px 34px rgba(0,0,0,.4);
     padding:16px;box-sizing:border-box;display:flex;flex-direction:column;
     position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:auto}
@@ -532,7 +532,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     color:var(--brand-gold);margin:0 40px 12px 4px;cursor:grab;-webkit-user-select:none;user-select:none}
   .nb-cover-title:active{cursor:grabbing}
   .nb-spread{flex:1;display:flex;background:var(--brand-cream);border-radius:8px;overflow:hidden;
-    box-shadow:inset 0 0 24px rgba(0,0,0,.18);min-height:380px;max-height:72vh}
+    box-shadow:inset 0 0 24px rgba(0,0,0,.18);min-height:285px;max-height:54vh}
   .nb-page{flex:1;display:flex;flex-direction:column;padding:20px 18px;overflow-y:auto;
     background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,94,42,.12) 27px,rgba(139,94,42,.12) 28px)}
   .nb-page-left{border-right:1px dashed rgba(139,94,42,.4)}

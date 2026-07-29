@@ -324,7 +324,23 @@
         hearted:false,
         trashed:false
       });
-      _nbShowStatus('💎 Saved as a Gem', false);
+
+      // Mark the entry itself with a leading 💎 right where it was chosen --
+      // Larry, July 29: the marker IN the text is the confirmation now, no
+      // separate "saved as a gem" message needed (that's hidden for now).
+      // In-memory edit only -- it rides the same dirty-check/save-on-close
+      // path every other Notebook edit already uses, not a forced commit.
+      var after=ta.value.slice(start);
+      if(!/^💎/.test(after)){
+        var marker='💎 ';
+        ta.value = ta.value.slice(0,start) + marker + after;
+        // marker.length, not a hardcoded count -- 💎 is a surrogate pair
+        // (2 UTF-16 code units) + the space, so the real shift is 3, and
+        // textarea selectionStart/End are measured in code units, same
+        // units String.length already uses.
+        ta.selectionStart = start + marker.length;
+        ta.selectionEnd = end + marker.length;
+      }
     }catch(e){
       console.error('_nbSaveSelectionAsGem error:', e);
       _nbShowStatus('Could not save that Gem — try again.', true);
@@ -499,7 +515,7 @@
             +'<div class="nb-paste-preview" id="nb-paste-preview" style="display:none"></div>'
             +'<textarea id="nb-text" class="nb-textarea" placeholder="What happened today…"></textarea>'
             +'<div class="nb-save-row">'
-              +'<button class="nb-gem" id="nb-gem" type="button" title="Highlight a line above, then tap this to save it as a Gem">💎 Gem</button>'
+              +'<button class="nb-gem" id="nb-gem" type="button" title="Highlight a line above, then tap this to save it as a Gem">💎</button>'
               +'<button class="nb-save" id="nb-save" type="button">SAVE</button>'
               +'<button class="nb-cancel" id="nb-cancel" type="button">CANCEL</button>'
             +'</div>'
