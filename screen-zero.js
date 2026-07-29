@@ -456,7 +456,7 @@
   // currently claimed or independently placed.
   var TOOL_ITEMS_DEFAULT = [
     { id: 'field-guide',    label: 'Field Guide',     action: function(){ if (window.T2T) window.T2T.goMG(); } },
-    { id: 'idea-board',     label: 'Idea Board',      action: function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas'); } },
+    { id: 'idea-board',     label: 'Idea Board',      action: function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); } }, // Larry, July 29 2026: was pointing at the archived 9220 legacy grid -- routes to the current 1010 Idea Storyboard now.
     { id: 'briefing-board', label: 'Briefing Board',  action: function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); } },
     { id: 'planning',       label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
     { id: 'organization',   label: 'Organization',    action: function(){ showZeroToast('Organization — coming later.'); } },

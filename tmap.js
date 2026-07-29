@@ -70,11 +70,11 @@
 
   var _dreamSteps = [
     {num:'1000',label:'The Dream Phase',   id:'s-dream'},
+    {num:'1010',label:'Idea Storyboard',   id:'s-sea-of-ideas-cluster'}, // Larry, July 29 2026: was 1150 -> the archived 9220 legacy grid; renumbered to match the live 1010 screen and moved up to sit right after 1000
     {num:'1100',label:'CREATE',            id:'s-create-hub'},
     {num:'1110',label:'Creative License',  id:'s-cl-intro'},
     {num:'1130',label:'Inklings',          id:'s-what-i-want'},
     {num:'1140',label:'Creative Sparks',   id:'s-lightning-bug'},
-    {num:'1150',label:'ISB',      id:'s-sea-of-ideas'},
     {num:'1160',label:'PLUSing',           id:'s-plusing'}
   ];
 

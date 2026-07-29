@@ -29,7 +29,13 @@
 
   function T(){ return window.T2T; }
 
-  /* ── SEA OF IDEAS — 9220 grid view (legacy, still live) ── */
+  /* ── SEA OF IDEAS — 9220 grid view. ARCHIVED July 29 2026: Larry --
+     'now defunct 9220 which needs to be archived.' The Idea Board tool-
+     tray button and the Map screen's Dream Phase step both used to point
+     here; both now go to 1010 (Idea Storyboard / s-sea-of-ideas-cluster)
+     instead, so nothing in the live UI links to this screen anymore.
+     Left in place rather than deleted, in case something still depends
+     on it existing -- say the word if you want it fully removed. ── */
   function injectSeaOfIdeas(){
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('s-sea-of-ideas')) return;
