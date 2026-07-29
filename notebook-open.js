@@ -332,6 +332,32 @@
       _nbShowStatus('Highlight a line first, then tap 💎', true);
       return;
     }
+
+    // Mark the entry itself with a leading 💎 right where it was chosen --
+    // FIRST, synchronously, before anything below awaits a network
+    // round-trip. Larry, July 29 (bug report): this used to run AFTER
+    // the Supabase insert below -- if he closed the Notebook right after
+    // tapping 💎 (no confirmation toast anymore to make him wait for),
+    // _nbCloseAndSave could tear the whole card down, removing this very
+    // textarea from the DOM, before that await ever resolved. The marker
+    // then got applied to an orphaned, already-detached element once the
+    // insert finally finished -- silently lost, never actually saved.
+    // Doing it first means the marker is sitting in the LIVE textarea the
+    // instant the button is tapped, already caught by the same dirty-
+    // check/save-on-close path every other Notebook edit uses, no matter
+    // how long the gems-table insert takes in the background.
+    var after=ta.value.slice(start);
+    if(!/^💎/.test(after)){
+      var marker='💎 ';
+      ta.value = ta.value.slice(0,start) + marker + after;
+      // marker.length, not a hardcoded count -- 💎 is a surrogate pair
+      // (2 UTF-16 code units) + the space, so the real shift is 3, and
+      // textarea selectionStart/End are measured in code units, same
+      // units String.length already uses.
+      ta.selectionStart = start + marker.length;
+      ta.selectionEnd = end + marker.length;
+    }
+
     try{
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
@@ -350,23 +376,6 @@
         hearted:false,
         trashed:false
       });
-
-      // Mark the entry itself with a leading 💎 right where it was chosen --
-      // Larry, July 29: the marker IN the text is the confirmation now, no
-      // separate "saved as a gem" message needed (that's hidden for now).
-      // In-memory edit only -- it rides the same dirty-check/save-on-close
-      // path every other Notebook edit already uses, not a forced commit.
-      var after=ta.value.slice(start);
-      if(!/^💎/.test(after)){
-        var marker='💎 ';
-        ta.value = ta.value.slice(0,start) + marker + after;
-        // marker.length, not a hardcoded count -- 💎 is a surrogate pair
-        // (2 UTF-16 code units) + the space, so the real shift is 3, and
-        // textarea selectionStart/End are measured in code units, same
-        // units String.length already uses.
-        ta.selectionStart = start + marker.length;
-        ta.selectionEnd = end + marker.length;
-      }
     }catch(e){
       console.error('_nbSaveSelectionAsGem error:', e);
       _nbShowStatus('Could not save that Gem — try again.', true);
