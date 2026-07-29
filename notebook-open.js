@@ -514,14 +514,14 @@
             +'<button class="nb-today-btn" id="nb-today-btn" type="button" style="display:none">↺ Back to Today</button>'
             +'<div class="nb-paste-preview" id="nb-paste-preview" style="display:none"></div>'
             +'<textarea id="nb-text" class="nb-textarea" placeholder="What happened today…"></textarea>'
-            +'<div class="nb-save-row">'
-              +'<button class="nb-gem" id="nb-gem" type="button" title="Highlight a line above, then tap this to save it as a Gem">💎</button>'
-              +'<button class="nb-save" id="nb-save" type="button">SAVE</button>'
-              +'<button class="nb-cancel" id="nb-cancel" type="button">CANCEL</button>'
-            +'</div>'
-            +'<div class="nb-status" id="nb-status"></div>'
           +'</div>'
         +'</div>'
+        +'<div class="nb-toolbar">'
+          +'<button class="nb-gem" id="nb-gem" type="button" title="Highlight a line above, then tap this to save it as a Gem">💎</button>'
+          +'<button class="nb-save" id="nb-save" type="button">SAVE</button>'
+          +'<button class="nb-cancel" id="nb-cancel" type="button">CANCEL</button>'
+        +'</div>'
+        +'<div class="nb-status" id="nb-status"></div>'
       +'</div>';
     layer.classList.add('active');
 
