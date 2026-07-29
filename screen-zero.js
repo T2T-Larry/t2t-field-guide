@@ -610,8 +610,22 @@
     nb.id = 'sz-notebook';
     nb.title = 'Notebook (double-click to open)';
     nb.innerHTML = '<div id="sz-notebook-label"><span>Notes</span></div>';
+    // Larry, July 29 2026: double-click no longer changes the channel to
+    // the full s-journal screen -- it opens the same kind of popup
+    // overlay card idea-capture.js uses (see notebook-open.js), sitting
+    // on top of whatever's already showing, no nav() at all. The icon
+    // itself hides for as long as that overlay is open (see SZNotebook
+    // below) and comes back once it closes.
     nb.addEventListener('dblclick', function(){
-      if (window.T2T) window.T2T.nav('s-journal');
+      if (window.SZNotebook) window.SZNotebook.hide();
+      if (window.NotebookOpen) {
+        window.NotebookOpen.open({
+          onClosed: function(){ if (window.SZNotebook) window.SZNotebook.show(); }
+        });
+      } else if (window.SZNotebook) {
+        // notebook-open.js didn't load -- don't strand the icon hidden.
+        window.SZNotebook.show();
+      }
     });
     return nb;
   }
@@ -1251,6 +1265,39 @@
     var hideWithDrawer = bar.classList.contains('sz-collapsed') && !notebookIsClaimed();
     notebook.style.display = hideWithDrawer ? 'none' : '';
   }
+
+  /* ---------- Notebook overlay hide/show hook -- July 29 2026. The
+     notebook's double-click now opens notebook-open.js's popup card
+     instead of nav()'ing away (see buildNotebook above); while that
+     overlay is open the floating icon has to disappear (nothing to
+     double-click behind a dimmed overlay), then reappear exactly where
+     it already was once the overlay closes -- same spot, same claimed/
+     riding state, same drag memory. Rather than teach notebook-open.js
+     (a separate, self-contained file) the rail's own claim/slot/dock
+     internals, this is the one small bridge: hide forces the icon off
+     regardless of state, show just re-runs the exact same visibility
+     recompute (updateNotebookVisibility + refreshRidersForSlot) that
+     already runs at every other point the icon's visibility can
+     change -- so "closed the overlay" behaves exactly like "toggled
+     the drawer" or "docked the tray" already did, no separate rule to
+     keep in sync. ---------- */
+  window.SZNotebook = {
+    hide: function(){
+      var nb = document.getElementById('sz-notebook');
+      if (nb) nb.style.display = 'none';
+    },
+    show: function(){
+      var nb = document.getElementById('sz-notebook');
+      if (!nb) return;
+      var leftBarEl = document.getElementById('sz-navbar');
+      var rightBarEl = document.getElementById('sz-drawer-r');
+      if (leftBarEl) {
+        updateNotebookVisibility(leftBarEl, nb);
+        refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
+      }
+      if (rightBarEl) refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+    }
+  };
 
   function buildNavBar(){
     if (document.getElementById('sz-navbar')) return; // idempotent

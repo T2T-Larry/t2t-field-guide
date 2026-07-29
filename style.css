@@ -497,3 +497,61 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   #travel-spinner .tw-hand{transform-origin:50px 56px;animation:tw-spin 1s linear infinite}
   @keyframes tw-spin{to{transform:rotate(360deg)}}
   @keyframes tw-sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+
+  /* ── NOTEBOOK OVERLAY — notebook-open.js. Reuses the shared
+     #isx-popup-layer overlay (same mechanism as the .isx-pcard family
+     above) but renders a bigger, book-shaped two-page-spread card
+     instead of the small isx-pcard -- Larry wanted this one to read
+     as an actual open book, not a scaled-up version of the Idea
+     input card. Outer shell matches #sz-notebook's own closed-cover
+     color so opening it visually reads as "the same object, now
+     open"; inner pages reuse the Journal's own parchment + ruled-
+     paper look (--brand-cream, the .jcov ruled-line gradient above)
+     plus its established Playfair/Caveat pairing. Added July 29, 2026. ── */
+  .nb-pcard{width:min(660px,94%);max-height:88vh;background:linear-gradient(180deg,#4a3018,#2a1a0e);
+    border-radius:14px;border:2px solid #241608;box-shadow:0 10px 34px rgba(0,0,0,.4);
+    padding:16px;position:relative;box-sizing:border-box;display:flex;flex-direction:column}
+  .nb-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:var(--brand-white);
+    border:2px solid var(--brand-ink);border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;z-index:2}
+  .nb-cover-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;letter-spacing:1px;
+    color:var(--brand-gold);margin:0 40px 12px 4px}
+  .nb-spread{flex:1;display:flex;background:var(--brand-cream);border-radius:8px;overflow:hidden;
+    box-shadow:inset 0 0 24px rgba(0,0,0,.18);min-height:380px;max-height:72vh}
+  .nb-page{flex:1;display:flex;flex-direction:column;padding:20px 18px;overflow-y:auto;
+    background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,94,42,.12) 27px,rgba(139,94,42,.12) 28px)}
+  .nb-page-left{border-right:1px dashed rgba(139,94,42,.4)}
+  .nb-page-right{flex:1.15}
+  .nb-spine{width:10px;flex-shrink:0;
+    background:linear-gradient(90deg,rgba(0,0,0,.25),rgba(0,0,0,.05) 40%,rgba(0,0,0,.05) 60%,rgba(0,0,0,.25))}
+  .nb-page-hdr{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;
+    color:var(--brand-brown-dark);margin-bottom:10px}
+  .nb-history-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+  .nb-hist-item{border:1.5px solid var(--brand-gold);border-radius:8px;padding:8px 10px;cursor:pointer;
+    background:rgba(255,255,255,.5);transition:background .12s}
+  .nb-hist-item:hover{background:rgba(255,255,255,.85)}
+  .nb-hist-item.active{background:var(--brand-gold);border-color:var(--brand-brown-dark)}
+  .nb-hist-date{font-family:'Caveat',cursive;font-size:18px;color:var(--brand-brown-dark);line-height:1}
+  .nb-hist-preview{font-family:'Playfair Display',serif;font-size:12.5px;font-style:italic;
+    color:var(--brand-brown-mid);margin-top:2px;line-height:1.4}
+  .nb-empty{font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#A87C4A;
+    text-align:center;padding:20px 6px;line-height:1.6}
+  .nb-today-btn{align-self:flex-start;margin-bottom:10px;font-size:11px;padding:5px 10px;
+    border:1.5px solid var(--brand-gold);border-radius:20px;background:var(--brand-white);
+    color:var(--brand-brown-dark);cursor:pointer;font-family:'Playfair Display',serif}
+  .nb-paste-preview{margin-bottom:8px}
+  .nb-loading{font-size:10px;color:#7A5C3A;text-align:center;padding:6px 0;font-style:italic}
+  .nb-link-chip{font-size:12px;text-align:center;padding:6px 0;word-break:break-word}
+  .nb-link-chip a{color:var(--brand-brown-dark)}
+  .nb-textarea{flex:1;width:100%;min-height:160px;background:transparent;border:none;resize:none;
+    outline:none;font-family:'Caveat',cursive;font-size:22px;line-height:1.5;color:var(--brand-brown-dark)}
+  .nb-textarea::placeholder{color:#B09070;font-style:italic}
+  .nb-save-row{display:flex;gap:8px;margin-top:8px}
+  .nb-save{flex:1;padding:11px;border:none;border-radius:9px;background:var(--brand-brown-dark);
+    color:var(--brand-cream);font-family:'Playfair Display',serif;font-weight:700;letter-spacing:1px;
+    font-size:13px;cursor:pointer}
+  .nb-save:hover{background:#2a1a0e}
+  .nb-cancel{flex:0 0 90px;padding:11px 6px;border:1.5px solid var(--brand-brown-dark);border-radius:9px;
+    background:transparent;color:var(--brand-brown-dark);font-family:'Playfair Display',serif;
+    font-weight:700;letter-spacing:.5px;font-size:12px;cursor:pointer}
+  .nb-cancel:hover{background:rgba(139,94,42,.12)}
+  .nb-status{font-size:11px;text-align:center;margin-top:6px;min-height:14px;font-family:'Playfair Display',serif}

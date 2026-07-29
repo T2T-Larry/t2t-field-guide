@@ -1,0 +1,529 @@
+/* ============================================================
+   T2T FIELD GUIDE — NOTEBOOK OVERLAY (the floating #sz-notebook
+   icon's double-click target)
+
+   Added July 29, 2026, replacing the old "double-click opens the
+   full-screen Journal (s-journal channel change)" behaviour. This
+   is the SAME kind of popup-overlay mechanism idea-capture.js
+   already uses (window.IdeaCapture.open()) -- it renders a card
+   into the shared #isx-popup-layer, toggles that layer's .active
+   class, and never calls nav(). Whatever screen is behind it (0000,
+   a Phase page, a TV-frame output) stays exactly as it was.
+
+   This is a COMBO viewer, not a fresh blank page: the left page
+   shows every past entry (click one to open it on the right), the
+   right page is the currently open page -- today by default, but
+   any past page opened from the left list becomes "the currently
+   open page" and is just as editable. There's no read-only state
+   anywhere in this file.
+
+   Storage: this notebook IS the Journal. Same Supabase table
+   (journal_notes), same columns backpack.js's own save/load already
+   uses (user_id, note_text, topic, page_context, entry_date,
+   created_at) -- see backpack.js's loadEntriesFromSupabase /
+   saveEntryToSupabase (~line 663). Those functions live inside
+   backpack.js's own closure and aren't exposed on window.T2T, so
+   this file talks to the same table directly with the same column
+   shape rather than reaching in for them -- reading/writing the
+   same rows either way, keyed by entry_date (the same "Jul 3, 2026"
+   -style string backpack.js already stamps every row with).
+
+   journal_notes has no separate image/link column the way the
+   ideas table does (image_url) -- a Journal note has only ever been
+   a block of text. Pasting an image here (see the paste handler
+   below, copied faithfully from idea-capture.js's own) uploads to
+   the same 'sea-of-ideas' storage bucket idea-capture.js already
+   uses and stores the resulting URL as the LAST LINE of note_text
+   (an optional caption on the line(s) before it); pasting a bare
+   link stores "title\nurl" the same way. On reopen, _nbExtractImageUrl
+   / _nbExtractBareLinkLine notice that trailing URL line and render
+   it back as an image/link chip instead of plain handwriting. The
+   old full-screen Journal view (s-journal-view/entry) doesn't know
+   about this convention and will just show the raw text/URL for
+   such a row -- harmless, and out of scope to change (Larry: the
+   s-journal* screens stay exactly as they are).
+
+   Exposes: window.NotebookOpen.open({onClosed}), isOpen(), close().
+   ============================================================ */
+
+(function(){
+
+  function T(){ return window.T2T; }
+
+  // ── State for whatever's currently open ──
+  var _nbOnClosed=null;
+  var _nbEntries=[];        // every journal_notes row for this user, ascending by created_at
+  var _nbActiveRow=null;    // the row currently open on the right page, or null = a fresh/unsaved page
+  var _nbLoadedText='';     // snapshot of the right page's text as last loaded/saved -- dirty-check baseline
+  var _nbPendingImageFile=null;
+  var _nbPendingLink=null;  // {url, title, thumb}
+  var _nbStatusTimer=null;
+
+  function _nbEsc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function _nbTodayKey(){
+    // Matches backpack.js's own entry_date format exactly (saveEntryToSupabase) --
+    // this is the "keyed by date" join between the two UIs.
+    return new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  function _nbTodayLongStr(){
+    // Larry wants the fresh/unwritten page to read like "July 29, 2026" --
+    // a nicer display-only format than the short form used as the actual
+    // storage key above.
+    return new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  }
+
+  function _nbIsBareUrl(text){
+    return /^https?:\/\/\S+$/i.test((text||'').trim());
+  }
+  function _nbResolveOEmbed(url){
+    return (window.T2TSea && window.T2TSea.resolveOEmbed) ? window.T2TSea.resolveOEmbed(url) : Promise.resolve(null);
+  }
+
+  // A saved row's note_text may end in a bare image/link URL (see file
+  // header) -- these two helpers notice that on reopen and split it back
+  // out from any caption text before it, so the page renders as a
+  // photo/link chip instead of showing a raw URL in the handwriting font.
+  function _nbExtractImageUrl(text){
+    if(!text) return null;
+    var lines=String(text).split('\n');
+    var last=lines[lines.length-1].trim();
+    var looksLikeUpload = /^https?:\/\/\S+$/i.test(last) && last.indexOf('/sea-of-ideas/')!==-1;
+    if(/^https?:\/\/\S+\.(jpe?g|png|gif|webp)(\?\S*)?$/i.test(last) || looksLikeUpload){
+      lines.pop();
+      return {url:last, rest:lines.join('\n').trim()};
+    }
+    return null;
+  }
+  function _nbExtractBareLinkLine(text){
+    if(!text) return null;
+    var lines=String(text).split('\n');
+    var last=lines[lines.length-1].trim();
+    if(_nbIsBareUrl(last)){
+      lines.pop();
+      return {url:last, rest:lines.join('\n').trim()};
+    }
+    return null;
+  }
+
+  // ── Same compression algorithm as idea-capture.js's _icCompressImageFile
+  //    (private to that file's closure, so replicated here rather than
+  //    invented differently -- see file header). ──
+  function _nbCompressImageFile(file, maxDim, quality){
+    maxDim=maxDim||1600; quality=quality||0.82;
+    return new Promise(function(resolve){
+      try{
+        var url=URL.createObjectURL(file);
+        var img=new Image();
+        img.onload=function(){
+          try{
+            var w=img.naturalWidth, h=img.naturalHeight;
+            if(w<=0||h<=0){ URL.revokeObjectURL(url); resolve(file); return; }
+            var scale=Math.min(1, maxDim/Math.max(w,h));
+            var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+            var canvas=document.createElement('canvas');
+            canvas.width=cw; canvas.height=ch;
+            var ctx=canvas.getContext('2d');
+            ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch);
+            ctx.drawImage(img,0,0,cw,ch);
+            canvas.toBlob(function(blob){
+              URL.revokeObjectURL(url);
+              if(!blob){ resolve(file); return; }
+              if(blob.size>=file.size && scale===1){ resolve(file); return; }
+              var newName=(file.name||'image').replace(/\.[^.]+$/,'')+'.jpg';
+              resolve(new File([blob], newName, {type:'image/jpeg'}));
+            }, 'image/jpeg', quality);
+          }catch(e){ URL.revokeObjectURL(url); resolve(file); }
+        };
+        img.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
+        img.src=url;
+      }catch(e){ resolve(file); }
+    });
+  }
+
+  function _nbShowStatus(msg, isError){
+    var el=document.getElementById('nb-status');
+    if(!el) return;
+    el.textContent=msg;
+    el.style.color = isError ? '#A32D2D' : '#2f7a4f';
+    if(_nbStatusTimer) clearTimeout(_nbStatusTimer);
+    _nbStatusTimer=setTimeout(function(){ if(el) el.textContent=''; }, 2200);
+  }
+
+  // ── Pending paste preview (image or link), before it's actually saved --
+  //    same "show a preview, nothing commits until SAVE" shape as
+  //    idea-capture.js's own _icShowPendingImage/_icShowPendingLink. ──
+  function _nbShowPendingImage(file){
+    _nbPendingImageFile=file; _nbPendingLink=null;
+    var preview=document.getElementById('nb-paste-preview');
+    if(preview){
+      var url=URL.createObjectURL(file);
+      preview.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:140px;border-radius:8px;'
+        +'display:block;margin:0 auto 8px;object-fit:contain">';
+      preview.style.display='block';
+    }
+  }
+
+  function _nbShowPendingLink(url){
+    _nbPendingLink={url:url, title:null, thumb:null}; _nbPendingImageFile=null;
+    var preview=document.getElementById('nb-paste-preview');
+    if(preview){
+      preview.innerHTML='<div class="nb-loading">Looking up this link…</div>';
+      preview.style.display='block';
+    }
+    _nbResolveOEmbed(url).then(function(meta){
+      if(!_nbPendingLink || _nbPendingLink.url!==url) return; // cancelled/replaced meanwhile
+      _nbPendingLink.title=(meta&&meta.title)||url;
+      _nbPendingLink.thumb=(meta&&meta.thumbnail_url)||null;
+      if(!preview) return;
+      preview.innerHTML=(_nbPendingLink.thumb
+          ? '<img src="'+_nbPendingLink.thumb+'" style="max-width:100%;max-height:120px;border-radius:8px;display:block;margin:0 auto 6px;object-fit:contain">'
+          : '<div style="font-size:26px;text-align:center;margin-bottom:4px">🔗</div>')
+        +'<div style="font-size:12px;color:var(--brand-brown-dark);text-align:center;font-weight:600">'+_nbEsc(_nbPendingLink.title)+'</div>'
+        +'<div style="font-size:9.5px;color:#7A5C3A;text-align:center;word-break:break-word">'+_nbEsc(url)+'</div>';
+    });
+  }
+
+  function _nbClearPending(){
+    _nbPendingImageFile=null; _nbPendingLink=null;
+  }
+
+  // ── SAVE — mirrors idea-capture.js's own priority (pending image, then
+  //    pending link, then plain typed text); journal_notes only has one
+  //    text column, so an image/link save folds any typed caption text
+  //    into note_text alongside the URL rather than a separate column. ──
+  async function _nbSaveImage(file, caption){
+    var preview=document.getElementById('nb-paste-preview');
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user) throw new Error('Not signed in.');
+      if(preview) preview.insertAdjacentHTML('beforeend','<div class="nb-loading">Compressing…</div>');
+      var toUpload=await _nbCompressImageFile(file);
+      if(preview) preview.insertAdjacentHTML('beforeend','<div class="nb-loading">Uploading…</div>');
+      var fname=toUpload.name||file.name||('pasted-image-'+Date.now()+'.jpg');
+      var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
+      var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
+      if(up.error) throw up.error;
+      var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+      var url=pub.data && pub.data.publicUrl;
+      if(!url) throw new Error('No public URL returned.');
+      var combined = caption ? (caption+'\n'+url) : url;
+      _nbPendingImageFile=null;
+      await _nbCommitText(combined);
+    }catch(e){
+      console.error('_nbSaveImage error:', e);
+      _nbShowStatus('Upload failed — '+((e&&e.message)||'try again'), true);
+    }
+  }
+
+  async function _nbCommitText(text){
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user){ _nbShowStatus('Not signed in.', true); return; }
+      if(_nbActiveRow && _nbActiveRow.id){
+        var res=await _sb.from('journal_notes').update({note_text:text}).eq('id',_nbActiveRow.id).select().single();
+        if(res.error) throw res.error;
+        _nbActiveRow=res.data;
+        for(var i=0;i<_nbEntries.length;i++){ if(_nbEntries[i].id===_nbActiveRow.id){ _nbEntries[i]=_nbActiveRow; break; } }
+      } else {
+        var now=new Date();
+        var dateStr=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+        var ins=await _sb.from('journal_notes').insert({
+          user_id:user.id,
+          note_text:text,
+          topic:null,
+          page_context:'Notebook',
+          entry_date:dateStr,
+          created_at:now.toISOString()
+        }).select().single();
+        if(ins.error) throw ins.error;
+        _nbActiveRow=ins.data;
+        _nbEntries.push(_nbActiveRow);
+      }
+      _nbPendingImageFile=null; _nbPendingLink=null;
+      _nbRenderHistoryList();
+      _nbRenderActivePage();
+      _nbShowStatus('Saved', false);
+    }catch(e){
+      console.error('_nbCommitText error:', e);
+      _nbShowStatus('Save failed — '+((e&&e.message)||'unknown error'), true);
+    }
+  }
+
+  async function _nbSaveActivePage(){
+    var ta=document.getElementById('nb-text');
+    var text=(ta?ta.value:'').trim();
+    if(_nbPendingImageFile){ return _nbSaveImage(_nbPendingImageFile, text); }
+    if(_nbPendingLink){
+      var link=_nbPendingLink;
+      var combined=(link.title && link.title!==link.url) ? (link.title+'\n'+link.url) : link.url;
+      return _nbCommitText(combined);
+    }
+    if(!text) return; // nothing to save, matches idea-capture's own "no text, no image, no-op" rule
+    return _nbCommitText(text);
+  }
+
+  function _nbIsDirty(){
+    var ta=document.getElementById('nb-text');
+    var curText=(ta?ta.value:'').trim();
+    return (curText!==(_nbLoadedText||'').trim()) || !!_nbPendingImageFile || !!_nbPendingLink;
+  }
+
+  // ── Flipping to a different page (past entry or back to today) saves
+  //    whatever's dirty on the CURRENT page first -- a real notebook
+  //    doesn't let you flip past a page you were mid-sentence on without
+  //    it sticking. ──
+  function _nbGoToEntry(row){
+    var doSwitch=function(){
+      _nbActiveRow=row||null;
+      _nbClearPending();
+      _nbRenderActivePage();
+    };
+    if(_nbIsDirty()){
+      _nbSaveActivePage().then(doSwitch).catch(doSwitch);
+    } else {
+      doSwitch();
+    }
+  }
+
+  function _nbGoToToday(){
+    var key=_nbTodayKey(), row=null;
+    for(var i=_nbEntries.length-1;i>=0;i--){ if(_nbEntries[i].entry_date===key){ row=_nbEntries[i]; break; } }
+    _nbGoToEntry(row);
+  }
+
+  function _nbHighlightHistorySelection(row){
+    var items=document.querySelectorAll('#nb-history-list .nb-hist-item');
+    items.forEach(function(el){
+      el.classList.toggle('active', !!(row && String(row.id)===el.getAttribute('data-id')));
+    });
+  }
+
+  function _nbRenderHistoryList(){
+    var list=document.getElementById('nb-history-list');
+    if(!list) return;
+    if(!_nbEntries.length){
+      list.innerHTML='<div class="nb-empty">No entries yet — today’s page is the first.</div>';
+      return;
+    }
+    var sorted=_nbEntries.slice().reverse(); // most recent first
+    list.innerHTML='';
+    sorted.forEach(function(row){
+      var div=document.createElement('div');
+      div.className='nb-hist-item';
+      div.setAttribute('data-id', String(row.id));
+      var raw=row.note_text||'';
+      var img=_nbExtractImageUrl(raw);
+      var link=_nbExtractBareLinkLine(raw);
+      var label;
+      if(img) label='🖼 Photo'+(img.rest?(': '+img.rest):'');
+      else if(link) label='🔗 Link'+(link.rest?(': '+link.rest):'');
+      else label=raw.replace(/\n/g,' ').trim();
+      if(label.length>64) label=label.substring(0,64)+'…';
+      div.innerHTML='<div class="nb-hist-date">'+_nbEsc(row.entry_date||'')+'</div>'
+        +'<div class="nb-hist-preview">'+_nbEsc(label||'(blank)')+'</div>';
+      div.addEventListener('click', function(){ _nbGoToEntry(row); });
+      list.appendChild(div);
+    });
+    _nbHighlightHistorySelection(_nbActiveRow);
+  }
+
+  function _nbRenderActivePage(){
+    var row=_nbActiveRow;
+    var todayKey=_nbTodayKey();
+    var isToday = row ? (row.entry_date===todayKey) : true;
+
+    var dateHdr=document.getElementById('nb-active-date');
+    if(dateHdr) dateHdr.textContent = row ? row.entry_date : _nbTodayLongStr();
+
+    var todayBtn=document.getElementById('nb-today-btn');
+    if(todayBtn) todayBtn.style.display = isToday ? 'none' : '';
+
+    var preview=document.getElementById('nb-paste-preview');
+    var ta=document.getElementById('nb-text');
+    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
+
+    var raw = row ? (row.note_text||'') : '';
+    var text = raw;
+    var img=_nbExtractImageUrl(raw);
+    if(img && preview){
+      preview.innerHTML='<img src="'+img.url+'" style="max-width:100%;max-height:150px;border-radius:8px;'
+        +'display:block;margin:0 auto 8px;object-fit:contain">';
+      preview.style.display='block';
+      text=img.rest;
+    } else {
+      var link=_nbExtractBareLinkLine(raw);
+      if(link && preview){
+        preview.innerHTML='<div class="nb-link-chip">🔗 <a href="'+_nbEsc(link.url)+'" target="_blank" rel="noopener">'+_nbEsc(link.url)+'</a></div>';
+        preview.style.display='block';
+        text=link.rest;
+      }
+    }
+
+    if(ta) ta.value=text;
+    _nbLoadedText=text;
+    _nbHighlightHistorySelection(row);
+  }
+
+  function _nbWirePaste(ta){
+    if(!ta) return;
+    // Same detection/priority as idea-capture.js's own paste handler on
+    // #isx-idea-text: a pasted image wins outright; otherwise a single
+    // bare URL (nothing else on the clipboard text) becomes a link
+    // preview; anything else just types normally. Nothing auto-commits --
+    // SAVE/close is still what actually writes it.
+    ta.addEventListener('paste', function(e){
+      var items=e.clipboardData && e.clipboardData.items;
+      if(items){
+        for(var i=0;i<items.length;i++){
+          if(items[i].type && items[i].type.indexOf('image/')===0){
+            var file=items[i].getAsFile();
+            if(file){
+              e.preventDefault();
+              _nbShowPendingImage(file);
+            }
+            return;
+          }
+        }
+      }
+      var text=e.clipboardData && e.clipboardData.getData('text/plain');
+      if(text && _nbIsBareUrl(text)){
+        e.preventDefault();
+        _nbShowPendingLink(text.trim());
+      }
+    });
+  }
+
+  // ── Close: save-on-close is a deliberate addition beyond idea-capture's
+  //    own pattern (which never auto-saves) -- a notebook page you were
+  //    mid-sentence on when you hit X shouldn't just evaporate. Explicit
+  //    SAVE still exists and still works exactly like idea-capture's own;
+  //    this is a safety net on TOP of it, not a replacement for it. ──
+  function _nbCloseAndSave(){
+    var finish=function(){
+      var cb=_nbOnClosed; _nbOnClosed=null;
+      _nbTeardown();
+      if(window.IdeaCapture && typeof window.IdeaCapture.close==='function'){
+        window.IdeaCapture.close(); // shared #isx-popup-layer close: clears innerHTML + .active
+      } else {
+        var layer=document.getElementById('isx-popup-layer');
+        if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
+      }
+      if(cb) cb();
+    };
+    if(_nbIsDirty()){
+      _nbSaveActivePage().then(finish).catch(finish);
+    } else {
+      finish();
+    }
+  }
+
+  function _nbTeardown(){
+    _nbEntries=[]; _nbActiveRow=null; _nbPendingImageFile=null; _nbPendingLink=null; _nbLoadedText='';
+  }
+
+  function _nbRenderShell(){
+    var layer=document.getElementById('isx-popup-layer');
+    if(!layer) return;
+    layer.innerHTML =
+      '<div class="nb-pcard" data-notebook-card="1">'
+        +'<button class="nb-close" id="nb-close" type="button" title="Close">✕</button>'
+        +'<div class="nb-cover-title">📓 Notebook</div>'
+        +'<div class="nb-spread">'
+          +'<div class="nb-page nb-page-left">'
+            +'<div class="nb-page-hdr">Past Entries</div>'
+            +'<div class="nb-history-list" id="nb-history-list"><div class="nb-empty">Loading…</div></div>'
+          +'</div>'
+          +'<div class="nb-spine"></div>'
+          +'<div class="nb-page nb-page-right">'
+            +'<div class="nb-page-hdr" id="nb-active-date"></div>'
+            +'<button class="nb-today-btn" id="nb-today-btn" type="button" style="display:none">↺ Back to Today</button>'
+            +'<div class="nb-paste-preview" id="nb-paste-preview" style="display:none"></div>'
+            +'<textarea id="nb-text" class="nb-textarea" placeholder="What happened today…"></textarea>'
+            +'<div class="nb-save-row">'
+              +'<button class="nb-save" id="nb-save" type="button">SAVE</button>'
+              +'<button class="nb-cancel" id="nb-cancel" type="button">CANCEL</button>'
+            +'</div>'
+            +'<div class="nb-status" id="nb-status"></div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    layer.classList.add('active');
+
+    document.getElementById('nb-close').onclick=_nbCloseAndSave;
+    document.getElementById('nb-save').onclick=function(){ _nbSaveActivePage(); };
+    document.getElementById('nb-cancel').onclick=function(){ _nbClearPending(); _nbRenderActivePage(); };
+    document.getElementById('nb-today-btn').onclick=_nbGoToToday;
+
+    var ta=document.getElementById('nb-text');
+    if(ta){
+      ta.focus();
+      _nbWirePaste(ta);
+    }
+  }
+
+  async function _nbLoadAndShow(){
+    var list=document.getElementById('nb-history-list');
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user){
+        if(list) list.innerHTML='<div class="nb-empty">Sign in to use your notebook.</div>';
+        var ta=document.getElementById('nb-text');
+        if(ta){ ta.disabled=true; ta.placeholder='Sign in to write in your notebook.'; }
+        var saveBtn=document.getElementById('nb-save'); if(saveBtn) saveBtn.disabled=true;
+        var dateHdr=document.getElementById('nb-active-date'); if(dateHdr) dateHdr.textContent=_nbTodayLongStr();
+        return;
+      }
+      var res=await _sb.from('journal_notes').select('*').eq('user_id',user.id).order('created_at',{ascending:true});
+      _nbEntries = (!res.error && res.data) ? res.data : [];
+    }catch(e){
+      _nbEntries=[];
+    }
+    _nbRenderHistoryList();
+    _nbGoToToday();
+  }
+
+  // Click the dimmed backdrop closes the popup, same as idea-capture's own
+  // cards -- but that shared close (wired once in idea-capture.js on
+  // #isx-popup-layer's 'click') just clears the layer; it has no idea a
+  // Notebook page needs saving first. A 'mousedown' listener here runs
+  // BEFORE that later 'click' fires (mousedown always precedes click),
+  // so the save-on-close logic (and the textarea's current value) is
+  // captured while the DOM is still intact, regardless of which file's
+  // click listener ends up running first.
+  document.addEventListener('DOMContentLoaded', function(){
+    var layer=document.getElementById('isx-popup-layer');
+    if(!layer) return;
+    layer.addEventListener('mousedown', function(e){
+      if(e.target===layer && layer.querySelector('.nb-pcard')){
+        _nbCloseAndSave();
+      }
+    });
+  });
+
+  // ── PUBLIC INTERFACE ──
+  window.NotebookOpen = {
+    open: function(opts){
+      opts=opts||{};
+      // Don't stomp an already-open idea-capture card (1170/9713/9714/9715)
+      // sharing the same #isx-popup-layer -- extremely unlikely given the
+      // icon hides itself while any popup is open, but cheap to guard.
+      if(window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen()) return;
+      _nbOnClosed=typeof opts.onClosed==='function' ? opts.onClosed : null;
+      _nbTeardown();
+      _nbRenderShell();
+      _nbLoadAndShow();
+    },
+    isOpen: function(){
+      var layer=document.getElementById('isx-popup-layer');
+      return !!(layer && layer.classList.contains('active') && layer.querySelector('.nb-pcard'));
+    },
+    close: _nbCloseAndSave
+  };
+
+})();
