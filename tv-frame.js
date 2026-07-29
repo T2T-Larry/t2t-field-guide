@@ -281,11 +281,35 @@
 
   function onKnob(kind){
     if (kind === 'idea'){
-      if (window.T2T) window.T2T.nav('s-sea-of-ideas');
+      // 9220 (legacy Sea of Ideas grid) retired as this knob's target —
+      // Larry, July 29 2026: pressing 💡 should always drop the traveler
+      // straight into adding an idea, same destination as the backpack's
+      // own 💡 entry (b-mg-idea above): 9712 CAPTURE auto-opened on top
+      // of 9711, not the old grid view.
+      if (window.T2T) window.T2T.closeMG();
+      if (window.T2TSea && window.T2TSea.openIdeaCapture){
+        var ideaCtx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
+        ideaCtx=ideaCtx||{};
+        ideaCtx.autoOpenCapture=true;
+        window.T2TSea.openIdeaCapture(ideaCtx);
+      } else console.error('Idea capture unavailable — window.T2TSea.openIdeaCapture is missing (session.js failed to load?).');
       return;
     }
     if (kind === 'trivia'){
-      if (window.T2T) window.T2T.nav('s-trivia');
+      // Bug, Larry July 29 2026: this knob is the ONLY way into Trivia
+      // (9500) that doesn't pass through the backpack's own goMG() call,
+      // so mgOrigin was never captured — pressing the Trivia menu's own
+      // ⬅️ (returnToMG) then had nowhere real to go back to and fell
+      // through to reopening the backpack over a stale Trivia screen
+      // instead of the primary page underneath. goMG() first captures
+      // (or preserves) mgOrigin exactly like every other entry point;
+      // closeMG() immediately after hides the overlay again since this
+      // knob should land straight on 9500, not on the backpack icons.
+      if (window.T2T){
+        window.T2T.goMG();
+        window.T2T.closeMG();
+        window.T2T.nav('s-trivia', false);
+      }
       return;
     }
     var target = findProxyTarget(kind);
