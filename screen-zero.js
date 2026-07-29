@@ -138,8 +138,6 @@
       +   'justify-content:center;gap:16px;overflow-y:auto;padding:10px 0}'
       + '#sz-tools{display:flex;flex-direction:column;align-items:center}'
       + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab}'
-      + '#sz-tool-group-1{display:flex;flex-direction:column;gap:8px;align-items:center;'
-      +   'cursor:grab;margin-top:10px;padding-top:10px;border-top:1px dashed rgba(138,106,58,.4)}'
       + '.sz-tool-stack-grip{width:150px;padding:3px 4px;border-radius:6px;text-align:center;'
       +   'font-size:9px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
       +   'border:1px dashed #c9a86a;background:rgba(255,255,255,.35)}'
@@ -447,9 +445,57 @@
   // the gear button becomes an easy one-tap undo: every tool button
   // snaps back to its home spot in the list, regardless of what's
   // currently claimed or independently placed.
-  var _toolButtonRecs = [];
+  var TOOL_ITEMS_DEFAULT = [
+    { id: 'field-guide',    label: 'Field Guide',     action: function(){ if (window.T2T) window.T2T.goMG(); } },
+    { id: 'idea-board',     label: 'Idea Board',      action: function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas'); } },
+    { id: 'briefing-board', label: 'Briefing Board',  action: function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); } },
+    { id: 'planning',       label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
+    { id: 'organization',   label: 'Organization',    action: function(){ showZeroToast('Organization — coming later.'); } },
+    { id: 'storytelling',   label: 'Storytelling',    action: function(){ showZeroToast('Storytelling — coming later.'); } },
+    { id: 'synapse',        label: 'Synapse',         action: function(){ showZeroToast('Synapse — coming later.'); } },
+    { id: 'library',        label: 'Library',         action: function(){ showZeroToast('Library — coming later.'); } },
+    { id: 'excellence',     label: 'Excellence',      action: function(){ showZeroToast('Excellence — coming later.'); } }
+  ];
+
+  // Larry, July 29 2026 (later same day): "All those buttons should be
+  // in the tools group / tray... All reorganizable." The nine tools
+  // used to be two separate clusters -- the original six couldn't be
+  // reordered, only the three added earlier that day could. This is
+  // one unified stack of nine: every button can be dragged past its
+  // neighbors to reorder (wireToolReorder below), the whole stack
+  // still moves together via its grip, and any single button can
+  // still be dragged out alone onto the desk or into either drawer.
+  var TOOL_ORDER_KEY = 't2t_toolOrder';
   var TOOL_STACK_KEY = 't2t_toolStackPos';
   var _toolStackRec = null;
+  var _toolButtonRecs = [];
+
+  function loadToolOrder(){
+    try {
+      var saved = JSON.parse(localStorage.getItem(TOOL_ORDER_KEY));
+      if (Array.isArray(saved) && saved.length === TOOL_ITEMS_DEFAULT.length) {
+        var byId = {};
+        TOOL_ITEMS_DEFAULT.forEach(function(it){ byId[it.id] = it; });
+        var ordered = saved.map(function(id){ return byId[id]; }).filter(Boolean);
+        if (ordered.length === TOOL_ITEMS_DEFAULT.length) return ordered;
+      }
+    } catch(e){}
+    return TOOL_ITEMS_DEFAULT.slice();
+  }
+
+  function saveToolOrderFromDom(stackEl){
+    var ids = [];
+    stackEl.querySelectorAll(':scope > .sz-tool-btn').forEach(function(btn){
+      if (btn.dataset.toolId) ids.push(btn.dataset.toolId);
+    });
+    if (ids.length === TOOL_ITEMS_DEFAULT.length) {
+      try { localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(ids)); } catch(e){}
+    }
+  }
+
+  function resetToolOrder(){
+    try { localStorage.removeItem(TOOL_ORDER_KEY); } catch(e){}
+  }
 
   function resetToolStack(){
     _toolButtonRecs.forEach(function(rec){
@@ -461,58 +507,71 @@
       rec.el.style.right = ''; rec.el.style.bottom = ''; rec.el.style.margin = '';
       rec.el.style.display = '';
     });
-    // The stack-as-a-unit grip (below) gets the same reset treatment
-    // as every individual button, so one gear-tap always returns
-    // everything to its default spot regardless of which way it left.
+    resetToolOrder();
     if (_toolStackRec) {
+      var stackEl = _toolStackRec.el;
+      var order = TOOL_ITEMS_DEFAULT.map(function(it){ return it.id; });
+      order.forEach(function(id){
+        var btn = stackEl.querySelector('[data-tool-id="' + id + '"]');
+        if (btn) stackEl.appendChild(btn);
+      });
       setRidingSlot(TOOL_STACK_KEY, null);
       try { localStorage.removeItem(TOOL_STACK_KEY); } catch(e){}
       restoreHomeParent(_toolStackRec);
-      var se = _toolStackRec.el;
-      se.style.position = '';
-      se.style.left = ''; se.style.top = '';
-      se.style.right = ''; se.style.bottom = ''; se.style.margin = '';
-      se.style.display = '';
-    }
-    // Synapse/Library/Excellence group: same per-button reset as the
-    // original six, plus putting the DOM order back to the default
-    // (Synapse, Library, Excellence) since a gear-tap should undo an
-    // in-group reorder too, not just a button that wandered off.
-    _groupButtonRecs.forEach(function(rec){
-      setRidingSlot(rec.storeKey, null);
-      try { localStorage.removeItem(rec.storeKey); } catch(e){}
-      restoreHomeParent(rec);
-      rec.el.style.position = '';
-      rec.el.style.left = ''; rec.el.style.top = '';
-      rec.el.style.right = ''; rec.el.style.bottom = ''; rec.el.style.margin = '';
-      rec.el.style.display = '';
-    });
-    resetGroupOrder();
-    if (_toolGroupRec) {
-      var groupEl = _toolGroupRec.el;
-      var order = GROUP_ITEMS_DEFAULT.map(function(it){ return it.id; });
-      order.forEach(function(id){
-        var btn = groupEl.querySelector('[data-tool-id="' + id + '"]');
-        if (btn) groupEl.appendChild(btn);
-      });
-      setRidingSlot(TOOL_GROUP_KEY, null);
-      try { localStorage.removeItem(TOOL_GROUP_KEY); } catch(e){}
-      restoreHomeParent(_toolGroupRec);
-      groupEl.style.position = '';
-      groupEl.style.left = ''; groupEl.style.top = '';
-      groupEl.style.right = ''; groupEl.style.bottom = ''; groupEl.style.margin = '';
-      groupEl.style.display = '';
+      stackEl.style.position = '';
+      stackEl.style.left = ''; stackEl.style.top = '';
+      stackEl.style.right = ''; stackEl.style.bottom = ''; stackEl.style.margin = '';
+      stackEl.style.display = '';
     }
     showZeroToast('Tool stack reset.');
   }
 
-  function wireToolButtonDrag(btn, leftBar, idx){
-    var storeKey = 't2t_toolBtnPos_' + idx;
+  // Live reorder while dragging -- swap-on-crossing, same idea as any
+  // sortable list: as the dragged button's vertical midpoint crosses a
+  // neighbor's midpoint, that neighbor hops to the other side of it.
+  // Only acts while the dragged button is still at least partly over
+  // the stack itself, so pulling one out toward a drawer or the open
+  // desk never shuffles the others on its way past them.
+  function wireToolReorder(btn, stackEl){
+    return function(rect){
+      var stackRect = stackEl.getBoundingClientRect();
+      var nearStack = !(rect.right < stackRect.left || rect.left > stackRect.right ||
+                         rect.bottom < stackRect.top || rect.top > stackRect.bottom);
+      if (!nearStack) return;
+      var draggedMidY = rect.top + rect.height / 2;
+      var siblings = Array.prototype.slice.call(stackEl.querySelectorAll(':scope > .sz-tool-btn'))
+        .filter(function(s){ return s !== btn; });
+      for (var i = 0; i < siblings.length; i++) {
+        var sib = siblings[i];
+        var sr = sib.getBoundingClientRect();
+        var sibMidY = sr.top + sr.height / 2;
+        var draggedIsBefore = (btn.compareDocumentPosition(sib) & Node.DOCUMENT_POSITION_FOLLOWING);
+        if (draggedIsBefore && draggedMidY > sibMidY) {
+          stackEl.insertBefore(sib, btn);
+          break;
+        } else if (!draggedIsBefore && draggedMidY < sibMidY) {
+          stackEl.insertBefore(btn, sib);
+          break;
+        }
+      }
+    };
+  }
+
+  // Each tool button can be dragged out of the stack onto the desk
+  // (becomes its own independent floating object), dropped onto the
+  // RIGHT drawer to be stored there, dropped back onto its OWN drawer
+  // (leftBar) to return home, or dropped back onto the stack itself
+  // to reorder (see wireToolReorder above, which has already put it
+  // in the right DOM spot by the time it's released).
+  function wireToolButtonDrag(btn, leftBar, stackEl){
+    var storeKey = 't2t_toolBtnPos_' + btn.dataset.toolId;
     var rec = registerClaimable(btn, storeKey, 16);
     _toolButtonRecs.push(rec);
     makeDraggable(btn, storeKey, null, 40, 40, {
       skipDefaultPos: true,
+      onDragMove: wireToolReorder(btn, stackEl),
       reattachTargets: [
+        { el: stackEl, side: 'stack' },
         { el: leftBar, side: 'left' },
         { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
       ],
@@ -520,12 +579,17 @@
         if (btn.parentNode !== document.body) document.body.appendChild(btn);
       },
       onReattach: function(side, barEl){
+        if (side === 'stack') {
+          setRidingSlot(storeKey, null);
+          try { localStorage.removeItem(storeKey); } catch(e){}
+          btn.style.position = '';
+          btn.style.left = ''; btn.style.top = '';
+          btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
+          btn.style.display = '';
+          saveToolOrderFromDom(stackEl);
+          return;
+        }
         var mode = barEl.dataset.mode || '1';
-        // "Home" only means the left drawer's OWN native slot (mode
-        // 1) -- dropping it on the left drawer while a different tap
-        // -slot is showing still needs to claim that specific slot,
-        // same as the right drawer, otherwise it would vanish the
-        // moment the left drawer's mode changed.
         if (side === 'left' && mode === '1') {
           setRidingSlot(storeKey, null);
           restoreHomeParent(rec);
@@ -533,6 +597,7 @@
           btn.style.left = ''; btn.style.top = '';
           btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
           btn.style.display = '';
+          saveToolOrderFromDom(stackEl);
         } else {
           setRidingSlot(storeKey, slotKey(side, mode));
           captureRidingOffset(rec, barEl);
@@ -542,17 +607,10 @@
     });
   }
 
-  // Larry, July 27 2026: "Tool stack is an object and should move
-  // out of drawer as a unit if desired." Individual buttons already
-  // drag out one at a time (wireToolButtonDrag above); this is a
-  // second, independent way to grab the whole stack at once via its
-  // own grip strip, without changing how a lone button behaves --
-  // grabbing a button still moves just that button (excludeSelector
-  // below), grabbing the grip (or the gaps around it) moves all six
-  // together. The grip lives INSIDE the existing #sz-tools mode-1
-  // panel rather than replacing it, so mode-switching/visibility
-  // keeps working exactly like it already does for every other
-  // mode-1 object.
+  // Larry, July 27 2026: "Tool stack is an object and should move out
+  // of drawer as a unit if desired." Grabbing a button still moves
+  // just that button; grabbing the grip (or the gaps around it) moves
+  // all nine together.
   function wireToolStackDrag(stack, leftBar){
     var rec = registerClaimable(stack, TOOL_STACK_KEY, 16);
     _toolStackRec = rec;
@@ -567,8 +625,6 @@
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        // "Home" is the left drawer's own native slot (mode 1) --
-        // same rule individual tool buttons already use.
         if (side === 'left' && mode === '1') {
           setRidingSlot(TOOL_STACK_KEY, null);
           restoreHomeParent(rec);
@@ -585,200 +641,6 @@
     });
   }
 
-
-  /* ---------- Tool group: Synapse / Library / Excellence, added
-     July 29 2026 -- Larry: "Add 'Synapse', 'Library' and 'Excellence'
-     Tools and make them rearrangeable in order and move together on
-     the tool tray. Also able to remove one by itself if desired."
-     Deliberately a second, separate cluster rather than folding these
-     three into the original six -- the original six (Field Guide /
-     Idea Board / Briefing Board / Planning / Organization /
-     Storytelling) keep their exact current order and behavior
-     untouched. This group adds two things the original stack never
-     had: an in-group drag-to-reorder (swap-on-crossing, live during
-     the drag), and its saved order persists across visits, same
-     spirit as every other saved position in this file. Moving the
-     whole group, dragging one button out alone onto the desk, or
-     riding either drawer all reuse the exact same claim/reattach
-     machinery as the original six. ---------- */
-
-  var TOOL_GROUP_ORDER_KEY = 't2t_toolGroup1Order';
-  var TOOL_GROUP_KEY = 't2t_toolGroup1Pos';
-  var _toolGroupRec = null;
-  var _groupButtonRecs = [];
-
-  var GROUP_ITEMS_DEFAULT = [
-    { id: 'synapse',    label: 'Synapse',    action: function(){ showZeroToast('Synapse — coming later.'); } },
-    { id: 'library',    label: 'Library',    action: function(){ showZeroToast('Library — coming later.'); } },
-    { id: 'excellence', label: 'Excellence', action: function(){ showZeroToast('Excellence — coming later.'); } }
-  ];
-
-  function loadGroupOrder(){
-    try {
-      var saved = JSON.parse(localStorage.getItem(TOOL_GROUP_ORDER_KEY));
-      if (Array.isArray(saved) && saved.length === GROUP_ITEMS_DEFAULT.length) {
-        var byId = {};
-        GROUP_ITEMS_DEFAULT.forEach(function(it){ byId[it.id] = it; });
-        var ordered = saved.map(function(id){ return byId[id]; }).filter(Boolean);
-        if (ordered.length === GROUP_ITEMS_DEFAULT.length) return ordered;
-      }
-    } catch(e){}
-    return GROUP_ITEMS_DEFAULT.slice();
-  }
-
-  function saveGroupOrderFromDom(groupEl){
-    var ids = [];
-    groupEl.querySelectorAll(':scope > .sz-tool-btn').forEach(function(btn){
-      if (btn.dataset.toolId) ids.push(btn.dataset.toolId);
-    });
-    if (ids.length === GROUP_ITEMS_DEFAULT.length) {
-      try { localStorage.setItem(TOOL_GROUP_ORDER_KEY, JSON.stringify(ids)); } catch(e){}
-    }
-  }
-
-  function resetGroupOrder(){
-    try { localStorage.removeItem(TOOL_GROUP_ORDER_KEY); } catch(e){}
-  }
-
-  // Live reorder while dragging: called on every move (opts.onDragMove
-  // from makeDraggable). Only acts while the dragged button's rect is
-  // still at least partly over the group container -- once it's
-  // dragged clear away toward a drawer or the open desk, this stops
-  // touching sibling order entirely, so a genuine "take it out" drag
-  // never shuffles the other two on its way past them.
-  function wireGroupReorder(btn, groupEl){
-    return function(rect){
-      var groupRect = groupEl.getBoundingClientRect();
-      var nearGroup = !(rect.right < groupRect.left || rect.left > groupRect.right ||
-                         rect.bottom < groupRect.top || rect.top > groupRect.bottom);
-      if (!nearGroup) return;
-      var draggedMidY = rect.top + rect.height / 2;
-      var siblings = Array.prototype.slice.call(groupEl.querySelectorAll(':scope > .sz-tool-btn'))
-        .filter(function(s){ return s !== btn; });
-      for (var i = 0; i < siblings.length; i++) {
-        var sib = siblings[i];
-        var sr = sib.getBoundingClientRect();
-        var sibMidY = sr.top + sr.height / 2;
-        var draggedIsBefore = (btn.compareDocumentPosition(sib) & Node.DOCUMENT_POSITION_FOLLOWING);
-        if (draggedIsBefore && draggedMidY > sibMidY) {
-          // dragged one is above sib in the DOM but the cursor has
-          // pulled it below sib's midpoint -- swap so sib moves up.
-          groupEl.insertBefore(sib, btn);
-          break;
-        } else if (!draggedIsBefore && draggedMidY < sibMidY) {
-          // dragged one is below sib in the DOM but has pulled above
-          // sib's midpoint -- swap so sib moves down.
-          groupEl.insertBefore(btn, sib);
-          break;
-        }
-      }
-    };
-  }
-
-  function wireGroupButtonDrag(btn, leftBar, groupEl, idx){
-    var storeKey = 't2t_toolGroupBtnPos_' + idx;
-    var rec = registerClaimable(btn, storeKey, 16);
-    _groupButtonRecs.push(rec);
-    makeDraggable(btn, storeKey, null, 40, 40, {
-      skipDefaultPos: true,
-      onDragMove: wireGroupReorder(btn, groupEl),
-      reattachTargets: [
-        { el: groupEl, side: 'group' },
-        { el: leftBar, side: 'left' },
-        { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
-      ],
-      onIndependent: function(){
-        if (btn.parentNode !== document.body) document.body.appendChild(btn);
-      },
-      onReattach: function(side, barEl){
-        if (side === 'group') {
-          // Dropped back fully inside the group -- the live reorder
-          // above has already put it in the right DOM spot; just clear
-          // the styles the drag left behind so it settles back into
-          // normal flow, and remember the (possibly new) order.
-          setRidingSlot(storeKey, null);
-          try { localStorage.removeItem(storeKey); } catch(e){}
-          btn.style.position = '';
-          btn.style.left = ''; btn.style.top = '';
-          btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
-          btn.style.display = '';
-          saveGroupOrderFromDom(groupEl);
-          return;
-        }
-        var mode = barEl.dataset.mode || '1';
-        if (side === 'left' && mode === '1') {
-          setRidingSlot(storeKey, null);
-          restoreHomeParent(rec);
-          btn.style.position = '';
-          btn.style.left = ''; btn.style.top = '';
-          btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
-          btn.style.display = '';
-          saveGroupOrderFromDom(groupEl);
-        } else {
-          setRidingSlot(storeKey, slotKey(side, mode));
-          captureRidingOffset(rec, barEl);
-          refreshRidersForSlot(side, mode, barEl);
-        }
-      }
-    });
-  }
-
-  function wireToolGroupDrag(groupEl, leftBar){
-    var rec = registerClaimable(groupEl, TOOL_GROUP_KEY, 16);
-    _toolGroupRec = rec;
-    makeDraggable(groupEl, TOOL_GROUP_KEY, '.sz-tool-btn', 40, 40, {
-      skipDefaultPos: true,
-      reattachTargets: [
-        { el: leftBar, side: 'left' },
-        { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
-      ],
-      onIndependent: function(){
-        if (groupEl.parentNode !== document.body) document.body.appendChild(groupEl);
-      },
-      onReattach: function(side, barEl){
-        var mode = barEl.dataset.mode || '1';
-        if (side === 'left' && mode === '1') {
-          setRidingSlot(TOOL_GROUP_KEY, null);
-          restoreHomeParent(rec);
-          groupEl.style.position = '';
-          groupEl.style.left = ''; groupEl.style.top = '';
-          groupEl.style.right = ''; groupEl.style.bottom = ''; groupEl.style.margin = '';
-          groupEl.style.display = '';
-        } else {
-          setRidingSlot(TOOL_GROUP_KEY, slotKey(side, mode));
-          captureRidingOffset(rec, barEl);
-          refreshRidersForSlot(side, mode, barEl);
-        }
-      }
-    });
-  }
-
-  function buildToolGroup(leftBar){
-    var groupEl = document.createElement('div');
-    groupEl.id = 'sz-tool-group-1';
-    groupEl.className = 'sz-drawer-drag-exclude';
-
-    var grip = document.createElement('div');
-    grip.className = 'sz-tool-stack-grip';
-    grip.title = 'Drag to move Synapse / Library / Excellence together';
-    grip.textContent = '\u22EE\u22EE Group';
-    groupEl.appendChild(grip);
-
-    loadGroupOrder().forEach(function(item, idx){
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'sz-tool-btn';
-      btn.dataset.toolId = item.id;
-      btn.innerHTML = '<div class="sz-tool-face"><span>' + item.label + '</span></div>';
-      btn.addEventListener('click', item.action);
-      groupEl.appendChild(btn);
-      wireGroupButtonDrag(btn, leftBar, groupEl, idx);
-    });
-
-    wireToolGroupDrag(groupEl, leftBar);
-    return groupEl;
-  }
-
   function buildTools(leftBar){
     var wrap = document.createElement('div');
     wrap.id = 'sz-tools';
@@ -793,30 +655,19 @@
     grip.textContent = '\u22EE\u22EE Tools';
     stack.appendChild(grip);
 
-    var items = [
-      { label: 'Field Guide',     action: function(){ if (window.T2T) window.T2T.goMG(); } },
-      { label: 'Idea Board',      action: function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas'); } },
-      { label: 'Briefing Board',  action: function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); } },
-      { label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
-      { label: 'Organization',    action: function(){ showZeroToast('Organization — coming later.'); } },
-      { label: 'Storytelling',    action: function(){ showZeroToast('Storytelling — coming later.'); } }
-    ];
-
-    items.forEach(function(item, idx){
+    loadToolOrder().forEach(function(item){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'sz-tool-btn';
+      btn.dataset.toolId = item.id;
       btn.innerHTML = '<div class="sz-tool-face"><span>' + item.label + '</span></div>';
       btn.addEventListener('click', item.action);
       stack.appendChild(btn);
-      wireToolButtonDrag(btn, leftBar, idx);
+      wireToolButtonDrag(btn, leftBar, stack);
     });
 
     wrap.appendChild(stack);
     wireToolStackDrag(stack, leftBar);
-
-    var group = buildToolGroup(leftBar);
-    wrap.appendChild(group);
 
     return wrap;
   }
