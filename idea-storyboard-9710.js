@@ -324,7 +324,7 @@
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">ISB</div>'
       +'</div>'
-      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">9710</div>'
+      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
@@ -360,7 +360,7 @@
       clusterOv.id='sb-cluster-overlay'; clusterOv.className='sb-overlay';
       fg.appendChild(clusterOv);
     }
-    T().registerPageNum('s-sea-of-ideas-cluster', '9710');
+    T().registerPageNum('s-sea-of-ideas-cluster', '1010'); // Larry, July 29 2026: renumbered from 9710 -- Idea Storyboard now reads as 1010 in the Dream Phase sequence, not the 9700s Storyboard-family block.
     T().registerCtx('s-sea-of-ideas-cluster', 'ISB — Cluster');
     T().wire('b-sc-close', function(){
       var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
