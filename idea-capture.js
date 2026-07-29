@@ -1,5 +1,5 @@
 /* ============================================================
-   T2T FIELD GUIDE — IDEA CAPTURE FAMILY (9712 Idea · 9713 Image ·
+   T2T FIELD GUIDE — IDEA CAPTURE FAMILY (1170 Idea · 9713 Image ·
    9714 Link · 9715 Rules)
 
    Extracted out of sea-of-ideas.js July 16, 2026. Previously this
@@ -40,7 +40,7 @@
   var _icOnSaved=null;
   var _icOnClosed=null;
 
-  // ── Idea (9712) card state ──
+  // ── Idea (1170) card state ──
   var _icIdeaMode='idea';       // manual 💡/❋ override, still respected if ever wired to a toggle
   var _icInputPendingImageFile=null;
   var _icInputPendingExternalUrl=null;
@@ -465,13 +465,13 @@
     };
   }
 
-  // ── 9712 — Idea ──
+  // ── 1170 — Idea ──
   function _icRenderIdeaPanel(){
     _icIdeaMode='idea';
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
     _icInputPendingExternalUrl=null;
-    _icOpenPopup('<div class="isx-pcard" data-pagenum="9712"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
+    _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
       +'<button class="isx-src-btn" id="isx-p-rules" type="button" style="width:100%;margin-bottom:8px">\ud83d\udcdc Rules</button>'
@@ -671,7 +671,7 @@
 
   // ── PUBLIC INTERFACE ──
   window.IdeaCapture = {
-    // Opens 9712 (Idea), preconditioned to opts.headerId. Any screen can
+    // Opens 1170 (Idea), preconditioned to opts.headerId. Any screen can
     // call this the same way — it never navigates, it just puts the card
     // on top of whatever's currently showing.
     open: function(opts){

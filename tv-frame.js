@@ -283,8 +283,8 @@
     if (kind === 'idea'){
       // 9220 (legacy Sea of Ideas grid) retired as this knob's target.
       // Larry, July 29 2026: loading the full 9711 board just to auto-pop
-      // 9712 on top of it (the previous fix) felt bulky and slow for
-      // what's meant to be a quick jot — go straight to 9712 instead, no
+      // 1170 on top of it (the previous fix) felt bulky and slow for
+      // what's meant to be a quick jot — go straight to 1170 instead, no
       // board underneath, quickAddIdea (session.js) handles resolving
       // where the idea lands.
       if (window.T2T) window.T2T.closeMG();

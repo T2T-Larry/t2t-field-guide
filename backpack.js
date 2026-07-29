@@ -529,7 +529,7 @@
         _tapCount = 0;
         var ov=document.getElementById('mg-overlay');
         var mgOpen = ov && ov.classList.contains('active');
-        // 9712/13/14/15 capture cards never call nav() — by design, they sit
+        // 1170/9713/14/15 capture cards never call nav() — by design, they sit
         // on top of whatever screen is active without disturbing it (see
         // idea-capture.js header). That means `cur` still points at the
         // HOST screen (9710 or 9711) while one of these is open, so this
@@ -539,7 +539,7 @@
         var icOpen = window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen();
         // DETAILS (9716, the shared Storyboard/Session card-back overlay)
         // has the exact same "sits on top without calling nav()" problem
-        // the 9712-9715 fix above already covers -- just never got added
+        // the 1170/9713-9715 fix above already covers -- just never got added
         // to this check, so triple-clicking the card back still reported
         // whatever host screen (9710/9711) was underneath it. Larry, July
         // 18, 2026.
@@ -871,7 +871,7 @@
         var ctx=(window.T2TSea.getCurrentBoardContext)?window.T2TSea.getCurrentBoardContext():null;
         ctx=ctx||{};
         // Clicking 💡 in the backpack means "I want to add an idea," not
-        // "show me the board" — Locked July 18, 2026. 9712 auto-opens on
+        // "show me the board" — Locked July 18, 2026. 1170 auto-opens on
         // top of 9711 the moment it lands, rather than requiring a second
         // tap once there.
         ctx.autoOpenCapture=true;

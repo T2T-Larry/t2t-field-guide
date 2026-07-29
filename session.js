@@ -172,7 +172,7 @@
       _isxWired=true;
       T().wire('isx-idea-btn', _isxOpenIdeaCaptureHere);
       T().wire('isx-gear-btn', _isxOpenGearMenu);
-      // RULES button moved off 9711's header onto 9712 (Idea Input card)
+      // RULES button moved off 9711's header onto 1170 (Idea Input card)
       // itself, July 18, 2026 — ground rules apply to the act of capturing
       // an idea, not to viewing/managing the board. See idea-capture.js.
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
@@ -256,7 +256,7 @@
   }
 
   // Shared by the 9711 header's own 💡 button and the backpack auto-open
-  // path above — opens 9712 (Idea Input) targeting whatever bucket 9711
+  // path above — opens 1170 (Idea Input) targeting whatever bucket 9711
   // is currently focused on.
   function _isxOpenIdeaCaptureHere(){
     window.IdeaCapture.open({
@@ -1670,7 +1670,7 @@
   }
 
   // Compass ("Where This Sits") manages #isx-popup-layer directly rather
-  // than through IdeaCapture — it's not part of the 9712-9715 capture
+  // than through IdeaCapture — it's not part of the 1170/9713-9715 capture
   // family, just a fellow user of the same shared overlay element. This
   // is its own close, scoped to itself. Locked July 16, 2026.
   function _isxCloseCompass(){
@@ -1783,11 +1783,11 @@
     // Larry, July 29 2026: the TV remote's 💡 knob used to call
     // openIdeaCapture above, which loads the full 9711 board (fetching
     // the sticky Topic, rendering the ladder + canvas) just so it could
-    // auto-pop 9712 on top a moment later — slow and "bulky" for what's
+    // auto-pop 1170 on top a moment later — slow and "bulky" for what's
     // meant to be a quick jot. This skips 9711 entirely: resolves the
     // same sticky target (last-used Topic, or the Wish Tank apex on a
     // first visit — identical logic to _isxInit, just without rendering
-    // anything) and opens 9712 directly on the global isx-popup-layer,
+    // anything) and opens 1170 directly on the global isx-popup-layer,
     // exactly the way 9710's own [+] circles already do via
     // _sboardOpenQuickCapture. No board underneath means no board to
     // refresh, so no onSaved callback is needed — the save itself is

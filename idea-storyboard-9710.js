@@ -1017,7 +1017,7 @@
     return tile;
   }
 
-  // Opens the 9712 Idea Input card directly on top of 9710 — no navigation
+  // Opens the 1170 Idea Input card directly on top of 9710 — no navigation
   // to 9711 first, no shared state with it either. IdeaCapture doesn't
   // know or care which screen called it. Locked July 16, 2026.
   function _sboardOpenQuickCapture(headerId){

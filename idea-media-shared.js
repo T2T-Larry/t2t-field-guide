@@ -190,7 +190,7 @@
   // _ideaSaveLinkCard, wireIdeaCaptureFamily) removed July 18, 2026 —
   // Larry hit the old 9210 screen live via a stale fallback path and
   // asked for it gone outright, not just made unreachable. The current
-  // capture flow (9712 Idea / 9713 Image / 9714 Link / 9715 Rules) is
+  // capture flow (1170 Idea / 9713 Image / 9714 Link / 9715 Rules) is
   // window.IdeaCapture in idea-capture.js and never depended on any of
   // this — confirmed no other file called any of the removed names.
 
