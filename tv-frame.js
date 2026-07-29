@@ -268,6 +268,14 @@
      next/back control exists on the screen currently showing. ---- */
 
   function findProxyTarget(kind){
+    // Larry, July 29 2026 bug fix: 1170/9713/9714/9715 (idea-capture.js)
+    // deliberately never call nav() -- they sit on top of whatever
+    // screen was already showing, so `.sc.active` still points at that
+    // hidden host screen while a card is open. Proxy-clicking its real
+    // prev/back button was silently navigating the HOST out from under
+    // the still-open card (sometimes all the way back to Sign In).
+    // Nothing underneath is a fair proxy target while a card's open.
+    if (window.IdeaCapture && window.IdeaCapture.isOpen()) return null;
     var active = document.querySelector('.sc.active');
     if (!active) return null;
     var pattern = kind === 'next' ? /-(next|fwd)(-|\d|$)/i : /-(prev|back)(-|\d|$)/i;
@@ -280,6 +288,15 @@
   }
 
   function onKnob(kind){
+    if (kind === 'prev' && window.IdeaCapture && window.IdeaCapture.isOpen()){
+      // Larry, July 29 2026: same bug as the findProxyTarget note below
+      // -- ⬅️ was reaching through the open capture card to the hidden
+      // host screen's own back button. Now it closes the open card
+      // instead, a third way to close it alongside ✕ and the backdrop
+      // click, rather than reaching through it.
+      window.IdeaCapture.close();
+      return;
+    }
     if (kind === 'idea'){
       // 9220 (legacy Sea of Ideas grid) retired as this knob's target.
       // Larry, July 29 2026: loading the full 9711 board just to auto-pop
@@ -319,10 +336,15 @@
      language the site already uses elsewhere. ---------- */
 
   function updateDimStates(frame){
+    var captureOpen = !!(window.IdeaCapture && window.IdeaCapture.isOpen());
     ['prev', 'next'].forEach(function(kind){
       var btn = frame.querySelector('.tv-knob[data-kind="' + kind + '"]');
       if (!btn) return;
-      var has = !!findProxyTarget(kind);
+      // Larry, July 29 2026: while a capture card is open, ⬅️ always
+      // has somewhere to go (it closes the card -- see onKnob) even
+      // though findProxyTarget reports no proxy target underneath.
+      // ▶ has no equivalent meaning while a card's open, so it dims.
+      var has = (kind === 'prev' && captureOpen) ? true : !!findProxyTarget(kind);
       btn.classList.toggle('dim', !has);
     });
   }

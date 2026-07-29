@@ -691,6 +691,12 @@
       var layer=document.getElementById('isx-popup-layer');
       return !!(layer && layer.classList.contains('active'));
     },
+    // Larry, July 29 2026: the TV remote's ⬅️ knob needed a real way to
+    // close whichever card (1170/9713/9714/9715) is open, instead of
+    // reaching through to the hidden host screen's own back button (see
+    // tv-frame.js onKnob). Just exposes the same close every ✕/backdrop
+    // click already uses.
+    close: _icClosePopup,
     currentPageNum: function(){
       var openCard=document.querySelector('#isx-popup-layer .isx-pcard[data-pagenum]');
       return openCard ? openCard.getAttribute('data-pagenum') : null;
