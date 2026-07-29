@@ -137,13 +137,22 @@
       + '#sz-navmid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;'
       +   'justify-content:center;gap:16px;overflow-y:auto;padding:10px 0}'
       + '#sz-tools{display:flex;flex-direction:column;align-items:center}'
-      + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab}'
+      + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab;'
+      +   'z-index:9999}'
       + '.sz-tool-stack-grip{width:150px;padding:3px 4px;border-radius:6px;text-align:center;'
       +   'font-size:9px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
       +   'border:1px dashed #c9a86a;background:rgba(255,255,255,.35)}'
+      // Larry, July 29 2026: after fixing tool buttons so a drop
+      // anywhere on the rail (not just the list) rides that spot
+      // independently, one dropped onto empty rail/drawer space came
+      // back invisible -- rail and drawer panels paint at z-index:9998
+      // and a tool button had no z-index of its own (defaults below
+      // that), so it rendered UNDER the panel it was sitting on top of.
+      // Nameplate/notebook never hit this because they were already
+      // given z-index:9999; giving tool buttons the same fixes it.
       + '.sz-tool-btn{width:150px;padding:3px;border-radius:6px;border:none;cursor:pointer;'
       +   'background:linear-gradient(135deg,#e0b060,#8a6420);box-shadow:2px 3px 6px rgba(0,0,0,.3);'
-      +   'transition:transform .1s ease, box-shadow .1s ease}'
+      +   'transition:transform .1s ease, box-shadow .1s ease;z-index:9999}'
       + '.sz-tool-btn:active{transform:translateY(2px);box-shadow:1px 1px 2px rgba(0,0,0,.3)}'
       + '.sz-tool-face{padding:7px 4px;border-radius:4px;text-align:center;font-size:11px;'
       +   'color:#4a3418;font-family:"Playfair Display",Georgia,serif;white-space:nowrap;'
