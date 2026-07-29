@@ -99,6 +99,14 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 .si-tag{font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:#9FE1CB;margin-bottom:24px}
 .si-fields{width:100%;max-width:300px;text-align:left}
 .si-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#9FE1CB;margin-bottom:6px}
+/* 0010/reset auth-screen chrome, July 29 2026 -- Larry: clicking around
+   the panel was showing a text-select cursor in places that aren't
+   actual readable content (labels, the divider line, the subtitle).
+   That's a side effect of #fg-root's broad "select everything" rule
+   from last session -- this opts these specific chrome pieces back
+   out, same way .si-t2t and .fg itself already were. Real content
+   elsewhere in the app keeps its copy/select behavior untouched. */
+.si-sub,.si-rule,.si-lbl,.si-tag{user-select:none;-webkit-user-select:none;cursor:default}
 .si-input::placeholder{color:#aaa;opacity:1}
 .si-btn{width:100%;padding:14px 0;font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;border-radius:10px;cursor:pointer;border:2px solid var(--brand-ink);background:var(--brand-gold);color:var(--brand-ink);display:block}
 .cover{background:var(--brand-teal-deep);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 40px;text-align:center}
