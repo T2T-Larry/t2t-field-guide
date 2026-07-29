@@ -3,12 +3,20 @@
    icon's double-click target)
 
    Added July 29, 2026, replacing the old "double-click opens the
-   full-screen Journal (s-journal channel change)" behaviour. This
-   is the SAME kind of popup-overlay mechanism idea-capture.js
-   already uses (window.IdeaCapture.open()) -- it renders a card
-   into the shared #isx-popup-layer, toggles that layer's .active
-   class, and never calls nav(). Whatever screen is behind it (0000,
-   a Phase page, a TV-frame output) stays exactly as it was.
+   full-screen Journal (s-journal channel change)" behaviour.
+
+   Reworked same day, same session, once Larry clarified: this must
+   NOT behave like a dimmed modal blocking the TV (which is how the
+   Idea-input card's shared #isx-popup-layer works). The Notebook
+   gets its OWN layer, #nb-layer -- no dim backdrop, no click-outside
+   -to-close, pointer-events:none on the layer itself so clicks pass
+   straight through to the TV everywhere except where the card visibly
+   sits. It floats ON TOP of whatever's showing (0000, a Phase page, a
+   TV-frame output) *and* stays fully moveable (see _nbWireDrag below
+   -- drag from the "📓 Notebook" title bar) so the traveler can drag
+   it clear of whatever they need to see, or leave it overlapping the
+   TV and keep writing right through that overlap. nav() is still
+   never called -- the screen behind it never changes.
 
    This is a COMBO viewer, not a fresh blank page: the left page
    shows every past entry (click one to open it on the right), the
@@ -407,12 +415,8 @@
     var finish=function(){
       var cb=_nbOnClosed; _nbOnClosed=null;
       _nbTeardown();
-      if(window.IdeaCapture && typeof window.IdeaCapture.close==='function'){
-        window.IdeaCapture.close(); // shared #isx-popup-layer close: clears innerHTML + .active
-      } else {
-        var layer=document.getElementById('isx-popup-layer');
-        if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
-      }
+      var layer=document.getElementById('nb-layer');
+      if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
       if(cb) cb();
     };
     if(_nbIsDirty()){
@@ -427,7 +431,7 @@
   }
 
   function _nbRenderShell(){
-    var layer=document.getElementById('isx-popup-layer');
+    var layer=document.getElementById('nb-layer');
     if(!layer) return;
     layer.innerHTML =
       '<div class="nb-pcard" data-notebook-card="1">'
@@ -464,6 +468,16 @@
       ta.focus();
       _nbWirePaste(ta);
     }
+
+    // Fresh card always opens centered (CSS default); any drag from a
+    // previous open doesn't carry over -- simplest thing that works,
+    // and matches "the same object, now open" each time.
+    var card=layer.querySelector('.nb-pcard');
+    if(card){
+      card.style.position='fixed'; card.style.left=''; card.style.top='';
+      card.style.transform='translate(-50%,-50%)';
+      card.style.right='auto'; card.style.bottom='auto';
+    }
   }
 
   async function _nbLoadAndShow(){
@@ -488,31 +502,66 @@
     _nbGoToToday();
   }
 
-  // Click the dimmed backdrop closes the popup, same as idea-capture's own
-  // cards -- but that shared close (wired once in idea-capture.js on
-  // #isx-popup-layer's 'click') just clears the layer; it has no idea a
-  // Notebook page needs saving first. A 'mousedown' listener here runs
-  // BEFORE that later 'click' fires (mousedown always precedes click),
-  // so the save-on-close logic (and the textarea's current value) is
-  // captured while the DOM is still intact, regardless of which file's
-  // click listener ends up running first.
-  document.addEventListener('DOMContentLoaded', function(){
-    var layer=document.getElementById('isx-popup-layer');
-    if(!layer) return;
-    layer.addEventListener('mousedown', function(e){
-      if(e.target===layer && layer.querySelector('.nb-pcard')){
-        _nbCloseAndSave();
-      }
-    });
-  });
+  // No dimmed backdrop on #nb-layer (see CSS: pointer-events:none on the
+  // layer itself) -- so there's nothing to click "outside" the card to
+  // close it. Closing is the X button only, same as Larry's original
+  // spec ("closed by X"). See _nbWireDrag below for how the card gets
+  // moved instead of closed when the traveler drags its title bar.
+
+  // ── Drag -- pick the card up by its "📓 Notebook" title bar and move
+  //    it anywhere, including on top of the TV. Wired once at module
+  //    load (not per-render) so repeated opens never pile up duplicate
+  //    document-level listeners; onDown/onMove always look up whichever
+  //    .nb-pcard is live right now rather than closing over a stale one. ──
+  (function(){
+    var dragging=false, moved=false, startX=0, startY=0, startLeft=0, startTop=0;
+    function pointOf(e){ return e.touches ? e.touches[0] : e; }
+    function activeCard(){ return document.querySelector('#nb-layer .nb-pcard'); }
+    function onDown(e){
+      if(!e.target.closest || !e.target.closest('.nb-cover-title')) return;
+      var card=activeCard(); if(!card) return;
+      var p=pointOf(e);
+      dragging=true; moved=false;
+      var rect=card.getBoundingClientRect();
+      startLeft=rect.left; startTop=rect.top;
+      startX=p.clientX; startY=p.clientY;
+      document.body.style.userSelect='none';
+    }
+    function onMove(e){
+      if(!dragging) return;
+      var card=activeCard();
+      if(!card){ dragging=false; return; }
+      var p=pointOf(e);
+      var dx=p.clientX-startX, dy=p.clientY-startY;
+      if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+      if(!moved) return;
+      if(e.cancelable) e.preventDefault();
+      card.style.position='fixed';
+      card.style.transform='none';
+      card.style.left=(startLeft+dx)+'px';
+      card.style.top=(startTop+dy)+'px';
+      card.style.right='auto'; card.style.bottom='auto';
+    }
+    function onUp(){
+      dragging=false;
+      document.body.style.userSelect='';
+    }
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('touchstart', onDown, {passive:true});
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, {passive:false});
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+  })();
 
   // ── PUBLIC INTERFACE ──
   window.NotebookOpen = {
     open: function(opts){
       opts=opts||{};
-      // Don't stomp an already-open idea-capture card (1170/9713/9714/9715)
-      // sharing the same #isx-popup-layer -- extremely unlikely given the
-      // icon hides itself while any popup is open, but cheap to guard.
+      // Don't open on top of an already-open idea-capture card (1170/9713/
+      // 9714/9715) -- they're on separate layers now (#isx-popup-layer vs
+      // #nb-layer) so they can't visually stomp each other, but having both
+      // capture UIs open at once is still confusing, so this guard stays.
       if(window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen()) return;
       _nbOnClosed=typeof opts.onClosed==='function' ? opts.onClosed : null;
       _nbTeardown();
@@ -520,7 +569,7 @@
       _nbLoadAndShow();
     },
     isOpen: function(){
-      var layer=document.getElementById('isx-popup-layer');
+      var layer=document.getElementById('nb-layer');
       return !!(layer && layer.classList.contains('active') && layer.querySelector('.nb-pcard'));
     },
     close: _nbCloseAndSave

@@ -438,6 +438,15 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   #isx-popup-layer{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
     background:rgba(10,20,30,.25);z-index:30}
   #isx-popup-layer.active{display:flex}
+
+  /* Notebook gets its OWN layer, not #isx-popup-layer -- Larry, July 29:
+     the Notebook must NOT dim/block the TV like the Idea-input popup does.
+     It floats over whatever's showing, stays moveable, and the TV keeps
+     running and clickable everywhere except where the card itself sits.
+     pointer-events:none on the layer + pointer-events:auto on .nb-pcard
+     is what makes that "see-through except the card" behavior work. */
+  #nb-layer{position:fixed;inset:0;display:none;z-index:35;pointer-events:none}
+  #nb-layer.active{display:block}
   /* 9711 lock, July 13, 2026: same size/shape as the DETAILS card
      (width:min(320px,88%), 16px radius) — see .sb-shape-card.
      Frame added July 18, 2026: like every other card, 9712 (and its
@@ -498,23 +507,30 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   @keyframes tw-spin{to{transform:rotate(360deg)}}
   @keyframes tw-sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
 
-  /* ── NOTEBOOK OVERLAY — notebook-open.js. Reuses the shared
-     #isx-popup-layer overlay (same mechanism as the .isx-pcard family
-     above) but renders a bigger, book-shaped two-page-spread card
-     instead of the small isx-pcard -- Larry wanted this one to read
-     as an actual open book, not a scaled-up version of the Idea
-     input card. Outer shell matches #sz-notebook's own closed-cover
-     color so opening it visually reads as "the same object, now
-     open"; inner pages reuse the Journal's own parchment + ruled-
-     paper look (--brand-cream, the .jcov ruled-line gradient above)
-     plus its established Playfair/Caveat pairing. Added July 29, 2026. ── */
+  /* ── NOTEBOOK OVERLAY — notebook-open.js. Its own #nb-layer (see
+     above), NOT the shared #isx-popup-layer -- it renders a bigger,
+     book-shaped two-page-spread card instead of the small isx-pcard --
+     Larry wanted this one to read as an actual open book, not a
+     scaled-up version of the Idea input card. Outer shell matches
+     #sz-notebook's own closed-cover color so opening it visually reads
+     as "the same object, now open"; inner pages reuse the Journal's
+     own parchment + ruled-paper look (--brand-cream, the .jcov
+     ruled-line gradient above) plus its established Playfair/Caveat
+     pairing. position:fixed + centered-by-default (transform) rather
+     than flex-centered by a parent -- .nb-cover-title is the drag
+     handle, so the traveler can pick the whole card up and move it
+     anywhere, including on top of the TV, without losing the ability
+     to write in it. Added July 29, 2026, reworked same day once Larry
+     clarified it must float over the TV, not block it. ── */
   .nb-pcard{width:min(660px,94%);max-height:88vh;background:linear-gradient(180deg,#4a3018,#2a1a0e);
     border-radius:14px;border:2px solid #241608;box-shadow:0 10px 34px rgba(0,0,0,.4);
-    padding:16px;position:relative;box-sizing:border-box;display:flex;flex-direction:column}
+    padding:16px;box-sizing:border-box;display:flex;flex-direction:column;
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:auto}
   .nb-close{position:absolute;top:12px;right:12px;width:28px;height:28px;background:var(--brand-white);
     border:2px solid var(--brand-ink);border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;z-index:2}
   .nb-cover-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;letter-spacing:1px;
-    color:var(--brand-gold);margin:0 40px 12px 4px}
+    color:var(--brand-gold);margin:0 40px 12px 4px;cursor:grab;-webkit-user-select:none;user-select:none}
+  .nb-cover-title:active{cursor:grabbing}
   .nb-spread{flex:1;display:flex;background:var(--brand-cream);border-radius:8px;overflow:hidden;
     box-shadow:inset 0 0 24px rgba(0,0,0,.18);min-height:380px;max-height:72vh}
   .nb-page{flex:1;display:flex;flex-direction:column;padding:20px 18px;overflow-y:auto;
