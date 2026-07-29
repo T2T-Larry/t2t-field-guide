@@ -142,6 +142,24 @@
       + '#sz-phases{display:flex;flex-direction:column;align-items:center}'
       + '#sz-phase-stack{display:flex;flex-direction:column;gap:8px;align-items:center;'
       +   'z-index:9999}'
+      // Larry, July 29 2026 (close of session): phase buttons take their
+      // matching phase color instead of the tool tray's shared gold --
+      // green like the Introduction panels (#0F6E56, the locked
+      // Introduction phase accent), sky blue for Dream (matches the
+      // Dream toolbar's own #d6eaf8), parchment for Believe (matches
+      // the app's existing parchment token), yellow for Dare, yellow-
+      // green for Journey. Same two-tone gradient shape the gold
+      // buttons already use, just recolored per phase.
+      + '.sz-tool-btn[data-phase-id="intro"]{background:linear-gradient(135deg,#8fd9be,#0F6E56)}'
+      + '.sz-tool-btn[data-phase-id="intro"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#eafaf3,#8fd9be 55%,#0F6E56 100%);color:#0a3a2c}'
+      + '.sz-tool-btn[data-phase-id="dream"]{background:linear-gradient(135deg,#eaf4fb,#5b9bd5)}'
+      + '.sz-tool-btn[data-phase-id="dream"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#f6fbfe,#cfe6f7 55%,#5b9bd5 100%);color:#1a3a5c}'
+      + '.sz-tool-btn[data-phase-id="believe"]{background:linear-gradient(135deg,#fffbf0,#d8bd94)}'
+      + '.sz-tool-btn[data-phase-id="believe"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#fffdf7,#f3e6cf 55%,#d8bd94 100%);color:#5c4423}'
+      + '.sz-tool-btn[data-phase-id="dare"]{background:linear-gradient(135deg,#fff6d6,#d4af37)}'
+      + '.sz-tool-btn[data-phase-id="dare"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#fffce8,#fbe9a8 55%,#d4af37 100%);color:#5c4a10}'
+      + '.sz-tool-btn[data-phase-id="journey"]{background:linear-gradient(135deg,#eaf5c8,#8fae3e)}'
+      + '.sz-tool-btn[data-phase-id="journey"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#f6fbe9,#d7e8a8 55%,#8fae3e 100%);color:#3a4a18}'
       + '.sz-tool-stack-grip{width:150px;padding:3px 4px;border-radius:6px;text-align:center;'
       +   'font-size:9px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
       +   'border:1px dashed #c9a86a;background:rgba(255,255,255,.35)}'
@@ -687,18 +705,22 @@
   }
 
   /* ---------- Phase tray -- Larry, July 29 2026: "phase buttons like
-     the tools tray but in the right top drawer." Lives in the right
-     drawer's slot 1 (the "top" single-tap slot), styled with the same
-     .sz-tool-btn/.sz-tool-face look as the left rail's tool stack so
-     it reads as the same family of object. Deliberately simpler than
-     buildTools() for now -- no drag-out-onto-desk, no reorder, no
-     per-button docking to either drawer -- just a static stack that
-     jumps the traveler straight to a phase's entry screen. Only
-     Introduction/Dream are real destinations today; Believe/Dare/
-     Journey resolve once their phase-entry screens + Supabase page
-     rows exist (this same session). Flagged as an MVP, not the full
-     tool-tray engine -- worth revisiting if Larry wants these
-     draggable/reorderable too. */
+     the tools tray but in the right top drawer." First pass was a
+     static stack (click-only); same-session follow-up: "Phase buttons
+     are on a tray like tools. Every button is moveable and
+     rearrangeable just like tools. Tray can move out of drawer." This
+     is now full parity with buildTools()/wireToolButtonDrag/
+     wireToolStackDrag below -- same reorder-by-crossing, same
+     drag-out-onto-desk, same dock-to-either-drawer, just mirrored:
+     this tray's HOME is the right drawer (mode 1) instead of the left
+     rail, so a button or the whole tray dropped back on the right
+     drawer's own slot 1 resets home, and the left rail becomes the
+     "foreign" dock instead of the right drawer. Colors are set by
+     data-phase-id via plain attribute selectors (not scoped to
+     #sz-phase-stack) so a button dragged out independently -- and
+     reparented straight onto document.body by refreshRidersForSlot --
+     keeps its phase color instead of losing it the moment it leaves
+     the stack. */
   var PHASE_ITEMS = [
     { id:'intro',   label:'🚪 Introduction', num:'0100' },
     { id:'dream',   label:'🌈 Dream',        num:'1000' },
@@ -707,7 +729,109 @@
     { id:'journey', label:'🚀 Journey',      num:'4000' }
   ];
 
-  function buildPhaseTray(){
+  var PHASE_ORDER_KEY = 't2t_phaseOrder';
+  var PHASE_STACK_KEY = 't2t_phaseStackPos';
+  var _phaseStackRec = null;
+  var _phaseButtonRecs = [];
+
+  function loadPhaseOrder(){
+    try {
+      var saved = JSON.parse(localStorage.getItem(PHASE_ORDER_KEY));
+      if (Array.isArray(saved) && saved.length === PHASE_ITEMS.length) {
+        var byId = {};
+        PHASE_ITEMS.forEach(function(it){ byId[it.id] = it; });
+        var ordered = saved.map(function(id){ return byId[id]; }).filter(Boolean);
+        if (ordered.length === PHASE_ITEMS.length) return ordered;
+      }
+    } catch(e){}
+    return PHASE_ITEMS.slice();
+  }
+
+  function savePhaseOrderFromDom(stackEl){
+    var ids = [];
+    stackEl.querySelectorAll(':scope > .sz-tool-btn').forEach(function(btn){
+      if (btn.dataset.phaseId) ids.push(btn.dataset.phaseId);
+    });
+    if (ids.length === PHASE_ITEMS.length) {
+      try { localStorage.setItem(PHASE_ORDER_KEY, JSON.stringify(ids)); } catch(e){}
+    }
+  }
+
+  // Each phase button: dropped back on its own stack = reorder
+  // (wireToolReorder, reused as-is -- it's generic over any
+  // .sz-tool-btn siblings within the stack passed to it). Dropped on
+  // the right drawer (this tray's home bar) or the left rail = rides
+  // that spot independently, exactly like a tool button riding either
+  // drawer.
+  function wirePhaseButtonDrag(btn, rightBar, stackEl){
+    var storeKey = 't2t_phaseBtnPos_' + btn.dataset.phaseId;
+    var rec = registerClaimable(btn, storeKey, 16);
+    _phaseButtonRecs.push(rec);
+    makeDraggable(btn, storeKey, null, 40, 40, {
+      skipDefaultPos: true,
+      onDragMove: wireToolReorder(btn, stackEl),
+      reattachTargets: [
+        { el: stackEl, side: 'stack' },
+        { el: rightBar, side: 'right' },
+        { get el(){ return document.getElementById('sz-navbar'); }, side: 'left' }
+      ],
+      onIndependent: function(){
+        if (btn.parentNode !== document.body) document.body.appendChild(btn);
+      },
+      onReattach: function(side, barEl){
+        if (side === 'stack') {
+          setRidingSlot(storeKey, null);
+          try { localStorage.removeItem(storeKey); } catch(e){}
+          btn.style.position = '';
+          btn.style.left = ''; btn.style.top = '';
+          btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
+          btn.style.display = '';
+          savePhaseOrderFromDom(stackEl);
+          return;
+        }
+        var mode = barEl.dataset.mode || '1';
+        setRidingSlot(storeKey, slotKey(side, mode));
+        captureRidingOffset(rec, barEl);
+        refreshRidersForSlot(side, mode, barEl);
+      }
+    });
+  }
+
+  // Whole tray: grip (or gaps between buttons) drags all five as a
+  // unit. Home is the right drawer's slot 1 -- dropped there, it
+  // resets to normal in-flow content; dropped anywhere else (left
+  // rail, or the right drawer's other modes), it rides that spot.
+  function wirePhaseStackDrag(stack, rightBar){
+    var rec = registerClaimable(stack, PHASE_STACK_KEY, 16);
+    _phaseStackRec = rec;
+    makeDraggable(stack, PHASE_STACK_KEY, '.sz-tool-btn', 40, 40, {
+      skipDefaultPos: true,
+      reattachTargets: [
+        { el: rightBar, side: 'right' },
+        { get el(){ return document.getElementById('sz-navbar'); }, side: 'left' }
+      ],
+      onIndependent: function(){
+        if (stack.parentNode !== document.body) document.body.appendChild(stack);
+      },
+      onReattach: function(side, barEl){
+        var mode = barEl.dataset.mode || '1';
+        if (side === 'right' && mode === '1') {
+          setRidingSlot(PHASE_STACK_KEY, null);
+          restoreHomeParent(rec);
+          stack.style.position = '';
+          stack.style.left = ''; stack.style.top = '';
+          stack.style.right = ''; stack.style.bottom = ''; stack.style.margin = '';
+          stack.style.display = '';
+        } else {
+          setRidingSlot(PHASE_STACK_KEY, slotKey(side, mode));
+          captureRidingOffset(rec, barEl);
+          refreshRidersForSlot(side, mode, barEl);
+        }
+      }
+    });
+  }
+
+  function buildPhaseTray(rightBar){
     var wrap = document.createElement('div');
     wrap.id = 'sz-phases';
 
@@ -717,10 +841,11 @@
 
     var grip = document.createElement('div');
     grip.className = 'sz-tool-stack-grip';
-    grip.textContent = 'Phases';
+    grip.title = 'Drag to move the whole phase tray';
+    grip.textContent = '\u22EE\u22EE Phases';
     stack.appendChild(grip);
 
-    PHASE_ITEMS.forEach(function(item){
+    loadPhaseOrder().forEach(function(item){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'sz-tool-btn';
@@ -730,9 +855,12 @@
         if (window.T2T) window.T2T.navToPageNum(item.num);
       });
       stack.appendChild(btn);
+      wirePhaseButtonDrag(btn, rightBar, stack);
     });
 
     wrap.appendChild(stack);
+    wirePhaseStackDrag(stack, rightBar);
+
     return wrap;
   }
 
@@ -1872,7 +2000,7 @@
     // single-tap slot) is no longer undesignated -- it's the
     // phase tray, mirroring the left rail's tool stack look.
     // Slot 2 remains bare/undesignated.
-    var mode1 = buildPhaseTray();
+    var mode1 = buildPhaseTray(bar);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = buildModePlaceholder();
     var surprise = buildSurprisePanel(bar, 'right');
