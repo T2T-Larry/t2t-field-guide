@@ -1269,7 +1269,13 @@
     mid.id = 'sz-navmid';
     var mode1 = buildTools(bar);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
-    var mode2 = buildModePlaceholder('Left drawer -- slot 2 (not yet designated)');
+    // Larry, July 29 2026: left drawer's slot 2 is no longer TBD --
+    // it's the junk drawer now, a place to drop anything moved off
+    // the desktop. Same treatment the surprise slot got once it held
+    // real content: drop the placeholder statement and the dashed
+    // "not built yet" border, keep the panel's size/layout.
+    var mode2 = document.createElement('div');
+    mode2.className = 'sz-mode-panel sz-mode-placeholder';
     var surprise = buildSurprisePanel(bar, 'left');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
