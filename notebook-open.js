@@ -65,6 +65,8 @@
   var _nbLoadedText='';     // snapshot of the right page's text as last loaded/saved -- dirty-check baseline
   var _nbPendingImageFile=null;
   var _nbPendingLink=null;  // {url, title, thumb}
+  var _nbPendingImageUrl=null; // {url, caption} -- an already-hosted image (no upload needed),
+                                // e.g. the monkey GIF dragged in from the desktop (see insertImageUrl)
   var _nbStatusTimer=null;
 
   function _nbEsc(s){
@@ -194,8 +196,23 @@
     });
   }
 
+  // Same "show a preview, nothing commits until SAVE" shape as
+  // _nbShowPendingImage above, but for an image that's ALREADY hosted
+  // somewhere (the monkey GIF's own giphy.com URL) -- no File object, so
+  // no compress/upload step needed, just preview it and remember the URL
+  // + optional caption for commit time.
+  function _nbShowPendingImageUrl(url, caption){
+    _nbPendingImageUrl={url:url, caption:caption||''}; _nbPendingImageFile=null; _nbPendingLink=null;
+    var preview=document.getElementById('nb-paste-preview');
+    if(preview){
+      preview.innerHTML='<img src="'+_nbEsc(url)+'" style="max-width:100%;max-height:140px;border-radius:8px;'
+        +'display:block;margin:0 auto 8px;object-fit:contain">';
+      preview.style.display='block';
+    }
+  }
+
   function _nbClearPending(){
-    _nbPendingImageFile=null; _nbPendingLink=null;
+    _nbPendingImageFile=null; _nbPendingLink=null; _nbPendingImageUrl=null;
   }
 
   // ── SAVE — mirrors idea-capture.js's own priority (pending image, then
@@ -266,6 +283,15 @@
     var ta=document.getElementById('nb-text');
     var text=(ta?ta.value:'').trim();
     if(_nbPendingImageFile){ return _nbSaveImage(_nbPendingImageFile, text); }
+    if(_nbPendingImageUrl){
+      // Already hosted (e.g. the monkey GIF) -- no upload step, just
+      // fold any caption text in ahead of the URL, same convention as
+      // every other image save (URL on the LAST line of note_text).
+      var pending=_nbPendingImageUrl;
+      var combinedUrl=(text ? (text+'\n') : '')+pending.url;
+      _nbPendingImageUrl=null;
+      return _nbCommitText(combinedUrl);
+    }
     if(_nbPendingLink){
       var link=_nbPendingLink;
       var combined=(link.title && link.title!==link.url) ? (link.title+'\n'+link.url) : link.url;
@@ -278,7 +304,7 @@
   function _nbIsDirty(){
     var ta=document.getElementById('nb-text');
     var curText=(ta?ta.value:'').trim();
-    return (curText!==(_nbLoadedText||'').trim()) || !!_nbPendingImageFile || !!_nbPendingLink;
+    return (curText!==(_nbLoadedText||'').trim()) || !!_nbPendingImageFile || !!_nbPendingLink || !!_nbPendingImageUrl;
   }
 
   // ── GEM -- Larry, July 29: a highlighted line in an entry can feel
@@ -493,7 +519,8 @@
   }
 
   function _nbTeardown(){
-    _nbEntries=[]; _nbActiveRow=null; _nbPendingImageFile=null; _nbPendingLink=null; _nbLoadedText='';
+    _nbEntries=[]; _nbActiveRow=null; _nbPendingImageFile=null; _nbPendingLink=null;
+    _nbPendingImageUrl=null; _nbLoadedText='';
   }
 
   function _nbRenderShell(){
@@ -640,7 +667,22 @@
       var layer=document.getElementById('nb-layer');
       return !!(layer && layer.classList.contains('active') && layer.querySelector('.nb-pcard'));
     },
-    close: _nbCloseAndSave
+    close: _nbCloseAndSave,
+    // Called by screen-zero.js when something already hosted elsewhere
+    // (the monkey GIF, so far) gets dropped onto the open card -- see
+    // makeDraggable's dropTargets in screen-zero.js for the drag side of
+    // this. Stages it as a pending image exactly like a pasted one (no
+    // upload needed, it's already a real URL); returns false (so the
+    // caller knows the drop wasn't actually handled and the dragged
+    // object should behave as an ordinary drop) if the card isn't
+    // currently open.
+    insertImageUrl: function(url, altText){
+      var layer=document.getElementById('nb-layer');
+      var open=!!(layer && layer.classList.contains('active') && layer.querySelector('.nb-pcard'));
+      if(!open || !url) return false;
+      _nbShowPendingImageUrl(url, altText);
+      return true;
+    }
   };
 
 })();

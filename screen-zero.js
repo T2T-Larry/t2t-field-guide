@@ -748,6 +748,22 @@
     var otherId = ownSide === 'left' ? 'sz-drawer-r' : 'sz-navbar';
     makeDraggable(img, storeKey, null, 40, 40, {
       skipDefaultPos: true,
+      // Drop the monkey onto the open Notebook card and it goes INTO the
+      // entry (Larry's own original example for this whole feature)
+      // instead of falling through onto the desktop -- see makeDraggable's
+      // dropTargets comment above for why this has to be checked before
+      // the ordinary reattach/independent-drop logic below runs.
+      dropTargets: [
+        { get el(){
+            return (window.NotebookOpen && window.NotebookOpen.isOpen())
+              ? document.querySelector('#nb-layer .nb-pcard') : null;
+          },
+          onDrop: function(){
+            return !!(window.NotebookOpen && window.NotebookOpen.insertImageUrl &&
+              window.NotebookOpen.insertImageUrl(SURPRISE_GIF_URL, 'A monkey playing cymbals'));
+          }
+        }
+      ],
       reattachTargets: [
         { el: ownBar, side: ownSide },
         { get el(){ return document.getElementById(otherId); }, side: otherSide }
@@ -927,6 +943,35 @@
       document.body.style.userSelect = '';
       if (!moved) return;
       var rect = el.getBoundingClientRect();
+
+      // opts.dropTargets -- Larry, July 29 2026 (bug report): dragged the
+      // monkey onto the open Notebook expecting it to go INTO the entry
+      // (his own original example for this feature), but it just fell
+      // through onto the desktop underneath -- the Notebook card wasn't a
+      // target this drag system knew about at all, so it landed as an
+      // ordinary independent desktop drop, then got visually covered by
+      // the Notebook floating above it (looked like it fell "through").
+      // General hook for "something else on screen wants first refusal
+      // on this drop": each target's onDrop(rect) runs only if the
+      // dropped rect overlaps that target's own rect; if onDrop returns
+      // true, the drop is considered fully handled elsewhere (e.g. the
+      // monkey's GIF got inserted into the notebook entry) and this
+      // function snaps the dragged element straight back to where the
+      // drag started, rather than leaving a second independent copy
+      // sitting on the desktop underneath whatever it was dropped onto.
+      if (opts && opts.dropTargets) {
+        for (var dti = 0; dti < opts.dropTargets.length; dti++) {
+          var dt = opts.dropTargets[dti];
+          if (!dt || !dt.el || typeof dt.el.getBoundingClientRect !== 'function') continue;
+          var dr = dt.el.getBoundingClientRect();
+          var dOverlaps = !(rect.right < dr.left || rect.left > dr.right ||
+                             rect.bottom < dr.top || rect.top > dr.bottom);
+          if (dOverlaps && dt.onDrop && dt.onDrop(rect)) {
+            applyPos(startLeft, startTop);
+            return;
+          }
+        }
+      }
 
       // "Stick to the side when close to it" -- snap flush against
       // whichever screen edge the rail was dragged near, same idea as
