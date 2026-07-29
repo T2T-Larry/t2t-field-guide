@@ -465,10 +465,14 @@
   function closeMG(){ var ov=document.getElementById('mg-overlay'); if(ov) ov.classList.remove('active'); }
 
   /* ── RETURN TO MG ── used by every backpack screen's ⬅️ (Map, Idea, Journal,
-     Gems, Tools, Trivia). Goes back to the origin page AND reopens the MG
-     overlay on top of it, restoring exactly the state the traveler left. */
+     Gems, Tools, Trivia). Used to also reopen the MG overlay on top of the
+     origin page, restoring exactly the state the traveler left -- Larry,
+     July 29 2026: skip that now and land directly on the origin page with
+     no backpack overlay showing, since the backpack itself is on its way
+     to the archive. Name kept as-is (still "the thing every hub's ⬅️
+     calls") even though it no longer reopens the MG. */
   function returnToMG(){
-    if (mgOrigin){ nav(mgOrigin,false); goMG(); }
+    if (mgOrigin){ nav(mgOrigin,false); }
     else { goBack(); }
   }
 
