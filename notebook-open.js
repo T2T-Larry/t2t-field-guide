@@ -281,6 +281,56 @@
     return (curText!==(_nbLoadedText||'').trim()) || !!_nbPendingImageFile || !!_nbPendingLink;
   }
 
+  // ── GEM -- Larry, July 29: a highlighted line in an entry can feel
+  //    significant enough to pull out on its own, same idea as the
+  //    Gems board's curated/traveler entries (gems.js). Doesn't touch
+  //    that file's own private helpers -- just writes to the same
+  //    'gems' table with the same column shape, tagged
+  //    source_type:'journal' (new value, alongside gems.js's own
+  //    'curated'/'traveler') so a future pass can filter "gems that
+  //    came out of the Journal" specifically, same as Larry described
+  //    wanting to do. source_page carries the entry's own date string,
+  //    so a future filter can trace a Gem back to which page it came
+  //    from. For now a Gem is just this: something you marked as
+  //    significant while writing -- no extraction/analysis happens
+  //    here, that's future work. ──
+  var _nbGemShapes=['circle','square','triangle','pentagon','hexagon'];
+  var _nbGemColors=['#E9D8FD','#FDE8D8','#D8F3E9','#FDE0EC','#DCE8FD','#F5E8D0'];
+
+  async function _nbSaveSelectionAsGem(){
+    var ta=document.getElementById('nb-text');
+    if(!ta) return;
+    var start=ta.selectionStart, end=ta.selectionEnd;
+    var picked=(start!=null && end!=null) ? ta.value.substring(start,end).trim() : '';
+    if(!picked){
+      _nbShowStatus('Highlight a line first, then tap 💎', true);
+      return;
+    }
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user){ _nbShowStatus('Not signed in.', true); return; }
+      var dateHdr=document.getElementById('nb-active-date');
+      var dateLabel=dateHdr?dateHdr.textContent:_nbTodayLongStr();
+      var entryDateKey=(_nbActiveRow && _nbActiveRow.entry_date) ? _nbActiveRow.entry_date : _nbTodayKey();
+      await _sb.from('gems').insert({
+        user_id:user.id,
+        gem_text:picked,
+        attribution:'From Notebook · '+dateLabel,
+        source_type:'journal',
+        source_page:entryDateKey,
+        shape:_nbGemShapes[Math.floor(Math.random()*_nbGemShapes.length)],
+        color:_nbGemColors[Math.floor(Math.random()*_nbGemColors.length)],
+        hearted:false,
+        trashed:false
+      });
+      _nbShowStatus('💎 Saved as a Gem', false);
+    }catch(e){
+      console.error('_nbSaveSelectionAsGem error:', e);
+      _nbShowStatus('Could not save that Gem — try again.', true);
+    }
+  }
+
   // ── Flipping to a different page (past entry or back to today) saves
   //    whatever's dirty on the CURRENT page first -- a real notebook
   //    doesn't let you flip past a page you were mid-sentence on without
@@ -449,6 +499,7 @@
             +'<div class="nb-paste-preview" id="nb-paste-preview" style="display:none"></div>'
             +'<textarea id="nb-text" class="nb-textarea" placeholder="What happened today…"></textarea>'
             +'<div class="nb-save-row">'
+              +'<button class="nb-gem" id="nb-gem" type="button" title="Highlight a line above, then tap this to save it as a Gem">💎 Gem</button>'
               +'<button class="nb-save" id="nb-save" type="button">SAVE</button>'
               +'<button class="nb-cancel" id="nb-cancel" type="button">CANCEL</button>'
             +'</div>'
@@ -462,6 +513,7 @@
     document.getElementById('nb-save').onclick=function(){ _nbSaveActivePage(); };
     document.getElementById('nb-cancel').onclick=function(){ _nbClearPending(); _nbRenderActivePage(); };
     document.getElementById('nb-today-btn').onclick=_nbGoToToday;
+    document.getElementById('nb-gem').onclick=function(){ _nbSaveSelectionAsGem(); };
 
     var ta=document.getElementById('nb-text');
     if(ta){

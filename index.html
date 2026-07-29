@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260729c">
+<link rel="stylesheet" href="style.css?v=20260729d">
 <style>
 /* 0010 sign-in background lightened #0F6E56 -> #15805F, July 27 2026 --
    Larry: needed a slightly lighter teal, now that the TV frame (0007)
@@ -46,7 +46,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260714a"></script>
 <script src="idea-capture.js?v=20260729d"></script>
-<script src="notebook-open.js?v=20260729b"></script>
+<script src="notebook-open.js?v=20260729c"></script>
 <script src="idea-media-shared.js?v=20260729c"></script>
 <script src="idea-storyboard-9710.js?v=20260729c"></script>
 <script src="session.js?v=20260729c"></script>
@@ -56,7 +56,7 @@
 <script src="tmap.js?v=20260720a"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260723b"></script>
-<script src="screen-zero.js?v=20260729d"></script>
+<script src="screen-zero.js?v=20260729e"></script>
 <script src="tv-frame.js?v=20260729b"></script>
 </head>
 <body>
@@ -645,7 +645,6 @@
      navigating away first. Moved here from inside #s-idea-session, July 16,
      2026. -->
 <div id="isx-popup-layer"></div>
-<div id="nb-layer"></div>
 <!-- Pocket-watch loading indicator — shows during screen transitions that
      need a moment (data fetch) so a screen never just goes blank. -->
 <div id="travel-spinner" aria-hidden="true">
@@ -665,6 +664,8 @@
   </svg>
 </div>
 </div><!-- /.fg -->
+<!-- Notebook overlay layer -- deliberately OUTSIDE #fg-root (see notebook-open.js/screen-zero.js comments): #tv-vignette is inserted as a body-level sibling of #fg-root, so anything still nested INSIDE #fg-root paints underneath the vignette no matter its own z-index. Moved out here July 29, 2026 after Larry caught the vignette showing through the open Notebook card. -->
+<div id="nb-layer"></div>
 
 <script>
 (function(){

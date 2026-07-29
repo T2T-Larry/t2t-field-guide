@@ -570,4 +570,8 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     background:transparent;color:var(--brand-brown-dark);font-family:'Playfair Display',serif;
     font-weight:700;letter-spacing:.5px;font-size:12px;cursor:pointer}
   .nb-cancel:hover{background:rgba(139,94,42,.12)}
+  .nb-gem{flex:0 0 74px;padding:11px 4px;border:1.5px solid var(--brand-gold);border-radius:9px;
+    background:var(--brand-cream);color:var(--brand-brown-dark);font-family:'Playfair Display',serif;
+    font-weight:700;letter-spacing:.3px;font-size:12px;cursor:pointer}
+  .nb-gem:hover{background:#f3e6cf}
   .nb-status{font-size:11px;text-align:center;margin-top:6px;min-height:14px;font-family:'Playfair Display',serif}

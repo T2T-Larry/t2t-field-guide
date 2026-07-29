@@ -1272,30 +1272,42 @@
      overlay is open the floating icon has to disappear (nothing to
      double-click behind a dimmed overlay), then reappear exactly where
      it already was once the overlay closes -- same spot, same claimed/
-     riding state, same drag memory. Rather than teach notebook-open.js
-     (a separate, self-contained file) the rail's own claim/slot/dock
-     internals, this is the one small bridge: hide forces the icon off
-     regardless of state, show just re-runs the exact same visibility
-     recompute (updateNotebookVisibility + refreshRidersForSlot) that
-     already runs at every other point the icon's visibility can
-     change -- so "closed the overlay" behaves exactly like "toggled
-     the drawer" or "docked the tray" already did, no separate rule to
-     keep in sync. ---------- */
+     riding state, same drag memory.
+
+     Reworked same day: the first version routed show() back through
+     updateNotebookVisibility + refreshRidersForSlot (the rail's own
+     recompute), on the theory that "closing the overlay" should behave
+     exactly like every other visibility change already does. Larry hit
+     a real bug from that: close the Notebook and the icon was gone
+     entirely -- not on the desktop, not riding either drawer. That
+     recompute has an early-return path (updateNotebookVisibility bails
+     out silently whenever the icon is riding a claimed slot, trusting
+     refreshRidersForSlot to be the one that actually sets display --
+     and there are edge cases, e.g. right after a drawer mode/side
+     change, where neither function ends up touching display at all) --
+     exactly the kind of edge case that leaves it stuck on the
+     'none' hide() set, with no recompute path left to undo it.
+
+     Simplest fix, and the only one that actually guarantees "reappear
+     exactly where it was left": don't recompute anything. Just
+     remember the icon's own exact inline display value the instant
+     before hide() touches it, then restore that exact value on show().
+     No claim/slot/dock logic involved at all -- hide/show can never
+     drift from whatever state was already correct a moment earlier. ---------- */
   window.SZNotebook = {
     hide: function(){
       var nb = document.getElementById('sz-notebook');
-      if (nb) nb.style.display = 'none';
+      if (!nb) return;
+      if (nb.style.display !== 'none') {
+        nb.dataset.szPrevDisplay = nb.style.display; // '' (visible) or an already-hidden value
+        nb.style.display = 'none';
+      }
     },
     show: function(){
       var nb = document.getElementById('sz-notebook');
       if (!nb) return;
-      var leftBarEl = document.getElementById('sz-navbar');
-      var rightBarEl = document.getElementById('sz-drawer-r');
-      if (leftBarEl) {
-        updateNotebookVisibility(leftBarEl, nb);
-        refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
-      }
-      if (rightBarEl) refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+      nb.style.display = (nb.dataset.szPrevDisplay !== undefined) ? nb.dataset.szPrevDisplay : '';
+      delete nb.dataset.szPrevDisplay;
     }
   };
 
