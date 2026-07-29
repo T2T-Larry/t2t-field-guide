@@ -579,6 +579,18 @@
         if (btn.parentNode !== document.body) document.body.appendChild(btn);
       },
       onReattach: function(side, barEl){
+        // Larry, July 29 2026 (later same day): "Field Guide jumped into
+        // [the] tool list even though I dropped it above the list as a
+        // separate item in the drawer." Root cause: the rail's own mode-1
+        // (its default, most-common state) used to be treated as "this
+        // button's home is the list" NO MATTER WHERE on the rail it
+        // landed -- so any drop anywhere on the left rail, even clearly
+        // above the list, merged it straight back in. Now the STACK
+        // itself is the only thing that means "back in the list" (it's
+        // already checked first, above); landing anywhere else on either
+        // rail/drawer -- including elsewhere on the left rail -- rides
+        // that spot as its own independent object instead, same as the
+        // right drawer already did.
         if (side === 'stack') {
           setRidingSlot(storeKey, null);
           try { localStorage.removeItem(storeKey); } catch(e){}
@@ -590,19 +602,9 @@
           return;
         }
         var mode = barEl.dataset.mode || '1';
-        if (side === 'left' && mode === '1') {
-          setRidingSlot(storeKey, null);
-          restoreHomeParent(rec);
-          btn.style.position = '';
-          btn.style.left = ''; btn.style.top = '';
-          btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
-          btn.style.display = '';
-          saveToolOrderFromDom(stackEl);
-        } else {
-          setRidingSlot(storeKey, slotKey(side, mode));
-          captureRidingOffset(rec, barEl);
-          refreshRidersForSlot(side, mode, barEl);
-        }
+        setRidingSlot(storeKey, slotKey(side, mode));
+        captureRidingOffset(rec, barEl);
+        refreshRidersForSlot(side, mode, barEl);
       }
     });
   }
