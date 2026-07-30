@@ -1,5 +1,11 @@
 /* ============================================================
-   bookmarks.js -- right-side screen bookmarks.
+   bookmarks.js -- "Shortcuts": a right-side rail of tagged screens.
+   (File name predates the final name -- Larry named the feature
+   itself "Shortcuts" on July 30, preferring it to "bookmarks" (a
+   book word) or "favorites" (implies you loved the content, when
+   half of this is just "where was I"). User-facing text all says
+   Shortcuts; internal ids/tables kept as bm-/bookmark_* rather than
+   renaming everything mid-build.)
 
    Larry, July 30 2026: "A series of potential bookmarks along the
    right side of the tv screen. A colored dot or shape of choice
@@ -9,19 +15,24 @@
    Custom Keys system already built for the Briefing Board (shape +
    color + meaning, a small traveler-built library): "Custom keys
    just like on the Briefing Board!" -- confirmed as a build ("do
-   it now!").
+   it now!"). Same-day follow-up: "Can we make this a moveable list
+   like phases that could be put into a drawer if wanted? What if
+   someone doesn't want any bookmarks?" -- see the drag/dock section
+   below for how both are answered.
 
    This file reuses that exact system (same 6 shapes, same 6
    curated colors, same shape-CSS technique -- see SIGNAL_SHAPES/
    KEY_COLORS/SIGNAL_CLIP in briefing-board.js) but keeps its own
    traveler-wide key library (bookmark_keys) rather than sharing
-   the Briefing Board's per-board one, since bookmarks aren't
+   the Briefing Board's per-board one, since Shortcuts aren't
    scoped to a board.
 
    How it works:
-   - A small vertical rail of dots floats just outside the TV
-     frame's right edge, tracking its position continuously the
-     same way tv-frame.js tracks #fg-root (see trackLoop below).
+   - A small vertical rail of dots, draggable anywhere on the desk
+     and dockable to either drawer -- see the drag/dock section
+     below, which plugs into the exact same shared system the
+     nameplate/notebook/Phase tray already use (window.SZDrag,
+     exported by screen-zero.js).
    - The top dot is a "+" -- tap it to tag the CURRENTLY showing
      screen. Only works on screens that have a real page number
      (T2T.getCurNum()); utility boards (Briefing Board, Gems, etc.)
@@ -34,16 +45,19 @@
      opens straight to that key with a Remove option instead.
    - Hovering any dot shows its meaning + destination screen name
      before you commit to clicking; clicking navigates there.
-   - Capped at 10 bookmarks (MAX_BOOKMARKS) so the rail stays a
+   - Capped at 10 Shortcuts (MAX_BOOKMARKS) so the rail stays a
      quick-glance list, not a second nav menu.
 
    Not yet built (flagging honestly): utility/full-screen boards
-   aren't taggable since they have no page number and the rail
-   hides itself while one is open, matching how the TV frame
-   already disappears there. A future pass could give those a
-   stable identity of their own if Larry wants them taggable too.
+   (Briefing Board, Gems, etc.) have no page number, so they're not
+   taggable yet -- the rail itself stays visible there though
+   (matching the nameplate/notebook, not the TV frame, which is the
+   one thing that DOES hide during those). A future pass could give
+   those boards a stable identity of their own if Larry wants them
+   taggable too.
 
-   Loaded last, after tv-frame.js.
+   Loaded last, after tv-frame.js (and after screen-zero.js, whose
+   window.SZDrag export this file depends on for dragging/docking).
    ============================================================ */
 
 (function(){
@@ -61,7 +75,7 @@
   };
   var MAX_KEY_LIBRARY = 6;
   var MAX_BOOKMARKS = 10;
-  var RAIL_GAP = 10;   // px between the TV frame's right edge and the rail
+  var RAIL_GAP = 10;   // px gap used for the rail's one-time default spot
   var DOT_SIZE = 22;
   var DOT_GAP = 8;
 
@@ -190,7 +204,8 @@
       + '#bm-rail{position:fixed;display:flex;flex-direction:column;align-items:center;'
       +   'gap:' + DOT_GAP + 'px;z-index:9999;transition:opacity .15s ease;padding:6px 4px;'
       +   'border-radius:14px;background:rgba(20,20,20,.18);backdrop-filter:blur(1px)}'
-      + '#bm-rail.bm-hidden{opacity:0;pointer-events:none}'
+      + '.bm-grip{width:100%;font-size:8px;letter-spacing:.5px;color:rgba(255,255,255,.75);'
+      +   'text-align:center;cursor:grab;user-select:none;line-height:1.4}'
       + '.bm-dot{width:' + DOT_SIZE + 'px;height:' + DOT_SIZE + 'px;border:1.5px solid rgba(255,255,255,.7);'
       +   'cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);padding:0;flex:none;'
       +   'transition:transform .1s ease}'
@@ -252,6 +267,12 @@
   function buildRail(){
     railEl = document.createElement('div');
     railEl.id = 'bm-rail';
+
+    var grip = document.createElement('div');
+    grip.className = 'bm-grip';
+    grip.title = 'Drag to move Shortcuts \u2014 drop on a drawer to put it away';
+    grip.textContent = '\u22EE\u22EE Shortcuts';
+    railEl.appendChild(grip);
 
     tagBtnEl = document.createElement('button');
     tagBtnEl.type = 'button';
@@ -495,41 +516,73 @@
     openOverlay();
   }
 
-  /* ---------- Position tracking -- same continuous-loop approach
-     tv-frame.js uses for #fg-root, anchored here to the TV frame's
-     own right edge (falling back to #fg-root + its bezel width for
-     the rare tick before the frame exists yet). ---------- */
+  /* ---------- Drag + dock, July 30 2026 -- Larry: "make this a
+     moveable list like phases that could be put into a drawer if
+     wanted." Rather than the original per-frame position-tracking
+     loop (which glued the rail to wherever the TV frame currently
+     sat), this now registers into the SAME shared claim/drag/dock
+     registry the nameplate, notebook, and Phase tray already use
+     (exposed as window.SZDrag by screen-zero.js) -- so it can be
+     dragged anywhere on the desk, dropped onto either drawer to ride
+     it, and hides automatically when that drawer collapses, exactly
+     like every other floating object already does. That also answers
+     "what if someone doesn't want any bookmarks" -- drag the rail
+     onto a drawer and collapse it, same as putting away the tool
+     stack or the notebook; nothing to build twice.
 
-  function trackLoop(){
-    function tick(){
-      var fg = document.getElementById('fg-root');
-      if (!fg || !document.body.contains(fg)){
-        railEl.classList.add('bm-hidden');
-        requestAnimationFrame(tick);
-        return;
+     One-time-only default spot (first visit, nothing saved yet):
+     approximated from the TV frame's current right edge, so it still
+     starts out reading as "attached to the TV" the way Larry first
+     asked for it -- from then on it behaves like the nameplate,
+     independent of wherever the widget itself gets dragged to. ---------- */
+
+  var BM_RAIL_KEY = 't2t-shortcuts-rail-pos';
+
+  function defaultRailPos(){
+    var frame = document.getElementById('tv-frame');
+    var fg = document.getElementById('fg-root');
+    var ref = frame || fg;
+    if (!ref) return { left: window.innerWidth - 60, top: 120 };
+    var r = ref.getBoundingClientRect();
+    return { left: r.right + (frame ? RAIL_GAP : RAIL_GAP + 22), top: r.top + 20 };
+  }
+
+  function wireDrag(){
+    var SZDrag = window.SZDrag;
+    if (!SZDrag){ console.error('Shortcuts: SZDrag unavailable -- screen-zero.js failed to load?'); return; }
+
+    var def = defaultRailPos();
+    var rec = SZDrag.registerClaimable(railEl, BM_RAIL_KEY, def.top);
+    SZDrag.makeDraggable(railEl, BM_RAIL_KEY, 'button', def.left, def.top, {
+      reattachTargets: [
+        { get el(){ return SZDrag.getNavbar(); }, side: 'left' },
+        { get el(){ return SZDrag.getDrawerR(); }, side: 'right' }
+      ],
+      onReattach: function(side, barEl){
+        var mode = barEl.dataset.mode || '1';
+        SZDrag.setRidingSlot(BM_RAIL_KEY, SZDrag.slotKey(side, mode));
+        SZDrag.captureRidingOffset(rec, barEl);
+        SZDrag.refreshRidersForSlot(side, mode, barEl);
       }
-      if (fg.classList.contains('isx-full')){
-        railEl.classList.add('bm-hidden');
-        requestAnimationFrame(tick);
-        return;
-      }
-      railEl.classList.remove('bm-hidden');
+    });
 
-      var frame = document.getElementById('tv-frame');
-      var r = frame ? frame.getBoundingClientRect() : fg.getBoundingClientRect();
-      var bezel = frame ? 0 : 22;
-      var left = r.right + bezel + RAIL_GAP;
-      var railH = railEl.offsetHeight || 0;
-      var top = r.top + r.height/2 - railH/2;
-      top = Math.max(8, Math.min(top, window.innerHeight - railH - 8));
+    // Safety net for a claim saved in a PREVIOUS session: screen-zero.js's
+    // own init() already ran its one-time sync pass before this file's
+    // DOMContentLoaded fires (script order), so it never saw this rail --
+    // catch up now the same way that pass does for its own objects.
+    var leftBar = SZDrag.getNavbar();
+    var rightBar = SZDrag.getDrawerR();
+    if (leftBar) SZDrag.refreshRidersForSlot('left', leftBar.dataset.mode || '1', leftBar);
+    if (rightBar) SZDrag.refreshRidersForSlot('right', rightBar.dataset.mode || '1', rightBar);
+  }
 
-      railEl.style.left = left + 'px';
-      railEl.style.top = top + 'px';
-
-      updateTagState();
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
+  // Tag-button state (dim/active/tooltip text) still needs to track
+  // whichever screen is currently showing, same live-tick idea
+  // tv-frame.js uses for its own knobs -- just no longer bundled with
+  // position work now that position isn't recomputed every frame.
+  function tickTagState(){
+    updateTagState();
+    requestAnimationFrame(tickTagState);
   }
 
   function init(){
@@ -540,7 +593,8 @@
     buildRail();
     buildOverlay();
     render();
-    trackLoop();
+    wireDrag();
+    requestAnimationFrame(tickTagState);
     refreshFromSupabase();
   }
 

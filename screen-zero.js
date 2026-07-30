@@ -1638,6 +1638,32 @@
      before hide() touches it, then restore that exact value on show().
      No claim/slot/dock logic involved at all -- hide/show can never
      drift from whatever state was already correct a moment earlier. ---------- */
+  /* ---------- Shared drag/dock primitives, exposed for other files.
+     Larry, July 30 2026: wanted the new Shortcuts rail (bookmarks.js)
+     to be "moveable like phases... could be put into a drawer if
+     wanted," same drag/dock/collapse parity every other floating
+     object on the desk already has. Rather than duplicate this
+     machinery in bookmarks.js (which would need its own separate
+     _claimRegistry, invisible to THIS file's own dock/mode/collapse
+     handlers -- exactly the "placed in drawer 1, appears in drawer 3"
+     class of bug Larry already hit once with the nameplate/notebook),
+     bookmarks.js registers into this SAME shared registry via
+     window.SZDrag, so every existing dock/mode/collapse trigger in
+     this file already knows how to show, hide, and reposition it too. ---------- */
+  window.SZDrag = {
+    registerClaimable: registerClaimable,
+    makeDraggable: makeDraggable,
+    slotKey: slotKey,
+    setRidingSlot: setRidingSlot,
+    getRidingSlot: getRidingSlot,
+    isRidingDrawer: isRidingDrawer,
+    captureRidingOffset: captureRidingOffset,
+    refreshRidersForSlot: refreshRidersForSlot,
+    restoreHomeParent: restoreHomeParent,
+    getNavbar: function(){ return document.getElementById('sz-navbar'); },
+    getDrawerR: function(){ return document.getElementById('sz-drawer-r'); }
+  };
+
   window.SZNotebook = {
     hide: function(){
       var nb = document.getElementById('sz-notebook');
