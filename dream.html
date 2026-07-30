@@ -1665,6 +1665,77 @@
     </g>
   </svg>
 </div>
+
+<!-- ══ 1300 · SHARE — Hub ══ -->
+<div class="sc card" id="s-share-hub">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="sw" style="padding:16px 28px 8px;overflow-y:auto;max-height:420px">
+      <div class="se">SHARE</div>
+      <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;margin-bottom:14px">Turning what CREATE and SHAPE built into a story others can receive.</div>
+      <div id="toc-vision" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:36px">1</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Vision</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Turning the Idea Storyboard into a true STORY</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="s-share-hub-back">⬅️</button>
+    <button class="tb" id="s-share-hub-mg">☰</button>
+  </div>
+</div>
+
+<!-- ══ 1310 · VISION ─ placeholder ══ -->
+<div class="sc card" id="s-vision">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+    <span class="ph-eyebrow">·</span>
+    <span class="ph-eyebrow">VISION</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:0px">
+      <div style="font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#8B6914;letter-spacing:1px">1310</div>
+      <div style="font-family:'Playfair Display',serif;font-size:30px;font-weight:700;letter-spacing:1px;color:#0a4a38;margin-bottom:16px">VISION</div>
+      <div style="width:50px;height:0.5px;background:#C9A87C;margin:0 auto 20px"></div>
+      <div style="font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:#555;line-height:1.6;max-width:300px;margin:0 auto">Placeholder — the Idea Storyboard translated into true story form, ready to become Believe Phase's raw material. Content not yet developed.</div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="s-vision-back">⬅️</button>
+    <button class="tb" id="s-vision-mg">☰</button>
+    <button class="tb dim" id="s-vision-fwd">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 1800 · TOOLS CRIB — Hub ══ -->
+<div class="sc card" id="s-dream-tools">
+  <div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden">
+    <span class="ph-eyebrow">🌈 DREAM PHASE</span>
+  </div>
+  <div class="reader-wrap">
+    <div class="sw" style="padding:16px 28px 8px;overflow-y:auto;max-height:420px">
+      <div class="se">TOOLS CRIB</div>
+      <div style="font-family:'Playfair Display',serif;font-size:14px;font-style:italic;color:#555;margin-bottom:14px">Dream Phase tools live here.</div>
+      <div id="toc-dream-storyboard" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:36px">1</div>
+          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Idea Storyboard</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">The Dream Phase deliverable tool (also 1010)</div></div>
+        </div>
+        <div style="font-size:16px;color:#C9A87C">›</div>
+      </div>
+    </div>
+  </div>
+  <div class="bar2 bar-dream-pp">
+    <button class="tb" id="s-dream-tools-back">⬅️</button>
+    <button class="tb" id="s-dream-tools-mg">☰</button>
+  </div>
+</div>
+
 </div><!-- /.fg -->
 <!-- Notebook overlay layer -- deliberately OUTSIDE #fg-root (see notebook-open.js/screen-zero.js comments): #tv-vignette is inserted as a body-level sibling of #fg-root, so anything still nested INSIDE #fg-root paints underneath the vignette no matter its own z-index. Moved out here July 29, 2026 after Larry caught the vignette showing through the open Notebook card. -->
 <div id="nb-layer"></div>
@@ -2287,7 +2358,34 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-seaview-mg',   T.goMG);
 
   /* Tell backpack current screen on startup */
-  T.nav('s-dream', false);
+
+  /* ── 1300/1310/1800 · SHARE + Tools Crib additions ──
+     Built July 30 2026. 1300 mirrors CREATE's hub/toc pattern.
+     1310 Vision is a placeholder -- content not yet developed.
+     1800 Tools Crib's 1810 slot re-routes to the EXISTING Idea
+     Storyboard (s-sea-of-ideas-cluster, already registered at 1010
+     per July 29's renumber) rather than duplicating it. Not yet
+     hooked into the live SHAPE forward flow since SHAPE's own first
+     section isn't built yet (b-shape-toc-fwd stays dim) -- reachable
+     for now via the Looking Glass (dmap.js) by number. */
+  T.registerPageNum('s-share-hub', '1300');
+  T.registerCtx('s-share-hub', 'SHARE');
+  T.wire('s-share-hub-back', function(){ T.nav('s-shape-toc'); });
+  T.wire('s-share-hub-mg', T.goMG);
+  document.getElementById('toc-vision') && document.getElementById('toc-vision').addEventListener('click', function(){ T.nav('s-vision'); });
+
+  T.registerPageNum('s-vision', '1310');
+  T.registerCtx('s-vision', 'VISION');
+  T.wire('s-vision-back', function(){ T.nav('s-share-hub'); });
+  T.wire('s-vision-mg', T.goMG);
+
+  T.registerPageNum('s-dream-tools', '1800');
+  T.registerCtx('s-dream-tools', 'TOOLS CRIB');
+  T.wire('s-dream-tools-back', function(){ T.nav('s-dream'); });
+  T.wire('s-dream-tools-mg', T.goMG);
+  document.getElementById('toc-dream-storyboard') && document.getElementById('toc-dream-storyboard').addEventListener('click', function(){ T.nav('s-sea-of-ideas-cluster'); });
+
+    T.nav('s-dream', false);
 });
 </script>
 </body>
