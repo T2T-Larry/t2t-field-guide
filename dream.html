@@ -40,6 +40,8 @@
   .phase-name{font-size:82px;font-weight:700;color:#1a3a5c;line-height:1.0;letter-spacing:-2px}
   .phase-word{font-size:28px;font-weight:400;font-style:italic;color:#2a1f0e;line-height:1.2}
   .phase-sub{font-size:14px;letter-spacing:4px;color:#3B2510;margin-top:32px;text-transform:uppercase}
+  .phase-sub-link{cursor:pointer;transition:color .15s}
+  .phase-sub-link:hover{color:#5b9bd5}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260714a"></script>
@@ -74,7 +76,7 @@
     <div class="phase-the">The</div>
     <div class="phase-name">Dream</div>
     <div class="phase-word">Phase</div>
-    <div class="phase-sub">Create &nbsp;·&nbsp; Shape &nbsp;·&nbsp; Share</div>
+    <div class="phase-sub"><span class="phase-sub-link" id="b-dream-create">Create</span> &nbsp;·&nbsp; <span class="phase-sub-link" id="b-dream-shape">Shape</span> &nbsp;·&nbsp; <span class="phase-sub-link" id="b-dream-share">Share</span></div>
   </div>
   <div class="bar2 bar-dream-pp">
     <button class="tb" id="b-dream-back">⬅️</button>
@@ -1723,6 +1725,9 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('b-dream-back', function(){ sessionStorage.setItem('bp_target','0990'); T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
   T.wire('b-dream-fwd',  function(){ T.nav('s-create-hub'); });
+  T.wire('b-dream-create', function(){ T.nav('s-create-hub'); });
+  T.wire('b-dream-shape',  function(){ T.nav('s-shape'); });
+  T.wire('b-dream-share',  function(){ T.nav('s-share-hub'); });
 
   /* ── 1100 · CREATE — Hook ── */
   T.registerPageNum('s-create-hub', '1100');
