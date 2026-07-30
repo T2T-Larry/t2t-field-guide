@@ -38,7 +38,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
 .sc{display:none!important;pointer-events:none}
 .sc.active{display:flex!important;flex-direction:column;pointer-events:auto}
 /* 0010 Sign In has no desk chrome around it yet -- Larry, July 28 2026 */
-body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook{display:none!important}
+body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #bm-rail{display:none!important}
 /* 0010 has no other screens stacked above/below it and a fixed-height card -- center it in the viewport instead of the site-wide flex-start (which exists so taller/variable-height screens don't jump). Larry, July 28 2026. */
 body.t2t-bare-screen .fg{align-self:center!important}
 /* Sign In never reflects member preferences (Larry, July 28 2026) --
