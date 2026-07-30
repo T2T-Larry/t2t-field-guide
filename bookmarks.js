@@ -204,7 +204,7 @@
       + '#bm-rail{position:fixed;display:flex;flex-direction:column;align-items:center;'
       +   'gap:' + DOT_GAP + 'px;z-index:9999;transition:opacity .15s ease;padding:6px 4px;'
       +   'border-radius:14px;background:rgba(20,20,20,.18);backdrop-filter:blur(1px)}'
-      + '.bm-grip{width:100%;font-size:8px;letter-spacing:.5px;color:rgba(255,255,255,.75);'
+      + '.bm-grip{width:100%;font-size:8px;letter-spacing:.5px;color:#000;'
       +   'text-align:center;cursor:grab;user-select:none;line-height:1.4}'
       + '.bm-dot{width:' + DOT_SIZE + 'px;height:' + DOT_SIZE + 'px;border:1.5px solid rgba(255,255,255,.7);'
       +   'cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);padding:0;flex:none;'
