@@ -55,7 +55,19 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
    reparented straight onto document.body (see wireDetachableRailButton
    in screen-zero.js) -- same escape hatch nameplate/notebook already
    needed their own explicit ids for. */
-body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen .sz-tool-btn{display:none!important}
+/* #sz-tool-stack/#sz-phases/.sz-tool-stack-grip added July 31 2026,
+   same day again -- Larry: "refresh now has Library, Tools and New
+   Tray handles on the Sign in page." Same root cause a third time:
+   the tool stack, the phase tray, and any custom tray's own grip
+   normally live nested inside #sz-navbar/#sz-drawer-r (already
+   covered), but the moment any of them is riding a drawer slot or
+   dragged loose, refreshRidersForSlot reparents it straight onto
+   document.body -- same escape hatch gear/menu/nameplate/notebook
+   already needed explicit ids for, just never extended to these.
+   The grip is covered by class (like .sz-tool-btn above) since a
+   custom tray's grip is a new one of these every time a traveler
+   builds one, with no fixed id to list in advance. */
+body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen #sz-tool-stack,body.t2t-bare-screen #sz-phases,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen .sz-tool-stack-grip{display:none!important}
 /* Closed desk (Larry, July 31 2026 -- "put an X on the tv screen to close it
    into the Field Guide Button... Phases and Shortcuts disappear and reappear
    when it is opened") -- NARROWED July 31 2026, later same day, Larry:
