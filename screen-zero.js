@@ -761,6 +761,23 @@
     });
   }
 
+  // Larry, July 31 2026: "Is there a way to change the name of a
+  // button?" A button's id (item.id) still drives what it actually
+  // does -- only the printed label is ever swapped, saved separately
+  // per id so it survives reloads and never touches the id itself
+  // (reordering, drag/dock claims, everything else keyed off item.id
+  // keeps working exactly as before, whatever the button currently
+  // reads). Same idea one step later gets its own key prefix
+  // (TRAY_LABEL_PREFIX) for renaming a whole tray's grip.
+  var TOOL_LABEL_PREFIX = 't2t_toolLabel_';
+  var TRAY_LABEL_PREFIX = 't2t_trayLabel_';
+  function loadCustomLabel(prefix, id, fallback){
+    try { return localStorage.getItem(prefix + id) || fallback; } catch(e){ return fallback; }
+  }
+  function saveCustomLabel(prefix, id, label){
+    try { localStorage.setItem(prefix + id, label); } catch(e){}
+  }
+
   function buildTools(leftBar){
     var wrap = document.createElement('div');
     wrap.id = 'sz-tools';
@@ -771,8 +788,15 @@
 
     var grip = document.createElement('div');
     grip.className = 'sz-tool-stack-grip';
-    grip.title = 'Drag to move the whole tool stack';
-    grip.textContent = '\u22EE\u22EE Tools';
+    grip.title = 'Drag to move the whole tool stack -- double-click to rename it';
+    grip.textContent = '\u22EE\u22EE ' + loadCustomLabel(TRAY_LABEL_PREFIX, 'tools', 'Tools');
+    grip.addEventListener('dblclick', function(){
+      var current = loadCustomLabel(TRAY_LABEL_PREFIX, 'tools', 'Tools');
+      openRenameCard('Rename this tray', current, function(newName){
+        saveCustomLabel(TRAY_LABEL_PREFIX, 'tools', newName);
+        grip.textContent = '\u22EE\u22EE ' + newName;
+      });
+    });
     stack.appendChild(grip);
 
     loadToolOrder().forEach(function(item){
@@ -780,8 +804,30 @@
       btn.type = 'button';
       btn.className = 'sz-tool-btn';
       btn.dataset.toolId = item.id;
-      btn.innerHTML = '<div class="sz-tool-face"><span>' + item.label + '</span></div>';
-      btn.addEventListener('click', item.action);
+      var faceSpan = document.createElement('span');
+      faceSpan.textContent = loadCustomLabel(TOOL_LABEL_PREFIX, item.id, item.label);
+      var face = document.createElement('div');
+      face.className = 'sz-tool-face';
+      face.appendChild(faceSpan);
+      btn.appendChild(face);
+      btn.title = 'Double-click to rename';
+      // Double-click renames instead of firing the button's own
+      // action -- makeTapCounter (already used for the drawer's
+      // single/double/triple-tap toggle) tells a real double-click
+      // apart from a plain single tap on the SAME 'click' event a
+      // real drag never fires anyway (see wireToolButtonDrag's own
+      // comment), so this never fights with dragging the button.
+      makeTapCounter(btn, function(n){
+        if (n >= 2) {
+          var current = loadCustomLabel(TOOL_LABEL_PREFIX, item.id, item.label);
+          openRenameCard('Rename this button', current, function(newLabel){
+            saveCustomLabel(TOOL_LABEL_PREFIX, item.id, newLabel);
+            faceSpan.textContent = newLabel;
+          });
+        } else {
+          item.action();
+        }
+      });
       stack.appendChild(btn);
       wireToolButtonDrag(btn, leftBar, stack);
     });
@@ -929,8 +975,15 @@
 
     var grip = document.createElement('div');
     grip.className = 'sz-tool-stack-grip';
-    grip.title = 'Drag to move the whole phase tray';
-    grip.textContent = '\u22EE\u22EE Phases';
+    grip.title = 'Drag to move the whole phase tray -- double-click to rename it';
+    grip.textContent = '\u22EE\u22EE ' + loadCustomLabel(TRAY_LABEL_PREFIX, 'phases', 'Phases');
+    grip.addEventListener('dblclick', function(){
+      var current = loadCustomLabel(TRAY_LABEL_PREFIX, 'phases', 'Phases');
+      openRenameCard('Rename this tray', current, function(newName){
+        saveCustomLabel(TRAY_LABEL_PREFIX, 'phases', newName);
+        grip.textContent = '\u22EE\u22EE ' + newName;
+      });
+    });
     stack.appendChild(grip);
 
     loadPhaseOrder().forEach(function(item){
@@ -2441,6 +2494,94 @@
     overlay.addEventListener('click', function(e){ if (e.target === overlay) closeBgColorPicker(); });
     card.querySelector('#sz-bg-color-close').addEventListener('click', closeBgColorPicker);
     return overlay;
+  }
+
+  /* ---------- Generic rename card -- Larry, July 31 2026: "Is there a
+     way to change the name of a button?" and "Can traveler name a
+     tray?" Same double-click-for-options family as the drawer/TV
+     frame color pickers and the notebook's own double-click-to-open,
+     just a text field instead of swatches. One shared overlay+card,
+     reused for both a button's own label and a tray's grip label --
+     callers only supply a title, the current value, and what to do
+     with the saved result, so this has no idea whether it's renaming
+     a button or a tray. ---------- */
+  function injectRenameStyle(){
+    if (document.getElementById('sz-rename-style')) return;
+    var css = ''
+      + '#sz-rename-overlay{position:fixed;inset:0;z-index:9997;'
+      +   'display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}'
+      + '#sz-rename-overlay.active{display:flex}'
+      + '#sz-rename-card{background:#fdf8f0;border-radius:14px;padding:18px;'
+      +   'width:260px;max-width:88vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4)}'
+      + '#sz-rename-card .sz-rename-title{font-family:"Playfair Display",Georgia,serif;'
+      +   'font-size:16px;font-weight:700;color:#2b2b2b;margin-bottom:12px}'
+      + '#sz-rename-input{width:100%;box-sizing:border-box;padding:8px 10px;'
+      +   'border:1px solid #cfe4f2;border-radius:8px;font-size:14px;'
+      +   'font-family:"Playfair Display",Georgia,serif;margin-bottom:14px;text-align:center}'
+      + '#sz-rename-actions{display:flex;gap:10px;justify-content:center}'
+      + '#sz-rename-save{border:none;background:#378ADD;color:#fff;padding:7px 20px;'
+      +   'border-radius:8px;cursor:pointer;font-size:13px;font-weight:700}'
+      + '#sz-rename-cancel{border:1px solid #cfe4f2;background:#fff;padding:7px 16px;'
+      +   'border-radius:8px;cursor:pointer;font-size:13px}';
+    var style = document.createElement('style');
+    style.id = 'sz-rename-style';
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  var _renameOnSave = null;
+
+  function buildRenameCard(){
+    injectRenameStyle();
+    var overlay = document.createElement('div');
+    overlay.id = 'sz-rename-overlay';
+    var card = document.createElement('div');
+    card.id = 'sz-rename-card';
+    card.innerHTML = ''
+      + '<div class="sz-rename-title" id="sz-rename-title">Rename</div>'
+      + '<input id="sz-rename-input" type="text" maxlength="40">'
+      + '<div id="sz-rename-actions">'
+      +   '<button id="sz-rename-save" type="button">Save</button>'
+      +   '<button id="sz-rename-cancel" type="button">Cancel</button>'
+      + '</div>';
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    var input = card.querySelector('#sz-rename-input');
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeRenameCard(); });
+    card.querySelector('#sz-rename-cancel').addEventListener('click', closeRenameCard);
+    card.querySelector('#sz-rename-save').addEventListener('click', saveRenameCard);
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') saveRenameCard();
+      else if (e.key === 'Escape') closeRenameCard();
+    });
+    return overlay;
+  }
+
+  function openRenameCard(title, currentValue, onSave){
+    var overlay = document.getElementById('sz-rename-overlay') || buildRenameCard();
+    overlay.querySelector('#sz-rename-title').textContent = title;
+    var input = overlay.querySelector('#sz-rename-input');
+    input.value = currentValue || '';
+    _renameOnSave = onSave;
+    overlay.classList.add('active');
+    input.focus();
+    input.select();
+  }
+
+  function closeRenameCard(){
+    var overlay = document.getElementById('sz-rename-overlay');
+    if (overlay) overlay.classList.remove('active');
+    _renameOnSave = null;
+  }
+
+  function saveRenameCard(){
+    var overlay = document.getElementById('sz-rename-overlay');
+    var input = overlay && overlay.querySelector('#sz-rename-input');
+    var val = input ? input.value.trim() : '';
+    var cb = _renameOnSave;
+    closeRenameCard();
+    if (val && cb) cb(val);
   }
 
   function openBgColorPicker(){
