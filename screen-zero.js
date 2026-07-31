@@ -134,7 +134,7 @@
       + '#sz-nameplate-text{color:#4a3418;text-shadow:1px 1px 0 rgba(255,240,200,.5);'
       +   'font-size:13px;font-weight:700;letter-spacing:.5px;text-align:center;padding:2px 8px 6px;'
       +   'overflow-wrap:break-word}'
-      + '#sz-navmid{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;'
+      + '#sz-navmid{position:relative;flex:1;width:100%;display:flex;flex-direction:column;align-items:center;'
       +   'justify-content:center;gap:16px;overflow-y:auto;padding:10px 0}'
       + '#sz-tools{display:flex;flex-direction:column;align-items:center}'
       + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab;'
@@ -222,26 +222,10 @@
       // a plain class rule regardless of which mode is active.
       + '.sz-mode-panel{display:none!important}'
       + '.sz-mode-panel.sz-mode-active{display:flex!important}'
-      + '.sz-mode-placeholder{position:relative;flex-direction:column;align-items:center;justify-content:center;'
+      + '.sz-mode-placeholder{flex-direction:column;align-items:center;justify-content:center;'
       +   'gap:6px;width:150px;min-height:80px;border-radius:8px;'
       +   'padding:14px 10px;text-align:center;color:#7a5c3a;font-size:11px;'
       +   'font-family:"Playfair Display",Georgia,serif;box-sizing:border-box}'
-      // Larry, July 31 2026: "What if the drawers, when empty, had a
-      // small embossed 'Drawer' in the center -- a clue to their
-      // purpose?" Same pressed-into-the-surface look as the desk's own
-      // T2T watermark (light+dark text-shadow pair on near-transparent
-      // text), just smaller and scoped to these still-undesignated
-      // slots via ::before so it's pure CSS -- covers left drawer's
-      // slot 2 and right drawer's slot 2 automatically, no JS change
-      // needed since both already share this one class. Disappears on
-      // its own the moment either slot gets real content, the same way
-      // the desk watermark gets covered by anything placed on top.
-      + '.sz-mode-placeholder::before{content:"Drawer";position:absolute;inset:0;'
-      +   'display:flex;align-items:center;justify-content:center;'
-      +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
-      +   'font-size:20px;letter-spacing:0.1em;color:rgba(0,0,0,.05);'
-      +   'text-shadow:1px 1px 2px rgba(255,255,255,.45),-1px -1px 2px rgba(0,0,0,.18);'
-      +   'pointer-events:none;user-select:none}'
       // Larry, July 29 2026: "delete dotted lines too!" -- both
       // drawers' still-undesignated slots (left's old slot 2, right's
       // slots 1 and 2) are bare panels now, no dashed "not built yet"
@@ -277,6 +261,24 @@
       + '#sz-drawer-r.sz-collapsed #sz-drawer-r-mid{display:none}'
       + '#sz-drawer-r-mid{flex:1;width:100%;display:flex;flex-direction:column;'
       +   'align-items:center;justify-content:center;gap:16px;overflow-y:auto;padding:10px 0;position:relative}'
+      // Larry, July 31 2026: "Let's emboss the drawers so that like the
+      // desktop, putting something in them just covers the embossing."
+      // Generalized version of the placeholder-only clue from earlier
+      // today -- lives on each drawer's own interior (#sz-navmid /
+      // #sz-drawer-r-mid) instead of one specific slot class, same
+      // pressed-into-the-surface look as the desk's own T2T watermark.
+      // z-index:-1 against the mid container's own stacking context
+      // (position:relative, set just above) keeps it under every real
+      // piece of drawer content -- the tool stack and phase tray both
+      // already carry z-index:9999, so it's invisible behind either one
+      // once populated, and only shows through a slot that's genuinely
+      // empty (today: each drawer's own still-undesignated slot 2).
+      + '#sz-navmid::before,#sz-drawer-r-mid::before{content:"Drawer";position:absolute;inset:0;'
+      +   'z-index:-1;display:flex;align-items:center;justify-content:center;'
+      +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
+      +   'font-size:26px;letter-spacing:0.1em;color:rgba(0,0,0,.05);'
+      +   'text-shadow:1px 1px 2px rgba(255,255,255,.45),-1px -1px 2px rgba(0,0,0,.18);'
+      +   'pointer-events:none;user-select:none}'
       + '#sz-drawer-r-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'left:-18px;width:18px;height:40px;'
       +   'border-radius:20px 0 0 20px;border:2px solid #999;border-right:none;'
