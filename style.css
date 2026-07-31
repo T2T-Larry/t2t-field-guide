@@ -53,6 +53,16 @@ body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-
    scoping, plus the dedicated toggle button left visible as the one thing a
    traveler can still click to bring the desk back. */
 body.t2t-desk-closed #sz-navbar,body.t2t-desk-closed #sz-drawer-r,body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-closed #sz-nameplate,body.t2t-desk-closed #sz-notebook,body.t2t-desk-closed #bm-rail,body.t2t-desk-closed .sz-tool-btn{display:none!important}
+/* Larry, July 31 2026: "X closes entire Field Guide, not just the tv
+   screen." The rule above only ever hid the desk chrome AROUND the
+   widget (the TV bezel, drawers, tools) -- #fg-root itself (the actual
+   screen content sitting inside that bezel) was never in the list, so
+   whatever screen was showing stayed fully visible the whole time.
+   :not(.t2t-bare-screen) matters here: closing the desk persists
+   across a sign-out, and #fg-root IS the Sign In form itself on 0010
+   -- without this guard, a traveler who closed the desk and later
+   signed out would find the Sign In screen hidden with no way back in. */
+body.t2t-desk-closed:not(.t2t-bare-screen) #fg-root{display:none!important}
 body.t2t-desk-closed #sz-desk-toggle{display:flex!important}
 /* 0010 has no other screens stacked above/below it and a fixed-height card -- center it in the viewport instead of the site-wide flex-start (which exists so taller/variable-height screens don't jump). Larry, July 28 2026. */
 body.t2t-bare-screen .fg{align-self:center!important}

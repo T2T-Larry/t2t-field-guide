@@ -162,6 +162,16 @@
       +   'font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;'
       +   'color:#f3e6cf;transition:transform .1s ease;outline:none}'
       + '.tv-knob:active{transform:translateY(1px)}'
+      // Close knob, Larry, July 31 2026: "make button background same
+      // color as 0100 panel" -- reuses --brand-teal-deep (style.css),
+      // the exact color s-cover's own .cover panel is filled with
+      // (#15805F), so it reads as "the same green as the Cover screen"
+      // rather than a new color invented just for this button. Falls
+      // back to the literal hex if style.css hasn't loaded for some
+      // reason. The extra left margin is the actual "move away from
+      // Next" fix -- real spacing, not just being last in the row.
+      + '.tv-knob-close{background:var(--brand-teal-deep,#15805F);'
+      +   'border-color:#0a4535;margin-left:18px}'
       + '.tv-knob:focus-visible{box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15),'
       +   '0 0 0 3px #f3e6cf}'
       + '.tv-knob.dim{opacity:.35;cursor:default;pointer-events:none}'
@@ -240,21 +250,29 @@
     var idea = knob('idea', '💡', 'Ideas');
     var trivia = knob('trivia', '🌸', 'Trivia');
     // Larry, July 31 2026: "put an X on the tv screen to close it into
-    // the Field Guide Button." A fifth knob, set apart from the
-    // paging/idea/trivia cluster at the far left -- like a power
-    // button next to a remote's channel controls -- so it never reads
-    // as "back" or gets pressed by accident while paging.
+    // the Field Guide Button." Originally placed at the far left, next
+    // to Previous -- Larry, same day, follow-up: "tv X is dangerously
+    // in the way of nav arrow." Moved to the far right end of the
+    // ledge instead, past Next, with its own left margin (see
+    // tv-knob-close CSS below) so there's real daylight between it and
+    // the paging cluster -- no longer sitting flush against a button a
+    // traveler taps constantly. The teal fill (matching 0100's own
+    // panel color, also per Larry) makes it read as visually distinct
+    // from the brown paging/idea/trivia knobs too, not just
+    // positionally separate.
     var close = knob('close', '✕', 'Close');
+    close.classList.add('tv-knob-close');
 
     // Larry, July 26: "the next arrow should be on the far right" --
     // Prev anchors the left end, Next anchors the right end, Idea/Trivia
     // sit in the middle, like a remote's channel controls bookending the
-    // row instead of being bunched together.
-    controls.appendChild(close);
+    // row instead of being bunched together. Close now sits past Next,
+    // at the true far right of the ledge.
     controls.appendChild(prev);
     controls.appendChild(idea);
     controls.appendChild(trivia);
     controls.appendChild(next);
+    controls.appendChild(close);
     frame.appendChild(controls);
 
     return frame;
