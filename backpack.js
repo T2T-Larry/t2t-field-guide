@@ -20,6 +20,21 @@
   async function loadMemberProfile(userId) {
     try {
       var res = await _sb.from('profiles').select('*').eq('user_id', userId).single();
+      // Larry, July 31 2026 (bug report): "Still calls me Traveler
+      // rather than my name" -- with a console check turning up
+      // nothing but an unrelated favicon 404. Root cause: Supabase's
+      // client doesn't throw on a failed query here -- a missing row,
+      // a permissions/RLS block, or any other failure comes back as
+      // res.error with res.data left null, which this function used
+      // to just silently ignore (the `if (res.data)` below skipped it
+      // entirely, and the catch below never even ran since nothing
+      // threw). Logging res.error means a failure like this actually
+      // shows up in the console from now on instead of failing with
+      // zero trace anywhere.
+      if (res.error) {
+        console.error('T2T: profile lookup failed for', userId, res.error);
+        return;
+      }
       if (res.data) {
         _member.user_id          = userId;
         _member.display_name     = res.data.display_name      || '';
@@ -37,8 +52,10 @@
         // lets the nametag (and anything else that wants it) update
         // immediately instead of guessing at a timeout.
         window.dispatchEvent(new CustomEvent('t2t:member-loaded', { detail: _member }));
+      } else {
+        console.error('T2T: profile lookup returned no row and no error for', userId, res);
       }
-    } catch(e) {}
+    } catch(e) { console.error('T2T: profile lookup threw', e); }
   }
 
   /* ── NAV STATE ── persisted across phase transitions via sessionStorage */
