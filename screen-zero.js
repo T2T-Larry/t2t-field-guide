@@ -1688,17 +1688,46 @@
           var tr = drawerHitRect(target.el);
           if (dropHitsTarget(rect, tr)) matches.push(target);
         }
-        var winner = matches[0] || null;
-        if (matches.length > 1 && document.elementsFromPoint) {
-          var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-          var underCursor = document.elementsFromPoint(cx, cy);
-          var topOther = null;
-          for (var ui = 0; ui < underCursor.length; ui++) {
-            if (underCursor[ui] !== el && !el.contains(underCursor[ui])) { topOther = underCursor[ui]; break; }
+        // Larry, July 31 2026 (bug report): objects kept landing in
+        // the LEFT drawer no matter how many times he aimed for the
+        // right one. Root cause: this used to default winner to
+        // matches[0] up front, and only OVERWRITE it if
+        // elementsFromPoint found a confident answer -- any time that
+        // tie-break couldn't resolve (topOther pointing at neither
+        // matched target, e.g. the desk backdrop showing through a
+        // gap between two padded hit rects), winner silently stayed
+        // matches[0]. reattachTargets is always defined left-then-
+        // right everywhere it's used, so every unresolved tie quietly
+        // favored the left drawer, regardless of where the drop
+        // actually looked like it landed. Now winner starts genuinely
+        // undecided, and an unresolved tie breaks by proximity --
+        // whichever matched target's own center is physically closest
+        // to the drop -- instead of by array order.
+        var winner = null;
+        if (matches.length === 1) {
+          winner = matches[0];
+        } else if (matches.length > 1) {
+          if (document.elementsFromPoint) {
+            var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+            var underCursor = document.elementsFromPoint(cx, cy);
+            var topOther = null;
+            for (var ui = 0; ui < underCursor.length; ui++) {
+              if (underCursor[ui] !== el && !el.contains(underCursor[ui])) { topOther = underCursor[ui]; break; }
+            }
+            if (topOther) {
+              for (var mi = 0; mi < matches.length; mi++) {
+                if (matches[mi].el.contains(topOther)) { winner = matches[mi]; break; }
+              }
+            }
           }
-          if (topOther) {
-            for (var mi = 0; mi < matches.length; mi++) {
-              if (matches[mi].el.contains(topOther)) { winner = matches[mi]; break; }
+          if (!winner) {
+            var dcx = rect.left + rect.width / 2, dcy = rect.top + rect.height / 2;
+            var bestDist = Infinity;
+            for (var pi = 0; pi < matches.length; pi++) {
+              var ptr = drawerHitRect(matches[pi].el);
+              var pcx = (ptr.left + ptr.right) / 2, pcy = (ptr.top + ptr.bottom) / 2;
+              var dist = (dcx - pcx) * (dcx - pcx) + (dcy - pcy) * (dcy - pcy);
+              if (dist < bestDist) { bestDist = dist; winner = matches[pi]; }
             }
           }
         }
