@@ -77,8 +77,22 @@ body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-
    Sign In leak, the confusing pulse). TV frame/vignette/widget still
    hide here for now, matching "close it into the Field Guide Button"
    -- open question for a future pass whether those should also stay,
-   flagged for Larry to confirm. */
-body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-closed #sz-drawer-r,body.t2t-desk-closed #bm-rail,body.t2t-desk-closed .sz-tool-btn[data-phase-id]{display:none!important}
+   flagged for Larry to confirm.
+
+   Larry, July 31 2026 (bug report): "Right drawer is missing! It
+   disappeared when I closed the Field Guide!" This rule used to hide
+   the WHOLE #sz-drawer-r shell, which was fine back when nothing but
+   the Phase tray ever lived there -- but Larry has since made the
+   right drawer permanent desk furniture too (its own slot 2 is a real
+   drop spot, and the gear/menu can now dock into it), so hiding the
+   entire drawer contradicts his own standing rule: "Top two drawers
+   NEVER lose what is put in them!!!! Closing the Field Guide ONLY
+   makes SHORTCUTS and PHASES disappear." Now targets #sz-phases (the
+   tray's own wrapper, screen-zero.js buildPhaseTray) instead of the
+   drawer shell -- the drawer, its toggle, and anything else riding in
+   it (gear, menu, or a future slot-2/slot-3 object) all stay put and
+   visible; only the Phase content itself disappears and reappears. */
+body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-closed #sz-phases,body.t2t-desk-closed #bm-rail,body.t2t-desk-closed .sz-tool-btn[data-phase-id]{display:none!important}
 /* Larry, July 31 2026: "X closes entire Field Guide, not just the tv
    screen." #fg-root itself (the actual screen content) is the widget,
    kept in step with the TV frame above.
