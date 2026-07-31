@@ -1049,9 +1049,21 @@
     var gear = document.createElement('button');
     gear.id = 'sz-gear';
     gear.type = 'button';
-    gear.title = 'Reset tool stack, gear, and menu to their default spots';
+    gear.title = 'Double-click to reset tool stack, gear, and menu to their default spots';
     gear.textContent = '⚙️';
-    gear.addEventListener('click', function(){
+    // Larry, July 31 2026 (bug report): "gear jumps back to a fixed
+    // position... tools jumped back into the drawer on their own...
+    // EVERY OBJECT should move in or out of a drawer and stay where
+    // it is positioned!" Root cause: this reset was one plain click,
+    // and a drag attempt on gear that doesn't clear the 3px movement
+    // threshold still fires a real click on release -- an ordinary
+    // mis-timed drag on gear was silently wiping every tool button's
+    // saved position along with gear's own, snapping everything back
+    // to its hardcoded home spot (bottom of the left rail). Requiring
+    // a double-click instead -- same deliberate-gesture family as the
+    // rename cards above -- means a stray single click/near-drag can
+    // no longer nuke everyone's careful placement by accident.
+    gear.addEventListener('dblclick', function(){
       resetToolStack();
     });
     return gear;
