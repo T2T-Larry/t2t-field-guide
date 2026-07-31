@@ -1510,10 +1510,28 @@
   // point-vs-containment choice untouched -- that already has its own
   // separate history (July 29: containment was tried and reverted for
   // blocking legitimate docks) not worth reopening here.
+  // Larry, July 31 2026 (bug report, same day, later): "I put the
+  // nametag in the drawer but closing the drawer left the nametag on
+  // the desktop?" The active-panel rect above was sized to its exact
+  // content -- correct for excluding the dead space that caused the
+  // original bug, but for a small or still-empty panel (the new-tray
+  // placeholder is only 150x80) that's a genuinely tight target: a
+  // drop landing just outside it now silently fell through to
+  // independent placement instead of claiming the drawer, so closing
+  // the drawer correctly left it alone -- it never actually made it
+  // in, even though it looked close enough. DOCK_PAD gives the active
+  // panel some real breathing room -- still nowhere near the full
+  // floor-to-ceiling column the original bug was about, but forgiving
+  // enough that landing near the visible content actually counts.
+  var DOCK_PAD = 40;
   function drawerHitRect(el){
     if (el && (el.id === 'sz-navbar' || el.id === 'sz-drawer-r')) {
       var active = el.querySelector('.sz-mode-panel.sz-mode-active');
-      if (active) return active.getBoundingClientRect();
+      if (active) {
+        var r = active.getBoundingClientRect();
+        return { left: r.left - DOCK_PAD, right: r.right + DOCK_PAD,
+                  top: r.top - DOCK_PAD, bottom: r.bottom + DOCK_PAD };
+      }
     }
     return el.getBoundingClientRect();
   }
