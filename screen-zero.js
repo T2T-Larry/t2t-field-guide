@@ -1269,7 +1269,14 @@
     grip.className = 'sz-tool-stack-grip sz-custom-tray-grip';
     grip.title = 'Drag to move the whole tray -- double-click to rename it';
     grip.textContent = '\u22EE\u22EE ' + loadCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', 'New Tray');
-    grip.style.display = 'none'; // shows itself the moment this slot holds a real member
+    // Larry, July 31 2026 (bug report): "the Library tray has
+    // disappeared" -- it hadn't, but an empty tray used to show
+    // nothing but the same generic embossed "Drawer" watermark every
+    // other empty slot shows, with no name on screen to tell it apart
+    // or confirm you're even looking at it before dropping something.
+    // The grip (and the name on it) now shows the instant this page
+    // is showing, member or not -- same idea as a real drawer keeping
+    // its label on the front even when it's empty.
     grip.addEventListener('dblclick', function(){
       var current = loadCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', 'New Tray');
       openRenameCard('Rename this tray', current, function(newName){
@@ -1987,11 +1994,11 @@
       rec.el.style.margin = '0';
       rec.el.style.display = collapsed ? 'none' : '';
     });
-    // The custom tray's grip only shows itself once the slot actually
-    // holds a member -- see buildCustomTraySlot.
+    // The custom tray's grip now shows itself as soon as this page is
+    // showing, member or not -- see buildCustomTraySlot, July 31 2026.
     if (mode === '2') {
       var grip = barEl.querySelector('.sz-custom-tray-grip');
-      if (grip) grip.style.display = traySlotMemberCount(side) > 0 ? '' : 'none';
+      if (grip) grip.style.display = collapsed ? 'none' : '';
     }
   }
 
@@ -2964,9 +2971,54 @@
     } catch(e){}
   }
 
+  // Third one-time cleanup, same day -- Larry: "those loose buttons
+  // are supposed to be added to a Library tray... I do not know how
+  // to add buttons to a new tray, PLUS those loose buttons seem to
+  // have a remote connection to the tools tray... if I put the tools
+  // tray in a drawer, the loose buttons think they are in the drawer
+  // too." Two separate things were going on: the Library tray (the
+  // right drawer's slot 2, which Larry had already named "Library")
+  // never showed its own name while empty -- fixed above, it's no
+  // longer indistinguishable from a plain empty drawer. But these
+  // three placeholder tool buttons (Excellence, Storytelling, and
+  // Library itself, since renamed to "Resources") had each picked up
+  // a stray claim on some earlier drop attempt that never actually
+  // landed cleanly -- Excellence and Storytelling were claimed to
+  // "right-2" but ALSO still had their own independent desk position
+  // saved, which wins in this system (an object with an independent
+  // spot is never treated as riding anything, stray claim or not) --
+  // so they just sat wherever they'd last been dropped, disconnected
+  // from any drawer, while still carrying leftover slot data that
+  // could resurface oddly later. "Library"/Resources had actually
+  // succeeded in riding the drawer, just its Tools page (slot 1,
+  // bundled in with the regular tool list) rather than its own named
+  // tray (slot 2) -- because the drawer happened to be showing Tools,
+  // not Library, at the moment it was dropped. This puts all three
+  // where Larry always meant them to end up: genuinely riding the
+  // right drawer's Library page as their own cluster, stacked in a
+  // clean column, exactly like a real drag onto that page would have
+  // produced if the timing had lined up. Field Guide is deliberately
+  // left alone -- it's the real navigation button, not part of this
+  // personal cluster idea, and already has its own fix above.
+  function fixLibraryTrayMembersOnce(){
+    try {
+      if (localStorage.getItem('t2t_libraryTrayFix_20260731')) return;
+      var ids = ['excellence', 'storytelling', 'library'];
+      ids.forEach(function(id, i){
+        var storeKey = 't2t_toolBtnPos_' + id;
+        localStorage.removeItem(storeKey);
+        localStorage.setItem('t2t_claimSlot_' + storeKey, 'right-2');
+        localStorage.setItem('t2t_claimOffset_' + storeKey,
+          JSON.stringify({ x: 15, y: 40 + i * 46 }));
+      });
+      localStorage.setItem('t2t_libraryTrayFix_20260731', '1');
+    } catch(e){}
+  }
+
   function init(){
     fixStuckGearMenuOnce();
     fixStuckFieldGuideOnce();
+    fixLibraryTrayMembersOnce();
     buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();
