@@ -56,7 +56,7 @@
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260723b"></script>
-<script src="screen-zero.js?v=202607311a"></script>
+<script src="screen-zero.js?v=202607311b"></script>
 <script src="tv-frame.js?v=20260731e"></script>
 <script src="bookmarks.js?v=20260730c"></script>
 </head>
@@ -782,6 +782,13 @@
         try{ curNum = localStorage.getItem('bpCurrentScreenNum'); }catch(e){}
         if(curNum){ T.navToPageNum(curNum); }
         else{ T.resumeToLastPageOr('s-cover'); }
+        // Larry, July 31 2026: sign-in (this silent auto-resume path
+        // included) should always LAND on the blank, closed desk --
+        // drawers collapsed, Field Guide the only thing showing --
+        // never straight into whatever screen was last open. The
+        // screen above still loads correctly in the background, so
+        // reopening the Field Guide goes right back to it.
+        try{ window.SZDesk && window.SZDesk.landOnClosedDesk(); }catch(e){}
       }
     }catch(e){ console.error('Session resume failed', e); }
   })();
@@ -832,9 +839,15 @@
       // load), so whoever just typed their password in should get the
       // same "return to where you were" treatment.
       T.resumeToLastPageOr('s-cover');
+      // Larry, July 31 2026: "should open to 0000 first with the
+      // blank desktop and 2 side drawers both closed... like the
+      // desktop with the Field Guide closed." Same treatment as the
+      // silent auto-resume path above -- land closed, always.
+      try{ window.SZDesk && window.SZDesk.landOnClosedDesk(); }catch(e2){}
     }catch(e){
       console.error('Post-sign-in setup failed, falling back to cover', e);
       try{ T.nav('s-cover'); }catch(e2){}
+      try{ window.SZDesk && window.SZDesk.landOnClosedDesk(); }catch(e3){}
     }finally{
       btn.textContent='Sign In'; btn.disabled=false;
     }

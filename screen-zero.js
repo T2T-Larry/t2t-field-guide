@@ -2327,10 +2327,36 @@
   }
 
 
+  // Larry, July 31 2026: "It opened to the Field Guide 0100 but
+  // should open to 0000 first with the blank desktop and 2 side
+  // drawers both closed... like the desktop with the Field Guide
+  // closed." closeDesk() alone (the same thing the TV frame's own X
+  // triggers) hides the TV frame/Phases/Shortcuts but deliberately
+  // leaves the two drawers standing open or collapsed, whichever they
+  // already were -- correct for the mid-session X, but signing in
+  // fresh should always start from the same known, tidy state: desk
+  // closed AND both drawers collapsed, regardless of whatever they
+  // were left at last time. Exposed separately from close() so the
+  // TV frame's own X keeps its existing, already-approved behavior
+  // untouched.
+  function landOnClosedDesk(){
+    closeDesk();
+    [ { id: 'sz-navbar', key: COLLAPSE_KEY },
+      { id: 'sz-drawer-r', key: RIGHT_COLLAPSE_KEY }
+    ].forEach(function(d){
+      var bar = document.getElementById(d.id);
+      if (!bar) return;
+      bar.classList.add('sz-collapsed');
+      try { localStorage.setItem(d.key, '1'); } catch(e){}
+      refreshRidersForSlot(d.id === 'sz-navbar' ? 'left' : 'right', bar.dataset.mode || '1', bar);
+    });
+  }
+
   window.SZDesk = {
     close: closeDesk,
     reopen: reopenDesk,
-    isClosed: isDeskClosed
+    isClosed: isDeskClosed,
+    landOnClosedDesk: landOnClosedDesk
   };
 
   function buildNavBar(){
