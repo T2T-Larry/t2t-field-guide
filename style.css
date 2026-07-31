@@ -55,43 +55,38 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
    reparented straight onto document.body (see wireDetachableRailButton
    in screen-zero.js) -- same escape hatch nameplate/notebook already
    needed their own explicit ids for. */
-body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen #sz-desk-toggle{display:none!important}
+body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen .sz-tool-btn{display:none!important}
 /* Closed desk (Larry, July 31 2026 -- "put an X on the tv screen to close it
    into the Field Guide Button... Phases and Shortcuts disappear and reappear
-   when it is opened"): same hide list as Sign In above, minus the bare-screen
-   scoping, plus the dedicated toggle button left visible as the one thing a
-   traveler can still click to bring the desk back.
-   #sz-navbar/#sz-drawer-r deliberately NOT in this list (unlike the Sign In
-   rule above, where there's no desk at all yet) -- Larry, July 31 2026,
-   follow-up: "Even the empty desktop needs the drawers on the sides!" and
-   "it is possible now to close everything on the desktop except the
-   embossed T2T and the drawers." The two drawers are furniture, not
-   contents -- closing puts away what's IN them (tools, phase buttons,
-   nameplate, notebook, gear, menu, Shortcuts) and the TV/widget, but the
-   drawers themselves stay standing on either side, empty, same as the
-   backdrop and its watermark. */
-body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-closed #sz-nameplate,body.t2t-desk-closed #sz-notebook,body.t2t-desk-closed #sz-gear,body.t2t-desk-closed #sz-menu,body.t2t-desk-closed #bm-rail,body.t2t-desk-closed .sz-tool-btn{display:none!important}
+   when it is opened") -- NARROWED July 31 2026, later same day, Larry:
+   "Top two drawers NEVER lose what is put in them!!!! ... Closing the
+   Field Guide ONLY makes SHORTCUTS and PHASES disappear as the ONLY
+   apply to the Field Guide!" Earlier passes over-scoped this to the
+   whole desk (nav rail, nameplate, notebook, gear, menu, every tool
+   button) -- all of that is back OUT of the hide list now, standing
+   permanently regardless of open/closed. Only the right/Phase drawer
+   and the Shortcuts rail are "part of" the Field Guide in Larry's
+   model, so only those two -- plus any phase button that's escaped
+   its home drawer independently -- hide here. Tool buttons
+   (.sz-tool-btn[data-tool-id]) are deliberately NOT touched: only
+   [data-phase-id] ones are. The Field Guide TOOL button itself (in
+   the tray, which now never hides) is what a traveler clicks to
+   reopen -- see its action in TOOL_ITEMS_DEFAULT, screen-zero.js --
+   so the separate floating #sz-desk-toggle handle from the first pass
+   is retired entirely, along with the bugs that came with it (the
+   Sign In leak, the confusing pulse). TV frame/vignette/widget still
+   hide here for now, matching "close it into the Field Guide Button"
+   -- open question for a future pass whether those should also stay,
+   flagged for Larry to confirm. */
+body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-closed #sz-drawer-r,body.t2t-desk-closed #bm-rail,body.t2t-desk-closed .sz-tool-btn[data-phase-id]{display:none!important}
 /* Larry, July 31 2026: "X closes entire Field Guide, not just the tv
-   screen." The rule above only ever hid the desk chrome AROUND the
-   widget (the TV bezel, drawers, tools) -- #fg-root itself (the actual
-   screen content sitting inside that bezel) was never in the list, so
-   whatever screen was showing stayed fully visible the whole time.
+   screen." #fg-root itself (the actual screen content) is the widget,
+   kept in step with the TV frame above.
    :not(.t2t-bare-screen) matters here: closing the desk persists
    across a sign-out, and #fg-root IS the Sign In form itself on 0010
    -- without this guard, a traveler who closed the desk and later
    signed out would find the Sign In screen hidden with no way back in. */
 body.t2t-desk-closed:not(.t2t-bare-screen) #fg-root{display:none!important}
-/* :not(.t2t-bare-screen) added here too, July 31 2026 -- Larry: "funny
-   looking button in the upper left corner of the sign in screen." Without
-   it, this rule and the bare-screen hide rule above were the SAME
-   specificity (both a class + an id on body), so if a traveler ever
-   closed the desk and ended up back on Sign In within the same page load
-   (no full reload in between), whichever rule happened to be LATER in
-   this file quietly won the tie -- which was this one, so the reopen
-   handle leaked through onto Sign In. Scoping the selector itself to
-   exclude bare-screen removes the tie entirely, same fix already applied
-   to #fg-root just above. */
-body.t2t-desk-closed:not(.t2t-bare-screen) #sz-desk-toggle{display:flex!important}
 /* 0010 has no other screens stacked above/below it and a fixed-height card -- center it in the viewport instead of the site-wide flex-start (which exists so taller/variable-height screens don't jump). Larry, July 28 2026. */
 body.t2t-bare-screen .fg{align-self:center!important}
 /* Sign In never reflects member preferences (Larry, July 28 2026) --

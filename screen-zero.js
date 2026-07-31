@@ -175,25 +175,13 @@
       +   'background:linear-gradient(135deg,#e0b060,#8a6420);box-shadow:2px 3px 6px rgba(0,0,0,.3);'
       +   'transition:transform .1s ease, box-shadow .1s ease;z-index:9999}'
       + '.sz-tool-btn:active{transform:translateY(2px);box-shadow:1px 1px 2px rgba(0,0,0,.3)}'
-      // Desk close/reopen handle (Larry, July 31 2026): the one thing
-      // still visible once the TV screen's new X knob has closed
-      // everything else. Same look as any tool button (reuses
-      // .sz-tool-btn/.sz-tool-face) so it reads as "the Field Guide
-      // button, still here" rather than a new object -- but it's its
-      // own element with its own id so the blanket '.sz-tool-btn'
-      // hide rule (style.css) can sweep every OTHER tool/phase button
-      // without also sweeping this one. Hidden by default; style.css's
-      // body.t2t-desk-closed rule is what reveals it.
-      + '#sz-desk-toggle{position:fixed;left:16px;top:16px;display:none}'
-      // Gentle pulse -- purely a "notice me, the desk is closed" cue,
-      // not a drag/animation conflict: makeDraggable only ever touches
-      // this element's inline left/top/position, never its box-shadow,
-      // so the pulse keeps running fine even while it's being dragged.
-      + '@keyframes sz-toggle-pulse{'
-      +   '0%{box-shadow:2px 3px 6px rgba(0,0,0,.3),0 0 0 0 rgba(224,176,96,.6)}'
-      +   '100%{box-shadow:2px 3px 6px rgba(0,0,0,.3),0 0 0 10px rgba(224,176,96,0)}'
-      +   '}'
-      + '.sz-desk-toggle-pulse{animation:sz-toggle-pulse 1.8s ease-out infinite}'
+      // Desk close/reopen handle -- RETIRED July 31 2026, later same
+      // day, Larry: "Closing the Field Guide ONLY makes SHORTCUTS and
+      // PHASES disappear." The tool tray never hides anymore, so the
+      // real Field Guide tool button (still standing) is the reopen
+      // handle now -- see its action in TOOL_ITEMS_DEFAULT. No
+      // separate floating element needed, which also retires the bugs
+      // that came with it (leaking onto Sign In, the confusing pulse).
       + '.sz-tool-face{padding:7px 4px;border-radius:4px;text-align:center;font-size:11px;'
       +   'color:#4a3418;font-family:"Playfair Display",Georgia,serif;white-space:nowrap;'
       +   'background:radial-gradient(circle at 35% 30%,#f3d98a,#c9973a 55%,#8a6420 100%)}'
@@ -495,7 +483,19 @@
   // snaps back to its home spot in the list, regardless of what's
   // currently claimed or independently placed.
   var TOOL_ITEMS_DEFAULT = [
-    { id: 'field-guide',    label: 'Field Guide',     action: function(){ if (window.T2T) window.T2T.goMG(); } },
+    // Larry, July 31 2026: "Closing the Field Guide ONLY makes
+    // SHORTCUTS and PHASES disappear... Field Guide Button" is the
+    // thing a traveler clicks to bring them back -- and since the
+    // tool tray itself never hides anymore (see the desk-closed CSS
+    // rule in style.css), THIS is that button; no separate floating
+    // toggle needed. isDeskClosed/reopenDesk are declared further
+    // down this file but that's fine -- function declarations are
+    // hoisted, and this only ever runs from a real click, long after
+    // the whole file has parsed.
+    { id: 'field-guide',    label: 'Field Guide',     action: function(){
+        if (isDeskClosed()) { reopenDesk(); return; }
+        if (window.T2T) window.T2T.goMG();
+      } },
     { id: 'idea-board',     label: 'Idea Board',      action: function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); } }, // Larry, July 29 2026: was pointing at the archived 9220 legacy grid -- routes to the current 1010 Idea Storyboard now.
     { id: 'briefing-board', label: 'Briefing Board',  action: function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); } },
     { id: 'planning',       label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
@@ -1780,27 +1780,34 @@
      the tv screen to close it into the Field Guide Button. With Field
      Guide closed, Phases and Shortcuts disappear and reappear when it
      is opened." One body class (t2t-desk-closed) is the whole switch:
-     style.css hides the same cross-cutting set of ids/classes 0010
-     Sign In already hides (nav rail, both drawers, TV frame + its
-     vignette, nameplate, notebook, Shortcuts rail, every tool/phase
-     button wherever it's riding) and reveals #sz-desk-toggle in their
-     place -- a standing, always-in-the-DOM stand-in for the Field
-     Guide button, built once below and left invisible until closed.
+     style.css hides a NARROW list -- the TV frame/vignette/widget,
+     the right/Phase drawer, the Shortcuts rail, and any phase button
+     riding loose. NARROWED to this July 31 2026, later same day,
+     after two broader passes -- Larry: "Top two drawers NEVER lose
+     what is put in them!!!! ... Closing the Field Guide ONLY makes
+     SHORTCUTS and PHASES disappear as the ONLY apply to the Field
+     Guide!" The nav rail, nameplate, notebook, gear, menu, and every
+     TOOL button are permanent desk furniture in Larry's model, not
+     part of "the Field Guide" -- they never hide, open or closed.
+
+     Reopening: since the tool tray itself never hides anymore, the
+     real Field Guide tool button (always standing in the tray) IS the
+     reopen handle -- see its action in TOOL_ITEMS_DEFAULT above. The
+     first pass's separate floating #sz-desk-toggle element (and the
+     Sign-In leak / confusing-pulse bugs that came with it) is retired.
 
      NOT persisted across a reload, unlike every other desk preference
      (drawer colors, TV frame color, drawer modes) -- Larry, same day,
-     follow-up: "Where are the drawers on desktop? They need to be
-     there!" He'd closed the desk while testing the X, and because the
-     closed state used to survive a refresh via localStorage, the
-     ENTIRE desk (drawers included) silently stayed gone on every
-     later visit with no obvious reason why. An in-memory flag means
-     "closed" only ever lasts for as long as the current page stays
-     loaded -- exactly matching "disappear and reappear when it is
-     opened" -- and every fresh load always starts fully open, so this
-     can't happen by accident again. Still scoped to the whole
-     single-page app (not per-screen): the toggle element and body
-     class both just keep existing across in-app navigation with no
-     extra wiring needed, same as before. */
+     earlier follow-up: "Where are the drawers on desktop? They need
+     to be there!" He'd closed the desk while testing the X, and
+     because the closed state used to survive a refresh via
+     localStorage, things stayed hidden on every later visit with no
+     obvious reason why. An in-memory flag means "closed" only ever
+     lasts for as long as the current page stays loaded -- exactly
+     matching "disappear and reappear when it is opened" -- and every
+     fresh load always starts fully open. Still scoped to the whole
+     single-page app (not per-screen): the body class just keeps
+     existing across in-app navigation with no extra wiring needed. */
   var _deskClosed = false;
 
   function isDeskClosed(){
@@ -1817,27 +1824,6 @@
     document.body.classList.remove('t2t-desk-closed');
   }
 
-  function buildDeskToggle(){
-    if (document.getElementById('sz-desk-toggle')) return; // idempotent
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = 'sz-desk-toggle';
-    btn.className = 'sz-tool-btn';
-    btn.title = 'Reopen the Field Guide';
-    // Larry, July 31 2026 (repeated confusion): several reports in a
-    // row that trace back to still being in the closed state without
-    // realizing it -- an empty-looking drawer, an "immovable" nameplate
-    // riding inside one, both really just still hidden because the
-    // desk never got reopened. Labeling this "Field Guide" made it
-    // look like any other tool button rather than the one thing that
-    // gets everything back; changed to say what it does, and given its
-    // own gentle pulse (tv-toggle-pulse below) so it doesn't blend in
-    // with a normal desk button.
-    btn.innerHTML = '<div class="sz-tool-face"><span>↗ Reopen<br>Field Guide</span></div>';
-    btn.classList.add('sz-desk-toggle-pulse');
-    btn.addEventListener('click', reopenDesk);
-    document.body.appendChild(btn);
-  }
 
   window.SZDesk = {
     close: closeDesk,
@@ -2395,7 +2381,7 @@
   function wireBgColorGesture(){
     document.addEventListener('dblclick', function(e){
       if (document.body.classList.contains('t2t-bare-screen')) return; // no desk on 0010
-      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-nameplate, #sz-notebook, #sz-bg-color-overlay, #sz-desk-toggle')) return;
+      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-nameplate, #sz-notebook, #sz-bg-color-overlay')) return;
       var tvFrameEl = document.getElementById('tv-frame');
       if (tvFrameEl && !tvFrameEl.classList.contains('tv-frame-hidden')) {
         var r = tvFrameEl.getBoundingClientRect();
@@ -2451,8 +2437,9 @@
     buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();
-    buildDeskToggle();
-    // No longer re-applies a saved closed state here -- see the
+    // No standalone reopen toggle to build anymore -- the real Field
+    // Guide tool button (in buildNavBar's tray) IS the reopen handle.
+    // No longer re-applies a saved closed state here either -- see the
     // in-memory _deskClosed note above, every fresh load starts open.
     makeWidgetDraggable();
     applyBgColor(getSavedBgKey());
