@@ -196,14 +196,22 @@
       + '#sz-notebook-label{position:absolute;left:50%;top:26%;transform:translateX(-50%);'
       +   'border:1px solid #C9A87C;padding:4px 8px;border-radius:2px}'
       + '#sz-notebook-label span{font-size:10px;color:#C9A87C;letter-spacing:1px;white-space:nowrap}'
+      // Larry, July 31 2026 (bug report): gear dragged into the right
+      // drawer vanished completely on release. Same root cause already
+      // documented above for tool buttons: drawer panels paint at
+      // z-index:9998, and gear/menu never got the z-index:9999 fix when
+      // they were made drawer-dockable earlier today -- they rendered
+      // UNDER whichever drawer they'd just been dropped onto, invisible
+      // but not actually gone. Both now carry z-index:9999, same as
+      // every other floating desk object.
       + '#sz-gear{width:36px;height:36px;border-radius:50%;border:2px solid #999;'
       +   'background:#fff;font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
-      +   'display:flex;align-items:center;justify-content:center;margin-top:6px}'
+      +   'display:flex;align-items:center;justify-content:center;margin-top:6px;z-index:9999}'
       + '#sz-menu{width:36px;height:36px;border-radius:50%;border:2px solid #999;'
       +   'background:#fff;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
-      +   'display:flex;align-items:center;justify-content:center;margin-top:10px}'
+      +   'display:flex;align-items:center;justify-content:center;margin-top:10px;z-index:9999}'
       // Larry, July 26: "single/double/triple click drawers on the
       // sides of 0000" -- both the left drawer (0001/0002/0003) and a
       // new right drawer (0004/0005/0006) show one of three "mode"
@@ -214,10 +222,26 @@
       // a plain class rule regardless of which mode is active.
       + '.sz-mode-panel{display:none!important}'
       + '.sz-mode-panel.sz-mode-active{display:flex!important}'
-      + '.sz-mode-placeholder{flex-direction:column;align-items:center;justify-content:center;'
+      + '.sz-mode-placeholder{position:relative;flex-direction:column;align-items:center;justify-content:center;'
       +   'gap:6px;width:150px;min-height:80px;border-radius:8px;'
       +   'padding:14px 10px;text-align:center;color:#7a5c3a;font-size:11px;'
       +   'font-family:"Playfair Display",Georgia,serif;box-sizing:border-box}'
+      // Larry, July 31 2026: "What if the drawers, when empty, had a
+      // small embossed 'Drawer' in the center -- a clue to their
+      // purpose?" Same pressed-into-the-surface look as the desk's own
+      // T2T watermark (light+dark text-shadow pair on near-transparent
+      // text), just smaller and scoped to these still-undesignated
+      // slots via ::before so it's pure CSS -- covers left drawer's
+      // slot 2 and right drawer's slot 2 automatically, no JS change
+      // needed since both already share this one class. Disappears on
+      // its own the moment either slot gets real content, the same way
+      // the desk watermark gets covered by anything placed on top.
+      + '.sz-mode-placeholder::before{content:"Drawer";position:absolute;inset:0;'
+      +   'display:flex;align-items:center;justify-content:center;'
+      +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
+      +   'font-size:20px;letter-spacing:0.1em;color:rgba(0,0,0,.05);'
+      +   'text-shadow:1px 1px 2px rgba(255,255,255,.45),-1px -1px 2px rgba(0,0,0,.18);'
+      +   'pointer-events:none;user-select:none}'
       // Larry, July 29 2026: "delete dotted lines too!" -- both
       // drawers' still-undesignated slots (left's old slot 2, right's
       // slots 1 and 2) are bare panels now, no dashed "not built yet"
