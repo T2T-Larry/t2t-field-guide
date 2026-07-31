@@ -617,7 +617,7 @@
           onTvFrameRing = e.clientX >= tvR.left && e.clientX <= tvR.right &&
                           e.clientY >= tvR.top && e.clientY <= tvR.bottom;
         }
-        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (onTvFrameRing ? '0007' : (outsideWidget ? 'C001' : (_pageNums[cur] || '—')))); // backdrop is Component C001 (was A001, renamed July 28 2026 when the Library dropped its A/M/T letter prefixes for one C prefix + a Tier property), not a screen
+        var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (onTvFrameRing ? '0007' : (outsideWidget ? '0000' : (_pageNums[cur] || '—')))); // backdrop renamed C001 -> 0000, July 31 2026, Larry: closing the desk via the TV X now leaves a real near-blank state (just the embossed T2T watermark + the two empty drawers) reachable and visible like any other screen, so it earns a screen number instead of a Component id (was A001, then C001 as of July 28 2026's Library A/M/T-prefix cleanup).
         var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '9360' : (bbDetailOpen ? '9370' : (bbKeyBuilderOpen ? '9390' : (bbKeyPickerOpen ? '9395' : outsideNum))))))));
         showPageToast(num);
       }

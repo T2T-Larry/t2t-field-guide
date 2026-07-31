@@ -2218,7 +2218,7 @@
     refreshDrawerColorForMode(bar, RIGHT_DRAWER_COLOR_PREFIX);
   }
 
-  /* ---------- Desk backdrop (C001) color picker -- double-click the
+  /* ---------- Desk backdrop (0000, was Component C001 -- renamed July 31 2026) color picker -- double-click the
      empty backdrop (outside the widget, both drawers, the TV frame
      ring, the notebook, and the nameplate) opens a swatch picker,
      same "double-click is color options everywhere" standard as
@@ -2277,7 +2277,7 @@
       + '#sz-t2t-watermark{position:fixed;top:50%;left:50%;'
       +   'transform:translate(-50%,-50%);z-index:0;pointer-events:none;'
       +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
-      +   'font-size:min(22vw,220px);letter-spacing:0.12em;'
+      +   'font-size:min(11vw,110px);letter-spacing:0.12em;' /* Larry, July 31 2026: about half the original size */
       +   'color:rgba(0,0,0,.05);'
       +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
       +   'user-select:none;-webkit-user-select:none}'
