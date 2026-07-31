@@ -3117,6 +3117,54 @@
     } catch(e){}
   }
 
+  /* ---------- Larry, July 31 2026: "No travelers will expect or
+     want that! An Idea Board is a totally different animal... you
+     don't need a ship's anchor on an airplane." Field Guide, gear,
+     the Notebook, and Shortcuts are meant to follow a traveler onto
+     every screen -- that's deliberate, they're universal tools. A
+     custom tray (Library, or any future personal cluster a traveler
+     builds) is different: it's blank-desk furniture, not a tool, and
+     showed up riding along onto the Idea Board the same way those
+     others do -- which read as clutter that doesn't belong there,
+     not a feature. Same idea as the TV frame already hiding itself
+     during .isx-full (tv-frame.js's own trackLoop) for the same
+     reason -- a real content screen taking over means desk-only
+     furniture should get out of the way, then come right back the
+     moment the desk is showing again. Polls once per frame but only
+     ACTS on an actual full/not-full transition, so it's as cheap as
+     the TV frame's own version of this same pattern. ---------- */
+  function watchCustomTrayDeskOnlyVisibility(){
+    var fg = document.getElementById('fg-root');
+    if (!fg) return;
+    var wasFull = null;
+    function tick(){
+      var isFull = fg.classList.contains('isx-full');
+      if (isFull !== wasFull) {
+        wasFull = isFull;
+        if (isFull) {
+          document.querySelectorAll('.sz-custom-tray-grip').forEach(function(grip){
+            grip.style.display = 'none';
+          });
+          _claimRegistry.forEach(function(rec){
+            var slot = getRidingSlot(rec.storeKey);
+            if (!slot || slot.split('-')[1] !== '2') return; // only custom-tray members -- Field Guide/gear/notebook/Shortcuts stay put
+            rec.el.style.display = 'none';
+          });
+        } else {
+          // Back on the desk -- let the normal slot/mode rules
+          // recompute everyone's real visibility rather than
+          // guessing at what to restore.
+          var leftBarEl = document.getElementById('sz-navbar');
+          var rightBarEl = document.getElementById('sz-drawer-r');
+          if (leftBarEl) refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
+          if (rightBarEl) refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
   function init(){
     fixStuckGearMenuOnce();
     fixStuckFieldGuideOnce();
@@ -3146,6 +3194,8 @@
     var rightBarEl = document.getElementById('sz-drawer-r');
     if (leftBarEl) refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
     if (rightBarEl) refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+
+    watchCustomTrayDeskOnlyVisibility();
   }
 
   if (document.readyState === 'loading') {
