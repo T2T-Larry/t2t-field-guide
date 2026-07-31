@@ -1523,15 +1523,33 @@
   // panel some real breathing room -- still nowhere near the full
   // floor-to-ceiling column the original bug was about, but forgiving
   // enough that landing near the visible content actually counts.
+  // Larry, July 31 2026 (bug report, same day, yet later): "Slid
+  // tools lower in the drawer and now they are on the desktop?" Even
+  // padded, a box sized to the active panel's own content was still
+  // too tight -- the drawer's card itself is genuinely floor-to-
+  // ceiling (CARD_LOOK spans top:0;bottom:0), so visually there's no
+  // difference between "near the buttons" and "further down the same
+  // solid card" for a traveler dragging something around inside it.
+  // Trying to shrink the VERTICAL extent was fighting how the drawer
+  // actually looks. Splitting the two dimensions instead: height now
+  // uses the drawer's own real full extent (matches what's actually
+  // on screen -- sliding something anywhere up/down the same card
+  // still counts as inside it), width stays bounded to the active
+  // panel's own footprint plus DOCK_PAD (the dimension that actually
+  // mattered for the original bug -- an object dropped clearly out on
+  // the open desktop, to the side of both drawers, still correctly
+  // misses).
   var DOCK_PAD = 40;
   function drawerHitRect(el){
     if (el && (el.id === 'sz-navbar' || el.id === 'sz-drawer-r')) {
       var active = el.querySelector('.sz-mode-panel.sz-mode-active');
+      var full = el.getBoundingClientRect();
       if (active) {
         var r = active.getBoundingClientRect();
         return { left: r.left - DOCK_PAD, right: r.right + DOCK_PAD,
-                  top: r.top - DOCK_PAD, bottom: r.bottom + DOCK_PAD };
+                  top: full.top, bottom: full.bottom };
       }
+      return full;
     }
     return el.getBoundingClientRect();
   }
