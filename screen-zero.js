@@ -1777,26 +1777,35 @@
      button wherever it's riding) and reveals #sz-desk-toggle in their
      place -- a standing, always-in-the-DOM stand-in for the Field
      Guide button, built once below and left invisible until closed.
-     Persisted the same way every other desk preference (drawer
-     colors, TV frame color, drawer modes) already is, so a traveler
-     who closes it and comes back later finds it exactly as they left
-     it. Not scoped per-screen: this is a single-page app, so the
-     toggle element and body class both just keep existing across
-     in-app navigation with no extra wiring needed. */
-  var DESK_CLOSED_KEY = 't2t_deskClosed';
+
+     NOT persisted across a reload, unlike every other desk preference
+     (drawer colors, TV frame color, drawer modes) -- Larry, same day,
+     follow-up: "Where are the drawers on desktop? They need to be
+     there!" He'd closed the desk while testing the X, and because the
+     closed state used to survive a refresh via localStorage, the
+     ENTIRE desk (drawers included) silently stayed gone on every
+     later visit with no obvious reason why. An in-memory flag means
+     "closed" only ever lasts for as long as the current page stays
+     loaded -- exactly matching "disappear and reappear when it is
+     opened" -- and every fresh load always starts fully open, so this
+     can't happen by accident again. Still scoped to the whole
+     single-page app (not per-screen): the toggle element and body
+     class both just keep existing across in-app navigation with no
+     extra wiring needed, same as before. */
+  var _deskClosed = false;
 
   function isDeskClosed(){
-    try { return localStorage.getItem(DESK_CLOSED_KEY) === '1'; } catch(e){ return false; }
+    return _deskClosed;
   }
 
   function closeDesk(){
+    _deskClosed = true;
     document.body.classList.add('t2t-desk-closed');
-    try { localStorage.setItem(DESK_CLOSED_KEY, '1'); } catch(e){}
   }
 
   function reopenDesk(){
+    _deskClosed = false;
     document.body.classList.remove('t2t-desk-closed');
-    try { localStorage.removeItem(DESK_CLOSED_KEY); } catch(e){}
   }
 
   function buildDeskToggle(){
@@ -2402,7 +2411,8 @@
     buildNavBar();
     buildRightDrawer();
     buildDeskToggle();
-    if (isDeskClosed()) document.body.classList.add('t2t-desk-closed');
+    // No longer re-applies a saved closed state here -- see the
+    // in-memory _deskClosed note above, every fresh load starts open.
     makeWidgetDraggable();
     applyBgColor(getSavedBgKey());
     wireBgColorGesture();

@@ -162,16 +162,23 @@
       +   'font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;'
       +   'color:#f3e6cf;transition:transform .1s ease;outline:none}'
       + '.tv-knob:active{transform:translateY(1px)}'
-      // Close knob, Larry, July 31 2026: "make button background same
-      // color as 0100 panel" -- reuses --brand-teal-deep (style.css),
-      // the exact color s-cover's own .cover panel is filled with
-      // (#15805F), so it reads as "the same green as the Cover screen"
-      // rather than a new color invented just for this button. Falls
-      // back to the literal hex if style.css hasn't loaded for some
-      // reason. The extra left margin is the actual "move away from
-      // Next" fix -- real spacing, not just being last in the row.
-      + '.tv-knob-close{background:var(--brand-teal-deep,#15805F);'
-      +   'border-color:#0a4535;margin-left:18px}'
+      // Close knob -- Larry, July 31 2026, second pass: "change color
+      // to same as tv frame" (was matching 0100's panel color instead,
+      // per an earlier request). Uses the SAME --tv-top/--tv-mid/
+      // --tv-bottom/--tv-border custom properties applyColor() sets
+      // directly on #tv-frame -- since this knob is a descendant of
+      // that element, the variables cascade down automatically, so it
+      // always matches whichever of the 6 frame colors is currently
+      // picked, live, with no extra wiring needed when the color
+      // changes. Same gradient angle/stops as the frame's own
+      // background for a true "cut from the same material" look.
+      // Pinned to the frame's top-right corner (see buildFrame) rather
+      // than sitting in the knob row -- position:absolute here is what
+      // makes that placement work, since #tv-frame is its containing
+      // block.
+      + '.tv-knob-close{position:absolute;top:10px;right:10px;'
+      +   'background:linear-gradient(160deg,var(--tv-top,#14806A),var(--tv-mid,#0F6E56) 55%,var(--tv-bottom,#093B2F) 100%);'
+      +   'border-color:var(--tv-border,#06231C)}'
       + '.tv-knob:focus-visible{box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15),'
       +   '0 0 0 3px #f3e6cf}'
       + '.tv-knob.dim{opacity:.35;cursor:default;pointer-events:none}'
@@ -249,31 +256,32 @@
     var next = knob('next', '▶', 'Next');
     var idea = knob('idea', '💡', 'Ideas');
     var trivia = knob('trivia', '🌸', 'Trivia');
-    // Larry, July 31 2026: "put an X on the tv screen to close it into
-    // the Field Guide Button." Originally placed at the far left, next
-    // to Previous -- Larry, same day, follow-up: "tv X is dangerously
-    // in the way of nav arrow." Moved to the far right end of the
-    // ledge instead, past Next, with its own left margin (see
-    // tv-knob-close CSS below) so there's real daylight between it and
-    // the paging cluster -- no longer sitting flush against a button a
-    // traveler taps constantly. The teal fill (matching 0100's own
-    // panel color, also per Larry) makes it read as visually distinct
-    // from the brown paging/idea/trivia knobs too, not just
-    // positionally separate.
-    var close = knob('close', '✕', 'Close');
-    close.classList.add('tv-knob-close');
 
     // Larry, July 26: "the next arrow should be on the far right" --
     // Prev anchors the left end, Next anchors the right end, Idea/Trivia
     // sit in the middle, like a remote's channel controls bookending the
-    // row instead of being bunched together. Close now sits past Next,
-    // at the true far right of the ledge.
+    // row instead of being bunched together.
     controls.appendChild(prev);
     controls.appendChild(idea);
     controls.appendChild(trivia);
     controls.appendChild(next);
-    controls.appendChild(close);
     frame.appendChild(controls);
+
+    // Larry, July 31 2026: "put an X on the tv screen to close it into
+    // the Field Guide Button." First try put it in the knob row (far
+    // left, then far right past Next) -- Larry, twice, same day: still
+    // "dangerously in the way of nav arrow," then "needs to move to
+    // the far right" again even after that. Root cause: #tv-controls
+    // is a CENTERED row, so "last in the row" still sits near the
+    // middle of a wide frame, not at its actual edge. Pinned directly
+    // to the frame's own top-right corner instead -- a real physical
+    // spot, not a position inside a centered cluster -- the same place
+    // a close button sits on an ordinary window, and about as far from
+    // the bottom paging ledge as this frame allows. Appended straight
+    // to `frame`, a sibling of #tv-controls, not a child of it.
+    var close = knob('close', '✕', 'Close');
+    close.classList.add('tv-knob-close');
+    frame.appendChild(close);
 
     return frame;
   }
