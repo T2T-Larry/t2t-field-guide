@@ -536,6 +536,12 @@
       ],
       onIndependent: function(){
         if (btn.parentNode !== document.body) document.body.appendChild(btn);
+        // Defensive, July 31 2026: nothing in this path should ever
+        // leave a stale inline display:none behind, but this guarantees
+        // a free-desktop drop is always visible regardless of what
+        // state the button carried in from (e.g. dropped while still
+        // nested under a collapsed rail).
+        btn.style.display = '';
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
@@ -2372,7 +2378,26 @@
     });
   }
 
+  // One-time cleanup, July 31 2026: gear/menu could get dropped
+  // somewhere invisible before the fixes above existed -- missing
+  // from the Sign In hide rule, or claimed by a drawer slot that
+  // happened to be collapsed at that instant, no feedback either way.
+  // If that already happened on this browser, clear the stuck saved
+  // spot once so gear/menu come back home on the very next load, same
+  // as a traveler who'd never touched them. Runs at most once ever
+  // (per browser) -- afterward this is a no-op forever, so it never
+  // interferes with anyone's real saved position going forward.
+  function fixStuckGearMenuOnce(){
+    try {
+      if (localStorage.getItem('t2t_gearMenuFix_20260731')) return;
+      ['t2t_gearPos','t2t_claimSlot_t2t_gearPos','t2t_menuPos','t2t_claimSlot_t2t_menuPos']
+        .forEach(function(k){ localStorage.removeItem(k); });
+      localStorage.setItem('t2t_gearMenuFix_20260731', '1');
+    } catch(e){}
+  }
+
   function init(){
+    fixStuckGearMenuOnce();
     buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();
