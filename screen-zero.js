@@ -2239,11 +2239,61 @@
       + '.sz-bg-color-swatch.sz-bg-color-active{border-color:#1a3a5c;'
       +   'box-shadow:0 0 0 2px #fdf8f0,0 0 0 4px #1a3a5c}'
       + '#sz-bg-color-close{border:1px solid #cfe4f2;background:#fff;padding:6px 16px;'
-      +   'border-radius:8px;cursor:pointer;font-size:13px}';
+      +   'border-radius:8px;cursor:pointer;font-size:13px}'
+      // Desk watermark -- Larry, July 31 2026: "with everything put
+      // into drawers, the desktop might be blank with the 2 filing
+      // cabinets on the sides? A nice looking unobtrusive embossed T2T
+      // in the center of the screen that is covered by anything placed
+      // on top of it." Sits on the same backdrop this color picker
+      // covers, so it lives right here alongside it. z-index:0 (an
+      // explicit low value, not the default "auto") plus being the
+      // very first thing appended to <body> (see buildDeskWatermark)
+      // is what makes "covered by anything placed on top" automatic --
+      // the widget and every drawer/tool/nameplate/notebook already
+      // sit at z-index 9997+, so they paint over this without any
+      // special-casing needed on their end. The "embossed" look is a
+      // light+dark text-shadow pair (a highlight up-left, a shadow
+      // down-right) on near-transparent text, a look that reads as
+      // pressed into the surface rather than printed on it, and holds
+      // up across every desk color in the palette above since it's
+      // relative light/dark rather than tied to one specific hue.
+      // pointer-events:none so it never intercepts the backdrop's own
+      // double-click-for-color gesture.
+      + '#sz-t2t-watermark{position:fixed;top:50%;left:50%;'
+      +   'transform:translate(-50%,-50%);z-index:0;pointer-events:none;'
+      +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
+      +   'font-size:min(22vw,220px);letter-spacing:0.12em;'
+      +   'color:rgba(0,0,0,.05);'
+      +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
+      +   'user-select:none;-webkit-user-select:none}'
+      // Never on 0010 -- there's no desk backdrop to sit on yet (same
+      // reasoning as the color picker itself, just above).
+      + 'body.t2t-bare-screen #sz-t2t-watermark{display:none!important}';
     var style = document.createElement('style');
     style.id = 'sz-bg-color-style';
     style.textContent = css;
     document.head.appendChild(style);
+  }
+
+  function buildDeskWatermark(){
+    if (document.getElementById('sz-t2t-watermark')) return; // idempotent
+    // injectBgColorStyle() normally only runs lazily, the first time a
+    // traveler double-clicks the backdrop for its color picker -- the
+    // watermark's own CSS lives in that same injected block (see
+    // above), so it has to be forced here instead, or the watermark
+    // would sit unstyled (default black text, top-left) until/unless
+    // that gesture ever happened. Safe to call any time -- idempotent.
+    injectBgColorStyle();
+    var mark = document.createElement('div');
+    mark.id = 'sz-t2t-watermark';
+    mark.textContent = 'T2T';
+    // Inserted as the very FIRST child of <body> -- everything else on
+    // the desk (the widget, both drawers, tools, nameplate, notebook)
+    // either carries an explicit high z-index or, for the widget
+    // itself, simply comes later in document order at the default
+    // stacking level, so it paints on top of this watermark without
+    // needing to know the watermark exists at all.
+    document.body.insertBefore(mark, document.body.firstChild);
   }
 
   function getSavedBgKey(){
@@ -2323,6 +2373,7 @@
   }
 
   function init(){
+    buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();
     buildDeskToggle();
