@@ -1114,6 +1114,12 @@
     openJournalView:openJournalView,
     navToPageNum:navToPageNum, currentFile:currentFile,
     getCurNum:function(){ return _pageNums[cur]||null; },
+    // Larry, July 31 2026: "toggle all the buttons!" -- tool buttons
+    // that nav() to a real screen need to know whether that screen is
+    // already showing, so a second tap can go back instead of
+    // re-navigating to the same place. Read-only, mirrors getCurNum's
+    // own pattern right above.
+    getCur:function(){ return cur; },
     setPhOpen:setPhOpen,
     getPageNumsReverse:function(){ return _pageNumsReverse; },
     resumeToLastPageOr:resumeToLastPageOr,

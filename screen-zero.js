@@ -508,6 +508,26 @@
   // the gear button becomes an easy one-tap undo: every tool button
   // snaps back to its home spot in the list, regardless of what's
   // currently claimed or independently placed.
+  // Larry, July 31 2026: "Tapping Field Guide a second time opens the
+  // old backpack 9000. Is it a good idea for the second click to
+  // close the button as additional method to X?" -- then, once
+  // confirmed: "yes toggle all the buttons!" Every tool button that
+  // actually opens a real screen now toggles: tap opens it, tap again
+  // (while it's already showing) closes/leaves it, instead of
+  // re-running the same open action or, for Field Guide specifically,
+  // falling through to an unrelated legacy screen. Buttons that only
+  // show a "coming later" toast have nothing to toggle yet -- nothing
+  // opens, so they're untouched.
+  function wireToggleNav(targetScreenId, openFn){
+    return function(){
+      if (window.T2T && window.T2T.getCur && window.T2T.getCur() === targetScreenId) {
+        window.T2T.goBack();
+      } else {
+        openFn();
+      }
+    };
+  }
+
   var TOOL_ITEMS_DEFAULT = [
     // Larry, July 31 2026: "Closing the Field Guide ONLY makes
     // SHORTCUTS and PHASES disappear... Field Guide Button" is the
@@ -518,12 +538,17 @@
     // down this file but that's fine -- function declarations are
     // hoisted, and this only ever runs from a real click, long after
     // the whole file has parsed.
+    //
+    // Second tap now closes the Field Guide (same as the TV frame's
+    // own X) instead of opening the old 9000 backpack menu -- that
+    // menu is still one tap away on the separate ☰ Menu button, so
+    // nothing is lost, Field Guide just has one clean open/close job.
     { id: 'field-guide',    label: 'Field Guide',     action: function(){
         if (isDeskClosed()) { reopenDesk(); return; }
-        if (window.T2T) window.T2T.goMG();
+        closeDesk();
       } },
-    { id: 'idea-board',     label: 'Idea Board',      action: function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); } }, // Larry, July 29 2026: was pointing at the archived 9220 legacy grid -- routes to the current 1010 Idea Storyboard now.
-    { id: 'briefing-board', label: 'Briefing Board',  action: function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); } },
+    { id: 'idea-board',     label: 'Idea Board',      action: wireToggleNav('s-sea-of-ideas-cluster', function(){ if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); }) }, // Larry, July 29 2026: was pointing at the archived 9220 legacy grid -- routes to the current 1010 Idea Storyboard now.
+    { id: 'briefing-board', label: 'Briefing Board',  action: wireToggleNav('s-briefing-board', function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); }) },
     { id: 'planning',       label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
     { id: 'organization',   label: 'Organization',    action: function(){ showZeroToast('Organization — coming later.'); } },
     { id: 'storytelling',   label: 'Storytelling',    action: function(){ showZeroToast('Storytelling — coming later.'); } },
