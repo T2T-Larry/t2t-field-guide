@@ -1950,7 +1950,7 @@
       // already document.body children, so this is a no-op for them.
       if (rec.el.parentNode !== document.body) document.body.appendChild(rec.el);
       rec.el.style.position = 'fixed';
-      rec.el.style.left = (barRect.left + rec.offsetX + (groupOffset ? groupOffset.x : 0)) + 'px';
+      var candLeft = barRect.left + rec.offsetX + (groupOffset ? groupOffset.x : 0);
       // Prefer a saved Y offset (relative to this bar's own top edge)
       // over the generic defaultTop fallback -- see the offset-
       // persistence note above captureRidingOffset. Falls through to
@@ -1958,8 +1958,27 @@
       // an object is showing here without ever having been captured
       // (shouldn't happen in practice once every drop path calls
       // captureRidingOffset, but safe either way).
-      if (rec.offsetY != null) {
-        rec.el.style.top = (barRect.top + rec.offsetY + (groupOffset ? groupOffset.y : 0)) + 'px';
+      var candTop = (rec.offsetY != null)
+        ? (barRect.top + rec.offsetY + (groupOffset ? groupOffset.y : 0))
+        : null;
+      // Larry, July 31 2026 (bug report): "it jumped above what I can
+      // see... now I cannot reach the tray to move it." A fast/far
+      // drag (especially the whole-tray group drag) could push a
+      // riding object's computed position past the edge of the
+      // screen entirely, with nothing to stop it and no way to grab
+      // an invisible element to drag it back. Every riding object's
+      // final on-screen spot is now clamped to stay fully inside the
+      // current viewport -- it can still ride anywhere within that,
+      // but never somewhere the traveler can't see or click it.
+      var elW = rec.el.offsetWidth || 40;
+      var elH = rec.el.offsetHeight || 40;
+      var maxLeft = Math.max(0, window.innerWidth - elW);
+      var maxTop = Math.max(0, window.innerHeight - elH);
+      candLeft = Math.min(Math.max(candLeft, 0), maxLeft);
+      if (candTop != null) candTop = Math.min(Math.max(candTop, 0), maxTop);
+      rec.el.style.left = candLeft + 'px';
+      if (candTop != null) {
+        rec.el.style.top = candTop + 'px';
       } else if (!rec.el.style.top) {
         rec.el.style.top = rec.defaultTop + 'px';
       }
