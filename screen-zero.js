@@ -1509,15 +1509,51 @@
   }
   function setRidingSlot(storeKey, slot){
     try {
-      if (slot) localStorage.setItem(claimSlotStoreKey(storeKey), slot);
-      else localStorage.removeItem(claimSlotStoreKey(storeKey));
+      if (slot) {
+        localStorage.setItem(claimSlotStoreKey(storeKey), slot);
+      } else {
+        localStorage.removeItem(claimSlotStoreKey(storeKey));
+        // Un-claiming (object went home, or independent) -- drop its
+        // saved in-slot offset too, so a future claim starts fresh
+        // instead of reusing a position left over from a totally
+        // different drop.
+        localStorage.removeItem(claimOffsetStoreKey(storeKey));
+      }
     } catch(e){}
   }
 
-  // rec: { el, storeKey, offsetX, defaultTop }. offsetX starts at a
-  // sane default and gets overwritten the moment the object is first
-  // actually dropped onto a drawer (captureRidingOffset), so it rides
-  // wherever it was released, not some fixed formula spot.
+  // Larry, July 31 2026 (bug report): "drawer contents seem to shift
+  // to the top... found gear in the stack of stuff that had shifted
+  // to the top of the left drawer." Root cause: WHICH slot an object
+  // rides was always persisted (claimSlotStoreKey above), but WHERE
+  // inside that slot it actually landed never was -- offsetX lived
+  // only on the in-memory rec (reset to a generic 12px on every fresh
+  // page load), and offsetY didn't exist at all, so refreshRidersForSlot
+  // fell back to a small hardcoded defaultTop for every single object
+  // on every reload, regardless of where it had actually been dropped.
+  // Anything sharing a similar small default piled up in the same
+  // top-left corner of whichever bar it rode. Now the exact (x, y)
+  // offset from the bar's own top-left corner is saved right alongside
+  // the slot claim and restored the same way, so a reload puts every
+  // riding object back exactly where it was left, not just in the
+  // right slot.
+  function claimOffsetStoreKey(storeKey){ return 't2t_claimOffset_' + storeKey; }
+  function saveRidingOffset(storeKey, x, y){
+    try { localStorage.setItem(claimOffsetStoreKey(storeKey), JSON.stringify({ x: x, y: y })); }
+    catch(e){}
+  }
+  function loadRidingOffset(storeKey){
+    try {
+      var v = JSON.parse(localStorage.getItem(claimOffsetStoreKey(storeKey)));
+      if (v && typeof v.x === 'number' && typeof v.y === 'number') return v;
+    } catch(e){}
+    return null;
+  }
+
+  // rec: { el, storeKey, offsetX, offsetY, defaultTop }. offsetX/Y
+  // start from any saved offset from a previous drop (see above),
+  // falling back to the original generic spot only the very first
+  // time an object is ever claimed by a drawer.
   var _claimRegistry = [];
   function registerClaimable(el, storeKey, defaultTop){
     // homeParent/homeNext -- where this object natively lives in the
@@ -1525,7 +1561,11 @@
     // this is a no-op for them; the tool buttons and the surprise GIF
     // live nested inside a mode-panel div, which is what makes
     // reparenting below actually matter for them).
-    var rec = { el: el, storeKey: storeKey, offsetX: 12, defaultTop: defaultTop,
+    var savedOffset = loadRidingOffset(storeKey);
+    var rec = { el: el, storeKey: storeKey,
+                offsetX: savedOffset ? savedOffset.x : 12,
+                offsetY: savedOffset ? savedOffset.y : null,
+                defaultTop: defaultTop,
                 homeParent: el.parentNode, homeNext: el.nextSibling };
     _claimRegistry.push(rec);
     return rec;
@@ -1534,6 +1574,8 @@
     var barRect = barEl.getBoundingClientRect();
     var elRect = rec.el.getBoundingClientRect();
     rec.offsetX = elRect.left - barRect.left;
+    rec.offsetY = elRect.top - barRect.top;
+    saveRidingOffset(rec.storeKey, rec.offsetX, rec.offsetY);
   }
   // An object that's home again needs to go back to its ORIGINAL
   // spot in the DOM, not just have its inline styles cleared -- an
@@ -1586,7 +1628,18 @@
       if (rec.el.parentNode !== document.body) document.body.appendChild(rec.el);
       rec.el.style.position = 'fixed';
       rec.el.style.left = (barRect.left + rec.offsetX) + 'px';
-      if (!rec.el.style.top) rec.el.style.top = rec.defaultTop + 'px';
+      // Prefer a saved Y offset (relative to this bar's own top edge)
+      // over the generic defaultTop fallback -- see the offset-
+      // persistence note above captureRidingOffset. Falls through to
+      // the old "only if nothing's set yet" default for the rare case
+      // an object is showing here without ever having been captured
+      // (shouldn't happen in practice once every drop path calls
+      // captureRidingOffset, but safe either way).
+      if (rec.offsetY != null) {
+        rec.el.style.top = (barRect.top + rec.offsetY) + 'px';
+      } else if (!rec.el.style.top) {
+        rec.el.style.top = rec.defaultTop + 'px';
+      }
       rec.el.style.right = 'auto';
       rec.el.style.bottom = 'auto';
       rec.el.style.margin = '0';
