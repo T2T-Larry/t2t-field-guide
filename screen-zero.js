@@ -801,18 +801,22 @@
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        if (side === 'left' && mode === '1') {
-          setRidingSlot(TOOL_STACK_KEY, null);
-          restoreHomeParent(rec);
-          stack.style.position = '';
-          stack.style.left = ''; stack.style.top = '';
-          stack.style.right = ''; stack.style.bottom = ''; stack.style.margin = '';
-          stack.style.display = '';
-        } else {
-          setRidingSlot(TOOL_STACK_KEY, slotKey(side, mode));
-          captureRidingOffset(rec, barEl);
-          refreshRidersForSlot(side, mode, barEl);
-        }
+        // Larry, July 31 2026: "moved the phase tray up in the
+        // drawer but it snapped back where it was" (tool stack has
+        // the identical mechanism, same bug). Dropping BACK onto its
+        // own home slot used to always wipe the claim and fall back
+        // to the generic centered spot -- meaning any reposition
+        // attempt within the home drawer itself was silently undone
+        // on release, since "home" and "just moved a few px" looked
+        // identical to this code. Home is no longer special-cased:
+        // every drop (home slot or not) claims its slot and saves
+        // exactly where it landed, so dragging within the home
+        // drawer now just repositions it there, same as anywhere
+        // else. The double-click gear reset (resetToolStack) remains
+        // the one deliberate way back to the true default spot.
+        setRidingSlot(TOOL_STACK_KEY, slotKey(side, mode));
+        captureRidingOffset(rec, barEl);
+        refreshRidersForSlot(side, mode, barEl);
       }
     });
   }
@@ -1005,18 +1009,15 @@
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        if (side === 'right' && mode === '1') {
-          setRidingSlot(PHASE_STACK_KEY, null);
-          restoreHomeParent(rec);
-          stack.style.position = '';
-          stack.style.left = ''; stack.style.top = '';
-          stack.style.right = ''; stack.style.bottom = ''; stack.style.margin = '';
-          stack.style.display = '';
-        } else {
-          setRidingSlot(PHASE_STACK_KEY, slotKey(side, mode));
-          captureRidingOffset(rec, barEl);
-          refreshRidersForSlot(side, mode, barEl);
-        }
+        // Larry, July 31 2026: "moved the phase tray up in the
+        // drawer but it snapped back where it was." Same fix as the
+        // tool stack right above -- home is no longer special-cased
+        // to always reset; every drop claims its slot and saves
+        // exactly where it landed, so repositioning within the home
+        // drawer actually sticks now.
+        setRidingSlot(PHASE_STACK_KEY, slotKey(side, mode));
+        captureRidingOffset(rec, barEl);
+        refreshRidersForSlot(side, mode, barEl);
       }
     });
   }
