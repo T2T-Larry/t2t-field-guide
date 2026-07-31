@@ -175,6 +175,16 @@
       +   'background:linear-gradient(135deg,#e0b060,#8a6420);box-shadow:2px 3px 6px rgba(0,0,0,.3);'
       +   'transition:transform .1s ease, box-shadow .1s ease;z-index:9999}'
       + '.sz-tool-btn:active{transform:translateY(2px);box-shadow:1px 1px 2px rgba(0,0,0,.3)}'
+      // Desk close/reopen handle (Larry, July 31 2026): the one thing
+      // still visible once the TV screen's new X knob has closed
+      // everything else. Same look as any tool button (reuses
+      // .sz-tool-btn/.sz-tool-face) so it reads as "the Field Guide
+      // button, still here" rather than a new object -- but it's its
+      // own element with its own id so the blanket '.sz-tool-btn'
+      // hide rule (style.css) can sweep every OTHER tool/phase button
+      // without also sweeping this one. Hidden by default; style.css's
+      // body.t2t-desk-closed rule is what reveals it.
+      + '#sz-desk-toggle{position:fixed;left:16px;top:16px;display:none}'
       + '.sz-tool-face{padding:7px 4px;border-radius:4px;text-align:center;font-size:11px;'
       +   'color:#4a3418;font-family:"Playfair Display",Georgia,serif;white-space:nowrap;'
       +   'background:radial-gradient(circle at 35% 30%,#f3d98a,#c9973a 55%,#8a6420 100%)}'
@@ -1681,6 +1691,56 @@
     }
   };
 
+  /* ---------- Desk close/reopen -- Larry, July 31 2026: "put an X on
+     the tv screen to close it into the Field Guide Button. With Field
+     Guide closed, Phases and Shortcuts disappear and reappear when it
+     is opened." One body class (t2t-desk-closed) is the whole switch:
+     style.css hides the same cross-cutting set of ids/classes 0010
+     Sign In already hides (nav rail, both drawers, TV frame + its
+     vignette, nameplate, notebook, Shortcuts rail, every tool/phase
+     button wherever it's riding) and reveals #sz-desk-toggle in their
+     place -- a standing, always-in-the-DOM stand-in for the Field
+     Guide button, built once below and left invisible until closed.
+     Persisted the same way every other desk preference (drawer
+     colors, TV frame color, drawer modes) already is, so a traveler
+     who closes it and comes back later finds it exactly as they left
+     it. Not scoped per-screen: this is a single-page app, so the
+     toggle element and body class both just keep existing across
+     in-app navigation with no extra wiring needed. */
+  var DESK_CLOSED_KEY = 't2t_deskClosed';
+
+  function isDeskClosed(){
+    try { return localStorage.getItem(DESK_CLOSED_KEY) === '1'; } catch(e){ return false; }
+  }
+
+  function closeDesk(){
+    document.body.classList.add('t2t-desk-closed');
+    try { localStorage.setItem(DESK_CLOSED_KEY, '1'); } catch(e){}
+  }
+
+  function reopenDesk(){
+    document.body.classList.remove('t2t-desk-closed');
+    try { localStorage.removeItem(DESK_CLOSED_KEY); } catch(e){}
+  }
+
+  function buildDeskToggle(){
+    if (document.getElementById('sz-desk-toggle')) return; // idempotent
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'sz-desk-toggle';
+    btn.className = 'sz-tool-btn';
+    btn.title = 'Reopen the Field Guide';
+    btn.innerHTML = '<div class="sz-tool-face"><span>Field Guide</span></div>';
+    btn.addEventListener('click', reopenDesk);
+    document.body.appendChild(btn);
+  }
+
+  window.SZDesk = {
+    close: closeDesk,
+    reopen: reopenDesk,
+    isClosed: isDeskClosed
+  };
+
   function buildNavBar(){
     if (document.getElementById('sz-navbar')) return; // idempotent
     injectStyle();
@@ -2173,7 +2233,7 @@
   function wireBgColorGesture(){
     document.addEventListener('dblclick', function(e){
       if (document.body.classList.contains('t2t-bare-screen')) return; // no desk on 0010
-      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-nameplate, #sz-notebook, #sz-bg-color-overlay')) return;
+      if (e.target.closest('#fg-root, #sz-navbar, #sz-drawer-r, #sz-nameplate, #sz-notebook, #sz-bg-color-overlay, #sz-desk-toggle')) return;
       var tvFrameEl = document.getElementById('tv-frame');
       if (tvFrameEl && !tvFrameEl.classList.contains('tv-frame-hidden')) {
         var r = tvFrameEl.getBoundingClientRect();
@@ -2187,6 +2247,8 @@
   function init(){
     buildNavBar();
     buildRightDrawer();
+    buildDeskToggle();
+    if (isDeskClosed()) document.body.classList.add('t2t-desk-closed');
     makeWidgetDraggable();
     applyBgColor(getSavedBgKey());
     wireBgColorGesture();

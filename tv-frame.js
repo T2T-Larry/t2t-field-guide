@@ -239,11 +239,18 @@
     var next = knob('next', '▶', 'Next');
     var idea = knob('idea', '💡', 'Ideas');
     var trivia = knob('trivia', '🌸', 'Trivia');
+    // Larry, July 31 2026: "put an X on the tv screen to close it into
+    // the Field Guide Button." A fifth knob, set apart from the
+    // paging/idea/trivia cluster at the far left -- like a power
+    // button next to a remote's channel controls -- so it never reads
+    // as "back" or gets pressed by accident while paging.
+    var close = knob('close', '✕', 'Close');
 
     // Larry, July 26: "the next arrow should be on the far right" --
     // Prev anchors the left end, Next anchors the right end, Idea/Trivia
     // sit in the middle, like a remote's channel controls bookending the
     // row instead of being bunched together.
+    controls.appendChild(close);
     controls.appendChild(prev);
     controls.appendChild(idea);
     controls.appendChild(trivia);
@@ -288,6 +295,14 @@
   }
 
   function onKnob(kind){
+    if (kind === 'close'){
+      // Larry, July 31 2026: collapses the whole desk (Phases,
+      // Shortcuts, tools, nameplate, notebook, this frame) down to
+      // just the Field Guide button -- see window.SZDesk in
+      // screen-zero.js for the actual hide/show + persistence.
+      if (window.SZDesk) window.SZDesk.close();
+      return;
+    }
     if (kind === 'prev' && window.IdeaCapture && window.IdeaCapture.isOpen()){
       // Larry, July 29 2026: same bug as the findProxyTarget note below
       // -- ⬅️ was reaching through the open capture card to the hidden
