@@ -510,6 +510,43 @@
   var _toolStackRec = null;
   var _toolButtonRecs = [];
 
+  // Larry, July 31 2026: "The gear button does not drag. All objects
+  // should drag into and out of drawers." Gear (and the matching
+  // Menu/☰ button next to it) used to be the one thing left out of
+  // the drawer-dockable system every other floating object already
+  // has -- same reattach-to-either-drawer pattern as the nameplate/
+  // notebook, generalized here so both buttons share one function
+  // instead of duplicating it. Recs live in their own array (not
+  // _toolButtonRecs -- these aren't part of the reorderable tool
+  // list) but resetToolStack() below restores them the same way, so
+  // the gear's own reset action is also the way back if either gets
+  // dragged somewhere by accident.
+  var GEAR_POS_KEY = 't2t_gearPos';
+  var MENU_POS_KEY = 't2t_menuPos';
+  var _railButtonRecs = [];
+
+  function wireDetachableRailButton(btn, storeKey, leftBar){
+    var rec = registerClaimable(btn, storeKey, 16);
+    _railButtonRecs.push(rec);
+    makeDraggable(btn, storeKey, null, 40, 40, {
+      skipDefaultPos: true,
+      reattachTargets: [
+        { el: leftBar, side: 'left' },
+        { get el(){ return document.getElementById('sz-drawer-r'); }, side: 'right' }
+      ],
+      onIndependent: function(){
+        if (btn.parentNode !== document.body) document.body.appendChild(btn);
+      },
+      onReattach: function(side, barEl){
+        var mode = barEl.dataset.mode || '1';
+        setRidingSlot(storeKey, slotKey(side, mode));
+        captureRidingOffset(rec, barEl);
+        refreshRidersForSlot(side, mode, barEl);
+      }
+    });
+    return rec;
+  }
+
   function loadToolOrder(){
     try {
       var saved = JSON.parse(localStorage.getItem(TOOL_ORDER_KEY));
@@ -538,7 +575,7 @@
   }
 
   function resetToolStack(){
-    _toolButtonRecs.forEach(function(rec){
+    _toolButtonRecs.concat(_railButtonRecs).forEach(function(rec){
       setRidingSlot(rec.storeKey, null);
       try { localStorage.removeItem(rec.storeKey); } catch(e){}
       restoreHomeParent(rec);
@@ -918,7 +955,7 @@
     var gear = document.createElement('button');
     gear.id = 'sz-gear';
     gear.type = 'button';
-    gear.title = 'Reset tool stack to its default spots';
+    gear.title = 'Reset tool stack, gear, and menu to their default spots';
     gear.textContent = '⚙️';
     gear.addEventListener('click', function(){
       resetToolStack();
@@ -1313,20 +1350,53 @@
       // General version of the same idea, for objects that can be
       // claimed by EITHER drawer, not just one fixed target -- Larry,
       // July 27 2026: "every object on a screen should be movable...
-      // drag it onto a drawer to put it away." Checks each candidate
-      // target in turn; first overlap wins, same drop-detection math
-      // as the single-target version above.
+      // drag it onto a drawer to put it away."
+      //
+      // Larry, July 31 2026 (bug report): "Field Guide button will not
+      // drag into the right drawer." Root cause: BOTH the left rail
+      // and the right drawer can independently dock to either side of
+      // the screen (dockRail/dockRightDrawer), so their rects can end
+      // up covering the exact same area -- e.g. the left rail dragged
+      // over to the right side, sitting on top of the right drawer.
+      // The old logic took the FIRST target in the array whose rect
+      // contained the drop point, which for a tool button always meant
+      // "my own rail" (checked before "the other drawer") even when
+      // the other drawer was the one actually visible/on top at that
+      // spot. Now, when more than one target's rect contains the drop
+      // point, the tie is broken by asking the browser what's really
+      // on top at that exact pixel (document.elementsFromPoint, same
+      // thing native drag-and-drop would use) -- whichever target
+      // contains that real topmost element wins, so a drop always
+      // lands wherever it visually looks like it landed. Falls back to
+      // the first match if that still can't be resolved (e.g. no
+      // overlap edge case), so nothing regresses in the common case
+      // where only one target ever matches.
       if (opts && opts.reattachTargets) {
+        var matches = [];
         for (var ri = 0; ri < opts.reattachTargets.length; ri++) {
           var target = opts.reattachTargets[ri];
           if (!target || !target.el) continue;
           var tr = target.el.getBoundingClientRect();
-          var ov = dropHitsTarget(rect, tr);
-          if (ov) {
-            try { localStorage.removeItem(storeKey); } catch(e){}
-            if (opts.onReattach) opts.onReattach(target.side, target.el);
-            return;
+          if (dropHitsTarget(rect, tr)) matches.push(target);
+        }
+        var winner = matches[0] || null;
+        if (matches.length > 1 && document.elementsFromPoint) {
+          var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+          var underCursor = document.elementsFromPoint(cx, cy);
+          var topOther = null;
+          for (var ui = 0; ui < underCursor.length; ui++) {
+            if (underCursor[ui] !== el && !el.contains(underCursor[ui])) { topOther = underCursor[ui]; break; }
           }
+          if (topOther) {
+            for (var mi = 0; mi < matches.length; mi++) {
+              if (matches[mi].el.contains(topOther)) { winner = matches[mi]; break; }
+            }
+          }
+        }
+        if (winner) {
+          try { localStorage.removeItem(storeKey); } catch(e){}
+          if (opts.onReattach) opts.onReattach(winner.side, winner.el);
+          return;
         }
       }
 
@@ -1773,9 +1843,11 @@
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
 
+    var menuBtn = buildMenuButton();
+    var gearBtn = buildGear();
     bar.appendChild(mid);
-    bar.appendChild(buildMenuButton());
-    bar.appendChild(buildGear());
+    bar.appendChild(menuBtn);
+    bar.appendChild(gearBtn);
 
     var nameplate = buildNameplate();
     var notebook = buildNotebook();
@@ -1902,6 +1974,12 @@
         }
       }
     );
+
+    // Larry, July 31 2026: gear and menu get the same drawer-dockable
+    // treatment as everything else on the desk now (see
+    // wireDetachableRailButton above).
+    wireDetachableRailButton(menuBtn, MENU_POS_KEY, bar);
+    wireDetachableRailButton(gearBtn, GEAR_POS_KEY, bar);
   }
 
   /* ---------- Dragging the widget (#fg-root) -- unchanged mechanics,
