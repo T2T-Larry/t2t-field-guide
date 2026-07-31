@@ -1163,6 +1163,94 @@
      small rotating pool so the surprise slot doesn't calcify into
      always showing the exact same thing. ---------- */
 
+  /* ---------- Custom tray slot -- Larry, July 31 2026: "Can traveler
+     open a new tray (cluster) of objects? ... How might that happen?"
+     then, after talking through drag-to-combine vs. an explicit new-
+     tray gesture vs. this: "yes" to building the still-empty junk-
+     drawer slot (mode 2, both drawers) as the birthplace. Nothing new
+     needed for an object to JOIN this tray -- dropping anything onto
+     a drawer while it's showing slot 2 already claims side+'-2'
+     through the exact same riding-slot system every other object
+     uses (see wireDetachableRailButton/wireToolButtonDrag's own
+     reattachTargets). What's new here is purely the tray's own
+     identity once it has members: a grip that appears the moment the
+     slot holds its first one, drags the whole cluster together via a
+     shared, persisted group offset instead of touching any member's
+     own saved spot, and the same double-click rename card Tools/
+     Phases already use -- keyed by side, so left and right can each
+     become their own independently-named tray. ---------- */
+  function trayGroupOffsetKey(side){ return 't2t_trayGroupOffset_' + side; }
+  function loadTrayGroupOffset(side){
+    try {
+      var v = JSON.parse(localStorage.getItem(trayGroupOffsetKey(side)));
+      if (v && typeof v.x === 'number' && typeof v.y === 'number') return v;
+    } catch(e){}
+    return { x: 0, y: 0 };
+  }
+  function saveTrayGroupOffset(side, x, y){
+    try { localStorage.setItem(trayGroupOffsetKey(side), JSON.stringify({ x: x, y: y })); }
+    catch(e){}
+  }
+  function traySlotMemberCount(side){
+    var slot = slotKey(side, '2');
+    var n = 0;
+    _claimRegistry.forEach(function(rec){
+      if (isRidingDrawer(rec.storeKey) && getRidingSlot(rec.storeKey) === slot) n++;
+    });
+    return n;
+  }
+
+  function wireTrayGripDrag(grip, side){
+    var dragging = false, moved = false, startX = 0, startY = 0, startOffset = { x: 0, y: 0 };
+    function pointOf(e){ return e.touches ? e.touches[0] : e; }
+    function onDown(e){
+      var p = pointOf(e);
+      dragging = true; moved = false;
+      startX = p.clientX; startY = p.clientY;
+      startOffset = loadTrayGroupOffset(side);
+    }
+    function onMove(e){
+      if (!dragging) return;
+      var p = pointOf(e);
+      var dx = p.clientX - startX, dy = p.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      if (!moved) return;
+      if (e.cancelable) e.preventDefault();
+      saveTrayGroupOffset(side, startOffset.x + dx, startOffset.y + dy);
+      var barEl = document.getElementById(side === 'left' ? 'sz-navbar' : 'sz-drawer-r');
+      if (barEl) refreshRidersForSlot(side, '2', barEl);
+    }
+    function onUp(){ dragging = false; }
+    grip.addEventListener('mousedown', onDown);
+    grip.addEventListener('touchstart', onDown, { passive: true });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+  }
+
+  function buildCustomTraySlot(side){
+    var panel = document.createElement('div');
+    panel.className = 'sz-mode-panel sz-mode-placeholder sz-custom-tray';
+
+    var grip = document.createElement('div');
+    grip.className = 'sz-tool-stack-grip sz-custom-tray-grip';
+    grip.title = 'Drag to move the whole tray -- double-click to rename it';
+    grip.textContent = '\u22EE\u22EE ' + loadCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', 'New Tray');
+    grip.style.display = 'none'; // shows itself the moment this slot holds a real member
+    grip.addEventListener('dblclick', function(){
+      var current = loadCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', 'New Tray');
+      openRenameCard('Rename this tray', current, function(newName){
+        saveCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', newName);
+        grip.textContent = '\u22EE\u22EE ' + newName;
+      });
+    });
+    wireTrayGripDrag(grip, side);
+    panel.appendChild(grip);
+
+    return panel;
+  }
+
   function buildModePlaceholder(label){
     var p = document.createElement('div');
     // Larry, July 29 2026: right drawer's slots 1 and 2 lose both the
@@ -1359,6 +1447,46 @@
            cy >= targetRect.top && cy <= targetRect.bottom;
   }
 
+  // Larry, July 31 2026 (bug report): "buttons... disappear when
+  // drawer is closed and reappear when that drawer is open... I
+  // thought we had a rule that an object had to be completely inside
+  // a drawer to be in a drawer?" -- then, confirming it wasn't just a
+  // one-off: "It might be a desktop issue? When I put the loose
+  // buttons in the right drawer, the left drawer closed without
+  // taking them with it" (i.e. the slot system itself keeps left/
+  // right correctly separate -- the bug is specifically about objects
+  // that were SUPPOSED to land independently on the open desk).
+  //
+  // Root cause: #sz-navbar/#sz-drawer-r are deliberately floor-to-
+  // ceiling (top:0;bottom:0) so they always look like a full column --
+  // but that means the drawer's OWN element covers the entire screen
+  // height no matter which point-testing algorithm dropHitsTarget
+  // uses (center-point or full containment both pass anywhere in that
+  // 200px-wide strip). A button dropped well clear of the visible
+  // button cluster, but still technically inside that tall strip, was
+  // silently getting claimed by the drawer instead of landing
+  // independent on the desk -- then correctly hiding/showing with
+  // THAT drawer's own open/closed state from then on, which is
+  // exactly what looked like a bug (it wasn't lying about being "in a
+  // drawer," it just never should have counted as dropped there).
+  //
+  // Fix: for the two drawer bars specifically, hit-test against the
+  // CURRENTLY ACTIVE mode panel inside them (sized to its real
+  // content, not the full column) instead of the bar's own floor-to-
+  // ceiling rect. Every other reattach target (the tool/phase stack,
+  // etc.) is already content-sized, so this only changes behavior for
+  // the two bars. Deliberately leaves dropHitsTarget's own center-
+  // point-vs-containment choice untouched -- that already has its own
+  // separate history (July 29: containment was tried and reverted for
+  // blocking legitimate docks) not worth reopening here.
+  function drawerHitRect(el){
+    if (el && (el.id === 'sz-navbar' || el.id === 'sz-drawer-r')) {
+      var active = el.querySelector('.sz-mode-panel.sz-mode-active');
+      if (active) return active.getBoundingClientRect();
+    }
+    return el.getBoundingClientRect();
+  }
+
   function makeDraggable(el, storeKey, excludeSelector, defaultLeft, defaultTop, opts){
     var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
 
@@ -1507,7 +1635,7 @@
         for (var ri = 0; ri < opts.reattachTargets.length; ri++) {
           var target = opts.reattachTargets[ri];
           if (!target || !target.el) continue;
-          var tr = target.el.getBoundingClientRect();
+          var tr = drawerHitRect(target.el);
           if (dropHitsTarget(rect, tr)) matches.push(target);
         }
         var winner = matches[0] || null;
@@ -1700,6 +1828,13 @@
     var slot = slotKey(side, mode);
     var barRect = barEl.getBoundingClientRect();
     var collapsed = barEl.classList.contains('sz-collapsed');
+    // Larry, July 31 2026: "Can traveler open a new tray?" -- mode 2
+    // is the one slot that can become a traveler-made tray (see
+    // buildCustomTraySlot). Its members drag together as a group via
+    // one shared, persisted offset on top of each member's own --
+    // moving the grip moves everyone without touching any individual
+    // member's saved spot.
+    var groupOffset = (mode === '2') ? loadTrayGroupOffset(side) : null;
     _claimRegistry.forEach(function(rec){
       if (!isRidingDrawer(rec.storeKey)) return;
       var ridingSlot = getRidingSlot(rec.storeKey);
@@ -1717,7 +1852,7 @@
       // already document.body children, so this is a no-op for them.
       if (rec.el.parentNode !== document.body) document.body.appendChild(rec.el);
       rec.el.style.position = 'fixed';
-      rec.el.style.left = (barRect.left + rec.offsetX) + 'px';
+      rec.el.style.left = (barRect.left + rec.offsetX + (groupOffset ? groupOffset.x : 0)) + 'px';
       // Prefer a saved Y offset (relative to this bar's own top edge)
       // over the generic defaultTop fallback -- see the offset-
       // persistence note above captureRidingOffset. Falls through to
@@ -1726,7 +1861,7 @@
       // (shouldn't happen in practice once every drop path calls
       // captureRidingOffset, but safe either way).
       if (rec.offsetY != null) {
-        rec.el.style.top = (barRect.top + rec.offsetY) + 'px';
+        rec.el.style.top = (barRect.top + rec.offsetY + (groupOffset ? groupOffset.y : 0)) + 'px';
       } else if (!rec.el.style.top) {
         rec.el.style.top = rec.defaultTop + 'px';
       }
@@ -1735,6 +1870,12 @@
       rec.el.style.margin = '0';
       rec.el.style.display = collapsed ? 'none' : '';
     });
+    // The custom tray's grip only shows itself once the slot actually
+    // holds a member -- see buildCustomTraySlot.
+    if (mode === '2') {
+      var grip = barEl.querySelector('.sz-custom-tray-grip');
+      if (grip) grip.style.display = traySlotMemberCount(side) > 0 ? '' : 'none';
+    }
   }
 
   /* ---------- The rail (tray): full height top-to-bottom by default,
@@ -2025,8 +2166,13 @@
     // the desktop. Same treatment the surprise slot got once it held
     // real content: drop the placeholder statement and the dashed
     // "not built yet" border, keep the panel's size/layout.
-    var mode2 = document.createElement('div');
-    mode2.className = 'sz-mode-panel sz-mode-placeholder';
+    //
+    // Larry, July 31 2026: this is also now where "open a new tray"
+    // happens -- see buildCustomTraySlot -- so it's simultaneously
+    // still the junk drawer (a bare drop spot) AND the birthplace of
+    // a real, nameable, group-draggable tray the moment it gets its
+    // first member.
+    var mode2 = buildCustomTraySlot('left');
     var surprise = buildSurprisePanel(bar, 'left');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
@@ -2352,10 +2498,11 @@
     // Larry, July 29 2026: right drawer's slot 1 (the top,
     // single-tap slot) is no longer undesignated -- it's the
     // phase tray, mirroring the left rail's tool stack look.
-    // Slot 2 remains bare/undesignated.
+    // Slot 2 is the right drawer's own new-tray birthplace now --
+    // see buildCustomTraySlot, same as the left drawer's slot 2.
     var mode1 = buildPhaseTray(bar);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
-    var mode2 = buildModePlaceholder();
+    var mode2 = buildCustomTraySlot('right');
     var surprise = buildSurprisePanel(bar, 'right');
     mid.appendChild(mode1);
     mid.appendChild(mode2);
