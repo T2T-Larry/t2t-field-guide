@@ -46,6 +46,37 @@
   var RAIL_WIDTH = 200;       // px -- "the wider" rail Larry asked for
   var RAIL_COLLAPSED_W = 40;  // px -- thin strip when closed
 
+  /* ---------- Bring-to-front -- Larry, July 31 2026: "I opened the
+     Field Guide on top of the nametag, but the nametag jumped on top
+     of the Field Guide. On the desktop, stuff can get stacked on top
+     of other stuff." Root cause: every floating object had a FIXED
+     stacking priority (nameplate/notebook/tool buttons all hardcoded
+     z-index:9999, drawers 9998, the TV frame/widget no z-index at
+     all) -- whoever's number was highest always won, regardless of
+     which one a traveler had actually just touched. Real desks don't
+     work that way; whatever you just picked up sits on top of the
+     pile. One shared, ever-increasing counter starting above every
+     existing hardcoded value -- picking up ANY object bumps it past
+     everything else touched so far. Exposed on window (not just a
+     local var) because tv-frame.js is a separate file/IIFE that drags
+     the Field Guide widget with its own code, not this file's shared
+     makeDraggable -- both need to draw from the exact same counter or
+     "most recently touched" could disagree between the two.
+     Deliberately never rewinds -- an ever-climbing number is simpler
+     and cheaper than tracking a full stacking list, and CSS z-index
+     has effectively unlimited headroom for how long anyone will
+     actually keep one page open. ---------- */
+  window.T2TFront = window.T2TFront || (function(){
+    var top = 10000; // above every existing hardcoded 9997-9999 value
+    return {
+      bump: function(el){
+        if (!el) return;
+        top += 1;
+        el.style.zIndex = String(top);
+      }
+    };
+  })();
+
   /* ---------- Shared "floating card" look, matched to the
      widget's own #fg-root styling in style.css (border:2px solid
      #999; border-radius:14px; box-shadow:0 4px 24px rgba(0,0,0,.18)),
@@ -1521,6 +1552,7 @@
 
     function onDown(e){
       if (excludeSelector && e.target.closest(excludeSelector)) return;
+      window.T2TFront.bump(el); // picking it up brings it to the front of everything else
       var p = pointOf(e);
       dragging = true; moved = false;
       var rect = el.getBoundingClientRect();

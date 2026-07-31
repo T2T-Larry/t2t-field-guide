@@ -556,6 +556,22 @@
     function onDown(e){
       if (e.target.closest('.tv-knob')) return;
       if (frame.classList.contains('tv-frame-hidden')) return;
+      // Larry, July 31 2026: "I opened the Field Guide on top of the
+      // nametag, but the nametag jumped on top of the Field Guide."
+      // Neither the frame nor the widget ever had a z-index at all,
+      // so nameplate/notebook/tool buttons (all a fixed 9999) could
+      // never end up underneath them no matter what a traveler had
+      // just touched. window.T2TFront is the one shared counter
+      // screen-zero.js's own draggable objects already bump on pickup
+      // (see makeDraggable's own onDown) -- bumping the same counter
+      // here means "whatever you just grabbed comes to the front" is
+      // true across both files, not just within one of them.
+      if (window.T2TFront) {
+        window.T2TFront.bump(frame);
+        window.T2TFront.bump(fg);
+        var vignette = document.getElementById('tv-vignette');
+        if (vignette) window.T2TFront.bump(vignette);
+      }
       var p = pointOf(e);
       dragging = true; moved = false;
       var rect = fg.getBoundingClientRect();
