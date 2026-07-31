@@ -185,6 +185,15 @@
       // without also sweeping this one. Hidden by default; style.css's
       // body.t2t-desk-closed rule is what reveals it.
       + '#sz-desk-toggle{position:fixed;left:16px;top:16px;display:none}'
+      // Gentle pulse -- purely a "notice me, the desk is closed" cue,
+      // not a drag/animation conflict: makeDraggable only ever touches
+      // this element's inline left/top/position, never its box-shadow,
+      // so the pulse keeps running fine even while it's being dragged.
+      + '@keyframes sz-toggle-pulse{'
+      +   '0%{box-shadow:2px 3px 6px rgba(0,0,0,.3),0 0 0 0 rgba(224,176,96,.6)}'
+      +   '100%{box-shadow:2px 3px 6px rgba(0,0,0,.3),0 0 0 10px rgba(224,176,96,0)}'
+      +   '}'
+      + '.sz-desk-toggle-pulse{animation:sz-toggle-pulse 1.8s ease-out infinite}'
       + '.sz-tool-face{padding:7px 4px;border-radius:4px;text-align:center;font-size:11px;'
       +   'color:#4a3418;font-family:"Playfair Display",Georgia,serif;white-space:nowrap;'
       +   'background:radial-gradient(circle at 35% 30%,#f3d98a,#c9973a 55%,#8a6420 100%)}'
@@ -1815,7 +1824,17 @@
     btn.id = 'sz-desk-toggle';
     btn.className = 'sz-tool-btn';
     btn.title = 'Reopen the Field Guide';
-    btn.innerHTML = '<div class="sz-tool-face"><span>Field Guide</span></div>';
+    // Larry, July 31 2026 (repeated confusion): several reports in a
+    // row that trace back to still being in the closed state without
+    // realizing it -- an empty-looking drawer, an "immovable" nameplate
+    // riding inside one, both really just still hidden because the
+    // desk never got reopened. Labeling this "Field Guide" made it
+    // look like any other tool button rather than the one thing that
+    // gets everything back; changed to say what it does, and given its
+    // own gentle pulse (tv-toggle-pulse below) so it doesn't blend in
+    // with a normal desk button.
+    btn.innerHTML = '<div class="sz-tool-face"><span>↗ Reopen<br>Field Guide</span></div>';
+    btn.classList.add('sz-desk-toggle-pulse');
     btn.addEventListener('click', reopenDesk);
     document.body.appendChild(btn);
   }
