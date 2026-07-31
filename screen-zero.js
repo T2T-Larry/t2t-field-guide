@@ -2164,6 +2164,18 @@
   function reopenDesk(){
     _deskClosed = false;
     document.body.classList.remove('t2t-desk-closed');
+    // Larry, July 31 2026 (bug report): "I put [the nametag] on the
+    // desktop but when I opened the Field Guide the nametag still
+    // jumped on top of the Guide." The bring-to-front fix only covers
+    // actually DRAGGING something -- opening the Field Guide back up
+    // via this button is a state toggle, not a drag, so the frame/
+    // widget never got its own turn at the front just from reopening.
+    // Bump the same shared counter here too.
+    if (window.T2TFront) {
+      window.T2TFront.bump(document.getElementById('tv-frame'));
+      window.T2TFront.bump(document.getElementById('fg-root'));
+      window.T2TFront.bump(document.getElementById('tv-vignette'));
+    }
   }
 
 
