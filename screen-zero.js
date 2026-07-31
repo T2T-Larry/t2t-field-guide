@@ -2405,8 +2405,30 @@
     } catch(e){}
   }
 
+  // Second one-time cleanup, same day -- Larry: "the nametag has been
+  // changed to a weird Field Guide button that is supposed to be in
+  // the missing left drawer." Not actually the nameplate -- the real
+  // Field Guide TOOL button (top of the tool tray) had been dragged
+  // out independently at some point well before today's session and
+  // left riding its own saved desktop spot, which happens to sit right
+  // near the nameplate's own default position -- close enough to read
+  // as "the nametag turned into a button." Separate flag from the
+  // gear/menu fix above (that one already ran once on Larry's browser,
+  // so reusing its flag wouldn't fire again) -- clears Field Guide's
+  // stray saved position/riding slot once so it lands back in the
+  // tool tray, right where resetToolStack() would put it.
+  function fixStuckFieldGuideOnce(){
+    try {
+      if (localStorage.getItem('t2t_fgHomeFix_20260731')) return;
+      ['t2t_toolBtnPos_field-guide','t2t_claimSlot_t2t_toolBtnPos_field-guide']
+        .forEach(function(k){ localStorage.removeItem(k); });
+      localStorage.setItem('t2t_fgHomeFix_20260731', '1');
+    } catch(e){}
+  }
+
   function init(){
     fixStuckGearMenuOnce();
+    fixStuckFieldGuideOnce();
     buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();

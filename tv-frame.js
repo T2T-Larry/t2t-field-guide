@@ -172,11 +172,14 @@
       // picked, live, with no extra wiring needed when the color
       // changes. Same gradient angle/stops as the frame's own
       // background for a true "cut from the same material" look.
-      // Pinned to the frame's top-right corner (see buildFrame) rather
+      // Pinned to the frame's LOWER-right corner (see buildFrame) rather
       // than sitting in the knob row -- position:absolute here is what
       // makes that placement work, since #tv-frame is its containing
-      // block.
-      + '.tv-knob-close{position:absolute;top:10px;right:10px;'
+      // block. Larry, July 31 2026, third pass: top-right "is lost in
+      // the upper right... must be in the LOWER right corner" --
+      // bottom:10px instead of top:10px is the whole fix; still
+      // outside the centered knob row, so still clear of Next.
+      + '.tv-knob-close{position:absolute;bottom:10px;right:10px;'
       +   'background:linear-gradient(160deg,var(--tv-top,#14806A),var(--tv-mid,#0F6E56) 55%,var(--tv-bottom,#093B2F) 100%);'
       +   'border-color:var(--tv-border,#06231C)}'
       + '.tv-knob:focus-visible{box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15),'
