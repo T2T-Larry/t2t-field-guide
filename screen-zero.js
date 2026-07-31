@@ -1237,6 +1237,7 @@
     function pointOf(e){ return e.touches ? e.touches[0] : e; }
     function onDown(e){
       var p = pointOf(e);
+      window.T2TFront.bump(grip); // picking it up brings it to the front of everything else -- see makeDraggable's own onDown for why this matters once a member is sitting on top of it
       dragging = true; moved = false;
       startX = p.clientX; startY = p.clientY;
       startOffset = loadTrayGroupOffset(side);
@@ -1267,6 +1268,7 @@
 
     var grip = document.createElement('div');
     grip.className = 'sz-tool-stack-grip sz-custom-tray-grip';
+    grip.dataset.side = side;
     grip.title = 'Drag to move the whole tray -- double-click to rename it';
     grip.textContent = '\u22EE\u22EE ' + loadCustomLabel(TRAY_LABEL_PREFIX, side + '-tray', 'New Tray');
     // Larry, July 31 2026 (bug report): "the Library tray has
@@ -1994,11 +1996,46 @@
       rec.el.style.margin = '0';
       rec.el.style.display = collapsed ? 'none' : '';
     });
-    // The custom tray's grip now shows itself as soon as this page is
-    // showing, member or not -- see buildCustomTraySlot, July 31 2026.
-    if (mode === '2') {
-      var grip = barEl.querySelector('.sz-custom-tray-grip');
-      if (grip) grip.style.display = collapsed ? 'none' : '';
+    // Larry, July 31 2026 (bug report): "I cannot grab the Library
+    // tray and move it like I can the Tools tray." Root cause: every
+    // OTHER riding object (tool buttons, gear, nameplate...) escapes
+    // to document.body the moment it's claimed by a drawer (see the
+    // reparent a few lines up), so it always paints in the same flat
+    // arena as everything else on the desk. The tray's own grip never
+    // did that -- it stayed nested inside the drawer's own markup,
+    // which caps its paint order at the drawer's z-index (9998) no
+    // matter what z-index the grip itself carries. Any member sitting
+    // in the tray (a plain .sz-tool-btn, z-index 9999, living at
+    // document.body like every independent object) always painted
+    // above it, silently swallowing clicks meant for the grip the
+    // moment the tray held anything at all. The grip now escapes to
+    // document.body too, positioned just above its members and kept
+    // there with a z-index above the members' own baseline -- same
+    // fix shape as every other "trapped behind its own container"
+    // bug already caught in this file, just for a new object.
+    var grip = document.querySelector('.sz-custom-tray-grip[data-side="' + side + '"]');
+    if (grip) {
+      if (mode === '2') {
+        if (grip.parentNode !== document.body) document.body.appendChild(grip);
+        grip.style.position = 'fixed';
+        var goff = loadTrayGroupOffset(side);
+        var gLeft = barRect.left + 15 + goff.x;
+        var gTop = barRect.top + 6 + goff.y;
+        var gW = grip.offsetWidth || 150, gH = grip.offsetHeight || 20;
+        gLeft = Math.min(Math.max(gLeft, 0), Math.max(0, window.innerWidth - gW));
+        gTop = Math.min(Math.max(gTop, 0), Math.max(0, window.innerHeight - gH));
+        grip.style.left = gLeft + 'px';
+        grip.style.top = gTop + 'px';
+        grip.style.right = 'auto';
+        grip.style.bottom = 'auto';
+        grip.style.margin = '0';
+        if (!grip.style.zIndex) grip.style.zIndex = '10000'; // above the 9999 every plain tool button starts at; onDown bumps it further still on pickup
+        grip.style.display = collapsed ? 'none' : '';
+      } else if (grip.parentNode === document.body) {
+        // A different page is showing on this side now -- hide, same
+        // as any other rider claimed to a slot that isn't active.
+        grip.style.display = 'none';
+      }
     }
   }
 
@@ -3015,10 +3052,28 @@
     } catch(e){}
   }
 
+  // Fourth one-time cleanup, same day -- the right tray's own group
+  // offset was left over from an earlier drag attempt on the grip
+  // that never actually worked (see the grip stacking-context fix
+  // above), and put the grip and its first member on top of each
+  // other once both are positioned relative to the drawer's real top
+  // edge. Zeroing it once gives the newly-migrated Library members a
+  // clean, non-overlapping starting layout; the grip is fully
+  // grabbable again after this same push, so any traveler is free to
+  // drag the group somewhere else from here on same as before.
+  function fixLibraryTrayOffsetOnce(){
+    try {
+      if (localStorage.getItem('t2t_libraryTrayOffsetFix_20260731')) return;
+      localStorage.setItem('t2t_trayGroupOffset_right', JSON.stringify({ x: 0, y: 0 }));
+      localStorage.setItem('t2t_libraryTrayOffsetFix_20260731', '1');
+    } catch(e){}
+  }
+
   function init(){
     fixStuckGearMenuOnce();
     fixStuckFieldGuideOnce();
     fixLibraryTrayMembersOnce();
+    fixLibraryTrayOffsetOnce();
     buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();
