@@ -637,7 +637,7 @@
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
         setRidingSlot(storeKey, slotKey(side, mode));
-        captureRidingOffset(rec, barEl);
+        captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
         refreshRidersForSlot(side, mode, barEl);
       }
     });
@@ -777,7 +777,7 @@
         }
         var mode = barEl.dataset.mode || '1';
         setRidingSlot(storeKey, slotKey(side, mode));
-        captureRidingOffset(rec, barEl);
+        captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
         refreshRidersForSlot(side, mode, barEl);
       }
     });
@@ -815,7 +815,7 @@
         // else. The double-click gear reset (resetToolStack) remains
         // the one deliberate way back to the true default spot.
         setRidingSlot(TOOL_STACK_KEY, slotKey(side, mode));
-        captureRidingOffset(rec, barEl);
+        captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
         refreshRidersForSlot(side, mode, barEl);
       }
     });
@@ -985,7 +985,7 @@
         }
         var mode = barEl.dataset.mode || '1';
         setRidingSlot(storeKey, slotKey(side, mode));
-        captureRidingOffset(rec, barEl);
+        captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
         refreshRidersForSlot(side, mode, barEl);
       }
     });
@@ -1016,7 +1016,7 @@
         // exactly where it landed, so repositioning within the home
         // drawer actually sticks now.
         setRidingSlot(PHASE_STACK_KEY, slotKey(side, mode));
-        captureRidingOffset(rec, barEl);
+        captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
         refreshRidersForSlot(side, mode, barEl);
       }
     });
@@ -1363,7 +1363,7 @@
           img.style.display = '';
         } else {
           setRidingSlot(storeKey, slotKey(side, mode));
-          captureRidingOffset(rec, barEl);
+          captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
           refreshRidersForSlot(side, mode, barEl);
         }
       }
@@ -1895,11 +1895,30 @@
     _claimRegistry.push(rec);
     return rec;
   }
-  function captureRidingOffset(rec, barEl){
+  function captureRidingOffset(rec, barEl, groupOffset){
+    // Larry, July 31 2026 (bug report): "I tried to move one up under
+    // the handle but it jumped to a different position... so much
+    // space between items that they do not look like they are
+    // connected." Root cause: a custom tray's render math adds the
+    // whole group's shared offset on TOP of each member's own saved
+    // offset (see refreshRidersForSlot) -- moving the grip shifts
+    // everyone at once without touching any member's individual spot.
+    // But capturing a member's offset never subtracted that same
+    // group offset back out first, so the moment the group had ever
+    // been moved even once, every fresh drop of an individual member
+    // saved a number that already secretly included the group shift
+    // -- then the very next render added the group shift AGAIN on top
+    // of that, throwing the member somewhere else entirely. Callers
+    // now pass the tray's current group offset when there is one, so
+    // what's saved is always the member's TRUE spot relative to the
+    // group's own zero point, matching what gets added back at render
+    // time exactly once, not twice.
     var barRect = barEl.getBoundingClientRect();
     var elRect = rec.el.getBoundingClientRect();
-    rec.offsetX = elRect.left - barRect.left;
-    rec.offsetY = elRect.top - barRect.top;
+    var gx = (groupOffset && typeof groupOffset.x === 'number') ? groupOffset.x : 0;
+    var gy = (groupOffset && typeof groupOffset.y === 'number') ? groupOffset.y : 0;
+    rec.offsetX = elRect.left - barRect.left - gx;
+    rec.offsetY = elRect.top - barRect.top - gy;
     saveRidingOffset(rec.storeKey, rec.offsetX, rec.offsetY);
   }
   // An object that's home again needs to go back to its ORIGINAL
@@ -2445,7 +2464,7 @@
           // exceptions -- matching how the nameplate already works.
           var mode = barEl.dataset.mode || '1';
           setRidingSlot(NOTEBOOK_KEY, slotKey(side, mode));
-          captureRidingOffset(notebookRec, barEl);
+          captureRidingOffset(notebookRec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
           refreshRidersForSlot(side, mode, barEl);
         }
       }
@@ -2477,7 +2496,7 @@
         onReattach: function(side, barEl){
           var mode = barEl.dataset.mode || '1';
           setRidingSlot(NAMEPLATE_KEY, slotKey(side, mode));
-          captureRidingOffset(nameplateRec, barEl);
+          captureRidingOffset(nameplateRec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
           refreshRidersForSlot(side, mode, barEl);
         }
       }
@@ -3069,11 +3088,41 @@
     } catch(e){}
   }
 
+  // Fifth one-time cleanup, same day -- Larry, testing the tray grip
+  // once it finally became grabbable, hit the offset-doubling bug
+  // fixed just above (captureRidingOffset): "moving the handle moves
+  // the three buttons...even on top of each other... I tried to move
+  // one up under the handle but it jumped to a different position...
+  // so much space between items." Whatever got saved for these three
+  // buttons and the tray's own group offset during that testing is
+  // now unreliable data, produced by the very bug that's fixed above.
+  // Re-running the same clean, stacked layout fixLibraryTrayMembersOnce
+  // originally set (and re-zeroing the group offset) gives them a
+  // sane starting point again -- safe to do a second time under a new
+  // flag, since captureRidingOffset itself no longer corrupts things
+  // going forward.
+  function fixLibraryTrayLayoutAgainOnce(){
+    try {
+      if (localStorage.getItem('t2t_libraryTrayLayoutFix2_20260731')) return;
+      var ids = ['excellence', 'storytelling', 'library'];
+      ids.forEach(function(id, i){
+        var storeKey = 't2t_toolBtnPos_' + id;
+        localStorage.removeItem(storeKey);
+        localStorage.setItem('t2t_claimSlot_' + storeKey, 'right-2');
+        localStorage.setItem('t2t_claimOffset_' + storeKey,
+          JSON.stringify({ x: 15, y: 40 + i * 46 }));
+      });
+      localStorage.setItem('t2t_trayGroupOffset_right', JSON.stringify({ x: 0, y: 0 }));
+      localStorage.setItem('t2t_libraryTrayLayoutFix2_20260731', '1');
+    } catch(e){}
+  }
+
   function init(){
     fixStuckGearMenuOnce();
     fixStuckFieldGuideOnce();
     fixLibraryTrayMembersOnce();
     fixLibraryTrayOffsetOnce();
+    fixLibraryTrayLayoutAgainOnce();
     buildDeskWatermark();
     buildNavBar();
     buildRightDrawer();
