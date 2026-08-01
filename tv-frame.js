@@ -549,7 +549,7 @@
      double/triple-click detection above. ---------- */
 
   function wireFrameDrag(frame, fg){
-    var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    var dragging = false, moved = false, startX = 0, startY = 0, startCx = 0, startCy = 0;
 
     function pointOf(e){ return e.touches ? e.touches[0] : e; }
 
@@ -575,7 +575,16 @@
       var p = pointOf(e);
       dragging = true; moved = false;
       var rect = fg.getBoundingClientRect();
-      startLeft = rect.left; startTop = rect.top;
+      // Larry, Aug 1 2026: track the widget's CENTER, not its rendered
+      // top-left -- screen-fit.js keeps a live scale transform on
+      // #fg-root now, and a scaled box's rendered top-left shifts
+      // depending on the scale in effect, while its rendered center
+      // stays exactly equal to its unscaled layout center (default
+      // transform-origin is center). Center is the only reference
+      // point that's safe to carry across a scale change (e.g. moving
+      // to a screen with a different natural height/scale).
+      startCx = rect.left + rect.width / 2;
+      startCy = rect.top + rect.height / 2;
       startX = p.clientX; startY = p.clientY;
       frame.classList.add('tv-frame-dragging');
       document.body.style.userSelect = 'none';
@@ -589,8 +598,8 @@
       if (!moved) return;
       if (e.cancelable) e.preventDefault();
       fg.style.position = 'fixed';
-      fg.style.left = (startLeft + dx) + 'px';
-      fg.style.top = (startTop + dy) + 'px';
+      fg.style.left = (startCx + dx - fg.offsetWidth / 2) + 'px';
+      fg.style.top = (startCy + dy - fg.offsetHeight / 2) + 'px';
       fg.style.margin = '0';
     }
 
@@ -601,7 +610,9 @@
       document.body.style.userSelect = '';
       if (!moved) return;
       var rect = fg.getBoundingClientRect();
-      try { localStorage.setItem('t2t-widget-pos', JSON.stringify({ left: rect.left, top: rect.top })); }
+      // Store the CENTER (see onDown comment) so it restores correctly
+      // no matter what scale screen-fit.js applies later.
+      try { localStorage.setItem('t2t-widget-pos', JSON.stringify({ cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 })); }
       catch(e){}
     }
 

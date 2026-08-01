@@ -338,8 +338,16 @@
     } else {
       try {
         var savedPos = JSON.parse(localStorage.getItem('t2t-widget-pos'));
-        if (fg && savedPos && typeof savedPos.left==='number' && typeof savedPos.top==='number') {
-          fg.style.position='fixed'; fg.style.left=savedPos.left+'px'; fg.style.top=savedPos.top+'px'; fg.style.margin='0';
+        // Larry, Aug 1 2026: stored/restored by CENTER, not top-left --
+        // screen-fit.js's live scale transform means a scaled box's
+        // rendered top-left shifts with whatever scale is in effect,
+        // while its rendered center stays exactly equal to its layout
+        // center no matter the scale. Restoring by center is what
+        // actually keeps a moved widget where it was put, even across
+        // screens with a different natural height (and so a different
+        // scale).
+        if (fg && savedPos && typeof savedPos.cx==='number' && typeof savedPos.cy==='number') {
+          fg.style.position='fixed'; fg.style.left=(savedPos.cx - fg.offsetWidth/2)+'px'; fg.style.top=(savedPos.cy - fg.offsetHeight/2)+'px'; fg.style.margin='0';
         }
       } catch(e){}
     }

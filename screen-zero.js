@@ -2545,7 +2545,7 @@
     var el = document.getElementById('fg-root');
     if (!el) return;
 
-    var dragging = false, moved = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    var dragging = false, moved = false, startX = 0, startY = 0, startCx = 0, startCy = 0;
 
     function applyPos(left, top){
       el.style.position = 'fixed';
@@ -2562,10 +2562,15 @@
       // saved position regardless of screen, which is what made
       // sign-in visibly re-center itself and then jump. Same guard as
       // nav()'s now uses.
+      // Larry, Aug 1 2026: stored/restored by CENTER now, not top-left
+      // -- see the matching comment in tv-frame.js's wireFrameDrag for
+      // why (screen-fit.js's live scale transform on #fg-root makes a
+      // scaled box's rendered top-left shift with whatever scale is in
+      // effect, while its center stays put).
       if (!document.body.classList.contains('t2t-bare-screen')) {
         var saved = JSON.parse(localStorage.getItem('t2t-widget-pos'));
-        if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
-          applyPos(saved.left, saved.top);
+        if (saved && typeof saved.cx === 'number' && typeof saved.cy === 'number') {
+          applyPos(saved.cx - el.offsetWidth / 2, saved.cy - el.offsetHeight / 2);
         }
       }
     } catch(e){}
@@ -2588,7 +2593,7 @@
       var p = pointOf(e);
       dragging = true; moved = false;
       var rect = el.getBoundingClientRect();
-      startLeft = rect.left; startTop = rect.top;
+      startCx = rect.left + rect.width / 2; startCy = rect.top + rect.height / 2;
       startX = p.clientX; startY = p.clientY;
       document.body.style.userSelect = 'none';
     }
@@ -2600,7 +2605,7 @@
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
       if (!moved) return;
       if (e.cancelable) e.preventDefault();
-      applyPos(startLeft + dx, startTop + dy);
+      applyPos(startCx + dx - el.offsetWidth / 2, startCy + dy - el.offsetHeight / 2);
     }
 
     function onUp(){
@@ -2609,7 +2614,7 @@
       document.body.style.userSelect = '';
       if (!moved) return;
       var rect = el.getBoundingClientRect();
-      try { localStorage.setItem('t2t-widget-pos', JSON.stringify({ left: rect.left, top: rect.top })); }
+      try { localStorage.setItem('t2t-widget-pos', JSON.stringify({ cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 })); }
       catch(e){}
     }
   }
