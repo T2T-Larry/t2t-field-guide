@@ -51,12 +51,12 @@
 <script src="idea-storyboard-9710.js?v=20260729e"></script>
 <script src="session.js?v=20260729c"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260801b"></script>
+<script src="backpack.js?v=20260801c"></script>
 <script src="briefing-board.js?v=20260727a"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260723b"></script>
-<script src="screen-zero.js?v=20260801b"></script>
+<script src="screen-zero.js?v=20260801c"></script>
 <script src="tv-frame.js?v=20260801a"></script>
 <script src="screen-fit.js?v=20260801a"></script>
 <script src="bookmarks.js?v=20260730c"></script>
@@ -845,15 +845,18 @@
       // load), so whoever just typed their password in should get the
       // same "return to where you were" treatment.
       T.resumeToLastPageOr('s-cover');
-      // Larry, July 31 2026: "should open to 0000 first with the
-      // blank desktop and 2 side drawers both closed... like the
-      // desktop with the Field Guide closed." Same treatment as the
-      // silent auto-resume path above -- land closed, always.
-      try{ window.SZDesk && window.SZDesk.landOnClosedDesk(); }catch(e2){}
+      // Larry, Aug 1 2026: landOnClosedDesk() removed from here --
+      // Larry, live-testing: "signing in went to blank desktop NOT
+      // back to where we left off UNTIL I clicked on Field Guide...
+      // Stay where traveler puts it." A real sign-in now gets the
+      // exact same "return to where you were" treatment as a plain
+      // refresh (see the silent auto-resume path above). The desk can
+      // still be closed manually mid-session -- that's the TV frame's
+      // own X button (closeDesk(), untouched) -- this only retires the
+      // automatic land-closed-on-entry behavior.
     }catch(e){
       console.error('Post-sign-in setup failed, falling back to cover', e);
       try{ T.nav('s-cover'); }catch(e2){}
-      try{ window.SZDesk && window.SZDesk.landOnClosedDesk(); }catch(e3){}
     }finally{
       btn.textContent='Sign In'; btn.disabled=false;
     }

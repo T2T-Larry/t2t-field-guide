@@ -350,13 +350,20 @@
           // Larry, Aug 1 2026 (bug report): "almost off the apple
           // screen" -- a saved center from one screen size (or an
           // older, larger monitor) can land partway or entirely off a
-          // smaller one. Clamp the center so the widget stays at least
-          // a half-widget-at-max-scale in from every edge -- 1.45 here
-          // matches screen-fit.js's own MAX_SCALE, kept in sync by hand
-          // since screen-fit.js hasn't necessarily loaded its export by
-          // the time this runs.
+          // smaller one. Clamp the center so the widget stays fully
+          // on-screen. Uses the widget's CURRENT rendered box (already
+          // reflects whatever scale screen-fit.js has it at right now)
+          // rather than a worst-case guess at its scale -- an earlier
+          // version of this fix used a flat 1.45x-of-natural-size
+          // margin, which was so conservative it fought a traveler's
+          // own repositioning on a small screen ("moving widget to more
+          // readable position... reverted to the previous less
+          // readable position" -- the honest fix is to only push back
+          // when a position is genuinely off-screen, not pre-emptively
+          // narrow where it's allowed to go).
           var _w=fg.offsetWidth, _h=fg.offsetHeight;
-          var _mx=(_w*1.45)/2+24, _my=(_h*1.45)/2+24;
+          var _rr=fg.getBoundingClientRect(), _rw=_rr.width||_w, _rh=_rr.height||_h;
+          var _mx=_rw/2+24, _my=_rh/2+24;
           var _cx=(2*_mx<window.innerWidth) ? Math.max(_mx, Math.min(savedPos.cx, window.innerWidth-_mx)) : window.innerWidth/2;
           var _cy=(2*_my<window.innerHeight) ? Math.max(_my, Math.min(savedPos.cy, window.innerHeight-_my)) : window.innerHeight/2;
           fg.style.position='fixed'; fg.style.left=(_cx - _w/2)+'px'; fg.style.top=(_cy - _h/2)+'px'; fg.style.margin='0';
