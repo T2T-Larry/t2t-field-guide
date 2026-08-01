@@ -49,13 +49,27 @@
                           // trims the laptop's over-grown case, not
                           // the desktop experience this was built for.
   var MARGIN = 40;        // breathing room kept clear on every side, px
+  var RAIL_WIDTH = 200;   // px -- matches screen-zero.js's own RAIL_WIDTH
+                          // constant; kept in sync by hand since the two
+                          // files don't share this value directly
 
   function reservedWidth(el){
     if (!el) return 0;
     var cs = window.getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden') return 0;
-    var r = el.getBoundingClientRect();
-    return r.width;
+    // Larry, Aug 1 2026: reserve the rail's FULL nominal width whenever
+    // it's present at all, regardless of whether a traveler has it
+    // collapsed right now -- Larry, live-testing: "laptop still change
+    // widget size based on drawers. Both open makes it the perfect
+    // size!" He wants the fit to hold steady no matter what a traveler
+    // does with the drawers mid-session, not react every time one gets
+    // collapsed or reopened. Reading the rail's actual (possibly
+    // collapsed-to-0) rendered width here was exactly what made the
+    // widget grow whenever a drawer closed -- using the fixed nominal
+    // width instead means the ONLY thing display:none (a rail that
+    // genuinely isn't part of this screen at all, e.g. Sign In) still
+    // correctly frees up the space it would have used.
+    return RAIL_WIDTH;
   }
 
   function tick(){
