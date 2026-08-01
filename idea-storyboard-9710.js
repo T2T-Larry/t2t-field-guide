@@ -72,7 +72,10 @@
     });
     T().wire('b-sea-mg', T().goMG);
     T().wire('b-sea-close', function(){ T().returnToMG(); });
-    T().wire('b-sea-to-cluster', function(){ T().nav('s-sea-of-ideas-cluster'); });
+    T().wire('b-sea-to-cluster', function(){
+      if(window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume();
+      else T().nav('s-sea-of-ideas-cluster');
+    });
     T().wire('b-sea-fwd', function(){
       if(T().currentFile()==='dream.html' && document.getElementById('s-idea-button')){ T().nav('s-idea-button'); }
       else { T().closeMG(); T().returnToMG(); }

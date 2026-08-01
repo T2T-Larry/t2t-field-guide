@@ -45,14 +45,14 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260801a"></script>
-<script src="backpack.js?v=20260801d"></script>
+<script src="backpack.js?v=20260801e"></script>
 <script src="briefing-board.js?v=20260727a"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="idea-capture.js?v=20260729d"></script>
 <script src="notebook-open.js?v=20260729g"></script>
 <script src="idea-media-shared.js?v=20260801c"></script>
-<script src="idea-storyboard-9710.js?v=20260801h"></script>
+<script src="idea-storyboard-9710.js?v=20260801i"></script>
 <script src="session.js?v=20260801d"></script>
 <script src="gems.js?v=20260723b"></script>
 <!-- Missing until now, July 27 2026 -- Larry: landing on 1000 left him
@@ -2362,7 +2362,16 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerCtx('s-dream-tools', 'TOOLS CRIB');
   T.wire('s-dream-tools-back', function(){ T.nav('s-dream'); });
   T.wire('s-dream-tools-mg', T.goMG);
-  document.getElementById('toc-dream-storyboard') && document.getElementById('toc-dream-storyboard').addEventListener('click', function(){ T.nav('s-sea-of-ideas-cluster'); });
+  document.getElementById('toc-dream-storyboard') && document.getElementById('toc-dream-storyboard').addEventListener('click', function(){
+    // Larry, August 1 2026 (third report): "What do you want showed up!
+    // No such TOPIC!" -- this TOC link was a bare nav() with no Topic
+    // ever set, same bug class as the desk's Idea Board button before
+    // it was fixed to resume. Routes through the same openBoardResume
+    // now so every door into 1010 lands somewhere real.
+    T.markSeaChapterEntry();
+    if(window.T2TMedia && window.T2TMedia.openBoardResume) T2TMedia.openBoardResume();
+    else T.nav('s-sea-of-ideas-cluster');
+  });
 
     T.nav('s-dream', false);
 });

@@ -1003,7 +1003,8 @@
     });
     wire('b-sea-ideas',function(){
       seaChapterEntry = false;
-      nav('s-sea-of-ideas-cluster');
+      if(window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume();
+      else nav('s-sea-of-ideas-cluster');
     });
 
     /* JOURNAL HUB */
@@ -1097,7 +1098,11 @@
     wire('b-d-back',function(){nav('s-tools');});  wire('b-d-mg',goMG);
     wire('b-cfg-back',function(){nav('s-tools');}); wire('b-cfg-mg',goMG);
     wire('b-tools-sea-ideas', function(){
-      nav('s-sea-of-ideas-cluster');
+      // Larry, August 1 2026 (third report): "What do you want showed
+      // up! No such TOPIC!" -- same bare-nav bug as the Dream Phase
+      // TOC's Storyboard link, fixed the same way.
+      if(window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume();
+      else nav('s-sea-of-ideas-cluster');
     });
     wire('b-tools-trash', function(){
       if (window.T2TSea) window.T2TSea.openTrash();
