@@ -194,7 +194,7 @@
         var fgr=document.getElementById('fg-root');
         if(fgr) fgr.classList.remove('isx-full');
         if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
-        T().returnToMG();
+        T().goBackStack();
       });
       // PROJECT — July 14, 2026: was display-only/inert on this screen;
       // now a real lateral jump between top-level projects, same intent

@@ -385,7 +385,7 @@
       if(returnOverride){ returnOverride(); return; }
       var viaChapter = T().consumeSeaChapterEntry();
       if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
-      else { T().returnToMG(); }
+      else { T().goBackStack(); }
     });
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     T().wire('b-sc-session-view', function(){ T2TMedia.openIdeaSession(); });
@@ -1697,11 +1697,28 @@
     }catch(e){ console.warn('Storyboard persist-last-topic failed:', e); }
   }
 
+  // Larry, August 1 2026: "the delay makes me wonder if anything is
+  // happening. If you have to take more than a blink, show pocket
+  // watch." Switching projects/topics in place (drilling in, climbing
+  // up) re-fetches from Supabase but never went through nav()'s own
+  // showTravelSpinner/hideTravelSpinner wrap — that only fires on a
+  // real screen change, not a same-screen refresh. This was also the
+  // window where "What do you want?" could flash as TOPIC: the chrome
+  // briefly re-reads the OLD project's cached rows for the NEW
+  // topicId until the fetch lands. The spinner covers that same gap.
+  function _sboardSpinWhile(promise){
+    var t2=T();
+    if(t2 && t2.showTravelSpinner) t2.showTravelSpinner();
+    var done=function(){ if(t2 && t2.hideTravelSpinner) t2.hideTravelSpinner(); };
+    if(promise && typeof promise.then==='function'){ promise.then(done, done); }
+    else { done(); }
+  }
+
   function _sboardDrillInto(headerRow){
     T2TShared.currentTopicId=headerRow.id;
     T2TShared.filter=headerRow.id;
     _sboardPersistLastTopic(headerRow.id);
-    renderSeaBoard();
+    _sboardSpinWhile(renderSeaBoard());
   }
 
   function _sboardGoUpOneLevel(){
@@ -1710,7 +1727,7 @@
     T2TShared.currentTopicId=parentId;
     T2TShared.filter=parentId;
     _sboardPersistLastTopic(parentId);
-    renderSeaBoard();
+    _sboardSpinWhile(renderSeaBoard());
   }
 
   function _sboardUpdateHeaderChrome(){

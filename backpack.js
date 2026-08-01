@@ -1122,9 +1122,26 @@
     drawPentagonArrows();
   }
 
+  // goBackStack — Larry, August 1 2026: "Close Field Guide to obsolete
+  // back pack rather than primary screen from which it was called."
+  // returnToMG()'s mgOrigin is only ever set by goMG() (opening the old
+  // backpack hub) -- entering 1010/9711 any other way (the desk's own
+  // Idea Board button, FOCUS, a chapter link) never touches it, so
+  // closing back out fell back to whatever stale backpack-era screen
+  // mgOrigin last happened to hold, not the actual screen the traveler
+  // had just come from. nav() already reliably records real navigation
+  // history in `stack` (pushed on every call unless told not to) -- this
+  // reads that instead, so closing means "back to the literal previous
+  // screen," not a guess tied to the backpack's own bookkeeping. Falls
+  // back to returnToMG() only if the stack is genuinely empty.
+  function goBackStack(){
+    if (stack.length>0) { nav(stack.pop(), false); }
+    else { returnToMG(); }
+  }
+
   /* ── PUBLIC API on window.T2T ── */
   window.T2T = {
-    nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG,
+    nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG, goBackStack:goBackStack,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
     showTravelSpinner:showTravelSpinner, hideTravelSpinner:hideTravelSpinner,
     markSeaChapterEntry:function(){ seaChapterEntry = true; },
