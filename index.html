@@ -12,7 +12,7 @@
 /* 0010 sign-in background lightened #0F6E56 -> #15805F, July 27 2026 --
    Larry: needed a slightly lighter teal, now that the TV frame (0007)
    bezel uses the original --brand-teal-deep shade too. */
-.fg{font-family:'Playfair Display',Georgia,serif;width:100%;max-width:680px;margin:0 auto;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default;align-self:flex-start}
+.fg{font-family:'Playfair Display',Georgia,serif;width:680px;margin:0 auto;transition:transform .15s ease-out;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default;align-self:flex-start}
 /* Larry, July 27 2026: "traveler should be able to highlight and copy
    anything in content." .fg above blocks selection everywhere, on
    purpose originally (needed for the widget's own drag gestures) --
@@ -58,6 +58,7 @@
 <script src="gems.js?v=20260723b"></script>
 <script src="screen-zero.js?v=202607311b"></script>
 <script src="tv-frame.js?v=20260731e"></script>
+<script src="screen-fit.js?v=20260801a"></script>
 <script src="bookmarks.js?v=20260730c"></script>
 </head>
 <body>
