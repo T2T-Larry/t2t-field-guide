@@ -657,6 +657,11 @@
   // fixed-anchor label only; this makes it a real lateral jump between
   // top-level projects (the flat Top Banana root list), not just a return
   // to the current project's own root.
+  // PROJECT (Selection) — renamed from "Project switcher" and reshaped
+  // August 1, 2026 per Larry's PROJECT screen spec: title is simply
+  // PROJECT, current project marked with a checkmark, X-only dismiss (no
+  // Cancel button), and a clearly separate "+ NEW PROJECT" section. Two
+  // parts on one screen: pick an existing project, or start a new one.
   async function openProjectSwitcher(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -671,19 +676,25 @@
       currentProjectId=pr?pr.id:null;
     }
     var rows=boards.map(function(b){
-      var cur=String(b.id)===String(currentProjectId)?' current':'';
-      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
+      var isCur=String(b.id)===String(currentProjectId);
+      var cur=isCur?' current':'';
+      var mark=isCur?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'';
+      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+mark+(b.text_content||'(untitled)')+'</div>';
     }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Project</div>'
+      +'<div style="position:relative;margin-bottom:10px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;letter-spacing:1px">PROJECT</div>'
+      +'<button class="sc-ov-btn" id="sb-proj-close-x" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:12px;line-height:1">✕</button>'
+      +'</div>'
       +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new project</label>'
+      +'<div style="font-size:9px;color:#a89a80;text-align:left;margin-bottom:10px">Double-click a project to rename, archive, or delete it.</div>'
+      +'<div style="border-top:1px solid #e0dcd0;margin:0 0 10px"></div>'
+      +'<label style="display:block;font-size:10px;font-weight:700;letter-spacing:1px;color:#7a6040;margin-bottom:4px;text-align:left">+ NEW PROJECT</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
       +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
       +'<button class="sc-ov-btn save" id="sb-proj-new-go">Create</button>'
       +'</div>'
-      +'<div id="sb-proj-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'<button class="sc-ov-btn" id="sb-proj-cancel" style="width:100%">Cancel</button>'
+      +'<div id="sb-proj-err" style="font-size:10px;color:#b8562f;margin-bottom:0;min-height:12px"></div>'
       +'</div>';
     // Positioned along the left side, near the Project chrome it was opened
     // from, rather than dead-center — added July 12, 2026. Reset in
@@ -693,14 +704,28 @@
     ov.style.paddingLeft='max(20px, 4vw)';
     ov.classList.add('active');
     Array.prototype.forEach.call(ov.querySelectorAll('.sb-hdr-vitem[data-pid]'), function(row){
+      // Single click switches (after a short window to give a following
+      // click the chance to become a double-click instead); double-click
+      // opens the Rename/Archive/Delete quick menu. Added August 1, 2026.
       row.addEventListener('click', function(){
+        if(row._sbProjClickTimer) return;
+        row._sbProjClickTimer=setTimeout(function(){
+          row._sbProjClickTimer=null;
+          var pid=row.getAttribute('data-pid');
+          var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
+          closeSbDetail();
+          if(boardRow) _sboardDrillInto(boardRow);
+        }, 260);
+      });
+      row.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        if(row._sbProjClickTimer){ clearTimeout(row._sbProjClickTimer); row._sbProjClickTimer=null; }
         var pid=row.getAttribute('data-pid');
         var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
-        closeSbDetail();
-        if(boardRow) _sboardDrillInto(boardRow);
+        if(boardRow) _sboardProjectQuickMenu(boardRow);
       });
     });
-    T().wire('sb-proj-cancel', closeSbDetail);
+    T().wire('sb-proj-close-x', closeSbDetail);
     T().wire('sb-proj-new-go', async function(){
       var errEl=document.getElementById('sb-proj-err');
       var nameInput=document.getElementById('sb-proj-new-input');
@@ -714,6 +739,104 @@
         closeSbDetail();
         _sboardDrillInto(ins.data);
       }catch(err){ if(errEl) errEl.textContent=err.message; }
+    });
+  }
+
+  // Project quick menu — Rename / Archive / Delete, reached only by
+  // double-clicking a row in PROJECT (never a bare single click, matching
+  // the same "nothing can be trashed directly" gating already locked for
+  // Headers). Cancel returns to the PROJECT list, not a full close — a
+  // traveler cleaning up several projects in one sitting shouldn't have to
+  // reopen PROJECT from scratch each time. Added August 1, 2026.
+  function _sboardProjectQuickMenu(boardRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+safeName+'</div>'
+      +'<button class="sc-ov-btn" id="sb-pq-rename" style="width:100%;margin-bottom:6px">Rename</button>'
+      +'<button class="sc-ov-btn" id="sb-pq-archive" style="width:100%;margin-bottom:6px">Archive</button>'
+      +'<button class="sc-ov-btn" id="sb-pq-delete" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete</button>'
+      +'<button class="sc-ov-btn" id="sb-pq-cancel" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-pq-cancel', openProjectSwitcher);
+    T().wire('sb-pq-rename', function(){ _sboardProjectRenamePrompt(boardRow); });
+    T().wire('sb-pq-archive', async function(){
+      try{
+        var archivedId=await T2TData.ensureArchivedHeader();
+        var _sb=T().sb;
+        var upd=await _sb.from('ideas').update({cluster_id:archivedId}).eq('id',boardRow.id).select();
+        if(upd.error) throw upd.error;
+        if(String(T2TShared.currentTopicId||'')===String(boardRow.id)){
+          T2TShared.currentTopicId=null; T2TShared.filter=null;
+        }
+        openProjectSwitcher();
+      }catch(err){
+        var errBox=document.querySelector('.sc-overlay-card');
+        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+      }
+    });
+    T().wire('sb-pq-delete', function(){ _sboardConfirmDeleteProject(boardRow); });
+  }
+
+  // Rename a Project in place — same "nothing is permanent" treatment as
+  // Header rename. Returns to the (refreshed) PROJECT list on save or
+  // close, not a full dismiss. Added August 1, 2026.
+  function _sboardProjectRenamePrompt(boardRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var safeVal=(boardRow.text_content||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Rename Project</div>'
+      +'<input id="sb-proj-rename-input" type="text" value="'+safeVal+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'
+      +'<div id="sb-proj-rename-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-proj-rename-go" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-proj-rename-close" style="flex:1" aria-label="Close">✕</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    var input=document.getElementById('sb-proj-rename-input');
+    if(input) setTimeout(function(){ input.focus(); input.select(); }, 0);
+    T().wire('sb-proj-rename-close', openProjectSwitcher);
+    T().wire('sb-proj-rename-go', async function(){
+      var errEl=document.getElementById('sb-proj-rename-err');
+      var name=(input&&input.value||'').trim();
+      if(!name){ if(errEl) errEl.textContent='Name it first.'; return; }
+      try{
+        var _sb=T().sb;
+        var upd=await _sb.from('ideas').update({text_content:name}).eq('id',boardRow.id).select();
+        if(upd.error) throw upd.error;
+        boardRow.text_content=name;
+        openProjectSwitcher();
+      }catch(err){ if(errEl) errEl.textContent=err.message; }
+    });
+  }
+
+  // Delete a Project — gated behind an explicit second confirmation, same
+  // pattern already locked for Header trash. Reuses the exact same Trash
+  // mechanic (reparent under the reserved Trash bucket) rather than a hard
+  // delete, so nothing is ever unrecoverable. Added August 1, 2026.
+  function _sboardConfirmDeleteProject(boardRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
+      +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Everything in it moves to Trash too — you can pull it back out later from Trash.</div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-pdel-go" style="flex:1;background:#b8562f;border-color:#b8562f">Delete it</button><button class="sc-ov-btn" id="sb-pdel-cancel" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-pdel-cancel', openProjectSwitcher);
+    T().wire('sb-pdel-go', async function(){
+      try{
+        var trashId=await T2TData.ensureTrashHeader();
+        var _sb=T().sb;
+        var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',boardRow.id).select();
+        if(upd.error) throw upd.error;
+        if(String(T2TShared.currentTopicId||'')===String(boardRow.id)){
+          T2TShared.currentTopicId=null; T2TShared.filter=null;
+        }
+        openProjectSwitcher();
+      }catch(err){
+        var errBox=document.querySelector('.sc-overlay-card');
+        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+      }
     });
   }
 

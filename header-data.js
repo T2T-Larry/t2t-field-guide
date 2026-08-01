@@ -22,7 +22,7 @@
 
   /* Reserved structural headers — never selectable as a PROJECT/TOPIC
      destination, only ever landing buckets for content. */
-  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash'];
+  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash','Archived'];
 
   /* ── generic tree helpers ── */
 
@@ -159,6 +159,19 @@
     return ins.data.id;
   }
 
+  /* Archived mirrors Trash exactly (same reserved-bucket mechanic, same
+     recoverability) but means "finished, not wrong" rather than "shouldn't
+     exist" — added August 1, 2026 for Project Selection archive/delete. */
+  async function ensureArchivedHeader(){
+    var sb=_sb(); var u=await _currentUser();
+    if(!u) throw new Error('Not signed in.');
+    var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Archived').limit(1);
+    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Archived',created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('Archived setup failed: '+ins.error.message);
+    return ins.data.id;
+  }
+
   async function ensureWishTank(){
     try{
       var sb=_sb(); var u=await _currentUser();
@@ -238,6 +251,7 @@
     activeChildHeaders: activeChildHeaders,
     topLevelBoards: topLevelBoards,
     ensureHeaderNamed: ensureHeaderNamed,
+    ensureArchivedHeader: ensureArchivedHeader,
     ensureMiscHeader: ensureMiscHeader,
     ensurePurposeHeader: ensurePurposeHeader,
     ensureNewAdditionsHeader: ensureNewAdditionsHeader,
