@@ -68,6 +68,16 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
    custom tray's grip is a new one of these every time a traveler
    builds one, with no fixed id to list in advance. */
 body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen #sz-tool-stack,body.t2t-bare-screen #sz-phases,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen .sz-tool-stack-grip{display:none!important}
+/* Larry, August 1 2026: "elements of the desktop have creeped into the
+   storyboard: shortcuts, and the 2 drawers." The Storyboard (1010) and
+   Session (9711) both go full-screen via #fg-root.isx-full, but that
+   overlay sits BELOW the shortcuts rail and both drawers in paint order
+   (they're deliberately high z-index — 9999/9998 — so they can float over
+   everything else on the desk). Tied to :has() instead of a manually
+   toggled body class so this can never get stuck on/off out of sync with
+   isx-full itself, no matter which of the several ways in or out of
+   1010/9711 gets used. */
+body:has(#fg-root.isx-full) #sz-navbar,body:has(#fg-root.isx-full) #sz-drawer-r,body:has(#fg-root.isx-full) #bm-rail{display:none!important}
 /* Closed desk (Larry, July 31 2026 -- "put an X on the tv screen to close it
    into the Field Guide Button... Phases and Shortcuts disappear and reappear
    when it is opened") -- NARROWED July 31 2026, later same day, Larry:
