@@ -176,6 +176,20 @@
       // itself, July 18, 2026 — ground rules apply to the act of capturing
       // an idea, not to viewing/managing the board. See idea-capture.js.
       T().wire('isx-compass-btn', _isxOpenStoryboardView);
+      // VIEW button — click reveals the one other option (Storyboard),
+      // closes again on an outside click. Larry, August 1 2026: "we
+      // should just see Storyboard [or Session] ... click on it to see
+      // option to switch."
+      T().wire('isx-view-btn', function(e){
+        e.stopPropagation();
+        var m=document.getElementById('isx-view-menu');
+        if(m) m.classList.toggle('open');
+      });
+      document.addEventListener('click', function(e){
+        var wrap=document.getElementById('isx-view-wrap');
+        var menu=document.getElementById('isx-view-menu');
+        if(wrap && menu && menu.classList.contains('open') && !wrap.contains(e.target)) menu.classList.remove('open');
+      });
       T().wire('isx-end-btn', function(){
         var fgr=document.getElementById('fg-root');
         if(fgr) fgr.classList.remove('isx-full');

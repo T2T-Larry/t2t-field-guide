@@ -334,10 +334,11 @@
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
-        +'<div style="display:flex;flex-direction:column;align-items:center">'
-+'<div class="sc-hdr-eyebrow">View</div>'
-+'<div class="sc-hdr-viewtoggle"><button class="sc-hdr-viewseg active" disabled>Storyboard</button><button class="sc-hdr-viewseg" id="b-sc-session-view" title="Switch to Session">Session</button></div>'
-+'</div>'
+        +'<div style="display:flex;flex-direction:column;align-items:center;position:relative" id="sc-view-wrap">'
+        +'<div class="sc-hdr-eyebrow">View</div>'
+        +'<div class="sc-hdr-frame" id="sc-view-btn" style="cursor:pointer"><div class="sc-hdr-frame-label">Storyboard</div></div>'
+        +'<div class="sc-hdr-viewmenu" id="sc-view-menu"><div class="sc-hdr-viewmenu-item" id="b-sc-session-view">Switch to Session</div></div>'
+        +'</div>'
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Options">⚙️</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
@@ -388,6 +389,18 @@
     });
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     T().wire('b-sc-session-view', function(){ T2TMedia.openIdeaSession(); });
+    // VIEW button — click reveals the one other option (Session), closes
+    // again on an outside click. Larry, August 1 2026.
+    T().wire('sc-view-btn', function(e){
+      e.stopPropagation();
+      var m=document.getElementById('sc-view-menu');
+      if(m) m.classList.toggle('open');
+    });
+    document.addEventListener('click', function(e){
+      var wrap=document.getElementById('sc-view-wrap');
+      var menu=document.getElementById('sc-view-menu');
+      if(wrap && menu && menu.classList.contains('open') && !wrap.contains(e.target)) menu.classList.remove('open');
+    });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see

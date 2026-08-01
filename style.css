@@ -77,7 +77,7 @@ body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-
    toggled body class so this can never get stuck on/off out of sync with
    isx-full itself, no matter which of the several ways in or out of
    1010/9711 gets used. */
-body:has(#fg-root.isx-full) #sz-navbar,body:has(#fg-root.isx-full) #sz-drawer-r,body:has(#fg-root.isx-full) #bm-rail{display:none!important}
+body:has(#fg-root.isx-full) #sz-navbar,body:has(#fg-root.isx-full) #sz-drawer-r,body:has(#fg-root.isx-full) #bm-rail,body:has(#fg-root.isx-full) #sz-nameplate{display:none!important}
 /* Closed desk (Larry, July 31 2026 -- "put an X on the tv screen to close it
    into the Field Guide Button... Phases and Shortcuts disappear and reappear
    when it is opened") -- NARROWED July 31 2026, later same day, Larry:
@@ -466,15 +466,21 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}
   .sc-hdr-btn-icon{padding:0;width:30px;font-size:14px}
 
-  /* VIEW toggle — Session/Storyboard, top-right of both 1010 and 9711's
-     own header band. Replaces the old one-way "SESSION VIEW" /
-     "STORYBOARD VIEW" buttons with a single switch so either screen
-     always shows which one you're on. Larry, August 1 2026. */
-  .sc-hdr-viewtoggle{display:flex;border:1px solid rgba(255,255,255,.16);border-radius:8px;overflow:hidden;height:30px;box-sizing:border-box}
-  .sc-hdr-viewseg{background:transparent;border:none;color:rgba(255,255,255,.75);font-size:9px;font-weight:700;
-    letter-spacing:.03em;text-transform:uppercase;padding:0 9px;cursor:pointer;font-family:inherit;height:100%}
-  .sc-hdr-viewseg:hover:not(.active){background:rgba(255,255,255,.14);color:#fff}
-  .sc-hdr-viewseg.active{background:rgba(255,255,255,.92);color:#1a3a5c;cursor:default}
+  /* VIEW — top-right of both 1010 and 9711's own header band. Larry,
+     August 1 2026: "not what I imagined... we should just see
+     Storyboard. Click on it to see option to switch to Session, not
+     both visible." Replaced the always-visible two-way switch with one
+     button showing only the current screen's name (same look as
+     PROJECT/PARENT's own sc-hdr-frame); clicking it drops down the one
+     other option, closed by default and closes again on an outside
+     click. */
+  .sc-hdr-viewmenu{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;
+    background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.22);
+    padding:4px;display:none;z-index:20;white-space:nowrap}
+  .sc-hdr-viewmenu.open{display:block}
+  .sc-hdr-viewmenu-item{font-family:'Playfair Display',serif;font-size:11px;font-weight:700;color:#1a3a5c;
+    padding:6px 12px;border-radius:6px;cursor:pointer}
+  .sc-hdr-viewmenu-item:hover{background:#eaf3fb}
 
   #isx-board{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--isx-board)}
   /* isx-header-strip is unused as of the freeform pile canvas redesign
