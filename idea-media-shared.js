@@ -118,6 +118,38 @@
     T().nav('s-sea-of-ideas-cluster');
   }
 
+  // Larry, August 1 2026: "There is no ISB project, no ISB parent and no
+  // What do you want? TOPIC — this board needs to be deleted." Root
+  // cause: the desk's own Idea Board tool button called T2T.nav()
+  // directly with no boardId, so currentTopicId stayed null and 1010
+  // rendered its blank/no-topic fallback labels (ISB / ISB / "What do
+  // you want?") — which looks exactly like a real empty project even
+  // though nothing like that exists in the data (confirmed). 9711
+  // already resumes the traveler's last topic on plain entry (see
+  // _isxInit's Resume last Input topic block) — this mirrors that same
+  // logic for 1010, so the desk button lands somewhere real instead.
+  async function _ideaOpenBoardResume(){
+    var wt=await T2TData.ensureWishTank();
+    if(!wt || !wt.id){
+      await new Promise(function(r){ setTimeout(r,400); });
+      wt=await T2TData.ensureWishTank();
+    }
+    if(!wt || !wt.id){
+      console.error('Idea Board: Wish Tank unavailable, opening blank');
+      T2TShared.currentTopicId=null; T2TShared.filter=null;
+      T().nav('s-sea-of-ideas-cluster');
+      return;
+    }
+    var targetId=wt.id;
+    try{
+      if(T2TData.getLastInputTopic){
+        var lastId=await T2TData.getLastInputTopic(wt.id);
+        if(lastId) targetId=lastId;
+      }
+    }catch(e){ console.warn('Idea Board resume-last-topic failed:', e); }
+    _ideaOpenBoard(targetId);
+  }
+
   // Reciprocal of _isxOpenStoryboardView (9711 → 9710). Carries the current
   // TOPIC over into Session View by seeding T2TShared.isxPath with the full ancestor
   // chain (same helper the isx side already uses to resume a specific
@@ -198,6 +230,7 @@
     parseText: _linkParseText,
     ensureWishTank: _ideaEnsureWishTank,
     openBoard: _ideaOpenBoard,
+    openBoardResume: _ideaOpenBoardResume,
     openIdeaSession: _sboardOpenIdeaSession,
     resolveOEmbed: _linkResolveOEmbed,
     getDefaultHeaderId: _ideaGetDefaultHeaderId,

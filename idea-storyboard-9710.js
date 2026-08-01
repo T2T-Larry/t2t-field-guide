@@ -322,13 +322,13 @@
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
-      +'<div id="sc-project-label" class="sc-hdr-frame-label">ISB</div>'
+      +'<div id="sc-project-label" class="sc-hdr-frame-label">Wish Tank</div>'
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
-      +'<div id="sc-parent-label" class="sc-hdr-frame-label">ISB</div>'
+      +'<div id="sc-parent-label" class="sc-hdr-frame-label">Wish Tank</div>'
       +'</div>'
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
       +'</div>'
@@ -371,7 +371,7 @@
       fg.appendChild(clusterOv);
     }
     T().registerPageNum('s-sea-of-ideas-cluster', '1010'); // Larry, July 29 2026: renumbered from 9710 -- Idea Storyboard now reads as 1010 in the Dream Phase sequence, not the 9700s Storyboard-family block.
-    T().registerCtx('s-sea-of-ideas-cluster', 'ISB — Cluster');
+    T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', function(){
       var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
       if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
@@ -1603,7 +1603,7 @@
   }
 
   function _sboardTopicOptionsHTML(excludeId){
-    var currentLabel=(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId]) ? _sboardHeadersById[T2TShared.currentTopicId].text_content : 'ISB';
+    var currentLabel=(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId]) ? _sboardHeadersById[T2TShared.currentTopicId].text_content : 'Wish Tank';
     var currentValue=T2TShared.currentTopicId||'';
     var opts='<option value="'+currentValue+'">Topic ('+currentLabel+')</option>';
     opts+=_sboardHeaderList
@@ -1727,8 +1727,8 @@
     } else {
       if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
       if(topicBox){ topicBox.style.background=''; }
-      if(projectLabel) projectLabel.textContent='ISB';
-      if(parentLabel) parentLabel.textContent='ISB';
+      if(projectLabel) projectLabel.textContent='Wish Tank';
+      if(parentLabel) parentLabel.textContent='\u2014';
       if(parentHit){ parentHit.classList.add('inert'); }
     }
     // One traveler-chosen color paints the whole screen (header strip +
@@ -2204,7 +2204,7 @@
     var topicLabel, parentLabelCrumb, localNewAdditionsTarget, isInLocalNewAdditions, curHeaderLabel;
     if(isOn9711 && _isxDetailCtx){
       topicLabel=_isxDetailCtx.topicText||_sboardGetRootPrompt();
-      parentLabelCrumb=_isxDetailCtx.parentText||'ISB';
+      parentLabelCrumb=_isxDetailCtx.parentText||'Wish Tank';
       localNewAdditionsTarget=_isxDetailCtx.topicId||'';
       isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
       var curHeaderRow9711=(item.cluster_id && !isInLocalNewAdditions)?(_isxDetailCtx.rowsById||{})[item.cluster_id]:null;
@@ -2215,7 +2215,7 @@
       var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
       var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
       var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
-      parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'ISB';
+      parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Wish Tank';
 
       // HEADER: "NEW" here means whichever board's own uncategorized bucket is
       // active: null at the root ISB, or the current topic id when working
