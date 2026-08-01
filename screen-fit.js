@@ -28,10 +28,26 @@
   'use strict';
 
   var MIN_SCALE = 0.6;   // floor -- keeps text legible on small screens
-  var MAX_SCALE = 1.45;  // ceiling -- keeps the widget from blowing up
+  var MAX_SCALE = 1.15;  // ceiling -- keeps the widget from blowing up
                           // into a blurry, oversized book on very large
                           // monitors; the desk around it is meant to
-                          // stay visible, not get crowded out
+                          // stay visible, not get crowded out.
+                          // Lowered from 1.45, Aug 1 2026 -- Larry,
+                          // live-testing on the laptop: "tv screen
+                          // changes to a perfect size when both
+                          // drawers are open... but enlarges again
+                          // when drawer is closed." The widget's
+                          // reference shape (680x~520) is wider than
+                          // it is tall, so on a laptop-height screen
+                          // its HEIGHT ratio is usually what limits
+                          // the scale, not width -- closing a drawer
+                          // frees up width the widget didn't actually
+                          // need, but the math still had room to grow
+                          // toward the old 1.45 ceiling. The measured
+                          // desktop scale (~1.06 on a 27" monitor) is
+                          // comfortably under 1.15 too, so this only
+                          // trims the laptop's over-grown case, not
+                          // the desktop experience this was built for.
   var MARGIN = 40;        // breathing room kept clear on every side, px
 
   function reservedWidth(el){
