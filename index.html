@@ -783,13 +783,18 @@
         try{ curNum = localStorage.getItem('bpCurrentScreenNum'); }catch(e){}
         if(curNum){ T.navToPageNum(curNum); }
         else{ T.resumeToLastPageOr('s-cover'); }
-        // Larry, July 31 2026: sign-in (this silent auto-resume path
-        // included) should always LAND on the blank, closed desk --
-        // drawers collapsed, Field Guide the only thing showing --
-        // never straight into whatever screen was last open. The
-        // screen above still loads correctly in the background, so
-        // reopening the Field Guide goes right back to it.
-        try{ window.SZDesk && window.SZDesk.landOnClosedDesk(); }catch(e){}
+        // Larry, July 31 2026: sign-in should always LAND on the
+        // blank, closed desk -- drawers collapsed, Field Guide the
+        // only thing showing -- never straight into whatever screen
+        // was last open.
+        // Larry, Aug 1 2026 (reversed for THIS path only): a plain
+        // refresh while already signed in should go straight back to
+        // the screen above, no closed-desk detour -- "refresh should
+        // always return to the current screen, even for the
+        // traveler." The closed-desk landing now only fires for an
+        // actual fresh sign-in (typing a password, or the reset
+        // shortcut's manual re-auth) -- see b-signin's own handler
+        // below, untouched.
       }
     }catch(e){ console.error('Session resume failed', e); }
   })();
