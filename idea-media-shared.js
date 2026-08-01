@@ -113,8 +113,23 @@
      unchanged. Moved out July 11, 2026 during the FOCUS module split. */
   async function _ideaEnsureWishTank(){ return T2TData.ensureWishTank(); }
 
+  // Fire-and-forget — every entry point into 1010 (FOCUS, the PROJECT
+  // switcher, DETAILS' Move panel, the desk resume path above) funnels
+  // through _ideaOpenBoard, so persisting here covers all of them, on
+  // top of the Storyboard's own drill/climb persistence in
+  // idea-storyboard-9710.js. Larry, August 1 2026: "Leave everything
+  // where it was put."
+  async function _ideaPersistLastTopic(topicId){
+    try{
+      if(!topicId || !T2TData || !T2TData.setLastInputTopic || !T2TData.ancestorChain) return;
+      var chain=await T2TData.ancestorChain(topicId);
+      if(chain && chain.length) T2TData.setLastInputTopic(chain[0].id, topicId);
+    }catch(e){ console.warn('Idea Board persist-last-topic failed:', e); }
+  }
+
   function _ideaOpenBoard(boardId){
     T2TShared.currentTopicId=boardId; T2TShared.filter=boardId;
+    _ideaPersistLastTopic(boardId);
     T().nav('s-sea-of-ideas-cluster');
   }
 

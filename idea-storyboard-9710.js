@@ -1676,9 +1676,31 @@
     });
   }
 
+  // Larry, August 1 2026: "I just closed the Field Guide storyboard but
+  // when I reopened it, it opened to the Wish Tank instead. almost
+  // there!" — the desk's Idea Board button (see _ideaOpenBoardResume in
+  // idea-media-shared.js) already resumes T2TData's getLastInputTopic,
+  // but nothing on 1010 itself was ever writing to it — only 9711
+  // (Session) did, via its own _isxPersistLastTopic. So reopening 1010
+  // fell back to the project apex (Wish Tank) unless Session happened to
+  // have saved something more specific. This mirrors that same write on
+  // every actual move within the Storyboard (drilling into a header,
+  // climbing back up, or switching projects — all three route through
+  // _sboardDrillInto/_sboardGoUpOneLevel), so "where you left off" means
+  // the same thing whichever screen you were actually using.
+  function _sboardPersistLastTopic(topicId){
+    try{
+      if(!topicId || !window.T2TData || !window.T2TData.setLastInputTopic) return;
+      var row=_sboardAllRowsById[topicId];
+      var projRow=row?_sboardProjectRowFor(row):null;
+      if(projRow && projRow.id) window.T2TData.setLastInputTopic(projRow.id, topicId);
+    }catch(e){ console.warn('Storyboard persist-last-topic failed:', e); }
+  }
+
   function _sboardDrillInto(headerRow){
     T2TShared.currentTopicId=headerRow.id;
     T2TShared.filter=headerRow.id;
+    _sboardPersistLastTopic(headerRow.id);
     renderSeaBoard();
   }
 
@@ -1687,6 +1709,7 @@
     var parentId=curRow?(curRow.cluster_id||null):null;
     T2TShared.currentTopicId=parentId;
     T2TShared.filter=parentId;
+    _sboardPersistLastTopic(parentId);
     renderSeaBoard();
   }
 
