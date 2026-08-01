@@ -347,7 +347,19 @@
         // screens with a different natural height (and so a different
         // scale).
         if (fg && savedPos && typeof savedPos.cx==='number' && typeof savedPos.cy==='number') {
-          fg.style.position='fixed'; fg.style.left=(savedPos.cx - fg.offsetWidth/2)+'px'; fg.style.top=(savedPos.cy - fg.offsetHeight/2)+'px'; fg.style.margin='0';
+          // Larry, Aug 1 2026 (bug report): "almost off the apple
+          // screen" -- a saved center from one screen size (or an
+          // older, larger monitor) can land partway or entirely off a
+          // smaller one. Clamp the center so the widget stays at least
+          // a half-widget-at-max-scale in from every edge -- 1.45 here
+          // matches screen-fit.js's own MAX_SCALE, kept in sync by hand
+          // since screen-fit.js hasn't necessarily loaded its export by
+          // the time this runs.
+          var _w=fg.offsetWidth, _h=fg.offsetHeight;
+          var _mx=(_w*1.45)/2+24, _my=(_h*1.45)/2+24;
+          var _cx=(2*_mx<window.innerWidth) ? Math.max(_mx, Math.min(savedPos.cx, window.innerWidth-_mx)) : window.innerWidth/2;
+          var _cy=(2*_my<window.innerHeight) ? Math.max(_my, Math.min(savedPos.cy, window.innerHeight-_my)) : window.innerHeight/2;
+          fg.style.position='fixed'; fg.style.left=(_cx - _w/2)+'px'; fg.style.top=(_cy - _h/2)+'px'; fg.style.margin='0';
         }
       } catch(e){}
     }

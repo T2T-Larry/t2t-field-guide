@@ -2570,7 +2570,13 @@
       if (!document.body.classList.contains('t2t-bare-screen')) {
         var saved = JSON.parse(localStorage.getItem('t2t-widget-pos'));
         if (saved && typeof saved.cx === 'number' && typeof saved.cy === 'number') {
-          applyPos(saved.cx - el.offsetWidth / 2, saved.cy - el.offsetHeight / 2);
+          // Larry, Aug 1 2026: same off-screen clamp as backpack.js's
+          // nav() restore -- see that comment for why.
+          var _w=el.offsetWidth, _h=el.offsetHeight;
+          var _mx=(_w*1.45)/2+24, _my=(_h*1.45)/2+24;
+          var _cx=(2*_mx<window.innerWidth) ? Math.max(_mx, Math.min(saved.cx, window.innerWidth-_mx)) : window.innerWidth/2;
+          var _cy=(2*_my<window.innerHeight) ? Math.max(_my, Math.min(saved.cy, window.innerHeight-_my)) : window.innerHeight/2;
+          applyPos(_cx - _w / 2, _cy - _h / 2);
         }
       }
     } catch(e){}
