@@ -117,9 +117,18 @@
         // Belt-and-suspenders alongside the nav() guard above -- never
         // "return" to the sign-in screen itself, even if an older stored
         // value somehow still points there.
-        if(localId && localId!=='s-signin' && document.getElementById(localId)){ nav(localId); return; }
+        // push:false, added August 1 2026 -- Larry: "closing storyboard
+        // went to sign in screen not storyboard button." cur is still
+        // 's-signin' (its initial value) at the exact moment this runs,
+        // so a plain nav() here pushed it onto the real navigation
+        // stack every single reload -- and goBackStack (used by 1010/
+        // 9711's own close button) will happily pop right back to it
+        // later. Sign-in is never a legitimate "go back" destination
+        // once already signed in, so it has no business on that stack
+        // at all.
+        if(localId && localId!=='s-signin' && document.getElementById(localId)){ nav(localId, false); return; }
       }
-      if(document.getElementById(fallbackId)) nav(fallbackId);
+      if(document.getElementById(fallbackId)) nav(fallbackId, false);
     }catch(e){
       console.error('resumeToLastPageOr failed, falling back to', fallbackId, e);
       try{ if(document.getElementById(fallbackId)) nav(fallbackId); }catch(e2){}
@@ -1140,6 +1149,13 @@
   // screen," not a guess tied to the backpack's own bookkeeping. Falls
   // back to returnToMG() only if the stack is genuinely empty.
   function goBackStack(){
+    // Skip past any 's-signin' entries -- never a real "go back"
+    // destination once already signed in (see the push:false fix in
+    // resumeToLastPageOr; this is the belt-and-suspenders half, for any
+    // already-open session where one snuck onto the stack before that
+    // fix). Larry, August 1 2026: "closing storyboard went to sign in
+    // screen not storyboard button."
+    while (stack.length>0 && stack[stack.length-1]==='s-signin'){ stack.pop(); }
     if (stack.length>0) { nav(stack.pop(), false); }
     else { returnToMG(); }
   }
