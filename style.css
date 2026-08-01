@@ -456,6 +456,16 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}
   .sc-hdr-btn-icon{padding:0;width:30px;font-size:14px}
 
+  /* VIEW toggle — Session/Storyboard, top-right of both 1010 and 9711's
+     own header band. Replaces the old one-way "SESSION VIEW" /
+     "STORYBOARD VIEW" buttons with a single switch so either screen
+     always shows which one you're on. Larry, August 1 2026. */
+  .sc-hdr-viewtoggle{display:flex;border:1px solid rgba(255,255,255,.16);border-radius:8px;overflow:hidden;height:30px;box-sizing:border-box}
+  .sc-hdr-viewseg{background:transparent;border:none;color:rgba(255,255,255,.75);font-size:9px;font-weight:700;
+    letter-spacing:.03em;text-transform:uppercase;padding:0 9px;cursor:pointer;font-family:inherit;height:100%}
+  .sc-hdr-viewseg:hover:not(.active){background:rgba(255,255,255,.14);color:#fff}
+  .sc-hdr-viewseg.active{background:rgba(255,255,255,.92);color:#1a3a5c;cursor:default}
+
   #isx-board{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--isx-board)}
   /* isx-header-strip is unused as of the freeform pile canvas redesign
      (July 18, 2026) — headers render directly on #isx-canvas now, at

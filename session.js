@@ -233,6 +233,13 @@
         if(e.target.closest('.isx-tile')) return;
         T2TStoryboard.openBoardBgPicker();
       });
+      // Header band is the same single color as the board now (see
+      // _sboardApplyBoardBg) — double-click there opens the same picker
+      // as double-clicking the board itself. Larry, August 1 2026.
+      var isxHeaderAreaEl=document.getElementById('isx-header-area');
+      if(isxHeaderAreaEl) isxHeaderAreaEl.addEventListener('dblclick', function(e){
+        if(e.target===isxHeaderAreaEl || e.target.id==='isx-header-topleft' || e.target.id==='isx-header-center') T2TStoryboard.openBoardBgPicker();
+      });
       var lassoCanvas=document.getElementById('isx-canvas');
       if(lassoCanvas) _isxWireLasso(lassoCanvas);
       // Triple-click PARENT to reveal the page number badge — same

@@ -326,7 +326,7 @@
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Parent Topic</div>'
+      +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">ISB</div>'
       +'</div>'
@@ -334,7 +334,10 @@
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
-        +'<button class="sc-hdr-btn-muted" id="b-sc-session-view" title="Open Session View">SESSION VIEW</button>'
+        +'<div style="display:flex;flex-direction:column;align-items:center">'
++'<div class="sc-hdr-eyebrow">View</div>'
++'<div class="sc-hdr-viewtoggle"><button class="sc-hdr-viewseg active" disabled>Storyboard</button><button class="sc-hdr-viewseg" id="b-sc-session-view" title="Switch to Session">Session</button></div>'
++'</div>'
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Options">⚙️</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
@@ -387,6 +390,12 @@
     T().wire('b-sc-session-view', function(){ T2TMedia.openIdeaSession(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
+    // Header band is now the same single color as the board (see
+    // _sboardApplyBoardBg) — double-click there opens the same picker,
+    // same gesture as double-clicking the board itself. Larry, August 1
+    // 2026: "I double clicked it and nothing happened."
+    var scHeaderAreaEl=document.getElementById('sc-header-area');
+    if(scHeaderAreaEl) scHeaderAreaEl.addEventListener('dblclick', function(e){ if(e.target===scHeaderAreaEl) openBoardBgPicker(); });
     _sboardApplyBoardBg();
     _sboardWireAutoScroll();
 
@@ -586,8 +595,15 @@
     var areaEl=document.getElementById('sc-header-area');
     var clusterEl=document.getElementById('s-sea-of-ideas-cluster');
     var swEl=clusterEl?clusterEl.querySelector('.sw'):null;
-    if(w) w.style.background=c||'transparent';
-    if(areaEl) areaEl.style.background=c||(T2TShared.currentTopicId?'#3a2564':'#1a3a5c');
+    // One single color for the header band and the board — no more
+    // separate purple (#3a2564) default just on the header, clashing with
+    // whatever the board itself was showing. Larry, August 1 2026: "make
+    // the header panel part of the storyboard color... drop the purple
+    // band." Both default to navy together now; picking a custom
+    // Storyboard background recolors both the same way, same as before.
+    var bg=c||'#1a3a5c';
+    if(w) w.style.background=bg;
+    if(areaEl) areaEl.style.background=bg;
     if(clusterEl) clusterEl.style.background=c||'';
     if(swEl) swEl.style.background=c||'';
     // 9711 SESSION shares this same whole-screen background as of the
@@ -596,8 +612,8 @@
     // before this (see removed _isxLoadTopicColor in session.js).
     var isxBoard=document.getElementById('isx-board');
     var isxArea=document.getElementById('isx-header-area');
-    if(isxBoard) isxBoard.style.background=c||'transparent';
-    if(isxArea) isxArea.style.background=c||'#3a2564';
+    if(isxBoard) isxBoard.style.background=bg;
+    if(isxArea) isxArea.style.background=bg;
   }
   function _sboardSetBoardBg(c){
     try{ localStorage.setItem('t2t_seaOfIdeas_boardBg', c); }catch(e){}
