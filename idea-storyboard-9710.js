@@ -707,7 +707,18 @@
       // Single click switches (after a short window to give a following
       // click the chance to become a double-click instead); double-click
       // opens the Rename/Archive/Delete quick menu. Added August 1, 2026.
-      row.addEventListener('click', function(){
+      row.addEventListener('click', function(e){
+        // e.detail is 2 (or more) on the second click of a double-click --
+        // fires synchronously, before the browser's separate 'dblclick'
+        // event, so this cancels the pending single-click switch right
+        // away instead of racing it. Fixes a bug where a fast double-click
+        // still switched into the project as TOPIC because the switch
+        // timer won the race against 'dblclick' arriving. Fixed August 1,
+        // 2026.
+        if(e.detail && e.detail>1){
+          if(row._sbProjClickTimer){ clearTimeout(row._sbProjClickTimer); row._sbProjClickTimer=null; }
+          return;
+        }
         if(row._sbProjClickTimer) return;
         row._sbProjClickTimer=setTimeout(function(){
           row._sbProjClickTimer=null;
@@ -715,7 +726,7 @@
           var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
           closeSbDetail();
           if(boardRow) _sboardDrillInto(boardRow);
-        }, 260);
+        }, 300);
       });
       row.addEventListener('dblclick', function(e){
         e.stopPropagation();
