@@ -1693,7 +1693,15 @@
       if(!topicId || !window.T2TData || !window.T2TData.setLastInputTopic) return;
       var row=_sboardAllRowsById[topicId];
       var projRow=row?_sboardProjectRowFor(row):null;
-      if(projRow && projRow.id) window.T2TData.setLastInputTopic(projRow.id, topicId);
+      if(projRow && projRow.id){
+        window.T2TData.setLastInputTopic(projRow.id, topicId);
+        // Larry, August 1 2026 (second report): "closed Field Guide but
+        // it reopened to Wish Tank again" — the desk's resume path needs
+        // to know WHICH project was last active, not just the topic
+        // within a fixed Wish Tank anchor. See _ideaRememberProject in
+        // idea-media-shared.js.
+        if(window.T2TMedia && window.T2TMedia.rememberProject) window.T2TMedia.rememberProject(projRow.id);
+      }
     }catch(e){ console.warn('Storyboard persist-last-topic failed:', e); }
   }
 

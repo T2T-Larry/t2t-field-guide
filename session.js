@@ -73,7 +73,14 @@
   async function _isxPersistLastTopic(){
     try{
       if(window.T2TData && window.T2TData.setLastInputTopic && T2TShared.isxPath && T2TShared.isxPath.length){
-        await window.T2TData.setLastInputTopic(T2TShared.isxPath[0].id, _isxCurrentTopicId());
+        var projId=T2TShared.isxPath[0].id;
+        await window.T2TData.setLastInputTopic(projId, _isxCurrentTopicId());
+        // Larry, August 1 2026 (second report): "closed Field Guide but
+        // it reopened to Wish Tank again" — see _ideaRememberProject in
+        // idea-media-shared.js; Session's own resume needs to feed the
+        // same device-local "last active project" the desk's Idea Board
+        // button now reads.
+        if(window.T2TMedia && window.T2TMedia.rememberProject) window.T2TMedia.rememberProject(projId);
       }
     }catch(e){ console.warn('Persist last Input topic failed:', e); }
   }

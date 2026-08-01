@@ -113,6 +113,25 @@
      unchanged. Moved out July 11, 2026 during the FOCUS module split. */
   async function _ideaEnsureWishTank(){ return T2TData.ensureWishTank(); }
 
+  // Larry, August 1 2026 (second report): "closed Field Guide but it
+  // reopened to Wish Tank again." getLastInputTopic is scoped per
+  // project (last_input_topic_id lives on that project's own row, by
+  // design, so Session's own resume never leaks one project's Topic
+  // into another's) -- but the desk's resume path had no way to know
+  // WHICH project to even ask, so it always asked Wish Tank specifically
+  // regardless of which project was actually last open. This remembers
+  // the last active project itself, device-local (same pattern as the
+  // board-color/tool-order/widget-position settings already stored this
+  // way -- it's a "where was I sitting" convenience, not data that needs
+  // to travel with the account).
+  var _ideaLastProjectKey='t2t_lastActiveProjectId';
+  function _ideaRememberProject(projectId){
+    try{ if(projectId) localStorage.setItem(_ideaLastProjectKey, projectId); }catch(e){}
+  }
+  function _ideaRecallProject(){
+    try{ return localStorage.getItem(_ideaLastProjectKey)||null; }catch(e){ return null; }
+  }
+
   // Fire-and-forget — every entry point into 1010 (FOCUS, the PROJECT
   // switcher, DETAILS' Move panel, the desk resume path above) funnels
   // through _ideaOpenBoard, so persisting here covers all of them, on
@@ -123,7 +142,7 @@
     try{
       if(!topicId || !T2TData || !T2TData.setLastInputTopic || !T2TData.ancestorChain) return;
       var chain=await T2TData.ancestorChain(topicId);
-      if(chain && chain.length) T2TData.setLastInputTopic(chain[0].id, topicId);
+      if(chain && chain.length){ T2TData.setLastInputTopic(chain[0].id, topicId); _ideaRememberProject(chain[0].id); }
     }catch(e){ console.warn('Idea Board persist-last-topic failed:', e); }
   }
 
@@ -155,10 +174,14 @@
       T().nav('s-sea-of-ideas-cluster');
       return;
     }
-    var targetId=wt.id;
+    // Ask whichever project was actually last active, not Wish Tank
+    // specifically -- falls back to Wish Tank only if nothing's been
+    // remembered yet (a brand-new traveler, or a cleared browser).
+    var projectId=_ideaRecallProject()||wt.id;
+    var targetId=projectId;
     try{
       if(T2TData.getLastInputTopic){
-        var lastId=await T2TData.getLastInputTopic(wt.id);
+        var lastId=await T2TData.getLastInputTopic(projectId);
         if(lastId) targetId=lastId;
       }
     }catch(e){ console.warn('Idea Board resume-last-topic failed:', e); }
@@ -246,6 +269,7 @@
     ensureWishTank: _ideaEnsureWishTank,
     openBoard: _ideaOpenBoard,
     openBoardResume: _ideaOpenBoardResume,
+    rememberProject: _ideaRememberProject,
     openIdeaSession: _sboardOpenIdeaSession,
     resolveOEmbed: _linkResolveOEmbed,
     getDefaultHeaderId: _ideaGetDefaultHeaderId,
