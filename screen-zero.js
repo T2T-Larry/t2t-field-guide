@@ -339,6 +339,23 @@
       + '.sz-color-swatch.sz-color-active{border-color:#4a3418;box-shadow:0 0 0 2px #fdf8f0,0 0 0 4px #4a3418}'
       + '#sz-color-close{border:1px solid #b89968;background:#fff;padding:6px 16px;'
       +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#4a3418}'
+      // Text-size picker -- Aug 3 2026, same overlay/card family as the
+      // drawer color picker just above.
+      + '#sz-text-overlay{position:fixed;inset:0;z-index:9997;'
+      +   'background:rgba(74,52,24,0.4);display:none;align-items:center;'
+      +   'justify-content:center;padding:20px;box-sizing:border-box}'
+      + '#sz-text-overlay.active{display:flex}'
+      + '#sz-text-card{background:#fdf8f0;border-radius:14px;padding:18px;'
+      +   'width:min(280px,90%);box-shadow:0 10px 30px rgba(0,0,0,.4);text-align:center}'
+      + '#sz-text-card .sz-text-title{font-family:"Playfair Display",Georgia,serif;'
+      +   'font-size:15px;font-weight:700;color:#4a3418;margin-bottom:2px}'
+      + '#sz-text-card .sz-text-sub{font-size:11px;color:#888;font-style:italic;margin-bottom:14px}'
+      + '#sz-text-options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}'
+      + '.sz-text-option{border:1px solid #cfae7e;background:#fff;padding:10px 12px;'
+      +   'border-radius:10px;cursor:pointer;color:#4a3418;font-family:"Playfair Display",Georgia,serif}'
+      + '.sz-text-option.sz-text-active{border-color:#4a3418;border-width:2px;background:#f6ecd8;font-weight:700}'
+      + '#sz-text-close{border:1px solid #b89968;background:#fff;padding:6px 16px;'
+      +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#4a3418}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -1106,7 +1123,7 @@
     var gear = document.createElement('button');
     gear.id = 'sz-gear';
     gear.type = 'button';
-    gear.title = 'Double-click to reset tool stack, gear, and menu to their default spots';
+    gear.title = 'Click for text size, double-click to reset tool stack/gear/menu positions';
     gear.textContent = '⚙️';
     // Larry, July 31 2026 (bug report): "gear jumps back to a fixed
     // position... tools jumped back into the drawer on their own...
@@ -1120,10 +1137,76 @@
     // a double-click instead -- same deliberate-gesture family as the
     // rename cards above -- means a stray single click/near-drag can
     // no longer nuke everyone's careful placement by accident.
-    gear.addEventListener('dblclick', function(){
-      resetToolStack();
-    });
+    //
+    // Aug 3 2026 -- Larry, on the laptop: "the print is too small...
+    // someone with poor eyesight needs to adjust." The gear was always
+    // meant to be the reader-facing settings icon (see the original
+    // May 2026 Gear/Asterisk design split); a single tap now opens the
+    // text-size picker (screen-fit.js owns the actual scale math) while
+    // a real double-click still resets positions, same makeTapCounter
+    // "count, then resolve after a gap" pattern already used for the
+    // Hidden Mickey triple-tap and the mode-panel drawers -- so a
+    // deliberate double-click is never mistaken for two single taps.
+    makeTapCounter(gear, function(n){
+      if (n >= 2) {
+        resetToolStack();
+      } else {
+        openTextSizePicker();
+      }
+    }, 320);
     return gear;
+  }
+
+  /* ---------- Text-size picker -- Aug 3 2026. Same overlay+card
+     pattern as the drawer color picker above (buildDrawerColorOverlay
+     et al), just offering screen-fit.js's four boost levels instead of
+     swatches. Lazily built on first open, same as the color picker. ---------- */
+
+  function buildTextSizeOverlay(){
+    var overlay = document.createElement('div');
+    overlay.id = 'sz-text-overlay';
+
+    var card = document.createElement('div');
+    card.id = 'sz-text-card';
+    card.innerHTML = ''
+      + '<div class="sz-text-title">Text size</div>'
+      + '<div class="sz-text-sub">Bigger text for easier reading. Stays until you change it.</div>'
+      + '<div id="sz-text-options"></div>'
+      + '<button id="sz-text-close" type="button">✕</button>';
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeTextSizePicker(); });
+    card.querySelector('#sz-text-close').addEventListener('click', closeTextSizePicker);
+
+    return overlay;
+  }
+
+  function openTextSizePicker(){
+    if (!window.FGTextSize) return; // screen-fit.js not loaded on this file
+    var overlay = document.getElementById('sz-text-overlay') || buildTextSizeOverlay();
+    var row = overlay.querySelector('#sz-text-options');
+    row.innerHTML = '';
+    var current = window.FGTextSize.getIndex();
+    window.FGTextSize.levels.forEach(function(label, i){
+      var opt = document.createElement('button');
+      opt.type = 'button';
+      opt.className = 'sz-text-option' + (i === current ? ' sz-text-active' : '');
+      opt.textContent = label;
+      opt.style.fontSize = (13 + i * 3) + 'px';
+      opt.addEventListener('click', function(){
+        window.FGTextSize.setIndex(i);
+        showZeroToast('Text size: ' + label);
+        closeTextSizePicker();
+      });
+      row.appendChild(opt);
+    });
+    overlay.classList.add('active');
+  }
+
+  function closeTextSizePicker(){
+    var overlay = document.getElementById('sz-text-overlay');
+    if (overlay) overlay.classList.remove('active');
   }
 
   /* ---------- The MAP (☰) button -- Larry, July 26: a safety measure
