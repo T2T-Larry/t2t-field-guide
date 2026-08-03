@@ -1299,6 +1299,7 @@
     // which doesn't render through the main board and has no order to
     // report here).
     front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
+    front.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
     // Drilling in is now done by dragging this card onto the TOPIC box
@@ -1676,6 +1677,13 @@
         // order computed just above -- Purpose/NEW/MISC included, and
         // unaffected by the alphabetical display toggle.
         hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
+    // Custom Keys, Aug 3 2026 (widened scope) -- Larry: "every card,
+    // maybe like a briefing card on the back of the card instead of in
+    // the gear?" Headers (top-level and Subbers alike) now get the same
+    // Keys row on their own DETAILS/back card and the same on-card dots
+    // as plain idea cards -- originally scoped out to match hearts, but
+    // Larry wants it everywhere.
+    hd.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
         if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -2867,10 +2875,11 @@
       // gear? Anywhere a traveler makes a note or adds an idea." Own row
       // below heart/notes/order so it doesn't crowd them -- populated by
       // _sboardRenderKeyRow right after this HTML lands (needs the real
-      // DOM node to attach click handlers to). Headers/Subbers don't get
-      // one, same as they don't get a heart -- Keys are a content-card
-      // marker.
-      + (isHeaderType ? '' : '<div class="sb-below-content-row" id="sb-keys-row"></div>')
+      // DOM node to attach click handlers to). Widened to every card
+      // type same day, Larry: "every card, maybe like a briefing card on
+      // the back of the card." Headers and Subbers get this same row now
+      // too -- only the red heart stays content-cards-only.
+      + '<div class="sb-below-content-row" id="sb-keys-row"></div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
@@ -3154,7 +3163,7 @@
       heartBtn.addEventListener('click', function(){ if(!held) applyHeartDelta(1); held=false; });
     })();
     T().wire('sb-notes', function(){ document.getElementById('sb-notes-box').style.display='block'; });
-    if(!isHeaderType) _sboardRenderKeyRow(item);
+    _sboardRenderKeyRow(item);
     var notesBox=document.getElementById('sb-notes-box');
     if(notesBox) notesBox.addEventListener('blur', async function(e){
       try{

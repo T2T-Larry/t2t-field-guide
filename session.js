@@ -1344,6 +1344,11 @@
       isxStackCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
       isxStackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     }
+    // Custom Keys badge, Aug 3 2026 (widened same day to every card type,
+    // Larry: "every card") -- header piles get the same on-card dots as
+    // plain cards now.
+    var isxStackFront=t.querySelector('.isx-stack-front');
+    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.keyDotsHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.keyDotsHTML(row));
     // Single click = toggle this pile open/closed (spread its real cards
     // out to view/reorganize, or gather them back into the cascade) -- a
     // plain click waits ~250ms to make sure a second one isn't coming
