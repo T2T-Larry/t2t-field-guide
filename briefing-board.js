@@ -755,14 +755,25 @@
         var name=window.prompt('Name for the new board:');
         _bbRenderBoardPicker();
         if(!name || !name.trim()) return;
-        var uid=await _bbCurrentUserId(); if(!uid) return;
+        var uid=await _bbCurrentUserId();
+        if(!uid){
+          window.alert('Could not add a board: your sign-in session appears to have expired. Please refresh the page and sign in again, then try adding the board.');
+          return;
+        }
         var sb=T().sb;
         try{
           var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:'personal', name:name.trim()}).select().single();
-          if(ins.error || !ins.data) return;
+          if(ins.error || !ins.data){
+            console.error('Briefing Board: could not create board', ins.error);
+            window.alert('Could not add the board "'+name.trim()+'". Error: '+(ins.error&&ins.error.message?ins.error.message:'unknown error')+'. Nothing was saved -- please try again or refresh the page.');
+            return;
+          }
           _bbBoards.push(ins.data);
           await _bbSwitchToBoard(ins.data.id);
-        }catch(e){ console.error('Briefing Board: could not create board', e); }
+        }catch(e){
+          console.error('Briefing Board: could not create board', e);
+          window.alert('Could not add the board "'+name.trim()+'". Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again or refresh the page.');
+        }
         return;
       }
       await _bbSwitchToBoard(sel.value);
