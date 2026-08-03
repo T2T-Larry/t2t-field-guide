@@ -578,10 +578,18 @@
   // falling through to an unrelated legacy screen. Buttons that only
   // show a "coming later" toast have nothing to toggle yet -- nothing
   // opens, so they're untouched.
-  function wireToggleNav(targetScreenId, openFn){
+  // closeFn -- optional, Aug 3 2026. Defaults to the plain T2T.goBack()
+  // every toggle button used before, but some target screens (the Idea
+  // Storyboard) have their own dedicated close routine that does real
+  // cleanup goBack() doesn't know about, and -- the actual bug -- treats
+  // 1010 as an old backpack-hub utility screen and reopens the obsolete
+  // ☰ backpack menu instead of closing. Larry, Aug 3 2026: "closing
+  // storyboard went to obsolete backpack rather than to storyboard
+  // button."
+  function wireToggleNav(targetScreenId, openFn, closeFn){
     return function(){
       if (window.T2T && window.T2T.getCur && window.T2T.getCur() === targetScreenId) {
-        window.T2T.goBack();
+        if (closeFn) closeFn(); else window.T2T.goBack();
       } else {
         openFn();
       }
@@ -607,7 +615,7 @@
         if (isDeskClosed()) { reopenDesk(); return; }
         closeDesk();
       } },
-    { id: 'idea-board',     label: 'Idea Board',      action: wireToggleNav('s-sea-of-ideas-cluster', function(){ if (window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume(); else if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); }) }, // Larry, July 29 2026: was pointing at the archived 9220 legacy grid -- routes to the current 1010 Idea Storyboard now. // Larry, August 1 2026: plain nav() left currentTopicId null, landing on 1010's confusing blank-project fallback -- now resumes the last real topic instead, same as 9711 already does.
+    { id: 'idea-board',     label: 'Idea Board',      action: wireToggleNav('s-sea-of-ideas-cluster', function(){ if (window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume(); else if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); }, function(){ if (window.T2TStoryboard && window.T2TStoryboard.closeBoard) window.T2TStoryboard.closeBoard(); else if (window.T2T) window.T2T.goBack(); }) }, // Larry, July 29 2026: was pointing at the archived 9220 legacy grid -- routes to the current 1010 Idea Storyboard now. // Larry, August 1 2026: plain nav() left currentTopicId null, landing on 1010's confusing blank-project fallback -- now resumes the last real topic instead, same as 9711 already does.
     { id: 'briefing-board', label: 'Briefing Board',  action: wireToggleNav('s-briefing-board', function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); }) },
     { id: 'planning',       label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
     { id: 'organization',   label: 'Organization',    action: function(){ showZeroToast('Organization — coming later.'); } },

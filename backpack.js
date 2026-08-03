@@ -308,7 +308,16 @@
     's-gems','s-gem-add','s-gems-list',
     's-search',
     's-tools','s-question','s-create','s-shape-tools','s-share','s-dare',
-    's-configure','s-change-password','s-sea-of-ideas','s-sea-of-ideas-cluster'
+    's-configure','s-change-password','s-sea-of-ideas'
+    // 's-sea-of-ideas-cluster' (1010, the real Idea/Planning Storyboard)
+    // removed from this list Aug 3 2026 -- it has its own dedicated
+    // close routine now (T2TStoryboard.closeBoard / the board's own X),
+    // same as 's-briefing-board' and 's-idea-session' already correctly
+    // never sat here. Leaving it registered as a "utility screen" made
+    // the generic goBack() treat it as an old backpack-hub destination
+    // and reopen the obsolete \u2630 backpack menu on close instead of
+    // actually closing the board. Larry, Aug 3 2026: "closing storyboard
+    // went to obsolete backpack rather than to storyboard button."
   ];
   // Screens that legitimately take over #fg-root as position:fixed
   // full-viewport (isx-full) -- each one adds the class itself on entry

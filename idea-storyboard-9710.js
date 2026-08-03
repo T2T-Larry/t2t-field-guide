@@ -391,21 +391,7 @@
     }
     T().registerPageNum('s-sea-of-ideas-cluster', '1010'); // Larry, July 29 2026: renumbered from 9710 -- Idea Storyboard now reads as 1010 in the Dream Phase sequence, not the 9700s Storyboard-family block.
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
-    T().wire('b-sc-close', function(){
-      var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
-      if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
-      T2TShared.currentTopicId=null; T2TShared.filter=null;
-      // Return override, added July 21, 2026 for the Briefing Board's
-      // Unhooking Ideas hand-off -- if whoever sent us here asked to be
-      // returned to specifically (e.g. the Hang-Up card that opened
-      // this board), honor that before falling back to the normal
-      // chapter-flow / backpack rules below.
-      var returnOverride = T().consumeReturnOverride && T().consumeReturnOverride();
-      if(returnOverride){ returnOverride(); return; }
-      var viaChapter = T().consumeSeaChapterEntry();
-      if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
-      else { T().goBackStack(); }
-    });
+    T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     T().wire('b-sc-session-view', function(){ T2TMedia.openIdeaSession(); });
     // VIEW button — click reveals the one other option (Session), closes
@@ -2573,6 +2559,34 @@
   // top-row buttons (recolor all headers, fix orphaned Purpose/Ideas
   // headers, full screen) into one place, leaving only Gear and X visible.
   // Locked July 16, 2026.
+  // Named (not inline) as of Aug 3 2026 so the desk's own Idea Board
+  // toggle button (screen-zero.js, second tap while the Storyboard is
+  // already open) can call this exact same close routine via
+  // T2TStoryboard.closeBoard, instead of the generic T2T.goBack() --
+  // that generic path still treats 1010 as an old backpack-hub utility
+  // screen (still listed in backpack.js's _utilScreens) and reopens the
+  // obsolete \u2630 backpack menu instead of actually closing the board.
+  // Larry, Aug 3 2026: "closing storyboard went to obsolete backpack
+  // rather than to storyboard button." Moved to this outer scope (was
+  // an inline handler inside injectSeaOfIdeasCluster) specifically so
+  // T2TStoryboard.closeBoard, assigned further down in this same outer
+  // scope, can actually reference it.
+  function _sboardCloseBoard(){
+    var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
+    if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+    T2TShared.currentTopicId=null; T2TShared.filter=null;
+    // Return override, added July 21, 2026 for the Briefing Board's
+    // Unhooking Ideas hand-off -- if whoever sent us here asked to be
+    // returned to specifically (e.g. the Hang-Up card that opened
+    // this board), honor that before falling back to the normal
+    // chapter-flow / backpack rules below.
+    var returnOverride = T().consumeReturnOverride && T().consumeReturnOverride();
+    if(returnOverride){ returnOverride(); return; }
+    var viaChapter = T().consumeSeaChapterEntry();
+    if(T().currentFile()==='dream.html' && document.getElementById('s-create-toc') && viaChapter){ T().nav('s-create-toc'); }
+    else { T().goBackStack(); }
+  }
+
   function _sboardOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -3971,7 +3985,8 @@
     openDetailToColor: openSbDetailToColor,
     drillInto: _sboardDrillInto,
     openKeyLibraryManager: _sboardOpenKeyLibraryManager,
-    keyDotsHTML: _sboardKeyDotsHTML
+    keyDotsHTML: _sboardKeyDotsHTML,
+    closeBoard: _sboardCloseBoard
   };
 
   document.addEventListener('DOMContentLoaded', function(){
