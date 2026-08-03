@@ -2940,7 +2940,7 @@
       +   'display:flex;flex-direction:column;align-items:center;'
       +   'user-select:none;-webkit-user-select:none}'
       + '#sz-member-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
-      +   'font-size:min(5vw,50px);letter-spacing:0.12em;color:rgba(0,0,0,.05);'
+      +   'font-size:min(3vw,30px);letter-spacing:0.04em;color:rgba(0,0,0,.05);' /* Larry, August 3 2026: smaller + mixed case, so a tighter tracking than the all-caps T2T reads cleaner */
       +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
       +   'white-space:nowrap;margin-bottom:2px}'
       + '#sz-t2t-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
@@ -2986,9 +2986,12 @@
     // (backpack.js's profile load) -- reused here rather than plumbed
     // through separately, so it stays correct if the profile finishes
     // loading late, or a different member signs in later in the same
-    // tab. Uppercased to match the nameplate's own treatment.
+    // tab. Larry, August 3 2026: "smaller and in upper and lower case"
+    // -- shown in its natural mixed case here (unlike the nameplate's
+    // own all-caps treatment), since this is a quieter caption line,
+    // not the bold nametag.
     function applyMemberName(m){
-      if (m && m.display_name) memberLine.textContent = m.display_name.toUpperCase();
+      if (m && m.display_name) memberLine.textContent = m.display_name;
     }
     window.addEventListener('t2t:member-loaded', function(e){ applyMemberName(e.detail); });
     var tries = 0;
