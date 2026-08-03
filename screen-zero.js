@@ -3303,19 +3303,32 @@
   /* ---------- Larry, July 31 2026: "No travelers will expect or
      want that! An Idea Board is a totally different animal... you
      don't need a ship's anchor on an airplane." Field Guide, gear,
-     the Notebook, and Shortcuts are meant to follow a traveler onto
-     every screen -- that's deliberate, they're universal tools. A
-     custom tray (Library, or any future personal cluster a traveler
-     builds) is different: it's blank-desk furniture, not a tool, and
-     showed up riding along onto the Idea Board the same way those
-     others do -- which read as clutter that doesn't belong there,
-     not a feature. Same idea as the TV frame already hiding itself
-     during .isx-full (tv-frame.js's own trackLoop) for the same
-     reason -- a real content screen taking over means desk-only
-     furniture should get out of the way, then come right back the
-     moment the desk is showing again. Polls once per frame but only
-     ACTS on an actual full/not-full transition, so it's as cheap as
-     the TV frame's own version of this same pattern. ---------- */
+     and Shortcuts are meant to follow a traveler onto every screen --
+     that's deliberate, they're universal tools. A custom tray
+     (Library, or any future personal cluster a traveler builds) is
+     different: it's blank-desk furniture, not a tool, and showed up
+     riding along onto the Idea Board the same way those others do --
+     which read as clutter that doesn't belong there, not a feature.
+     Same idea as the TV frame already hiding itself during .isx-full
+     (tv-frame.js's own trackLoop) for the same reason -- a real
+     content screen taking over means desk-only furniture should get
+     out of the way, then come right back the moment the desk is
+     showing again. Polls once per frame but only ACTS on an actual
+     full/not-full transition, so it's as cheap as the TV frame's own
+     version of this same pattern.
+
+     Larry, Aug 3 2026 (bug report): "Notebook has bled onto the idea
+     board. It must stay on 0000 or a drawer." The Notebook was
+     originally grouped in with Field Guide/gear/Shortcuts above as a
+     "universal tool" that follows a traveler everywhere -- that's
+     the one part of the July 31 decision this reverses. The Notebook
+     now gets the exact same desk-only treatment as a custom tray:
+     hidden the instant a real content screen goes full-screen,
+     restored the instant it isn't. Only a display:none/'' toggle --
+     never touches left/top -- so it can't jump or lose its spot,
+     same guarantee every other object on the desk already has.
+     Field Guide, gear, and Shortcuts are untouched; Larry only asked
+     about the Notebook. ---------- */
   function watchCustomTrayDeskOnlyVisibility(){
     var fg = document.getElementById('fg-root');
     if (!fg) return;
@@ -3330,9 +3343,17 @@
           });
           _claimRegistry.forEach(function(rec){
             var slot = getRidingSlot(rec.storeKey);
-            if (!slot || slot.split('-')[1] !== '2') return; // only custom-tray members -- Field Guide/gear/notebook/Shortcuts stay put
+            if (!slot || slot.split('-')[1] !== '2') return; // only custom-tray members -- Field Guide/gear/Shortcuts stay put
             rec.el.style.display = 'none';
           });
+          // Notebook, Aug 3 2026: desk-only furniture too now (see the
+          // comment above this function) -- hides regardless of
+          // whether it's riding the rail's default spot, claimed into
+          // a drawer slot, or sitting independently on the open desk.
+          // A plain display toggle, nothing about its saved position
+          // changes, so it comes back exactly where it was.
+          var nbHide = document.getElementById('sz-notebook');
+          if (nbHide) nbHide.style.display = 'none';
         } else {
           // Back on the desk -- let the normal slot/mode rules
           // recompute everyone's real visibility rather than
@@ -3341,6 +3362,16 @@
           var rightBarEl = document.getElementById('sz-drawer-r');
           if (leftBarEl) refreshRidersForSlot('left', leftBarEl.dataset.mode || '1', leftBarEl);
           if (rightBarEl) refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
+          // Notebook: if it's claimed into a drawer slot, the
+          // refreshRidersForSlot call above already set its correct
+          // display (that's exactly what _claimRegistry is for).
+          // Otherwise (rail's default spot, or an independent desk
+          // position) updateNotebookVisibility owns that same
+          // decision everywhere else in this file -- reuse it here
+          // instead of guessing, and it already no-ops if a slot claim
+          // exists, so calling it unconditionally is safe either way.
+          var nbShow = document.getElementById('sz-notebook');
+          if (nbShow && leftBarEl) updateNotebookVisibility(leftBarEl, nbShow);
         }
       }
       requestAnimationFrame(tick);
