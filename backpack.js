@@ -9,7 +9,31 @@
   /* ── SUPABASE ── */
   const SB_URL = 'https://jyvvbjxqmxdgsxfcrfdn.supabase.co';
   const SB_KEY = 'sb_publishable_LADU6bQTx91yLtXdm4Xb4g_jLjQ6meh';
-  const _sb = supabase.createClient(SB_URL, SB_KEY);
+  // "Remember me" checkbox on the sign-in screen, Aug 3 2026 -- Supabase
+  // always keeps a signed-in session in localStorage by default, so a
+  // traveler who signs in stays signed in forever with no way to opt
+  // out. This swaps the session's storage between localStorage
+  // (remembered -- survives closing the browser, the original/default
+  // behavior) and sessionStorage (not remembered -- gone the moment
+  // the tab/browser closes) based on a small preference flag the
+  // sign-in button writes right before signing in. The flag itself
+  // always lives in localStorage (not sensitive, just a yes/no), so
+  // this device keeps remembering the traveler's last choice even
+  // across a "don't remember me" session. No flag yet (a traveler
+  // who's never seen the checkbox) defaults to remembered, matching
+  // the exact behavior this app always had before.
+  var T2T_REMEMBER_KEY = 't2t_remember';
+  function _t2tAuthBackingStore(){
+    var remembered = true;
+    try{ remembered = localStorage.getItem(T2T_REMEMBER_KEY) !== '0'; }catch(e){}
+    return remembered ? window.localStorage : window.sessionStorage;
+  }
+  var _t2tAuthStorage = {
+    getItem:function(key){ try{ return _t2tAuthBackingStore().getItem(key); }catch(e){ return null; } },
+    setItem:function(key,value){ try{ _t2tAuthBackingStore().setItem(key,value); }catch(e){} },
+    removeItem:function(key){ try{ _t2tAuthBackingStore().removeItem(key); }catch(e){} }
+  };
+  const _sb = supabase.createClient(SB_URL, SB_KEY, { auth:{ storage:_t2tAuthStorage } });
 
   /* ── MEMBER PROFILE ── */
   var _member = {

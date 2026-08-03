@@ -42,6 +42,14 @@
    hugging the password field. 60px measured live to land the button
    equidistant from both (siw's centering does the rest). */
 #b-signin{margin-top:60px}
+/* 0010 New member / Remember me, Aug 3 2026 -- shared link style for
+   the bottom-bar toggles (Forgot password? / New member? / Back to
+   Sign In), and the Remember me checkbox row sitting just above the
+   Sign In button. */
+.si-link{font-size:12px;color:#9FE1CB;cursor:pointer;letter-spacing:1px}
+.si-link:hover{text-decoration:underline}
+.si-remember{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12px;color:#9FE1CB;letter-spacing:1px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.si-remember input{width:14px;height:14px;cursor:pointer;accent-color:var(--brand-gold,#C9A87C)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260801a"></script>
@@ -51,7 +59,7 @@
 <script src="idea-storyboard-9710.js?v=20260803c"></script>
 <script src="session.js?v=20260803c"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260801f"></script>
+<script src="backpack.js?v=20260803d"></script>
 <script src="briefing-board.js?v=20260803c"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -82,9 +90,11 @@
 <div class="sc card" id="s-signin">
   <div class="siw" style="flex:1;padding:16px 40px 12px">
     <div class="si-t2t">T2T</div>
-    <div class="si-sub" style="margin-bottom:16px">Thoughts to Things</div>
+    <div class="si-sub" id="si-heading" style="margin-bottom:16px">Thoughts to Things</div>
     <div class="si-rule" style="margin-bottom:16px"></div>
-    <div class="si-fields">
+
+    <!-- Sign in -->
+    <div class="si-fields" id="si-mode-signin">
       <label class="si-lbl">Email</label>
       <input class="si-input" style="margin-bottom:10px" type="email" id="si-email" placeholder="your@email.com">
       <label class="si-lbl">Password</label>
@@ -92,11 +102,36 @@
         <input class="si-input" style="margin-bottom:0" type="password" id="si-password" placeholder="password">
         <button type="button" class="si-eye" id="si-pw-toggle" aria-label="Show password">👁️</button>
       </div>
+      <label class="si-remember" for="si-remember">
+        <input type="checkbox" id="si-remember" checked>
+        <span>Remember me</span>
+      </label>
       <button class="si-btn" id="b-signin">Sign In</button>
+    </div>
+
+    <!-- New member (beta) -- Larry, Aug 3 2026: a self-serve way to add
+         a new member straight from the sign-in screen, so travelers
+         don't need Larry to create their login by hand while this is
+         still in beta. Long-term this is expected to move to a real
+         invite flow; for now it's a plain create-account form living
+         right on this same card. -->
+    <div class="si-fields" id="si-mode-signup" style="display:none">
+      <label class="si-lbl">Name</label>
+      <input class="si-input" style="margin-bottom:10px" type="text" id="su-name" placeholder="your name">
+      <label class="si-lbl">Email</label>
+      <input class="si-input" style="margin-bottom:10px" type="email" id="su-email" placeholder="your@email.com">
+      <label class="si-lbl">Password</label>
+      <div class="si-pw-wrap" style="margin-bottom:16px">
+        <input class="si-input" style="margin-bottom:0" type="password" id="su-password" placeholder="choose a password">
+        <button type="button" class="si-eye" id="su-pw-toggle" aria-label="Show password">👁️</button>
+      </div>
+      <button class="si-btn" id="b-signup">Create Account</button>
     </div>
   </div>
   <div class="bar2">
-    <span id="b-forgot" style="font-size:12px;color:#9FE1CB;cursor:pointer;letter-spacing:1px">Forgot password?</span>
+    <span id="b-forgot" class="si-link">Forgot password?</span>
+    <span id="b-show-signup" class="si-link">New member?</span>
+    <span id="b-show-signin" class="si-link" style="display:none">&larr; Back to Sign In</span>
   </div>
 </div>
 
@@ -811,6 +846,14 @@
     btn.textContent = showing ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDE48';
     btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
   });
+  T.wire('su-pw-toggle', function(){
+    var f=document.getElementById('su-password');
+    var btn=document.getElementById('su-pw-toggle');
+    var showing = f.type === 'text';
+    f.type = showing ? 'password' : 'text';
+    btn.textContent = showing ? '\uD83D\uDC41\uFE0F' : '\uD83D\uDE48';
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
   T.wire('b-signin-reset', function(){
     document.getElementById('si-email').value='';
     document.getElementById('si-password').value='';
@@ -823,9 +866,72 @@
     var res=await _sb.auth.resetPasswordForEmail(email,{redirectTo:'https://t2t-larry.github.io/t2t-field-guide/'});
     if(res.error){alert(res.error.message);}else{alert('Reset email sent! Check your inbox.');}
   });
+
+  // New member (beta) / Sign In toggle on the same card, Aug 3 2026.
+  // Just swaps which set of fields is visible and which bottom-bar
+  // links show -- no navigation, so none of s-signin's own special
+  // handling (bare-screen chrome, widget centering, back-stack) is
+  // affected either way.
+  function _siShowMode(mode){
+    var signup = mode === 'signup';
+    document.getElementById('si-mode-signin').style.display = signup ? 'none' : '';
+    document.getElementById('si-mode-signup').style.display = signup ? '' : 'none';
+    document.getElementById('b-forgot').style.display        = signup ? 'none' : '';
+    document.getElementById('b-show-signup').style.display    = signup ? 'none' : '';
+    document.getElementById('b-show-signin').style.display    = signup ? '' : 'none';
+    document.getElementById('si-heading').textContent = signup ? 'Create Your Account' : 'Thoughts to Things';
+  }
+  T.wire('b-show-signup', function(){ _siShowMode('signup'); });
+  T.wire('b-show-signin', function(){ _siShowMode('signin'); });
+
+  T.wire('b-signup', async function(){
+    var name=document.getElementById('su-name').value.trim();
+    var email=document.getElementById('su-email').value.trim();
+    var password=document.getElementById('su-password').value;
+    if(!name){alert('Enter your name.');return;}
+    if(!email){alert('Enter your email address.');return;}
+    if(!password || password.length<6){alert('Choose a password with at least 6 characters.');return;}
+    var btn=document.getElementById('b-signup');
+    btn.textContent='Creating account\u2026'; btn.disabled=true;
+    try{
+      // New members stay signed in on this device by default -- same
+      // as the "Remember me" checkbox checked -- since there's no
+      // equivalent checkbox on this form (kept it simple for beta).
+      try{ localStorage.setItem('t2t_remember','1'); }catch(e){}
+      var res=await _sb.auth.signUp({email:email, password:password, options:{data:{name:name}}});
+      if(res.error){ alert(res.error.message); return; }
+      if(res.data && res.data.session && res.data.user){
+        // Signed in immediately (project has email confirmation off).
+        // The members-table row is created automatically by a DB
+        // trigger on signup, but profiles (display name, briefing
+        // board) has no such trigger -- create it here so the desk
+        // greets them by name right away instead of "Traveler."
+        try{ await _sb.from('profiles').upsert({user_id:res.data.user.id, display_name:name}); }
+        catch(e){ console.error('T2T: profile create on signup failed', e); }
+        await T.loadVisitedFromSupabase();
+        await T.loadMemberProfile(res.data.user.id);
+        T.resumeToLastPageOr('s-cover');
+      } else {
+        // Email confirmation is required -- no session yet.
+        alert('Account created! Check your email to confirm, then sign in.');
+        document.getElementById('su-name').value='';
+        document.getElementById('su-password').value='';
+        document.getElementById('si-email').value=email;
+        _siShowMode('signin');
+      }
+    }catch(e){
+      console.error('Create account failed', e);
+      alert('Something went wrong creating the account. Please try again.');
+    }finally{
+      btn.textContent='Create Account'; btn.disabled=false;
+    }
+  });
+
   T.wire('b-signin', async function(){
     var email=document.getElementById('si-email').value.trim();
     var password=document.getElementById('si-password').value;
+    var remember=document.getElementById('si-remember').checked;
+    try{ localStorage.setItem('t2t_remember', remember ? '1' : '0'); }catch(e){}
     var btn=document.getElementById('b-signin');
     btn.textContent='Signing in\u2026'; btn.disabled=true;
     var res=await _sb.auth.signInWithPassword({email,password});
@@ -872,6 +978,7 @@
     document.getElementById('si-password').value='';
     var btn=document.getElementById('b-signin');
     btn.textContent='Sign In'; btn.disabled=false;
+    _siShowMode('signin');
     T.nav('s-signin');
   });
   T.wire('b-cover-mg', T.goMG);
