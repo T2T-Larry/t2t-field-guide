@@ -309,7 +309,19 @@
       +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
       +   'font-size:26px;letter-spacing:0.1em;color:rgba(0,0,0,.05);'
       +   'text-shadow:1px 1px 2px rgba(255,255,255,.45),-1px -1px 2px rgba(0,0,0,.18);'
+      +   'white-space:pre-line;text-align:center;line-height:1.25;'
       +   'pointer-events:none;user-select:none}'
+      // Larry, August 3 2026: "add '1' below Drawer on the one-click
+      // drawer and '2' on the two-click drawer, for ID purposes."
+      // bar.dataset.mode (set by wireModeToggle's showMode) tells us
+      // which tap-count slot is currently showing, so the embossed
+      // watermark itself can carry the slot number -- same generic
+      // text for mode 3 (surprise slot already has its own real
+      // content/flourish, doesn't need a number).
+      + '#sz-navbar[data-mode="1"] #sz-navmid::before,'
+      +   '#sz-drawer-r[data-mode="1"] #sz-drawer-r-mid::before{content:"Drawer\\A 1"}'
+      + '#sz-navbar[data-mode="2"] #sz-navmid::before,'
+      +   '#sz-drawer-r[data-mode="2"] #sz-drawer-r-mid::before{content:"Drawer\\A 2"}'
       + '#sz-drawer-r-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'left:-28px;width:28px;height:60px;'
       +   'border-radius:30px 0 0 30px;border:2px solid #999;border-right:none;'
