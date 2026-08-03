@@ -3334,6 +3334,15 @@
     }
     try{ await _sboardWriteItemKeys(item.id, keys); }catch(err){}
     openSbDetail(item);
+    // Bug, Aug 3 2026 -- Larry: "not seeing custom key on front of card
+    // yet?" _sboardWriteItemKeys updates the cached row in memory, but
+    // the actual tile sitting on the board was already built (and its
+    // badge HTML already inserted) by an earlier renderSeaBoard() call --
+    // mutating the JS object after the fact doesn't touch DOM that's
+    // already on screen. Every other card edit (move, trash, recolor)
+    // already calls renderSeaBoard() to pick up its own change; this one
+    // was missing it.
+    renderSeaBoard();
   }
 
   // Reached either from a card's Choose-a-Key ("+ Build a new key") or
