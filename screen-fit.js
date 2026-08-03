@@ -23,9 +23,57 @@
    Recorder, Briefing Board, Gems) -- those tools already go edge-to-edge
    at 100vw/100vh and manage their own layout independently; scaling
    them would fight that.
+
+   Text-size boost -- added Aug 3 2026. Larry, live on the laptop: "the
+   print is too small... someone with poor eyesight needs to adjust."
+   Auto-fit alone can shrink the widget down to MIN_SCALE on a smaller
+   laptop window, and that's exactly where legibility suffers most. This
+   layers a traveler-chosen multiplier on TOP of the auto-fit scale --
+   auto-fit still finds the best base size for the window, the boost
+   just steps it up further for anyone who needs bigger text. Deliberately
+   allowed to push the widget past MAX_SCALE and off the edge of a small
+   window (the surrounding page scrolls) -- for someone who needs this,
+   legibility wins over tidy containment. Four steps, same "three or
+   four feels right" sizing Larry settled on for other choice controls.
+   Screen-zero.js's gear (single tap, see buildGear) opens the picker;
+   this file owns the math and the saved preference so any screen can
+   read the current boost without caring how it was set.
 */
 (function(){
   'use strict';
+
+  var BOOST_KEY = 'fg-text-boost';
+  var BOOST_LEVELS = [
+    { mult: 1,    label: 'Standard' },
+    { mult: 1.2,  label: 'Large' },
+    { mult: 1.45, label: 'Larger' },
+    { mult: 1.75, label: 'Largest' }
+  ];
+
+  function loadBoostIndex(){
+    try {
+      var raw = localStorage.getItem(BOOST_KEY);
+      var i = raw === null ? 0 : parseInt(raw, 10);
+      if (isNaN(i) || i < 0 || i >= BOOST_LEVELS.length) return 0;
+      return i;
+    } catch(e){ return 0; }
+  }
+
+  var boostIndex = loadBoostIndex();
+
+  function setBoostIndex(i){
+    if (i < 0 || i >= BOOST_LEVELS.length) return;
+    boostIndex = i;
+    try { localStorage.setItem(BOOST_KEY, String(i)); } catch(e){}
+  }
+
+  // Public API -- screen-zero.js's gear popover reads/writes through
+  // this rather than touching localStorage or the scale math itself.
+  window.FGTextSize = {
+    levels: BOOST_LEVELS.map(function(l){ return l.label; }),
+    getIndex: function(){ return boostIndex; },
+    setIndex: setBoostIndex
+  };
 
   var MIN_SCALE = 0.6;   // floor -- keeps text legible on small screens
   var MAX_SCALE = 1.15;  // ceiling -- keeps the widget from blowing up
@@ -95,6 +143,7 @@
         if (naturalW > 0 && naturalH > 0 && availW > 0 && availH > 0){
           var scale = Math.min(availW / naturalW, availH / naturalH);
           scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+          scale = scale * BOOST_LEVELS[boostIndex].mult;
           var next = 'scale(' + scale.toFixed(4) + ')';
           if (fg.style.transform !== next) fg.style.transform = next;
         }
