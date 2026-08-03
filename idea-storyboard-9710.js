@@ -1451,7 +1451,17 @@
             var draggedHeaderId=raw.slice(7);
             if(String(draggedHeaderId)===String(headerRow.id)) return;
             if(side==='nest'){ _sboardMoveCard(draggedHeaderId, headerRow.id); }
-            else { _sboardReorderHeader(draggedHeaderId, headerRow.id, side==='after'); }
+            // Larry, Aug 3 2026: "unless this happens faster, we need the
+            // clock to feedback that action is happening" -- a header
+            // reorder rewrites sort_order on every visible header
+            // sequentially (see _sboardReorderHeader), which is fast with
+            // a handful of headers but genuinely takes a beat with a
+            // full row of them, and the small #sc-status text alone was
+            // easy to miss. Wrapping with the same pocket-watch spinner
+            // every screen change already shows (_sboardSpinWhile) gives
+            // it the same unmistakable "still working" feedback, with no
+            // new UI to build.
+            else { _sboardSpinWhile(_sboardReorderHeader(draggedHeaderId, headerRow.id, side==='after')); }
           } else {
             _sboardMoveCard(raw, headerRow.id);
           }
@@ -1529,7 +1539,7 @@
           var raw=e.dataTransfer.getData('text/plain');
           if(!raw||raw==='sb-goup') return;
           if(raw.indexOf('header:')===0){
-            if(newRow) _sboardReorderHeader(raw.slice(7), newRow.id, side==='after');
+            if(newRow) _sboardSpinWhile(_sboardReorderHeader(raw.slice(7), newRow.id, side==='after'));
           } else {
             _sboardMoveCard(raw, parentIdForDrop);
           }
@@ -2176,6 +2186,95 @@
     });
   }
 
+  // Sort headers — Larry, Aug 3 2026: "I would like to toggle headers into
+  // alphabetical order or number order in gear." Dragging one header at a
+  // time already works but is slow to arrange a whole row by hand; this
+  // computes the full order in one pass and writes it in one bulk
+  // operation, wrapped in the same pocket-watch spinner
+  // _sboardSpinWhile already gives every screen change (see the header
+  // drag-drop handlers above) so a long row doesn't look frozen while the
+  // sequential Supabase writes run.
+  //
+  // Only the real content headers move -- Purpose, NEW ("New Additions"),
+  // and MISC are auto-managed, reserved headers with their own fixed
+  // conventional spots (first, second, and always-last respectively —
+  // see _rowPriority in renderSeaBoard) and are deliberately left exactly
+  // where they already sit.
+  function _sboardLeadingNumber(text){
+    var m=/\d+/.exec(text||'');
+    return m ? parseInt(m[0],10) : Infinity; // no digits in the name -- sorts to the end, same idea as an empty string sorting last alphabetically
+  }
+
+  function _sboardOpenSortHeadersPicker(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var headers=(_sboardVisibleHeaders||[]).filter(function(h){
+      return String(h.id)!==String(_sboardNewAdditionsId);
+    });
+    if(headers.length<2){
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to sort</div>'
+        +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">This board needs at least two headers before an order means anything.</div>'
+        +'<button class="sc-ov-btn" id="sb-sort-close" style="width:100%" aria-label="Close">✕</button></div>';
+      ov.classList.add('active');
+      T().wire('sb-sort-close', closeSbDetail);
+      return;
+    }
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Sort headers</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Arranges every header on this board. Purpose, NEW and MISC stay put — only the headers between them move.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+      +'<button class="sc-ov-btn" id="sb-sort-alpha" style="width:100%">A → Z</button>'
+      +'<button class="sc-ov-btn" id="sb-sort-number" style="width:100%">Number order</button>'
+      +'</div>'
+      +'<button class="sc-ov-btn" id="sb-sort-close" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-sort-close', closeSbDetail);
+    T().wire('sb-sort-alpha', function(){ closeSbDetail(); _sboardSortHeaders('alpha'); });
+    T().wire('sb-sort-number', function(){ closeSbDetail(); _sboardSortHeaders('number'); });
+  }
+
+  function _sboardSortHeaders(mode){
+    var headers=(_sboardVisibleHeaders||[]).filter(function(h){
+      return String(h.id)!==String(_sboardNewAdditionsId);
+    });
+    if(headers.length<2) return;
+    var sorted=headers.slice().sort(function(a,b){
+      if(mode==='number'){
+        var an=_sboardLeadingNumber(a.text_content), bn=_sboardLeadingNumber(b.text_content);
+        if(an!==bn) return an-bn;
+      }
+      var at=(a.text_content||'').toLowerCase(), bt=(b.text_content||'').toLowerCase();
+      return at.localeCompare(bt, undefined, {numeric:true, sensitivity:'base'});
+    });
+    // Rebuild the row the same way it's always assembled (see the
+    // mergedRow logic in renderSeaBoard): Purpose first, then NEW, then
+    // content headers, then MISC last — so writing fresh sort_order
+    // values here can never knock those three reserved slots out of
+    // place, only reorder what's between them.
+    var fullRow=[];
+    if(_sboardPurposeId && _sboardAllRowsById[_sboardPurposeId]) fullRow.push(_sboardAllRowsById[_sboardPurposeId]);
+    if(_sboardNewAdditionsId && _sboardAllRowsById[_sboardNewAdditionsId]) fullRow.push(_sboardAllRowsById[_sboardNewAdditionsId]);
+    fullRow=fullRow.concat(sorted);
+    if(_sboardMiscId && _sboardAllRowsById[_sboardMiscId]) fullRow.push(_sboardAllRowsById[_sboardMiscId]);
+    var ids=fullRow.map(function(h){ return h.id; });
+    var _sb=T().sb;
+    var statusEl=document.getElementById('sc-status');
+    if(statusEl){ statusEl.textContent='Sorting…'; statusEl.classList.remove('err'); }
+    var work=(async function(){
+      for(var i=0;i<ids.length;i++){
+        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
+        if(upd.error) throw upd.error;
+      }
+      renderSeaBoard();
+    })();
+    _sboardSpinWhile(work);
+    work.catch(function(err){
+      if(statusEl){ statusEl.textContent='Sort failed: '+err.message; statusEl.classList.add('err'); }
+    });
+  }
+
   // Gear menu — consolidates the traveler options that used to be separate
   // top-row buttons (recolor all headers, fix orphaned Purpose/Ideas
   // headers, full screen) into one place, leaving only Gear and X visible.
@@ -2189,6 +2288,7 @@
       +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+      +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
       +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
@@ -2197,6 +2297,7 @@
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
+    T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
     T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
     // Aug 3 2026: Storyboard is full-screen (.isx-full), so the desk's own
