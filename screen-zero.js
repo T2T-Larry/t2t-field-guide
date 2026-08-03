@@ -191,8 +191,8 @@
       + '.sz-tool-btn[data-phase-id="dare"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#fffce8,#fbe9a8 55%,#d4af37 100%);color:#5c4a10}'
       + '.sz-tool-btn[data-phase-id="journey"]{background:linear-gradient(135deg,#eaf5c8,#8fae3e)}'
       + '.sz-tool-btn[data-phase-id="journey"] .sz-tool-face{background:radial-gradient(circle at 35% 30%,#f6fbe9,#d7e8a8 55%,#8fae3e 100%);color:#3a4a18}'
-      + '.sz-tool-stack-grip{width:150px;padding:3px 4px;border-radius:6px;text-align:center;'
-      +   'font-size:9px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
+      + '.sz-tool-stack-grip{width:150px;padding:7px 4px;border-radius:6px;text-align:center;'
+      +   'font-size:12px;letter-spacing:1.5px;color:#8a6a3a;cursor:grab;user-select:none;'
       +   'border:1px dashed #c9a86a;background:rgba(255,255,255,.35)}'
       // Larry, July 29 2026: after fixing tool buttons so a drop
       // anywhere on the rail (not just the list) rides that spot
