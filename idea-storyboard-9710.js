@@ -161,9 +161,11 @@
         +'.sc-corner-flip{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 15px 15px;border-color:transparent transparent rgba(26,58,92,0.32) transparent;cursor:pointer;z-index:6;transition:border-width .12s}'
         // Order # badge -- Larry, Aug 3 2026: "small, no bigger that Notes
         // field" (.sb-notes-pill below is 12px; this is smaller still).
-        // Bottom-left is the one corner none of the existing per-card
-        // badges (lock, heart, link, corner-flip) already use.
-        +'.sb-order-badge{position:absolute;bottom:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:5}'
+        // Moved to the upper-left corner (Larry, Aug 3 2026) so the number
+        // reads first, before anything else on the card. The link badge
+        // (top-left, link+image cards only) is nudged right below so the
+        // two never overlap.
+        +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
         +'.sb-key-dots{position:absolute;bottom:2px;right:18px;display:flex;gap:2px;pointer-events:none;z-index:5}'
         +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         +'.sb-key-shape-btn{width:28px;height:28px;border:2px solid transparent;border-radius:6px;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}'
@@ -1153,7 +1155,7 @@
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
       if(item.content_type==='link'){
         var badge=document.createElement('div');
-        badge.style.cssText='position:absolute;top:2px;left:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+        badge.style.cssText='position:absolute;top:2px;left:20px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
         badge.textContent='\ud83d\udd17';
         tile.appendChild(badge);
       }
