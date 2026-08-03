@@ -2927,16 +2927,29 @@
       // relative light/dark rather than tied to one specific hue.
       // pointer-events:none so it never intercepts the backdrop's own
       // double-click-for-color gesture.
-      + '#sz-t2t-watermark{position:fixed;top:50%;left:50%;'
+      //
+      // Larry, August 3 2026: "write member's name above T2T on 0000
+      // in embossed letters smaller than the 2." T2T itself used to be
+      // the fixed-position element; now the fixed position moves up to
+      // a wrapping container (#sz-desk-watermark) so the member's name
+      // can stack above it as a second line, both centered together as
+      // one unit -- same embossed look, just a smaller font so it
+      // reads as a caption over the main T2T mark, not a rival to it.
+      + '#sz-desk-watermark{position:fixed;top:50%;left:50%;'
       +   'transform:translate(-50%,-50%);z-index:0;pointer-events:none;'
-      +   'font-family:"Playfair Display",Georgia,serif;font-weight:700;'
+      +   'display:flex;flex-direction:column;align-items:center;'
+      +   'user-select:none;-webkit-user-select:none}'
+      + '#sz-member-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
+      +   'font-size:min(5vw,50px);letter-spacing:0.12em;color:rgba(0,0,0,.05);'
+      +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
+      +   'white-space:nowrap;margin-bottom:2px}'
+      + '#sz-t2t-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
       +   'font-size:min(11vw,110px);letter-spacing:0.12em;' /* Larry, July 31 2026: about half the original size */
       +   'color:rgba(0,0,0,.05);'
-      +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
-      +   'user-select:none;-webkit-user-select:none}'
+      +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18)}'
       // Never on 0010 -- there's no desk backdrop to sit on yet (same
       // reasoning as the color picker itself, just above).
-      + 'body.t2t-bare-screen #sz-t2t-watermark{display:none!important}';
+      + 'body.t2t-bare-screen #sz-desk-watermark{display:none!important}';
     var style = document.createElement('style');
     style.id = 'sz-bg-color-style';
     style.textContent = css;
@@ -2944,7 +2957,7 @@
   }
 
   function buildDeskWatermark(){
-    if (document.getElementById('sz-t2t-watermark')) return; // idempotent
+    if (document.getElementById('sz-desk-watermark')) return; // idempotent
     // injectBgColorStyle() normally only runs lazily, the first time a
     // traveler double-clicks the backdrop for its color picker -- the
     // watermark's own CSS lives in that same injected block (see
@@ -2952,16 +2965,43 @@
     // would sit unstyled (default black text, top-left) until/unless
     // that gesture ever happened. Safe to call any time -- idempotent.
     injectBgColorStyle();
+    var wrap = document.createElement('div');
+    wrap.id = 'sz-desk-watermark';
+    var memberLine = document.createElement('div');
+    memberLine.id = 'sz-member-watermark';
     var mark = document.createElement('div');
     mark.id = 'sz-t2t-watermark';
     mark.textContent = 'T2T';
+    wrap.appendChild(memberLine);
+    wrap.appendChild(mark);
     // Inserted as the very FIRST child of <body> -- everything else on
     // the desk (the widget, both drawers, tools, nameplate, notebook)
     // either carries an explicit high z-index or, for the widget
     // itself, simply comes later in document order at the default
     // stacking level, so it paints on top of this watermark without
     // needing to know the watermark exists at all.
-    document.body.insertBefore(mark, document.body.firstChild);
+    document.body.insertBefore(wrap, document.body.firstChild);
+
+    // Same real-signed-in-member name buildNameplate already fills in
+    // (backpack.js's profile load) -- reused here rather than plumbed
+    // through separately, so it stays correct if the profile finishes
+    // loading late, or a different member signs in later in the same
+    // tab. Uppercased to match the nameplate's own treatment.
+    function applyMemberName(m){
+      if (m && m.display_name) memberLine.textContent = m.display_name.toUpperCase();
+    }
+    window.addEventListener('t2t:member-loaded', function(e){ applyMemberName(e.detail); });
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries++;
+      var m = window.T2T && window.T2T.getMember && window.T2T.getMember();
+      if (m && m.display_name) {
+        applyMemberName(m);
+        clearInterval(timer);
+      } else if (tries > 20) {
+        clearInterval(timer); // give up quietly -- the event listener above still catches a later sign-in
+      }
+    }, 1000);
   }
 
   function getSavedBgKey(){
