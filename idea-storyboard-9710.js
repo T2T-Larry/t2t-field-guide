@@ -547,6 +547,12 @@
   // another reorder them, the same way dragging a plain idea onto
   // another already reorders those.
   var _sboardSubberOrderByParent = {};
+  // Aug 3 2026 -- combined Subber+idea display order per parent, used only
+  // by the ORDER # badge (and the DETAILS card's order pill) so the whole
+  // visual column numbers 1,2,3... straight down with no repeats. See the
+  // long comment in renderGroup for why this has to be separate from
+  // _sboardIdeaOrderByParent/_sboardSubberOrderByParent.
+  var _sboardCardOrderByParent = {};
   var _sboardChildCountById = {};
   // Alphabetical header view -- Larry, Aug 3 2026: "If headers or subbers
   // are sorted alphabetically the order number does NOT change, allowing
@@ -1058,10 +1064,11 @@
     cornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     tile.appendChild(cornerFlip);
     // ORDER # badge, Aug 3 2026 -- Larry: "What if every card has an
-    // ORDER #" -- plain idea cards get one too, same vertical top-to-
-    // bottom numbering as Subbers, via _sboardIdeaOrderByParent keyed by
-    // this tile's real parent (groupParentId).
-    tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardIdeaOrderByParent[groupParentId]||[], item.id));
+    // ORDER #" -- plain idea cards get one too, numbered in the same
+    // single top-to-bottom sequence as this parent's Subbers (see
+    // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
+    // loose card sitting in the same visual column never both show "1".
+    tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
     // one to a header if it wasn't already — same "first card placed stays
@@ -1155,12 +1162,13 @@
     stackCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     front.appendChild(stackCornerFlip);
     // ORDER # badge, Aug 3 2026 -- Larry: "Subbers are numbered vertically
-    // top to bottom." Reads from _sboardSubberOrderByParent, keyed by
-    // this Subber's own real parent -- empty/no badge if that map hasn't
+    // top to bottom." Reads from _sboardCardOrderByParent (Subbers +
+    // loose cards under this Subber's own real parent, in one shared
+    // sequence -- see renderGroup) -- empty/no badge if that map hasn't
     // been populated for this parent yet (e.g. the small peek-grid view,
     // which doesn't render through the main board and has no order to
     // report here).
-    front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardSubberOrderByParent[headerRow.cluster_id]||[], headerRow.id));
+    front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
     // Drilling in is now done by dragging this card onto the TOPIC box
@@ -1490,6 +1498,22 @@
         _sboardBackfillSortOrder(directItems);
         _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
         _sboardSubberOrderByParent[headerRow.id]=subs.map(function(r){ return r.id; });
+        // ORDER # display numbering, Aug 3 2026 -- Larry noticed "Long
+        // Ideas has 2 number 1's": Subbers and plain idea/text cards
+        // render in ONE shared vertical column here (Subbers on top,
+        // then loose cards below), but their ORDER # badges came from
+        // two separate sequences that both start at 1 -- so the first
+        // Subber and the first loose card could both show badge "1"
+        // even though they're two different rows in the same visual
+        // stack. Larry's Planning Board use case (cards as steps in a
+        // plan) needs one continuous count straight down the column.
+        // _sboardIdeaOrderByParent/_sboardSubberOrderByParent above stay
+        // exactly as they were -- they're what the actual drag-reorder
+        // math (_sboardReorderOrMoveIdea/_sboardReorderOrMoveSubber)
+        // uses to rewrite sort_order, and mixing Subber ids into an
+        // idea-only reorder (or vice versa) would corrupt that. This
+        // separate map is ONLY for what number a badge shows.
+        _sboardCardOrderByParent[headerRow.id]=subs.concat(directItems).map(function(r){ return r.id; });
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
@@ -2637,10 +2661,8 @@
       var list=null, idx=-1;
       if(isHeaderType && _sboardTopLevelOrder && findIdx(_sboardTopLevelOrder)!==-1){
         list=_sboardTopLevelOrder; idx=findIdx(list);
-      } else if(isHeaderType && item.cluster_id && _sboardSubberOrderByParent[item.cluster_id]){
-        list=_sboardSubberOrderByParent[item.cluster_id]; idx=findIdx(list);
-      } else if(!isHeaderType && item.cluster_id && _sboardIdeaOrderByParent[item.cluster_id]){
-        list=_sboardIdeaOrderByParent[item.cluster_id]; idx=findIdx(list);
+      } else if(item.cluster_id && _sboardCardOrderByParent[item.cluster_id]){
+        list=_sboardCardOrderByParent[item.cluster_id]; idx=findIdx(list);
       }
       if(list && idx!==-1){
         orderPillHTML='<span class="sb-notes-pill" style="cursor:default" title="Order #">🔢 '+(idx+1)+' of '+list.length+'</span>';
