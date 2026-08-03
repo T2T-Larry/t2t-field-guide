@@ -1402,6 +1402,9 @@
             +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
               +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
             +'</div></div>'
+            +'<div class="bb-field"><label>Text size</label>'
+              +'<button class="bb-flag-btn" id="bb-open-textsize" style="width:100%">🔠 Adjust text size</button>'
+            +'</div>'
             +'<div class="bb-field"><label>Start Date warning (days before, auto-sets H)</label>'
               +'<input type="number" min="0" step="1" id="bb-start-warn-days" style="width:80px">'
             +'</div>'
@@ -1413,6 +1416,11 @@
         +'</div>';
       fg.appendChild(setOv);
       setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
+      // Aug 3 2026: Briefing Board is full-screen (.isx-full), so the
+      // desk's own gear/text-size picker is hidden here -- same shared
+      // picker as Storyboard/Session's Options menus.
+      var tsBtn=setOv.querySelector('#bb-open-textsize');
+      if(tsBtn) tsBtn.addEventListener('click', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
     }
     if(!document.getElementById('bb-hx-overlay')){
       var hxOv=document.createElement('div');
