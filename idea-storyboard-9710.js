@@ -1823,7 +1823,15 @@
     } else {
       if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
       if(topicBox){ topicBox.style.background=''; }
-      if(projectLabel) projectLabel.textContent='Wish Tank';
+      // Larry, Aug 3 2026 (bug report): "It claims to be in the Wish
+      // Tank project but that is not true!!" This branch only runs
+      // when there's genuinely no real Topic selected (currentTopicId
+      // null/unresolved) -- PROJECT was hardcoded to the literal text
+      // "Wish Tank" here, which reads as a real (wrong) answer instead
+      // of the same "nothing selected" state PARENT already shows
+      // correctly with an em dash. Match that instead of naming any
+      // specific project when none is actually chosen.
+      if(projectLabel) projectLabel.textContent='\u2014';
       if(parentLabel) parentLabel.textContent='\u2014';
       if(parentHit){ parentHit.classList.add('inert'); }
     }

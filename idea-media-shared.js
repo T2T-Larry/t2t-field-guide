@@ -146,10 +146,19 @@
     }catch(e){ console.warn('Idea Board persist-last-topic failed:', e); }
   }
 
-  function _ideaOpenBoard(boardId){
+  // push -- optional, defaults to true (normal nav() behavior, pushing
+  // the current screen onto the back-stack). Aug 3 2026: the sign-in/
+  // reload resume path (backpack.js's resumeToLastPageOr) needs this to
+  // be false the one time it calls through here, same as every other
+  // screen it resumes -- otherwise 's-signin' (still `cur` at that exact
+  // moment) gets pushed onto the stack, and closing the Storyboard would
+  // wrongly go back to the sign-in screen instead of wherever it should
+  // (the exact Aug 1 2026 bug this file's push:false convention already
+  // exists to prevent, just never plumbed through this particular path).
+  function _ideaOpenBoard(boardId, push){
     T2TShared.currentTopicId=boardId; T2TShared.filter=boardId;
     _ideaPersistLastTopic(boardId);
-    T().nav('s-sea-of-ideas-cluster');
+    T().nav('s-sea-of-ideas-cluster', push);
   }
 
   // Larry, August 1 2026: "There is no ISB project, no ISB parent and no
@@ -162,7 +171,7 @@
   // already resumes the traveler's last topic on plain entry (see
   // _isxInit's Resume last Input topic block) — this mirrors that same
   // logic for 1010, so the desk button lands somewhere real instead.
-  async function _ideaOpenBoardResume(){
+  async function _ideaOpenBoardResume(push){
     var wt=await T2TData.ensureWishTank();
     if(!wt || !wt.id){
       await new Promise(function(r){ setTimeout(r,400); });
@@ -171,7 +180,7 @@
     if(!wt || !wt.id){
       console.error('Idea Board: Wish Tank unavailable, opening blank');
       T2TShared.currentTopicId=null; T2TShared.filter=null;
-      T().nav('s-sea-of-ideas-cluster');
+      T().nav('s-sea-of-ideas-cluster', push);
       return;
     }
     // Ask whichever project was actually last active, not Wish Tank
@@ -185,7 +194,7 @@
         if(lastId) targetId=lastId;
       }
     }catch(e){ console.warn('Idea Board resume-last-topic failed:', e); }
-    _ideaOpenBoard(targetId);
+    _ideaOpenBoard(targetId, push);
   }
 
   // Reciprocal of _isxOpenStoryboardView (9711 → 9710). Carries the current

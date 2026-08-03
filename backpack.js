@@ -150,6 +150,30 @@
         // later. Sign-in is never a legitimate "go back" destination
         // once already signed in, so it has no business on that stack
         // at all.
+        //
+        // Larry, Aug 3 2026 (bug report): "When I signed in it went to
+        // an OBSOLETE idea board called What do you want? It claims to
+        // be in the Wish Tank project but that is not true!!" Root
+        // cause: this is the ONE entry point into 1010 (the Idea
+        // Storyboard, s-sea-of-ideas-cluster) that was still a bare
+        // nav() call -- every other entry point (desk button, TOOLS
+        // menu, TOC links) was already fixed back on Aug 1 to go
+        // through T2TMedia.openBoardResume() instead, precisely
+        // because a bare nav() here leaves currentTopicId null and 1010
+        // renders its blank-project fallback chrome (TOPIC "What do you
+        // want?", PROJECT hardcoded to read "Wish Tank" even though no
+        // real project is selected at all). Nothing was ever actually
+        // saved as an obsolete board -- this was always just that same
+        // fallback display, reachable one path Aug 1's fix missed:
+        // sign-in/reload resuming a session that was last left sitting
+        // on 1010 with no topic resolved. Same treatment as every other
+        // entry point now: resolve a real topic first, THEN land on the
+        // screen, instead of landing blank and hoping something fixes
+        // it up afterward.
+        if(localId==='s-sea-of-ideas-cluster' && window.T2TMedia && window.T2TMedia.openBoardResume){
+          window.T2TMedia.openBoardResume(false);
+          return;
+        }
         if(localId && localId!=='s-signin' && document.getElementById(localId)){ nav(localId, false); return; }
       }
       if(document.getElementById(fallbackId)) nav(fallbackId, false);
