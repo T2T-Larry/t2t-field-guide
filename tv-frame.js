@@ -156,10 +156,10 @@
       // outline:none + a warm gold focus ring (matching the knob's own
       // color language) replaces the default blue instead of just
       // deleting focus indication outright.
-      + '.tv-knob{width:34px;height:34px;border-radius:50%;cursor:pointer;pointer-events:auto;'
+      + '.tv-knob{width:40px;height:40px;border-radius:50%;cursor:pointer;pointer-events:auto;'
       +   'border:2px solid #6b5a42;background:radial-gradient(circle at 35% 30%,#8a7358,#4a3826 70%);'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15);'
-      +   'font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;'
+      +   'font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;'
       +   'color:#f3e6cf;transition:transform .1s ease;outline:none}'
       + '.tv-knob:active{transform:translateY(1px)}'
       // Close knob -- Larry, July 31 2026, second pass: "change color
@@ -179,7 +179,8 @@
       // the upper right... must be in the LOWER right corner" --
       // bottom:10px instead of top:10px is the whole fix; still
       // outside the centered knob row, so still clear of Next.
-      + '.tv-knob-close{position:absolute;bottom:10px;right:10px;'
+      + '.tv-knob-close{position:absolute;bottom:10px;right:18px;'
+      +   'width:34px;height:34px;font-size:14px;'
       +   'background:linear-gradient(160deg,var(--tv-top,#14806A),var(--tv-mid,#0F6E56) 55%,var(--tv-bottom,#093B2F) 100%);'
       +   'border-color:var(--tv-border,#06231C)}'
       + '.tv-knob:focus-visible{box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15),'
