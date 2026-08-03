@@ -2942,7 +2942,7 @@
       + '#sz-member-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
       +   'font-size:min(3vw,30px);letter-spacing:0.04em;color:rgba(0,0,0,.05);' /* Larry, August 3 2026: smaller + mixed case, so a tighter tracking than the all-caps T2T reads cleaner */
       +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
-      +   'white-space:nowrap;margin-bottom:2px}'
+      +   'white-space:nowrap;margin-top:2px}'
       + '#sz-t2t-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
       +   'font-size:min(11vw,110px);letter-spacing:0.12em;' /* Larry, July 31 2026: about half the original size */
       +   'color:rgba(0,0,0,.05);'
@@ -2972,8 +2972,8 @@
     var mark = document.createElement('div');
     mark.id = 'sz-t2t-watermark';
     mark.textContent = 'T2T';
-    wrap.appendChild(memberLine);
     wrap.appendChild(mark);
+    wrap.appendChild(memberLine);
     // Inserted as the very FIRST child of <body> -- everything else on
     // the desk (the widget, both drawers, tools, nameplate, notebook)
     // either carries an explicit high z-index or, for the widget
