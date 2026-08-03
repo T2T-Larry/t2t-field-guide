@@ -536,6 +536,12 @@
   // that isn't right").
   var _isxDetailCtx = null;
   var _sboardIdeaOrderByParent = {};
+  // Subber order within their own Header, added Aug 3 2026 -- same idea
+  // as _sboardIdeaOrderByParent just above, but for nested Header cards
+  // (Subbers) instead of plain ideas. Lets dragging one Subber onto
+  // another reorder them, the same way dragging a plain idea onto
+  // another already reorders those.
+  var _sboardSubberOrderByParent = {};
   var _sboardChildCountById = {};
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
@@ -1099,13 +1105,35 @@
     // mean color everywhere with zero header exceptions). Double-click here
     // is the same color-options shortcut every other card has.
     wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
-    wrap.addEventListener('dragover', function(e){ e.preventDefault(); front.style.outline='2px solid #5b9bd5'; });
-    wrap.addEventListener('dragleave', function(){ front.style.outline='none'; });
+    // Reorder/move zoning, Aug 3 2026 -- top/bottom half of this Subber
+    // tile reorders it among its siblings under the same Header (or moves
+    // it in from a different Header entirely, inserting at this
+    // position) -- same "drag one card onto another" language plain idea
+    // cards already use, just applied to Subbers, which previously had
+    // no drop behavior at all for another Subber dragged onto them (the
+    // drop was silently ignored). A plain idea dropped here still just
+    // files under this Subber, unchanged.
+    wrap.addEventListener('dragover', function(e){
+      e.preventDefault();
+      var rect=wrap.getBoundingClientRect();
+      var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
+      front.style.outline='2px solid #5b9bd5';
+      front.style.boxShadow = (frac<0.5) ? 'inset 0 3px 0 0 #5b9bd5' : 'inset 0 -3px 0 0 #5b9bd5';
+      wrap._dropSide = (frac<0.5) ? 'before' : 'after';
+    });
+    wrap.addEventListener('dragleave', function(){ front.style.outline='none'; front.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; wrap._dropSide=null; });
     wrap.addEventListener('drop', function(e){
-      e.preventDefault(); front.style.outline='none';
+      e.preventDefault(); front.style.outline='none'; front.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)';
+      var side=wrap._dropSide||'before'; wrap._dropSide=null;
       var raw=e.dataTransfer.getData('text/plain');
-      if(!raw||raw==='sb-goup'||raw.indexOf('header:')===0) return;
-      _sboardMoveCard(raw, headerRow.id);
+      if(!raw||raw==='sb-goup') return;
+      if(raw.indexOf('header:')===0){
+        var draggedHeaderId=raw.slice(7);
+        if(String(draggedHeaderId)===String(headerRow.id)) return;
+        _sboardReorderOrMoveSubber(draggedHeaderId, headerRow.id, headerRow.cluster_id||null, side==='after');
+      } else {
+        _sboardMoveCard(raw, headerRow.id);
+      }
     });
     return wrap;
   }
@@ -1363,9 +1391,16 @@
         // respectively). Locked July 16, 2026.
         var blocksNewSubbers=(name==='Trash'||name==='Purpose'||name==='NEW');
         var straight=true;
-        var subs=subHeadersOf[headerRow.id]||[];
+        // Sorted by sort_order, Aug 3 2026 -- previously rendered in
+        // whatever order Supabase happened to return them, since nothing
+        // ever wrote a meaningful sort_order for Subbers. Now that
+        // dragging one Subber onto another actually reorders them (see
+        // _sboardReorderOrMoveSubber), the render needs to respect that
+        // order instead of ignoring it.
+        var subs=(subHeadersOf[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
+        _sboardSubberOrderByParent[headerRow.id]=subs.map(function(r){ return r.id; });
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
@@ -1390,23 +1425,33 @@
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
         }
+        // Three drop zones, Aug 3 2026 -- left/right edges reorder this
+        // Header among its top-level siblings (unchanged); the middle
+        // band now nests the dragged Header/Subber under THIS Header
+        // instead of doing nothing, matching the reorder-vs-nest zoning
+        // idea tiles already use. A plain idea dropped anywhere on this
+        // pill still just files under this Header, same as before --
+        // ideas don't have a "top level" to reorder into here.
         hd.addEventListener('dragover', function(e){
           e.preventDefault();
           var rect=hd.getBoundingClientRect();
           var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
-          hd.style.outline='none';
-          hd.style.boxShadow = (frac<0.5) ? 'inset 4px 0 0 0 #2d7dff' : 'inset -4px 0 0 0 #2d7dff';
-          hd._dropSide = (frac<0.5) ? 'before' : 'after';
+          if(frac<0.3){ hd.style.outline='none'; hd.style.boxShadow='inset 4px 0 0 0 #2d7dff'; hd._dropSide='before'; }
+          else if(frac>0.7){ hd.style.outline='none'; hd.style.boxShadow='inset -4px 0 0 0 #2d7dff'; hd._dropSide='after'; }
+          else { hd.style.boxShadow='none'; hd.style.outline='2px solid #2d7dff'; hd._dropSide='nest'; }
         });
-        hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd._dropSide=null; });
+        hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null; });
         hd.addEventListener('drop', function(e){
           e.preventDefault();
           var side=hd._dropSide||'before';
-          hd.style.boxShadow='none'; hd._dropSide=null;
+          hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null;
           var raw=e.dataTransfer.getData('text/plain');
           if(!raw || raw==='sb-goup') return;
           if(raw.indexOf('header:')===0){
-            _sboardReorderHeader(raw.slice(7), headerRow.id, side==='after');
+            var draggedHeaderId=raw.slice(7);
+            if(String(draggedHeaderId)===String(headerRow.id)) return;
+            if(side==='nest'){ _sboardMoveCard(draggedHeaderId, headerRow.id); }
+            else { _sboardReorderHeader(draggedHeaderId, headerRow.id, side==='after'); }
           } else {
             _sboardMoveCard(raw, headerRow.id);
           }
@@ -1829,20 +1874,66 @@
     }
   }
 
+  // Drop a Subber onto another Subber tile, Aug 3 2026 -- same gesture as
+  // _sboardReorderOrMoveIdea just above, but for Subbers (nested Header
+  // cards) instead of plain ideas: reorders among siblings under the same
+  // Header if the dragged Subber is already there, or moves it in (and
+  // inserts it at that position) if it's coming from a different Header
+  // entirely. One gesture covers both, matching how plain-idea cards
+  // already behave -- this was the missing piece that made moving a
+  // Subber require opening its DETAILS card instead of just dragging it.
+  async function _sboardReorderOrMoveSubber(draggedId, targetId, parentId, insertAfter){
+    if(String(draggedId)===String(targetId)) return;
+    if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
+    var statusEl=document.getElementById('sc-status');
+    var _sb=T().sb;
+    var ids=(_sboardSubberOrderByParent[parentId]||[]).slice();
+    var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
+    if(fromIdx!==-1) ids.splice(fromIdx,1);
+    var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
+    var insertAt=toIdx===-1?ids.length:(insertAfter?toIdx+1:toIdx);
+    ids.splice(insertAt, 0, draggedId);
+    if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
+    try{
+      var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId);
+      if(updCluster.error) throw updCluster.error;
+      for(var i=0;i<ids.length;i++){
+        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
+        if(upd.error) throw upd.error;
+      }
+      renderSeaBoard();
+    }catch(err){
+      if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
+    }
+  }
+
+  // Reorders top-level Headers among each other. Also handles promoting a
+  // Subber up to Header level, Aug 3 2026 -- dropping a Subber onto a
+  // Header's left/right edge (see the 'hd' drop handler below) used to
+  // silently do nothing, because this function only ever knew how to
+  // reshuffle cards that were already top-level (fromIdx===-1 bailed out
+  // immediately). Now a dragged card that isn't already top-level is
+  // treated as a promotion: its parent link is cleared (making it a real
+  // standalone Header) on top of the normal reorder.
   async function _sboardReorderHeader(draggedId, targetId, insertAfter){
     if(String(draggedId)===String(targetId)) return;
     var statusEl=document.getElementById('sc-status');
     var ids=_sboardTopLevelOrder.slice();
     var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
     var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
-    if(fromIdx===-1||toIdx===-1) return;
-    ids.splice(fromIdx,1);
+    if(toIdx===-1) return;
+    var wasTopLevel=fromIdx!==-1;
+    if(wasTopLevel) ids.splice(fromIdx,1);
     var insertAt=ids.findIndex(function(id){ return String(id)===String(targetId); });
     if(insertAfter) insertAt+=1;
     ids.splice(insertAt,0,draggedId);
     var _sb=T().sb;
     if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
     try{
+      if(!wasTopLevel){
+        var updCluster=await _sb.from('ideas').update({cluster_id:null}).eq('id',draggedId);
+        if(updCluster.error) throw updCluster.error;
+      }
       for(var i=0;i<ids.length;i++){
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
