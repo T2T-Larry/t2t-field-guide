@@ -1432,13 +1432,20 @@
         // idea tiles already use. A plain idea dropped anywhere on this
         // pill still just files under this Header, same as before --
         // ideas don't have a "top level" to reorder into here.
+        // Bright green, Aug 3 2026 -- Larry: "Make it a bright green to
+        // saw it is OK to release header here." Was the same blue
+        // (#2d7dff) used for the reorder line itself, which didn't read
+        // as a go/no-go signal -- green is the conventional "this is a
+        // valid drop, safe to let go" color (matching, e.g., a traffic
+        // light) the same way red reads as "stop/danger," so it was the
+        // more effective choice here over red.
         hd.addEventListener('dragover', function(e){
           e.preventDefault();
           var rect=hd.getBoundingClientRect();
           var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
-          if(frac<0.3){ hd.style.outline='none'; hd.style.boxShadow='inset 4px 0 0 0 #2d7dff'; hd._dropSide='before'; }
-          else if(frac>0.7){ hd.style.outline='none'; hd.style.boxShadow='inset -4px 0 0 0 #2d7dff'; hd._dropSide='after'; }
-          else { hd.style.boxShadow='none'; hd.style.outline='2px solid #2d7dff'; hd._dropSide='nest'; }
+          if(frac<0.3){ hd.style.outline='none'; hd.style.boxShadow='inset 4px 0 0 0 #22c55e'; hd._dropSide='before'; }
+          else if(frac>0.7){ hd.style.outline='none'; hd.style.boxShadow='inset -4px 0 0 0 #22c55e'; hd._dropSide='after'; }
+          else { hd.style.boxShadow='none'; hd.style.outline='2px solid #22c55e'; hd._dropSide='nest'; }
         });
         hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null; });
         hd.addEventListener('drop', function(e){
@@ -1523,12 +1530,15 @@
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+newRow.id); });
         }
+        // Same bright green as the main header drop zones above, Aug 3
+        // 2026 -- keeps NEW's own reorder feedback consistent with every
+        // other header pill's.
         hd.addEventListener('dragover', function(e){
           e.preventDefault();
           var rect=hd.getBoundingClientRect();
           var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
           hd.style.outline='none';
-          hd.style.boxShadow = (frac<0.5) ? 'inset 4px 0 0 0 #2d7dff' : 'inset -4px 0 0 0 #2d7dff';
+          hd.style.boxShadow = (frac<0.5) ? 'inset 4px 0 0 0 #22c55e' : 'inset -4px 0 0 0 #22c55e';
           hd._dropSide = (frac<0.5) ? 'before' : 'after';
         });
         hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd._dropSide=null; });
