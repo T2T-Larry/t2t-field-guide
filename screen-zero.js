@@ -1209,6 +1209,11 @@
     if (overlay) overlay.classList.remove('active');
   }
 
+  // Exposed so full-screen tools (Storyboard, Session, Briefing Board,
+  // Gems) that hide the desk's own gear can still open the same picker
+  // from their own in-tool settings/gear menu. Aug 3 2026.
+  window.openFGTextSizePicker = openTextSizePicker;
+
   /* ---------- The MAP (☰) button -- Larry, July 26: a safety measure
      for retiring every screen's own bottom toolbar (see style.css --
      .bar2/.bar3 hidden entirely now, not just the paging arrows).
