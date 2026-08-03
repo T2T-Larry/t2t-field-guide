@@ -1963,20 +1963,30 @@
         // subber instead of changing order? I moved it back to header
         // level and it might have disappeared." Root cause: this always
         // promoted a dragged Subber with cluster_id:null, which is only
-        // correct when "header level" means the absolute project apex
-        // (T2TShared.currentTopicId is genuinely null). Every OTHER
-        // header row -- the normal case, viewing a real Topic's own
-        // headers -- has cluster_id equal to that Topic's own id, not
-        // null. Promoting to null yanked the Subber all the way out to
-        // become its own brand-new top-level project, invisible from
-        // wherever it was actually being viewed -- exactly what read as
-        // "disappeared." Using the current Topic's own id (falling back
-        // to null only at the true apex) puts a promoted Subber back
-        // among the very headers it's being dropped next to, matching
-        // what "header level" actually means on whichever board is on
-        // screen.
-        var newTopParent=T2TShared.currentTopicId||null;
-        var updCluster=await _sb.from('ideas').update({cluster_id:newTopParent}).eq('id',draggedId);
+        // correct when "header level" means the absolute project apex.
+        // On a real Topic's own board -- the normal case -- its headers
+        // all share that Topic's own id as cluster_id, not null.
+        // Promoting to null yanked the Subber all the way out to become
+        // its own brand-new top-level project, invisible from wherever
+        // it was actually being viewed -- exactly what read as
+        // "disappeared."
+        //
+        // Second pass, same day -- Larry, after the immediate fix: "it
+        // was just a test header for moving in various locations, none
+        // of which were to create a new project which should ONLY happen
+        // in one spot." That's a stronger rule than "use the right id" --
+        // this drag gesture must never be able to spawn a new top-level
+        // project at all, full stop; that's the "+ NEW PROJECT" flow's
+        // job alone. So rather than falling back to cluster_id:null at
+        // the true apex (still technically "creating a project" via a
+        // drag), promoting with nowhere real to land is refused outright
+        // -- same shape as every other guarded action in this file, a
+        // status message instead of a silent wrong result.
+        if(!T2TShared.currentTopicId){
+          if(statusEl){ statusEl.textContent='Can\'t make a new project this way — use + NEW PROJECT.'; statusEl.classList.add('err'); }
+          return;
+        }
+        var updCluster=await _sb.from('ideas').update({cluster_id:T2TShared.currentTopicId}).eq('id',draggedId);
         if(updCluster.error) throw updCluster.error;
       }
       for(var i=0;i<ids.length;i++){
