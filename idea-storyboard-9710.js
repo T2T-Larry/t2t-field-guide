@@ -1959,7 +1959,24 @@
     if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
     try{
       if(!wasTopLevel){
-        var updCluster=await _sb.from('ideas').update({cluster_id:null}).eq('id',draggedId);
+        // Bug fix, Aug 3 2026 -- Larry: "I think a header was just made a
+        // subber instead of changing order? I moved it back to header
+        // level and it might have disappeared." Root cause: this always
+        // promoted a dragged Subber with cluster_id:null, which is only
+        // correct when "header level" means the absolute project apex
+        // (T2TShared.currentTopicId is genuinely null). Every OTHER
+        // header row -- the normal case, viewing a real Topic's own
+        // headers -- has cluster_id equal to that Topic's own id, not
+        // null. Promoting to null yanked the Subber all the way out to
+        // become its own brand-new top-level project, invisible from
+        // wherever it was actually being viewed -- exactly what read as
+        // "disappeared." Using the current Topic's own id (falling back
+        // to null only at the true apex) puts a promoted Subber back
+        // among the very headers it's being dropped next to, matching
+        // what "header level" actually means on whichever board is on
+        // screen.
+        var newTopParent=T2TShared.currentTopicId||null;
+        var updCluster=await _sb.from('ideas').update({cluster_id:newTopParent}).eq('id',draggedId);
         if(updCluster.error) throw updCluster.error;
       }
       for(var i=0;i<ids.length;i++){
@@ -2524,6 +2541,22 @@
           + '<div class="sb-loc-row" style="margin-bottom:10px">'
           + '<div class="sb-loc-crumbs">'+(_hnIdx+1)+' of '+_hnList.length+'</div>'
           + '</div>';
+      } else if(item.cluster_id){
+        // Subber Number — Larry, Aug 3 2026: "do subbers need order
+        // numbers like headers?" Yes, same idea, same eyebrow+field
+        // language, just scoped to this Subber's own siblings under its
+        // parent Header instead of the top-level row -- _sboardMakeHeaderStackTile's
+        // own drag zones already reorder Subbers vertically ("higher or
+        // lower," per Larry's own words) via _sboardSubberOrderByParent,
+        // so that's the exact same live-computed list this reads from.
+        var _snList=_sboardSubberOrderByParent[item.cluster_id]||[];
+        var _snIdx=_snList.findIndex(function(id){ return String(id)===String(item.id); });
+        if(_snIdx!==-1){
+          headerNumberHTML='<div class="sb-hdr-eyebrow2">Subber Number</div>'
+            + '<div class="sb-loc-row" style="margin-bottom:10px">'
+            + '<div class="sb-loc-crumbs">'+(_snIdx+1)+' of '+_snList.length+'</div>'
+            + '</div>';
+        }
       }
     }
 
