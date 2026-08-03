@@ -852,12 +852,16 @@
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
+      +'<button class="sc-ov-btn" id="isx-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('isx-gear-recolor', function(){ T2TStoryboard.closeDetail(); _isxOpenRecolorAll(); });
     T().wire('isx-gear-reset', function(){ T2TStoryboard.closeDetail(); _isxOpenResetHeadersConfirm(); });
+    // Aug 3 2026: same shared picker as 9710 (see its own gear menu) --
+    // Session is full-screen too, so the desk's gear is hidden here.
+    T().wire('isx-gear-textsize', function(){ T2TStoryboard.closeDetail(); if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
     T().wire('isx-gear-close', T2TStoryboard.closeDetail);
   }
 
