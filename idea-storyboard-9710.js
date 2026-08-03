@@ -164,7 +164,7 @@
         // Bottom-left is the one corner none of the existing per-card
         // badges (lock, heart, link, corner-flip) already use.
         +'.sb-order-badge{position:absolute;bottom:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:5}'
-        +'.sb-key-dots{position:absolute;top:2px;left:50%;transform:translateX(-50%);display:flex;gap:2px;pointer-events:none;z-index:5}'
+        +'.sb-key-dots{position:absolute;bottom:2px;right:18px;display:flex;gap:2px;pointer-events:none;z-index:5}'
         +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         +'.sb-key-shape-btn{width:28px;height:28px;border:2px solid transparent;border-radius:6px;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}'
         +'.sb-key-shape-btn.active{border-color:#5b9bd5}'
@@ -673,10 +673,11 @@
     var row=_sboardAllRowsById[itemId];
     if(row){ row.key_slot_1=keysArr[0]||null; row.key_slot_2=keysArr[1]||null; row.key_slot_3=keysArr[2]||null; }
   }
-  // On-card badge, Aug 3 2026 -- small shape+color dots along the top
-  // edge (bottom-left/right/corners are already spoken for by the lock,
-  // heart, link, and ORDER # badges). title=meaning gives the "visible
-  // on hover" Larry asked for, for free, via the native browser tooltip.
+  // On-card badge, Aug 3 2026 -- small shape+color dots tucked just left
+  // of the heart, bottom-right -- Larry: "Custom key goes on the outside
+  // of the card like the heart," after an earlier top-center placement
+  // didn't read right. title=meaning gives the "visible on hover" Larry
+  // asked for, for free, via the native browser tooltip.
   function _sboardKeyDotsHTML(item){
     var keys=_sboardItemKeys(item);
     if(!keys.length) return '';
@@ -1192,12 +1193,10 @@
     // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
     // loose card sitting in the same visual column never both show "1".
     tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
-    // Custom Keys badge, Aug 3 2026 -- Larry: "We use red hearts to mean
-    // I like this one. What about a blue heart? or a yellow triangle
-    // with custom meanings visible on hover?" Up to 3 small shape+color
-    // dots along the top edge -- every other corner is already spoken
-    // for (lock top-right, link top-left, heart+corner-flip bottom-
-    // right, ORDER # bottom-left).
+    // Custom Keys badge, Aug 3 2026 -- Larry: "Custom key goes on the
+    // outside of the card like the heart." Sits just left of the heart
+    // badge, same bottom-right corner, so the two "how I feel about this
+    // card" markers read together.
     tile.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(item));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
