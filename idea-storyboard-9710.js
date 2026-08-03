@@ -2092,6 +2092,7 @@
       +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
+      +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
@@ -2099,6 +2100,10 @@
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
     T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
+    // Aug 3 2026: Storyboard is full-screen (.isx-full), so the desk's own
+    // gear/text-size picker is hidden here -- this reaches the same shared
+    // picker screen-zero.js owns, so the choice stays one control, not two.
+    T().wire('sb-gear-textsize', function(){ closeSbDetail(); if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
     T().wire('sb-gear-close', closeSbDetail);
   }
 
