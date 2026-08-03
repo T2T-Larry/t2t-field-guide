@@ -138,18 +138,18 @@
       + '#sz-navbar.sz-collapsed #sz-navmid,'
       +   '#sz-navbar.sz-collapsed #sz-menu,#sz-navbar.sz-collapsed #sz-gear{display:none}'
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
-      +   'right:-18px;width:18px;height:40px;'
-      +   'border-radius:0 20px 20px 0;border:2px solid #999;border-left:none;'
+      +   'right:-28px;width:28px;height:60px;'
+      +   'border-radius:0 30px 30px 0;border:2px solid #999;border-left:none;'
       +   'background:var(--sz-bg,#fdf8f0);cursor:pointer;'
-      +   'box-shadow:2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
+      +   'box-shadow:2px 3px 8px rgba(0,0,0,.25);font-size:17px;line-height:1;'
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
       // Docked to the right side: the tray anchors from the right instead
       // of the left, and the toggle mirrors onto the rail's LEFT edge so
       // it still pokes into open screen space, not off past the browser
       // edge. Larry, July 26: "if it is placed on the right side of the
       // screen, the toggle must switch to the left side."
-      + '#sz-navbar.sz-dock-right #sz-navbar-toggle{right:auto;left:-18px;'
-      +   'border-radius:20px 0 0 20px;border-left:2px solid #999;border-right:none}'
+      + '#sz-navbar.sz-dock-right #sz-navbar-toggle{right:auto;left:-28px;'
+      +   'border-radius:30px 0 0 30px;border-left:2px solid #999;border-right:none}'
       // Was `width:100%` while it lived inside the 200px rail -- now
       // that it's `position:fixed` and free-standing, 100% would
       // stretch it across the whole viewport, so it needs a real width
@@ -311,13 +311,13 @@
       +   'text-shadow:1px 1px 2px rgba(255,255,255,.45),-1px -1px 2px rgba(0,0,0,.18);'
       +   'pointer-events:none;user-select:none}'
       + '#sz-drawer-r-toggle{position:absolute;top:50%;transform:translateY(-50%);'
-      +   'left:-18px;width:18px;height:40px;'
-      +   'border-radius:20px 0 0 20px;border:2px solid #999;border-right:none;'
+      +   'left:-28px;width:28px;height:60px;'
+      +   'border-radius:30px 0 0 30px;border:2px solid #999;border-right:none;'
       +   'background:var(--sz-bg,#fdf8f0);cursor:pointer;'
-      +   'box-shadow:-2px 3px 8px rgba(0,0,0,.25);font-size:12px;line-height:1;'
+      +   'box-shadow:-2px 3px 8px rgba(0,0,0,.25);font-size:17px;line-height:1;'
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
-      + '#sz-drawer-r.sz-dock-left #sz-drawer-r-toggle{left:auto;right:-18px;'
-      +   'border-radius:0 20px 20px 0;border-left:none;border-right:2px solid #999}'
+      + '#sz-drawer-r.sz-dock-left #sz-drawer-r-toggle{left:auto;right:-28px;'
+      +   'border-radius:0 30px 30px 0;border-left:none;border-right:2px solid #999}'
       // Pastel color-options picker (double-click a drawer's own
       // background, not one of its buttons) -- Larry, July 27 2026.
       // Same dimmed-backdrop overlay family as the TV frame's picker
