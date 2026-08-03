@@ -159,6 +159,11 @@
         // drill-to-TOPIC navigation, and this avoids any collision with
         // that or with the DETAILS image lightbox's own dblclick.
         +'.sc-corner-flip{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 15px 15px;border-color:transparent transparent rgba(26,58,92,0.32) transparent;cursor:pointer;z-index:6;transition:border-width .12s}'
+        // Order # badge -- Larry, Aug 3 2026: "small, no bigger that Notes
+        // field" (.sb-notes-pill below is 12px; this is smaller still).
+        // Bottom-left is the one corner none of the existing per-card
+        // badges (lock, heart, link, corner-flip) already use.
+        +'.sb-order-badge{position:absolute;bottom:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:5}'
         +'.sc-corner-flip:hover{border-width:0 0 20px 20px;border-color:transparent transparent rgba(26,58,92,0.55) transparent}'
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
@@ -543,6 +548,15 @@
   // another already reorders those.
   var _sboardSubberOrderByParent = {};
   var _sboardChildCountById = {};
+  // Alphabetical header view -- Larry, Aug 3 2026: "If headers or subbers
+  // are sorted alphabetically the order number does NOT change, allowing
+  // to resort to number order." This is a pure DISPLAY toggle, never
+  // written anywhere -- true by default means "showing A-Z instead of
+  // the real order," reset to false any time the traveler leaves this
+  // board (see _sboardDrillInto/_sboardGoUpOneLevel) so a freshly opened
+  // board never inherits a leftover alphabetical view from somewhere else.
+  var _sboardAlphaHeaderView = false;
+  var _sboardLastRenderedTopicId = undefined;
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
   var _clusterWide = false;
@@ -904,6 +918,43 @@
     return ao-bo;
   }
 
+  function _sboardByAlpha(a,b){
+    return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase(), undefined, {numeric:true, sensitivity:'base'});
+  }
+
+  // Makes a sibling group's ORDER # real and permanent -- Larry, Aug 3
+  // 2026: "What if every card has an ORDER #... the order number does NOT
+  // change." A number that only ever comes from the null-sort_order
+  // fallback (creation order / priority tie-break) isn't a stable number
+  // yet -- the moment ANY member of a group is still relying on that
+  // fallback, this writes the group's current (already-correct) order
+  // as real sort_order values for every member, fire-and-forget, so from
+  // this render on the badge below is reading a genuine persisted
+  // position, not a guess that could shift if the fallback's own
+  // tie-break ever changed.
+  function _sboardBackfillSortOrder(orderedRows){
+    var needsBackfill=orderedRows.some(function(r){ return r.sort_order===null||r.sort_order===undefined; });
+    if(!needsBackfill) return;
+    var _sb=T().sb;
+    orderedRows.forEach(function(r,i){
+      if(r.sort_order!==i){
+        r.sort_order=i;
+        _sb.from('ideas').update({sort_order:i}).eq('id',r.id).then(function(){}, function(){});
+      }
+    });
+  }
+
+  // Small on-card badge -- Larry, Aug 3 2026: "small, no bigger that Notes
+  // field" (see .sb-notes-pill, 12px). orderedIds must always be the REAL
+  // persisted order (post-backfill), never whatever order the row is
+  // currently being DISPLAYED in -- that's what keeps this number
+  // unchanged while a board is being viewed alphabetically.
+  function _sboardOrderBadgeHTML(orderedIds, itemId){
+    var idx=-1;
+    for(var i=0;i<orderedIds.length;i++){ if(String(orderedIds[i])===String(itemId)){ idx=i; break; } }
+    return idx===-1 ? '' : '<div class="sb-order-badge">'+(idx+1)+'</div>';
+  }
+
   function _sboardFitFontSize(text, base, min){
     var len=(text||'').length;
     if(len<=14) return base;
@@ -1006,6 +1057,11 @@
     cornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     cornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     tile.appendChild(cornerFlip);
+    // ORDER # badge, Aug 3 2026 -- Larry: "What if every card has an
+    // ORDER #" -- plain idea cards get one too, same vertical top-to-
+    // bottom numbering as Subbers, via _sboardIdeaOrderByParent keyed by
+    // this tile's real parent (groupParentId).
+    tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardIdeaOrderByParent[groupParentId]||[], item.id));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
     // one to a header if it wasn't already — same "first card placed stays
@@ -1098,6 +1154,13 @@
     stackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     stackCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     front.appendChild(stackCornerFlip);
+    // ORDER # badge, Aug 3 2026 -- Larry: "Subbers are numbered vertically
+    // top to bottom." Reads from _sboardSubberOrderByParent, keyed by
+    // this Subber's own real parent -- empty/no badge if that map hasn't
+    // been populated for this parent yet (e.g. the small peek-grid view,
+    // which doesn't render through the main board and has no order to
+    // report here).
+    front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardSubberOrderByParent[headerRow.cluster_id]||[], headerRow.id));
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
     // Drilling in is now done by dragging this card onto the TOPIC box
@@ -1247,6 +1310,17 @@
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     if(!wrap||!_sb) return;
+    // Alphabetical view resets on a real board change, Aug 3 2026 --
+    // keyed off whatever topic actually rendered last time (however it
+    // got here: drill in/out, PROJECT switcher, a TOC link...), not any
+    // one specific navigation function, so this can't miss a path. A
+    // same-board refresh (recoloring, saving Notes, etc.) leaves it alone
+    // -- only landing on a genuinely different board snaps back to the
+    // real order.
+    if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
+      _sboardAlphaHeaderView=false;
+      _sboardLastRenderedTopicId=T2TShared.currentTopicId;
+    }
     if(statusEl){ statusEl.textContent='Loading…'; statusEl.classList.remove('err'); }
     try{
       var user=(await _sb.auth.getUser()).data.user;
@@ -1374,7 +1448,14 @@
       var fallbackTop=order.map(function(id){ return _unordered.find(function(h){ return String(h.id)===String(id); }); }).filter(Boolean);
       var explicitTop=_ordered.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
       var orderedTop=fallbackTop.concat(explicitTop);
+      // ORDER # badges always read the REAL order, never the alphabetical
+      // display below -- backfill first so that's a genuine persisted
+      // position from here on, then set _sboardTopLevelOrder from it
+      // (also what drag-reorder itself writes against, unaffected by
+      // whatever's currently on screen).
+      _sboardBackfillSortOrder(orderedTop);
       _sboardTopLevelOrder=orderedTop.map(function(h){ return h.id; });
+      var displayTop=_sboardAlphaHeaderView ? orderedTop.slice().sort(_sboardByAlpha) : orderedTop;
 
       var SUBBER_W=104;
       var SUBBER_H=64;
@@ -1399,6 +1480,14 @@
         // order instead of ignoring it.
         var subs=(subHeadersOf[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
+        // Backfill, Aug 3 2026 -- same reasoning as the top-level row:
+        // makes each Subber's/idea's ORDER # a real, permanent number
+        // instead of a fallback guess, the moment either list still has
+        // one relying on it. Subbers/ideas render vertically top to
+        // bottom, always in this real order -- there's no alphabetical
+        // view for this level (yet), so no separate display copy needed.
+        _sboardBackfillSortOrder(subs);
+        _sboardBackfillSortOrder(directItems);
         _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
         _sboardSubberOrderByParent[headerRow.id]=subs.map(function(r){ return r.id; });
         var block=document.createElement('div');
@@ -1421,6 +1510,12 @@
         hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
         hd.appendChild(hdCornerFlip);
+        // ORDER # badge, Aug 3 2026 -- Larry: "Headers are numbered
+        // horizontally left to right and includes ALL headers." Reads
+        // straight from _sboardTopLevelOrder, the REAL (backfilled)
+        // order computed just above -- Purpose/NEW/MISC included, and
+        // unaffected by the alphabetical display toggle.
+        hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
         if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -1602,12 +1697,34 @@
           var bo=(b.sort_order===null||b.sort_order===undefined)?_rowPriority(b):b.sort_order;
           return ao-bo;
         });
+        // ORDER # badges always read the REAL order (this mergedRow,
+        // backfilled), never whatever's on screen -- Larry, Aug 3 2026:
+        // "the order number does NOT change." _sboardTopLevelOrder is
+        // also what drag-reorder itself writes against, so it has to
+        // stay the real order too, not the alphabetical display below.
+        _sboardBackfillSortOrder(mergedRow);
         _sboardTopLevelOrder=mergedRow.map(function(h){ return h.id; });
         _sboardVisibleHeaders=childHeadersSorted;
 
         if(statusEl) statusEl.textContent=(directIdeas.length===0 && childHeaders.length===0) ? 'Nothing under this Header yet.' : '';
 
-        mergedRow.forEach(function(h){
+        // Alphabetical view, Aug 3 2026 -- Purpose/NEW stay pinned first
+        // and MISC stays pinned last (their real, backfilled relative
+        // order is kept exactly as-is); only the content headers between
+        // them get rearranged alphabetically for DISPLAY. mergedRow
+        // itself -- the real order everything else (badges, drag-reorder)
+        // reads from -- is untouched either way.
+        var displayMergedRow=mergedRow;
+        if(_sboardAlphaHeaderView){
+          var _pinFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
+          var _pinLastId=miscRow?String(miscRow.id):null;
+          var _pinFirst=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))!==-1; });
+          var _pinLast=mergedRow.filter(function(h){ return _pinLastId && String(h.id)===_pinLastId; });
+          var _middleAlpha=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))===-1 && !(_pinLastId && String(h.id)===_pinLastId); }).sort(_sboardByAlpha);
+          displayMergedRow=_pinFirst.concat(_middleAlpha).concat(_pinLast);
+        }
+
+        displayMergedRow.forEach(function(h){
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)){
             groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, T2TShared.currentTopicId, h));
           } else {
@@ -1616,7 +1733,7 @@
         });
       } else {
         if(newAdditionsRow) groupsWrap.appendChild(renderGroup(newAdditionsRow, 0));
-        orderedTop.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
+        displayTop.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
         _sboardVisibleHeaders=(newAdditionsRow?[newAdditionsRow]:[]).concat(orderedTop);
         if(statusEl) statusEl.textContent='';
         if(miscRow) groupsWrap.appendChild(renderGroup(miscRow, 0));
@@ -2237,11 +2354,6 @@
   // conventional spots (first, second, and always-last respectively —
   // see _rowPriority in renderSeaBoard) and are deliberately left exactly
   // where they already sit.
-  function _sboardLeadingNumber(text){
-    var m=/\d+/.exec(text||'');
-    return m ? parseInt(m[0],10) : Infinity; // no digits in the name -- sorts to the end, same idea as an empty string sorting last alphabetically
-  }
-
   function _sboardOpenSortHeadersPicker(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -2257,9 +2369,17 @@
       T().wire('sb-sort-close', closeSbDetail);
       return;
     }
+    // Larry, Aug 3 2026: "If headers or subbers are sorted alphabetically
+    // the order number does NOT change, allowing to resort to number
+    // order." Redesigned around that: A -> Z is now a temporary, unsaved
+    // DISPLAY-only rearrangement (_sboardAlphaHeaderView, consulted by
+    // renderSeaBoard) -- it never writes sort_order, so every card's real
+    // ORDER # badge keeps showing its true position the whole time it's
+    // active. Number order simply switches that view back off -- also no
+    // write, since the real order was never touched to begin with.
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Sort headers</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Arranges every header on this board. Purpose, NEW and MISC stay put — only the headers between them move.</div>'
+      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">A → Z is just a look -- it never changes anyone\'s ORDER #. Number order always brings back the real arrangement.</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="sb-sort-alpha" style="width:100%">A → Z</button>'
       +'<button class="sc-ov-btn" id="sb-sort-number" style="width:100%">Number order</button>'
@@ -2268,48 +2388,16 @@
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-sort-close', closeSbDetail);
-    T().wire('sb-sort-alpha', function(){ closeSbDetail(); _sboardSortHeaders('alpha'); });
-    T().wire('sb-sort-number', function(){ closeSbDetail(); _sboardSortHeaders('number'); });
+    T().wire('sb-sort-alpha', function(){ closeSbDetail(); _sboardSetAlphaHeaderView(true); });
+    T().wire('sb-sort-number', function(){ closeSbDetail(); _sboardSetAlphaHeaderView(false); });
   }
 
-  function _sboardSortHeaders(mode){
-    var headers=(_sboardVisibleHeaders||[]).filter(function(h){
-      return String(h.id)!==String(_sboardNewAdditionsId);
-    });
-    if(headers.length<2) return;
-    var sorted=headers.slice().sort(function(a,b){
-      if(mode==='number'){
-        var an=_sboardLeadingNumber(a.text_content), bn=_sboardLeadingNumber(b.text_content);
-        if(an!==bn) return an-bn;
-      }
-      var at=(a.text_content||'').toLowerCase(), bt=(b.text_content||'').toLowerCase();
-      return at.localeCompare(bt, undefined, {numeric:true, sensitivity:'base'});
-    });
-    // Rebuild the row the same way it's always assembled (see the
-    // mergedRow logic in renderSeaBoard): Purpose first, then NEW, then
-    // content headers, then MISC last — so writing fresh sort_order
-    // values here can never knock those three reserved slots out of
-    // place, only reorder what's between them.
-    var fullRow=[];
-    if(_sboardPurposeId && _sboardAllRowsById[_sboardPurposeId]) fullRow.push(_sboardAllRowsById[_sboardPurposeId]);
-    if(_sboardNewAdditionsId && _sboardAllRowsById[_sboardNewAdditionsId]) fullRow.push(_sboardAllRowsById[_sboardNewAdditionsId]);
-    fullRow=fullRow.concat(sorted);
-    if(_sboardMiscId && _sboardAllRowsById[_sboardMiscId]) fullRow.push(_sboardAllRowsById[_sboardMiscId]);
-    var ids=fullRow.map(function(h){ return h.id; });
-    var _sb=T().sb;
-    var statusEl=document.getElementById('sc-status');
-    if(statusEl){ statusEl.textContent='Sorting…'; statusEl.classList.remove('err'); }
-    var work=(async function(){
-      for(var i=0;i<ids.length;i++){
-        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
-        if(upd.error) throw upd.error;
-      }
-      renderSeaBoard();
-    })();
-    _sboardSpinWhile(work);
-    work.catch(function(err){
-      if(statusEl){ statusEl.textContent='Sort failed: '+err.message; statusEl.classList.add('err'); }
-    });
+  // No Supabase round trip either way now, so no spinner needed -- this
+  // is purely an in-memory view flag plus a re-render, done before the
+  // click handler above even returns.
+  function _sboardSetAlphaHeaderView(on){
+    _sboardAlphaHeaderView=!!on;
+    renderSeaBoard();
   }
 
   // Gear menu — consolidates the traveler options that used to be separate
@@ -2529,46 +2617,35 @@
       + '<button class="sb-move-btn" id="sb-move-btn">MOVE</button>'
       + '</div>';
 
-    // HEADER NUMBER — Larry, Aug 3 2026: "add eyebrow HEADER NUMBER with
-    // field containing the current number of header in order from left to
-    // right. Moving a header changes related numbers." Computed fresh
-    // every time this card opens, from the same ordered, Purpose/NEW/MISC-
-    // excluded list the gear menu's Sort headers feature (_sboardSortHeaders)
-    // already treats as "the headers" -- so it's never a stored value that
-    // could go stale, and a drag-reorder or a sort immediately shows the
-    // right number the next time any header's card is opened, no separate
-    // bookkeeping required. Only real content headers get one; Purpose/
-    // NEW/MISC/Trash (handled by the isReservedItem branch above, which
-    // already returns before this point) and plain ideas never show it.
-    var headerNumberHTML='';
-    if(isHeaderType){
-      var _hnList=(_sboardVisibleHeaders||[]).filter(function(h){
-        return String(h.id)!==String(_sboardNewAdditionsId);
-      });
-      var _hnIdx=_hnList.findIndex(function(h){ return String(h.id)===String(item.id); });
-      if(_hnIdx!==-1){
-        headerNumberHTML='<div class="sb-hdr-eyebrow2">Header Number</div>'
-          + '<div class="sb-loc-row" style="margin-bottom:10px">'
-          + '<div class="sb-loc-crumbs">'+(_hnIdx+1)+' of '+_hnList.length+'</div>'
-          + '</div>';
-      } else if(item.cluster_id){
-        // Subber Number — Larry, Aug 3 2026: "do subbers need order
-        // numbers like headers?" Yes, same idea, same eyebrow+field
-        // language, just scoped to this Subber's own siblings under its
-        // parent Header instead of the top-level row -- _sboardMakeHeaderStackTile's
-        // own drag zones already reorder Subbers vertically ("higher or
-        // lower," per Larry's own words) via _sboardSubberOrderByParent,
-        // so that's the exact same live-computed list this reads from.
-        var _snList=_sboardSubberOrderByParent[item.cluster_id]||[];
-        var _snIdx=_snList.findIndex(function(id){ return String(id)===String(item.id); });
-        if(_snIdx!==-1){
-          headerNumberHTML='<div class="sb-hdr-eyebrow2">Subber Number</div>'
-            + '<div class="sb-loc-row" style="margin-bottom:10px">'
-            + '<div class="sb-loc-crumbs">'+(_snIdx+1)+' of '+_snList.length+'</div>'
-            + '</div>';
-        }
+    // ORDER # — Larry, Aug 3 2026, second pass: "What if every card has
+    // an ORDER #, small, no bigger that Notes field." Replaces the
+    // earlier full-width eyebrow version with a small pill matching
+    // .sb-notes-pill's own size, living in the below-content-row instead
+    // -- same small badge every card already shows out on the board
+    // (_sboardOrderBadgeHTML), just repeated here for confirmation while
+    // the card's open. Headers read the REAL order (includes Purpose/
+    // NEW/MISC now, not just content headers) from _sboardTopLevelOrder;
+    // Subbers and plain ideas read their own vertical top-to-bottom order
+    // the same way the on-card badge does. Never affected by the
+    // alphabetical view toggle -- that's the whole point.
+    var orderPillHTML='';
+    (function(){
+      function findIdx(list){
+        for(var i=0;i<list.length;i++){ if(String(list[i])===String(item.id)) return i; }
+        return -1;
       }
-    }
+      var list=null, idx=-1;
+      if(isHeaderType && _sboardTopLevelOrder && findIdx(_sboardTopLevelOrder)!==-1){
+        list=_sboardTopLevelOrder; idx=findIdx(list);
+      } else if(isHeaderType && item.cluster_id && _sboardSubberOrderByParent[item.cluster_id]){
+        list=_sboardSubberOrderByParent[item.cluster_id]; idx=findIdx(list);
+      } else if(!isHeaderType && item.cluster_id && _sboardIdeaOrderByParent[item.cluster_id]){
+        list=_sboardIdeaOrderByParent[item.cluster_id]; idx=findIdx(list);
+      }
+      if(list && idx!==-1){
+        orderPillHTML='<span class="sb-notes-pill" style="cursor:default" title="Order #">🔢 '+(idx+1)+' of '+list.length+'</span>';
+      }
+    })();
 
     var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
@@ -2618,13 +2695,13 @@
       + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
       + currentLocationHTML
-      + headerNumberHTML
       + headerListHTML
       + bodyHTML
       + '<div class="sb-below-content-row">'
       + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
       + '<span style="color:#D4537E;font-size:13px">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
       + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️ Notes</button>'
+      + orderPillHTML
       + '</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
