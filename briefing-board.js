@@ -321,6 +321,16 @@
 
   // Supabase-backed multi-board state, added July 21, 2026 (evening).
   var _bbCurrentBoardId = null;
+  // TYPE + NAME, Aug 3 2026 -- the 4 board types Larry named: "Briefing
+  // Boards can come in 4 types: Personal, Departmental, Company, and
+  // Project." Stored as briefing_boards.board_type (already existed,
+  // every board created before today just hardcoded 'personal').
+  var BB_BOARD_TYPES = [
+    {value:'personal', label:'Personal'},
+    {value:'departmental', label:'Departmental'},
+    {value:'company', label:'Company'},
+    {value:'project', label:'Project'}
+  ];
   var _bbBoards = [];
   var _bbKeyLibCache = [];
   var _bbMembersCache = [];
@@ -691,6 +701,7 @@
           try{ sessionStorage.setItem('bbMigratedLegacy','1'); }catch(e2){}
           _bbCards=remappedCards;
           _bbKeyLibCache=remappedKeys;
+          _bbRenderTypePicker();
           _bbRenderBoardPicker();
           renderBoard();
           return;
@@ -700,6 +711,7 @@
 
     _bbCards = cardRows.length ? cardRows.map(_bbRowToCard) : _bbSeed();
     _bbKeyLibCache = keyRows.map(function(r){ return {id:r.id, shape:r.shape, color:r.color, meaning:r.meaning}; });
+    _bbRenderTypePicker();
     _bbRenderBoardPicker();
     renderBoard();
   }
@@ -740,43 +752,99 @@
     await _bbSwitchToBoard((match||fallback).id);
   }
 
+  // NAME picker's list is scoped to whichever TYPE is currently
+  // selected (Aug 3 2026) -- reads the TYPE dropdown's live value so a
+  // rebuild mid-switch (see wireTypePicker) always reflects the type the
+  // traveler is actually looking at, not stale data from _bbBoards.
+  function _bbActiveBoardType(){
+    var typeSel=document.getElementById('bb-type-picker');
+    if(typeSel && typeSel.value) return typeSel.value;
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    return (board && board.board_type) || 'personal';
+  }
+
+  function _bbRenderTypePicker(){
+    var sel=document.getElementById('bb-type-picker'); if(!sel) return;
+    if(!sel.options.length){
+      sel.innerHTML = BB_BOARD_TYPES.map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
+    }
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    sel.value = (board && board.board_type) || 'personal';
+  }
+
   function _bbRenderBoardPicker(){
     var sel=document.getElementById('bb-board-picker'); if(!sel) return;
-    var opts=_bbBoards.map(function(b){
+    var activeType=_bbActiveBoardType();
+    var filtered=_bbBoards.filter(function(b){ return (b.board_type||'personal')===activeType; });
+    var opts=filtered.map(function(b){
       return '<option value="'+_esc(b.id)+'"'+(b.id===_bbCurrentBoardId?' selected':'')+'>'+_esc(b.name||'Untitled Board')+'</option>';
     }).join('');
     sel.innerHTML = opts + '<option value="__add__">+ Add a board&hellip;</option>';
+  }
+
+  // Shared by both the NAME picker's "+ Add a board..." and the TYPE
+  // picker's "no boards of this type yet" prompt (Aug 3 2026) -- one
+  // creation path instead of two copies of the same Supabase insert.
+  async function _bbCreateBoard(name, boardType){
+    var uid=await _bbCurrentUserId();
+    if(!uid){
+      window.alert('Could not add a board: your sign-in session appears to have expired. Please refresh the page and sign in again, then try adding the board.');
+      return false;
+    }
+    var sb=T().sb;
+    try{
+      var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:boardType||'personal', name:name}).select().single();
+      if(ins.error || !ins.data){
+        console.error('Briefing Board: could not create board', ins.error);
+        window.alert('Could not add the board "'+name+'". Error: '+(ins.error&&ins.error.message?ins.error.message:'unknown error')+'. Nothing was saved -- please try again or refresh the page.');
+        return false;
+      }
+      _bbBoards.push(ins.data);
+      await _bbSwitchToBoard(ins.data.id);
+      return true;
+    }catch(e){
+      console.error('Briefing Board: could not create board', e);
+      window.alert('Could not add the board "'+name+'". Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again or refresh the page.');
+      return false;
+    }
   }
 
   function wireBoardPicker(){
     var sel=document.getElementById('bb-board-picker'); if(!sel) return;
     sel.addEventListener('change', async function(){
       if(sel.value==='__add__'){
-        var name=window.prompt('Name for the new board:');
+        var typeSel=document.getElementById('bb-type-picker');
+        var boardType=_bbActiveBoardType();
+        var typeLabel=(typeSel && typeSel.options[typeSel.selectedIndex]) ? typeSel.options[typeSel.selectedIndex].text : 'board';
+        var name=window.prompt('Name for the new '+typeLabel+' board:');
         _bbRenderBoardPicker();
         if(!name || !name.trim()) return;
-        var uid=await _bbCurrentUserId();
-        if(!uid){
-          window.alert('Could not add a board: your sign-in session appears to have expired. Please refresh the page and sign in again, then try adding the board.');
-          return;
-        }
-        var sb=T().sb;
-        try{
-          var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:'personal', name:name.trim()}).select().single();
-          if(ins.error || !ins.data){
-            console.error('Briefing Board: could not create board', ins.error);
-            window.alert('Could not add the board "'+name.trim()+'". Error: '+(ins.error&&ins.error.message?ins.error.message:'unknown error')+'. Nothing was saved -- please try again or refresh the page.');
-            return;
-          }
-          _bbBoards.push(ins.data);
-          await _bbSwitchToBoard(ins.data.id);
-        }catch(e){
-          console.error('Briefing Board: could not create board', e);
-          window.alert('Could not add the board "'+name.trim()+'". Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again or refresh the page.');
-        }
+        await _bbCreateBoard(name.trim(), boardType);
         return;
       }
       await _bbSwitchToBoard(sel.value);
+    });
+  }
+
+  // TYPE picker, Aug 3 2026 -- switching TYPE jumps straight to that
+  // type's first board (matching NAME's own alphabetical-by-created-at
+  // order), or, if this traveler has none of that type yet, prompts to
+  // create the first one right there (mirrors NAME's own "+ Add a
+  // board..." flow, same _bbCreateBoard helper). Cancelling the prompt
+  // reverts TYPE back to whatever board is actually still active, same
+  // as NAME's own cancel-leaves-you-where-you-were behavior.
+  function wireTypePicker(){
+    var sel=document.getElementById('bb-type-picker'); if(!sel) return;
+    sel.addEventListener('change', async function(){
+      var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===sel.value; });
+      if(matching.length){
+        await _bbSwitchToBoard(matching[0].id);
+      } else {
+        var typeLabel=sel.options[sel.selectedIndex].text;
+        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
+        if(!name || !name.trim()){ _bbRenderTypePicker(); return; }
+        await _bbCreateBoard(name.trim(), sel.value);
+      }
     });
   }
 
@@ -1160,17 +1228,24 @@
       // the topic sits under the top edge -- no more dead space.
       +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px;flex-shrink:0}'
       +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}'
-      +'.bb-mh-group{display:flex;flex-direction:column;align-items:flex-start;gap:2px;justify-self:start}'
+      // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
+      // Board [title], A control and communication tool, in the center.
+      // Far left: eyebrow TYPE with drop down list followed by a Field
+      // filled in with the name." Swaps the board switcher from the
+      // center (where it lived as one big pill since July 22) out to the
+      // far left, split into two small eyebrow-labeled dropdowns -- TYPE
+      // (Personal/Departmental/Company/Project, briefing_boards.board_type)
+      // then NAME (that type's boards, briefing_boards.name -- "Larry,"
+      // "Accounting," "T2T," "Field Guide"). The center now carries the
+      // permanent "Briefing Board" title, same text/size it always had,
+      // just relocated.
+      +'.bb-mh-typebox{display:flex;gap:10px;justify-self:start;align-items:flex-end}'
+      +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px}'
+      +'.bb-mh-eyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:120px}'
+      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:2px;justify-self:center;text-align:center}'
       +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      // BB TOPIC, July 22 2026 -- Larry: "move BB TOPIC to center justify
-      // in large font size," then "with the colorful headers, the TOPIC
-      // needs to be very large" -- given its own grid column so it sits
-      // centered regardless of how long the title on the left or the
-      // icon row on the right get, and sized to lead the header now
-      // (34px, bigger than the "Briefing Board" title itself) so it
-      // holds up against a themed color background.
-      +'.bb-mh-topic{justify-self:center;min-width:0}'
-      +'.bb-board-picker{background:#fff;border:2px solid var(--bb-accent);border-radius:999px;padding:8px 22px;font-family:var(--bb-head-font);font-size:34px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:320px;text-align:center;text-align-last:center}'
+      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:150px}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
@@ -1306,8 +1381,11 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
-            +'<div class="bb-mh-group"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
-            +'<div class="bb-mh-topic"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
+            +'<div class="bb-mh-typebox">'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><select id="bb-type-picker" class="bb-type-picker" title="Board type"></select></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Name</div><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
+            +'</div>'
+            +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
@@ -2036,6 +2114,7 @@
   }
 
   function wireTopicBar(){
+    wireTypePicker();
     wireBoardPicker();
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
