@@ -2492,6 +2492,31 @@
       + '<button class="sb-move-btn" id="sb-move-btn">MOVE</button>'
       + '</div>';
 
+    // HEADER NUMBER — Larry, Aug 3 2026: "add eyebrow HEADER NUMBER with
+    // field containing the current number of header in order from left to
+    // right. Moving a header changes related numbers." Computed fresh
+    // every time this card opens, from the same ordered, Purpose/NEW/MISC-
+    // excluded list the gear menu's Sort headers feature (_sboardSortHeaders)
+    // already treats as "the headers" -- so it's never a stored value that
+    // could go stale, and a drag-reorder or a sort immediately shows the
+    // right number the next time any header's card is opened, no separate
+    // bookkeeping required. Only real content headers get one; Purpose/
+    // NEW/MISC/Trash (handled by the isReservedItem branch above, which
+    // already returns before this point) and plain ideas never show it.
+    var headerNumberHTML='';
+    if(isHeaderType){
+      var _hnList=(_sboardVisibleHeaders||[]).filter(function(h){
+        return String(h.id)!==String(_sboardNewAdditionsId);
+      });
+      var _hnIdx=_hnList.findIndex(function(h){ return String(h.id)===String(item.id); });
+      if(_hnIdx!==-1){
+        headerNumberHTML='<div class="sb-hdr-eyebrow2">Header Number</div>'
+          + '<div class="sb-loc-row" style="margin-bottom:10px">'
+          + '<div class="sb-loc-crumbs">'+(_hnIdx+1)+' of '+_hnList.length+'</div>'
+          + '</div>';
+      }
+    }
+
     var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
       + '<div class="sb-hdr-vitem'+(isMisc?' current':'')+'" id="sb-misc-pinned" style="border:0.5px solid #D3D1C7;border-radius:8px;margin-bottom:6px;font-weight:600">'+(isMisc?'📦 Misc ✓ — tap to move out':'📦 Misc (project archive)')+'</div>'
@@ -2540,6 +2565,7 @@
       + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
       + currentLocationHTML
+      + headerNumberHTML
       + headerListHTML
       + bodyHTML
       + '<div class="sb-below-content-row">'
