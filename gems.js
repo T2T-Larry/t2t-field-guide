@@ -183,6 +183,7 @@
         '<div id="gb-toolbar">' +
           '<div class="gb-tb-label">Gems</div>' +
           '<button id="gb-add">＋ New Gem</button>' +
+          '<button id="gb-textsize">🔠 Text size</button>' +
         '</div>' +
         '<div style="position:relative;flex:1;width:100%;background:#EFE7FB;overflow:hidden">' +
           '<div style="position:absolute;top:16px;left:16px;z-index:1">' +
@@ -230,6 +231,9 @@
     });
     T().wire('gb-detail-close', closeDetail);
     T().wire('gb-add', addNewGem);
+    // Aug 3 2026: Gems is full-screen too and has no gear of its own --
+    // same shared picker as Storyboard/Session/Briefing Board.
+    T().wire('gb-textsize', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
     T().registerScreenActivate('s-gems-board', renderGemsBoard);
   }
 
