@@ -852,6 +852,7 @@
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
+      +'<button class="sc-ov-btn" id="isx-gear-keys" style="width:100%">🔑 Custom Keys</button>'
       +'<button class="sc-ov-btn" id="isx-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%" aria-label="Close">✕</button>'
@@ -859,6 +860,9 @@
     ov.classList.add('active');
     T().wire('isx-gear-recolor', function(){ T2TStoryboard.closeDetail(); _isxOpenRecolorAll(); });
     T().wire('isx-gear-reset', function(){ T2TStoryboard.closeDetail(); _isxOpenResetHeadersConfirm(); });
+    // Aug 3 2026: same shared traveler-wide Custom Keys library as 9710's
+    // own gear menu -- one library, reachable from either screen.
+    T().wire('isx-gear-keys', function(){ T2TStoryboard.closeDetail(); T2TStoryboard.openKeyLibraryManager(); });
     // Aug 3 2026: same shared picker as 9710 (see its own gear menu) --
     // Session is full-screen too, so the desk's gear is hidden here.
     T().wire('isx-gear-textsize', function(){ T2TStoryboard.closeDetail(); if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
@@ -1011,7 +1015,7 @@
       var miscId=_ensureResults[0], trashId=_ensureResults[1], purposeId=_ensureResults[2];
       _isxTrashId = trashId;
 
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,key_slot_1,key_slot_2,key_slot_3')
         .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1216,7 +1220,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,key_slot_1,key_slot_2,key_slot_3')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1280,6 +1284,12 @@
     isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
     isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     t.appendChild(isxCornerFlip);
+    // Custom Keys badge, Aug 3 2026 -- Larry: "This option could be in
+    // every gear? Anywhere a traveler makes a note or adds an idea."
+    // 9710's own tile (_sboardMakeTile) shows these dots directly; 9711
+    // reaches the same shared library through T2TStoryboard.keyDotsHTML
+    // since the key-shape helpers live in 9710's closure, not this file.
+    if(window.T2TStoryboard && T2TStoryboard.keyDotsHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.keyDotsHTML(row));
     // Double-click is the color-options shortcut every card has (locked
     // July 27, 2026) -- this loose-idea tile never had a double-click job
     // of its own before, so this is a straight addition, not a migration.

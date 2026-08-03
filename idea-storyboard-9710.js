@@ -164,6 +164,15 @@
         // Bottom-left is the one corner none of the existing per-card
         // badges (lock, heart, link, corner-flip) already use.
         +'.sb-order-badge{position:absolute;bottom:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:5}'
+        +'.sb-key-dots{position:absolute;top:2px;left:50%;transform:translateX(-50%);display:flex;gap:2px;pointer-events:none;z-index:5}'
+        +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
+        +'.sb-key-shape-btn{width:28px;height:28px;border:2px solid transparent;border-radius:6px;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}'
+        +'.sb-key-shape-btn.active{border-color:#5b9bd5}'
+        +'.sb-key-swatch-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}'
+        +'.sb-key-swatch-btn.active{border-color:#1a3a5c}'
+        +'.sb-key-pick-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px;cursor:pointer;text-align:left}'
+        +'.sb-key-pick-row[disabled]{opacity:.35;cursor:not-allowed}'
+        +'.sb-key-lib-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px}'
         +'.sc-corner-flip:hover{border-width:0 0 20px 20px;border-color:transparent transparent rgba(26,58,92,0.55) transparent}'
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
@@ -563,6 +572,120 @@
   // board never inherits a leftover alphabetical view from somewhere else.
   var _sboardAlphaHeaderView = false;
   var _sboardLastRenderedTopicId = undefined;
+  // Custom Keys, Aug 3 2026 -- Larry: "We use red hearts to mean I like
+  // this one. What about a blue heart? or a yellow triangle with custom
+  // meanings visible on hover? This option could be in every gear?"
+  // Follow-up, when asked how far to take it: one shared library, usable
+  // "anywhere a traveler makes a note or adds an idea." This reuses the
+  // exact shape+color+meaning system already proven on the Briefing
+  // Board (its own board-scoped briefing_board_keys) and on Shortcuts
+  // (traveler-wide bookmark_keys) -- this one is modeled on Shortcuts'
+  // traveler-wide scope (one shared custom_keys table, not tied to a
+  // single board), same 6 shapes / 6 colors / 6-key-library-cap /
+  // 3-keys-per-card-cap so the visual language matches everywhere it
+  // shows up. The existing red heart is untouched, per Larry's explicit
+  // call -- Custom Keys are a second, optional marker, not a
+  // replacement.
+  var _sboardKeyShapes = ['circle','square','triangle','diamond','star','heart'];
+  var _sboardKeyColors = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
+  var _sboardKeyClip = {
+    triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+    diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+    star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+    heart: 'polygon(50% 20%, 60% 0%, 80% 0%, 100% 20%, 100% 40%, 50% 100%, 0% 40%, 0% 20%, 20% 0%, 40% 0%)'
+  };
+  var MAX_KEY_LIBRARY = 6;
+  var MAX_KEYS_PER_CARD = 3;
+  function _sboardKeyShapeCSS(shape, color){
+    var css='background:'+color+';';
+    if(shape==='circle') css+='border-radius:50%;';
+    else if(shape==='square') css+='border-radius:2px;';
+    else if(_sboardKeyClip[shape]) css+='clip-path:'+_sboardKeyClip[shape]+';';
+    return css;
+  }
+  function _sboardEsc(s){
+    return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function _sboardKeyLibLocal(){
+    try{ var r=sessionStorage.getItem('t2t_customKeyLibrary'); return r?JSON.parse(r):[]; }catch(e){ return []; }
+  }
+  function _sboardSaveKeyLibLocal(lib){
+    try{ sessionStorage.setItem('t2t_customKeyLibrary', JSON.stringify(lib)); }catch(e){}
+  }
+  // Instant paint from whatever sessionStorage remembers from last time,
+  // same two-step pattern Shortcuts already uses for its own
+  // traveler-wide key library, so the very first render of a board never
+  // waits on a round trip just to know which keys already exist. A real
+  // fetch (_sboardEnsureKeyLibraryLoaded, called once from renderSeaBoard)
+  // corrects it moments later.
+  var _sboardKeyLib = _sboardKeyLibLocal();
+  var _sboardKeyLibLoaded = false;
+  async function _sboardEnsureKeyLibraryLoaded(){
+    if(_sboardKeyLibLoaded) return;
+    _sboardKeyLibLoaded = true;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) return;
+      var res=await _sb.from('custom_keys').select('id,shape,color,meaning').eq('user_id',user.id).order('created_at',{ascending:true});
+      if(res.error) throw res.error;
+      _sboardKeyLib = res.data||[];
+      _sboardSaveKeyLibLocal(_sboardKeyLib);
+      renderSeaBoard();
+    }catch(e){ console.error('Custom Keys: load failed', e); }
+  }
+  function _sboardKeyById(id){
+    for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(id)) return _sboardKeyLib[i]; }
+    return null;
+  }
+  async function _sboardCreateKey(shape, color, meaning){
+    var _sb=T().sb;
+    var user=(await _sb.auth.getUser()).data.user;
+    if(!user) throw new Error('Not signed in.');
+    var ins=await _sb.from('custom_keys').insert({user_id:user.id,shape:shape,color:color,meaning:meaning}).select().single();
+    if(ins.error) throw ins.error;
+    _sboardKeyLib.push(ins.data);
+    _sboardSaveKeyLibLocal(_sboardKeyLib);
+    return ins.data;
+  }
+  async function _sboardDeleteKey(keyId){
+    var _sb=T().sb;
+    var del=await _sb.from('custom_keys').delete().eq('id',keyId);
+    if(del.error) throw del.error;
+    _sboardKeyLib = _sboardKeyLib.filter(function(k){ return String(k.id)!==String(keyId); });
+    _sboardSaveKeyLibLocal(_sboardKeyLib);
+  }
+  function _sboardItemKeys(item){
+    return [item.key_slot_1, item.key_slot_2, item.key_slot_3].filter(function(k){ return !!k; });
+  }
+  // Writes all 3 slot columns from a gap-free array -- same "splice,
+  // don't null out" approach the Briefing Board's own Custom Keys use,
+  // so removing key #2 of 3 shifts #3 left instead of leaving an empty
+  // middle slot.
+  async function _sboardWriteItemKeys(itemId, keysArr){
+    var _sb=T().sb;
+    var upd=await _sb.from('ideas').update({
+      key_slot_1: keysArr[0]||null,
+      key_slot_2: keysArr[1]||null,
+      key_slot_3: keysArr[2]||null
+    }).eq('id', itemId);
+    if(upd.error) throw upd.error;
+    var row=_sboardAllRowsById[itemId];
+    if(row){ row.key_slot_1=keysArr[0]||null; row.key_slot_2=keysArr[1]||null; row.key_slot_3=keysArr[2]||null; }
+  }
+  // On-card badge, Aug 3 2026 -- small shape+color dots along the top
+  // edge (bottom-left/right/corners are already spoken for by the lock,
+  // heart, link, and ORDER # badges). title=meaning gives the "visible
+  // on hover" Larry asked for, for free, via the native browser tooltip.
+  function _sboardKeyDotsHTML(item){
+    var keys=_sboardItemKeys(item);
+    if(!keys.length) return '';
+    return '<div class="sb-key-dots">'+keys.map(function(kid){
+      var k=_sboardKeyById(kid);
+      if(!k) return '';
+      return '<span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+'"></span>';
+    }).join('')+'</div>';
+  }
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
   var _clusterWide = false;
@@ -1069,6 +1192,13 @@
     // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
     // loose card sitting in the same visual column never both show "1".
     tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
+    // Custom Keys badge, Aug 3 2026 -- Larry: "We use red hearts to mean
+    // I like this one. What about a blue heart? or a yellow triangle
+    // with custom meanings visible on hover?" Up to 3 small shape+color
+    // dots along the top edge -- every other corner is already spoken
+    // for (lock top-right, link top-left, heart+corner-flip bottom-
+    // right, ORDER # bottom-left).
+    tile.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(item));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
     // one to a header if it wasn't already — same "first card placed stays
@@ -1302,6 +1432,12 @@
   }
 
   async function renderSeaBoard(){
+    // Custom Keys, Aug 3 2026 -- kicks off the one-time library fetch
+    // (no-ops after the first call, see _sboardKeyLibLoaded) regardless
+    // of which screen (9710 or 9711, delegated to just below) is
+    // actually active, since the library is shared/global, not tied to
+    // either screen.
+    _sboardEnsureKeyLibraryLoaded();
     // July 18, 2026: DETAILS (openSbDetail, below) is shared between 9710
     // and 9711 — every action inside it (color, heart, lock, trash, move,
     // notes) calls this function afterward to refresh the board. But
@@ -1385,7 +1521,7 @@
       _sboardPurposeId=purposeId;
       var miscId=_ensureResults[2];
 
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
         .eq('user_id', user.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
@@ -2197,7 +2333,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
         .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -2438,6 +2574,7 @@
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
+      +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🔑 Custom Keys</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
       +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
@@ -2447,6 +2584,7 @@
     ov.classList.add('active');
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
+    T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
     T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
     // Aug 3 2026: Storyboard is full-screen (.isx-full), so the desk's own
@@ -2725,6 +2863,14 @@
       + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️ Notes</button>'
       + orderPillHTML
       + '</div>'
+      // Keys row, Aug 3 2026 -- Larry: "This option could be in every
+      // gear? Anywhere a traveler makes a note or adds an idea." Own row
+      // below heart/notes/order so it doesn't crowd them -- populated by
+      // _sboardRenderKeyRow right after this HTML lands (needs the real
+      // DOM node to attach click handlers to). Headers/Subbers don't get
+      // one, same as they don't get a heart -- Keys are a content-card
+      // marker.
+      + (isHeaderType ? '' : '<div class="sb-below-content-row" id="sb-keys-row"></div>')
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
@@ -3008,6 +3154,7 @@
       heartBtn.addEventListener('click', function(){ if(!held) applyHeartDelta(1); held=false; });
     })();
     T().wire('sb-notes', function(){ document.getElementById('sb-notes-box').style.display='block'; });
+    if(!isHeaderType) _sboardRenderKeyRow(item);
     var notesBox=document.getElementById('sb-notes-box');
     if(notesBox) notesBox.addEventListener('blur', async function(e){
       try{
@@ -3096,6 +3243,173 @@
     openSbDetail(item);
     var row=document.getElementById('sb-swatch-row');
     if(row) row.style.display='flex';
+  }
+
+  // Custom Keys UI, Aug 3 2026 -- three small pieces reached from a
+  // card's DETAILS card: the Keys row itself (up to 3 slots + one "+"),
+  // the picker that opens when any slot is tapped (assign/remove/build
+  // new), and the builder (shape+color+meaning) reached either from the
+  // picker or straight from the gear menu's library manager. Mirrors the
+  // Briefing Board's own Custom Keys flow (Choose a Key / Add a Key)
+  // almost exactly -- proven UX, just pointed at the new shared
+  // custom_keys table instead of a board-scoped one.
+  var _sboardKeyDraft = {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
+
+  function _sboardRenderKeyRow(item){
+    var row=document.getElementById('sb-keys-row'); if(!row) return;
+    var keys=_sboardItemKeys(item);
+    var html='';
+    for(var i=0;i<keys.length;i++){
+      var k=_sboardKeyById(keys[i]);
+      if(!k) continue;
+      html += '<button class="sb-notes-pill sb-key-slot-btn" data-slot="'+i+'" title="'+_sboardEsc(k.meaning||'')+'">'
+        +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span></button>';
+    }
+    if(keys.length<MAX_KEYS_PER_CARD){
+      html += '<button class="sb-notes-pill sb-key-slot-btn" data-slot="'+keys.length+'" title="Add a key">🔑 +</button>';
+    }
+    row.innerHTML = html;
+    row.querySelectorAll('.sb-key-slot-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        _sboardOpenKeyPicker(item, Number(btn.getAttribute('data-slot')));
+      });
+    });
+  }
+
+  // Shows the whole shared library every time a slot is tapped, same as
+  // the Briefing Board ("so you know what's already possible") --
+  // greying out any key already sitting in one of this card's OTHER
+  // slots, since the same key showing twice on one card would just be
+  // confusing.
+  function _sboardOpenKeyPicker(item, slotIndex){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var keys=_sboardItemKeys(item);
+    var hasKey=!!keys[slotIndex];
+    var listHTML;
+    if(!_sboardKeyLib.length){
+      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:6px">No keys yet — build your first one below.</div>';
+    } else {
+      listHTML=_sboardKeyLib.map(function(k){
+        var usedElsewhere = keys.indexOf(k.id)>=0 && keys[slotIndex]!==k.id;
+        return '<button class="sb-key-pick-row" data-key-id="'+k.id+'"'+(usedElsewhere?' disabled':'')+'>'
+          +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
+          +'<span style="font-size:12px">'+_sboardEsc(k.meaning||'')+'</span>'
+          +'</button>';
+      }).join('');
+    }
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Key</div>'
+      +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
+      +'<button class="sc-ov-btn save" id="sb-key-build-new" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Build a new key</button>'
+      +(hasKey?'<button class="sc-ov-btn" id="sb-key-remove" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">Remove this key</button>':'')
+      +'<button class="sc-ov-btn" id="sb-key-cancel" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.classList.add('active');
+    ov.querySelectorAll('.sb-key-pick-row').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(btn.hasAttribute('disabled')) return;
+        _sboardAssignKeyToSlot(item, slotIndex, btn.getAttribute('data-key-id'));
+      });
+    });
+    T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAssignKeyToSlot(item, slotIndex, newKey.id); }); });
+    T().wire('sb-key-remove', function(){ _sboardAssignKeyToSlot(item, slotIndex, null); });
+    T().wire('sb-key-cancel', function(){ openSbDetail(item); });
+  }
+
+  async function _sboardAssignKeyToSlot(item, slotIndex, keyIdOrNull){
+    var keys=_sboardItemKeys(item);
+    if(keyIdOrNull===null){
+      keys.splice(slotIndex,1); // gap-free removal -- matches Briefing Board
+    } else {
+      keys[slotIndex]=keyIdOrNull;
+    }
+    try{ await _sboardWriteItemKeys(item.id, keys); }catch(err){}
+    openSbDetail(item);
+  }
+
+  // Reached either from a card's Choose-a-Key ("+ Build a new key") or
+  // straight from the gear menu's library manager -- onSaved(newKeyRow)
+  // decides what happens next in either case (assign it to the slot that
+  // opened the picker, or just refresh the library list).
+  function _sboardOpenKeyBuilder(onSaved){
+    _sboardKeyDraft = {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Add a Key</div>'
+      +'<div style="font-size:11px;color:#7a6040;margin-bottom:6px">Shape</div>'
+      +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
+        +_sboardKeyShapes.map(function(s){ return '<button class="sb-key-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:block;width:16px;height:16px;'+_sboardKeyShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
+      +'</div>'
+      +'<div style="font-size:11px;color:#7a6040;margin-bottom:6px">Color</div>'
+      +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
+        +_sboardKeyColors.map(function(c){ return '<button class="sb-key-swatch-btn" data-color="'+c+'" style="background:'+c+'"></button>'; }).join('')
+      +'</div>'
+      +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px">'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
+      +'</div>';
+    ov.classList.add('active');
+    function highlightShape(){ ov.querySelectorAll('.sb-key-shape-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-shape')===_sboardKeyDraft.shape); }); }
+    function highlightColor(){ ov.querySelectorAll('.sb-key-swatch-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-color')===_sboardKeyDraft.color); }); }
+    highlightShape(); highlightColor();
+    ov.querySelectorAll('.sb-key-shape-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ _sboardKeyDraft.shape=btn.getAttribute('data-shape'); highlightShape(); });
+    });
+    ov.querySelectorAll('.sb-key-swatch-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ _sboardKeyDraft.color=btn.getAttribute('data-color'); highlightColor(); });
+    });
+    T().wire('sb-key-cancel2', closeSbDetail);
+    T().wire('sb-key-save', async function(){
+      var meaningEl=document.getElementById('sb-key-meaning');
+      var meaning=meaningEl?meaningEl.value.trim():'';
+      if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
+      try{
+        var newKey=await _sboardCreateKey(_sboardKeyDraft.shape, _sboardKeyDraft.color, meaning);
+        if(onSaved) onSaved(newKey); else closeSbDetail();
+      }catch(err){
+        if(meaningEl) meaningEl.style.borderColor='#b8562f';
+      }
+    });
+  }
+
+  // Gear menu entry, Aug 3 2026 -- Larry: "This option could be in every
+  // gear?" View the whole shared library, delete keys nobody needs
+  // anymore (un-tags any card that had it -- the database does that
+  // automatically, see the key_slot_1/2/3 foreign keys), or add a new
+  // one straight from here without needing a card open first.
+  function _sboardOpenKeyLibraryManager(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var listHTML;
+    if(!_sboardKeyLib.length){
+      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">No custom keys yet. Build one below — then tap any card\'s Keys row to use it.</div>';
+    } else {
+      listHTML=_sboardKeyLib.map(function(k){
+        return '<div class="sb-key-lib-row">'
+          +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
+          +'<span style="font-size:12px;flex:1;text-align:left">'+_sboardEsc(k.meaning||'')+'</span>'
+          +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this key" style="border:none;background:none;cursor:pointer;font-size:13px;color:#b8562f">🗑️</button>'
+          +'</div>';
+      }).join('');
+    }
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:4px">Custom Keys</div>'
+      +'<div style="font-size:10px;font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a key on a card to see what it means.</div>'
+      +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
+      +'<button class="sc-ov-btn save" id="sb-keylib-add" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Add a key</button>'
+      +'<button class="sc-ov-btn" id="sb-keylib-close" style="width:100%">Close</button>'
+      +'</div>';
+    ov.classList.add('active');
+    ov.querySelectorAll('.sb-key-lib-del').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        try{ await _sboardDeleteKey(btn.getAttribute('data-key-id')); }catch(e){}
+        _sboardOpenKeyLibraryManager();
+        renderSeaBoard();
+      });
+    });
+    T().wire('sb-keylib-add', function(){ _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(); }); });
+    T().wire('sb-keylib-close', closeSbDetail);
   }
 
   function closeSbDetail(){
@@ -3636,7 +3950,9 @@
     setVisibleHeaders: function(list){ _sboardVisibleHeaders = list||[]; },
     setIsxContext: function(ctx){ _isxDetailCtx = ctx||null; },
     openDetailToColor: openSbDetailToColor,
-    drillInto: _sboardDrillInto
+    drillInto: _sboardDrillInto,
+    openKeyLibraryManager: _sboardOpenKeyLibraryManager,
+    keyDotsHTML: _sboardKeyDotsHTML
   };
 
   document.addEventListener('DOMContentLoaded', function(){
