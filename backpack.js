@@ -644,7 +644,21 @@
      to the archive. Name kept as-is (still "the thing every hub's ⬅️
      calls") even though it no longer reopens the MG. */
   function returnToMG(){
+    // Larry, Aug 4 2026 (bug report): closing the Briefing Board (or any
+    // other full-screen hub reached directly, e.g. right after sign-in,
+    // without ever passing through the backpack menu first) left
+    // mgOrigin unset, so this fell through to goBack() -- which, for a
+    // screen not in _utilScreens, means goBackByNum()'s unpredictable
+    // numeric lookup instead of a real destination. In practice that
+    // surfaced as a shrunk/mispositioned widget and the obsolete
+    // backpack menu popping open on the next interaction, when the
+    // traveler should have just landed on Cover. Falling back to
+    // primaryPage / _primaryPages[0] mirrors the same safety net
+    // goMG() already uses (that array is seeded with 's-cover' first
+    // via index.html's setPrimaryPages call), so there's always a real,
+    // correct screen to land on.
     if (mgOrigin){ nav(mgOrigin,false); }
+    else if (primaryPage || _primaryPages[0]){ nav(primaryPage || _primaryPages[0], false); }
     else { goBack(); }
   }
 
