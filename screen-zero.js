@@ -1428,7 +1428,7 @@
   // (buildSurprisePanel is called once per drawer), so each gets its
   // own storage key and can be claimed to a different slot from the
   // other.
-  function wireSurpriseGifDrag(img, storeKey, ownBar, ownSide){
+  function wireSurpriseGifDrag(img, storeKey, ownBar, ownSide, ownPanel){
     var rec = registerClaimable(img, storeKey, 60);
     var otherSide = ownSide === 'left' ? 'right' : 'left';
     var otherId = ownSide === 'left' ? 'sz-drawer-r' : 'sz-navbar';
@@ -1451,7 +1451,7 @@
         }
       ],
       reattachTargets: [
-        { el: ownBar, side: ownSide },
+        { el: ownBar, hitEl: ownPanel, side: ownSide },
         { get el(){ return document.getElementById(otherId); }, side: otherSide }
       ],
       onIndependent: function(){
@@ -1499,7 +1499,7 @@
     img.draggable = false;
     img.addEventListener('dragstart', function(e){ e.preventDefault(); });
     wrap.appendChild(img);
-    wireSurpriseGifDrag(img, 't2t_surpriseGif_' + side, bar, side);
+    wireSurpriseGifDrag(img, 't2t_surpriseGif_' + side, bar, side, wrap);
     return { el: wrap };
   }
 
@@ -1821,7 +1821,19 @@
         for (var ri = 0; ri < opts.reattachTargets.length; ri++) {
           var target = opts.reattachTargets[ri];
           if (!target || !target.el) continue;
-          var tr = drawerHitRect(target.el);
+          // hitEl -- Larry, Aug 4 2026 (bug report): "Monkey in the drawer
+          // always snaps to middle and does not stay where it is put."
+          // Root cause: this target's own drawer bar is deliberately
+          // floor-to-ceiling for drawerHitRect's own-drawer special case
+          // (see that function's July 31 history), so almost any drop
+          // anywhere near the drawer's horizontal position -- even well
+          // clear of the small monkey placeholder itself -- still counted
+          // as "home" and re-centered it. hitEl lets a caller hit-test
+          // against a smaller, real element (the monkey's own placeholder
+          // box) while still reporting the actual bar as the match for
+          // onReattach's mode-reading logic below, without changing
+          // drawerHitRect's shared behavior for every other rider.
+          var tr = drawerHitRect(target.hitEl || target.el);
           if (dropHitsTarget(rect, tr)) matches.push(target);
         }
         // Larry, July 31 2026 (bug report): objects kept landing in
