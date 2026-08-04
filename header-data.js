@@ -84,7 +84,13 @@
   async function topLevelBoards(){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
-      var res=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').is('cluster_id',null);
+      // Aug 4 2026, Larry: Storyboard sharing -- a member can now be
+       // added to someone else's PROJECT tree (see storyboard_members /
+       // is_storyboard_member in the DB), so this no longer filters to
+       // user_id=u.id. RLS decides what comes back: this traveler's own
+       // projects, plus any project someone has added them to. user_id is
+       // selected too so the UI can tell an owned project from a shared one.
+      var res=await sb.from('ideas').select('id,text_content,user_id').eq('content_type','header').is('cluster_id',null);
       if(res.error){ console.warn('topLevelBoards error:', res.error); return []; }
       return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; });
     }catch(e){ console.warn('topLevelBoards exception:', e); return []; }

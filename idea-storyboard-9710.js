@@ -1015,35 +1015,122 @@
   // Headers). Cancel returns to the PROJECT list, not a full close — a
   // traveler cleaning up several projects in one sitting shouldn't have to
   // reopen PROJECT from scratch each time. Added August 1, 2026.
-  function _sboardProjectQuickMenu(boardRow){
+  // Aug 4 2026, Larry: Storyboard sharing -- a member added to someone
+  // else's PROJECT can reach this same quick menu, but Rename/Archive/
+  // Delete stay owner-only (RLS already blocks the writes; this just
+  // avoids showing controls that would only fail). Manage Access is
+  // owner-only too, same split already locked for the Briefing Board.
+  async function _sboardProjectQuickMenu(boardRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var _sb=T().sb;
+    var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
+    var isOwner=!!me && boardRow.user_id===me.id;
+    var body='<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+safeName+'</div>';
+    if(isOwner){
+      body+='<button class="sc-ov-btn" id="sb-pq-rename" style="width:100%;margin-bottom:6px">Rename</button>'
+        +'<button class="sc-ov-btn" id="sb-pq-archive" style="width:100%;margin-bottom:6px">Archive</button>'
+        +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83E\uDD1D Manage Access</button>'
+        +'<button class="sc-ov-btn" id="sb-pq-delete" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete</button>';
+    } else {
+      body+='<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Shared with you -- only the owner can rename, archive, or delete this project.</div>'
+        +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83E\uDD1D View Access</button>';
+    }
+    body+='<button class="sc-ov-btn" id="sb-pq-cancel" style="width:100%">Cancel</button>';
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'+body+'</div>';
+    ov.classList.add('active');
+    T().wire('sb-pq-cancel', openProjectSwitcher);
+    T().wire('sb-pq-share', function(){ _sboardOpenShareManager(boardRow, isOwner); });
+    if(isOwner){
+      T().wire('sb-pq-rename', function(){ _sboardProjectRenamePrompt(boardRow); });
+      T().wire('sb-pq-archive', async function(){
+        try{
+          var archivedId=await T2TData.ensureArchivedHeader();
+          var upd=await _sb.from('ideas').update({cluster_id:archivedId}).eq('id',boardRow.id).select();
+          if(upd.error) throw upd.error;
+          if(String(T2TShared.currentTopicId||'')===String(boardRow.id)){
+            T2TShared.currentTopicId=null; T2TShared.filter=null;
+          }
+          openProjectSwitcher();
+        }catch(err){
+          var errBox=document.querySelector('.sc-overlay-card');
+          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+        }
+      });
+      T().wire('sb-pq-delete', function(){ _sboardConfirmDeleteProject(boardRow); });
+    }
+  }
+
+  // Manage Access (Aug 4 2026) -- lets a PROJECT's owner add other signed-
+  // in members so they can see and edit everything in it (equal access,
+  // same as the owner) -- everything except renaming/archiving/deleting
+  // the PROJECT itself, which stays owner-only. Backed by
+  // storyboard_members + RLS (Supabase migration "add_storyboard_sharing").
+  async function _sboardRenderShareList(boardRow, isOwner){
+    var list=document.getElementById('sb-share-list'); if(!list) return;
+    var _sb=T().sb;
+    var res=await _sb.rpc('list_storyboard_members', {p_project_id: boardRow.id});
+    var rows=(!res.error && res.data) ? res.data : [];
+    var addRow=document.getElementById('sb-share-add-row');
+    if(addRow) addRow.style.display = isOwner ? 'flex' : 'none';
+    if(!rows.length){
+      list.innerHTML='<div style="font-size:11px;color:#a89a80;font-style:italic;padding:6px 0">'+(isOwner?'Only you can see this project right now.':'Shared with you.')+'</div>';
+      return;
+    }
+    list.innerHTML=rows.map(function(m){
+      var safeLabel=(m.name||m.email||'').replace(/</g,'&lt;');
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:12px">'
+        +'<span>'+safeLabel+'</span>'
+        +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:13px" title="Remove">&#10005;</button>' : '')
+        +'</div>';
+    }).join('');
+    if(!isOwner) return;
+    Array.prototype.forEach.call(list.querySelectorAll('.sb-share-remove'), function(btn){
+      btn.addEventListener('click', async function(){
+        var uidToRemove=btn.getAttribute('data-user-id');
+        if(!window.confirm('Remove this person from the project? They will lose access immediately.')) return;
+        await _sb.from('storyboard_members').delete().eq('project_id', boardRow.id).eq('user_id', uidToRemove);
+        await _sboardRenderShareList(boardRow, isOwner);
+      });
+    });
+  }
+
+  function _sboardOpenShareManager(boardRow, isOwner){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+safeName+'</div>'
-      +'<button class="sc-ov-btn" id="sb-pq-rename" style="width:100%;margin-bottom:6px">Rename</button>'
-      +'<button class="sc-ov-btn" id="sb-pq-archive" style="width:100%;margin-bottom:6px">Archive</button>'
-      +'<button class="sc-ov-btn" id="sb-pq-delete" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete</button>'
-      +'<button class="sc-ov-btn" id="sb-pq-cancel" style="width:100%">Cancel</button>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Manage Access</div>'
+      +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
+      +'<div id="sb-share-list" style="text-align:left;margin-bottom:10px"></div>'
+      +'<div id="sb-share-add-row" style="display:flex;gap:6px;margin-bottom:10px">'
+        +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+        +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
+      +'</div>'
+      +'<div id="sb-share-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<button class="sc-ov-btn" id="sb-share-close" style="width:100%">Back</button>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-pq-cancel', openProjectSwitcher);
-    T().wire('sb-pq-rename', function(){ _sboardProjectRenamePrompt(boardRow); });
-    T().wire('sb-pq-archive', async function(){
+    _sboardRenderShareList(boardRow, isOwner);
+    T().wire('sb-share-close', function(){ _sboardProjectQuickMenu(boardRow); });
+    T().wire('sb-share-add-go', async function(){
+      if(!isOwner) return;
+      var errEl=document.getElementById('sb-share-err');
+      var input=document.getElementById('sb-share-add-email');
+      var email=(input&&input.value||'').trim().toLowerCase();
+      if(!email){ if(errEl) errEl.textContent='Enter an email first.'; return; }
+      var _sb=T().sb;
       try{
-        var archivedId=await T2TData.ensureArchivedHeader();
-        var _sb=T().sb;
-        var upd=await _sb.from('ideas').update({cluster_id:archivedId}).eq('id',boardRow.id).select();
-        if(upd.error) throw upd.error;
-        if(String(T2TShared.currentTopicId||'')===String(boardRow.id)){
-          T2TShared.currentTopicId=null; T2TShared.filter=null;
-        }
-        openProjectSwitcher();
-      }catch(err){
-        var errBox=document.querySelector('.sc-overlay-card');
-        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
-      }
+        var res=await _sb.rpc('find_member_by_email', {p_email: email});
+        var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
+        if(!match){ if(errEl) errEl.textContent='No T2T member found with that email -- they need an active Field Guide account first.'; return; }
+        var myUser=(await _sb.auth.getUser()).data.user;
+        var ins=await _sb.from('storyboard_members').insert({project_id: boardRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null});
+        if(ins.error){ if(errEl) errEl.textContent=ins.error.message||'Could not add that person.'; return; }
+        if(input) input.value='';
+        if(errEl) errEl.textContent='';
+        await _sboardRenderShareList(boardRow, isOwner);
+      }catch(err){ if(errEl) errEl.textContent=err.message; }
     });
-    T().wire('sb-pq-delete', function(){ _sboardConfirmDeleteProject(boardRow); });
   }
 
   // Rename a Project in place — same "nothing is permanent" treatment as
