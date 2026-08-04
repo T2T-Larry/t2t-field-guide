@@ -1772,10 +1772,12 @@
         var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='NEW');
         // MISC can take a new card just as freely as any content header —
         // it's specifically for ideas that don't relate to the current
-        // TOPIC, so excluding it from the [+] made no sense. Purpose/NEW/
-        // Trash stay excluded (statement-only, auto-managed, and off-limits
-        // respectively). Locked July 16, 2026.
-        var blocksNewSubbers=(name==='Trash'||name==='Purpose'||name==='NEW');
+        // TOPIC, so excluding it from the [+] made no sense. Purpose picked
+        // up the same [+] on Aug 4, 2026 per Larry -- it's still a
+        // one-statement header by default, but he wants the option to add
+        // cards under it same as any other column. NEW/Trash stay excluded
+        // (auto-managed and off-limits respectively).
+        var blocksNewSubbers=(name==='Trash'||name==='NEW');
         var straight=true;
         // Sorted by sort_order, Aug 3 2026 -- previously rendered in
         // whatever order Supabase happened to return them, since nothing
@@ -1904,8 +1906,8 @@
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
           // [+] under each header adds a new subber directly here — mirrors
           // the [+] after MISC for headers. MISC included now too (any
-          // idea can land there, on-topic or not). Purpose/NEW/Trash stay
-          // excluded. Locked July 16, 2026.
+          // idea can land there, on-topic or not); Purpose joined them
+          // Aug 4, 2026. NEW/Trash stay excluded.
           if(!blocksNewSubbers && !headerRow.locked){
             scroll.appendChild(_sboardMakeAddSubberTile(headerRow.id, SUBBER_W, SUBBER_H));
           }
