@@ -32,6 +32,13 @@
                                 Lists the library to pick from, Remove
                                 (if the slot's filled), or Build a new
                                 key (drops into 9390, slot-aware).
+     9396  bb-linkpicker-overlay  Add a Link -- Aug 3 2026. Search +
+                                pick an existing Storyboard idea/header
+                                or another Briefing Card to link this
+                                card to (briefing_card_links). Separate
+                                from Unhooking Ideas (which creates a
+                                NEW Header, doesn't link to one that
+                                already exists).
    9360/9370 converted from nav()'d screens to overlays July 20, 2026,
    per Larry: the card should sit ON TOP of the board (board stays
    visible/live underneath, dimmed), closed via an explicit X or by
@@ -336,6 +343,18 @@
   var _bbMembersCache = [];
   var _bbTeamCache = [];
   var _bbChecklistCache = [];
+  // Linked Items, Aug 3 2026. _bbLinksCache: the open card's own links,
+  // resolved to a displayable label ({linkId, kind:'storyboard'|'card',
+  // targetId, label, dead, drillId or boardId}). _bbLinkCountCache:
+  // cardId -> total link count, board-wide, for the card-face badge/glow
+  // (recomputed whenever the active board's cards load or the open
+  // card's links change -- see _bbLoadLinkCounts).
+  var _bbLinksCache = [];
+  var _bbLinkCountCache = {};
+  // Loaded once per Link picker open, then filtered client-side as the
+  // traveler types -- see openLinkPicker/_bbRenderLinkPickerResults.
+  var _bbLinkPickerStoryboardCache = null;
+  var _bbLinkPickerCardsCache = null;
   var _bbInitStarted = false;
 
   function _bbUUID(){
@@ -560,6 +579,262 @@
     });
   }
 
+  // ============================================================
+  // LINKED ITEMS, Aug 3 2026 -- Larry: "A link in the precomputer days
+  // was colored yarn which literally connected cards with a line. The
+  // literal line is not necessary but a card [links] with several other
+  // items. The more links, the more key the item is." One edge per row
+  // in briefing_card_links (Supabase): target_type='storyboard' points
+  // at an Idea Storyboard idea/header (ideas.id); target_type='card'
+  // points at another Briefing Card, on any board. Card-to-card edges
+  // are undirected -- one row serves both cards, read from whichever
+  // side (card_id or target_card_id) isn't the card asking.
+  // ============================================================
+
+  // Resolves a Storyboard row to whatever it should mean to jump to --
+  // a Header/Subber is itself a real destination (currentTopicId can
+  // drill straight into it), but a plain idea/note/image/link card
+  // isn't drillable on its own, only its parent Header is. Mirrors the
+  // same "only Headers are real destinations" rule Unhooking Ideas
+  // already relies on (see _bbUnhookIdeas above).
+  function _bbStoryboardDrillTarget(row){
+    if(!row) return null;
+    if(row.content_type==='header') return row.id;
+    return row.cluster_id || row.id;
+  }
+
+  async function _bbLoadLinksForCard(cardId){
+    var sb=T().sb;
+    if(!sb){ if(_bbOpenCardId===cardId){ _bbLinksCache=[]; _bbRenderLinks(); } return; }
+    try{
+      var res=await sb.from('briefing_card_links').select('*').or('card_id.eq.'+cardId+',target_card_id.eq.'+cardId);
+      if(res.error) throw res.error;
+      var rows=res.data||[];
+      var entries=rows.map(function(r){
+        if(r.target_type==='storyboard'){
+          return {linkId:r.id, kind:'storyboard', targetId:r.target_idea_id};
+        }
+        var otherCardId=(String(r.card_id)===String(cardId)) ? r.target_card_id : r.card_id;
+        return {linkId:r.id, kind:'card', targetId:otherCardId};
+      });
+      var ideaIds=entries.filter(function(e){ return e.kind==='storyboard'; }).map(function(e){ return e.targetId; });
+      var cardIds=entries.filter(function(e){ return e.kind==='card'; }).map(function(e){ return e.targetId; });
+      var ideaMap={}, cardMap={};
+      if(ideaIds.length){
+        var ir=await sb.from('ideas').select('id,text_content,content_type,cluster_id').in('id', ideaIds);
+        (ir.data||[]).forEach(function(row){ ideaMap[row.id]=row; });
+      }
+      if(cardIds.length){
+        var cr=await sb.from('briefing_cards').select('id,task,board_id').in('id', cardIds);
+        (cr.data||[]).forEach(function(row){ cardMap[row.id]=row; });
+      }
+      entries.forEach(function(e){
+        if(e.kind==='storyboard'){
+          var irow=ideaMap[e.targetId];
+          e.label=irow ? (irow.text_content || (irow.content_type==='header' ? '(untitled header)' : '(untitled idea)')) : '(deleted item)';
+          e.dead=!irow;
+          e.drillId=irow ? _bbStoryboardDrillTarget(irow) : null;
+        } else {
+          var crow=cardMap[e.targetId];
+          e.label=crow ? (crow.task || '(untitled card)') : '(deleted card)';
+          e.dead=!crow;
+          e.boardId=crow ? crow.board_id : null;
+        }
+      });
+      if(_bbOpenCardId===cardId){ _bbLinksCache=entries; _bbRenderLinks(); }
+    }catch(e){
+      console.error('Briefing Board: could not load links', e);
+      if(_bbOpenCardId===cardId){ _bbLinksCache=[]; _bbRenderLinks(); }
+    }
+  }
+
+  function _bbRenderLinks(){
+    var list=document.getElementById('bb-d-links-list'); if(!list) return;
+    if(!_bbLinksCache.length){
+      list.innerHTML='<div class="bb-links-empty">No linked items yet.</div>';
+      return;
+    }
+    list.innerHTML=_bbLinksCache.map(function(e){
+      var icon=e.kind==='storyboard' ? '🧭' : '📋';
+      return '<div class="bb-link-row'+(e.dead?' bb-link-dead':'')+'">'
+        +'<span class="bb-link-go" data-go="'+_esc(e.linkId)+'">'+icon+' '+_esc(e.label)+'</span>'
+        +'<button class="bb-link-remove" data-id="'+_esc(e.linkId)+'" title="Remove link">&#10005;</button>'
+        +'</div>';
+    }).join('');
+    list.querySelectorAll('.bb-link-go').forEach(function(el){
+      el.addEventListener('click', function(){
+        var id=el.getAttribute('data-go');
+        var entry=_bbLinksCache.filter(function(x){ return x.linkId===id; })[0];
+        if(entry) _bbGoToLink(entry);
+      });
+    });
+    list.querySelectorAll('.bb-link-remove').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var id=btn.getAttribute('data-id');
+        var sb=T().sb;
+        try{ if(sb) await sb.from('briefing_card_links').delete().eq('id', id); }
+        catch(e){ console.error('Briefing Board: could not remove link', e); }
+        _bbLinksCache=_bbLinksCache.filter(function(x){ return x.linkId!==id; });
+        _bbRenderLinks();
+      });
+    });
+  }
+
+  // Jump to a linked item. Storyboard: same return-override pattern as
+  // Unhooking Ideas, so the Storyboard's own X comes straight back to
+  // this exact card instead of falling out to the backpack. Card:
+  // switches boards first if the linked card lives on a different one
+  // (it's still "your" corkboard, just a different board) then opens it.
+  function _bbGoToLink(entry){
+    if(entry.dead){ window.alert('That linked item no longer exists.'); return; }
+    if(entry.kind==='storyboard'){
+      if(!entry.drillId) return;
+      if(window.T2TShared){ window.T2TShared.currentTopicId=entry.drillId; window.T2TShared.filter=entry.drillId; }
+      var _bbReturnCardId=_bbOpenCardId;
+      if(T().markReturnOverride){
+        T().markReturnOverride(function(){ T().nav('s-briefing-board'); openCardDetail(_bbReturnCardId); });
+      }
+      closeCardDetail();
+      T().nav('s-sea-of-ideas-cluster');
+    } else if(entry.kind==='card'){
+      var targetCardId=entry.targetId, targetBoardId=entry.boardId;
+      closeCardDetail();
+      (async function(){
+        if(targetBoardId && targetBoardId!==_bbCurrentBoardId){ await _bbSwitchToBoard(targetBoardId); }
+        openCardDetail(targetCardId);
+      })();
+    }
+  }
+
+  // Board-wide link counts, Aug 3 2026 -- powers the card-face badge and
+  // "more links, more key" glow for every card on the currently active
+  // board. Two queries instead of one GROUP BY: supabase-js's query
+  // builder has no aggregate/group-by, and this is small enough (a
+  // traveler's whole board, not the whole table) that two plain .in()
+  // selects plus a client-side tally is simpler than standing up a
+  // Postgres function just for this.
+  async function _bbLoadLinkCounts(cardIds){
+    _bbLinkCountCache={};
+    if(!cardIds || !cardIds.length) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var r1=await sb.from('briefing_card_links').select('card_id').in('card_id', cardIds);
+      (r1.data||[]).forEach(function(row){ _bbLinkCountCache[row.card_id]=(_bbLinkCountCache[row.card_id]||0)+1; });
+      var r2=await sb.from('briefing_card_links').select('target_card_id').in('target_card_id', cardIds);
+      (r2.data||[]).forEach(function(row){ if(row.target_card_id) _bbLinkCountCache[row.target_card_id]=(_bbLinkCountCache[row.target_card_id]||0)+1; });
+    }catch(e){ console.error('Briefing Board: could not load link counts', e); }
+  }
+
+  async function _bbCreateLink(targetType, targetIdeaId, targetCardId){
+    if(!_bbOpenCardId) return;
+    var sb=T().sb;
+    if(!sb){ window.alert('Could not add the link: your sign-in session appears to have expired. Please refresh the page and sign in again.'); return; }
+    try{
+      var row={card_id:_bbOpenCardId, target_type:targetType, target_idea_id:targetIdeaId||null, target_card_id:targetCardId||null};
+      var ins=await sb.from('briefing_card_links').insert(row).select().single();
+      if(ins.error){
+        console.error('Briefing Board: could not create link', ins.error);
+        window.alert('Could not add that link. Error: '+(ins.error.message||'unknown error')+'. Nothing was saved -- please try again.');
+        return;
+      }
+      closeLinkPicker();
+      await _bbLoadLinksForCard(_bbOpenCardId);
+    }catch(e){
+      console.error('Briefing Board: could not create link', e);
+      window.alert('Could not add that link. Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again.');
+    }
+  }
+
+  // ---- Link picker (9396) ----
+
+  async function openLinkPicker(){
+    if(!_bbOpenCardId) return;
+    var ov=document.getElementById('bb-linkpicker-overlay'); if(!ov) return;
+    var search=document.getElementById('bb-linkpicker-search'); if(search) search.value='';
+    ov.classList.add('active');
+    _bbRenderLinkPickerResults('');
+    var sb=T().sb;
+    if(sb){
+      try{
+        var uid=await _bbCurrentUserId();
+        if(uid){
+          var ir=await sb.from('ideas').select('id,text_content,content_type,cluster_id').eq('user_id', uid).order('created_at',{ascending:false}).limit(500);
+          _bbLinkPickerStoryboardCache=(ir.data||[]).filter(function(row){ return row.content_type==='header' || (row.text_content && row.text_content.trim()); });
+          // RLS on briefing_cards already scopes SELECT to this
+          // traveler's own boards (own cards - select policy joins
+          // through board_id -> briefing_boards.user_id), so a plain
+          // select needs no extra filter here -- matches every other
+          // query in this file, none of which use an embedded/!inner
+          // join. Board names come from _bbBoards, already loaded for
+          // the TYPE/NAME pickers and covering every board regardless
+          // of type.
+          var cr=await sb.from('briefing_cards').select('id,task,board_id').order('created_at',{ascending:false}).limit(500);
+          var boardNameById={};
+          _bbBoards.forEach(function(b){ boardNameById[b.id]=b.name||'Untitled Board'; });
+          _bbLinkPickerCardsCache=(cr.data||[]).filter(function(row){ return row.id!==_bbOpenCardId && row.task && row.task.trim(); }).map(function(row){
+            return {id:row.id, task:row.task, board_id:row.board_id, boardName:boardNameById[row.board_id]||'Untitled Board'};
+          });
+        }
+      }catch(e){ console.error('Briefing Board: could not load link picker candidates', e); }
+      _bbRenderLinkPickerResults(search?search.value:'');
+    }
+  }
+
+  function closeLinkPicker(){
+    var ov=document.getElementById('bb-linkpicker-overlay'); if(ov) ov.classList.remove('active');
+  }
+
+  function _bbRenderLinkPickerResults(query){
+    var box=document.getElementById('bb-linkpicker-results'); if(!box) return;
+    var q=(query||'').trim().toLowerCase();
+    var storyboardItems=_bbLinkPickerStoryboardCache||[];
+    var cardItems=_bbLinkPickerCardsCache||[];
+    var alreadyLinkedIdea={}, alreadyLinkedCard={};
+    _bbLinksCache.forEach(function(e){
+      if(e.kind==='storyboard') alreadyLinkedIdea[e.targetId]=true;
+      else alreadyLinkedCard[e.targetId]=true;
+    });
+    var sMatches=storyboardItems.filter(function(row){
+      if(alreadyLinkedIdea[row.id]) return false;
+      var label=row.text_content||'';
+      return !q || label.toLowerCase().indexOf(q)!==-1;
+    }).slice(0,40);
+    var cMatches=cardItems.filter(function(row){
+      if(alreadyLinkedCard[row.id]) return false;
+      return !q || row.task.toLowerCase().indexOf(q)!==-1;
+    }).slice(0,40);
+    if(!_bbLinkPickerStoryboardCache && !_bbLinkPickerCardsCache){
+      box.innerHTML='<div class="bb-linkpicker-empty">Loading…</div>';
+      return;
+    }
+    if(!sMatches.length && !cMatches.length){
+      box.innerHTML='<div class="bb-linkpicker-empty">'+(q?'No matches.':'Nothing to link yet.')+'</div>';
+      return;
+    }
+    var html='';
+    sMatches.forEach(function(row){
+      var label=row.text_content || (row.content_type==='header' ? '(untitled header)' : '(untitled idea)');
+      html+='<div class="bb-linkpicker-item" data-storyboard="'+_esc(row.id)+'"><span class="bb-linkpicker-tag">'+(row.content_type==='header'?'Header':'Idea')+'</span><span>'+_esc(label)+'</span></div>';
+    });
+    cMatches.forEach(function(row){
+      html+='<div class="bb-linkpicker-item" data-card="'+_esc(row.id)+'"><span class="bb-linkpicker-tag">'+_esc(row.boardName)+'</span><span>'+_esc(row.task)+'</span></div>';
+    });
+    box.innerHTML=html;
+    box.querySelectorAll('[data-storyboard]').forEach(function(el){
+      el.addEventListener('click', function(){ _bbCreateLink('storyboard', el.getAttribute('data-storyboard'), null); });
+    });
+    box.querySelectorAll('[data-card]').forEach(function(el){
+      el.addEventListener('click', function(){ _bbCreateLink('card', null, el.getAttribute('data-card')); });
+    });
+  }
+
+  function wireLinks(){
+    T().wire('bb-d-add-link', openLinkPicker);
+    T().wire('bb-linkpicker-close', closeLinkPicker);
+    var search=document.getElementById('bb-linkpicker-search');
+    if(search) search.addEventListener('input', function(){ _bbRenderLinkPickerResults(search.value); });
+  }
+
   // Browsable Archive, added July 21, 2026 (evening) -- Touch Point 9380,
   // held in reserve since the original Custom Keys work. Verified-
   // complete cards never left storage, just the board's 4 columns --
@@ -703,6 +978,7 @@
           _bbKeyLibCache=remappedKeys;
           _bbRenderTypePicker();
           _bbRenderBoardPicker();
+          await _bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
           return;
         }catch(e){ console.error('Briefing Board: legacy migration failed', e); }
@@ -713,6 +989,7 @@
     _bbKeyLibCache = keyRows.map(function(r){ return {id:r.id, shape:r.shape, color:r.color, meaning:r.meaning}; });
     _bbRenderTypePicker();
     _bbRenderBoardPicker();
+    await _bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; }));
     renderBoard();
   }
 
@@ -1287,9 +1564,19 @@
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
+      // "More links, more key," Aug 3 2026 (Larry) -- a card's shadow
+      // gets a layered, stacked look as its link count climbs, same
+      // visual language the Storyboard already uses for "this thing has
+      // more behind it" (.sc-pill.has-children in idea-storyboard-9710.js).
+      // 1-2 links: a thin gold outline. 3+: a bolder outline plus a
+      // second offset shadow layer, so a well-connected card visibly
+      // stands out from the pile without needing to open it.
+      +'.bb-card.bb-has-links{box-shadow:1px 2px 4px rgba(59,37,16,0.18),0 0 0 1px rgba(201,168,124,.65)}'
+      +'.bb-card.bb-many-links{box-shadow:2px 3px 6px rgba(59,37,16,0.28),0 0 0 2px rgba(201,168,124,.9),4px 5px 0 rgba(201,168,124,.22)}'
       +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
       +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
       +'.bb-pri-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
+      +'.bb-link-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;background:#6b4a2e;line-height:1.4}'
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:13px;color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px}'
@@ -1346,6 +1633,21 @@
       +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
       +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
       +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
+      // Linked Items, Aug 3 2026 -- same row/remove-button shape as the
+      // Checklist just above (bb-checklist-row/remove), so the two
+      // "small list living inside a field" patterns on this card read
+      // as one family.
+      +'.bb-link-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
+      +'.bb-link-row:last-child{border-bottom:none}'
+      +'.bb-link-go{flex:1;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(59,37,16,.25);text-underline-offset:2px}'
+      +'.bb-link-go:hover{color:#6b4a2e}'
+      +'.bb-link-dead .bb-link-go{color:var(--bb-sub);font-style:italic;text-decoration:none;cursor:default}'
+      +'.bb-link-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
+      +'.bb-links-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:2px 0}'
+      +'.bb-linkpicker-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;margin-bottom:6px;cursor:pointer;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);background:#fff}'
+      +'.bb-linkpicker-item:hover{background:var(--bb-bg)}'
+      +'.bb-linkpicker-tag{flex-shrink:0;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.bb-linkpicker-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:8px 0}'
       +'.bb-archive-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--bb-accent)}'
       +'.bb-archive-task{font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
       +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub)}'
@@ -1452,6 +1754,17 @@
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
             +'<div class="bb-field"><label>Custom Keys</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
+            // Linked Items, Aug 3 2026 -- Larry: "A link in the
+            // precomputer days was colored yarn which literally
+            // connected cards with a line ... a card [links] with
+            // several other items. The more links, the more key the
+            // item is." A card can link to an existing Storyboard idea
+            // or header, or to another Briefing Card (any board) --
+            // see briefing_card_links (Supabase) and openLinkPicker
+            // below. Separate from Hang-Ups' own Unhooking Ideas button
+            // above, which is untouched -- that one auto-creates a NEW
+            // Header; this links to something that already exists.
+            +'<div class="bb-field"><label>Linked Items</label><div id="bb-d-links-list"></div><button class="jb" id="bb-d-add-link" type="button" style="width:100%;margin-bottom:0">&#129525; Add a link</button></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
@@ -1592,6 +1905,27 @@
       kpOv.addEventListener('click', function(e){ if(e.target===kpOv) closeKeyPicker(); });
       _bbMakeDraggable(kpOv.querySelector('.bb-overlay-card'), kpOv.querySelector('.bb-overlay-head'));
     }
+    // Link picker (9396 -- next free number after 9395's Choose a Key),
+    // Aug 3 2026. Loads the traveler's own Storyboard items and other
+    // Briefing Cards once per open, then filters client-side as they
+    // type -- both lists are small enough (low hundreds at most) that a
+    // live search-as-you-type call to Supabase on every keystroke would
+    // just be slower for no real benefit.
+    if(!document.getElementById('bb-linkpicker-overlay')){
+      var lpOv=document.createElement('div');
+      lpOv.id='bb-linkpicker-overlay'; lpOv.className='bb-overlay';
+      lpOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Link</span><button class="bb-close" id="bb-linkpicker-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field"><input type="text" id="bb-linkpicker-search" placeholder="Search Storyboard ideas, headers, and Briefing Cards..."></div>'
+            +'<div class="bb-field" id="bb-linkpicker-results"></div>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(lpOv);
+      lpOv.addEventListener('click', function(e){ if(e.target===lpOv) closeLinkPicker(); });
+      _bbMakeDraggable(lpOv.querySelector('.bb-overlay-card'), lpOv.querySelector('.bb-overlay-head'));
+    }
 
     T().registerPageNum('s-briefing-board', '9350');
     T().registerUtilScreen('s-briefing-board');
@@ -1655,12 +1989,18 @@
       });
       colCards.forEach(function(c){
         var el=document.createElement('div');
-        el.className='bb-card';
+        // Aug 3 2026, "more links, more key" -- bb-has-links (1-2) /
+        // bb-many-links (3+) scale the card's own shadow, see the CSS
+        // above. Count comes from _bbLinkCountCache, refreshed whenever
+        // a board loads or a card's links change (see _bbLoadLinkCounts).
+        var linkCount=_bbLinkCountCache[c.id]||0;
+        el.className='bb-card'+(linkCount>=3?' bb-many-links':(linkCount>=1?' bb-has-links':''));
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
+        var linkBadge = linkCount ? ('<span class="bb-link-badge" title="'+linkCount+' linked item'+(linkCount>1?'s':'')+'">\uD83E\uDDF5'+(linkCount>1?linkCount:'')+'</span>') : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -1668,7 +2008,7 @@
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+linkBadge+'</span>'+dotHTML+'</div>'
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
@@ -1856,6 +2196,9 @@
     var clInput=document.getElementById('bb-d-checklist-new'); if(clInput) clInput.value='';
     _bbRenderChecklist();
     _bbLoadChecklistForCard(id);
+    _bbLinksCache=[];
+    _bbRenderLinks();
+    _bbLoadLinksForCard(id);
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -1880,7 +2223,10 @@
     }
     _bbOpenCardId=null;
     var ov=document.getElementById('bb-detail-overlay'); if(ov) ov.classList.remove('active');
-    renderBoard();
+    // Refresh link counts before redrawing -- the card that was just
+    // open may have gotten (or lost) links, and the board-face badge/
+    // glow needs to reflect that the moment you're back looking at it.
+    _bbLoadLinkCounts(_bbCardsList().map(function(c){ return c.id; })).then(renderBoard);
   }
 
   function openTrashConfirm(id){
@@ -2425,6 +2771,7 @@
     wireKeyBuilder();
     wireKeyPicker();
     wireChecklist();
+    wireLinks();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
