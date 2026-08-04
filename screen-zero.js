@@ -1450,28 +1450,40 @@
           }
         }
       ],
+      // Larry, Aug 4 2026 (bug report, third round): "When I move
+      // monkey in drawer then close the drawer the monkey jumps out
+      // of the drawer. AN OBJECT SHOULD STAY WHERE IT IS PUT!"
+      // Root cause of this whole back-and-forth: the monkey's OWN
+      // drawer/mode-3 slot was special-cased as "home" -- dropped
+      // there, it reset to a hardcoded centered spot instead of
+      // remembering exactly where it was dropped (unlike every other
+      // slot-riding object, which always calls captureRidingOffset).
+      // That's what made the hit-test tight in the previous pass (to
+      // make escaping the reset easier), which in turn meant a drop
+      // that still visually looked "in the drawer" but missed the
+      // narrow target fell through to an independent, document.body,
+      // position:fixed placement instead -- one that doesn't belong
+      // to any slot, so refreshRidersForSlot's own collapse-hides-it
+      // logic never applies, and it stays visible ("jumps out") when
+      // the drawer collapses.
+      //
+      // Fixed at the actual source instead of patching the hit-test
+      // again: the monkey's own drawer is no longer special-cased at
+      // all -- landing on EITHER drawer (including its own, any mode)
+      // now goes through the exact same setRidingSlot +
+      // captureRidingOffset + refreshRidersForSlot path every other
+      // riding object already uses. That system already remembers the
+      // precise drop position AND already correctly hides/shows with
+      // its bar's own collapsed state (see refreshRidersForSlot's
+      // `display = collapsed ? 'none' : ''`), so both bugs disappear
+      // by using the proven mechanism instead of a bespoke one. The
+      // hit-test also goes back to the plain, generous floor-to-
+      // ceiling target every other object uses (restoreHomeParent and
+      // the old special-case branch are no longer called here, so
+      // that helper is now unused by the monkey but left in place --
+      // still used elsewhere in this file).
       reattachTargets: [
-        // Larry, Aug 4 2026 (bug report, immediate follow-up): "Now
-        // monkey moves but refuses to go back into drawer????" ...
-        // "unless placed in the center!" Root cause: hit-testing
-        // against ownPanel's own rect only worked when that exact
-        // panel (mode 3, the monkey's home slot) happened to be the
-        // drawer's CURRENTLY VISIBLE tab -- any other moment it's
-        // display:none, so getBoundingClientRect() returns a zero-size
-        // box nothing can ever land in ("the center" Larry found was
-        // really just the one moment mode 3 was showing). Switched to
-        // a live getter that reads whichever mode panel is ACTUALLY
-        // showing in the drawer right now and hit-tests against THAT
-        // panel's own real rect -- still tight (no floor-to-ceiling,
-        // no DOCK_PAD), so pulling it out onto the open desk stays
-        // easy, but putting it back just means aiming at whatever's
-        // visibly showing in the drawer, not one specific hidden slot.
-        { el: ownBar, side: ownSide, hitEl: {
-            getBoundingClientRect: function(){
-              var active = ownBar.querySelector('.sz-mode-panel.sz-mode-active');
-              return (active || ownBar).getBoundingClientRect();
-            }
-          } },
+        { el: ownBar, side: ownSide },
         { get el(){ return document.getElementById(otherId); }, side: otherSide }
       ],
       onIndependent: function(){
@@ -1479,21 +1491,9 @@
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        // Home is specifically ITS OWN drawer's mode-3 slot, the one
-        // it was originally built into -- anywhere else (including
-        // its own drawer's OTHER modes) is a real slot claim.
-        if (side === ownSide && mode === '3') {
-          setRidingSlot(storeKey, null);
-          restoreHomeParent(rec);
-          img.style.position = '';
-          img.style.left = ''; img.style.top = '';
-          img.style.right = ''; img.style.bottom = ''; img.style.margin = '';
-          img.style.display = '';
-        } else {
-          setRidingSlot(storeKey, slotKey(side, mode));
-          captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
-          refreshRidersForSlot(side, mode, barEl);
-        }
+        setRidingSlot(storeKey, slotKey(side, mode));
+        captureRidingOffset(rec, barEl, mode === '2' ? loadTrayGroupOffset(side) : null);
+        refreshRidersForSlot(side, mode, barEl);
       }
     });
   }
