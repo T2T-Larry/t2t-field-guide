@@ -1227,7 +1227,12 @@
     await _bbEnsureKeyLibraryLoaded();
     var sb=T().sb;
     try{
-      var res=await sb.from('briefing_boards').select('*').eq('user_id',uid).order('created_at',{ascending:true});
+      // Aug 4 2026, Larry: board sharing -- the owner can grant other
+      // members access (see board_members / is_board_member in the DB), so
+      // this intentionally no longer filters to user_id=uid. Row Level
+      // Security alone decides what comes back: this traveler's own boards,
+      // plus any board someone has added them to.
+      var res=await sb.from('briefing_boards').select('*').order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _bbBoards=res.data||[];
     }catch(e){
@@ -2077,6 +2082,10 @@
             +'<div class="bb-field"><label>Custom Keys</label>'
               +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128273; Manage Keys</button>'
             +'</div>'
+            +'<div class="bb-field" id="bb-sharing-field"><label>Sharing</label>'
+              +'<div id="bb-sharing-summary" style="font-size:12px;color:var(--bb-sub);margin-bottom:6px"></div>'
+              +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
+            +'</div>'
             +'<div class="bb-field"><label>Team</label><div id="bb-team-list"></div><div style="font-size:11px;color:var(--bb-sub);margin-top:6px;font-style:italic">To add someone new, they need a real account first -- this only edits or removes existing team members.</div></div>'
           +'</div>'
         +'</div>';
@@ -2111,6 +2120,28 @@
       fg.appendChild(klOv);
       klOv.addEventListener('click', function(e){ if(e.target===klOv) closeKeyLibManager(); });
       _bbMakeDraggable(klOv.querySelector('.bb-overlay-card'), klOv.querySelector('.bb-overlay-head'));
+    }
+    // Board Sharing (Aug 4 2026) -- lets the owner of a project/departmental/
+    // company Briefing Board add other signed-in members so they can see
+    // and edit it too. Same overlay shape as the Custom Keys manager.
+    if(!document.getElementById('bb-sharing-overlay')){
+      var shOv=document.createElement('div');
+      shOv.id='bb-sharing-overlay'; shOv.className='bb-overlay';
+      shOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Manage Access</span><button class="bb-close" id="bb-sharing-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">Everyone added here can see and edit this board -- same access as you.</div>'
+            +'<div id="bb-sharing-list"></div>'
+            +'<div id="bb-sharing-add-row" style="display:flex;gap:6px;margin-top:8px">'
+              +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
+              +'<button class="bb-icon-btn" id="bb-sharing-add-btn" title="Add">+</button>'
+            +'</div>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(shOv);
+      shOv.addEventListener('click', function(e){ if(e.target===shOv) closeSharingManager(); });
+      _bbMakeDraggable(shOv.querySelector('.bb-overlay-card'), shOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-hx-overlay')){
       var hxOv=document.createElement('div');
@@ -2548,6 +2579,7 @@
     var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
     var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
     _bbLoadTeam();
+    _bbLoadSharing();
     var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.add('active');
   }
   function closeSettings(){
@@ -2842,6 +2874,116 @@
     T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
     T().wire('bb-keylibmanager-close', closeKeyLibManager);
     T().wire('bb-keylib-add', function(){ closeKeyLibManager(); openKeyBuilder(null, function(){ openKeyLibManager(); }); });
+  }
+
+  // ---- Board Sharing manager (Aug 4 2026) ----
+  // Larry: Project/Departmental/Company boards should support more than
+  // one signed-in member on the same board. Whoever owns the board (its
+  // user_id) is the only one who can add or remove other members; anyone
+  // they add gets full, equal edit access to the board's cards, same as
+  // the owner -- no separate viewer/editor tiers for now. Backed by the
+  // board_members table + RLS (Supabase migration "add_board_sharing").
+  // Personal boards stay single-traveler and hide this control entirely.
+  var _bbSharingCache = [];
+  var _bbSharingIsOwner = false;
+
+  async function _bbLoadSharing(){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var fieldEl=document.getElementById('bb-sharing-field');
+    var summaryEl=document.getElementById('bb-sharing-summary');
+    if(!board || (board.board_type||'personal')==='personal'){
+      if(fieldEl) fieldEl.style.display='none';
+      return;
+    }
+    if(fieldEl) fieldEl.style.display='';
+    var uid=await _bbCurrentUserId();
+    _bbSharingIsOwner = !!uid && board.user_id===uid;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var res=await sb.rpc('list_board_members', {p_board_id: board.id});
+      _bbSharingCache = (!res.error && res.data) ? res.data : [];
+    }catch(e){ _bbSharingCache=[]; }
+    if(summaryEl){
+      if(!_bbSharingCache.length){
+        summaryEl.textContent = _bbSharingIsOwner ? 'Only you can see this board right now.' : 'Shared with you.';
+      } else {
+        var names=_bbSharingCache.map(function(m){ return m.name||m.email; });
+        summaryEl.textContent = (_bbSharingIsOwner?'Shared with: ':'Also shared with: ')+names.join(', ');
+      }
+    }
+    var openBtn=document.getElementById('bb-open-sharing');
+    if(openBtn) openBtn.innerHTML = '\uD83E\uDD1D ' + (_bbSharingIsOwner ? 'Manage Access' : 'View Access');
+  }
+
+  function _bbRenderSharingList(){
+    var list=document.getElementById('bb-sharing-list'); if(!list) return;
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var addRow=document.getElementById('bb-sharing-add-row');
+    if(addRow) addRow.style.display = _bbSharingIsOwner ? 'flex' : 'none';
+    if(!_bbSharingCache.length){
+      list.innerHTML='<div class="bb-key-pick-empty-msg">Nobody else has access yet.</div>';
+      return;
+    }
+    list.innerHTML=_bbSharingCache.map(function(m){
+      return '<div class="bb-keylib-row" data-user-id="'+_esc(m.user_id)+'">'
+        +'<span class="bb-keylib-meaning">'+_esc(m.name||m.email)+'</span>'
+        +(_bbSharingIsOwner ? '<button class="bb-keylib-del" data-user-id="'+_esc(m.user_id)+'" title="Remove">&#128465;&#65039;</button>' : '')
+        +'</div>';
+    }).join('');
+    if(!_bbSharingIsOwner || !board) return;
+    list.querySelectorAll('.bb-keylib-del').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var uidToRemove=btn.getAttribute('data-user-id');
+        var row=_bbSharingCache.filter(function(m){ return m.user_id===uidToRemove; })[0];
+        if(!window.confirm('Remove '+(row?(row.name||row.email):'this person')+' from this board? They will lose access immediately.')) return;
+        var sb=T().sb; if(!sb) return;
+        await sb.from('board_members').delete().eq('board_id', board.id).eq('user_id', uidToRemove);
+        await _bbLoadSharing();
+        _bbRenderSharingList();
+      });
+    });
+  }
+
+  function openSharingManager(){
+    _bbLoadSharing().then(_bbRenderSharingList);
+    var ov=document.getElementById('bb-sharing-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeSharingManager(){
+    var ov=document.getElementById('bb-sharing-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function wireSharingManager(){
+    T().wire('bb-open-sharing', function(){ closeSettings(); openSharingManager(); });
+    T().wire('bb-sharing-close', closeSharingManager);
+    var addBtn=document.getElementById('bb-sharing-add-btn');
+    if(addBtn) addBtn.addEventListener('click', async function(){
+      if(!_bbSharingIsOwner){ window.alert('Only the board owner can add people.'); return; }
+      var input=document.getElementById('bb-sharing-add-email');
+      var email=input?input.value.trim().toLowerCase():'';
+      if(!email) return;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      var sb=T().sb; if(!sb || !board) return;
+      try{
+        var res=await sb.rpc('find_member_by_email', {p_email: email});
+        var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
+        if(!match){
+          window.alert('No T2T member found with that email. They need an active Field Guide account first -- ask them to sign up, then try adding them again.');
+          return;
+        }
+        var myUid=await _bbCurrentUserId();
+        var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid});
+        if(ins.error){
+          window.alert('Could not add '+(match.name||email)+'. '+(ins.error.message||'Please try again.'));
+          return;
+        }
+        if(input) input.value='';
+        await _bbLoadSharing();
+        _bbRenderSharingList();
+      }catch(e){
+        console.error('Briefing Board: could not add member', e);
+        window.alert('Could not add that person. Please try again.');
+      }
+    });
   }
 
   function wirePriorityButtons(){
@@ -3218,6 +3360,7 @@
     wireKeyBuilder();
     wireKeyPicker();
     wireKeyLibManager();
+    wireSharingManager();
     wireChecklist();
     wireLinks();
 
