@@ -138,12 +138,14 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 .phase-tray-sym{font-size:18px;line-height:1}
 .phase-tray-lbl{font-weight:700}
 /* Create hub TOC cards (1101) -- Larry, Aug 4 2026: switched from a full-width
-   6-row list to a 2-col grid (half width each, 3 rows instead of 6) to kill
-   the scroll-forcing whitespace and leave real room for artwork. Follow-up,
-   same day: "All these buttons are in Create. What if they are all light
-   blue?" -- light-blue treatment matching the Blue Sky door buttons' own
-   palette (#f0f6ff/#1a3a5c) elsewhere in this same hub. */
-.toc-card{background:#EBF4FF;border:1.5px solid #B5D4F4;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+   6-row list to half-width cards to kill the scroll-forcing whitespace and
+   leave room for artwork alongside. First pass tried a 2-col grid; Larry's
+   follow-up: "Single column is still good as they will be presented in
+   that order" -- so back to a single stacked column, just half width
+   (left-aligned, right half of the row open) instead of full width.
+   Also light blue to match the Blue Sky door buttons' own palette
+   (#f0f6ff/#1a3a5c) elsewhere in this same hub. */
+.toc-card{background:#EBF4FF;border:1.5px solid #B5D4F4;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;width:50%;box-sizing:border-box}
 .toc-card:hover{background:#DCEBFB}
 .toc-num{font-family:'Playfair Display',serif;font-size:12px;color:#378ADD;font-weight:700}
 .toc-title{font-family:'Playfair Display',serif;font-size:14px;color:#1a3a5c;font-weight:700}
