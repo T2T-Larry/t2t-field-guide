@@ -1260,7 +1260,7 @@
       // 2px -> 10px so the tagline reads as its own line, not crowded
       // against the title's descenders.
       +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
-      +'.bb-mh{color:var(--bb-ink);font-size:30px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
+      +'.bb-mh{color:var(--bb-ink);font-size:38px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
       +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:150px}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
