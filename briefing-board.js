@@ -287,14 +287,14 @@
   ];
 
   // Custom Keys, July 21, 2026 -- replaces the old one-per-board Signal.
-  // A board-wide library of up to 6 traveler-defined keys (shape + color
+  // A shared library of up to 12 traveler-defined keys (shape + color
   // + meaning), built from a fixed set of 6 shapes and 6 curated colors
   // so any two library entries stay visually distinct at card-face size.
   // Each card carries up to 3 of them (c.keys, an array of library ids)
   // -- see Larry's July 21 design chat for the 6/6/6/3 reasoning.
   var SIGNAL_SHAPES = ['circle','square','triangle','diamond','star','heart'];
   var KEY_COLORS = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
-  var MAX_KEY_LIBRARY = 6;
+  var MAX_KEY_LIBRARY = 12; // raised from 6 -- Aug 4 2026, after merging Storyboard + Briefing Board libraries into one shared pool, the old per-board cap of 6 was too low for the combined set
   var MAX_KEYS_PER_CARD = 3;
   var SIGNAL_CLIP = {
     triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
@@ -2455,7 +2455,7 @@
     });
   }
 
-  // Custom Keys -- a board-wide library of up to 6 traveler-defined
+  // Custom Keys -- a shared library of up to 12 traveler-defined
   // keys (shape+color+meaning), built in the Add-a-Key overlay (9390).
   // A card holds up to 3 (c.keys, always kept gap-free -- see
   // removeKeyFromSlot). Tapping ANY circle (empty or filled) opens

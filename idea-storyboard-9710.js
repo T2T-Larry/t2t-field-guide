@@ -569,7 +569,7 @@
   // Board (its own board-scoped briefing_board_keys) and on Shortcuts
   // (traveler-wide bookmark_keys) -- this one is modeled on Shortcuts'
   // traveler-wide scope (one shared custom_keys table, not tied to a
-  // single board), same 6 shapes / 6 colors / 6-key-library-cap /
+  // single board), same 6 shapes / 6 colors, 12-key-library-cap (raised from 6 Aug 4 2026 after the library merge) /
   // 3-keys-per-card-cap so the visual language matches everywhere it
   // shows up. The existing red heart is untouched, per Larry's explicit
   // call -- Custom Keys are a second, optional marker, not a
@@ -582,7 +582,7 @@
     star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
     heart: 'polygon(50% 20%, 60% 0%, 80% 0%, 100% 20%, 100% 40%, 50% 100%, 0% 40%, 0% 20%, 20% 0%, 40% 0%)'
   };
-  var MAX_KEY_LIBRARY = 6;
+  var MAX_KEY_LIBRARY = 12; // raised from 6 -- Aug 4 2026, after merging Storyboard + Briefing Board libraries into one shared pool, the old per-board cap of 6 was too low for the combined set
   var MAX_KEYS_PER_CARD = 3;
   function _sboardKeyShapeCSS(shape, color){
     var css='background:'+color+';';
