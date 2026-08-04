@@ -4085,6 +4085,38 @@
      already built) — see above. Kept CLUSTER's own rename code out of here
      on purpose, so there's exactly one rename dialog instead of two. */
 
+  // ── LIVE SYNC (Aug 4 2026) ── renderSeaBoard() already re-fetches
+  // fresh from Supabase and re-renders every time it's called (it's the
+  // same function every local action here already calls afterward), so
+  // reacting to a remote change just means calling it again -- no manual
+  // row-merging needed the way the Briefing Board's card list needs.
+  // Coalesced/deferred the same way as the Briefing Board's live sync,
+  // so a burst of remote changes doesn't fire a network re-fetch per row,
+  // and paused while a card/header is mid-drag.
+  var _sboardRtPendingRender = false, _sboardRtTimer = null;
+  function _sboardRtSafeRefresh(){
+    if (T().isDragActive()) { _sboardRtPendingRender = true; return; }
+    if (_sboardRtTimer) clearTimeout(_sboardRtTimer);
+    _sboardRtTimer = setTimeout(function(){ _sboardRtTimer = null; renderSeaBoard(); }, 300);
+  }
+  window.addEventListener('t2t:drag-end', function(){
+    if (_sboardRtPendingRender) { _sboardRtPendingRender = false; _sboardRtSafeRefresh(); }
+  });
+  function _sboardApplyRemoteIdea(){ _sboardRtSafeRefresh(); }
+  function _sboardApplyRemoteKey(evt, row, oldRow){
+    if (!_sboardKeyLibLoaded) return; // library not fetched in this tab yet -- nothing cached to patch
+    if (evt === 'DELETE') {
+      if (!oldRow) return;
+      _sboardKeyLib = _sboardKeyLib.filter(function(k){ return String(k.id) !== String(oldRow.id); });
+    } else {
+      var idx = -1;
+      for (var i=0;i<_sboardKeyLib.length;i++){ if (String(_sboardKeyLib[i].id) === String(row.id)) { idx=i; break; } }
+      if (idx !== -1) _sboardKeyLib[idx] = row; else _sboardKeyLib.push(row);
+    }
+    _sboardSaveKeyLibLocal(_sboardKeyLib);
+    _sboardRtSafeRefresh();
+  }
+
   window.T2TStoryboard = {
     ensureMiscHeader: T2TData.ensureMiscHeader,
     ensureTrashHeader: T2TData.ensureTrashHeader,
@@ -4116,6 +4148,10 @@
   document.addEventListener('DOMContentLoaded', function(){
     injectSeaOfIdeas();
     injectSeaOfIdeasCluster();
+    if (T().onRealtimeChange) {
+      T().onRealtimeChange('ideas', _sboardApplyRemoteIdea);
+      T().onRealtimeChange('custom_keys', _sboardApplyRemoteKey);
+    }
   });
 
 })();

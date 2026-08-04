@@ -3124,6 +3124,61 @@
     });
   }
 
+  // ── LIVE SYNC (Aug 4 2026) ── reacts to changes pushed by backpack.js's
+  // shared realtime channel (see startRealtimeSync there). A remote
+  // change updates this board's own in-memory state the same way a
+  // local save already does, then re-renders -- deferred/coalesced so
+  // a burst of events (e.g. someone else's whole-board save, which
+  // upserts every card row) doesn't hammer the DOM with a render per
+  // row, and paused entirely while a card is mid-drag.
+  var _bbRtPendingRender = false, _bbRtTimer = null;
+  function _bbRtSafeRender(){
+    if (T().isDragActive()) { _bbRtPendingRender = true; return; }
+    if (_bbRtTimer) clearTimeout(_bbRtTimer);
+    _bbRtTimer = setTimeout(function(){ _bbRtTimer = null; renderBoard(); }, 300);
+  }
+  window.addEventListener('t2t:drag-end', function(){
+    if (_bbRtPendingRender) { _bbRtPendingRender = false; _bbRtSafeRender(); }
+  });
+  function _bbApplyRemoteCard(evt, row, oldRow){
+    var boardId = row ? row.board_id : (oldRow ? oldRow.board_id : null);
+    if (boardId !== _bbCurrentBoardId) return; // not the board currently open in this tab
+    var list = _bbCardsList();
+    if (evt === 'DELETE') {
+      if (!oldRow) return;
+      _bbCards = list.filter(function(c){ return c.id !== oldRow.id; });
+      if (_bbOpenCardId === oldRow.id) closeCardDetail();
+    } else {
+      var card = _bbRowToCard(row);
+      var idx = -1;
+      for (var i=0;i<list.length;i++){ if (list[i].id === card.id) { idx=i; break; } }
+      if (idx !== -1) list[idx] = card; else list.push(card);
+      _bbCards = list;
+    }
+    _bbRtSafeRender();
+  }
+  function _bbApplyRemoteChecklist(evt, row, oldRow){
+    var cardId = (row && row.card_id) || (oldRow && oldRow.card_id);
+    if (cardId && cardId === _bbOpenCardId) _bbLoadChecklistForCard(cardId);
+  }
+  function _bbApplyRemoteLinks(evt, row, oldRow){
+    var cardId = (row && row.card_id) || (oldRow && oldRow.card_id);
+    var targetCardId = (row && row.target_card_id) || (oldRow && oldRow.target_card_id);
+    if (_bbOpenCardId && (cardId === _bbOpenCardId || targetCardId === _bbOpenCardId)) _bbLoadLinksForCard(_bbOpenCardId);
+  }
+  function _bbApplyRemoteKey(evt, row, oldRow){
+    if (!_bbKeyLibraryLoaded) return; // library not fetched in this tab yet -- nothing cached to patch
+    if (evt === 'DELETE') {
+      if (!oldRow) return;
+      _bbKeyLibCache = _bbKeyLibCache.filter(function(k){ return String(k.id) !== String(oldRow.id); });
+    } else {
+      var idx = -1;
+      for (var i=0;i<_bbKeyLibCache.length;i++){ if (String(_bbKeyLibCache[i].id) === String(row.id)) { idx=i; break; } }
+      if (idx !== -1) _bbKeyLibCache[idx] = row; else _bbKeyLibCache.push(row);
+    }
+    _bbRtSafeRender();
+  }
+
   function wireBriefingBoard(){
     T().wire('b-bb-mg', T().goMG);
     // July 22, 2026, Larry: the Briefing Board is "one of the most
@@ -3174,6 +3229,12 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     injectBriefingBoardScreens();
+    if (T().onRealtimeChange) {
+      T().onRealtimeChange('briefing_cards', _bbApplyRemoteCard);
+      T().onRealtimeChange('briefing_checklist_items', _bbApplyRemoteChecklist);
+      T().onRealtimeChange('briefing_card_links', _bbApplyRemoteLinks);
+      T().onRealtimeChange('custom_keys', _bbApplyRemoteKey);
+    }
   });
 
 })();

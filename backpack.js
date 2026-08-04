@@ -41,6 +41,67 @@
     briefing_board_id:null
   };
 
+  // ── LIVE SYNC (Aug 4 2026) ──────────────────────────────────────
+  // Larry asked whether the Storyboard and Briefing Board could stay in
+  // sync when open at once (e.g. on two screens). Neither board polled
+  // or listened for anything before this -- each one loaded its data
+  // once and only ever saw a fresh copy again after its own save. This
+  // adds one shared Supabase Realtime channel, listening for row
+  // changes on every table either board reads (ideas, briefing_cards,
+  // briefing_checklist_items, briefing_card_links, custom_keys), and a
+  // tiny pub/sub (onRealtimeChange) so briefing-board.js and
+  // idea-storyboard-9710.js can each react in their own way without
+  // reaching into each other's code -- same "talk only through
+  // window.T2T" rule the two boards already follow for everything else.
+  // Row visibility is still governed entirely by each table's existing
+  // Row Level Security policies -- this doesn't widen what anyone can
+  // see, it just pushes the same rows a traveler could already query
+  // themselves, the moment they change instead of on next reload.
+  var _rtListeners = {};
+  function onRealtimeChange(table, cb){
+    (_rtListeners[table] = _rtListeners[table] || []).push(cb);
+  }
+  function _rtFire(table, eventType, newRow, oldRow){
+    var arr = _rtListeners[table];
+    if (!arr || !arr.length) return;
+    arr.forEach(function(cb){
+      try { cb(eventType, newRow, oldRow); }
+      catch(e){ console.error('T2T: realtime listener failed for', table, e); }
+    });
+  }
+  var _rtChannel = null, _rtStarted = false;
+  var LIVE_SYNC_TABLES = ['ideas','briefing_cards','briefing_checklist_items','briefing_card_links','custom_keys'];
+  function startRealtimeSync(){
+    if (_rtStarted || !_member.user_id) return;
+    _rtStarted = true;
+    try {
+      var ch = _sb.channel('t2t-live-sync');
+      LIVE_SYNC_TABLES.forEach(function(t){
+        ch.on('postgres_changes', { event:'*', schema:'public', table:t }, function(payload){
+          _rtFire(t, payload.eventType, payload.new, payload.old);
+        });
+      });
+      ch.subscribe(function(status, err){
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('T2T: live-sync channel problem', status, err);
+          _rtStarted = false; // allow a retry on next profile load / nav
+        }
+      });
+      _rtChannel = ch;
+    } catch(e) { console.error('T2T: could not start live sync', e); _rtStarted = false; }
+  }
+  // Native HTML5 drag-and-drop breaks if the dragged element gets
+  // removed from the DOM mid-drag -- exactly what a remote-change
+  // re-render would do to a card/idea currently being dragged. Both
+  // boards check this (via T().isDragActive()) before reacting to a
+  // live update, and re-check on t2t:drag-end once the drag finishes.
+  var _t2tDragActive = false;
+  document.addEventListener('dragstart', function(){ _t2tDragActive = true; }, true);
+  document.addEventListener('dragend', function(){
+    _t2tDragActive = false;
+    window.dispatchEvent(new CustomEvent('t2t:drag-end'));
+  }, true);
+
   async function loadMemberProfile(userId) {
     try {
       var res = await _sb.from('profiles').select('*').eq('user_id', userId).single();
@@ -76,6 +137,7 @@
         // lets the nametag (and anything else that wants it) update
         // immediately instead of guessing at a timeout.
         window.dispatchEvent(new CustomEvent('t2t:member-loaded', { detail: _member }));
+        startRealtimeSync();
       } else {
         console.error('T2T: profile lookup returned no row and no error for', userId, res);
       }
@@ -1239,6 +1301,7 @@
     loadVisitedFromSupabase:loadVisitedFromSupabase,
     getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
+    onRealtimeChange:onRealtimeChange, isDragActive:function(){ return _t2tDragActive; },
     // Larry, July 27 2026: "Trivia button should light up if there are
     // any trivia docs [for the current page]." Mirrors renderTrivia's
     // own priority exactly (hub override, then primary page, then
