@@ -1732,7 +1732,12 @@
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
       +'.bb-done-date{font-family:"Caveat",cursive;font-size:12px;color:#3F6B3A;text-align:right;margin-top:1px}'
       +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:3px;pointer-events:none}'
-      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
+      // pointer-events:auto here, Aug 4 2026 -- the container above stays
+      // click-through (so it never steals a card drag), but each dot
+      // itself needs real pointer events or its title tooltip (the
+      // meaning, on hover) never fires -- a child inherits "none" from
+      // its parent unless it opts back in like this.
+      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:auto;cursor:default}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:12px;color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
