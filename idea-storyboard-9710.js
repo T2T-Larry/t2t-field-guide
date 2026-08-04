@@ -172,8 +172,11 @@
         +'.sb-key-shape-btn.active{border-color:#5b9bd5}'
         +'.sb-key-swatch-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}'
         +'.sb-key-swatch-btn.active{border-color:#1a3a5c}'
-        +'.sb-key-pick-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px;cursor:pointer;text-align:left}'
-        +'.sb-key-pick-row[disabled]{opacity:.35;cursor:not-allowed}'
+        +'.sb-key-pick-row{display:flex;align-items:center;gap:6px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px}'
+        +'.sb-key-pick-select{display:flex;align-items:center;gap:8px;flex:1;min-width:0;border:none;background:none;cursor:pointer;text-align:left;padding:0;font:inherit}'
+        +'.sb-key-pick-select span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+        +'.sb-key-pick-select[disabled]{opacity:.35;cursor:not-allowed}'
+        +'.sb-key-pick-edit{border:none;background:none;cursor:pointer;font-size:13px;color:#5b9bd5;flex-shrink:0;padding:0 2px}'
         +'.sb-key-lib-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px}'
         +'.sc-corner-flip:hover{border-width:0 0 20px 20px;border-color:transparent transparent rgba(26,58,92,0.55) transparent}'
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
@@ -3394,10 +3397,19 @@
     } else {
       listHTML=_sboardKeyLib.map(function(k){
         var usedElsewhere = keys.indexOf(k.id)>=0 && keys[slotIndex]!==k.id;
-        return '<button class="sb-key-pick-row" data-key-id="'+k.id+'"'+(usedElsewhere?' disabled':'')+'>'
+        return '<div class="sb-key-pick-row">'
+          +'<button class="sb-key-pick-select" data-key-id="'+k.id+'"'+(usedElsewhere?' disabled':'')+'>'
           +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
           +'<span style="font-size:12px">'+_sboardEsc(k.meaning||'')+'</span>'
-          +'</button>';
+          +'</button>'
+          // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
+          // edit or change the meaning of any one of them" from wherever
+          // he actually runs into a key, not just the library manager
+          // buried in the gear menu. Same edit form as the library
+          // manager (_sboardOpenKeyBuilder with existingKey), just
+          // reachable from the Choose-a-Key picker too.
+          +'<button class="sb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this key">✏️</button>'
+          +'</div>';
       }).join('');
     }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
@@ -3408,10 +3420,16 @@
       +'<button class="sc-ov-btn" id="sb-key-cancel" style="width:100%">Cancel</button>'
       +'</div>';
     ov.classList.add('active');
-    ov.querySelectorAll('.sb-key-pick-row').forEach(function(btn){
+    ov.querySelectorAll('.sb-key-pick-select').forEach(function(btn){
       btn.addEventListener('click', function(){
         if(btn.hasAttribute('disabled')) return;
         _sboardAssignKeyToSlot(item, slotIndex, btn.getAttribute('data-key-id'));
+      });
+    });
+    ov.querySelectorAll('.sb-key-pick-edit').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var key=_sboardKeyById(btn.getAttribute('data-key-id'));
+        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(); }, key);
       });
     });
     T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAssignKeyToSlot(item, slotIndex, newKey.id); }); });

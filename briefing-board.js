@@ -1770,7 +1770,10 @@
       +'.bb-key-add{font-size:16px;color:var(--bb-sub);border-style:dashed}'
       +'.bb-key-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}'
       +'.bb-key-swatch.bb-swatch-active{border-color:#3B2510}'
-      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;width:100%;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;margin-bottom:6px;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);text-align:left}'
+      +'.bb-key-pick-row-wrap{display:flex;align-items:center;gap:6px;margin-bottom:6px}'
+      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);text-align:left}'
+      +'.bb-key-pick-meaning{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'.bb-key-pick-edit{background:none;border:none;cursor:pointer;font-size:14px;color:#4a7a95;flex-shrink:0;padding:0 4px}'
       +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
       +'.bb-key-pick-empty-msg{font-size:12px;color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
@@ -2529,15 +2532,30 @@
     } else {
       list.innerHTML = lib.map(function(k){
         var usedElsewhere = keys.indexOf(k.id)>=0 && keys[_bbOpenSlotIndex]!==k.id;
-        return '<button class="bb-key-pick-row'+(usedElsewhere?' bb-key-pick-disabled':'')+'" data-key-id="'+k.id+'">'
+        return '<div class="bb-key-pick-row-wrap">'
+          +'<button class="bb-key-pick-row'+(usedElsewhere?' bb-key-pick-disabled':'')+'" data-key-id="'+k.id+'">'
           +'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>'
           +'<span class="bb-key-pick-meaning">'+_esc(k.meaning||'')+'</span>'
-          +'</button>';
+          +'</button>'
+          // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
+          // edit or change the meaning of any one of them" from
+          // wherever he actually runs into a key, not just Board
+          // Settings' library manager. Same edit form (openKeyBuilder
+          // with existingKey), reached straight from the card's own
+          // Choose-a-Key picker too.
+          +'<button class="bb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this key">&#9998;</button>'
+          +'</div>';
       }).join('');
       list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
         btn.addEventListener('click', function(){
           if(btn.classList.contains('bb-key-pick-disabled')) return;
           assignKeyToSlot(btn.getAttribute('data-key-id'));
+        });
+      });
+      list.querySelectorAll('.bb-key-pick-edit').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var k=lib.filter(function(x){ return String(x.id)===btn.getAttribute('data-key-id'); })[0];
+          if(k){ var slot=_bbOpenSlotIndex; closeKeyPicker(); openKeyBuilder(k, function(){ openKeyPicker(slot); }); }
         });
       });
     }
