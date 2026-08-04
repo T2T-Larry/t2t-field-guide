@@ -167,7 +167,12 @@
         // two never overlap.
         +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
         +'.sb-key-dots{position:absolute;bottom:2px;right:18px;display:flex;gap:2px;pointer-events:none;z-index:5}'
-        +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
+        // pointer-events:auto here, Aug 4 2026 -- same fix as the
+        // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
+        // stays click-through (so it never grabs a card drag), but a
+        // dot inherits that "none" too unless it opts back in, which
+        // was silently killing its own title-on-hover meaning tooltip.
+        +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:auto;cursor:default}'
         +'.sb-key-shape-btn{width:28px;height:28px;border:2px solid transparent;border-radius:6px;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}'
         +'.sb-key-shape-btn.active{border-color:#5b9bd5}'
         +'.sb-key-swatch-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}'
