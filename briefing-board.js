@@ -39,6 +39,11 @@
                                 from Unhooking Ideas (which creates a
                                 NEW Header, doesn't link to one that
                                 already exists).
+     9397  bb-keylibmanager-overlay  Custom Keys -- Aug 3 2026. View,
+                                edit (pencil), or delete (trash) any key
+                                in the shared custom_keys library.
+                                Twin of the Storyboard's own
+                                _sboardOpenKeyLibraryManager, same rows.
    9360/9370 converted from nav()'d screens to overlays July 20, 2026,
    per Larry: the card should sit ON TOP of the board (board stays
    visible/live underneath, dimmed), closed via an explicit X or by
@@ -305,19 +310,49 @@
     return css;
   }
   function _bbLoadKeyLibrary(){
-    if(_bbCurrentBoardId) return _bbKeyLibCache;
-    try{
-      var r=sessionStorage.getItem('bbKeyLibrary');
-      return r?JSON.parse(r):[];
-    }catch(e){ return []; }
+    return _bbKeyLibCache;
   }
+  // Old per-board sessionStorage key, kept read-only so the one legacy
+  // migration path below (a "field guide"-named board found empty)
+  // can still recover any keys a traveler entered before named
+  // multi-board storage shipped -- nothing else writes this key anymore.
   function _bbLoadKeyLibraryLegacy(){
     try{ var r=sessionStorage.getItem('bbKeyLibrary'); return r?JSON.parse(r):[]; }catch(e){ return []; }
   }
-  function _bbSaveKeyLibrary(lib){
-    if(_bbCurrentBoardId) _bbKeyLibCache = lib;
-    try{ sessionStorage.setItem('bbKeyLibrary', JSON.stringify(lib)); }catch(e){}
-    _bbSyncKeysToSupabase(lib);
+  async function _bbEnsureKeyLibraryLoaded(){
+    if(_bbKeyLibraryLoaded) return;
+    _bbKeyLibraryLoaded=true;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var uid=await _bbCurrentUserId(); if(!uid) return;
+      var res=await sb.from('custom_keys').select('*').eq('user_id',uid).order('created_at',{ascending:true});
+      if(res.error) throw res.error;
+      _bbKeyLibCache=res.data||[];
+    }catch(e){ console.error('Briefing Board: could not load key library', e); }
+  }
+  async function _bbCreateKey(shape, color, meaning){
+    var sb=T().sb;
+    var uid=await _bbCurrentUserId();
+    if(!uid) throw new Error('Not signed in.');
+    var ins=await sb.from('custom_keys').insert({user_id:uid, shape:shape, color:color, meaning:meaning}).select().single();
+    if(ins.error) throw ins.error;
+    _bbKeyLibCache.push(ins.data);
+    return ins.data;
+  }
+  async function _bbUpdateKey(keyId, shape, color, meaning){
+    var sb=T().sb;
+    var upd=await sb.from('custom_keys').update({shape:shape, color:color, meaning:meaning}).eq('id', keyId).select().single();
+    if(upd.error) throw upd.error;
+    var idx=_bbKeyLibCache.findIndex ? _bbKeyLibCache.findIndex(function(k){ return String(k.id)===String(keyId); }) : -1;
+    if(idx===-1){ for(var i=0;i<_bbKeyLibCache.length;i++){ if(String(_bbKeyLibCache[i].id)===String(keyId)){ idx=i; break; } } }
+    if(idx!==-1) _bbKeyLibCache[idx]=upd.data;
+    return upd.data;
+  }
+  async function _bbDeleteKey(keyId){
+    var sb=T().sb;
+    var del=await sb.from('custom_keys').delete().eq('id', keyId);
+    if(del.error) throw del.error;
+    _bbKeyLibCache=_bbKeyLibCache.filter(function(k){ return String(k.id)!==String(keyId); });
   }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
@@ -339,7 +374,13 @@
     {value:'project', label:'Project'}
   ];
   var _bbBoards = [];
+  // Custom Keys, Aug 3 2026 -- merged into the Storyboard's shared,
+  // traveler-wide custom_keys table (was its own board-scoped
+  // briefing_board_keys). Loaded once per session (_bbKeyLibraryLoaded
+  // guards it), not re-fetched on every board switch -- see
+  // _bbEnsureKeyLibraryLoaded, called from _bbInitBoardsAndData.
   var _bbKeyLibCache = [];
+  var _bbKeyLibraryLoaded = false;
   var _bbMembersCache = [];
   var _bbTeamCache = [];
   var _bbChecklistCache = [];
@@ -394,16 +435,20 @@
     return (b && b.default_assignee) || '';
   }
 
-  // ---- Supabase persistence, added July 21, 2026 (evening) -- boards,
-  // cards and the key library now live in real per-traveler Supabase
-  // tables (briefing_boards / briefing_cards / briefing_board_keys)
-  // instead of only sessionStorage. Every existing mutation in this
-  // file still just calls _bbSaveLocal/_bbSaveKeyLibrary exactly as
-  // before -- those two now ALSO push to Supabase in the background
+  // ---- Supabase persistence, added July 21, 2026 (evening) -- boards
+  // and cards live in real per-traveler Supabase tables (briefing_boards
+  // / briefing_cards) instead of only sessionStorage. Every existing
+  // card mutation in this file still just calls _bbSaveLocal exactly as
+  // before -- it now ALSO pushes to Supabase in the background
   // (fire-and-forget) whenever a Supabase board is active, so nothing
   // else in this file had to change. If Supabase is unreachable, or
   // nobody's signed in, the board quietly keeps working exactly as it
   // always did, straight off sessionStorage.
+  // Custom Keys are a separate story, Aug 3 2026 -- originally their
+  // own board-scoped briefing_board_keys table (mirroring this same
+  // save-local-then-sync pattern), now merged into the Storyboard's
+  // shared, traveler-wide custom_keys table -- see _bbEnsureKeyLibraryLoaded
+  // / _bbCreateKey / _bbUpdateKey / _bbDeleteKey below.
 
   function _bbToISODate(mdStr){
     var d=_bbParseDue(mdStr);
@@ -474,21 +519,6 @@
         await sb.from('briefing_cards').delete().eq('board_id', _bbCurrentBoardId);
       }
     }catch(e){ console.error('Briefing Board: Supabase card sync failed', e); }
-  }
-
-  async function _bbSyncKeysToSupabase(lib){
-    if(!_bbCurrentBoardId) return;
-    var sb=T().sb; if(!sb) return;
-    try{
-      var rows=lib.map(function(k){ return {id:k.id, board_id:_bbCurrentBoardId, shape:k.shape, color:k.color, meaning:k.meaning||''}; });
-      if(rows.length){
-        var res=await sb.from('briefing_board_keys').upsert(rows);
-        if(res.error) throw res.error;
-        await sb.from('briefing_board_keys').delete().eq('board_id', _bbCurrentBoardId).not('id','in','('+_bbSafeIdList(rows).join(',')+')');
-      } else {
-        await sb.from('briefing_board_keys').delete().eq('board_id', _bbCurrentBoardId);
-      }
-    }catch(e){ console.error('Briefing Board: Supabase key sync failed', e); }
   }
 
   // Checklist, added July 21, 2026 (evening) -- sub-steps under a card.
@@ -611,15 +641,20 @@
       if(res.error) throw res.error;
       var rows=res.data||[];
       var entries=rows.map(function(r){
+        var base={linkId:r.id, source:r.source||'manual', viaKeyId:r.via_key_id||null};
         if(r.target_type==='storyboard'){
-          return {linkId:r.id, kind:'storyboard', targetId:r.target_idea_id};
+          return Object.assign(base, {kind:'storyboard', targetId:r.target_idea_id});
         }
         var otherCardId=(String(r.card_id)===String(cardId)) ? r.target_card_id : r.card_id;
-        return {linkId:r.id, kind:'card', targetId:otherCardId};
+        return Object.assign(base, {kind:'card', targetId:otherCardId});
       });
       var ideaIds=entries.filter(function(e){ return e.kind==='storyboard'; }).map(function(e){ return e.targetId; });
       var cardIds=entries.filter(function(e){ return e.kind==='card'; }).map(function(e){ return e.targetId; });
-      var ideaMap={}, cardMap={};
+      // Key-sourced entries (Aug 3 2026, "place same symbol on cards and
+      // they automatically link") also need the key's own meaning, so
+      // the Linked Items row can say WHY the connection exists.
+      var keyIds=entries.filter(function(e){ return e.source==='key' && e.viaKeyId; }).map(function(e){ return e.viaKeyId; });
+      var ideaMap={}, cardMap={}, keyMap={};
       if(ideaIds.length){
         var ir=await sb.from('ideas').select('id,text_content,content_type,cluster_id').in('id', ideaIds);
         (ir.data||[]).forEach(function(row){ ideaMap[row.id]=row; });
@@ -627,6 +662,10 @@
       if(cardIds.length){
         var cr=await sb.from('briefing_cards').select('id,task,board_id').in('id', cardIds);
         (cr.data||[]).forEach(function(row){ cardMap[row.id]=row; });
+      }
+      if(keyIds.length){
+        var kr=await sb.from('custom_keys').select('id,meaning').in('id', keyIds);
+        (kr.data||[]).forEach(function(row){ keyMap[row.id]=row; });
       }
       entries.forEach(function(e){
         if(e.kind==='storyboard'){
@@ -639,6 +678,10 @@
           e.label=crow ? (crow.task || '(untitled card)') : '(deleted card)';
           e.dead=!crow;
           e.boardId=crow ? crow.board_id : null;
+        }
+        if(e.source==='key'){
+          var krow=keyMap[e.viaKeyId];
+          e.viaKeyMeaning=krow ? (krow.meaning||'') : '';
         }
       });
       if(_bbOpenCardId===cardId){ _bbLinksCache=entries; _bbRenderLinks(); }
@@ -656,8 +699,20 @@
     }
     list.innerHTML=_bbLinksCache.map(function(e){
       var icon=e.kind==='storyboard' ? '🧭' : '📋';
+      var label=_esc(e.label);
+      // Key-sourced links (Aug 3 2026) show WHY they exist and can't be
+      // individually removed -- the key is the source of truth, remove
+      // the key from either item (or delete the key outright) to remove
+      // the connection, same as a real shared piece of yarn only comes
+      // untied at the pin, not by snipping the middle.
+      if(e.source==='key'){
+        return '<div class="bb-link-row'+(e.dead?' bb-link-dead':'')+'">'
+          +'<span class="bb-link-go" data-go="'+_esc(e.linkId)+'">'+icon+' '+label+'</span>'
+          +'<span style="font-size:10px;color:var(--bb-sub);white-space:nowrap" title="Linked automatically because both share this key">&#128273; '+_esc(e.viaKeyMeaning||'')+'</span>'
+          +'</div>';
+      }
       return '<div class="bb-link-row'+(e.dead?' bb-link-dead':'')+'">'
-        +'<span class="bb-link-go" data-go="'+_esc(e.linkId)+'">'+icon+' '+_esc(e.label)+'</span>'
+        +'<span class="bb-link-go" data-go="'+_esc(e.linkId)+'">'+icon+' '+label+'</span>'
         +'<button class="bb-link-remove" data-id="'+_esc(e.linkId)+'" title="Remove link">&#10005;</button>'
         +'</div>';
     }).join('');
@@ -723,6 +778,90 @@
       var r2=await sb.from('briefing_card_links').select('target_card_id').in('target_card_id', cardIds);
       (r2.data||[]).forEach(function(row){ if(row.target_card_id) _bbLinkCountCache[row.target_card_id]=(_bbLinkCountCache[row.target_card_id]||0)+1; });
     }catch(e){ console.error('Briefing Board: could not load link counts', e); }
+  }
+
+  // Writes just this one card's key slots straight to Supabase and
+  // waits for it -- assignKeyToSlot/removeKeyFromSlot's normal
+  // _bbSaveLocal already does this too, but fire-and-forget, which
+  // would race _bbSyncKeyLinks (right below) reading key_slot_1/2/3
+  // back out of the same table a moment later. Only touches this one
+  // row (a plain .update(), not _bbSyncCardsToSupabase's whole-board
+  // upsert-then-delete-stale), so it's safe to call on its own.
+  async function _bbPersistCardKeysNow(c){
+    if(!_bbCurrentBoardId) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      await sb.from('briefing_cards').update({key_slot_1:c.keys[0]||null, key_slot_2:c.keys[1]||null, key_slot_3:c.keys[2]||null}).eq('id', c.id);
+    }catch(e){ console.error('Briefing Board: could not persist card keys', e); }
+  }
+
+  // "Place same symbol on cards and they automatically link" -- Larry,
+  // Aug 3 2026. Reconciles every briefing_card_links row with
+  // source='key' and via_key_id=keyId against reality: fetches every
+  // idea/header and every Briefing Card currently carrying this key,
+  // then makes sure a link row exists for every pair that should have
+  // one (any two cards sharing it, or a card and a Storyboard item
+  // sharing it) and removes any that no longer should. Idea-to-idea
+  // pairs are skipped on purpose -- they're already sitting together
+  // right on the Storyboard, a "jump to it" link wouldn't do anything
+  // useful there. Called after ANY key assignment change, from either
+  // this file (assignKeyToSlot/removeKeyFromSlot) or the Storyboard's
+  // own _sboardSyncKeyLinks (idea-storyboard-9710.js) -- same table,
+  // same reconciliation logic, kept as two small copies rather than a
+  // cross-file call, matching how this codebase already keeps
+  // Storyboard and Briefing Board talking only through window.T2T /
+  // window.T2TShared, never straight into each other's functions.
+  async function _bbSyncKeyLinks(keyId){
+    if(!keyId) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var ir=await sb.from('ideas').select('id').or('key_slot_1.eq.'+keyId+',key_slot_2.eq.'+keyId+',key_slot_3.eq.'+keyId);
+      var ideaIds=(ir.data||[]).map(function(r){ return r.id; });
+      var cr=await sb.from('briefing_cards').select('id').or('key_slot_1.eq.'+keyId+',key_slot_2.eq.'+keyId+',key_slot_3.eq.'+keyId);
+      var cardIds=(cr.data||[]).map(function(r){ return r.id; });
+
+      var desired={};
+      var i, j;
+      for(i=0;i<cardIds.length;i++){
+        for(j=i+1;j<cardIds.length;j++){
+          var a=cardIds[i], b=cardIds[j];
+          var lo=a<b?a:b, hi=a<b?b:a;
+          desired['card|'+lo+'|'+hi]={target_type:'card', card_id:lo, target_card_id:hi};
+        }
+      }
+      for(i=0;i<cardIds.length;i++){
+        for(j=0;j<ideaIds.length;j++){
+          desired['story|'+cardIds[i]+'|'+ideaIds[j]]={target_type:'storyboard', card_id:cardIds[i], target_idea_id:ideaIds[j]};
+        }
+      }
+
+      var existRes=await sb.from('briefing_card_links').select('*').eq('source','key').eq('via_key_id', keyId);
+      var existing=existRes.data||[];
+      var existingByKey={};
+      existing.forEach(function(row){
+        if(row.target_type==='card'){
+          var a2=row.card_id, b2=row.target_card_id;
+          var lo2=a2<b2?a2:b2, hi2=a2<b2?b2:a2;
+          existingByKey['card|'+lo2+'|'+hi2]=row;
+        } else {
+          existingByKey['story|'+row.card_id+'|'+row.target_idea_id]=row;
+        }
+      });
+
+      var toInsert=[], toDeleteIds=[];
+      Object.keys(desired).forEach(function(k){
+        if(!existingByKey[k]){
+          var d=desired[k];
+          toInsert.push({card_id:d.card_id, target_type:d.target_type, target_card_id:d.target_card_id||null, target_idea_id:d.target_idea_id||null, source:'key', via_key_id:keyId});
+        }
+      });
+      Object.keys(existingByKey).forEach(function(k){
+        if(!desired[k]) toDeleteIds.push(existingByKey[k].id);
+      });
+
+      if(toInsert.length) await sb.from('briefing_card_links').insert(toInsert);
+      if(toDeleteIds.length) await sb.from('briefing_card_links').delete().in('id', toDeleteIds);
+    }catch(e){ console.error('Briefing Board: could not sync key-driven links', e); }
   }
 
   async function _bbCreateLink(targetType, targetIdeaId, targetCardId){
@@ -940,12 +1079,10 @@
         if(uid && sb) await sb.from('profiles').update({active_briefing_board_id: boardId}).eq('user_id', uid);
       }catch(e){ console.error('Briefing Board: could not persist active board', e); }
     })();
-    var cardRows=[], keyRows=[];
+    var cardRows=[];
     try{
       var cRes=await sb.from('briefing_cards').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
       if(!cRes.error) cardRows=cRes.data||[];
-      var kRes=await sb.from('briefing_board_keys').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
-      if(!kRes.error) keyRows=kRes.data||[];
     }catch(e){ console.error('Briefing Board: could not load board data', e); }
     _bbLoadMembers();
 
@@ -959,6 +1096,10 @@
       var legacyCards=_bbLoadLocal();
       if(!already && legacyCards && legacyCards.length){
         try{
+          // Keys, Aug 3 2026 -- now the shared custom_keys table
+          // (user_id-owned, not board-scoped), so recovered legacy
+          // keys get inserted there instead of the now-gone
+          // briefing_board_keys.
           var legacyKeys=_bbLoadKeyLibraryLegacy();
           var keyIdMap={};
           var remappedKeys=legacyKeys.map(function(k){
@@ -971,11 +1112,13 @@
               keys:(c.keys||[]).map(function(kid){ return kid?(keyIdMap[kid]||null):null; })
             });
           });
-          if(remappedKeys.length) await sb.from('briefing_board_keys').upsert(remappedKeys.map(function(k){ return {id:k.id, board_id:boardId, shape:k.shape, color:k.color, meaning:k.meaning}; }));
+          var migrationUid=await _bbCurrentUserId();
+          if(remappedKeys.length && migrationUid) await sb.from('custom_keys').upsert(remappedKeys.map(function(k){ return {id:k.id, user_id:migrationUid, shape:k.shape, color:k.color, meaning:k.meaning}; }));
           if(remappedCards.length) await sb.from('briefing_cards').upsert(remappedCards.map(function(c){ return _bbCardToRow(c, boardId); }));
           try{ sessionStorage.setItem('bbMigratedLegacy','1'); }catch(e2){}
           _bbCards=remappedCards;
-          _bbKeyLibCache=remappedKeys;
+          await _bbEnsureKeyLibraryLoaded();
+          if(remappedKeys.length) _bbKeyLibCache=_bbKeyLibCache.concat(remappedKeys);
           _bbRenderTypePicker();
           _bbRenderBoardPicker();
           await _bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; }));
@@ -986,7 +1129,6 @@
     }
 
     _bbCards = cardRows.length ? cardRows.map(_bbRowToCard) : _bbSeed();
-    _bbKeyLibCache = keyRows.map(function(r){ return {id:r.id, shape:r.shape, color:r.color, meaning:r.meaning}; });
     _bbRenderTypePicker();
     _bbRenderBoardPicker();
     await _bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; }));
@@ -996,6 +1138,12 @@
   async function _bbInitBoardsAndData(){
     var uid=await _bbCurrentUserId();
     if(!uid){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    // Aug 3 2026 -- Custom Keys are traveler-wide now (merged with the
+    // Storyboard's shared library), so they load once here rather than
+    // per board switch. _bbEnsureKeyLibraryLoaded guards itself, so a
+    // reload-and-return-here (Alt+C) or re-entering the screen never
+    // re-fetches needlessly.
+    await _bbEnsureKeyLibraryLoaded();
     var sb=T().sb;
     try{
       var res=await sb.from('briefing_boards').select('*').eq('user_id',uid).order('created_at',{ascending:true});
@@ -1648,6 +1796,15 @@
       +'.bb-linkpicker-item:hover{background:var(--bb-bg)}'
       +'.bb-linkpicker-tag{flex-shrink:0;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-linkpicker-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:8px 0}'
+      // Key Library manager (9397), Aug 3 2026 -- same row shape as
+      // Linked Items/Checklist just above, pencil then trash per row.
+      +'.bb-keylib-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
+      +'.bb-keylib-row:last-child{border-bottom:none}'
+      +'.bb-keylib-swatch{display:inline-block;width:16px;height:16px;flex-shrink:0}'
+      +'.bb-keylib-meaning{flex:1}'
+      +'.bb-keylib-edit,.bb-keylib-del{background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px}'
+      +'.bb-keylib-edit{color:#4a7a95}'
+      +'.bb-keylib-del{color:#a3372b}'
       +'.bb-archive-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--bb-accent)}'
       +'.bb-archive-task{font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
       +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub)}'
@@ -1818,6 +1975,9 @@
             +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
               +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
             +'</div>'
+            +'<div class="bb-field"><label>Custom Keys</label>'
+              +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128273; Manage Keys</button>'
+            +'</div>'
             +'<div class="bb-field"><label>Team</label><div id="bb-team-list"></div><div style="font-size:11px;color:var(--bb-sub);margin-top:6px;font-style:italic">To add someone new, they need a real account first -- this only edits or removes existing team members.</div></div>'
           +'</div>'
         +'</div>';
@@ -1828,6 +1988,30 @@
       // picker as Storyboard/Session's Options menus.
       var tsBtn=setOv.querySelector('#bb-open-textsize');
       if(tsBtn) tsBtn.addEventListener('click', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
+    }
+    // Key Library manager (9397), Aug 3 2026 -- Larry: "we need to be
+    // able to edit or trash any custom key." Didn't exist for the
+    // Briefing Board at all before (only the per-card slot picker,
+    // which can only assign/unassign, never edit or delete the key
+    // itself). Now that keys are the shared, traveler-wide custom_keys
+    // library, this is deliberately the twin of the Storyboard's own
+    // _sboardOpenKeyLibraryManager -- same pencil+trash-per-row shape,
+    // reachable from either board's gear menu, editing the same rows.
+    if(!document.getElementById('bb-keylibmanager-overlay')){
+      var klOv=document.createElement('div');
+      klOv.id='bb-keylibmanager-overlay'; klOv.className='bb-overlay';
+      klOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Custom Keys</span><button class="bb-close" id="bb-keylibmanager-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a key link to each other automatically.</div>'
+            +'<div id="bb-keylib-list"></div>'
+            +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a key</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(klOv);
+      klOv.addEventListener('click', function(e){ if(e.target===klOv) closeKeyLibManager(); });
+      _bbMakeDraggable(klOv.querySelector('.bb-overlay-card'), klOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-hx-overlay')){
       var hxOv=document.createElement('div');
@@ -2360,7 +2544,7 @@
     var newBtn=document.getElementById('bb-keypicker-new');
     if(newBtn) newBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
   }
-  function assignKeyToSlot(keyId){
+  async function assignKeyToSlot(keyId){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c) return;
     c.keys = c.keys || [];
@@ -2369,10 +2553,19 @@
     closeKeyPicker();
     _bbRenderKeyRow(c);
     renderBoard();
+    // Auto-link, Aug 3 2026 -- reconcile once the key's own database
+    // row is confirmed current, so _bbSyncKeyLinks sees this card among
+    // the key's holders.
+    await _bbPersistCardKeysNow(c);
+    await _bbSyncKeyLinks(keyId);
+    if(_bbOpenCardId===c.id) await _bbLoadLinksForCard(c.id);
+    await _bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+    renderBoard();
   }
-  function removeKeyFromSlot(){
+  async function removeKeyFromSlot(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c || !c.keys) return;
+    var removedKeyId=c.keys[_bbOpenSlotIndex];
     // Splice, don't null out -- keeps the array gap-free so the next
     // render shows the remaining keys packed left plus one "+", instead
     // of a hole where the removed key used to sit.
@@ -2381,11 +2574,31 @@
     closeKeyPicker();
     _bbRenderKeyRow(c);
     renderBoard();
+    await _bbPersistCardKeysNow(c);
+    if(removedKeyId) await _bbSyncKeyLinks(removedKeyId);
+    if(_bbOpenCardId===c.id) await _bbLoadLinksForCard(c.id);
+    await _bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+    renderBoard();
   }
 
-  function openKeyBuilder(){
-    _bbKeyDraft = {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
-    var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value='';
+  // existingKey -- optional (Aug 3 2026, pencil-to-edit on the Key
+  // Library manager). Pre-fills the draft from a real key row and
+  // switches saveNewKey (below) into update mode instead of insert.
+  // onSaved(savedKeyRow) -- what to do once it's actually saved: assign
+  // it to the card slot that opened this (bb-keypicker-new's case,
+  // below), or just refresh whatever list is showing it (Key Library
+  // manager, Task 8). Always explicit now -- no implicit "guess from
+  // whatever card/slot happens to still be open" fallback, since that
+  // got fragile once this overlay had more than one way in.
+  var _bbKeyBuilderOnSaved = null;
+  function openKeyBuilder(existingKey, onSaved){
+    _bbKeyDraft = existingKey
+      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
+      : {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
+    _bbKeyBuilderOnSaved = onSaved || null;
+    var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value=existingKey?(existingKey.meaning||''):'';
+    var t=document.querySelector('#bb-keybuilder-overlay .bb-overlay-title'); if(t) t.textContent=existingKey?'Edit Key':'Add a Key';
+    var s=document.getElementById('bb-keybuilder-save'); if(s) s.textContent=existingKey?'Save changes':'Save';
     _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
     _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
     var ov=document.getElementById('bb-keybuilder-overlay');
@@ -2404,28 +2617,30 @@
       btn.classList.toggle('bb-swatch-active', btn.getAttribute('data-color')===color);
     });
   }
-  // Always reached through Choose a Key now, so _bbOpenSlotIndex is
-  // already set to the slot that triggered it -- saving both grows the
-  // library AND fills that slot in one step, no need to reopen the
-  // picker afterward.
-  function saveNewKey(){
-    var lib=_bbLoadKeyLibrary();
-    if(lib.length>=MAX_KEY_LIBRARY) return;
+  // Handles both create (fresh _bbKeyDraft) and edit (_bbKeyDraft.editingId
+  // set) -- Aug 3 2026, "we need to be able to edit or trash any custom
+  // key." Calls back via _bbKeyBuilderOnSaved rather than hardcoding
+  // what happens next, since this overlay now opens from more than one
+  // place (a card's Choose-a-Key, and the Key Library manager).
+  async function saveNewKey(){
     var meaningEl=document.getElementById('bb-keybuilder-meaning');
     var meaning=meaningEl?meaningEl.value.trim():'';
     if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
-    var newKey={id:_bbUUID(), shape:_bbKeyDraft.shape, color:_bbKeyDraft.color, meaning:meaning};
-    lib.push(newKey);
-    _bbSaveKeyLibrary(lib);
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
-    if(c){
-      c.keys = c.keys || [];
-      c.keys[_bbOpenSlotIndex] = newKey.id;
-      _bbSaveLocal(_bbCardsList());
+    if(!_bbKeyDraft.editingId && _bbKeyLibCache.length>=MAX_KEY_LIBRARY) return;
+    var savedKey;
+    try{
+      if(_bbKeyDraft.editingId){
+        savedKey=await _bbUpdateKey(_bbKeyDraft.editingId, _bbKeyDraft.shape, _bbKeyDraft.color, meaning);
+      } else {
+        savedKey=await _bbCreateKey(_bbKeyDraft.shape, _bbKeyDraft.color, meaning);
+      }
+    }catch(e){
+      console.error('Briefing Board: could not save key', e);
+      window.alert('Could not save that key. Error: '+(e&&e.message?e.message:String(e))+'. Please try again.');
+      return;
     }
     closeKeyBuilder();
-    if(c) _bbRenderKeyRow(c);
-    renderBoard();
+    if(_bbKeyBuilderOnSaved) _bbKeyBuilderOnSaved(savedKey);
   }
   function wireKeyBuilder(){
     document.querySelectorAll('#bb-keybuilder-overlay .bb-shape-btn').forEach(function(btn){
@@ -2448,8 +2663,59 @@
     T().wire('bb-keypicker-remove', removeKeyFromSlot);
     T().wire('bb-keypicker-new', function(){
       closeKeyPicker();
-      openKeyBuilder();
+      openKeyBuilder(null, function(newKey){ assignKeyToSlot(newKey.id); });
     });
+  }
+
+  // ---- Key Library manager (9397) ----
+
+  function _bbRenderKeyLibManager(){
+    var list=document.getElementById('bb-keylib-list'); if(!list) return;
+    var lib=_bbLoadKeyLibrary();
+    if(!lib.length){
+      list.innerHTML='<div class="bb-links-empty">No custom keys yet. Build one below.</div>';
+    } else {
+      list.innerHTML=lib.map(function(k){
+        return '<div class="bb-keylib-row">'
+          +'<span class="bb-keylib-swatch" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
+          +'<span class="bb-keylib-meaning">'+_esc(k.meaning||'')+'</span>'
+          +'<button class="bb-keylib-edit" data-key-id="'+_esc(k.id)+'" title="Edit this key">&#9998;</button>'
+          +'<button class="bb-keylib-del" data-key-id="'+_esc(k.id)+'" title="Delete this key">&#128465;&#65039;</button>'
+          +'</div>';
+      }).join('');
+      list.querySelectorAll('.bb-keylib-edit').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var key=lib.filter(function(k){ return String(k.id)===btn.getAttribute('data-key-id'); })[0];
+          if(key){ closeKeyLibManager(); openKeyBuilder(key, function(){ openKeyLibManager(); }); }
+        });
+      });
+      list.querySelectorAll('.bb-keylib-del').forEach(function(btn){
+        btn.addEventListener('click', async function(){
+          var id=btn.getAttribute('data-key-id');
+          if(!window.confirm('Delete this key? It will be removed from every card and Storyboard item currently using it, and any links that exist only because of it.')) return;
+          try{ await _bbDeleteKey(id); }
+          catch(e){ console.error('Briefing Board: could not delete key', e); window.alert('Could not delete that key. Please try again.'); return; }
+          _bbRenderKeyLibManager();
+          renderBoard();
+        });
+      });
+    }
+    var addBtn=document.getElementById('bb-keylib-add');
+    if(addBtn) addBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
+  }
+
+  function openKeyLibManager(){
+    _bbRenderKeyLibManager();
+    var ov=document.getElementById('bb-keylibmanager-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeKeyLibManager(){
+    var ov=document.getElementById('bb-keylibmanager-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function wireKeyLibManager(){
+    T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
+    T().wire('bb-keylibmanager-close', closeKeyLibManager);
+    T().wire('bb-keylib-add', function(){ closeKeyLibManager(); openKeyBuilder(null, function(){ openKeyLibManager(); }); });
   }
 
   function wirePriorityButtons(){
@@ -2770,6 +3036,7 @@
     wirePersonSelect();
     wireKeyBuilder();
     wireKeyPicker();
+    wireKeyLibManager();
     wireChecklist();
     wireLinks();
 

@@ -643,6 +643,84 @@
     _sboardKeyLib = _sboardKeyLib.filter(function(k){ return String(k.id)!==String(keyId); });
     _sboardSaveKeyLibLocal(_sboardKeyLib);
   }
+  // Aug 3 2026 -- "we need to be able to edit or trash any custom key."
+  // Trash already existed here (_sboardDeleteKey); this is the pencil.
+  async function _sboardUpdateKey(keyId, shape, color, meaning){
+    var _sb=T().sb;
+    var upd=await _sb.from('custom_keys').update({shape:shape,color:color,meaning:meaning}).eq('id',keyId).select().single();
+    if(upd.error) throw upd.error;
+    var idx=-1;
+    for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(keyId)){ idx=i; break; } }
+    if(idx!==-1) _sboardKeyLib[idx]=upd.data;
+    _sboardSaveKeyLibLocal(_sboardKeyLib);
+    return upd.data;
+  }
+  // "Place same symbol on cards and they automatically link" -- Larry,
+  // Aug 3 2026. Twin of briefing-board.js's own _bbSyncKeyLinks -- same
+  // table (briefing_card_links), same reconciliation logic, kept as a
+  // separate copy rather than a cross-file call (this codebase's
+  // convention: Storyboard and Briefing Board only ever talk through
+  // window.T2T / window.T2TShared, never straight into each other's
+  // functions). Reconciles every source='key' via_key_id=keyId row
+  // against reality -- every Briefing Card and every idea/header
+  // currently carrying this key -- adding rows for pairs that should be
+  // linked and haven't yet, removing rows for pairs that no longer
+  // share the key. Idea-to-idea pairs are skipped on purpose: they're
+  // already sitting together right here on the board, a "jump to it"
+  // link between two ideas that are both already on screen wouldn't do
+  // anything useful.
+  async function _sboardSyncKeyLinks(keyId){
+    if(!keyId) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var ir=await _sb.from('ideas').select('id').or('key_slot_1.eq.'+keyId+',key_slot_2.eq.'+keyId+',key_slot_3.eq.'+keyId);
+      var ideaIds=(ir.data||[]).map(function(r){ return r.id; });
+      var cr=await _sb.from('briefing_cards').select('id').or('key_slot_1.eq.'+keyId+',key_slot_2.eq.'+keyId+',key_slot_3.eq.'+keyId);
+      var cardIds=(cr.data||[]).map(function(r){ return r.id; });
+
+      var desired={};
+      var i, j;
+      for(i=0;i<cardIds.length;i++){
+        for(j=i+1;j<cardIds.length;j++){
+          var a=cardIds[i], b=cardIds[j];
+          var lo=a<b?a:b, hi=a<b?b:a;
+          desired['card|'+lo+'|'+hi]={target_type:'card', card_id:lo, target_card_id:hi};
+        }
+      }
+      for(i=0;i<cardIds.length;i++){
+        for(j=0;j<ideaIds.length;j++){
+          desired['story|'+cardIds[i]+'|'+ideaIds[j]]={target_type:'storyboard', card_id:cardIds[i], target_idea_id:ideaIds[j]};
+        }
+      }
+
+      var existRes=await _sb.from('briefing_card_links').select('*').eq('source','key').eq('via_key_id', keyId);
+      var existing=existRes.data||[];
+      var existingByKey={};
+      existing.forEach(function(row){
+        if(row.target_type==='card'){
+          var a2=row.card_id, b2=row.target_card_id;
+          var lo2=a2<b2?a2:b2, hi2=a2<b2?b2:a2;
+          existingByKey['card|'+lo2+'|'+hi2]=row;
+        } else {
+          existingByKey['story|'+row.card_id+'|'+row.target_idea_id]=row;
+        }
+      });
+
+      var toInsert=[], toDeleteIds=[];
+      Object.keys(desired).forEach(function(k){
+        if(!existingByKey[k]){
+          var d=desired[k];
+          toInsert.push({card_id:d.card_id, target_type:d.target_type, target_card_id:d.target_card_id||null, target_idea_id:d.target_idea_id||null, source:'key', via_key_id:keyId});
+        }
+      });
+      Object.keys(existingByKey).forEach(function(k){
+        if(!desired[k]) toDeleteIds.push(existingByKey[k].id);
+      });
+
+      if(toInsert.length) await _sb.from('briefing_card_links').insert(toInsert);
+      if(toDeleteIds.length) await _sb.from('briefing_card_links').delete().in('id', toDeleteIds);
+    }catch(e){ console.error('Storyboard: could not sync key-driven links', e); }
+  }
   function _sboardItemKeys(item){
     return [item.key_slot_1, item.key_slot_2, item.key_slot_3].filter(function(k){ return !!k; });
   }
@@ -3343,6 +3421,10 @@
 
   async function _sboardAssignKeyToSlot(item, slotIndex, keyIdOrNull){
     var keys=_sboardItemKeys(item);
+    // Aug 3 2026: capture whichever key is actually changing (the new
+    // one on assign, the outgoing one on remove) before the splice, so
+    // _sboardSyncKeyLinks below reconciles the right key either way.
+    var affectedKeyId = (keyIdOrNull===null) ? keys[slotIndex] : keyIdOrNull;
     if(keyIdOrNull===null){
       keys.splice(slotIndex,1); // gap-free removal -- matches Briefing Board
     } else {
@@ -3359,18 +3441,28 @@
     // already calls renderSeaBoard() to pick up its own change; this one
     // was missing it.
     renderSeaBoard();
+    // "Place same symbol on cards and they automatically link" -- Larry,
+    // Aug 3 2026. _sboardWriteItemKeys above already awaited, so this
+    // key's own database row is current by the time _sboardSyncKeyLinks
+    // goes looking for who holds it.
+    if(affectedKeyId) await _sboardSyncKeyLinks(affectedKeyId);
   }
 
   // Reached either from a card's Choose-a-Key ("+ Build a new key") or
   // straight from the gear menu's library manager -- onSaved(newKeyRow)
   // decides what happens next in either case (assign it to the slot that
   // opened the picker, or just refresh the library list).
-  function _sboardOpenKeyBuilder(onSaved){
-    _sboardKeyDraft = {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
+  // existingKey -- optional (Aug 3 2026, pencil-to-edit from the Key
+  // Library manager). Pre-fills shape/color/meaning from a real row and
+  // switches the Save button into update mode instead of insert.
+  function _sboardOpenKeyBuilder(onSaved, existingKey){
+    _sboardKeyDraft = existingKey
+      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
+      : {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Add a Key</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(existingKey?'Edit Key':'Add a Key')+'</div>'
       +'<div style="font-size:11px;color:#7a6040;margin-bottom:6px">Shape</div>'
       +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
         +_sboardKeyShapes.map(function(s){ return '<button class="sb-key-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:block;width:16px;height:16px;'+_sboardKeyShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
@@ -3379,8 +3471,8 @@
       +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
         +_sboardKeyColors.map(function(c){ return '<button class="sb-key-swatch-btn" data-color="'+c+'" style="background:'+c+'"></button>'; }).join('')
       +'</div>'
-      +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px">'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
+      +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" value="'+(existingKey?_sboardEsc(existingKey.meaning||''):'')+'" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px">'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">'+(existingKey?'Save changes':'Save')+'</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
     function highlightShape(){ ov.querySelectorAll('.sb-key-shape-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-shape')===_sboardKeyDraft.shape); }); }
@@ -3398,8 +3490,10 @@
       var meaning=meaningEl?meaningEl.value.trim():'';
       if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
       try{
-        var newKey=await _sboardCreateKey(_sboardKeyDraft.shape, _sboardKeyDraft.color, meaning);
-        if(onSaved) onSaved(newKey); else closeSbDetail();
+        var savedKey = _sboardKeyDraft.editingId
+          ? await _sboardUpdateKey(_sboardKeyDraft.editingId, _sboardKeyDraft.shape, _sboardKeyDraft.color, meaning)
+          : await _sboardCreateKey(_sboardKeyDraft.shape, _sboardKeyDraft.color, meaning);
+        if(onSaved) onSaved(savedKey); else closeSbDetail();
       }catch(err){
         if(meaningEl) meaningEl.style.borderColor='#b8562f';
       }
@@ -3422,6 +3516,7 @@
         return '<div class="sb-key-lib-row">'
           +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
           +'<span style="font-size:12px;flex:1;text-align:left">'+_sboardEsc(k.meaning||'')+'</span>'
+          +'<button class="sb-key-lib-edit" data-key-id="'+k.id+'" title="Edit this key" style="border:none;background:none;cursor:pointer;font-size:13px;color:#5b9bd5">✏️</button>'
           +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this key" style="border:none;background:none;cursor:pointer;font-size:13px;color:#b8562f">🗑️</button>'
           +'</div>';
       }).join('');
@@ -3434,6 +3529,12 @@
       +'<button class="sc-ov-btn" id="sb-keylib-close" style="width:100%">Close</button>'
       +'</div>';
     ov.classList.add('active');
+    ov.querySelectorAll('.sb-key-lib-edit').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var key=_sboardKeyById(btn.getAttribute('data-key-id'));
+        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(); }, key);
+      });
+    });
     ov.querySelectorAll('.sb-key-lib-del').forEach(function(btn){
       btn.addEventListener('click', async function(){
         try{ await _sboardDeleteKey(btn.getAttribute('data-key-id')); }catch(e){}
