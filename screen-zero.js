@@ -1420,6 +1420,22 @@
   // surprise comment") now that there's a real object living here.
   var SURPRISE_GIF_URL = 'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExc3dsdTg4cm9jcmllcTd2c3JxZjhxaDEwM3N3Z2JtdGh4eHpsaTM1aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/k5cnWfaRTPgze/giphy.gif';
 
+  // A real "pile" instead of one fixed object -- Larry, Aug 4 2026,
+  // pointed at the "Donkey" card already sitting on a storyboard and
+  // asked to add it in here alongside the monkey. Session 148's
+  // original ask was that a bigger set should hand back a fresh
+  // random pick each time an object's dropped back home; the modest
+  // version built here picks one at random each time a drawer is
+  // built (so left and right can each surprise with a different one),
+  // without touching the monkey's own hard-won drag/position code.
+  var SURPRISE_ITEMS = [
+    { url: SURPRISE_GIF_URL, alt: 'A monkey playing cymbals' },
+    { url: 'https://jyvvbjxqmxdgsxfcrfdn.supabase.co/storage/v1/object/public/sea-of-ideas/819d8af0-3105-47c6-8208-a75a9d4dfd05/1783983964606-image.jpg', alt: 'Donkey' }
+  ];
+  function pickSurpriseItem(){
+    return SURPRISE_ITEMS[Math.floor(Math.random() * SURPRISE_ITEMS.length)];
+  }
+
   // The monkey should "drag out of the drawer and stay there if
   // desired" (Larry, July 27 2026), and stick to whichever slot it's
   // dropped into rather than following every mode switch -- same
@@ -1428,7 +1444,7 @@
   // (buildSurprisePanel is called once per drawer), so each gets its
   // own storage key and can be claimed to a different slot from the
   // other.
-  function wireSurpriseGifDrag(img, storeKey, ownBar, ownSide, ownPanel){
+  function wireSurpriseGifDrag(img, storeKey, ownBar, ownSide, ownPanel, item){
     var rec = registerClaimable(img, storeKey, 60);
     var otherSide = ownSide === 'left' ? 'right' : 'left';
     var otherId = ownSide === 'left' ? 'sz-drawer-r' : 'sz-navbar';
@@ -1446,7 +1462,7 @@
           },
           onDrop: function(){
             return !!(window.NotebookOpen && window.NotebookOpen.insertImageUrl &&
-              window.NotebookOpen.insertImageUrl(SURPRISE_GIF_URL, 'A monkey playing cymbals'));
+              window.NotebookOpen.insertImageUrl(item.url, item.alt));
           }
         }
       ],
@@ -1502,10 +1518,11 @@
     var wrap = document.createElement('div');
     wrap.className = 'sz-mode-panel sz-mode-placeholder sz-surprise-panel';
     wrap.style.position = 'relative';
+    var item = pickSurpriseItem();
     var img = document.createElement('img');
     img.className = 'sz-surprise-gif sz-drawer-drag-exclude';
-    img.src = SURPRISE_GIF_URL;
-    img.alt = 'A monkey playing cymbals';
+    img.src = item.url;
+    img.alt = item.alt;
     // Larry, July 27 2026 (bug report): the monkey wouldn't budge out
     // of the drawer. Root cause: <img> elements are natively
     // draggable in every browser by default, so a mousedown-drag on
@@ -1519,7 +1536,7 @@
     img.draggable = false;
     img.addEventListener('dragstart', function(e){ e.preventDefault(); });
     wrap.appendChild(img);
-    wireSurpriseGifDrag(img, 't2t_surpriseGif_' + side, bar, side, wrap);
+    wireSurpriseGifDrag(img, 't2t_surpriseGif_' + side, bar, side, wrap, item);
     return { el: wrap };
   }
 
