@@ -1451,7 +1451,27 @@
         }
       ],
       reattachTargets: [
-        { el: ownBar, hitEl: ownPanel, side: ownSide },
+        // Larry, Aug 4 2026 (bug report, immediate follow-up): "Now
+        // monkey moves but refuses to go back into drawer????" ...
+        // "unless placed in the center!" Root cause: hit-testing
+        // against ownPanel's own rect only worked when that exact
+        // panel (mode 3, the monkey's home slot) happened to be the
+        // drawer's CURRENTLY VISIBLE tab -- any other moment it's
+        // display:none, so getBoundingClientRect() returns a zero-size
+        // box nothing can ever land in ("the center" Larry found was
+        // really just the one moment mode 3 was showing). Switched to
+        // a live getter that reads whichever mode panel is ACTUALLY
+        // showing in the drawer right now and hit-tests against THAT
+        // panel's own real rect -- still tight (no floor-to-ceiling,
+        // no DOCK_PAD), so pulling it out onto the open desk stays
+        // easy, but putting it back just means aiming at whatever's
+        // visibly showing in the drawer, not one specific hidden slot.
+        { el: ownBar, side: ownSide, hitEl: {
+            getBoundingClientRect: function(){
+              var active = ownBar.querySelector('.sz-mode-panel.sz-mode-active');
+              return (active || ownBar).getBoundingClientRect();
+            }
+          } },
         { get el(){ return document.getElementById(otherId); }, side: otherSide }
       ],
       onIndependent: function(){

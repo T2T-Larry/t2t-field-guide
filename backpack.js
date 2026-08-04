@@ -505,6 +505,25 @@
       fg.classList.remove('isx-full');
       fg.classList.remove('sb-wide');
     }
+    // Larry, Aug 4 2026 (bug report): closing the Briefing Board could
+    // land back on it (e.g. via returnToMG()'s mgOrigin, or stale
+    // sessionStorage nav state from an earlier test) via this generic
+    // nav() rather than briefing-board.js's own dedicated open path --
+    // the only place that was adding isx-full (see its own
+    // registerScreenActivate). Without it, Briefing Board's CSS
+    // (`#fg-root.isx-full #s-briefing-board.active{...}`) never
+    // applied, so it rendered squished into the normal small widget
+    // frame instead of full-screen -- looked like "too tall" content
+    // cramped into the TV frame, and the frame itself reads "widened"
+    // since it was still tracking #fg-root's real (now content-
+    // overflowed) size. Added the symmetric case: landing ON a
+    // full-screen screen via ANY path now adds isx-full here too, so
+    // it's never possible to reach one of these screens without the
+    // right full-screen treatment, regardless of which caller's nav()
+    // call got it there.
+    if (_fullScreenScreens.indexOf(id)!==-1 && fg && !fg.classList.contains('isx-full')) {
+      fg.classList.add('isx-full');
+    }
     if (push!==false) stack.push(cur);
     cur=id;
     if (_primaryPages.indexOf(id)!==-1) primaryPage=id;
@@ -657,7 +676,28 @@
     // goMG() already uses (that array is seeded with 's-cover' first
     // via index.html's setPrimaryPages call), so there's always a real,
     // correct screen to land on.
-    if (mgOrigin){ nav(mgOrigin,false); }
+    //
+    // Same day, follow-up bug report: "Closing Briefing Board still
+    // goes [to] the deleted backpack screen" / "Closing the backpack
+    // went to that too tall tv frame again." Root cause: this trusted
+    // mgOrigin blindly the moment it was truthy, with no check that
+    // it still points at something real or sane. A stale value can
+    // survive across reloads in the same tab (mgOrigin round-trips
+    // through sessionStorage via persistNavState/restoreNavState), so
+    // a value set before an earlier fix -- pointing at a screen since
+    // archived, or at a full-screen hub like Briefing Board itself --
+    // kept getting reused: nav()-ing straight to a full-screen hub
+    // this way skips the isx-full setup only that hub's own open path
+    // adds (see nav()'s own fix just above), which is the "too tall"/
+    // "widened" rendering. mgOrigin is now validated before being
+    // trusted: it must point to a real element still in the DOM, and
+    // it must not be one of the full-screen hubs (those always need
+    // their own dedicated entry, never a bare nav()). Anything invalid
+    // falls through to the same Cover-first fallback as an unset
+    // mgOrigin, instead of being trusted at face value.
+    var mgOriginValid = mgOrigin && document.getElementById(mgOrigin) &&
+      _fullScreenScreens.indexOf(mgOrigin) === -1;
+    if (mgOriginValid){ nav(mgOrigin,false); }
     else if (primaryPage || _primaryPages[0]){ nav(primaryPage || _primaryPages[0], false); }
     else { goBack(); }
   }
