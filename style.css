@@ -130,7 +130,13 @@ body.t2t-bare-screen .fg{align-self:center!important}
    CSS alone so it can't race with JS load order like the widget
    position did. */
 body.t2t-bare-screen{background:#d0d0d0!important}
-.card{min-height:480px;max-height:480px;border-radius:12px 12px 0 0;overflow-x:hidden;overflow-y:auto;flex:1;display:flex;flex-direction:column} /* Larry, Aug 4 2026: trimmed 40px off the fixed screen height (520 -> 480) so the TV frame around it isn't quite so tall, opening a little breathing room above/below the cabinet. */
+.card{min-height:520px;max-height:520px;border-radius:12px 12px 0 0;overflow-x:hidden;overflow-y:auto;flex:1;display:flex;flex-direction:column} /* Larry, Aug 4 2026: reverted the across-the-board 480px trim -- sign-in wasn't actually the problem, so a blanket shrink wasn't the right lever. Back to 520px default; Cover (0100) gets its own shorter override below since that's the screen that's actually too tall (sparse content, lots of empty space). */
+#s-cover.card{min-height:400px;max-height:400px} /* Larry, Aug 4 2026: Cover (0100) content is just the T2T mark, tagline and byline -- 520px left a lot of dead air under the TV frame. Scoped to this screen only. */
+/* Phase tray buttons (0105) -- Larry, Aug 4 2026: sized to match the Create hub's own compact list-item scale, not the bigger Blue Sky door tiles. */
+.phase-tray-btn{display:flex;align-items:center;gap:10px;padding:9px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;cursor:pointer;font-family:'Playfair Display',serif;font-size:15px;color:#111;text-align:left;width:100%}
+.phase-tray-btn:hover{background:#f0f0ec}
+.phase-tray-sym{font-size:18px;line-height:1}
+.phase-tray-lbl{font-weight:700}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .tb{width:80px;height:36px;background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}

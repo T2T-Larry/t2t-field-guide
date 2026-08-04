@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260804a">
+<link rel="stylesheet" href="style.css?v=20260804b">
 <style>
 /* 0010 sign-in background lightened #0F6E56 -> #15805F, July 27 2026 --
    Larry: needed a slightly lighter teal, now that the TV frame (0007)
@@ -149,6 +149,48 @@
     <button class="tb" id="b-cover-back">⬅️</button>
     <button class="tb" id="b-cover-mg">☰</button>
     <button class="tb" id="b-cover-next">➡️</button>
+  </div>
+</div>
+
+<!-- ══ 0105 · PHASE TRAY — first appearance of the four-phase arc ══
+     Larry, Aug 4 2026: "What if that tray started as part of the story
+     and a copy of them appeared in the drawer after passing that page?"
+     First pass: the story-screen half of that idea. Introduces Dream /
+     Believe / Dare / Journey as one row of equally-weighted, compact
+     buttons (matching the Create hub's own list-item scale, not the
+     bigger Blue Sky door tiles) and lets a traveler jump straight into
+     any phase file. The drawer echo (a persistent copy living in
+     #sz-drawer-r after this screen is passed) is a separate, larger
+     change to the existing drawer/slot system and is NOT included in
+     this pass -- flagged honestly rather than guessed at under time
+     pressure. See session notes for the follow-up. -->
+<div class="sc card" id="s-phase-tray">
+  <div class="reader-wrap">
+    <div class="reader-body" style="gap:10px">
+      <div class="reader-eyebrow">T2T</div>
+      <div class="reader-line bold" style="font-size:24px">Four phases. One journey.</div>
+      <div style="width:60px;height:0.5px;background:#C9A87C;margin:4px auto"></div>
+      <div class="reader-line small" style="color:#888;font-style:italic">Tap a phase any time to jump there.</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;padding:4px 24px 12px">
+    <button class="phase-tray-btn" id="b-pt-dream" style="border-color:#0F6E56">
+      <span class="phase-tray-sym">🌈</span><span class="phase-tray-lbl">Dream</span>
+    </button>
+    <button class="phase-tray-btn" id="b-pt-believe" style="border-color:#1B3A5C">
+      <span class="phase-tray-sym">🔬</span><span class="phase-tray-lbl">Believe</span>
+    </button>
+    <button class="phase-tray-btn" id="b-pt-dare" style="border-color:#6B1E3C">
+      <span class="phase-tray-sym">⚖️</span><span class="phase-tray-lbl">Dare</span>
+    </button>
+    <button class="phase-tray-btn" id="b-pt-journey" style="border-color:#7A5A1C">
+      <span class="phase-tray-sym">🚀</span><span class="phase-tray-lbl">Journey</span>
+    </button>
+  </div>
+  <div class="bar3">
+    <button class="tb" id="b-phase-tray-back">⬅️</button>
+    <button class="tb" id="b-phase-tray-mg">☰</button>
+    <button class="tb" id="b-phase-tray-next">➡️</button>
   </div>
 </div>
 
@@ -713,7 +755,7 @@
   var T = window.T2T;
 
   /* ── PRIMARY PAGES ── */
-  T.setPrimaryPages(['s-cover','s-invention','s-want','s-know','s-no-transition','s-dream-intro']);
+  T.setPrimaryPages(['s-cover','s-phase-tray','s-invention','s-want','s-know','s-no-transition','s-dream-intro']);
 
   /* ── PAGE NUMBERS ── */
   T.registerPageNum('s-signin',        '0010');
@@ -982,14 +1024,24 @@
     T.nav('s-signin');
   });
   T.wire('b-cover-mg', T.goMG);
-  T.wire('b-cover-next', function(){T.nav('s-invention');});
+  T.wire('b-cover-next', function(){T.nav('s-phase-tray');});
+
+  /* ── 0105 · PHASE TRAY ── */
+  T.registerPageNum('s-phase-tray', '0105');
+  T.wire('b-phase-tray-back', function(){T.nav('s-cover');});
+  T.wire('b-phase-tray-mg',   T.goMG);
+  T.wire('b-phase-tray-next', function(){T.nav('s-invention');});
+  T.wire('b-pt-dream',   function(){T.goPhase('dream.html');});
+  T.wire('b-pt-believe', function(){T.goPhase('believe.html');});
+  T.wire('b-pt-dare',    function(){T.goPhase('dare.html');});
+  T.wire('b-pt-journey', function(){T.goPhase('journey.html');});
 
   /* ── WHAT IS T2T / T2T GOALS ── */
   T.wire('b-what-is-t2t-back', function(){T.nav('s-trivia');}); T.wire('b-what-is-t2t-mg', T.goMG);
   T.wire('b-t2t-goals-back',   function(){T.nav('s-trivia');}); T.wire('b-t2t-goals-mg',   T.goMG);
 
   /* ── INVENTION ── */
-  T.wire('b-inv-back', function(){T.nav('s-cover');}); T.wire('b-inv-mg', T.goMG);
+  T.wire('b-inv-back', function(){T.nav('s-phase-tray');}); T.wire('b-inv-mg', T.goMG);
   T.wire('b-inv-next', function(){T.nav('s-want');});
 
   /* ── THOUGHTS READER ── */
