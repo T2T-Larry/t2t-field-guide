@@ -137,6 +137,17 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 .phase-tray-btn:hover{background:#f0f0ec}
 .phase-tray-sym{font-size:18px;line-height:1}
 .phase-tray-lbl{font-weight:700}
+/* Create hub TOC cards (1101) -- Larry, Aug 4 2026: switched from a full-width
+   6-row list to a 2-col grid (half width each, 3 rows instead of 6) to kill
+   the scroll-forcing whitespace and leave real room for artwork. Follow-up,
+   same day: "All these buttons are in Create. What if they are all light
+   blue?" -- light-blue treatment matching the Blue Sky door buttons' own
+   palette (#f0f6ff/#1a3a5c) elsewhere in this same hub. */
+.toc-card{background:#EBF4FF;border:1.5px solid #B5D4F4;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.toc-card:hover{background:#DCEBFB}
+.toc-num{font-family:'Playfair Display',serif;font-size:12px;color:#378ADD;font-weight:700}
+.toc-title{font-family:'Playfair Display',serif;font-size:14px;color:#1a3a5c;font-weight:700}
+.toc-sub{font-size:10px;color:#5b80a5;font-style:italic;line-height:1.3}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .tb{width:80px;height:36px;background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}

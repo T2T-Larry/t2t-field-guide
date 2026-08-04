@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <style>@media print{@page{size:landscape;margin:0.3in}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html,body{height:100%!important;width:100%!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;margin:0!important;width:100%!important;max-width:none!important;height:100%!important;transform:none!important}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:visible!important}#cl-print-area{width:100%!important;height:100%!important;padding:0!important}#cl-cert-svg{max-height:none!important;width:100%!important;height:auto!important}.bar2{display:none!important}button[onclick]{display:none!important}}</style>
-<link rel="stylesheet" href="style.css?v=20260804b">
+<link rel="stylesheet" href="style.css?v=20260804c">
 <style>
 .fg{font-family:'Playfair Display',Georgia,serif;width:680px;margin:0 auto;transition:transform .15s ease-out;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default}
 /* Kept in sync with index.html's text-selection fix, July 27 2026.
@@ -134,51 +134,16 @@
     <span class="ph-eyebrow">CREATE</span>
   </div>
   <div class="reader-wrap">
-    <div class="sw" style="padding:16px 28px 8px;overflow-y:auto;max-height:420px">
+    <div class="sw" style="padding:16px 28px 8px">
       <div class="se">What's ahead</div>
-      <div id="toc-whatif" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">1</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">What If?</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">The creative question</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div id="toc-whatif" class="toc-card"><div class="toc-num">1</div><div class="toc-title">What If?</div><div class="toc-sub">The creative question</div></div>
+      <div id="toc-wl" class="toc-card"><div class="toc-num">2</div><div class="toc-title">License</div><div class="toc-sub">Give yourself permission</div></div>
+      <div id="toc-ftf" class="toc-card"><div class="toc-num">3</div><div class="toc-title">Friction</div><div class="toc-sub">If not that, then what?</div></div>
+      <div id="toc-sparks" class="toc-card"><div class="toc-num">4</div><div class="toc-title">Happy</div><div class="toc-sub">What makes you feel happy?</div></div>
+      <div id="toc-bluesky" class="toc-card"><div class="toc-num">5</div><div class="toc-title">Blue Sky</div><div class="toc-sub">Ideas as if there were no limitations</div></div>
+      <div id="toc-sea" class="toc-card"><div class="toc-num">6</div><div class="toc-title">Idea Board</div><div class="toc-sub">The goal of CREATE</div></div>
       </div>
-      <div id="toc-wl" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">2</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">License</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Give yourself permission</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
-      </div>
-      <div id="toc-ftf" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">3</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Friction</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">If not that, then what?</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
-      </div>
-      <div id="toc-sparks" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">4</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Happy</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">What makes you feel happy?</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
-      </div>
-      <div id="toc-bluesky" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">5</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Blue Sky</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">Ideas as if there were no limitations</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
-      </div>
-      <div id="toc-sea" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f9f9f7;border:1.5px solid #ddd;border-radius:10px;margin-bottom:7px;cursor:pointer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="font-family:'Playfair Display',serif;font-size:13px;color:#8B6914;width:14px">6</div>
-          <div><div style="font-family:'Playfair Display',serif;font-size:15px;color:#111">Idea Board</div><div style="font-size:11px;color:#888;font-style:italic;margin-top:1px">The goal of CREATE</div></div>
-        </div>
-        <div style="font-size:16px;color:#C9A87C">›</div>
-      </div>
-      <div class="sp"></div>
     </div>
   </div>
   <div class="bar2 bar-dream-pp">
