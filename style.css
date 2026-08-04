@@ -145,11 +145,16 @@ body.t2t-bare-screen{background:#d0d0d0!important}
    (left-aligned, right half of the row open) instead of full width.
    Also light blue to match the Blue Sky door buttons' own palette
    (#f0f6ff/#1a3a5c) elsewhere in this same hub. */
-.toc-card{background:#EBF4FF;border:1.5px solid #B5D4F4;border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;width:50%;box-sizing:border-box}
+.toc-card{background:#EBF4FF;border:1.5px solid #B5D4F4;border-radius:8px;padding:5px 10px;cursor:pointer;display:flex;flex-direction:column;gap:0;width:50%;box-sizing:border-box}
+/* Larry, Aug 4 2026: "Reduce vertical size of buttons so that NO SCROLL is
+   needed." Collapsed number + title onto one row (was its own line) and
+   tightened padding/gaps so all six cards fit within 1101's 420px panel
+   without a scrollbar -- see the row/num/title/sub rules just below. */
+.toc-row{display:flex;align-items:baseline;gap:6px}
 .toc-card:hover{background:#DCEBFB}
-.toc-num{font-family:'Playfair Display',serif;font-size:12px;color:#378ADD;font-weight:700}
-.toc-title{font-family:'Playfair Display',serif;font-size:14px;color:#1a3a5c;font-weight:700}
-.toc-sub{font-size:10px;color:#5b80a5;font-style:italic;line-height:1.3}
+.toc-num{font-family:'Playfair Display',serif;font-size:11px;color:#378ADD;font-weight:700}
+.toc-title{font-family:'Playfair Display',serif;font-size:13px;color:#1a3a5c;font-weight:700;line-height:1.3}
+.toc-sub{font-size:9px;color:#5b80a5;font-style:italic;line-height:1.2}
 .bar3{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .bar2{background:#0a4a38;display:flex;justify-content:center;align-items:center;gap:12px;padding:10px 16px;border:2px solid #0d5c47;border-top:1px solid #1a7a5e}
 .tb{width:80px;height:36px;background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
