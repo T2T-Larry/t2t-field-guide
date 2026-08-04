@@ -392,6 +392,14 @@
   // card's links change -- see _bbLoadLinkCounts).
   var _bbLinksCache = [];
   var _bbLinkCountCache = {};
+  // Per-key link counts, Aug 4 2026 -- Larry: "Links are Key related...
+  // One key on a card might have 7 links; another only 3." Same shape
+  // as _bbLinkCountCache but keyed one level deeper: {cardId: {keyId: n}}.
+  // A key's link count IS the number of other cards/ideas currently
+  // sharing that exact key (that's what _bbSyncKeyLinks wires up one
+  // edge per pair for), so this reads straight off the already-tagged
+  // source='key' rows rather than recomputing anything.
+  var _bbKeyLinkCountCache = {};
   // Loaded once per Link picker open, then filtered client-side as the
   // traveler types -- see openLinkPicker/_bbRenderLinkPickerResults.
   var _bbLinkPickerStoryboardCache = null;
@@ -829,6 +837,30 @@
     }catch(e){ console.error('Briefing Board: could not load link counts', e); }
   }
 
+  // Companion to _bbLoadLinkCounts above -- same two-query-plus-tally
+  // shape, scoped to source='key' rows and split out by via_key_id so
+  // the card face can show "this key has N links" per key, not just
+  // one card-wide total.
+  async function _bbLoadKeyLinkCounts(cardIds){
+    _bbKeyLinkCountCache={};
+    if(!cardIds || !cardIds.length) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var r1=await sb.from('briefing_card_links').select('card_id,via_key_id').eq('source','key').in('card_id', cardIds);
+      (r1.data||[]).forEach(function(row){
+        if(!row.via_key_id) return;
+        _bbKeyLinkCountCache[row.card_id]=_bbKeyLinkCountCache[row.card_id]||{};
+        _bbKeyLinkCountCache[row.card_id][row.via_key_id]=(_bbKeyLinkCountCache[row.card_id][row.via_key_id]||0)+1;
+      });
+      var r2=await sb.from('briefing_card_links').select('target_card_id,via_key_id').eq('source','key').in('target_card_id', cardIds);
+      (r2.data||[]).forEach(function(row){
+        if(!row.via_key_id || !row.target_card_id) return;
+        _bbKeyLinkCountCache[row.target_card_id]=_bbKeyLinkCountCache[row.target_card_id]||{};
+        _bbKeyLinkCountCache[row.target_card_id][row.via_key_id]=(_bbKeyLinkCountCache[row.target_card_id][row.via_key_id]||0)+1;
+      });
+    }catch(e){ console.error('Briefing Board: could not load per-key link counts', e); }
+  }
+
   // Writes just this one card's key slots straight to Supabase and
   // waits for it -- assignKeyToSlot/removeKeyFromSlot's normal
   // _bbSaveLocal already does this too, but fire-and-forget, which
@@ -1170,7 +1202,7 @@
           if(remappedKeys.length) _bbKeyLibCache=_bbKeyLibCache.concat(remappedKeys);
           _bbRenderTypePicker();
           _bbRenderBoardPicker();
-          await _bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; }));
+          await Promise.all([_bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; })), _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }))]);
           renderBoard();
           return;
         }catch(e){ console.error('Briefing Board: legacy migration failed', e); }
@@ -1180,7 +1212,7 @@
     _bbCards = cardRows.length ? cardRows.map(_bbRowToCard) : _bbSeed();
     _bbRenderTypePicker();
     _bbRenderBoardPicker();
-    await _bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; }));
+    await Promise.all([_bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; })), _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }))]);
     renderBoard();
   }
 
@@ -1780,13 +1812,19 @@
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
       +'.bb-done-date{font-family:"Caveat",cursive;font-size:12px;color:#3F6B3A;text-align:right;margin-top:1px}'
-      +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:3px;pointer-events:none}'
+      +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:7px;pointer-events:none}'
       // pointer-events:auto here, Aug 4 2026 -- the container above stays
-      // click-through (so it never steals a card drag), but each dot
-      // itself needs real pointer events or its title tooltip (the
-      // meaning, on hover) never fires -- a child inherits "none" from
-      // its parent unless it opts back in like this.
-      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3);pointer-events:auto;cursor:default}'
+      // click-through (so it never steals a card drag), but the wrap
+      // around each dot+count needs real pointer events or its title
+      // tooltip (the meaning, on hover) never fires -- a child inherits
+      // "none" from its parent unless it opts back in like this.
+      +'.bb-key-badge-wrap{display:inline-flex;align-items:center;gap:2px;pointer-events:auto;cursor:default}'
+      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3);flex-shrink:0}'
+      // Link count, Aug 4 2026 -- Larry: "links number should be to
+      // the right of the Key symbol. One key on a card might have 7
+      // links; another only 3." Small enough to sit beside a 12px dot
+      // without dominating the card face.
+      +'.bb-key-link-count{font-family:var(--bb-body-font);font-size:9px;font-weight:700;color:var(--bb-sub);line-height:1}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:12px;color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
@@ -2260,7 +2298,20 @@
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
           +((c.keys && c.keys.some(function(k){ return k; })) ? ('<div class="bb-key-badges">'+c.keys.filter(function(kid){ return kid; }).map(function(kid){
               var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
-              return k ? '<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'" title="'+_esc(k.meaning||'')+'"></span>' : '';
+              if(!k) return '';
+              // Link count next to the key, Aug 4 2026 -- Larry: "Links
+              // are Key related, therefore links number should be to
+              // the right of the Key symbol. One key on a card might
+              // have 7 links; another only 3." A key's count is exactly
+              // how many other cards/ideas currently share that same
+              // key (that's what auto-linking connects), read straight
+              // from _bbKeyLinkCountCache rather than the card-wide
+              // total badge, which lumps every key together.
+              var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
+              return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this key':'')+'">'
+                +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
+                +(lc?'<span class="bb-key-link-count">'+lc+'</span>':'')
+                +'</span>';
             }).join('')+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
@@ -2472,7 +2523,7 @@
     // Refresh link counts before redrawing -- the card that was just
     // open may have gotten (or lost) links, and the board-face badge/
     // glow needs to reflect that the moment you're back looking at it.
-    _bbLoadLinkCounts(_bbCardsList().map(function(c){ return c.id; })).then(renderBoard);
+    Promise.all([_bbLoadLinkCounts(_bbCardsList().map(function(c){ return c.id; })), _bbLoadKeyLinkCounts(_bbCardsList().map(function(c){ return c.id; }))]).then(renderBoard);
   }
 
   function openTrashConfirm(id){
@@ -2636,7 +2687,7 @@
     await _bbPersistCardKeysNow(c);
     await _bbSyncKeyLinks(keyId);
     if(_bbOpenCardId===c.id) await _bbLoadLinksForCard(c.id);
-    await _bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+    await Promise.all([_bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; })), _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }))]);
     renderBoard();
   }
   async function removeKeyFromSlot(){
@@ -2654,7 +2705,7 @@
     await _bbPersistCardKeysNow(c);
     if(removedKeyId) await _bbSyncKeyLinks(removedKeyId);
     if(_bbOpenCardId===c.id) await _bbLoadLinksForCard(c.id);
-    await _bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+    await Promise.all([_bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; })), _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }))]);
     renderBoard();
   }
 
