@@ -740,6 +740,46 @@
   // this exact card instead of falling out to the backpack. Card:
   // switches boards first if the linked card lives on a different one
   // (it's still "your" corkboard, just a different board) then opens it.
+  // Toast + glow, Aug 4 2026 -- Larry: "I thought the card switched but
+  // it was not obvious. What would shout that we are on a different
+  // card?" A link jump that lands back on the same overlay (card ->
+  // card) swaps content in place with no visible cue that anything
+  // moved. Same toast language already used elsewhere in the app
+  // (screen-zero.js's showZeroToast) for "something just happened,
+  // read this" moments, reskinned to Briefing Board's own palette --
+  // plus a brief glow on the card that just opened so the eye finds it
+  // fast, no reading required.
+  function _bbShowToast(msg){
+    var existing=document.getElementById('bb-toast'); if(existing) existing.remove();
+    var toast=document.createElement('div');
+    toast.id='bb-toast';
+    toast.textContent=msg;
+    toast.style.cssText=[
+      'position:fixed','bottom:20px','left:20px',
+      'background:rgba(59,37,16,0.92)','color:#C9A87C',
+      'font-family:"Playfair Display",serif','font-size:13px','font-weight:700',
+      'letter-spacing:0.5px','padding:10px 18px','border-radius:20px',
+      'max-width:260px','text-align:left',
+      'box-shadow:0 4px 16px rgba(0,0,0,0.35)','z-index:10000',
+      'pointer-events:none','opacity:0','transition:opacity 0.2s'
+    ].join(';');
+    document.body.appendChild(toast);
+    requestAnimationFrame(function(){
+      toast.style.opacity='1';
+      setTimeout(function(){
+        toast.style.opacity='0';
+        setTimeout(function(){ toast.remove(); }, 220);
+      }, 2000);
+    });
+  }
+  function _bbGlowOpenCard(){
+    var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+    if(!card) return;
+    card.classList.remove('bb-just-arrived');
+    void card.offsetWidth; // restart the animation if it's already mid-glow
+    card.classList.add('bb-just-arrived');
+    setTimeout(function(){ card.classList.remove('bb-just-arrived'); }, 1400);
+  }
   function _bbGoToLink(entry){
     if(entry.dead){ window.alert('That linked item no longer exists.'); return; }
     if(entry.kind==='storyboard'){
@@ -749,14 +789,23 @@
       if(T().markReturnOverride){
         T().markReturnOverride(function(){ T().nav('s-briefing-board'); openCardDetail(_bbReturnCardId); });
       }
+      _bbShowToast('Jumped to \u201c'+entry.label+'\u201d on the Storyboard');
       closeCardDetail();
       T().nav('s-sea-of-ideas-cluster');
     } else if(entry.kind==='card'){
       var targetCardId=entry.targetId, targetBoardId=entry.boardId;
+      var switchingBoard = targetBoardId && targetBoardId!==_bbCurrentBoardId;
       closeCardDetail();
       (async function(){
-        if(targetBoardId && targetBoardId!==_bbCurrentBoardId){ await _bbSwitchToBoard(targetBoardId); }
+        if(switchingBoard){
+          await _bbSwitchToBoard(targetBoardId);
+          var board=_bbBoards.filter(function(b){ return b.id===targetBoardId; })[0];
+          _bbShowToast('Switched to '+(board?board.name:'a different')+' board \u2014 \u201c'+entry.label+'\u201d');
+        } else {
+          _bbShowToast('Opened linked card \u2014 \u201c'+entry.label+'\u201d');
+        }
         openCardDetail(targetCardId);
+        _bbGlowOpenCard();
       })();
     }
   }
@@ -1829,6 +1878,11 @@
       +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
       +'.bb-overlay.active{display:flex}'
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
+      // Landed-here glow, Aug 4 2026 -- fires once when a link jump opens
+      // a card into this same overlay, so a content swap that would
+      // otherwise be silent gets one visible pulse to catch the eye.
+      +'@keyframes bb-arrive-pulse{0%{box-shadow:0 10px 30px rgba(59,37,16,0.35),0 0 0 0 rgba(201,168,124,0.9)}70%{box-shadow:0 10px 30px rgba(59,37,16,0.35),0 0 0 14px rgba(201,168,124,0)}100%{box-shadow:0 10px 30px rgba(59,37,16,0.35),0 0 0 0 rgba(201,168,124,0)}}'
+      +'.bb-overlay-card.bb-just-arrived{animation:bb-arrive-pulse 1.4s ease-out}'
       +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
