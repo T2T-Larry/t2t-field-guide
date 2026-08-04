@@ -1243,8 +1243,24 @@
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px}'
       +'.bb-mh-eyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:120px}'
-      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:2px;justify-self:center;text-align:center}'
-      +'.bb-mh{color:var(--bb-ink);font-size:20px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
+      // NAME row, Aug 3 2026 -- pencil button added so a traveler can
+      // actually rename a board (Larry: "How can a traveler edit the
+      // name of the Briefing Board?" -- there was no way; renaming only
+      // ever happened by typing a fresh name into "+ Add a board...").
+      // Small and square like the header's other icon buttons, just
+      // scaled down (22px vs 30px) to sit level with the NAME select's
+      // own smaller 13px text instead of towering over it.
+      +'.bb-mh-namerow{display:flex;align-items:center;gap:4px}'
+      +'.bb-rename-btn{width:22px;height:22px;flex-shrink:0;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;padding:0}'
+      +'.bb-rename-btn:hover{background:var(--bb-bg)}'
+      // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
+      // Push tagline lower." Was 20px (sized for when it sat next to the
+      // big board-name pill); now the header's one permanent, static
+      // element, sized to lead. Gap between title and tagline widened
+      // 2px -> 10px so the tagline reads as its own line, not crowded
+      // against the title's descenders.
+      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
+      +'.bb-mh{color:var(--bb-ink);font-size:30px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
       +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:150px}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
@@ -1383,7 +1399,7 @@
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><select id="bb-type-picker" class="bb-type-picker" title="Board type"></select></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Name</div><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Name</div><div class="bb-mh-namerow"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
@@ -2113,9 +2129,40 @@
     }
   }
 
+  // Rename, Aug 3 2026 -- Larry: "How can a traveler edit the name of
+  // the Briefing Board?" There wasn't a way; the only place a name ever
+  // got typed in was "+ Add a board...". Small pencil button next to
+  // NAME does a plain rename-in-place -- same board, same cards, just a
+  // new label -- rather than creating a new board.
+  function wireRenameButton(){
+    T().wire('bb-rename-btn', async function(){
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(!board){ window.alert('No board is open yet -- nothing to rename.'); return; }
+      var newName=window.prompt('Rename this board:', board.name||'');
+      if(newName===null) return;
+      newName=newName.trim();
+      if(!newName || newName===board.name) return;
+      var sb=T().sb;
+      try{
+        var res=await sb.from('briefing_boards').update({name:newName}).eq('id', board.id).select().single();
+        if(res.error){
+          console.error('Briefing Board: could not rename board', res.error);
+          window.alert('Could not rename the board. Error: '+(res.error.message||'unknown error')+'. Nothing was saved -- please try again.');
+          return;
+        }
+        board.name = newName;
+        _bbRenderBoardPicker();
+      }catch(e){
+        console.error('Briefing Board: could not rename board', e);
+        window.alert('Could not rename the board. Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again.');
+      }
+    });
+  }
+
   function wireTopicBar(){
     wireTypePicker();
     wireBoardPicker();
+    wireRenameButton();
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
