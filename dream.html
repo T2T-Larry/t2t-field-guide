@@ -902,6 +902,7 @@
     <button class="tb" id="b-happy-back">⬅️</button>
     <button class="tb" id="b-happy-mg">☰</button>
     <button class="save-btn" id="b-save-happy">SAVE</button>
+    <button class="tb" id="b-happy-fwd">➡️</button>
   </div>
 </div>
 
@@ -958,7 +959,7 @@
     <span class="ph-eyebrow">BLUE SKY</span>
   </div>
   <div class="sw" style="padding:14px 24px 12px;align-items:center">
-    <div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#1a3a5c;letter-spacing:1px;margin-bottom:4px;text-align:center">NO LIMITATIONS</div>
+    <div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:#1a3a5c;letter-spacing:1px;margin-bottom:4px;text-align:center">1141 · NO LIMITATIONS</div>
     <div style="font-family:'Playfair Display',serif;font-size:13px;font-style:italic;color:#888;margin-bottom:14px;text-align:center">Money is no object. All the time in the world.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;width:100%;max-width:300px;flex:1">
       <button class="spark-door" style="background:#f0f6ff;color:#1a3a5c" id="b-bs-have" data-door="HAVE" data-prompt="What wild thing might you want to have someday?">🌟 HAVE</button>
@@ -1935,7 +1936,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerCtx('s-ftf-flip', 'Flip the Friction');
   T.wire('b-ftf-flip-back', function(){ T.nav('s-ftf-pain'); });
   T.wire('b-ftf-flip-mg',   T.goMG);
-  T.wire('b-ftf-flip-fwd',  function(){ T.nav('s-bluesky-intro'); });
+  T.wire('b-ftf-flip-fwd',  function(){ T.nav('s-happy'); });
 
   /* Anger + Pain list input */
   (function(){
@@ -2089,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerCtx('s-bluesky-doors', 'Blue Sky');
   T.wire('b-bluesky-doors-back', function(){ T.nav('s-bluesky-intro'); });
   T.wire('b-bluesky-doors-mg',   T.goMG);
-  T.wire('b-bluesky-doors-fwd',  function(){ T.nav('s-happy'); });
+  T.wire('b-bluesky-doors-fwd',  function(){ _enterSeaChapterFlow(); });
 
   /* Blue Sky doors → capture */
   (function(){
@@ -2278,6 +2279,7 @@ document.addEventListener('DOMContentLoaded', function(){
   ]);
   T.wire('b-happy-back', function(){ T.nav('s-create-toc'); });
   T.wire('b-happy-mg',   T.goMG);
+  T.wire('b-happy-fwd',  function(){ T.nav('s-bluesky-intro'); });
 
   (function(){
     var ta = document.getElementById('happy-text');
