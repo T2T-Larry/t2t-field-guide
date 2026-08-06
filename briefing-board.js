@@ -2405,6 +2405,11 @@
             .map(function(el){ return el.getAttribute('data-id'); })
             .filter(function(cid){ return cid!==id; });
           var insertAt=beforeEl ? order.indexOf(beforeEl.getAttribute('data-id')) : order.length;
+          // The card it's landing directly above -- i.e. the one it
+          // displaces downward. Captured before the splice below so it
+          // still reflects the pre-drop layout. Null when dropped at
+          // the very bottom (nothing to land above).
+          var neighborAfterId=beforeEl ? beforeEl.getAttribute('data-id') : null;
           order.splice(insertAt, 0, id);
           var allCards=_bbCardsList();
           order.forEach(function(cid, idx){
@@ -2421,21 +2426,34 @@
           // nothing further to escalate to, so top just stays there;
           // same for each family's bottom value. A single-card column
           // counts as "top" (escalate wins the tie), not bottom.
-          // Landing in the middle leaves whatever priority the card
-          // already carries alone.
+          // Aug 6, 2026, Larry: landing in the middle used to leave the
+          // card's priority alone -- now it matches whatever it's
+          // physically dropped among instead, same escalate/de-escalate
+          // as top and bottom ("HH moved between H's becomes H," same
+          // for MH/M and ML/L). _bbResortDoColumnByPriority (called just
+          // below) always keeps each family's cards grouped into two
+          // contiguous blocks -- escalated on top, base on the bottom --
+          // so landing directly above a given card means landing in
+          // that card's block; reading its priority is enough to know
+          // which block that is. Top/bottom still force the outright
+          // escalated/base value regardless of neighbors (unchanged),
+          // so dragging to the bottom of an all-HH column still lands
+          // on plain H even though every neighbor is HH.
           if(_bbIsDoCol(c.col) && c.col!=='new' && order.length>0){
             var famKey=c.col.slice(3); // 'h' | 'm' | 'l'
             var isTop=(insertAt===0);
             var isBottom=(!isTop && insertAt===order.length-1);
-            if(famKey==='h'){
-              if(isTop) c.priority='HH';
-              else if(isBottom) c.priority='H';
-            } else if(famKey==='m'){
-              if(isTop) c.priority='MH';
-              else if(isBottom) c.priority='M';
-            } else if(famKey==='l'){
-              if(isTop) c.priority='ML';
-              else if(isBottom) c.priority='L';
+            var famEscalated={h:'HH', m:'MH', l:'ML'}[famKey];
+            var famBase={h:'H', m:'M', l:'L'}[famKey];
+            if(isTop){
+              c.priority=famEscalated;
+            } else if(isBottom){
+              c.priority=famBase;
+            } else if(neighborAfterId){
+              var neighborCard=allCards.filter(function(x){ return x.id===neighborAfterId; })[0];
+              if(neighborCard && (neighborCard.priority===famEscalated || neighborCard.priority===famBase)){
+                c.priority=neighborCard.priority;
+              }
             }
           }
           if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
