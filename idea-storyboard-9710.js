@@ -193,6 +193,7 @@
         +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
         +'#sc-status:empty{display:none;margin:0}'
         +'#sc-status.err{color:#b8562f}'
+        +'#sc-status.pending{color:#3a6ea5;font-style:italic}'
         +'.sc-overlay-card{background:#fff;border-radius:14px;padding:16px;width:min(260px,84%);box-shadow:0 10px 24px rgba(0,0,0,0.3)}'
         +'.sc-overlay-card label{display:block;font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:6px}'
         +'.sc-overlay-card input{width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1a3a5c;margin-bottom:10px;box-sizing:border-box}'
@@ -1305,6 +1306,7 @@
     var rot=straight?0:(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
     tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+    tile.setAttribute('data-idea-id', String(item.id));
     tile.draggable=!item.locked;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
     tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
@@ -1420,6 +1422,7 @@
     var rot=straight?0:(Math.random()*6-3).toFixed(1);
     var wrap=document.createElement('div');
     wrap.className='sc-stack-tile';
+    wrap.setAttribute('data-header-id', String(headerRow.id));
     wrap.draggable=!headerRow.locked;
     wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
     wrap.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;cursor:pointer;transform:rotate('+rot+'deg)';
@@ -1521,6 +1524,35 @@
     return tile;
   }
 
+  // Saved-but-not-visible reassurance, Aug 6 2026 -- prompted by a real
+  // incident: Larry added headers and a card that were genuinely saved
+  // (confirmed in the database) but didn't show up on screen because
+  // GitHub's own Actions/Pages service was down and couldn't ship the
+  // fix that would've displayed them. From in here there's no way to
+  // know WHY something didn't render -- could be that, could be a slow
+  // network, could be a future bug nobody's found yet -- so this doesn't
+  // try to diagnose it. It just checks, after any add finishes, whether
+  // the new header or card actually landed in the DOM. If it didn't,
+  // it says so plainly: saved, just not visible yet, not something you
+  // did, not a sign anything's broken. Deliberately calm, not red/error
+  // styled -- this is a "hang on" message, not a warning.
+  function _sboardVerifyAdded(newId, label){
+    if(!newId) return;
+    // renderSeaBoard() hands off entirely to the Idea Session (9711)
+    // screen's own ring-layout renderer when that's what's on screen --
+    // a different DOM shape this check doesn't know how to read yet.
+    // Skip rather than risk a false "didn't show up" there.
+    var isxScreen=document.getElementById('s-idea-session');
+    if(isxScreen && isxScreen.classList.contains('active')) return;
+    var statusEl=document.getElementById('sc-status');
+    if(!statusEl) return;
+    var found=document.querySelector('[data-header-id="'+newId+'"], [data-idea-id="'+newId+'"]');
+    if(!found){
+      statusEl.textContent=(label||'What you just added')+' is saved safely — it just hasn\'t shown up on screen yet. That\'s not something you did, and nothing\'s broken. Give it a moment, or refresh, and it\'ll be there.';
+      statusEl.className='pending';
+    }
+  }
+
   function _sboardOpenAddHeaderPrompt(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -1545,7 +1577,8 @@
         var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:T2TShared.currentTopicId||null,created_at:new Date().toISOString()}).select().single();
         if(ins.error) throw ins.error;
         closeSbDetail();
-        renderSeaBoard();
+        await renderSeaBoard();
+        _sboardVerifyAdded(ins.data&&ins.data.id, 'Your new header "'+name+'"');
       }catch(err){
         if(errEl) errEl.textContent=err.message;
       }
@@ -1588,7 +1621,10 @@
       headerId: headerId,
       headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
       boardId: T2TShared.currentTopicId,
-      onSaved: function(){ renderSeaBoard(); }
+      onSaved: async function(row){
+        await renderSeaBoard();
+        _sboardVerifyAdded(row&&row.id, 'What you just added');
+      }
     });
   }
 
@@ -1827,6 +1863,7 @@
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
+        hd.setAttribute('data-header-id', String(headerRow.id));
         var hdFitSize=_sboardFitFontSize(name, 15, 10);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
