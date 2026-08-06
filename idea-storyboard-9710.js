@@ -2016,11 +2016,28 @@
         if(newAdditionsRow) mergedRow.push(newAdditionsRow);
         mergedRow=mergedRow.concat(childHeadersSorted);
         if(miscRow) mergedRow.push(miscRow);
+        // Fallback priority for a row member with no real sort_order yet.
+        // Used to be a flat 0 for every ordinary content header, which
+        // only matched the "default arrangement" on a totally fresh board
+        // (nothing backfilled yet, so 0 ties everything and original query
+        // order wins). Once a board's existing headers HAVE been backfilled
+        // with real sort_order values, a flat 0 loses that tie-break to
+        // any header whose real value is >0 -- so a header added via [+]
+        // after that point sorted itself in near the front instead of at
+        // the true end of the row, next to MISC, as the [+] control is
+        // documented to do. Now scaled to land after every already-real
+        // value in this row instead. Fixed Aug 6, 2026.
+        var _rowMaxRealSortOrder=-1;
+        mergedRow.forEach(function(h){
+          if((h.sort_order!==null&&h.sort_order!==undefined) && !(miscRow&&String(h.id)===String(miscRow.id)) && h.sort_order>_rowMaxRealSortOrder){
+            _rowMaxRealSortOrder=h.sort_order;
+          }
+        });
         var _rowPriority=function(h){
           if(purposeRow && String(h.id)===String(purposeRow.id)) return -2;
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)) return -1;
           if(miscRow && String(h.id)===String(miscRow.id)) return 999;
-          return 0;
+          return _rowMaxRealSortOrder+1;
         };
         mergedRow.sort(function(a,b){
           var ao=(a.sort_order===null||a.sort_order===undefined)?_rowPriority(a):a.sort_order;
