@@ -43,7 +43,6 @@
   // ── Idea (1170) card state ──
   var _icIdeaMode='idea';       // manual 💡/❋ override, still respected if ever wired to a toggle
   var _icInputPendingImageFile=null;
-  var _icInputPendingExternalUrl=null;
   var _icInputPendingLink=null; // {url, title, thumb}
 
   // ── Image (9713) card state — kept for completeness; this panel has
@@ -293,7 +292,6 @@
     ta.value=''; ta.focus();
     _icIdeaMode='idea';
     _icClearPendingImage();
-    _icClearPendingExternalUrl();
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
       var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
@@ -364,12 +362,6 @@
     return /^https?:\/\/\S+$/i.test((text||'').trim());
   }
 
-  function _icClearPendingExternalUrl(){
-    _icInputPendingExternalUrl=null;
-    var preview=document.getElementById('isx-paste-preview');
-    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
-  }
-
   function _icCommitIdeaPanel(){
     if(_icInputPendingImageFile){
       var file=_icInputPendingImageFile;
@@ -387,82 +379,20 @@
         var stillOpen=document.querySelector('#isx-popup-layer .isx-pcard');
         if(!stillOpen) _icRenderIdeaPanel();
       });
-    } else if(_icInputPendingExternalUrl){
-      // Unsplash pick — an external URL reference: no download/compress
-      // step, _icSaveCard already resets the panel in place on success
-      // just like a plain text save.
-      var extUrl=_icInputPendingExternalUrl;
-      _icInputPendingExternalUrl=null;
-      _icSaveCard(extUrl);
     } else {
       _icSaveCard(null);
     }
   }
 
   // Cancel is a permanent fixture, not a state-conditional button — it
-  // resets the whole card back to blank (typed text, pending image,
-  // pending link, or a pending Unsplash pick), not just pasted content.
-  // Never closes the popup; that's still the ✕'s job alone.
+  // resets the whole card back to blank (typed text, pending image, or
+  // pending link), not just pasted content. Never closes the popup;
+  // that's still the ✕'s job alone.
   function _icCancelIdeaEntry(){
     _icClearPendingImage();
     _icClearPendingLink();
-    _icClearPendingExternalUrl();
     var ta=document.getElementById('isx-idea-text');
     if(ta){ ta.value=''; ta.focus(); }
-  }
-
-  async function _icFetchUnsplashBatch(n){
-    var photos=[];
-    try{
-      for(var i=0;i<n;i++){
-        var r=await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
-        if(r.ok){ var d=await r.json(); photos.push(d.urls.regular); }
-      }
-    }catch(e){}
-    return photos;
-  }
-
-  function _icWireUnsplashTiles(){
-    document.querySelectorAll('#isx-unsplash-pick-grid .isx-unsplash-tile').forEach(function(tile){
-      if(tile._icWired) return;
-      tile._icWired=true;
-      tile.addEventListener('click', function(){
-        document.querySelectorAll('#isx-unsplash-pick-grid .isx-unsplash-tile div').forEach(function(h){h.textContent='\ud83e\udd0d';});
-        this.querySelector('div').textContent='\ud83e\udda4';
-        _icInputPendingExternalUrl=this.getAttribute('data-url');
-      });
-    });
-  }
-
-  function _icUnsplashTileHTML(url){
-    return '<div class="isx-unsplash-tile" data-url="'+url+'" style="position:relative;height:64px;border:2px solid #111;border-radius:8px;overflow:hidden;cursor:pointer">'
-      +'<img src="'+url+'" style="width:100%;height:100%;object-fit:cover">'
-      +'<div style="position:absolute;bottom:2px;right:4px;font-size:14px">\ud83e\udd0d</div></div>';
-  }
-
-  async function _icShowUnsplashPicker(){
-    _icClearPendingImage(); _icClearPendingLink();
-    _icInputPendingExternalUrl=null;
-    var preview=document.getElementById('isx-paste-preview');
-    if(!preview) return;
-    preview.style.display='block';
-    preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Loading Unsplash\u2026</div>';
-    var photos=await _icFetchUnsplashBatch(4);
-    if(!preview) return; // popup may have closed while this was in flight
-    if(!photos.length){ preview.innerHTML='<div style="font-size:10px;color:#A32D2D;text-align:center;padding:10px 0">Couldn\u2019t load images. Try again.</div>'; return; }
-    preview.innerHTML='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;max-height:200px;overflow-y:auto" id="isx-unsplash-pick-grid">'
-      +photos.map(_icUnsplashTileHTML).join('')+'</div>'
-      +'<button type="button" id="isx-unsplash-more" style="width:100%;margin-top:6px;padding:6px;font-size:10px;'
-      +'border:1.5px dashed var(--isx-paleblue);border-radius:8px;background:transparent;color:var(--isx-navy);cursor:pointer">\ud83d\udd04 More photos</button>';
-    _icWireUnsplashTiles();
-    var moreBtn=document.getElementById('isx-unsplash-more');
-    if(moreBtn) moreBtn.onclick=async function(){
-      moreBtn.disabled=true; moreBtn.textContent='Loading\u2026';
-      var more=await _icFetchUnsplashBatch(4);
-      var grid=document.getElementById('isx-unsplash-pick-grid');
-      if(grid){ grid.insertAdjacentHTML('beforeend', more.map(_icUnsplashTileHTML).join('')); _icWireUnsplashTiles(); }
-      moreBtn.disabled=false; moreBtn.textContent='\ud83d\udd04 More photos';
-    };
   }
 
   // ── 1170 — Idea ──
@@ -470,7 +400,6 @@
     _icIdeaMode='idea';
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
-    _icInputPendingExternalUrl=null;
     _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
@@ -478,7 +407,6 @@
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
       +'<div class="isx-save-row">'
-        +'<button class="isx-src-btn" id="isx-btn-unsplash" type="button">\ud83c\udf05 Unsplash</button>'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
       +'</div></div>');
@@ -488,8 +416,6 @@
     // RULES moved here from 9711's header, July 18, 2026 — ground rules
     // apply to the act of capturing an idea, not to viewing the board.
     document.getElementById('isx-p-rules').onclick=_icRenderRulesPanel;
-    var unsplashBtn=document.getElementById('isx-btn-unsplash');
-    if(unsplashBtn) unsplashBtn.onclick=_icShowUnsplashPicker;
     _icWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
     var ta=document.getElementById('isx-idea-text');
