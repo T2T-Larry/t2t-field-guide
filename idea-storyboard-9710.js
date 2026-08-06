@@ -1682,9 +1682,19 @@
       _sboardPurposeId=purposeId;
       var miscId=_ensureResults[2];
 
+      // Whole-account fetch (every header, idea, image and link this user
+      // owns, across every board) -- unlike the cluster-scoped fetches
+      // elsewhere in this file, there's no .eq('cluster_id', ...) here to
+      // keep the row count small. limit(300) quietly capped this to the
+      // OLDEST 300 rows (ascending order), so once the account passed 300
+      // total rows, anything newer -- including a header added just now
+      // via [+] -- was silently left out of the fetch and never appeared
+      // anywhere, with no error. Raised well past current usage (~350
+      // rows and growing) so new content stops vanishing. Fixed Aug 6,
+      // 2026 -- Larry: "Added a header but it never showed anywhere."
       var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
         .eq('user_id', user.id).in('content_type',['image','text','link','header'])
-        .order('created_at',{ascending:true}).limit(300);
+        .order('created_at',{ascending:true}).limit(2000);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
       _sboardAllRowsById={}; rows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
