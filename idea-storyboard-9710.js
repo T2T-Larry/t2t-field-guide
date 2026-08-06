@@ -1562,7 +1562,7 @@
   // Kept small and understated, same reasoning as the header [+] above.
   // Locked July 16, 2026.
   // [+] control at the end of a header's own subber list — opens the same
-  // full capture card everything else uses (camera/attach/Unsplash, paste,
+  // full capture card everything else uses (camera/attach, paste,
   // link), pre-targeted at this specific header, then returns to this
   // board on save. No more separate lightweight text-only dialog — one
   // input experience everywhere. Locked July 16, 2026.

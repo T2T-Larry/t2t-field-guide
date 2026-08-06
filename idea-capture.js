@@ -46,7 +46,7 @@
   var _icInputPendingLink=null; // {url, title, thumb}
 
   // ── Image (9713) card state — kept for completeness; this panel has
-  //    no live entry point right now (superseded by paste/Unsplash
+  //    no live entry point right now (superseded by paste-in
   //    living inside the Idea card itself), but stays wired in case a
   //    future screen wants a dedicated Image button. ──
   var _icImgTab='paste';
@@ -59,8 +59,6 @@
   var _icLinkPendingThumb=null;
   var _icLinkPendingTitle=null;
   var _icLinkTimer=null;
-
-  var UNSPLASH_KEY='ka0gIrtPFZ1o4q4JKnSdaaBH5197-tWnFnZkd-zw3ns';
 
   // A trailing : or ? auto-promotes a typed idea to a header — same rule
   // as the Storyboard's own quick-add, duplicated here (one line) rather
@@ -459,7 +457,6 @@
       +'<div class="isx-ptitle">\ud83d\udcf7 Image</div>'
       +'<div class="isx-src-row">'
         +'<button class="isx-src-btn on" data-src="paste">Paste / Upload</button>'
-        +'<button class="isx-src-btn" data-src="unsplash">Unsplash</button>'
         +'<button class="isx-src-btn" data-src="ai">Generate</button>'
       +'</div>'
       +'<div id="isx-img-body"></div>'
@@ -498,38 +495,9 @@
           _icSaveImageFile(_icImgPendingFile);
         }
       };
-    } else if(_icImgTab==='unsplash'){
-      body.innerHTML='<div id="isx-unsplash-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px">Loading\u2026</div>'
-        +'<button class="isx-save" id="isx-p-save">SAVE</button>';
-      _icLoadUnsplash();
-      document.getElementById('isx-p-save').onclick=function(){ if(_icImgPendingUrl) _icSaveCard(_icImgPendingUrl); };
     } else {
       body.innerHTML='<div class="isx-dropzone">Custom AI image generation isn\u2019t wired up yet \u2014 needs an image-gen API connected.</div>';
     }
-  }
-
-  async function _icLoadUnsplash(){
-    var grid=document.getElementById('isx-unsplash-grid');
-    if(!grid) return;
-    var photos=[];
-    try{
-      for(var i=0;i<4;i++){
-        var r=await fetch('https://api.unsplash.com/photos/random?content_filter=high&client_id='+UNSPLASH_KEY);
-        if(r.ok){ var d=await r.json(); photos.push(d.urls.regular); }
-      }
-    }catch(e){}
-    if(!grid) return;
-    if(!photos.length){ grid.innerHTML='Couldn\u2019t load images. Try again.'; return; }
-    grid.innerHTML=photos.map(function(url){
-      return '<div class="isx-unsplash-tile" data-url="'+url+'" style="position:relative;height:72px;border:2px solid #111;border-radius:8px;overflow:hidden;cursor:pointer"><img src="'+url+'" style="width:100%;height:100%;object-fit:cover"><div style="position:absolute;bottom:2px;right:4px;font-size:15px">\ud83e\udd0d</div></div>';
-    }).join('');
-    document.querySelectorAll('.isx-unsplash-tile').forEach(function(tile){
-      tile.addEventListener('click', function(){
-        document.querySelectorAll('.isx-unsplash-tile div').forEach(function(h){h.textContent='\ud83e\udd0d';});
-        this.querySelector('div').textContent='\ud83e\udda4';
-        _icImgPendingUrl=this.getAttribute('data-url');
-      });
-    });
   }
 
   // ── 9714 — Link (currently unreachable; kept for a future dedicated
