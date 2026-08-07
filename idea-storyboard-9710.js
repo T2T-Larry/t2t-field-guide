@@ -3186,26 +3186,33 @@
       + topRowHTML
       + headerListHTML
       + bodyHTML
-      + '<div class="sb-below-content-row">'
-      + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️ Notes</button>'
+      // NOTES + SIGNAL FLAGS, Aug 7 2026 (Larry): Notes moved onto the same
+      // row as Signal Flags, matching the eyebrow-over-field look the
+      // PARENT/VIEW/ORDER row uses -- NOTES eyebrow over the pencil icon
+      // (icon only now; the eyebrow itself supplies the "Notes" label, so
+      // the button text is redundant), Signal Flags eyebrow over the heart
+      // + flag row, side by side. The heart isn't part of the picker (it's
+      // the one fixed, "non-choice" flag every card gets, tap to add / hold
+      // to remove, same as always); any custom flags follow, then the add
+      // control -- a plain classic (+), same dashed-circle look the
+      // board's own [+] add-a-card tiles use everywhere else. Flags row
+      // populated by _sboardRenderKeyRow right after this HTML lands
+      // (needs the real DOM node to attach click handlers to). Headers and
+      // Subbers get this same row too -- only the heart stays
+      // content-cards-only.
+      + '<div class="sb-eyebrow-row">'
+      + '<div class="sb-eyebrow-col" style="flex:0 0 auto">'
+      + '<div class="sb-hdr-eyebrow2">Notes</div>'
+      + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️</button>'
       + '</div>'
-      // SIGNAL FLAGS, Aug 7 2026 (Larry): the red heart and Custom Keys
-      // used to live in two separate, unlabeled rows (heart next to
-      // Notes/Order up top, Keys in its own row below) -- now one row
-      // under one eyebrow. Heart renders first and isn't part of the
-      // picker (it's the one fixed, "non-choice" flag every card gets,
-      // tap to add / hold to remove, same as always); any custom flags
-      // follow, then the add control -- switched from the "🔑 +" pill to
-      // a plain classic (+), same dashed-circle look the board's own
-      // [+] add-a-card tiles already use everywhere else. Populated by
-      // _sboardRenderKeyRow right after this HTML lands (needs the real
-      // DOM node to attach click handlers to). Headers and Subbers get
-      // this same row too -- only the heart stays content-cards-only.
-      + '<div class="sb-hdr-eyebrow2">Signal Flags</div>'
-      + '<div class="sb-below-content-row" id="sb-flags-row">'
+      + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
+      + '<div class="sb-hdr-eyebrow2" style="text-align:left">Signal Flags</div>'
+      + '<div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
       + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
       + '<span style="color:#D4537E;font-size:13px">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
       + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
+      + '</div>'
+      + '</div>'
       + '</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
