@@ -580,6 +580,18 @@
   async function navToPageNum(num) {
     // Local registry first — no Supabase needed if screen is in this file
     var localId = _pageNumsReverse[num];
+    // Same guard resumeToLastPageOr already has (Aug 1 2026 bug fix) --
+    // a bare nav() into 1010 (the Idea Storyboard) leaves currentTopicId
+    // null, which renders 1010's blank-project fallback chrome ("What
+    // do you want?" / a project that isn't real). This function was the
+    // one remaining entry point still missing that guard -- exposed
+    // Aug 7 2026 once the Sign-In-on-reload race was fixed and a
+    // session's own remembered screen (bpCurrentScreenNum) could
+    // actually reach here and be 1010.
+    if(localId==='s-sea-of-ideas-cluster' && window.T2TMedia && window.T2TMedia.openBoardResume){
+      window.T2TMedia.openBoardResume(false);
+      return;
+    }
     if (localId && document.getElementById(localId)) {
       nav(localId, false);
       return;
