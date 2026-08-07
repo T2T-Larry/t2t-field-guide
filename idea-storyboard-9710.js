@@ -1728,7 +1728,7 @@
       var _ensureResults=await Promise.all([
         T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(
           T2TShared.currentTopicId,
-          isAtProjectRoot ? ((currentProjectRowForScope.text_content||'Project')+' Ideas') : null
+          null
         ) : Promise.resolve(null),
         currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
         T2TData.ensureMiscHeader(T2TShared.currentTopicId)
@@ -1845,9 +1845,10 @@
         // TOPIC, so excluding it from the [+] made no sense. Purpose picked
         // up the same [+] on Aug 4, 2026 per Larry -- it's still a
         // one-statement header by default, but he wants the option to add
-        // cards under it same as any other column. NEW/Trash stay excluded
-        // (auto-managed and off-limits respectively).
-        var blocksNewSubbers=(name==='Trash'||name==='NEW');
+        // cards under it same as any other column. Aug 7 2026, Larry:
+        // NEW gets the same [+] now too, same reasoning -- only Trash
+        // stays excluded (off-limits, not a place to add anything to).
+        var blocksNewSubbers=(name==='Trash');
         var straight=true;
         // Sorted by sort_order, Aug 3 2026 -- previously rendered in
         // whatever order Supabase happened to return them, since nothing
@@ -1999,15 +2000,12 @@
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('div');
         hd.className='sc-pill named';
-        // Contextual label — added July 12, 2026. Loose ideas under a Topic
-        // aren't necessarily "new" (a card can land here by sliding down or
-        // a header demoting, not just by being freshly typed), so the
-        // bucket now reads "[Topic] Ideas" instead of the generic NEW when
-        // there's a real Topic to name it after — e.g. "Website Ideas"
-        // when Website is the current Topic. Root level (no Topic selected)
-        // keeps the plain NEW label, since there's no single name to attach.
-        var topicRowForLabel=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
-        var localLabel=topicRowForLabel?((topicRowForLabel.text_content||'Topic')+' Ideas'):'NEW';
+        // Plain "NEW" everywhere, matching the Briefing Board's NEW column
+        // — Aug 7 2026, Larry. Used to read "[Topic] Ideas" (e.g. "Website
+        // Ideas") whenever a Topic was open, on the reasoning that loose
+        // ideas here aren't necessarily freshly typed. Larry wants one
+        // consistent label across every storyboard instead.
+        var localLabel='NEW';
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
@@ -2051,10 +2049,19 @@
           }
         });
         block.appendChild(hd);
-        if(directItems.length){
+        // Aug 7 2026, Larry: NEW should be able to take a new idea directly,
+        // same [+] every other header gets (mirrors renderGroup's own
+        // !blocksNewSubbers tile below) -- not just something things land
+        // in by sliding down or being demoted. Scroll section now always
+        // renders (even with zero items yet) so the [+] has somewhere to
+        // sit; only a locked NEW row (shouldn't normally happen) hides it.
+        if(directItems.length || (newRow && !newRow.locked)){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
           directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, parentIdForDrop, SUBBER_H)); });
+          if(newRow && !newRow.locked){
+            scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
+          }
           block.appendChild(scroll);
         }
         return block;
