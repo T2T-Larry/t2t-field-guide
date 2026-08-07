@@ -41,7 +41,7 @@
   var _icOnClosed=null;
 
   // ── Idea (1170) card state ──
-  var _icIdeaMode='idea';       // manual 💡/❋ override, still respected if ever wired to a toggle
+  var _icIdeaMode='idea';       // manual idea/header override -- wired to the isx-p-header-toggle button, Aug 7, 2026
   var _icInputPendingImageFile=null;
   var _icInputPendingLink=null; // {url, title, thumb}
 
@@ -292,6 +292,8 @@
     _icClearPendingImage();
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
+      var toggleBtn=card.querySelector('#isx-p-header-toggle');
+      if(toggleBtn) toggleBtn.classList.remove('on');
       var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
       var flash=document.createElement('div');
       flash.className='isx-save-flash';
@@ -401,7 +403,7 @@
     _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
       +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
       +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
-      +'<button class="isx-src-btn" id="isx-p-rules" type="button" style="width:100%;margin-bottom:8px">\ud83d\udcdc Rules</button>'
+      +'<button class="isx-src-btn" id="isx-p-header-toggle" type="button" style="width:100%;margin-bottom:8px">\ud83c\udff7\ufe0f Make this a Header</button>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
       +'<div class="isx-save-row">'
@@ -411,9 +413,28 @@
     document.getElementById('isx-p-close').onclick=_icClosePopup;
     document.getElementById('isx-p-save').onclick=_icCommitIdeaPanel;
     document.getElementById('isx-p-cancel').onclick=_icCancelIdeaEntry;
-    // RULES moved here from 9711's header, July 18, 2026 — ground rules
-    // apply to the act of capturing an idea, not to viewing the board.
-    document.getElementById('isx-p-rules').onclick=_icRenderRulesPanel;
+    // Rules button removed from here Aug 7, 2026 (Larry) — this slot now
+    // holds the Make-a-Header toggle instead. _icRenderRulesPanel /
+    // openRules() are untouched and still reachable from wherever else
+    // calls them; this card just no longer offers a way in.
+    // MAKE HEADER toggle, Aug 7, 2026 — wires the _icIdeaMode variable
+    // that _icSaveCard already checked but nothing ever set: lets Larry
+    // decide right when typing that this card should be a header,
+    // instead of only deciding after the fact on DETAILS (9716).
+    (function(){
+      var toggleBtn=document.getElementById('isx-p-header-toggle');
+      function paint(){
+        if(!toggleBtn) return;
+        toggleBtn.classList.toggle('on', _icIdeaMode==='header');
+      }
+      if(toggleBtn){
+        toggleBtn.onclick=function(){
+          _icIdeaMode = (_icIdeaMode==='header') ? 'idea' : 'header';
+          paint();
+        };
+      }
+      paint();
+    })();
     _icWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
     var ta=document.getElementById('isx-idea-text');

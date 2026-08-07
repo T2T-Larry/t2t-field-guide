@@ -253,6 +253,12 @@
         +'.sb-body-box{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:120px;max-height:50vh;border-radius:8px;background:#fff;border:0.5px solid #B4B2A9;padding:10px 12px;box-sizing:border-box;margin-bottom:8px;overflow:hidden;position:relative}'
         +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain;display:block}'
         +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#2C2C2A;font-weight:500;font-size:14px;cursor:pointer;word-break:break-word}'
+        // 4-line cap, Aug 7, 2026 (Larry) -- replaces the old shrink-the-
+        // font-to-cram-more-in behavior on a card's own text (see the
+        // plain-idea branch of openSbDetail below): text now always shows
+        // at the standard 18px size and simply clips after 4 lines instead
+        // of getting smaller and smaller to fit everything.
+        +'.sb-body-text-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}'
         +'.sb-blue-row{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
         +'.sb-blue-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:1 1 auto;min-width:36px}'
         +'.sb-blue-btn:active{transform:scale(0.95)}'
@@ -3121,8 +3127,7 @@
         + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div>';
     } else {
-      var fitSize=_sboardFitFontSize(item.text_content||'', 18, 11);
-      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text" style="font-size:'+fitSize+'px" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
+      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:18px" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
         + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
     }
@@ -3160,6 +3165,7 @@
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
+      + (isHeaderType?'':'<button class="sb-blue-btn" id="sb-make-header" title="Make this a Header">🏷️</button>')
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
@@ -3207,6 +3213,21 @@
     T().wire('sb-move-btn', function(){
       var panel=document.getElementById('sb-move-panel');
       if(panel) panel.style.display=(panel.style.display==='none')?'block':'none';
+    });
+
+    // MAKE HEADER, Aug 7, 2026 (Larry) — same promotion the drag-a-card-
+    // onto-another-card path already does (_sboardStackIntoHeader sets
+    // content_type:'header'), just reachable as an explicit button here
+    // on DETAILS instead of only by dragging. Button only renders for
+    // non-header items (see isHeaderType above), so no guard needed here.
+    T().wire('sb-make-header', async function(){
+      try{
+        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',item.id).select();
+        if(upd.error) throw upd.error;
+        item.content_type='header';
+        closeSbDetail();
+        renderSeaBoard();
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
     // Header list: tap to reassign immediately
