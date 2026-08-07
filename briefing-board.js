@@ -3350,7 +3350,13 @@
     T().wire('bb-reset', T().resetAndReturn);
 
     T().wire('bb-add-close', closeAddCard);
-    T().wire('b-bb-save-card', function(){
+    // Aug 7 2026 -- Larry: "I hit ENTER on a Briefing Card entry but it
+    // did not Pin to the board. This needs to work like the Ideas
+    // cards" (same request that led to the Storyboard New Header fix
+    // earlier today). This field's a textarea rather than a single-line
+    // input, so plain ENTER pins the card and SHIFT+ENTER still inserts
+    // a line break for anyone jotting a multi-line task.
+    function _bbSaveNewCard(){
       var t=document.getElementById('bb-new-task');
       var text=t?t.value.trim():'';
       if(!text) return;
@@ -3367,7 +3373,14 @@
       _bbSaveLocal(cards);
       closeAddCard();
       renderBoard();
-    });
+    }
+    T().wire('b-bb-save-card', _bbSaveNewCard);
+    (function(){
+      var newTaskField=document.getElementById('bb-new-task');
+      if(newTaskField) newTaskField.addEventListener('keydown', function(e){
+        if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); _bbSaveNewCard(); }
+      });
+    })();
 
     T().wire('bb-detail-close', closeCardDetail);
     T().wire('bb-d-unhook-ideas', _bbUnhookIdeas);
