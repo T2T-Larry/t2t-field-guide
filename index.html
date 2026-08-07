@@ -839,12 +839,27 @@
   // because nothing ever checked for one -- the app just always started
   // on s-signin. Supabase already persists the session on its own; this
   // just asks before defaulting to the sign-in screen.
-  (async function _resumeSession(){
+  //
+  // Switched from a one-shot getSession() call to onAuthStateChange's
+  // INITIAL_SESSION event, Aug 7 2026 (Larry, bug report: hard refresh
+  // landing on Sign In with a fully valid session already sitting in
+  // storage). Verified live: calling getSession() again by hand a few
+  // seconds after a broken load correctly found the same session that
+  // the page-load call had just missed -- a real startup race, not a
+  // missing/expired token. getSession() can return before the client
+  // has finished reading its own persisted session back out of
+  // storage; INITIAL_SESSION is Supabase's own documented signal for
+  // "the client has now genuinely finished figuring out whether anyone
+  // is signed in," so there's nothing left to race against.
+  var _resumeSessionDone=false;
+  _sb.auth.onAuthStateChange(async function(event, session){
+    if(_resumeSessionDone) return;
+    if(event!=='INITIAL_SESSION') return;
+    _resumeSessionDone=true;
     try{
-      var res = await _sb.auth.getSession();
-      if(res && res.data && res.data.session && res.data.session.user){
+      if(session && session.user){
         await T.loadVisitedFromSupabase();
-        await T.loadMemberProfile(res.data.session.user.id);
+        await T.loadMemberProfile(session.user.id);
         // July 22, 2026, Larry: the reload-and-return shortcut (🔄 in the
         // backpack menu) needs this to land back on whatever screen was
         // actually open, not always the cover -- see resumeToLastPageOr
@@ -880,7 +895,7 @@
         T.nav('s-signin', false);
       }
     }catch(e){ console.error('Session resume failed', e); T.nav('s-signin', false); }
-  })();
+  });
 
   T.wire('si-pw-toggle', function(){
     var f=document.getElementById('si-password');
