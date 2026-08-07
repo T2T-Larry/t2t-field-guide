@@ -291,6 +291,121 @@
     if(c.due) c.dueEscalatedFor=c.due;
   }
 
+  // Aug 7 2026 (later) -- Larry: a card he moved didn't land where he
+  // put it AND couldn't be put back where it was -- it just vanished.
+  // (Root cause was the auto-escalate override above; that's fixed.)
+  // But Larry's ask was broader than one bug: a real safety net for
+  // MOVES themselves, not just Trash. Every manual move (drag-drop or
+  // the H/M/L buttons) now writes a row to briefing_card_moves with
+  // the before/after col+priority+sortOrder, and the "Recent Moves"
+  // panel (bb-moves icon, next to Trash) lists them with an Undo
+  // button that puts the card straight back where it was -- no need to
+  // guess, no dependency on the card ever having been trashed.
+  var BB_MOVE_COL_LABEL = {'new':'NEW','do-h':'DO (H)','do-m':'DO (M)','do-l':'DO (L)','doing':'Doing','done':'Done','hangups':'Hang-Ups'};
+  function _bbMoveDesc(col, priority){
+    var label = BB_MOVE_COL_LABEL[col] || col || '?';
+    return priority ? (label+' \u2014 '+priority) : label;
+  }
+  function _bbSnapshotCard(c){
+    return {col:c.col, priority:c.priority, sortOrder:c.sortOrder};
+  }
+  // Fire-and-forget: logs a move to Supabase if col/priority/sortOrder
+  // actually changed. Never blocks the UI and never throws -- a failed
+  // log write shouldn't stop the move itself from saving.
+  async function _bbLogCardMove(c, before){
+    if(!_bbCurrentBoardId) return;
+    if(before.col===c.col && before.priority===c.priority && before.sortOrder===c.sortOrder) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      await sb.from('briefing_card_moves').insert({
+        board_id: _bbCurrentBoardId,
+        card_id: c.id,
+        task: c.task||'',
+        from_col: before.col||null, from_priority: before.priority||null, from_sort_order: (typeof before.sortOrder==='number')?before.sortOrder:null,
+        to_col: c.col||null, to_priority: c.priority||null, to_sort_order: (typeof c.sortOrder==='number')?c.sortOrder:null
+      });
+    }catch(e){ console.error('Briefing Board: move log failed', e); }
+  }
+  function _bbMoveAgo(iso){
+    var d=new Date(iso); if(isNaN(d.getTime())) return '';
+    var mins=Math.floor((Date.now()-d.getTime())/60000);
+    if(mins<1) return 'just now';
+    if(mins<60) return mins+' min ago';
+    var hrs=Math.floor(mins/60);
+    if(hrs<24) return hrs+(hrs===1?' hour ago':' hours ago');
+    var days=Math.floor(hrs/24);
+    return days+(days===1?' day ago':' days ago');
+  }
+  function openRecentMoves(){
+    _bbRenderRecentMoves();
+    var ov=document.getElementById('bb-moves-overlay');
+    if(ov) ov.classList.add('active');
+  }
+  function closeRecentMoves(){
+    var ov=document.getElementById('bb-moves-overlay'); if(ov) ov.classList.remove('active');
+  }
+  var _bbMovesCache = [];
+  async function _bbRenderRecentMoves(){
+    var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
+    wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Loading...</div>';
+    var sb=T().sb;
+    if(!sb || !_bbCurrentBoardId){ wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>'; return; }
+    try{
+      var res=await sb.from('briefing_card_moves').select('*').eq('board_id', _bbCurrentBoardId).is('undone_at', null).order('moved_at',{ascending:false}).limit(20);
+      if(res.error) throw res.error;
+      _bbMovesCache = res.data||[];
+    }catch(e){ console.error('Briefing Board: load moves failed', e); _bbMovesCache=[]; }
+    if(!_bbMovesCache.length){
+      wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
+      return;
+    }
+    wrap.innerHTML=_bbMovesCache.map(function(m){
+      return '<div class="bb-mv-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
+        +'<div style="font-size:13px;margin-bottom:2px">'+_esc(m.task||'(untitled)')+'</div>'
+        +'<div style="font-size:11px;color:#6b5a42;margin-bottom:2px">'+_esc(_bbMoveDesc(m.from_col,m.from_priority))+' \u2192 '+_esc(_bbMoveDesc(m.to_col,m.to_priority))+'</div>'
+        +'<div style="font-size:10px;color:#a3907a;margin-bottom:6px">'+_bbMoveAgo(m.moved_at)+'</div>'
+        +'<button class="bb-icon-btn" data-mv-undo="'+_esc(m.id)+'" style="width:auto;height:auto;font-size:11px;padding:4px 8px">Undo -- put it back</button>'
+      +'</div>';
+    }).join('');
+  }
+  async function _bbUndoMove(moveId){
+    var m=_bbMovesCache.filter(function(x){ return x.id===moveId; })[0];
+    if(!m) return;
+    var c=_bbCardsList().filter(function(x){ return x.id===m.card_id; })[0];
+    if(!c){ window.alert('That card is no longer on this board (it may have been trashed).'); return; }
+    var before=_bbSnapshotCard(c);
+    c.col=m.from_col; c.priority=m.from_priority; c.sortOrder=(typeof m.from_sort_order==='number')?m.from_sort_order:c.sortOrder;
+    if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
+    _bbStampDateEscalationHandled(c);
+    _bbSaveLocal(_bbCardsList());
+    var sb=T().sb;
+    if(sb){
+      try{ await sb.from('briefing_card_moves').update({undone_at:new Date().toISOString()}).eq('id', moveId); }catch(e){ console.error('Briefing Board: mark move undone failed', e); }
+    }
+    // Log the undo itself as a fresh move, so it too can be reverted.
+    _bbLogCardMove(c, before);
+    await _bbRenderRecentMoves();
+    renderBoard();
+  }
+  function wireRecentMoves(){
+    T().wire('bb-moves-close', closeRecentMoves);
+    var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
+    wrap.addEventListener('click', function(e){
+      var undoId=e.target.getAttribute && e.target.getAttribute('data-mv-undo');
+      if(undoId) _bbUndoMove(undoId);
+    });
+  }
+  // Rows older than this get cleaned up automatically -- mirrors the
+  // Trash retention window (BB_TRASH_RETENTION_DAYS below).
+  var BB_MOVE_LOG_RETENTION_DAYS = 30;
+  async function _bbPurgeOldMoves(boardId){
+    var sb=T().sb; if(!sb || !boardId) return;
+    try{
+      var cutoff=new Date(Date.now() - BB_MOVE_LOG_RETENTION_DAYS*86400000).toISOString();
+      await sb.from('briefing_card_moves').delete().eq('board_id', boardId).lt('moved_at', cutoff);
+    }catch(e){ console.error('Briefing Board: move log auto-purge failed', e); }
+  }
+
   var THEMES = [
     {key:'gold',   label:'Gold',   bg:'#FDF6E8', accent:'#C9A87C', ink:'#3B2510', sub:'#7A5C3A'},
     {key:'forest', label:'Forest', bg:'#EFF5EC', accent:'#8FBE8A', ink:'#1F3A1A', sub:'#3F6B3A'},
@@ -372,6 +487,9 @@
   }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
+  // Aug 7 2026 -- the "Recent Moves" icon (a plain clock) that opens
+  // the move-history/undo panel, sitting just to the left of Trash.
+  var MOVES_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>';
 
   var _bbCards = null;
   var _bbOpenCardId = null;
@@ -1203,6 +1321,7 @@
     // load are unaffected either way (a card purged mid-session just
     // won't come back next reload).
     _bbPurgeOldTrash(boardId);
+    _bbPurgeOldMoves(boardId);
     _bbLoadMembers();
 
     // One-time migration, July 21, 2026 (evening): the first time Field
@@ -2014,6 +2133,7 @@
         +'</div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
+        +'<div class="bb-trash" id="bb-moves" title="Recent Moves" style="right:68px">'+MOVES_SVG+'</div>'
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
@@ -2127,6 +2247,27 @@
       fg.appendChild(rdOv);
       rdOv.addEventListener('click', function(e){ if(e.target===rdOv) closeRecentlyDeleted(); });
       _bbMakeDraggable(rdOv.querySelector('.bb-overlay-card'), rdOv.querySelector('.bb-overlay-head'));
+    }
+    // Recent Moves (9366), Aug 7 2026 -- Larry: a card he moved didn't
+    // land where he put it and couldn't be put back, separate from
+    // Trash entirely ("Never put the card into the trash... We need a
+    // safety net for potential errors"). Opened by a plain click on
+    // this icon -- lists the last 20 manual moves on this board
+    // (drag-drop or the H/M/L buttons), newest first, each with an
+    // Undo that puts the card straight back to its prior column,
+    // priority, and position.
+    if(!document.getElementById('bb-moves-overlay')){
+      var mvOv=document.createElement('div');
+      mvOv.id='bb-moves-overlay'; mvOv.className='bb-overlay';
+      mvOv.innerHTML=
+         '<div class="bb-overlay-card" style="width:320px">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recent Moves</span><button class="bb-close" id="bb-moves-close" aria-label="Close">✕</button></div>'
+          +'<div style="font-size:11px;color:#7A5C3A;font-style:italic;margin-bottom:10px">Every move you made, with a way back.</div>'
+          +'<div id="bb-moves-list" style="max-height:320px;overflow-y:auto"></div>'
+        +'</div>';
+      fg.appendChild(mvOv);
+      mvOv.addEventListener('click', function(e){ if(e.target===mvOv) closeRecentMoves(); });
+      _bbMakeDraggable(mvOv.querySelector('.bb-overlay-card'), mvOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-settings-overlay')){
       var setOv=document.createElement('div');
@@ -2451,6 +2592,7 @@
         var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
         if(c){
           var wasCol=c.col;
+          var _bbMoveBefore=_bbSnapshotCard(c);
           c.col=zone.getAttribute('data-col');
           // July 22, 2026: dropping a card into one of the 3 Do columns
           // sets its priority to match (coarse -- H DO/M DO/L DO), same
@@ -2530,6 +2672,7 @@
           if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
           _bbStampDateEscalationHandled(c);
           _bbSaveLocal(_bbCardsList());
+          _bbLogCardMove(c, _bbMoveBefore);
         }
         renderBoard();
       });
@@ -3168,6 +3311,7 @@
         btn.addEventListener('click', function(){
           var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
           if(!c) return;
+          var _bbMoveBefore=_bbSnapshotCard(c);
           var base=btn.getAttribute('data-pri-base');
           c.priority=_bbNextPriority(c.priority||'', base);
           // July 22, 2026: keep the card in the Do column matching its
@@ -3178,6 +3322,7 @@
           if(_bbIsDoCol(c.col)){ c.col=_bbDoColKey(c.priority); _bbResortDoColumnByPriority(c.col); }
           _bbStampDateEscalationHandled(c);
           _bbSaveLocal(_bbCardsList());
+          _bbLogCardMove(c, _bbMoveBefore);
           _bbHighlightPriority(c.priority);
           renderBoard();
         });
@@ -3567,6 +3712,8 @@
     T().wire('bb-trash-no', closeTrashConfirm);
     wireTrashIcon();
     wireRecentlyDeleted();
+    wireRecentMoves();
+    T().wire('bb-moves', openRecentMoves);
     wireTopicBar();
   }
 
