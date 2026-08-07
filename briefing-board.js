@@ -32,13 +32,11 @@
                                 Lists the library to pick from, Remove
                                 (if the slot's filled), or Build a new
                                 key (drops into 9390, slot-aware).
-     9396  bb-linkpicker-overlay  Add a Link -- Aug 3 2026. Search +
-                                pick an existing Storyboard idea/header
-                                or another Briefing Card to link this
-                                card to (briefing_card_links). Separate
-                                from Unhooking Ideas (which creates a
-                                NEW Header, doesn't link to one that
-                                already exists).
+     9396  (retired)          was Add a Link / Linked Items -- built
+                                Aug 3 2026, removed Aug 7 2026 per
+                                Larry: dropped the whole Linked Items
+                                field from the Briefing Card. Number
+                                held in reserve like 9380/9390.
      9397  bb-keylibmanager-overlay  Custom Keys -- Aug 3 2026. View,
                                 edit (pencil), or delete (trash) any key
                                 in the shared custom_keys library.
@@ -519,26 +517,14 @@
   var _bbMembersCache = [];
   var _bbTeamCache = [];
   var _bbChecklistCache = [];
-  // Linked Items, Aug 3 2026. _bbLinksCache: the open card's own links,
-  // resolved to a displayable label ({linkId, kind:'storyboard'|'card',
-  // targetId, label, dead, drillId or boardId}). _bbLinkCountCache:
-  // cardId -> total link count, board-wide, for the card-face badge/glow
-  // (recomputed whenever the active board's cards load or the open
-  // card's links change -- see _bbLoadLinkCounts).
-  var _bbLinksCache = [];
-  var _bbLinkCountCache = {};
   // Per-key link counts, Aug 4 2026 -- Larry: "Links are Key related...
   // One key on a card might have 7 links; another only 3." Same shape
-  // as _bbLinkCountCache but keyed one level deeper: {cardId: {keyId: n}}.
+  // Keyed two levels deep: {cardId: {keyId: n}}.
   // A key's link count IS the number of other cards/ideas currently
   // sharing that exact key (that's what _bbSyncKeyLinks wires up one
   // edge per pair for), so this reads straight off the already-tagged
   // source='key' rows rather than recomputing anything.
   var _bbKeyLinkCountCache = {};
-  // Loaded once per Link picker open, then filtered client-side as the
-  // traveler types -- see openLinkPicker/_bbRenderLinkPickerResults.
-  var _bbLinkPickerStoryboardCache = null;
-  var _bbLinkPickerCardsCache = null;
   var _bbInitStarted = false;
 
   function _bbUUID(){
@@ -755,6 +741,82 @@
       });
     });
   }
+  // Small calendar popup for the date fields (Due date / Start date),
+  // Aug 7 2026 -- Larry: pick from a calendar instead of typing
+  // MM/DD/YYYY by hand, today's date should stand out. Reads/writes the
+  // same plain text input _bbParseDue already expects, so nothing else
+  // about how dates are stored or validated has to change -- this is
+  // just a faster way to fill in the same field. Built fresh rather
+  // than a native <input type="date"> so the look matches the rest of
+  // the card and MM/DD/YYYY without a year still works for hand-typing.
+  function _bbAttachDatePicker(inputId){
+    var input=document.getElementById(inputId); if(!input) return;
+    var pop=null, viewYear=0, viewMonth=0;
+    var MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    function onDocDown(e){
+      if(pop && e.target!==input && !pop.contains(e.target)) closePop();
+    }
+    function closePop(){
+      if(!pop) return;
+      pop.remove(); pop=null;
+      document.removeEventListener('mousedown', onDocDown, true);
+    }
+    function render(){
+      var now=new Date();
+      var selected=_bbParseDue(input.value);
+      var firstDow=new Date(viewYear, viewMonth, 1).getDay();
+      var daysInMonth=new Date(viewYear, viewMonth+1, 0).getDate();
+      var html='<div class="bb-dp-head">'
+        +'<button type="button" class="bb-dp-nav" data-dp-nav="-1" aria-label="Previous month">&#8249;</button>'
+        +'<span class="bb-dp-label">'+MONTH_NAMES[viewMonth]+' '+viewYear+'</span>'
+        +'<button type="button" class="bb-dp-nav" data-dp-nav="1" aria-label="Next month">&#8250;</button>'
+        +'</div><div class="bb-dp-grid">';
+      ['S','M','T','W','T','F','S'].forEach(function(d){ html+='<span class="bb-dp-dow">'+d+'</span>'; });
+      for(var i=0;i<firstDow;i++) html+='<span class="bb-dp-day bb-dp-blank"></span>';
+      for(var d=1; d<=daysInMonth; d++){
+        var isToday=(viewYear===now.getFullYear() && viewMonth===now.getMonth() && d===now.getDate());
+        var isSel=(selected && selected.getFullYear()===viewYear && selected.getMonth()===viewMonth && selected.getDate()===d);
+        html+='<button type="button" class="bb-dp-day'+(isToday?' bb-dp-today':'')+(isSel?' bb-dp-selected':'')+'" data-dp-day="'+d+'">'+d+'</button>';
+      }
+      html+='</div>';
+      pop.innerHTML=html;
+      pop.querySelectorAll('[data-dp-nav]').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.stopPropagation();
+          viewMonth+=parseInt(btn.getAttribute('data-dp-nav'),10);
+          if(viewMonth<0){ viewMonth=11; viewYear--; } else if(viewMonth>11){ viewMonth=0; viewYear++; }
+          render();
+        });
+      });
+      pop.querySelectorAll('[data-dp-day]').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.stopPropagation();
+          input.value=(viewMonth+1)+'/'+btn.getAttribute('data-dp-day')+'/'+viewYear;
+          closePop();
+          input.focus();
+        });
+      });
+    }
+    function openPop(){
+      if(pop) return;
+      var base=_bbParseDue(input.value)||new Date();
+      viewYear=base.getFullYear(); viewMonth=base.getMonth();
+      pop=document.createElement('div');
+      pop.className='bb-datepicker-pop';
+      document.body.appendChild(pop);
+      var r=input.getBoundingClientRect();
+      pop.style.left=r.left+'px';
+      pop.style.top=(r.bottom+4)+'px';
+      render();
+      setTimeout(function(){ document.addEventListener('mousedown', onDocDown, true); }, 0);
+    }
+    input.addEventListener('click', openPop);
+    input.addEventListener('focus', openPop);
+  }
+  function wireDatePickers(){
+    _bbAttachDatePicker('bb-d-due');
+    _bbAttachDatePicker('bb-d-start');
+  }
   function wireChecklist(){
     T().wire('bb-d-checklist-add-btn', function(){
       var input=document.getElementById('bb-d-checklist-new');
@@ -767,230 +829,10 @@
     });
   }
 
-  // ============================================================
-  // LINKED ITEMS, Aug 3 2026 -- Larry: "A link in the precomputer days
-  // was colored yarn which literally connected cards with a line. The
-  // literal line is not necessary but a card [links] with several other
-  // items. The more links, the more key the item is." One edge per row
-  // in briefing_card_links (Supabase): target_type='storyboard' points
-  // at an Idea Storyboard idea/header (ideas.id); target_type='card'
-  // points at another Briefing Card, on any board. Card-to-card edges
-  // are undirected -- one row serves both cards, read from whichever
-  // side (card_id or target_card_id) isn't the card asking.
-  // ============================================================
-
-  // Resolves a Storyboard row to whatever it should mean to jump to --
-  // a Header/Subber is itself a real destination (currentTopicId can
-  // drill straight into it), but a plain idea/note/image/link card
-  // isn't drillable on its own, only its parent Header is. Mirrors the
-  // same "only Headers are real destinations" rule Unhooking Ideas
-  // already relies on (see _bbUnhookIdeas above).
-  function _bbStoryboardDrillTarget(row){
-    if(!row) return null;
-    if(row.content_type==='header') return row.id;
-    return row.cluster_id || row.id;
-  }
-
-  async function _bbLoadLinksForCard(cardId){
-    var sb=T().sb;
-    if(!sb){ if(_bbOpenCardId===cardId){ _bbLinksCache=[]; _bbRenderLinks(); } return; }
-    try{
-      var res=await sb.from('briefing_card_links').select('*').or('card_id.eq.'+cardId+',target_card_id.eq.'+cardId);
-      if(res.error) throw res.error;
-      var rows=res.data||[];
-      var entries=rows.map(function(r){
-        var base={linkId:r.id, source:r.source||'manual', viaKeyId:r.via_key_id||null};
-        if(r.target_type==='storyboard'){
-          return Object.assign(base, {kind:'storyboard', targetId:r.target_idea_id});
-        }
-        var otherCardId=(String(r.card_id)===String(cardId)) ? r.target_card_id : r.card_id;
-        return Object.assign(base, {kind:'card', targetId:otherCardId});
-      });
-      var ideaIds=entries.filter(function(e){ return e.kind==='storyboard'; }).map(function(e){ return e.targetId; });
-      var cardIds=entries.filter(function(e){ return e.kind==='card'; }).map(function(e){ return e.targetId; });
-      // Key-sourced entries (Aug 3 2026, "place same symbol on cards and
-      // they automatically link") also need the key's own meaning, so
-      // the Linked Items row can say WHY the connection exists.
-      var keyIds=entries.filter(function(e){ return e.source==='key' && e.viaKeyId; }).map(function(e){ return e.viaKeyId; });
-      var ideaMap={}, cardMap={}, keyMap={};
-      if(ideaIds.length){
-        var ir=await sb.from('ideas').select('id,text_content,content_type,cluster_id').in('id', ideaIds);
-        (ir.data||[]).forEach(function(row){ ideaMap[row.id]=row; });
-      }
-      if(cardIds.length){
-        var cr=await sb.from('briefing_cards').select('id,task,board_id').in('id', cardIds);
-        (cr.data||[]).forEach(function(row){ cardMap[row.id]=row; });
-      }
-      if(keyIds.length){
-        var kr=await sb.from('custom_keys').select('id,meaning').in('id', keyIds);
-        (kr.data||[]).forEach(function(row){ keyMap[row.id]=row; });
-      }
-      entries.forEach(function(e){
-        if(e.kind==='storyboard'){
-          var irow=ideaMap[e.targetId];
-          e.label=irow ? (irow.text_content || (irow.content_type==='header' ? '(untitled header)' : '(untitled idea)')) : '(deleted item)';
-          e.dead=!irow;
-          e.drillId=irow ? _bbStoryboardDrillTarget(irow) : null;
-        } else {
-          var crow=cardMap[e.targetId];
-          e.label=crow ? (crow.task || '(untitled card)') : '(deleted card)';
-          e.dead=!crow;
-          e.boardId=crow ? crow.board_id : null;
-        }
-        if(e.source==='key'){
-          var krow=keyMap[e.viaKeyId];
-          e.viaKeyMeaning=krow ? (krow.meaning||'') : '';
-        }
-      });
-      if(_bbOpenCardId===cardId){ _bbLinksCache=entries; _bbRenderLinks(); }
-    }catch(e){
-      console.error('Briefing Board: could not load links', e);
-      if(_bbOpenCardId===cardId){ _bbLinksCache=[]; _bbRenderLinks(); }
-    }
-  }
-
-  function _bbRenderLinks(){
-    var list=document.getElementById('bb-d-links-list'); if(!list) return;
-    if(!_bbLinksCache.length){
-      list.innerHTML='<div class="bb-links-empty">No linked items yet.</div>';
-      return;
-    }
-    list.innerHTML=_bbLinksCache.map(function(e){
-      var icon=e.kind==='storyboard' ? '🧭' : '📋';
-      var label=_esc(e.label);
-      // Key-sourced links (Aug 3 2026) show WHY they exist and can't be
-      // individually removed -- the key is the source of truth, remove
-      // the key from either item (or delete the key outright) to remove
-      // the connection, same as a real shared piece of yarn only comes
-      // untied at the pin, not by snipping the middle.
-      if(e.source==='key'){
-        return '<div class="bb-link-row'+(e.dead?' bb-link-dead':'')+'">'
-          +'<span class="bb-link-go" data-go="'+_esc(e.linkId)+'">'+icon+' '+label+'</span>'
-          +'<span style="font-size:10px;color:var(--bb-sub);white-space:nowrap" title="Linked automatically because both share this key">&#128273; '+_esc(e.viaKeyMeaning||'')+'</span>'
-          +'</div>';
-      }
-      return '<div class="bb-link-row'+(e.dead?' bb-link-dead':'')+'">'
-        +'<span class="bb-link-go" data-go="'+_esc(e.linkId)+'">'+icon+' '+label+'</span>'
-        +'<button class="bb-link-remove" data-id="'+_esc(e.linkId)+'" title="Remove link">&#10005;</button>'
-        +'</div>';
-    }).join('');
-    list.querySelectorAll('.bb-link-go').forEach(function(el){
-      el.addEventListener('click', function(){
-        var id=el.getAttribute('data-go');
-        var entry=_bbLinksCache.filter(function(x){ return x.linkId===id; })[0];
-        if(entry) _bbGoToLink(entry);
-      });
-    });
-    list.querySelectorAll('.bb-link-remove').forEach(function(btn){
-      btn.addEventListener('click', async function(){
-        var id=btn.getAttribute('data-id');
-        var sb=T().sb;
-        try{ if(sb) await sb.from('briefing_card_links').delete().eq('id', id); }
-        catch(e){ console.error('Briefing Board: could not remove link', e); }
-        _bbLinksCache=_bbLinksCache.filter(function(x){ return x.linkId!==id; });
-        _bbRenderLinks();
-      });
-    });
-  }
-
-  // Jump to a linked item. Storyboard: same return-override pattern as
-  // Unhooking Ideas, so the Storyboard's own X comes straight back to
-  // this exact card instead of falling out to the backpack. Card:
-  // switches boards first if the linked card lives on a different one
-  // (it's still "your" corkboard, just a different board) then opens it.
-  // Toast + glow, Aug 4 2026 -- Larry: "I thought the card switched but
-  // it was not obvious. What would shout that we are on a different
-  // card?" A link jump that lands back on the same overlay (card ->
-  // card) swaps content in place with no visible cue that anything
-  // moved. Same toast language already used elsewhere in the app
-  // (screen-zero.js's showZeroToast) for "something just happened,
-  // read this" moments, reskinned to Briefing Board's own palette --
-  // plus a brief glow on the card that just opened so the eye finds it
-  // fast, no reading required.
-  function _bbShowToast(msg){
-    var existing=document.getElementById('bb-toast'); if(existing) existing.remove();
-    var toast=document.createElement('div');
-    toast.id='bb-toast';
-    toast.textContent=msg;
-    toast.style.cssText=[
-      'position:fixed','bottom:20px','left:20px',
-      'background:rgba(59,37,16,0.92)','color:#C9A87C',
-      'font-family:"Playfair Display",serif','font-size:13px','font-weight:700',
-      'letter-spacing:0.5px','padding:10px 18px','border-radius:20px',
-      'max-width:260px','text-align:left',
-      'box-shadow:0 4px 16px rgba(0,0,0,0.35)','z-index:10000',
-      'pointer-events:none','opacity:0','transition:opacity 0.2s'
-    ].join(';');
-    document.body.appendChild(toast);
-    requestAnimationFrame(function(){
-      toast.style.opacity='1';
-      setTimeout(function(){
-        toast.style.opacity='0';
-        setTimeout(function(){ toast.remove(); }, 220);
-      }, 2000);
-    });
-  }
-  function _bbGlowOpenCard(){
-    var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
-    if(!card) return;
-    card.classList.remove('bb-just-arrived');
-    void card.offsetWidth; // restart the animation if it's already mid-glow
-    card.classList.add('bb-just-arrived');
-    setTimeout(function(){ card.classList.remove('bb-just-arrived'); }, 1400);
-  }
-  function _bbGoToLink(entry){
-    if(entry.dead){ window.alert('That linked item no longer exists.'); return; }
-    if(entry.kind==='storyboard'){
-      if(!entry.drillId) return;
-      if(window.T2TShared){ window.T2TShared.currentTopicId=entry.drillId; window.T2TShared.filter=entry.drillId; }
-      var _bbReturnCardId=_bbOpenCardId;
-      if(T().markReturnOverride){
-        T().markReturnOverride(function(){ T().nav('s-briefing-board'); openCardDetail(_bbReturnCardId); });
-      }
-      _bbShowToast('Jumped to \u201c'+entry.label+'\u201d on the Storyboard');
-      closeCardDetail();
-      T().nav('s-sea-of-ideas-cluster');
-    } else if(entry.kind==='card'){
-      var targetCardId=entry.targetId, targetBoardId=entry.boardId;
-      var switchingBoard = targetBoardId && targetBoardId!==_bbCurrentBoardId;
-      closeCardDetail();
-      (async function(){
-        if(switchingBoard){
-          await _bbSwitchToBoard(targetBoardId);
-          var board=_bbBoards.filter(function(b){ return b.id===targetBoardId; })[0];
-          _bbShowToast('Switched to '+(board?board.name:'a different')+' board \u2014 \u201c'+entry.label+'\u201d');
-        } else {
-          _bbShowToast('Opened linked card \u2014 \u201c'+entry.label+'\u201d');
-        }
-        openCardDetail(targetCardId);
-        _bbGlowOpenCard();
-      })();
-    }
-  }
-
-  // Board-wide link counts, Aug 3 2026 -- powers the card-face badge and
-  // "more links, more key" glow for every card on the currently active
-  // board. Two queries instead of one GROUP BY: supabase-js's query
-  // builder has no aggregate/group-by, and this is small enough (a
-  // traveler's whole board, not the whole table) that two plain .in()
-  // selects plus a client-side tally is simpler than standing up a
-  // Postgres function just for this.
-  async function _bbLoadLinkCounts(cardIds){
-    _bbLinkCountCache={};
-    if(!cardIds || !cardIds.length) return;
-    var sb=T().sb; if(!sb) return;
-    try{
-      var r1=await sb.from('briefing_card_links').select('card_id').in('card_id', cardIds);
-      (r1.data||[]).forEach(function(row){ _bbLinkCountCache[row.card_id]=(_bbLinkCountCache[row.card_id]||0)+1; });
-      var r2=await sb.from('briefing_card_links').select('target_card_id').in('target_card_id', cardIds);
-      (r2.data||[]).forEach(function(row){ if(row.target_card_id) _bbLinkCountCache[row.target_card_id]=(_bbLinkCountCache[row.target_card_id]||0)+1; });
-    }catch(e){ console.error('Briefing Board: could not load link counts', e); }
-  }
-
-  // Companion to _bbLoadLinkCounts above -- same two-query-plus-tally
-  // shape, scoped to source='key' rows and split out by via_key_id so
-  // the card face can show "this key has N links" per key, not just
-  // one card-wide total.
+  // Two queries instead of one GROUP BY (supabase-js has no
+  // aggregate/group-by): scoped to source='key' rows, split out by
+  // via_key_id so the card face can show "this key has N links" per
+  // key, not just one card-wide total.
   async function _bbLoadKeyLinkCounts(cardIds){
     _bbKeyLinkCountCache={};
     if(!cardIds || !cardIds.length) return;
@@ -1094,116 +936,6 @@
       if(toDeleteIds.length) await sb.from('briefing_card_links').delete().in('id', toDeleteIds);
     }catch(e){ console.error('Briefing Board: could not sync key-driven links', e); }
   }
-
-  async function _bbCreateLink(targetType, targetIdeaId, targetCardId){
-    if(!_bbOpenCardId) return;
-    var sb=T().sb;
-    if(!sb){ window.alert('Could not add the link: your sign-in session appears to have expired. Please refresh the page and sign in again.'); return; }
-    try{
-      var row={card_id:_bbOpenCardId, target_type:targetType, target_idea_id:targetIdeaId||null, target_card_id:targetCardId||null};
-      var ins=await sb.from('briefing_card_links').insert(row).select().single();
-      if(ins.error){
-        console.error('Briefing Board: could not create link', ins.error);
-        window.alert('Could not add that link. Error: '+(ins.error.message||'unknown error')+'. Nothing was saved -- please try again.');
-        return;
-      }
-      closeLinkPicker();
-      await _bbLoadLinksForCard(_bbOpenCardId);
-    }catch(e){
-      console.error('Briefing Board: could not create link', e);
-      window.alert('Could not add that link. Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again.');
-    }
-  }
-
-  // ---- Link picker (9396) ----
-
-  async function openLinkPicker(){
-    if(!_bbOpenCardId) return;
-    var ov=document.getElementById('bb-linkpicker-overlay'); if(!ov) return;
-    var search=document.getElementById('bb-linkpicker-search'); if(search) search.value='';
-    ov.classList.add('active');
-    _bbRenderLinkPickerResults('');
-    var sb=T().sb;
-    if(sb){
-      try{
-        var uid=await _bbCurrentUserId();
-        if(uid){
-          var ir=await sb.from('ideas').select('id,text_content,content_type,cluster_id').eq('user_id', uid).order('created_at',{ascending:false}).limit(500);
-          _bbLinkPickerStoryboardCache=(ir.data||[]).filter(function(row){ return row.content_type==='header' || (row.text_content && row.text_content.trim()); });
-          // RLS on briefing_cards already scopes SELECT to this
-          // traveler's own boards (own cards - select policy joins
-          // through board_id -> briefing_boards.user_id), so a plain
-          // select needs no extra filter here -- matches every other
-          // query in this file, none of which use an embedded/!inner
-          // join. Board names come from _bbBoards, already loaded for
-          // the TYPE/NAME pickers and covering every board regardless
-          // of type.
-          var cr=await sb.from('briefing_cards').select('id,task,board_id').order('created_at',{ascending:false}).limit(500);
-          var boardNameById={};
-          _bbBoards.forEach(function(b){ boardNameById[b.id]=b.name||'Untitled Board'; });
-          _bbLinkPickerCardsCache=(cr.data||[]).filter(function(row){ return row.id!==_bbOpenCardId && row.task && row.task.trim(); }).map(function(row){
-            return {id:row.id, task:row.task, board_id:row.board_id, boardName:boardNameById[row.board_id]||'Untitled Board'};
-          });
-        }
-      }catch(e){ console.error('Briefing Board: could not load link picker candidates', e); }
-      _bbRenderLinkPickerResults(search?search.value:'');
-    }
-  }
-
-  function closeLinkPicker(){
-    var ov=document.getElementById('bb-linkpicker-overlay'); if(ov) ov.classList.remove('active');
-  }
-
-  function _bbRenderLinkPickerResults(query){
-    var box=document.getElementById('bb-linkpicker-results'); if(!box) return;
-    var q=(query||'').trim().toLowerCase();
-    var storyboardItems=_bbLinkPickerStoryboardCache||[];
-    var cardItems=_bbLinkPickerCardsCache||[];
-    var alreadyLinkedIdea={}, alreadyLinkedCard={};
-    _bbLinksCache.forEach(function(e){
-      if(e.kind==='storyboard') alreadyLinkedIdea[e.targetId]=true;
-      else alreadyLinkedCard[e.targetId]=true;
-    });
-    var sMatches=storyboardItems.filter(function(row){
-      if(alreadyLinkedIdea[row.id]) return false;
-      var label=row.text_content||'';
-      return !q || label.toLowerCase().indexOf(q)!==-1;
-    }).slice(0,40);
-    var cMatches=cardItems.filter(function(row){
-      if(alreadyLinkedCard[row.id]) return false;
-      return !q || row.task.toLowerCase().indexOf(q)!==-1;
-    }).slice(0,40);
-    if(!_bbLinkPickerStoryboardCache && !_bbLinkPickerCardsCache){
-      box.innerHTML='<div class="bb-linkpicker-empty">Loading…</div>';
-      return;
-    }
-    if(!sMatches.length && !cMatches.length){
-      box.innerHTML='<div class="bb-linkpicker-empty">'+(q?'No matches.':'Nothing to link yet.')+'</div>';
-      return;
-    }
-    var html='';
-    sMatches.forEach(function(row){
-      var label=row.text_content || (row.content_type==='header' ? '(untitled header)' : '(untitled idea)');
-      html+='<div class="bb-linkpicker-item" data-storyboard="'+_esc(row.id)+'"><span class="bb-linkpicker-tag">'+(row.content_type==='header'?'Header':'Idea')+'</span><span>'+_esc(label)+'</span></div>';
-    });
-    cMatches.forEach(function(row){
-      html+='<div class="bb-linkpicker-item" data-card="'+_esc(row.id)+'"><span class="bb-linkpicker-tag">'+_esc(row.boardName)+'</span><span>'+_esc(row.task)+'</span></div>';
-    });
-    box.innerHTML=html;
-    box.querySelectorAll('[data-storyboard]').forEach(function(el){
-      el.addEventListener('click', function(){ _bbCreateLink('storyboard', el.getAttribute('data-storyboard'), null); });
-    });
-    box.querySelectorAll('[data-card]').forEach(function(el){
-      el.addEventListener('click', function(){ _bbCreateLink('card', null, el.getAttribute('data-card')); });
-    });
-  }
-
-  function wireLinks(){
-    T().wire('bb-linkpicker-close', closeLinkPicker);
-    var search=document.getElementById('bb-linkpicker-search');
-    if(search) search.addEventListener('input', function(){ _bbRenderLinkPickerResults(search.value); });
-  }
-
   // Browsable Archive, added July 21, 2026 (evening) -- Touch Point 9380,
   // held in reserve since the original Custom Keys work. Verified-
   // complete cards never left storage, just the board's 4 columns --
@@ -1358,7 +1090,7 @@
           if(remappedKeys.length) _bbKeyLibCache=_bbKeyLibCache.concat(remappedKeys);
           _bbRenderTypePicker();
           _bbRenderBoardPicker();
-          await Promise.all([_bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; })), _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }))]);
+          await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
           return;
         }catch(e){ console.error('Briefing Board: legacy migration failed', e); }
@@ -1368,7 +1100,7 @@
     _bbCards = cardRows.length ? cardRows.map(_bbRowToCard) : _bbSeed();
     _bbRenderTypePicker();
     _bbRenderBoardPicker();
-    await Promise.all([_bbLoadLinkCounts(_bbCards.map(function(c){ return c.id; })), _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }))]);
+    await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     renderBoard();
   }
 
@@ -1954,15 +1686,6 @@
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
-      // "More links, more key," Aug 3 2026 (Larry) -- a card's shadow
-      // gets a layered, stacked look as its link count climbs, same
-      // visual language the Storyboard already uses for "this thing has
-      // more behind it" (.sc-pill.has-children in idea-storyboard-9710.js).
-      // 1-2 links: a thin gold outline. 3+: a bolder outline plus a
-      // second offset shadow layer, so a well-connected card visibly
-      // stands out from the pile without needing to open it.
-      +'.bb-card.bb-has-links{box-shadow:1px 2px 4px rgba(59,37,16,0.18),0 0 0 1px rgba(201,168,124,.65)}'
-      +'.bb-card.bb-many-links{box-shadow:2px 3px 6px rgba(59,37,16,0.28),0 0 0 2px rgba(201,168,124,.9),4px 5px 0 rgba(201,168,124,.22)}'
       +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
       +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
       +'.bb-pri-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
@@ -2005,6 +1728,7 @@
       +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:16px;color:var(--bb-sub)}'
       +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
+      +'#bb-d-task{font-family:var(--bb-body-font);font-style:normal;font-size:14px;color:#000}'
       +'#bb-d-notes{font-family:var(--bb-body-font)!important;font-style:normal;font-size:14px!important;min-height:160px}'
       +'#bb-new-task{font-family:var(--bb-body-font)!important;font-style:normal;font-size:15px!important}'
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
@@ -2036,21 +1760,7 @@
       +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
       +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
       +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
-      // Linked Items, Aug 3 2026 -- same row/remove-button shape as the
-      // Checklist just above (bb-checklist-row/remove), so the two
-      // "small list living inside a field" patterns on this card read
-      // as one family.
-      +'.bb-link-row{display:flex;align-items:center;gap:6px;padding:4px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
-      +'.bb-link-row:last-child{border-bottom:none}'
-      +'.bb-link-go{flex:1;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(59,37,16,.25);text-underline-offset:2px}'
-      +'.bb-link-go:hover{color:#6b4a2e}'
-      +'.bb-link-dead .bb-link-go{color:var(--bb-sub);font-style:italic;text-decoration:none;cursor:default}'
-      +'.bb-link-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
       +'.bb-links-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:2px 0}'
-      +'.bb-linkpicker-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;margin-bottom:6px;cursor:pointer;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);background:#fff}'
-      +'.bb-linkpicker-item:hover{background:var(--bb-bg)}'
-      +'.bb-linkpicker-tag{flex-shrink:0;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--bb-sub)}'
-      +'.bb-linkpicker-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:8px 0}'
       // Key Library manager (9397), Aug 3 2026 -- same row shape as
       // Linked Items/Checklist just above, pencil then trash per row.
       +'.bb-keylib-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
@@ -2076,11 +1786,6 @@
       +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
       +'.bb-overlay.active{display:flex}'
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
-      // Landed-here glow, Aug 4 2026 -- fires once when a link jump opens
-      // a card into this same overlay, so a content swap that would
-      // otherwise be silent gets one visible pulse to catch the eye.
-      +'@keyframes bb-arrive-pulse{0%{box-shadow:0 10px 30px rgba(59,37,16,0.35),0 0 0 0 rgba(201,168,124,0.9)}70%{box-shadow:0 10px 30px rgba(59,37,16,0.35),0 0 0 14px rgba(201,168,124,0)}100%{box-shadow:0 10px 30px rgba(59,37,16,0.35),0 0 0 0 rgba(201,168,124,0)}}'
-      +'.bb-overlay-card.bb-just-arrived{animation:bb-arrive-pulse 1.4s ease-out}'
       +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
@@ -2097,6 +1802,18 @@
       +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
       +'.bb-date-row input.bb-date-time{width:60px;flex:none;min-width:0}'
       +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:12px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-datepicker-pop{position:fixed;z-index:10001;width:220px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-family:var(--bb-body-font)}'
+      +'.bb-dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}'
+      +'.bb-dp-label{font-size:12px;font-weight:700;color:var(--bb-ink)}'
+      +'.bb-dp-nav{background:none;border:none;font-size:16px;line-height:1;cursor:pointer;color:var(--bb-ink);padding:0 6px}'
+      +'.bb-dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}'
+      +'.bb-dp-dow{font-size:9px;text-align:center;color:var(--bb-sub);font-weight:700;padding:2px 0}'
+      +'.bb-dp-day{background:none;border:none;font-size:12px;padding:5px 0;text-align:center;cursor:pointer;border-radius:4px;color:var(--bb-ink)}'
+      +'.bb-dp-day:hover{background:var(--bb-bg)}'
+      +'.bb-dp-day.bb-dp-blank{cursor:default}'
+      +'.bb-dp-day.bb-dp-blank:hover{background:none}'
+      +'.bb-dp-day.bb-dp-today{border:1.5px solid var(--bb-accent);font-weight:700}'
+      +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:11px;line-height:1}'
       +'.bb-team-row{display:flex;gap:6px;align-items:center;padding:4px 0}'
@@ -2169,6 +1886,7 @@
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-routine-toggle" id="bb-d-routine-toggle" title="Routine card" aria-label="Toggle routine">🔄</button><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
+            +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -2177,19 +1895,7 @@
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
-            +'<div class="bb-field"><label>Custom Keys</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
-            // Linked Items, Aug 3 2026 -- Larry: "A link in the
-            // precomputer days was colored yarn which literally
-            // connected cards with a line ... a card [links] with
-            // several other items. The more links, the more key the
-            // item is." A card can link to an existing Storyboard idea
-            // or header, or to another Briefing Card (any board) --
-            // see briefing_card_links (Supabase) and openLinkPicker
-            // below. Separate from Hang-Ups' own Unhooking Ideas button
-            // above, which is untouched -- that one auto-creates a NEW
-            // Header; this links to something that already exists.
-            +'<div class="bb-field"><label>Linked Items</label><div id="bb-d-links-list"></div></div>'
-            +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
+            +'<div class="bb-field"><label>Signal Flags</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
             +'<div class="bb-field"><label>Due date</label><div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><select id="bb-d-routine" class="bb-routine-select"><option value="">Routine</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select></div><input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none"></div>'
@@ -2430,28 +2136,6 @@
       kpOv.addEventListener('click', function(e){ if(e.target===kpOv) closeKeyPicker(); });
       _bbMakeDraggable(kpOv.querySelector('.bb-overlay-card'), kpOv.querySelector('.bb-overlay-head'));
     }
-    // Link picker (9396 -- next free number after 9395's Choose a Key),
-    // Aug 3 2026. Loads the traveler's own Storyboard items and other
-    // Briefing Cards once per open, then filters client-side as they
-    // type -- both lists are small enough (low hundreds at most) that a
-    // live search-as-you-type call to Supabase on every keystroke would
-    // just be slower for no real benefit.
-    if(!document.getElementById('bb-linkpicker-overlay')){
-      var lpOv=document.createElement('div');
-      lpOv.id='bb-linkpicker-overlay'; lpOv.className='bb-overlay';
-      lpOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Link</span><button class="bb-close" id="bb-linkpicker-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-field"><input type="text" id="bb-linkpicker-search" placeholder="Search Storyboard ideas, headers, and Briefing Cards..."></div>'
-            +'<div class="bb-field" id="bb-linkpicker-results"></div>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(lpOv);
-      lpOv.addEventListener('click', function(e){ if(e.target===lpOv) closeLinkPicker(); });
-      _bbMakeDraggable(lpOv.querySelector('.bb-overlay-card'), lpOv.querySelector('.bb-overlay-head'));
-    }
-
     T().registerPageNum('s-briefing-board', '9350');
     T().registerUtilScreen('s-briefing-board');
     T().registerCtx('s-briefing-board', 'Briefing Board');
@@ -2514,12 +2198,7 @@
       });
       colCards.forEach(function(c){
         var el=document.createElement('div');
-        // Aug 3 2026, "more links, more key" -- bb-has-links (1-2) /
-        // bb-many-links (3+) scale the card's own shadow, see the CSS
-        // above. Count comes from _bbLinkCountCache, refreshed whenever
-        // a board loads or a card's links change (see _bbLoadLinkCounts).
-        var linkCount=_bbLinkCountCache[c.id]||0;
-        el.className='bb-card'+(linkCount>=3?' bb-many-links':(linkCount>=1?' bb-has-links':''));
+        el.className='bb-card';
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
@@ -2754,9 +2433,6 @@
     var clInput=document.getElementById('bb-d-checklist-new'); if(clInput) clInput.value='';
     _bbRenderChecklist();
     _bbLoadChecklistForCard(id);
-    _bbLinksCache=[];
-    _bbRenderLinks();
-    _bbLoadLinksForCard(id);
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -2781,10 +2457,11 @@
     }
     _bbOpenCardId=null;
     var ov=document.getElementById('bb-detail-overlay'); if(ov) ov.classList.remove('active');
-    // Refresh link counts before redrawing -- the card that was just
-    // open may have gotten (or lost) links, and the board-face badge/
-    // glow needs to reflect that the moment you're back looking at it.
-    Promise.all([_bbLoadLinkCounts(_bbCardsList().map(function(c){ return c.id; })), _bbLoadKeyLinkCounts(_bbCardsList().map(function(c){ return c.id; }))]).then(renderBoard);
+    var openDp=document.querySelector('.bb-datepicker-pop'); if(openDp) openDp.remove();
+    // Refresh per-key link counts before redrawing -- the card that was
+    // just open may have gained or lost a Signal Flag, and the board-
+    // face badge needs to reflect that the moment you're back looking.
+    _bbLoadKeyLinkCounts(_bbCardsList().map(function(c){ return c.id; })).then(renderBoard);
   }
 
   function openTrashConfirm(id){
@@ -3033,8 +2710,7 @@
     // the key's holders.
     await _bbPersistCardKeysNow(c);
     await _bbSyncKeyLinks(keyId);
-    if(_bbOpenCardId===c.id) await _bbLoadLinksForCard(c.id);
-    await Promise.all([_bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; })), _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }))]);
+    await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
     renderBoard();
   }
   async function removeKeyFromSlot(){
@@ -3051,8 +2727,7 @@
     renderBoard();
     await _bbPersistCardKeysNow(c);
     if(removedKeyId) await _bbSyncKeyLinks(removedKeyId);
-    if(_bbOpenCardId===c.id) await _bbLoadLinksForCard(c.id);
-    await Promise.all([_bbLoadLinkCounts(_bbCardsList().map(function(x){ return x.id; })), _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }))]);
+    await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
     renderBoard();
   }
 
@@ -3623,11 +3298,6 @@
     var cardId = (row && row.card_id) || (oldRow && oldRow.card_id);
     if (cardId && cardId === _bbOpenCardId) _bbLoadChecklistForCard(cardId);
   }
-  function _bbApplyRemoteLinks(evt, row, oldRow){
-    var cardId = (row && row.card_id) || (oldRow && oldRow.card_id);
-    var targetCardId = (row && row.target_card_id) || (oldRow && oldRow.target_card_id);
-    if (_bbOpenCardId && (cardId === _bbOpenCardId || targetCardId === _bbOpenCardId)) _bbLoadLinksForCard(_bbOpenCardId);
-  }
   function _bbApplyRemoteKey(evt, row, oldRow){
     if (!_bbKeyLibraryLoaded) return; // library not fetched in this tab yet -- nothing cached to patch
     if (evt === 'DELETE') {
@@ -3705,7 +3375,7 @@
     wireKeyLibManager();
     wireSharingManager();
     wireChecklist();
-    wireLinks();
+    wireDatePickers();
 
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
@@ -3721,7 +3391,6 @@
     if (T().onRealtimeChange) {
       T().onRealtimeChange('briefing_cards', _bbApplyRemoteCard);
       T().onRealtimeChange('briefing_checklist_items', _bbApplyRemoteChecklist);
-      T().onRealtimeChange('briefing_card_links', _bbApplyRemoteLinks);
       T().onRealtimeChange('custom_keys', _bbApplyRemoteKey);
     }
   });
