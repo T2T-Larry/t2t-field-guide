@@ -1566,10 +1566,23 @@
     var input=document.getElementById('sb-addheader-input');
     if(input) setTimeout(function(){ input.focus(); }, 50);
     T().wire('sb-addheader-cancel', closeSbDetail);
-    T().wire('sb-addheader-go', async function(){
+    // Aug 7 2026 -- Larry filed two DOING cards after using this screen:
+    // ENTER should act as Create, and Create/Save felt like it "did
+    // nothing" and only Cancel actually closed the screen. Root cause of
+    // the second one, confirmed live: there was no keydown handler at
+    // all (so ENTER truly did nothing), and Create gave no immediate
+    // feedback while the save round-tripped to the database -- a slow
+    // moment looked identical to a broken button, so Larry closed it
+    // himself before the save had a chance to land. Fix: ENTER now
+    // triggers the same Create path, and the button visibly goes into a
+    // "Saving..." state (and can't be double-clicked) the instant it's
+    // pressed, so there's always something to see happening.
+    var goBtn=document.getElementById('sb-addheader-go');
+    async function _sbAddHeaderGo(){
       var errEl=document.getElementById('sb-addheader-err');
       var name=((input&&input.value)||'').trim();
       if(!name){ if(errEl) errEl.textContent='Name can\'t be empty.'; return; }
+      if(goBtn){ goBtn.disabled=true; goBtn.textContent='Saving...'; }
       var _sb=T().sb;
       try{
         var user=(await _sb.auth.getUser()).data.user;
@@ -1581,7 +1594,12 @@
         _sboardVerifyAdded(ins.data&&ins.data.id, 'Your new header "'+name+'"');
       }catch(err){
         if(errEl) errEl.textContent=err.message;
+        if(goBtn){ goBtn.disabled=false; goBtn.textContent='Create'; }
       }
+    }
+    T().wire('sb-addheader-go', _sbAddHeaderGo);
+    if(input) input.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ e.preventDefault(); _sbAddHeaderGo(); }
     });
   }
 
@@ -3304,12 +3322,20 @@
 
     T().wire('sb-hdr-newh', function(){
       document.getElementById('sb-newheader-row').style.display='block';
+      var nhInput=document.getElementById('sb-newheader-input');
+      if(nhInput) setTimeout(function(){ nhInput.focus(); }, 50);
     });
     T().wire('sb-hdr-othertopic', openMoveToTopicPicker);
     T().wire('sb-hdr-otherproj', openMoveToProjectPicker);
-    T().wire('sb-newheader-go', async function(){
+    // Aug 7 2026 -- same ENTER + no-feedback-on-Save fix as the standalone
+    // New Header prompt above (_sboardOpenAddHeaderPrompt), applied here
+    // too since this is the other place a header gets created and Larry's
+    // two DOING cards didn't say which screen he'd hit it on.
+    var newHeaderGoBtn=document.getElementById('sb-newheader-go');
+    async function _sbNewHeaderGo(){
       var name=(document.getElementById('sb-newheader-input')||{}).value||'';
       name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
+      if(newHeaderGoBtn){ newHeaderGoBtn.disabled=true; newHeaderGoBtn.textContent='Saving...'; }
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
@@ -3321,8 +3347,18 @@
         item.cluster_id=ins.data.id;
         closeSbDetail();
         renderSeaBoard();
-      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-    });
+      }catch(err){
+        if(statusBox) statusBox.textContent=err.message;
+        if(newHeaderGoBtn){ newHeaderGoBtn.disabled=false; newHeaderGoBtn.textContent='Create & move here'; }
+      }
+    }
+    T().wire('sb-newheader-go', _sbNewHeaderGo);
+    (function(){
+      var nhInput=document.getElementById('sb-newheader-input');
+      if(nhInput) nhInput.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); _sbNewHeaderGo(); }
+      });
+    })();
 
     // Text editing (auto-promotes to header if punctuation says so)
     var textDisplay=document.getElementById('sb-text-display');
