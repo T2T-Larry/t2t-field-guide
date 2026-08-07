@@ -252,7 +252,7 @@
         // the current state, click drops down the one other option. Light-
         // card colors here instead of that control's dark-band ones, to sit
         // right on DETAILS's own cream background.
-        +'.sb-view-wrap{display:inline-block;text-align:left}'
+        +'.sb-view-wrap{display:inline-block;text-align:center;position:relative}'
         +'.sb-view-frame{background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;font-family:\'Playfair Display\',serif;cursor:pointer}'
         +'.sb-view-frame:active{transform:scale(0.96)}'
         +'.sb-view-menu{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.22);padding:4px;display:none;z-index:20;white-space:nowrap}'
@@ -306,11 +306,15 @@
            grouped directly below Content. */
         +'.sb-details-card{width:min(380px,90vw);border-radius:0;border-top:6px solid #5b9bd5;box-shadow:0 10px 30px rgba(0,0,0,0.18);position:relative}'
         +'.sb-details-card::after{content:\'\';position:absolute;top:6px;right:0;width:0;height:0;border-style:solid;border-width:0 16px 16px 0;border-color:transparent #e4ddc9 transparent transparent}'
-        +'.sb-loc-row{display:flex;align-items:center;gap:10px;background:#fff;border:0.5px solid #B4B2A9;border-radius:10px;padding:8px 10px;margin-bottom:10px}'
-        +'.sb-loc-crumbs{flex:1;min-width:0;font-size:12px;color:#5F5E5A;text-align:left}'
-        +'.sb-loc-crumbs .cur{color:#2C2C2A;font-weight:700}'
-        +'.sb-move-btn{font-size:11px;padding:6px 14px;background:#2C2C2A;color:#fff;border:none;border-radius:20px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;flex-shrink:0}'
-        +'.sb-move-btn:active{transform:scale(0.96)}'
+        // TOP ROW (PARENT/VIEW/ORDER) + SIGNAL FLAGS, Aug 7 2026 -- replaces
+        // the old .sb-loc-row/.sb-loc-crumbs/.sb-move-btn (Current Location
+        // breadcrumb + its own MOVE button), which are retired.
+        +'.sb-eyebrow-row{display:flex;gap:8px;margin-bottom:10px}'
+        +'.sb-eyebrow-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}'
+        +'.sb-eyebrow-col .sb-hdr-eyebrow2{text-align:center}'
+        +'.sb-flag-add-btn{flex-shrink:0;width:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:14px;font-weight:700;cursor:pointer;opacity:.85;transition:opacity .15s,background .15s}'
+        +'.sb-flag-add-btn:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
+        +'.sb-flag-add-btn:active{transform:scale(0.95)}'
         +'.sb-below-content-row{display:flex;gap:6px;margin:6px 0 8px}'
         +'.sb-notes-pill{font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A;font-family:inherit}'
         +'.sb-notes-pill.active{background:#EEECE4}'
@@ -3077,28 +3081,28 @@
       curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
     }
 
-    // Current Location — read-only, styled like the Content/Title field
-    // headers. Repositioning happens only through the single MOVE button,
-    // which reveals the panel below (same header/topic/project pickers
-    // that used to sit always-partly-visible on the card).
-    var currentLocationHTML='<div class="sb-hdr-eyebrow2">Current Location</div>'
-      + '<div class="sb-loc-row">'
-      + '<div class="sb-loc-crumbs">'+parentLabelCrumb+' &rsaquo; '+topicLabel+' &rsaquo; <span class="cur">'+curHeaderLabel+'</span></div>'
-      + '<button class="sb-move-btn" id="sb-move-btn">MOVE</button>'
-      + '</div>';
-
-    // VIEW -- Header/Subber toggle, Aug 7 2026 (Larry): same interaction as
-    // the board's own VIEW control (top-right of 1010's header band) --
-    // shows only the current state, click reveals the one other option.
-    // Replaces the old one-way "Make this a Header" 🏷️ button (which only
-    // ever appeared for non-header items) with one control that works both
-    // directions, on every card. Demoting a Header that's still actively
-    // holding content (isBucket) is blocked -- move its cards out first,
-    // same "don't silently orphan things" reasoning Trash/lock guards use
-    // elsewhere in this file.
+    // TOP ROW -- PARENT / VIEW / ORDER, Aug 7 2026 (Larry). Replaces the
+    // old "Current Location" breadcrumb (Parent Project > Topic > Header)
+    // plus its separate MOVE button, and pulls the ORDER # up from down
+    // by Notes -- three compact eyebrow+field columns in one row instead,
+    // matching the board's own PROJECT/PARENT/VIEW header chrome.
+    //
+    // PARENT shows just the immediate parent Header (curHeaderLabel) --
+    // the one piece of the old breadcrumb that actually matters for
+    // "where does this live" at a glance. Tapping it reveals the same
+    // move-to-header panel the old MOVE button did (headerListHTML right
+    // below, untouched -- id="sb-move-btn" just moved onto this field).
+    //
+    // VIEW is the Header/Subber toggle added earlier today.
+    //
+    // ORDER, not RANK -- Larry asked which reads better. Keeping ORDER:
+    // this is a plain sequence position ("3 of 8"), not a priority score,
+    // and it matches the ORDER # badges already used everywhere else on
+    // the board (_sboardOrderBadgeHTML) and in this file's own comments.
+    // RANK would suggest importance, which isn't what this number means.
     var viewOtherLabel = isHeaderType ? 'Subber' : 'Header';
     var viewSwitchDisabled = isHeaderType && isBucket;
-    var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap" style="position:relative;margin-bottom:10px">'
+    var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap">'
       + '<div class="sb-hdr-eyebrow2">View</div>'
       + '<button class="sb-view-frame" id="sb-view-btn" type="button">'+(isHeaderType?'Header':'Subber')+'</button>'
       + '<div class="sb-view-menu" id="sb-view-menu">'
@@ -3106,18 +3110,7 @@
       + '</div>'
       + '</div>';
 
-    // ORDER # — Larry, Aug 3 2026, second pass: "What if every card has
-    // an ORDER #, small, no bigger that Notes field." Replaces the
-    // earlier full-width eyebrow version with a small pill matching
-    // .sb-notes-pill's own size, living in the below-content-row instead
-    // -- same small badge every card already shows out on the board
-    // (_sboardOrderBadgeHTML), just repeated here for confirmation while
-    // the card's open. Headers read the REAL order (includes Purpose/
-    // NEW/MISC now, not just content headers) from _sboardTopLevelOrder;
-    // Subbers and plain ideas read their own vertical top-to-bottom order
-    // the same way the on-card badge does. Never affected by the
-    // alphabetical view toggle -- that's the whole point.
-    var orderPillHTML='';
+    var orderValueText='—';
     (function(){
       function findIdx(list){
         for(var i=0;i<list.length;i++){ if(String(list[i])===String(item.id)) return i; }
@@ -3129,10 +3122,20 @@
       } else if(item.cluster_id && _sboardCardOrderByParent[item.cluster_id]){
         list=_sboardCardOrderByParent[item.cluster_id]; idx=findIdx(list);
       }
-      if(list && idx!==-1){
-        orderPillHTML='<span class="sb-notes-pill" style="cursor:default" title="Order #">🔢 '+(idx+1)+' of '+list.length+'</span>';
-      }
+      if(list && idx!==-1){ orderValueText=(idx+1)+' of '+list.length; }
     })();
+
+    var topRowHTML='<div class="sb-eyebrow-row">'
+      + '<div class="sb-eyebrow-col">'
+      + '<div class="sb-hdr-eyebrow2">Parent</div>'
+      + '<button class="sb-view-frame" id="sb-move-btn" type="button">'+curHeaderLabel+'</button>'
+      + '</div>'
+      + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
+      + '<div class="sb-eyebrow-col">'
+      + '<div class="sb-hdr-eyebrow2">Order</div>'
+      + '<div class="sb-view-frame" style="cursor:default" title="Order #">🔢 '+orderValueText+'</div>'
+      + '</div>'
+      + '</div>';
 
     var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
@@ -3180,25 +3183,30 @@
       + '</div>'
       + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
-      + currentLocationHTML
-      + viewWidgetHTML
+      + topRowHTML
       + headerListHTML
       + bodyHTML
       + '<div class="sb-below-content-row">'
+      + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️ Notes</button>'
+      + '</div>'
+      // SIGNAL FLAGS, Aug 7 2026 (Larry): the red heart and Custom Keys
+      // used to live in two separate, unlabeled rows (heart next to
+      // Notes/Order up top, Keys in its own row below) -- now one row
+      // under one eyebrow. Heart renders first and isn't part of the
+      // picker (it's the one fixed, "non-choice" flag every card gets,
+      // tap to add / hold to remove, same as always); any custom flags
+      // follow, then the add control -- switched from the "🔑 +" pill to
+      // a plain classic (+), same dashed-circle look the board's own
+      // [+] add-a-card tiles already use everywhere else. Populated by
+      // _sboardRenderKeyRow right after this HTML lands (needs the real
+      // DOM node to attach click handlers to). Headers and Subbers get
+      // this same row too -- only the heart stays content-cards-only.
+      + '<div class="sb-hdr-eyebrow2">Signal Flags</div>'
+      + '<div class="sb-below-content-row" id="sb-flags-row">'
       + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
       + '<span style="color:#D4537E;font-size:13px">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
-      + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️ Notes</button>'
-      + orderPillHTML
+      + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
       + '</div>'
-      // Keys row, Aug 3 2026 -- Larry: "This option could be in every
-      // gear? Anywhere a traveler makes a note or adds an idea." Own row
-      // below heart/notes/order so it doesn't crowd them -- populated by
-      // _sboardRenderKeyRow right after this HTML lands (needs the real
-      // DOM node to attach click handlers to). Widened to every card
-      // type same day, Larry: "every card, maybe like a briefing card on
-      // the back of the card." Headers and Subbers get this same row now
-      // too -- only the red heart stays content-cards-only.
-      + '<div class="sb-below-content-row" id="sb-keys-row"></div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
@@ -3641,7 +3649,11 @@
         +'<span style="display:inline-block;width:12px;height:12px;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span></button>';
     }
     if(keys.length<MAX_KEYS_PER_CARD){
-      html += '<button class="sb-notes-pill sb-key-slot-btn" data-slot="'+keys.length+'" title="Add a key">🔑 +</button>';
+      // Classic (+), Aug 7 2026 (Larry) -- swapped out the "🔑 +" pill for
+      // the same dashed-circle plus every other [+] add control on the
+      // board already uses (see .sc-add-subber-tile), just sized to sit
+      // level with the heart pill and flag badges in this row.
+      html += '<button class="sb-flag-add-btn sb-key-slot-btn" data-slot="'+keys.length+'" title="Add a flag">+</button>';
     }
     row.innerHTML = html;
     row.querySelectorAll('.sb-key-slot-btn').forEach(function(btn){
