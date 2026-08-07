@@ -360,6 +360,7 @@
   var _bbCards = null;
   var _bbOpenCardId = null;
   var _bbTrashPendingId = null;
+  var _bbAddStatusTimer = null;
 
   // Supabase-backed multi-board state, added July 21, 2026 (evening).
   var _bbCurrentBoardId = null;
@@ -1992,10 +1993,16 @@
           +'<div class="bbw">'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
             +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
+            +'<div id="bb-add-status" style="font-size:11px;color:#5a7a3a;min-height:14px;margin-top:4px;text-align:center"></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(addOv);
-      addOv.addEventListener('click', function(e){ if(e.target===addOv) closeAddCard(); });
+      // Aug 7 2026 -- Larry: ENTER pinning the card was right, but it was
+      // also closing this screen, and it should only close with the X.
+      // Dropped the click-outside-the-card-to-close behavior here to
+      // match -- this overlay is meant to stay open through several
+      // quick adds in a row, same as the Storyboard's New Header prompt
+      // never auto-closed either.
       _bbMakeDraggable(addOv.querySelector('.bb-overlay-card'), addOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-detail-overlay')){
@@ -3371,8 +3378,18 @@
       // controls. No sense asking twice.
       cards.push({id:_bbUUID(), col:'new', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
       _bbSaveLocal(cards);
-      closeAddCard();
       renderBoard();
+      // Aug 7 2026 -- Larry: pinning shouldn't close this screen, only
+      // the X should. Clear the field and keep it open (and focused) so
+      // several cards can be pinned back to back, with a quiet "Pinned"
+      // flash standing in for the feedback the old auto-close used to give.
+      if(t){ t.value=''; t.focus(); }
+      var statusEl=document.getElementById('bb-add-status');
+      if(statusEl){
+        statusEl.textContent='Pinned ✓';
+        clearTimeout(_bbAddStatusTimer);
+        _bbAddStatusTimer=setTimeout(function(){ statusEl.textContent=''; }, 1500);
+      }
     }
     T().wire('b-bb-save-card', _bbSaveNewCard);
     (function(){
