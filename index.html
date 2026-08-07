@@ -876,8 +876,10 @@
         // actual fresh sign-in (typing a password, or the reset
         // shortcut's manual re-auth) -- see b-signin's own handler
         // below, untouched.
+      } else {
+        T.nav('s-signin', false);
       }
-    }catch(e){ console.error('Session resume failed', e); }
+    }catch(e){ console.error('Session resume failed', e); T.nav('s-signin', false); }
   })();
 
   T.wire('si-pw-toggle', function(){
@@ -1099,9 +1101,10 @@
         if(res.error){btn.textContent='Set Password';btn.disabled=false;alert(res.error.message);}
         else{alert('Password updated! Please sign in.');T.nav('s-signin',false);}
       });
-    } else {
-      T.nav('s-signin',false);
     }
+    // No recovery link -- nothing to do here now. _resumeSession above
+    // (async, session-aware) is the only thing that decides whether a
+    // plain load lands on Sign In or resumes straight past it.
   })();
 
 })();
