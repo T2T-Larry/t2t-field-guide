@@ -1199,7 +1199,6 @@
   }
 
   function wireLinks(){
-    T().wire('bb-d-add-link', openLinkPicker);
     T().wire('bb-linkpicker-close', closeLinkPicker);
     var search=document.getElementById('bb-linkpicker-search');
     if(search) search.addEventListener('input', function(){ _bbRenderLinkPickerResults(search.value); });
@@ -2189,7 +2188,7 @@
             // below. Separate from Hang-Ups' own Unhooking Ideas button
             // above, which is untouched -- that one auto-creates a NEW
             // Header; this links to something that already exists.
-            +'<div class="bb-field"><label>Linked Items</label><div id="bb-d-links-list"></div><button class="jb" id="bb-d-add-link" type="button" style="width:100%;margin-bottom:0">&#129525; Add a link</button></div>'
+            +'<div class="bb-field"><label>Linked Items</label><div id="bb-d-links-list"></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
