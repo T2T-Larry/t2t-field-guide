@@ -246,6 +246,21 @@
         +'.sb-crumb-sep{font-size:10px;color:#cfc3ae}'
         +'.sb-crumb-topic{font-size:16px;color:#1a3a5c;font-weight:700;font-family:\'Playfair Display\',serif}'
         +'.sb-hdr-eyebrow2{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#5F5E5A;margin-bottom:3px;text-align:left}'
+        // VIEW widget, Aug 7 2026 -- Header/Subber toggle on every card's
+        // own DETAILS, same look/interaction as the board's own VIEW control
+        // (sc-hdr-frame/sc-hdr-viewmenu up in the header band): shows only
+        // the current state, click drops down the one other option. Light-
+        // card colors here instead of that control's dark-band ones, to sit
+        // right on DETAILS's own cream background.
+        +'.sb-view-wrap{display:inline-block;text-align:left}'
+        +'.sb-view-frame{background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;font-family:\'Playfair Display\',serif;cursor:pointer}'
+        +'.sb-view-frame:active{transform:scale(0.96)}'
+        +'.sb-view-menu{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.22);padding:4px;display:none;z-index:20;white-space:nowrap}'
+        +'.sb-view-menu.open{display:block}'
+        +'.sb-view-menu-item{font-family:\'Playfair Display\',serif;font-size:11px;font-weight:700;color:#1a3a5c;padding:6px 12px;border-radius:6px;cursor:pointer}'
+        +'.sb-view-menu-item:hover{background:#eaf3fb}'
+        +'.sb-view-menu-item.disabled{color:#c4c0b8;cursor:default}'
+        +'.sb-view-menu-item.disabled:hover{background:transparent}'
         +'.sb-hdr-vlist{display:flex;flex-direction:column;gap:3px;max-height:112px;overflow-y:auto;margin-bottom:10px;border:0.5px solid #D3D1C7;border-radius:8px;padding:6px;flex-shrink:0;background:#fff}'
         +'.sb-hdr-vitem{padding:6px 10px;border-radius:8px;font-size:12px;text-align:left;cursor:pointer;color:#2C2C2A;background:transparent}'
         +'.sb-hdr-vitem.current{background:#F5F1E8;font-weight:700}'
@@ -3072,6 +3087,25 @@
       + '<button class="sb-move-btn" id="sb-move-btn">MOVE</button>'
       + '</div>';
 
+    // VIEW -- Header/Subber toggle, Aug 7 2026 (Larry): same interaction as
+    // the board's own VIEW control (top-right of 1010's header band) --
+    // shows only the current state, click reveals the one other option.
+    // Replaces the old one-way "Make this a Header" 🏷️ button (which only
+    // ever appeared for non-header items) with one control that works both
+    // directions, on every card. Demoting a Header that's still actively
+    // holding content (isBucket) is blocked -- move its cards out first,
+    // same "don't silently orphan things" reasoning Trash/lock guards use
+    // elsewhere in this file.
+    var viewOtherLabel = isHeaderType ? 'Subber' : 'Header';
+    var viewSwitchDisabled = isHeaderType && isBucket;
+    var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap" style="position:relative;margin-bottom:10px">'
+      + '<div class="sb-hdr-eyebrow2">View</div>'
+      + '<button class="sb-view-frame" id="sb-view-btn" type="button">'+(isHeaderType?'Header':'Subber')+'</button>'
+      + '<div class="sb-view-menu" id="sb-view-menu">'
+      + '<div class="sb-view-menu-item'+(viewSwitchDisabled?' disabled':'')+'" id="sb-view-switch"'+(viewSwitchDisabled?' title="Move its cards out first"':'')+'>Switch to '+viewOtherLabel+'</div>'
+      + '</div>'
+      + '</div>';
+
     // ORDER # — Larry, Aug 3 2026, second pass: "What if every card has
     // an ORDER #, small, no bigger that Notes field." Replaces the
     // earlier full-width eyebrow version with a small pill matching
@@ -3147,6 +3181,7 @@
       + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
       + currentLocationHTML
+      + viewWidgetHTML
       + headerListHTML
       + bodyHTML
       + '<div class="sb-below-content-row">'
@@ -3172,7 +3207,6 @@
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
-      + (isHeaderType?'':'<button class="sb-blue-btn" id="sb-make-header" title="Make this a Header">🏷️</button>')
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
@@ -3222,16 +3256,30 @@
       if(panel) panel.style.display=(panel.style.display==='none')?'block':'none';
     });
 
-    // MAKE HEADER, Aug 7, 2026 (Larry) — same promotion the drag-a-card-
-    // onto-another-card path already does (_sboardStackIntoHeader sets
-    // content_type:'header'), just reachable as an explicit button here
-    // on DETAILS instead of only by dragging. Button only renders for
-    // non-header items (see isHeaderType above), so no guard needed here.
-    T().wire('sb-make-header', async function(){
+    // VIEW -- Header/Subber toggle, Aug 7 2026 (Larry) -- replaces the old
+    // one-way MAKE HEADER button above with a two-way control matching the
+    // board's own VIEW pattern: tap the frame to reveal the one other
+    // state, tap it to switch. Promoting (Subber -> Header) is the same
+    // promotion the drag-a-card-onto-another-card path already does
+    // (_sboardStackIntoHeader sets content_type:'header'). Demoting
+    // (Header -> Subber) reverses it -- picks back up as an image card if
+    // it still has an image_url (i.e. was promoted from one), plain text
+    // otherwise, since the original type isn't separately stored. Blocked
+    // via viewSwitchDisabled (menu item greyed out, click no-ops) whenever
+    // the header is still actively holding content -- move it out first,
+    // so demoting can never silently orphan anything.
+    T().wire('sb-view-btn', function(e){
+      e.stopPropagation();
+      var m=document.getElementById('sb-view-menu');
+      if(m) m.classList.toggle('open');
+    });
+    T().wire('sb-view-switch', async function(){
+      if(viewSwitchDisabled) return;
+      var newType = isHeaderType ? (item.image_url ? 'image' : 'text') : 'header';
       try{
-        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',item.id).select();
+        var upd=await _sb.from('ideas').update({content_type:newType}).eq('id',item.id).select();
         if(upd.error) throw upd.error;
-        item.content_type='header';
+        item.content_type=newType;
         closeSbDetail();
         renderSeaBoard();
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
