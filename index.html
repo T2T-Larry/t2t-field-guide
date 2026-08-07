@@ -50,6 +50,14 @@
 .si-link:hover{text-decoration:underline}
 .si-remember{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;font-size:12px;color:#9FE1CB;letter-spacing:1px;cursor:pointer;user-select:none;-webkit-user-select:none}
 .si-remember input{width:14px;height:14px;cursor:pointer;accent-color:var(--brand-gold,#C9A87C)}
+/* Boot-wait gate, Aug 7 2026 (Larry: hard refresh was showing Sign In
+   for a beat before landing back on the real screen) -- nothing in
+   .fg is visible at all until _resumeSession below has actually
+   decided what to show, so there's nothing left to flash regardless
+   of how long a hard refresh takes to get through the session check.
+   visibility (not display) so layout/measurement code elsewhere that
+   runs during this window still sees real sizes. */
+body.t2t-boot-wait .fg{visibility:hidden}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260804a"></script>
@@ -69,7 +77,7 @@
 <script src="screen-fit.js?v=20260803b"></script>
 <script src="bookmarks.js?v=20260803a"></script>
 </head>
-<body>
+<body class="t2t-boot-wait">
 <div class="fg" id="fg-root">
 
 <!-- PASSWORD RESET -->
@@ -839,6 +847,21 @@
   // because nothing ever checked for one -- the app just always started
   // on s-signin. Supabase already persists the session on its own; this
   // just asks before defaulting to the sign-in screen.
+  // Boot-wait reveal, Aug 7 2026 -- pairs with body.t2t-boot-wait above.
+  // Whatever happens in _resumeSession below (found a session, found
+  // none, or hit an error), this is the one place that un-hides the
+  // page, so there's exactly one spot to reason about instead of a
+  // reveal call scattered into every branch. The safety-net timeout
+  // matches the same 5-second failsafe pattern the travel spinner
+  // already uses elsewhere in this app -- can't ever get stuck hidden.
+  var _t2tBootRevealed=false;
+  function _t2tRevealBoot(){
+    if(_t2tBootRevealed) return;
+    _t2tBootRevealed=true;
+    document.body.classList.remove('t2t-boot-wait');
+  }
+  setTimeout(_t2tRevealBoot, 5000);
+
   (async function _resumeSession(){
     try{
       var res = await _sb.auth.getSession();
@@ -862,7 +885,12 @@
         // there's nothing to return to.
         var curNum = null;
         try{ curNum = localStorage.getItem('bpCurrentScreenNum'); }catch(e){}
-        if(curNum){ T.navToPageNum(curNum); }
+        // Awaited now (Aug 7 2026) -- navToPageNum can fall through to a
+        // cross-file Supabase lookup before it ever calls nav(); without
+        // waiting for that, the page would reveal itself a beat early,
+        // with nothing landed yet, which is its own version of the same
+        // flash this whole gate exists to prevent.
+        if(curNum){ await T.navToPageNum(curNum); }
         else{ T.resumeToLastPageOr('s-cover'); }
         // Larry, July 31 2026: sign-in should always LAND on the
         // blank, closed desk -- drawers collapsed, Field Guide the
@@ -877,7 +905,12 @@
         // shortcut's manual re-auth) -- see b-signin's own handler
         // below, untouched.
       }
+      // No session found -- this function has never called nav('s-signin')
+      // itself (whatever puts a logged-out visitor on Sign In happens
+      // elsewhere/already, untouched by this gate), so there's nothing
+      // more to wait for here beyond the getSession() check itself.
     }catch(e){ console.error('Session resume failed', e); }
+    finally{ _t2tRevealBoot(); }
   })();
 
   T.wire('si-pw-toggle', function(){
