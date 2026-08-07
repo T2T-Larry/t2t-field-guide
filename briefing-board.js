@@ -274,6 +274,22 @@
     if(_bbDoFamily(currentPriority)===fam) return currentPriority;
     return _bbDoColBasePriority[colKey];
   }
+  // Aug 7 2026 -- Larry moved a card to MH at the top of the M column,
+  // and on the very next render _bbAutoEscalateDates silently knocked it
+  // back down to H/do-h -- the card had an arrived Start Date that had
+  // never triggered the one-time date nudge yet, so the nudge fired for
+  // the first time right on top of Larry's own fresh manual placement,
+  // undoing it without any visible sign of what happened. The July 23
+  // startEscalatedFor/dueEscalatedFor fields already stop the nudge from
+  // firing a SECOND time once it's fired once -- this closes the gap for
+  // the FIRST time: any manual priority/column decision (drag-drop or
+  // the H/M/L buttons) stamps the card's current dates as already
+  // handled, so a coincidentally-arrived date can't immediately override
+  // a choice the traveler just made.
+  function _bbStampDateEscalationHandled(c){
+    if(c.startDate) c.startEscalatedFor=c.startDate;
+    if(c.due) c.dueEscalatedFor=c.due;
+  }
 
   var THEMES = [
     {key:'gold',   label:'Gold',   bg:'#FDF6E8', accent:'#C9A87C', ink:'#3B2510', sub:'#7A5C3A'},
@@ -424,10 +440,10 @@
     try{ var r=sessionStorage.getItem('bbCards'); return r?JSON.parse(r):null; }
     catch(e){ return null; }
   }
-  function _bbSaveLocal(cards){
+  function _bbSaveLocal(cards, deletedIds){
     _bbCards = cards;
     try{ sessionStorage.setItem('bbCards', JSON.stringify(cards)); }catch(e){}
-    _bbSyncCardsToSupabase(cards);
+    _bbSyncCardsToSupabase(cards, deletedIds);
   }
   function _bbSeed(){
     return [
@@ -493,7 +509,8 @@
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
-      start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor)
+      start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
+      trashed_at: c.trashedAt || null
     };
   }
   function _bbRowToCard(row){
@@ -508,14 +525,28 @@
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
-      startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for)
+      startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
+      trashedAt: row.trashed_at || null
     };
   }
   function _bbSafeIdList(rows){
     return rows.map(function(r){ return String(r.id).replace(/[^a-zA-Z0-9-]/g,''); });
   }
 
-  async function _bbSyncCardsToSupabase(cards){
+  // Aug 7 2026 -- Larry: "We need a safety net for potential errors."
+  // This used to upsert the given cards, THEN delete anything on the
+  // board that wasn't in that same list -- meant to propagate local
+  // deletions, but it meant ANY save from a list that was momentarily
+  // incomplete (a stale tab, a card another tab/session had just added
+  // that hadn't made it into this tab's in-memory list yet) would wipe
+  // out real cards from Supabase with no warning and no way back. Now
+  // that Trash is a soft delete (trashedAt, see doTrashCard) and the
+  // only place a card is ever meant to leave _bbCards entirely is an
+  // explicit "Delete Forever" in Recently Deleted, this function only
+  // ever upserts -- deletion is opt-in per call via deletedIds, never
+  // an automatic side effect of what happens to be missing from the
+  // list at save time.
+  async function _bbSyncCardsToSupabase(cards, deletedIds){
     if(!_bbCurrentBoardId) return;
     var sb=T().sb; if(!sb) return;
     try{
@@ -523,9 +554,9 @@
       if(rows.length){
         var res=await sb.from('briefing_cards').upsert(rows);
         if(res.error) throw res.error;
-        await sb.from('briefing_cards').delete().eq('board_id', _bbCurrentBoardId).not('id','in','('+_bbSafeIdList(rows).join(',')+')');
-      } else {
-        await sb.from('briefing_cards').delete().eq('board_id', _bbCurrentBoardId);
+      }
+      if(deletedIds && deletedIds.length){
+        await sb.from('briefing_cards').delete().in('id', _bbSafeIdList(deletedIds.map(function(id){ return {id:id}; })));
       }
     }catch(e){ console.error('Briefing Board: Supabase card sync failed', e); }
   }
@@ -1166,6 +1197,12 @@
       var cRes=await sb.from('briefing_cards').select('*').eq('board_id',boardId).order('created_at',{ascending:true});
       if(!cRes.error) cardRows=cRes.data||[];
     }catch(e){ console.error('Briefing Board: could not load board data', e); }
+    // Aug 7 2026 -- sweep anything past the 30-day trash retention
+    // window every time the board loads. Fire-and-forget: doesn't block
+    // showing the board, and cards already fetched into cardRows this
+    // load are unaffected either way (a card purged mid-session just
+    // won't come back next reload).
+    _bbPurgeOldTrash(boardId);
     _bbLoadMembers();
 
     // One-time migration, July 21, 2026 (evening): the first time Field
@@ -2055,7 +2092,15 @@
       trashOv.innerHTML=
          '<div class="bb-overlay-card" style="width:280px;text-align:center">'
           +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#3B2510;margin-bottom:6px">Moose poop?</div>'
-          +'<div style="font-size:12px;color:#7A5C3A;font-style:italic;margin-bottom:14px">Off the board for good &mdash; this isn’t the same as Done.</div>'
+          // Aug 7 2026 -- Larry: "We need a safety net for potential
+          // errors." Trash used to delete the row from Supabase
+          // outright, no undo -- now it's a real recoverable trash
+          // (trashed_at column), kept 30 days before it's auto-purged,
+          // with a Recently Deleted list (open by clicking the trash
+          // can itself, not dragging to it) to restore from in the
+          // meantime. Wording updated to match -- this is no longer a
+          // "for good" action.
+          +'<div style="font-size:12px;color:#7A5C3A;font-style:italic;margin-bottom:14px">Off the board &mdash; kept for 30 days in case you change your mind.</div>'
           +'<div style="display:flex;gap:8px">'
             +'<button class="bb-flag-btn" id="bb-trash-yes" style="background:#a3372b;color:#fff;border-color:#a3372b">Yes</button>'
             +'<button class="bb-flag-btn" id="bb-trash-no">Keep it</button>'
@@ -2063,6 +2108,25 @@
         +'</div>';
       fg.appendChild(trashOv);
       trashOv.addEventListener('click', function(e){ if(e.target===trashOv) closeTrashConfirm(); });
+    }
+    // Recently Deleted (9365), Aug 7 2026 -- the other half of the
+    // safety net alongside trashed_at/doTrashCard below. Opened by a
+    // plain click on the trash can (drag-and-drop still goes through
+    // the Moose poop? confirm above) -- lists every card on this board
+    // with trashed_at set and not yet purged, newest first, each with
+    // Restore and a separate, harder-to-hit Delete Forever.
+    if(!document.getElementById('bb-recently-deleted-overlay')){
+      var rdOv=document.createElement('div');
+      rdOv.id='bb-recently-deleted-overlay'; rdOv.className='bb-overlay';
+      rdOv.innerHTML=
+         '<div class="bb-overlay-card" style="width:320px">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recently Deleted</span><button class="bb-close" id="bb-rd-close" aria-label="Close">✕</button></div>'
+          +'<div style="font-size:11px;color:#7A5C3A;font-style:italic;margin-bottom:10px">Kept for 30 days, then removed for good.</div>'
+          +'<div id="bb-rd-list" style="max-height:320px;overflow-y:auto"></div>'
+        +'</div>';
+      fg.appendChild(rdOv);
+      rdOv.addEventListener('click', function(e){ if(e.target===rdOv) closeRecentlyDeleted(); });
+      _bbMakeDraggable(rdOv.querySelector('.bb-overlay-card'), rdOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-settings-overlay')){
       var setOv=document.createElement('div');
@@ -2277,7 +2341,7 @@
     wrap.innerHTML='';
     var _keyLib=_bbLoadKeyLibrary();
     _bbAutoEscalateDates();
-    var cards=_bbCardsList().filter(function(c){ return !c.archived; });
+    var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
       col.className='bb-col';
@@ -2464,6 +2528,7 @@
             }
           }
           if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
+          _bbStampDateEscalationHandled(c);
           _bbSaveLocal(_bbCardsList());
         }
         renderBoard();
@@ -2590,13 +2655,95 @@
     var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
   }
 
+  // Aug 7 2026 -- Larry: "We need a safety net for potential errors."
+  // Trash used to filter the card out of _bbCards entirely and save --
+  // since _bbSyncCardsToSupabase prunes any row not in the saved list,
+  // that deleted it from the database outright, no undo, the instant
+  // the confirm was clicked. Now it just stamps trashedAt and keeps the
+  // card in _bbCards (so the prune step leaves it alone) -- renderBoard
+  // filters trashed cards out of the normal columns below, same way it
+  // already filters archived ones.
   function doTrashCard(){
     var id=_bbTrashPendingId;
-    _bbCards=_bbCardsList().filter(function(x){ return x.id!==id; });
-    _bbSaveLocal(_bbCards);
+    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
+    if(c) c.trashedAt=new Date().toISOString();
+    _bbSaveLocal(_bbCardsList());
     _bbTrashPendingId=null;
     var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
     renderBoard();
+  }
+
+  function openRecentlyDeleted(){
+    _bbRenderRecentlyDeleted();
+    var ov=document.getElementById('bb-recently-deleted-overlay');
+    if(ov) ov.classList.add('active');
+  }
+  function closeRecentlyDeleted(){
+    var ov=document.getElementById('bb-recently-deleted-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function _bbDaysAgo(iso){
+    var d=new Date(iso); if(isNaN(d.getTime())) return '';
+    var days=Math.floor((Date.now()-d.getTime())/86400000);
+    if(days<=0) return 'today';
+    if(days===1) return '1 day ago';
+    return days+' days ago';
+  }
+  function _bbRenderRecentlyDeleted(){
+    var wrap=document.getElementById('bb-rd-list'); if(!wrap) return;
+    var trashed=_bbCardsList().filter(function(c){ return c.trashedAt; })
+      .sort(function(a,b){ return new Date(b.trashedAt)-new Date(a.trashedAt); });
+    if(!trashed.length){
+      wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
+      return;
+    }
+    wrap.innerHTML=trashed.map(function(c){
+      return '<div class="bb-rd-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
+        +'<div style="font-size:13px;margin-bottom:2px">'+_esc(c.task||'(untitled)')+'</div>'
+        +'<div style="font-size:10px;color:#a3907a;margin-bottom:6px">Trashed '+_bbDaysAgo(c.trashedAt)+'</div>'
+        +'<div style="display:flex;gap:6px">'
+          +'<button class="bb-icon-btn" data-rd-restore="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:11px;padding:4px 8px">Restore</button>'
+          +'<button class="bb-icon-btn" data-rd-purge="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:11px;padding:4px 8px;color:#a3372b">Delete Forever</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+  function _bbRestoreTrashedCard(id){
+    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
+    if(!c) return;
+    c.trashedAt=null;
+    _bbSaveLocal(_bbCardsList());
+    _bbRenderRecentlyDeleted();
+    renderBoard();
+  }
+  function _bbPurgeTrashedCardForever(id){
+    _bbCards=_bbCardsList().filter(function(x){ return x.id!==id; });
+    _bbSaveLocal(_bbCards, [id]);
+    _bbRenderRecentlyDeleted();
+  }
+  function wireRecentlyDeleted(){
+    T().wire('bb-rd-close', closeRecentlyDeleted);
+    var wrap=document.getElementById('bb-rd-list'); if(!wrap) return;
+    wrap.addEventListener('click', function(e){
+      var restoreId=e.target.getAttribute && e.target.getAttribute('data-rd-restore');
+      var purgeId=e.target.getAttribute && e.target.getAttribute('data-rd-purge');
+      if(restoreId) _bbRestoreTrashedCard(restoreId);
+      if(purgeId){
+        if(window.confirm('Delete this for good? There\'s no getting it back after this.')) _bbPurgeTrashedCardForever(purgeId);
+      }
+    });
+  }
+  // Aug 7 2026 -- cards sitting in trashed_at longer than this get
+  // permanently removed the next time the board loads (see the purge
+  // call in the board-load function). A targeted delete scoped to
+  // trashed_at only -- never touches the risky whole-board prune in
+  // _bbSyncCardsToSupabase.
+  var BB_TRASH_RETENTION_DAYS = 30;
+  async function _bbPurgeOldTrash(boardId){
+    var sb=T().sb; if(!sb || !boardId) return;
+    try{
+      var cutoff=new Date(Date.now() - BB_TRASH_RETENTION_DAYS*86400000).toISOString();
+      await sb.from('briefing_cards').delete().eq('board_id', boardId).not('trashed_at','is',null).lt('trashed_at', cutoff);
+    }catch(e){ console.error('Briefing Board: trash auto-purge failed', e); }
   }
 
   function openSettings(){
@@ -2621,6 +2768,9 @@
       var id=e.dataTransfer.getData('text/plain');
       if(id) openTrashConfirm(id);
     });
+    // Aug 7 2026 -- plain click (not a drop) opens Recently Deleted,
+    // the restore side of the new safety net.
+    trash.addEventListener('click', openRecentlyDeleted);
   }
 
   // Custom Keys -- a shared library of up to 12 traveler-defined
@@ -3026,6 +3176,7 @@
           // still have its priority changed here without being yanked
           // back into Do).
           if(_bbIsDoCol(c.col)){ c.col=_bbDoColKey(c.priority); _bbResortDoColumnByPriority(c.col); }
+          _bbStampDateEscalationHandled(c);
           _bbSaveLocal(_bbCardsList());
           _bbHighlightPriority(c.priority);
           renderBoard();
@@ -3415,6 +3566,7 @@
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
     wireTrashIcon();
+    wireRecentlyDeleted();
     wireTopicBar();
   }
 
