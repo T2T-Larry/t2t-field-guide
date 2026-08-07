@@ -1915,7 +1915,13 @@
       var trashOv=document.createElement('div');
       trashOv.id='bb-trash-overlay'; trashOv.className='bb-overlay';
       trashOv.innerHTML=
-         '<div class="bb-overlay-card" style="width:280px;text-align:center">'
+         // Anchored just above the trash can (bottom:16/right:16, 44px
+         // tall) instead of the shared .bb-overlay center, Aug 7 2026
+         // per Larry -- position:fixed here overrides the overlay's
+         // flex centering since the card is explicitly positioned,
+         // no change needed to the shared .bb-overlay/.bb-overlay-card
+         // rules every other overlay still relies on.
+         '<div class="bb-overlay-card" style="width:280px;text-align:center;position:fixed;right:16px;bottom:76px;margin:0">'
           +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#3B2510;margin-bottom:6px">Moose poop?</div>'
           // Aug 7 2026 -- Larry: "We need a safety net for potential
           // errors." Trash used to delete the row from Supabase
