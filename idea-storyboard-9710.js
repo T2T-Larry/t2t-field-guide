@@ -1149,7 +1149,7 @@
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
     var goBack = backFn || function(){ _sboardProjectQuickMenu(boardRow); };
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Guests</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Guests</span><button class="sc-ov-btn" id="sb-share-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
       +'<div id="sb-share-list" style="text-align:left;margin-bottom:10px"></div>'
       +'<div id="sb-share-add-row" style="margin-bottom:10px">'
@@ -1159,7 +1159,6 @@
         +'</div>'
       +'</div>'
       +'<div id="sb-share-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'<button class="sc-ov-btn" id="sb-share-close" style="width:100%">Back</button>'
       +'</div>';
     ov.classList.add('active');
     _sboardRenderShareList(boardRow, isOwner);
@@ -3036,6 +3035,7 @@
     var projectRow=_sboardCurrentProjectRow();
     var ov=document.getElementById('sb-detail-overlay'); if(!ov || !projectRow) return;
     ov.innerHTML='<div class="sc-overlay-card sb-team-print" style="text-align:center;width:min(400px,92vw)">'
+      +'<div style="display:flex;justify-content:flex-end;margin-bottom:2px"><button class="sc-ov-btn" id="tm-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<input type="text" class="tm-groupname" id="tm-groupname" value="'+_esc9710(projectRow.text_content||'')+'">'
       +'<div id="tm-list-view"></div>'
       +'<div class="tm-addrow">'
@@ -3047,7 +3047,6 @@
         +'<button class="sc-ov-btn save" id="tm-add-confirm">Add</button>'
       +'</div>'
       +'<div id="tm-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
-      +'<button class="sc-ov-btn" id="tm-close" style="width:100%;margin-top:12px">\u2715</button>'
     +'</div>';
     ov.classList.add('active');
     _tmLoadRoster(projectRow).then(function(){ _tmRenderRoster(projectRow); });
@@ -3128,13 +3127,12 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Settings</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Settings</span><button class="sc-ov-btn" id="sb-gear-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-set-go-people" style="width:100%">&#128101; People</button>'
         +'<button class="sc-ov-btn" id="sb-set-go-appearance" style="width:100%">&#127912; Appearance</button>'
         +'<button class="sc-ov-btn" id="sb-set-go-preferences" style="width:100%">&#128295; Preferences</button>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-set-go-people', _sboardOpenPeopleMenu);
@@ -3146,12 +3144,11 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">People</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
         +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-people-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(); });
@@ -3164,13 +3161,12 @@
     var fsIcon=document.fullscreenElement?'\u21a9':'\u26f6';
     var fsLabel=document.fullscreenElement?'Exit full screen':'Full screen';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Appearance</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="sb-appearance-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
         +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-appearance-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
@@ -3185,13 +3181,12 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Preferences</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-preferences-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
