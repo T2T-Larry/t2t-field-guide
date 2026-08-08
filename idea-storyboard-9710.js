@@ -1027,7 +1027,7 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         closeSbDetail();
         _sboardDrillInto(ins.data);
@@ -1612,7 +1612,7 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:T2TShared.currentTopicId||null,created_at:new Date().toISOString()}).select().single();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:T2TShared.currentTopicId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         closeSbDetail();
         await renderSeaBoard();
@@ -2778,6 +2778,7 @@
         try{
           for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); }
         }catch(e){}
+        T().setDefaultHeaderColor(c);
         closeSbDetail();
         renderSeaBoard();
       };
@@ -2914,7 +2915,7 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
     _sboardPurposeId=ins.data.id;
     return _sboardPurposeId;
@@ -2937,7 +2938,7 @@
       if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
       return _sboardNewAdditionsId;
     }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
     return _sboardNewAdditionsId;
@@ -3431,7 +3432,7 @@
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
         var parentId=T2TShared.filter||null;
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString()}).select().single();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw new Error(ins.error.message);
         var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
         if(upd.error) throw upd.error;
@@ -4262,7 +4263,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString()}).select().single();
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
       if(ins.error) throw ins.error;
       var newHeaderId=ins.data.id;
       for(var i=0;i<allIds.length;i++){
@@ -4357,7 +4358,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString()});
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()});
       if(ins.error) throw ins.error;
     }catch(err){}
     renderClusterView(headerRow);

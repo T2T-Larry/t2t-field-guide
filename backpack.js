@@ -1333,6 +1333,22 @@
   // reads that instead, so closing means "back to the literal previous
   // screen," not a guess tied to the backpack's own bookkeeping. Falls
   // back to returnToMG() only if the stack is genuinely empty.
+  // Default header color for newly-created headers -- Larry, Aug 7 2026:
+  // "when all headers color is set, that is the default color for all new
+  // headers until changed by traveler." Recolor-all (9710's own board and
+  // 9711's per-Topic version) is the only place a color applies to every
+  // header at once, so that's the moment that sets this. Persisted in
+  // localStorage (not sessionStorage) since it's meant to survive across
+  // sessions until deliberately changed again, same durability class as
+  // t2t_lastActiveProjectId. Shared across every board/Topic -- one
+  // traveler-wide default, not scoped per-board.
+  function getDefaultHeaderColor(){
+    try{ return localStorage.getItem('t2t_defaultHeaderColor') || null; }catch(e){ return null; }
+  }
+  function setDefaultHeaderColor(c){
+    try{ if(c) localStorage.setItem('t2t_defaultHeaderColor', c); }catch(e){}
+  }
+
   function goBackStack(){
     // Skip past any 's-signin' entries -- never a real "go back"
     // destination once already signed in (see the push:false fix in
@@ -1391,7 +1407,8 @@
     setPhOpen:setPhOpen,
     getPageNumsReverse:function(){ return _pageNumsReverse; },
     resumeToLastPageOr:resumeToLastPageOr,
-    resetAndReturn:resetAndReturn
+    resetAndReturn:resetAndReturn,
+    getDefaultHeaderColor:getDefaultHeaderColor, setDefaultHeaderColor:setDefaultHeaderColor
   };
 
   document.addEventListener('DOMContentLoaded',function(){

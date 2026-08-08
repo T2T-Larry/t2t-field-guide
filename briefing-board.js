@@ -110,8 +110,12 @@
      (Hang-Ups red, flag colors, priority H-L gradient, heart red) stay
      fixed on purpose -- they carry meaning, a theme swap shouldn't
      change what "urgent" looks like.
-   - X (bb-close-x) closes the board straight to the MG; the MG-jump
-     icon (b-bb-mg) rides along next to gear/X in the same header row.
+   - X (bb-close-x) calls returnToMG(), which lands the traveler back on
+     whichever page they opened the board from (validated against the
+     DOM, Aug 4 fix), or Cover as the fallback -- not "the MG" itself,
+     since returnToMG() stopped reopening that overlay on July 29. The
+     MG-jump icon (b-bb-mg) rides along next to gear/X in the same
+     header row for whenever the traveler actually wants the MG.
      The board's own separate bottom bar2 (the old back-arrow/MG-jump
      pair) was dropped entirely July 20 -- Larry: it had become an
      obsolete second toolbar once the header row could do the same job,

@@ -622,7 +622,7 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
         T2TShared.isxPath=[{id:ins.data.id, text:ins.data.text_content}];
@@ -691,7 +691,7 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentEntry?parentEntry.id:null,created_at:new Date().toISOString()}).select().single();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentEntry?parentEntry.id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
         T2TShared.isxPath[T2TShared.isxPath.length-1]={id:ins.data.id, text:ins.data.text_content};
@@ -949,6 +949,7 @@
           try{
             for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); }
           }catch(e){}
+          T().setDefaultHeaderColor(c);
           T2TStoryboard.closeDetail();
           _isxRenderBoard();
         };
