@@ -1985,64 +1985,11 @@
       setOv.id='bb-settings-overlay'; setOv.className='bb-overlay';
       setOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
-          +'<div class="bb-settings-tabs">'
-            +'<button class="bb-settings-tab active" data-tab="people">&#128101; People</button>'
-            +'<button class="bb-settings-tab" data-tab="appearance">&#127912; Appearance</button>'
-            +'<button class="bb-settings-tab" data-tab="maintenance">&#128295; Maintenance</button>'
-          +'</div>'
-          +'<div class="bbw">'
-            +'<div class="bb-settings-pane" data-pane="people">'
-              +'<div class="bb-field" id="bb-team-roster-field">'
-                +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#127917; Cast</button>'
-              +'</div>'
-              +'<div class="bb-field" id="bb-sharing-field">'
-                +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#127915; Guests</button>'
-              +'</div>'
-            +'</div>'
-            +'<div class="bb-settings-pane" data-pane="appearance" style="display:none">'
-              +'<div class="bb-field"><label>Color theme</label><div class="bb-swatches">'
-                +THEMES.map(function(t){ return '<button class="bb-theme-swatch" data-theme="'+t.key+'" title="'+t.label+'" style="background:'+t.bg+';border-color:'+t.accent+'"></button>'; }).join('')
-              +'</div></div>'
-              +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
-                +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
-              +'</div></div>'
-              +'<div class="bb-field"><label>Text size</label>'
-                +'<button class="bb-flag-btn" id="bb-open-textsize" style="width:100%">&#128288; Adjust text size</button>'
-              +'</div>'
-            +'</div>'
-            +'<div class="bb-settings-pane" data-pane="maintenance" style="display:none">'
-              +'<div class="bb-field"><label>Start Date warning (days before, auto-sets H)</label>'
-                +'<input type="number" min="0" step="1" id="bb-start-warn-days" style="width:80px">'
-              +'</div>'
-              +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
-                +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
-              +'</div>'
-              +'<div class="bb-field"><label>Signal Flags</label>'
-                +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128681; Manage Signal Flags</button>'
-              +'</div>'
-            +'</div>'
-          +'</div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title" id="bb-settings-title">Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw" id="bb-settings-body"></div>'
         +'</div>';
       fg.appendChild(setOv);
       setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
-      // Aug 3 2026: Briefing Board is full-screen (.isx-full), so the
-      // desk's own gear/text-size picker is hidden here -- same shared
-      // picker as Storyboard/Session's Options menus.
-      var tsBtn=setOv.querySelector('#bb-open-textsize');
-      if(tsBtn) tsBtn.addEventListener('click', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
-      // People/Appearance/Maintenance tabs, Aug 8 2026 -- Larry's clustering
-      // request: Board Settings groups everything by kind instead of one
-      // long flat list. Plain show/hide, no framework -- matches every
-      // other lightweight control in this file.
-      setOv.querySelectorAll('.bb-settings-tab').forEach(function(tabBtn){
-        tabBtn.addEventListener('click', function(){
-          setOv.querySelectorAll('.bb-settings-tab').forEach(function(b){ b.classList.remove('active'); });
-          tabBtn.classList.add('active');
-          var target=tabBtn.getAttribute('data-tab');
-          setOv.querySelectorAll('.bb-settings-pane').forEach(function(p){ p.style.display = (p.getAttribute('data-pane')===target) ? '' : 'none'; });
-        });
-      });
     }
     // Team Roster (Settings > Team), Aug 8 2026 -- Larry's locked design:
     // reads like it would print, not a data-entry grid. Email/phone always
@@ -2624,12 +2571,87 @@
     }catch(e){ console.error('Briefing Board: trash auto-purge failed', e); }
   }
 
-  function openSettings(){
-    _bbHighlightAppearance();
-    var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
-    var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
-    _bbLoadSharing();
+  // Settings screen stack, Aug 8 2026 -- Larry: Settings should be a
+  // simple drill-down (Settings home -> People -> Cast/Guests), not a
+  // tab bar, with X always meaning "back one screen" until you're back
+  // at the top, where X closes for real. One overlay div, body content
+  // re-rendered per screen -- same idea as the Storyboard's single
+  // sb-detail-overlay, just scoped to Settings here.
+  var _bbSettingsScreen='home';
+  function _bbRenderSettingsScreen(screen){
+    _bbSettingsScreen=screen;
+    var body=document.getElementById('bb-settings-body'); if(!body) return;
+    var titleEl=document.getElementById('bb-settings-title');
+    if(screen==='home'){
+      if(titleEl) titleEl.textContent='Settings';
+      body.innerHTML=
+         '<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-people" style="width:100%">&#128101; People</button></div>'
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-appearance" style="width:100%">&#127912; Appearance</button></div>'
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-preferences" style="width:100%">&#128295; Preferences</button></div>';
+      T().wire('bb-settings-go-people', function(){ _bbRenderSettingsScreen('people'); });
+      T().wire('bb-settings-go-appearance', function(){ _bbRenderSettingsScreen('appearance'); });
+      T().wire('bb-settings-go-preferences', function(){ _bbRenderSettingsScreen('preferences'); });
+    } else if(screen==='people'){
+      if(titleEl) titleEl.textContent='People';
+      body.innerHTML=
+         '<div class="bb-field" id="bb-team-roster-field">'
+          +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#127917; Cast</button>'
+        +'</div>'
+        +'<div class="bb-field" id="bb-sharing-field">'
+          +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#127915; Guests</button>'
+        +'</div>';
+      T().wire('bb-open-team-roster', function(){ closeSettings(); openTeamRoster(); });
+      T().wire('bb-open-sharing', function(){ closeSettings(); openSharingManager(); });
+      _bbLoadSharing();
+    } else if(screen==='appearance'){
+      if(titleEl) titleEl.textContent='Appearance';
+      body.innerHTML=
+         '<div class="bb-field"><label>Color theme</label><div class="bb-swatches">'
+          +THEMES.map(function(t){ return '<button class="bb-theme-swatch" data-theme="'+t.key+'" title="'+t.label+'" style="background:'+t.bg+';border-color:'+t.accent+'"></button>'; }).join('')
+        +'</div></div>'
+        +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
+          +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
+        +'</div></div>'
+        +'<div class="bb-field"><label>Text size</label>'
+          +'<button class="bb-flag-btn" id="bb-open-textsize" style="width:100%">&#128288; Adjust text size</button>'
+        +'</div>';
+      // Aug 3 2026: Briefing Board is full-screen (.isx-full), so the
+      // desk's own gear/text-size picker is hidden here -- same shared
+      // picker as Storyboard/Session's Options menus.
+      var tsBtn=document.getElementById('bb-open-textsize');
+      if(tsBtn) tsBtn.addEventListener('click', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
+      document.querySelectorAll('#bb-settings-body .bb-theme-swatch').forEach(function(btn){
+        btn.addEventListener('click', function(){ _bbApplyTheme(btn.getAttribute('data-theme')); });
+      });
+      document.querySelectorAll('#bb-settings-body .bb-font-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){ _bbApplyFont(btn.getAttribute('data-font')); });
+      });
+      _bbHighlightAppearance();
+    } else if(screen==='preferences'){
+      if(titleEl) titleEl.textContent='Preferences';
+      body.innerHTML=
+         '<div class="bb-field"><label>Start Date warning (days before, auto-sets H)</label>'
+          +'<input type="number" min="0" step="1" id="bb-start-warn-days" style="width:80px">'
+        +'</div>'
+        +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
+          +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
+        +'</div>'
+        +'<div class="bb-field"><label>Signal Flags</label>'
+          +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128681; Manage Signal Flags</button>'
+        +'</div>';
+      var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
+      var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
+      if(sw) sw.addEventListener('change', function(){ _bbSetStartWarnDays(sw.value); sw.value=_bbStartWarnDays(); renderBoard(); });
+      if(dw) dw.addEventListener('change', function(){ _bbSetDueWarnDays(dw.value); dw.value=_bbDueWarnDays(); renderBoard(); });
+      T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
+    }
+  }
+  function _bbOpenSettingsAt(screen){
+    _bbRenderSettingsScreen(screen);
     var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.add('active');
+  }
+  function openSettings(){
+    _bbOpenSettingsAt('home');
   }
   function closeSettings(){
     var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.remove('active');
@@ -2921,7 +2943,6 @@
     var ov=document.getElementById('bb-keylibmanager-overlay'); if(ov) ov.classList.remove('active');
   }
   function wireKeyLibManager(){
-    T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
     T().wire('bb-keylibmanager-close', closeKeyLibManager);
     T().wire('bb-keylib-add', function(){ closeKeyLibManager(); openKeyBuilder(null, function(){ openKeyLibManager(); }); });
   }
@@ -3008,9 +3029,9 @@
   }
   function closeSharingManager(){
     var ov=document.getElementById('bb-sharing-overlay'); if(ov) ov.classList.remove('active');
+    _bbOpenSettingsAt('people');
   }
   function wireSharingManager(){
-    T().wire('bb-open-sharing', function(){ closeSettings(); openSharingManager(); });
     T().wire('bb-sharing-close', closeSharingManager);
     var addBtn=document.getElementById('bb-sharing-add-btn');
     if(addBtn) addBtn.addEventListener('click', async function(){
@@ -3187,10 +3208,10 @@
     var ov=document.getElementById('bb-team-overlay'); if(ov) ov.classList.remove('active');
     var addRow=document.getElementById('bb-team-add-row'); if(addRow) addRow.style.display='none';
     var errEl=document.getElementById('bb-team-error'); if(errEl) errEl.style.display='none';
+    _bbOpenSettingsAt('people');
   }
 
   function wireTeamRoster(){
-    T().wire('bb-open-team-roster', function(){ closeSettings(); openTeamRoster(); });
     T().wire('bb-team-close', closeTeamRoster);
     T().wire('bb-team-print', function(){ window.print(); });
     T().wire('bb-team-add', function(){
@@ -3332,24 +3353,9 @@
       if(e.target.closest('.bb-card')) return;
       openSettings();
     });
-    T().wire('bb-settings-close', closeSettings);
-    document.querySelectorAll('.bb-theme-swatch').forEach(function(btn){
-      btn.addEventListener('click', function(){ _bbApplyTheme(btn.getAttribute('data-theme')); });
-    });
-    document.querySelectorAll('.bb-font-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){ _bbApplyFont(btn.getAttribute('data-font')); });
-    });
-    var startWarnEl=document.getElementById('bb-start-warn-days');
-    if(startWarnEl) startWarnEl.addEventListener('change', function(){
-      _bbSetStartWarnDays(startWarnEl.value);
-      startWarnEl.value=_bbStartWarnDays();
-      renderBoard();
-    });
-    var dueWarnEl=document.getElementById('bb-due-warn-days');
-    if(dueWarnEl) dueWarnEl.addEventListener('change', function(){
-      _bbSetDueWarnDays(dueWarnEl.value);
-      dueWarnEl.value=_bbDueWarnDays();
-      renderBoard();
+    T().wire('bb-settings-close', function(){
+      if(_bbSettingsScreen==='home') closeSettings();
+      else _bbRenderSettingsScreen('home');
     });
   }
 

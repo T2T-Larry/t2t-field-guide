@@ -3047,11 +3047,11 @@
         +'<button class="sc-ov-btn save" id="tm-add-confirm">Add</button>'
       +'</div>'
       +'<div id="tm-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
-      +'<button class="sc-ov-btn" id="tm-close" style="width:100%;margin-top:12px">Back</button>'
+      +'<button class="sc-ov-btn" id="tm-close" style="width:100%;margin-top:12px">\u2715</button>'
     +'</div>';
     ov.classList.add('active');
     _tmLoadRoster(projectRow).then(function(){ _tmRenderRoster(projectRow); });
-    T().wire('tm-close', function(){ closeSbDetail(); });
+    T().wire('tm-close', function(){ closeSbDetail(); _sboardOpenPeopleMenu(); });
     T().wire('tm-print-tile', function(){ window.print(); });
     T().wire('tm-add-tile', function(){
       if(!_tmRosterIsOwner) return;
@@ -3115,62 +3115,89 @@
     var _sb=T().sb;
     var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
     var isOwner=!!me && projectRow.user_id===me.id;
-    _sboardOpenShareManager(projectRow, isOwner, function(){ _sboardOpenGearMenu(); });
+    _sboardOpenShareManager(projectRow, isOwner, function(){ _sboardOpenPeopleMenu(); });
   }
 
+  // Settings screen stack, Aug 8 2026 -- Larry: Settings should be a
+  // simple drill-down (Settings home -> People -> Cast/Guests), not a
+  // tab bar, with X always meaning "back one screen" until you're back
+  // at the top, where X closes for real. Each screen is its own render
+  // into the shared sb-detail-overlay, same pattern this file already
+  // uses everywhere else.
   function _sboardOpenGearMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Settings</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-set-go-people" style="width:100%">&#128101; People</button>'
+        +'<button class="sc-ov-btn" id="sb-set-go-appearance" style="width:100%">&#127912; Appearance</button>'
+        +'<button class="sc-ov-btn" id="sb-set-go-preferences" style="width:100%">&#128295; Preferences</button>'
+      +'</div>'
+      +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-set-go-people', _sboardOpenPeopleMenu);
+    T().wire('sb-set-go-appearance', _sboardOpenAppearanceMenu);
+    T().wire('sb-set-go-preferences', _sboardOpenPreferencesMenu);
+    T().wire('sb-gear-close', closeSbDetail);
+  }
+  function _sboardOpenPeopleMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">People</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
+      +'</div>'
+      +'<button class="sc-ov-btn" id="sb-people-close" style="width:100%" aria-label="Close">✕</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(); });
+    T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(); });
+    T().wire('sb-people-close', _sboardOpenGearMenu);
+  }
+  function _sboardOpenAppearanceMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     var fsIcon=document.fullscreenElement?'\u21a9':'\u26f6';
     var fsLabel=document.fullscreenElement?'Exit full screen':'Full screen';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Settings</div>'
-      +'<div class="sb-gear-tabs">'
-        +'<button class="sb-gear-tab active" data-tab="people">&#128101; People</button>'
-        +'<button class="sb-gear-tab" data-tab="appearance">&#127912; Appearance</button>'
-        +'<button class="sb-gear-tab" data-tab="maintenance">&#128295; Maintenance</button>'
-      +'</div>'
-      +'<div class="sb-gear-pane" data-pane="people" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
-      +'</div>'
-      +'<div class="sb-gear-pane" data-pane="appearance" style="display:none;flex-direction:column;gap:6px;margin-bottom:8px">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Appearance</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
         +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
-      +'<div class="sb-gear-pane" data-pane="maintenance" style="display:none;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
-      +'</div>'
-      +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
+      +'<button class="sc-ov-btn" id="sb-appearance-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
-    // People/Appearance/Maintenance tabs, Aug 8 2026 -- Larry's clustering
-    // request, matching the same grouping now on the Briefing Board's
-    // Board Settings. Plain show/hide, rebuilt fresh every time this
-    // overlay opens (same as the rest of this function).
-    ov.querySelectorAll('.sb-gear-tab').forEach(function(tabBtn){
-      tabBtn.addEventListener('click', function(){
-        ov.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.remove('active'); });
-        tabBtn.classList.add('active');
-        var target=tabBtn.getAttribute('data-tab');
-        ov.querySelectorAll('.sb-gear-pane').forEach(function(p){ p.style.display = (p.getAttribute('data-pane')===target) ? 'flex' : 'none'; });
-      });
-    });
-    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(); });
-    T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(); });
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
-    T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
-    T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
-    T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
     // Aug 3 2026: Storyboard is full-screen (.isx-full), so the desk's own
     // gear/text-size picker is hidden here -- this reaches the same shared
     // picker screen-zero.js owns, so the choice stays one control, not two.
     T().wire('sb-gear-textsize', function(){ closeSbDetail(); if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
-    T().wire('sb-gear-close', closeSbDetail);
+    T().wire('sb-appearance-close', _sboardOpenGearMenu);
+  }
+  function _sboardOpenPreferencesMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Preferences</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
+      +'</div>'
+      +'<button class="sc-ov-btn" id="sb-preferences-close" style="width:100%" aria-label="Close">✕</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
+    T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
+    T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
+    T().wire('sb-preferences-close', _sboardOpenGearMenu);
   }
 
   async function _sboardEnsurePurposeHeader(parentId){
