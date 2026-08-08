@@ -1985,7 +1985,7 @@
       setOv.id='bb-settings-overlay'; setOv.className='bb-overlay';
       setOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Board Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
           +'<div class="bb-settings-tabs">'
             +'<button class="bb-settings-tab active" data-tab="people">&#128101; People</button>'
             +'<button class="bb-settings-tab" data-tab="appearance">&#127912; Appearance</button>'
@@ -1993,12 +1993,11 @@
           +'</div>'
           +'<div class="bbw">'
             +'<div class="bb-settings-pane" data-pane="people">'
-              +'<div class="bb-field" id="bb-sharing-field"><label>Sharing</label>'
-                +'<div id="bb-sharing-summary" style="font-size:12px;color:var(--bb-sub);margin-bottom:6px"></div>'
-                +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
-              +'</div>'
               +'<div class="bb-field" id="bb-team-roster-field">'
                 +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#127917; Cast</button>'
+              +'</div>'
+              +'<div class="bb-field" id="bb-sharing-field">'
+                +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#127915; Guests</button>'
               +'</div>'
             +'</div>'
             +'<div class="bb-settings-pane" data-pane="appearance" style="display:none">'
@@ -2104,16 +2103,15 @@
       shOv.id='bb-sharing-overlay'; shOv.className='bb-overlay';
       shOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Manage Access</span><button class="bb-close" id="bb-sharing-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Guests</span><button class="bb-close" id="bb-sharing-close" aria-label="Close">\u2715</button></div>'
           +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">Full access Cast Members can see and edit this board, same as you. Guests can look but not change anything.</div>'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">Guests can look at this board but not change anything.</div>'
             +'<div id="bb-sharing-list"></div>'
             +'<div id="bb-sharing-add-row" style="margin-top:8px">'
               +'<div style="display:flex;gap:6px;margin-bottom:6px">'
                 +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
                 +'<button class="bb-icon-btn" id="bb-sharing-add-btn" title="Add">+</button>'
               +'</div>'
-              +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bb-sub);cursor:pointer"><input type="checkbox" id="bb-sharing-add-viewonly" style="width:auto"> Add as a Guest</label>'
             +'</div>'
           +'</div>'
         +'</div>';
@@ -2964,7 +2962,7 @@
       }
     }
     var openBtn=document.getElementById('bb-open-sharing');
-    if(openBtn) openBtn.innerHTML = '\uD83E\uDD1D ' + (_bbSharingIsOwner ? 'Manage Access' : 'View Access');
+    if(openBtn) openBtn.innerHTML = '\uD83C\uDFAB Guests';
   }
 
   function _bbRenderSharingList(){
@@ -2976,10 +2974,16 @@
       list.innerHTML='<div class="bb-key-pick-empty-msg">Nobody else has access yet.</div>';
       return;
     }
-    list.innerHTML=_bbSharingCache.map(function(m){
-      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:var(--bb-sub);font-style:italic;margin-left:6px">Guest</span>' : '';
-      return '<div class="bb-keylib-row" data-user-id="'+_esc(m.user_id)+'">'
-        +'<span class="bb-keylib-meaning">'+_esc(m.name||m.email)+viewOnlyTag+'</span>'
+    var _bbGuestsOnly=(_bbSharingCache||[]).filter(function(m){ return m.access_level==='view'; });
+    if(!_bbGuestsOnly.length){
+      list.innerHTML='<div class="bb-key-pick-empty-msg">No guests yet.</div>';
+      return;
+    }
+    list.innerHTML=_bbGuestsOnly.map(function(m){
+      var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+_esc(m.phone)) : '';
+      var sponsorLine = m.sponsor_name ? '<div style="font-size:10px;color:var(--bb-sub);font-style:italic;margin-top:2px">Cast sponsor: '+_esc(m.sponsor_name)+'</div>' : '';
+      return '<div class="bb-keylib-row" data-user-id="'+_esc(m.user_id)+'" style="align-items:flex-start">'
+        +'<span class="bb-keylib-meaning"><div>'+_esc(m.name||m.email)+'</div><div style="font-size:11px;color:var(--bb-sub)">\u2709 '+_esc(m.email||'')+phoneLine+'</div>'+sponsorLine+'</span>'
         +(_bbSharingIsOwner ? '<button class="bb-keylib-del" data-user-id="'+_esc(m.user_id)+'" title="Remove">&#128465;&#65039;</button>' : '')
         +'</div>';
     }).join('');
@@ -3014,8 +3018,7 @@
       var input=document.getElementById('bb-sharing-add-email');
       var email=input?input.value.trim().toLowerCase():'';
       if(!email) return;
-      var viewOnlyEl=document.getElementById('bb-sharing-add-viewonly');
-      var accessLevel=(viewOnlyEl && viewOnlyEl.checked) ? 'view' : 'edit';
+      var accessLevel='view';
       var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
       var sb=T().sb; if(!sb || !board) return;
       try{
@@ -3032,7 +3035,6 @@
           return;
         }
         if(input) input.value='';
-        if(viewOnlyEl) viewOnlyEl.checked=false;
         await _bbLoadSharing();
         _bbRenderSharingList();
       }catch(e){
@@ -3170,7 +3172,7 @@
       var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
       if(!match) return {ok:false,msg:'No T2T member found with that email.'};
       var myUid=await _bbCurrentUserId();
-      var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid});
+      var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid, access_level: 'edit'});
       if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }

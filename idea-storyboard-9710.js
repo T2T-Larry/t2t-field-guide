@@ -1077,7 +1077,7 @@
     if(isOwner){
       body+='<button class="sc-ov-btn" id="sb-pq-rename" style="width:100%;margin-bottom:6px">Rename</button>'
         +'<button class="sc-ov-btn" id="sb-pq-archive" style="width:100%;margin-bottom:6px">Archive</button>'
-        +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83E\uDD1D Manage Access</button>'
+        +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83C\uDFAB Guests</button>'
         +'<button class="sc-ov-btn" id="sb-pq-delete" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete</button>';
     } else {
       body+='<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Shared with you -- only the owner can rename, archive, or delete this project.</div>'
@@ -1117,18 +1117,19 @@
     var list=document.getElementById('sb-share-list'); if(!list) return;
     var _sb=T().sb;
     var res=await _sb.rpc('list_storyboard_members', {p_project_id: boardRow.id});
-    var rows=(!res.error && res.data) ? res.data : [];
+    var rows=(!res.error && res.data) ? res.data.filter(function(m){ return m.access_level==='view'; }) : [];
     var addRow=document.getElementById('sb-share-add-row');
     if(addRow) addRow.style.display = isOwner ? 'block' : 'none';
     if(!rows.length){
-      list.innerHTML='<div style="font-size:11px;color:#a89a80;font-style:italic;padding:6px 0">'+(isOwner?'Only you can see this project right now.':'Shared with you.')+'</div>';
+      list.innerHTML='<div style="font-size:11px;color:#a89a80;font-style:italic;padding:6px 0">No guests yet.</div>';
       return;
     }
     list.innerHTML=rows.map(function(m){
       var safeLabel=(m.name||m.email||'').replace(/</g,'&lt;');
-      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:#a89a80;font-style:italic;margin-left:6px">Guest</span>' : '';
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:12px">'
-        +'<span>'+safeLabel+viewOnlyTag+'</span>'
+      var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+String(m.phone).replace(/</g,'&lt;')) : '';
+      var sponsorLine = m.sponsor_name ? '<div style="font-size:10px;color:#a89a80;font-style:italic;margin-top:2px">Cast sponsor: '+String(m.sponsor_name).replace(/</g,'&lt;')+'</div>' : '';
+      return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:12px">'
+        +'<span><div>'+safeLabel+'</div><div style="font-size:11px;color:#7a6040">\u2709 '+(m.email||'').replace(/</g,'&lt;')+phoneLine+'</div>'+sponsorLine+'</span>'
         +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:13px" title="Remove">&#10005;</button>' : '')
         +'</div>';
     }).join('');
@@ -1148,7 +1149,7 @@
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
     var goBack = backFn || function(){ _sboardProjectQuickMenu(boardRow); };
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Manage Access</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Guests</div>'
       +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
       +'<div id="sb-share-list" style="text-align:left;margin-bottom:10px"></div>'
       +'<div id="sb-share-add-row" style="margin-bottom:10px">'
@@ -1156,7 +1157,6 @@
           +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
           +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
         +'</div>'
-        +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;cursor:pointer"><input type="checkbox" id="sb-share-add-viewonly" style="width:auto"> Add as a Guest</label>'
       +'</div>'
       +'<div id="sb-share-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<button class="sc-ov-btn" id="sb-share-close" style="width:100%">Back</button>'
@@ -1170,8 +1170,7 @@
       var input=document.getElementById('sb-share-add-email');
       var email=(input&&input.value||'').trim().toLowerCase();
       if(!email){ if(errEl) errEl.textContent='Enter an email first.'; return; }
-      var viewOnlyEl=document.getElementById('sb-share-add-viewonly');
-      var accessLevel=(viewOnlyEl && viewOnlyEl.checked) ? 'view' : 'edit';
+      var accessLevel='view';
       var _sb=T().sb;
       try{
         var res=await _sb.rpc('find_member_by_email', {p_email: email});
@@ -1181,7 +1180,6 @@
         var ins=await _sb.from('storyboard_members').insert({project_id: boardRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null, access_level: accessLevel});
         if(ins.error){ if(errEl) errEl.textContent=ins.error.message||'Could not add that person.'; return; }
         if(input) input.value='';
-        if(viewOnlyEl) viewOnlyEl.checked=false;
         if(errEl) errEl.textContent='';
         await _sboardRenderShareList(boardRow, isOwner);
       }catch(err){ if(errEl) errEl.textContent=err.message; }
@@ -3028,7 +3026,7 @@
       var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
       if(!match) return {ok:false,msg:'No T2T member found with that email.'};
       var myUser=(await _sb.auth.getUser()).data.user;
-      var ins=await _sb.from('storyboard_members').insert({project_id: projectRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null});
+      var ins=await _sb.from('storyboard_members').insert({project_id: projectRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null, access_level: 'edit'});
       if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
@@ -3126,7 +3124,7 @@
     var fsIcon=document.fullscreenElement?'\u21a9':'\u26f6';
     var fsLabel=document.fullscreenElement?'Exit full screen':'Full screen';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Settings</div>'
       +'<div class="sb-gear-tabs">'
         +'<button class="sb-gear-tab active" data-tab="people">&#128101; People</button>'
         +'<button class="sb-gear-tab" data-tab="appearance">&#127912; Appearance</button>'
@@ -3134,7 +3132,7 @@
       +'</div>'
       +'<div class="sb-gear-pane" data-pane="people" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">&#129309; Manage Access</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
       +'</div>'
       +'<div class="sb-gear-pane" data-pane="appearance" style="display:none;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
