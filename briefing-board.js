@@ -1795,6 +1795,25 @@
       +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-overlay-card.bb-hangup-active .bb-overlay-title{color:#a3372b}'
       +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:13px;color:var(--bb-ink)}'
+      +'.tm-groupname{font-family:var(--bb-head-font);font-size:16px;font-weight:700;color:var(--bb-ink);text-align:center;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 2px}'
+      +'.tm-cap{text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:10px}'
+      +'.tm-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(59,37,16,0.12)}'
+      +'.tm-sym{width:22px;text-align:center;font-size:15px;padding-top:1px;flex-shrink:0}'
+      +'.tm-sym.tm-clickable{cursor:pointer}'
+      +'.tm-body{flex:1;min-width:0}'
+      +'.tm-name{font-size:13px;font-weight:600;color:var(--bb-ink)}'
+      +'.tm-role{font-weight:400;color:var(--bb-sub);font-size:11px}'
+      +'.tm-contact{font-size:11px;color:#5b9bd5;line-height:1.25;margin-top:1px}'
+      +'.tm-notes-row{display:flex;align-items:baseline;gap:5px;line-height:1.25;margin-top:1px}'
+      +'.tm-notes-lbl{font-size:8px;letter-spacing:1px;color:var(--bb-sub);flex-shrink:0}'
+      +'.tm-notes-input{flex:1;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:10px;color:var(--bb-sub);padding:0;font-family:var(--bb-body-font)}'
+      +'.tm-rolepanel{margin:6px 0 0 32px;background:#fff;border:1px solid var(--bb-accent);border-radius:8px;padding:8px 10px}'
+      +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bb-ink);margin-bottom:5px;cursor:pointer}'
+      +'.tm-rolepanel label:last-child{margin-bottom:0}'
+      +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
+      +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+      +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-sub);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+      +'@media print{body *{visibility:hidden}.bb-team-print,.bb-team-print *{visibility:visible}.bb-team-print{position:absolute;left:0;top:0;width:100%!important;max-height:none!important;box-shadow:none!important}@page{size:landscape}}'
       +'.bb-close:hover{background:var(--bb-bg)}'
       +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
       +'.bb-hx-back:hover{background:var(--bb-bg)}'
@@ -2013,7 +2032,10 @@
               +'<div id="bb-sharing-summary" style="font-size:12px;color:var(--bb-sub);margin-bottom:6px"></div>'
               +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
             +'</div>'
-            +'<div class="bb-field"><label>Team</label><div id="bb-team-list"></div><div style="font-size:11px;color:var(--bb-sub);margin-top:6px;font-style:italic">To add someone new, they need a real account first -- this only edits or removes existing team members.</div></div>'
+            +'<div class="bb-field" id="bb-team-roster-field"><label>Team &amp; Roles</label>'
+              +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#128101; Open Team Roster</button>'
+            +'</div>'
+            +'<div class="bb-field"><label>All Members (admin)</label><div id="bb-team-list"></div><div style="font-size:11px;color:var(--bb-sub);margin-top:6px;font-style:italic">To add someone new, they need a real account first -- this only edits or removes existing team members.</div></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
@@ -2023,6 +2045,34 @@
       // picker as Storyboard/Session's Options menus.
       var tsBtn=setOv.querySelector('#bb-open-textsize');
       if(tsBtn) tsBtn.addEventListener('click', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
+    }
+    // Team Roster (Settings > Team), Aug 8 2026 -- Larry's locked design:
+    // reads like it would print, not a data-entry grid. Email/phone always
+    // visible (the real use case is calling someone to cover a session or
+    // checking who's free at a new time), Notes gets its own always-on
+    // field per person, role symbol doubles as the role-picker trigger.
+    if(!document.getElementById('bb-team-overlay')){
+      var tmOv=document.createElement('div');
+      tmOv.id='bb-team-overlay'; tmOv.className='bb-overlay';
+      tmOv.innerHTML=
+         '<div class="bb-overlay-card bb-team-print" style="width:400px">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Team</span><button class="bb-close" id="bb-team-close" aria-label="Close">&#10005;</button></div>'
+          +'<input type="text" class="tm-groupname" id="bb-team-groupname" placeholder="Name this team...">'
+          +'<div class="tm-cap" id="bb-team-cap">Team roster</div>'
+          +'<div id="bb-team-list-view"></div>'
+          +'<div class="tm-addrow">'
+            +'<div class="tm-add-tile" id="bb-team-add" title="Add a team member">+</div>'
+            +'<div class="tm-print-tile" id="bb-team-print" title="Print roster">&#128438;</div>'
+          +'</div>'
+          +'<div id="bb-team-add-row" style="display:none;margin-top:10px;gap:6px">'
+            +'<input type="email" id="bb-team-add-email" placeholder="name@example.com" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--bb-accent);border-radius:6px">'
+            +'<button class="bb-flag-btn" id="bb-team-add-confirm" style="flex-shrink:0">Add</button>'
+          +'</div>'
+          +'<div id="bb-team-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
+        +'</div>';
+      fg.appendChild(tmOv);
+      tmOv.addEventListener('click', function(e){ if(e.target===tmOv) closeTeamRoster(); });
+      _bbMakeDraggable(tmOv.querySelector('.bb-overlay-card'), tmOv.querySelector('.bb-overlay-head'));
     }
     // Key Library manager (9397), Aug 3 2026 -- Larry: "we need to be
     // able to edit or trash any custom key." Didn't exist for the
@@ -2988,6 +3038,185 @@
     });
   }
 
+  // Team Roster -- board-level roles (Owner/Leader/Facilitator/Member),
+  // separate from the Sharing list above (Sharing is just "who can see
+  // this board," Team Roster is "what's their role on it"). Owner is
+  // never a board_members row -- it's implicit via briefing_boards.user_id
+  // -- so it's read separately and shown first, non-editable except by
+  // being who they are.
+  var _bbRosterCache = [];
+  var _bbRosterOwner = null;
+  var _bbRosterIsOwner = false;
+
+  function _bbRoleSymbol(m){
+    if(m.isOwner) return '\uD83D\uDC51';
+    if(m.role==='leader') return '\uD83C\uDFAF';
+    if(m.is_facilitator) return '\uD83C\uDFA4';
+    if(m.can_facilitate) return '\u2726';
+    return '\u2610';
+  }
+  function _bbRoleTitle(m){
+    if(m.isOwner) return 'Owner';
+    if(m.role==='leader') return 'Leader';
+    if(m.is_facilitator) return 'Facilitator';
+    if(m.can_facilitate) return 'Facilitator-qualified';
+    return 'Member';
+  }
+
+  async function _bbLoadRoster(){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board) return;
+    var uid=await _bbCurrentUserId();
+    _bbRosterIsOwner = !!uid && board.user_id===uid;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var ownerRes=await sb.from('members').select('user_id,name,email,initials,phone').eq('user_id', board.user_id).maybeSingle();
+      _bbRosterOwner = (!ownerRes.error && ownerRes.data) ? ownerRes.data : null;
+    }catch(e){ _bbRosterOwner=null; }
+    try{
+      var res=await sb.rpc('list_board_members', {p_board_id: board.id});
+      _bbRosterCache = (!res.error && res.data) ? res.data : [];
+    }catch(e){ _bbRosterCache=[]; }
+  }
+
+  function _bbAllRosterRows(){
+    var rows=[];
+    if(_bbRosterOwner) rows.push({user_id:_bbRosterOwner.user_id, name:_bbRosterOwner.name, email:_bbRosterOwner.email, phone:_bbRosterOwner.phone, isOwner:true, role:null, can_facilitate:true, is_facilitator:false, notes:''});
+    (_bbRosterCache||[]).forEach(function(m){ rows.push({user_id:m.user_id, name:m.name, email:m.email, phone:m.phone, isOwner:false, role:m.role, can_facilitate:m.can_facilitate, is_facilitator:m.is_facilitator, notes:m.notes||''}); });
+    return rows;
+  }
+
+  function _bbRenderRoster(){
+    var wrap=document.getElementById('bb-team-list-view'); if(!wrap) return;
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var nameEl=document.getElementById('bb-team-groupname');
+    if(nameEl){ nameEl.value=(board && (board.topic||board.name))||''; nameEl.disabled=!_bbRosterIsOwner; }
+    var rows=_bbAllRosterRows();
+    var cap=(board && board.member_cap) || 7;
+    var capEl=document.getElementById('bb-team-cap');
+    if(capEl) capEl.textContent='Team roster \u00b7 '+rows.length+' of '+cap;
+    wrap.innerHTML = rows.map(function(m){
+      var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+_esc(m.phone)) : '';
+      var clickable = (!m.isOwner && _bbRosterIsOwner);
+      var panel = (!m.isOwner) ? (
+        '<div class="tm-rolepanel" id="tm-rp-'+_esc(m.user_id)+'" style="display:none">'
+          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Leader &mdash; runs the board day to day</label>'
+          +'<label><input type="checkbox" class="tm-r-canfac" data-uid="'+_esc(m.user_id)+'"'+(m.can_facilitate?' checked':'')+'> \u2726 Facilitator-qualified</label>'
+          +'<label><input type="radio" name="tm-fac" class="tm-r-fac" data-uid="'+_esc(m.user_id)+'"'+(m.is_facilitator?' checked':'')+'> \uD83C\uDFA4 Facilitator &mdash; running sessions now</label>'
+        +'</div>'
+      ) : '';
+      return '<div class="tm-row">'
+        +'<div class="tm-sym'+(clickable?' tm-clickable':'')+'" '+(clickable?'data-uid="'+_esc(m.user_id)+'"':'')+'>'+_bbRoleSymbol(m)+'</div>'
+        +'<div class="tm-body">'
+          +'<div class="tm-name">'+_esc(m.name||m.email||'')+' <span class="tm-role">&middot; '+_bbRoleTitle(m)+'</span></div>'
+          +'<div class="tm-contact">\u2709 '+_esc(m.email||'')+phoneLine+'</div>'
+          +(m.isOwner ? '' : '<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input" data-uid="'+_esc(m.user_id)+'" placeholder="\u2014" value="'+_esc(m.notes||'')+'" '+(_bbRosterIsOwner?'':'disabled')+'></div>')
+          +panel
+        +'</div>'
+      +'</div>';
+    }).join('');
+    var addTile=document.getElementById('bb-team-add');
+    if(addTile) addTile.style.display = _bbRosterIsOwner ? 'flex' : 'none';
+  }
+
+  async function _bbSaveMemberRole(uid, role, canFac, isFac){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0]; if(!board) return;
+    var sb=T().sb; if(!sb) return;
+    try{ await sb.rpc('update_board_member', {p_board_id: board.id, p_user_id: uid, p_role: role, p_can_facilitate: canFac, p_is_facilitator: isFac}); }catch(e){}
+    await _bbLoadRoster(); _bbRenderRoster();
+  }
+
+  async function _bbSaveMemberNotes(uid, notes){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0]; if(!board) return;
+    var sb=T().sb; if(!sb) return;
+    try{ await sb.rpc('update_board_member_notes', {p_board_id: board.id, p_user_id: uid, p_notes: notes}); }catch(e){}
+  }
+
+  async function _bbTeamAddMember(email){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board) return {ok:false,msg:'No board selected.'};
+    var rows=_bbAllRosterRows();
+    var cap=board.member_cap||7;
+    if(rows.length>=cap) return {ok:false,msg:'This board is at its '+cap+'-person cap.'};
+    var sb=T().sb; if(!sb) return {ok:false,msg:'Not connected.'};
+    try{
+      var res=await sb.rpc('find_member_by_email', {p_email: String(email||'').trim().toLowerCase()});
+      var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
+      if(!match) return {ok:false,msg:'No T2T member found with that email.'};
+      var myUid=await _bbCurrentUserId();
+      var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid});
+      if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
+      return {ok:true};
+    }catch(e){ return {ok:false,msg:'Could not add them.'}; }
+  }
+
+  function openTeamRoster(){
+    _bbLoadRoster().then(_bbRenderRoster);
+    var ov=document.getElementById('bb-team-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeTeamRoster(){
+    var ov=document.getElementById('bb-team-overlay'); if(ov) ov.classList.remove('active');
+    var addRow=document.getElementById('bb-team-add-row'); if(addRow) addRow.style.display='none';
+    var errEl=document.getElementById('bb-team-error'); if(errEl) errEl.style.display='none';
+  }
+
+  function wireTeamRoster(){
+    T().wire('bb-open-team-roster', function(){ closeSettings(); openTeamRoster(); });
+    T().wire('bb-team-close', closeTeamRoster);
+    T().wire('bb-team-print', function(){ window.print(); });
+    T().wire('bb-team-add', function(){
+      if(!_bbRosterIsOwner) return;
+      var row=document.getElementById('bb-team-add-row');
+      if(row) row.style.display = (row.style.display==='none') ? 'flex' : 'none';
+    });
+    var confirmBtn=document.getElementById('bb-team-add-confirm');
+    if(confirmBtn) confirmBtn.addEventListener('click', async function(){
+      var input=document.getElementById('bb-team-add-email');
+      var errEl=document.getElementById('bb-team-error');
+      var email=input?input.value.trim():'';
+      if(!email) return;
+      var res=await _bbTeamAddMember(email);
+      if(!res.ok){
+        if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; }
+        return;
+      }
+      if(errEl) errEl.style.display='none';
+      if(input) input.value='';
+      var row=document.getElementById('bb-team-add-row'); if(row) row.style.display='none';
+      await _bbLoadRoster(); _bbRenderRoster();
+    });
+    var nameEl=document.getElementById('bb-team-groupname');
+    if(nameEl) nameEl.addEventListener('change', async function(){
+      if(!_bbRosterIsOwner) return;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0]; if(!board) return;
+      var sb=T().sb; if(!sb) return;
+      board.topic=nameEl.value;
+      try{ await sb.from('briefing_boards').update({topic: nameEl.value}).eq('id', board.id); }catch(e){}
+    });
+    var wrap=document.getElementById('bb-team-list-view');
+    if(wrap){
+      wrap.addEventListener('click', function(e){
+        var sym=e.target.closest('.tm-clickable'); if(!sym) return;
+        var p=document.getElementById('tm-rp-'+sym.getAttribute('data-uid'));
+        if(p) p.style.display = (p.style.display==='none') ? 'block' : 'none';
+      });
+      wrap.addEventListener('change', async function(e){
+        var t=e.target;
+        if(t.classList.contains('tm-r-leader') || t.classList.contains('tm-r-canfac') || t.classList.contains('tm-r-fac')){
+          var uid=t.getAttribute('data-uid');
+          var panel=document.getElementById('tm-rp-'+uid); if(!panel) return;
+          var role = panel.querySelector('.tm-r-leader').checked ? 'leader' : null;
+          var canFac = panel.querySelector('.tm-r-canfac').checked;
+          var isFac = panel.querySelector('.tm-r-fac').checked;
+          await _bbSaveMemberRole(uid, role, canFac, isFac);
+        } else if(t.classList.contains('tm-notes-input')){
+          await _bbSaveMemberNotes(t.getAttribute('data-uid'), t.value);
+        }
+      });
+    }
+  }
+
   function wirePriorityButtons(){
     var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');
     for(var i=0;i<btns.length;i++){
@@ -3384,6 +3613,7 @@
     wireKeyPicker();
     wireKeyLibManager();
     wireSharingManager();
+    wireTeamRoster();
     wireChecklist();
     wireDatePickers();
 
