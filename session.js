@@ -852,7 +852,7 @@
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
-      +'<button class="sc-ov-btn" id="isx-gear-keys" style="width:100%">🔑 Custom Keys</button>'
+      +'<button class="sc-ov-btn" id="isx-gear-keys" style="width:100%">🚩 Signal Flags</button>'
       +'<button class="sc-ov-btn" id="isx-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%" aria-label="Close">✕</button>'
@@ -860,7 +860,7 @@
     ov.classList.add('active');
     T().wire('isx-gear-recolor', function(){ T2TStoryboard.closeDetail(); _isxOpenRecolorAll(); });
     T().wire('isx-gear-reset', function(){ T2TStoryboard.closeDetail(); _isxOpenResetHeadersConfirm(); });
-    // Aug 3 2026: same shared traveler-wide Custom Keys library as 9710's
+    // Aug 3 2026: same shared traveler-wide Signal Flags library as 9710's
     // own gear menu -- one library, reachable from either screen.
     T().wire('isx-gear-keys', function(){ T2TStoryboard.closeDetail(); T2TStoryboard.openKeyLibraryManager(); });
     // Aug 3 2026: same shared picker as 9710 (see its own gear menu) --
@@ -1285,7 +1285,7 @@
     isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
     isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     t.appendChild(isxCornerFlip);
-    // Custom Keys badge, Aug 3 2026 -- Larry: "This option could be in
+    // Signal Flags badge, Aug 3 2026 -- Larry: "This option could be in
     // every gear? Anywhere a traveler makes a note or adds an idea."
     // 9710's own tile (_sboardMakeTile) shows these dots directly; 9711
     // reaches the same shared library through T2TStoryboard.keyDotsHTML
@@ -1345,7 +1345,7 @@
       isxStackCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
       isxStackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     }
-    // Custom Keys badge, Aug 3 2026 (widened same day to every card type,
+    // Signal Flags badge, Aug 3 2026 (widened same day to every card type,
     // Larry: "every card") -- header piles get the same on-card dots as
     // plain cards now.
     var isxStackFront=t.querySelector('.isx-stack-front');

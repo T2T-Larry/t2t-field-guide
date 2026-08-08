@@ -799,12 +799,12 @@
         var bbAddOpen = !!(bbAddOv && bbAddOv.classList.contains('active'));
         var bbDetailOv=document.getElementById('bb-detail-overlay');
         var bbDetailOpen = !!(bbDetailOv && bbDetailOv.classList.contains('active'));
-        // Add a Key (9390) has the same "sits on top without calling nav()"
+        // Add a Signal Flag (9390) has the same "sits on top without calling nav()"
         // situation as the other Briefing Board overlays above -- same fix.
         // Larry, July 21, 2026.
         var bbKeyBuilderOv=document.getElementById('bb-keybuilder-overlay');
         var bbKeyBuilderOpen = !!(bbKeyBuilderOv && bbKeyBuilderOv.classList.contains('active'));
-        // Choose a Key (9395) -- same situation as 9390 above.
+        // Choose a Signal Flag (9395) -- same situation as 9390 above.
         var bbKeyPickerOv=document.getElementById('bb-keypicker-overlay');
         var bbKeyPickerOpen = !!(bbKeyPickerOv && bbKeyPickerOv.classList.contains('active'));
         // Screen 0000 (the plain gray backdrop) and 0020 (the nav bar

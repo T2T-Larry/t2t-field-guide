@@ -12,7 +12,7 @@
    that marks a screen worth tagging to return to. Hover over the
    dot to see where it goes before you click, or just go there if
    you don't remember why you marked it." Then, once shown the
-   Custom Keys system already built for the Briefing Board (shape +
+   Signal Flags system already built for the Briefing Board (shape +
    color + meaning, a small traveler-built library): "Custom keys
    just like on the Briefing Board!" -- confirmed as a build ("do
    it now!"). Same-day follow-up: "Can we make this a moveable list
@@ -40,7 +40,7 @@
      language the TV frame's own knobs already use.
    - Tagging opens a small overlay: pick one of your existing keys,
      or build a new one (shape + color + meaning), same two-step
-     flow as the Briefing Board's "Choose a Key" / "Add a Key"
+     flow as the Briefing Board's "Choose a Signal Flag" / "Add a Signal Flag"
      overlays. If the current screen is already tagged, the overlay
      opens straight to that key with a Remove option instead.
    - Hovering any dot shows its meaning + destination screen name

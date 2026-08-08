@@ -200,6 +200,9 @@
         +'.sc-overlay-actions{display:flex;gap:8px;justify-content:flex-end}'
         +'.sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 12px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#5b9bd5}'
         +'.sc-ov-btn.save{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
+        +'.sb-gear-tabs{display:flex;gap:4px;margin-bottom:10px}'
+        +'.sb-gear-tab{flex:1;font-size:11px;padding:7px 3px;border-radius:8px;border:1px solid #cfe4f2;background:#fff;cursor:pointer;color:#5b9bd5;font-family:inherit}'
+        +'.sb-gear-tab.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
         +'.tm-groupname{font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#1a3a5c;text-align:center;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 12px}'
         +'.tm-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #efe9dc;text-align:left}'
         +'.tm-sym{width:22px;text-align:center;font-size:15px;padding-top:1px;flex-shrink:0}'
@@ -612,7 +615,7 @@
   // board never inherits a leftover alphabetical view from somewhere else.
   var _sboardAlphaHeaderView = false;
   var _sboardLastRenderedTopicId = undefined;
-  // Custom Keys, Aug 3 2026 -- Larry: "We use red hearts to mean I like
+  // Signal Flags, Aug 3 2026 -- Larry: "We use red hearts to mean I like
   // this one. What about a blue heart? or a yellow triangle with custom
   // meanings visible on hover? This option could be in every gear?"
   // Follow-up, when asked how far to take it: one shared library, usable
@@ -624,7 +627,7 @@
   // single board), same 6 shapes / 6 colors, 12-key-library-cap (raised from 6 Aug 4 2026 after the library merge) /
   // 3-keys-per-card-cap so the visual language matches everywhere it
   // shows up. The existing red heart is untouched, per Larry's explicit
-  // call -- Custom Keys are a second, optional marker, not a
+  // call -- Signal Flags are a second, optional marker, not a
   // replacement.
   var _sboardKeyShapes = ['circle','square','triangle','diamond','star','heart'];
   var _sboardKeyColors = ['#a3372b','#3F6B3A','#4a7a95','#c9a230','#7a4a95','#3B2510'];
@@ -672,7 +675,7 @@
       _sboardKeyLib = res.data||[];
       _sboardSaveKeyLibLocal(_sboardKeyLib);
       renderSeaBoard();
-    }catch(e){ console.error('Custom Keys: load failed', e); }
+    }catch(e){ console.error('Signal Flags: load failed', e); }
   }
   function _sboardKeyById(id){
     for(var i=0;i<_sboardKeyLib.length;i++){ if(String(_sboardKeyLib[i].id)===String(id)) return _sboardKeyLib[i]; }
@@ -777,7 +780,7 @@
     return [item.key_slot_1, item.key_slot_2, item.key_slot_3].filter(function(k){ return !!k; });
   }
   // Writes all 3 slot columns from a gap-free array -- same "splice,
-  // don't null out" approach the Briefing Board's own Custom Keys use,
+  // don't null out" approach the Briefing Board's own Signal Flags use,
   // so removing key #2 of 3 shifts #3 left instead of leaving an empty
   // middle slot.
   async function _sboardWriteItemKeys(itemId, keysArr){
@@ -1116,15 +1119,16 @@
     var res=await _sb.rpc('list_storyboard_members', {p_project_id: boardRow.id});
     var rows=(!res.error && res.data) ? res.data : [];
     var addRow=document.getElementById('sb-share-add-row');
-    if(addRow) addRow.style.display = isOwner ? 'flex' : 'none';
+    if(addRow) addRow.style.display = isOwner ? 'block' : 'none';
     if(!rows.length){
       list.innerHTML='<div style="font-size:11px;color:#a89a80;font-style:italic;padding:6px 0">'+(isOwner?'Only you can see this project right now.':'Shared with you.')+'</div>';
       return;
     }
     list.innerHTML=rows.map(function(m){
       var safeLabel=(m.name||m.email||'').replace(/</g,'&lt;');
+      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:#a89a80;font-style:italic;margin-left:6px">view-only visitor</span>' : '';
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:12px">'
-        +'<span>'+safeLabel+'</span>'
+        +'<span>'+safeLabel+viewOnlyTag+'</span>'
         +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:13px" title="Remove">&#10005;</button>' : '')
         +'</div>';
     }).join('');
@@ -1139,38 +1143,45 @@
     });
   }
 
-  function _sboardOpenShareManager(boardRow, isOwner){
+  function _sboardOpenShareManager(boardRow, isOwner, backFn){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var goBack = backFn || function(){ _sboardProjectQuickMenu(boardRow); };
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Manage Access</div>'
       +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
       +'<div id="sb-share-list" style="text-align:left;margin-bottom:10px"></div>'
-      +'<div id="sb-share-add-row" style="display:flex;gap:6px;margin-bottom:10px">'
-        +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
-        +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
+      +'<div id="sb-share-add-row" style="margin-bottom:10px">'
+        +'<div style="display:flex;gap:6px;margin-bottom:6px">'
+          +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+          +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
+        +'</div>'
+        +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;cursor:pointer"><input type="checkbox" id="sb-share-add-viewonly" style="width:auto"> Add as a view-only visitor</label>'
       +'</div>'
       +'<div id="sb-share-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<button class="sc-ov-btn" id="sb-share-close" style="width:100%">Back</button>'
       +'</div>';
     ov.classList.add('active');
     _sboardRenderShareList(boardRow, isOwner);
-    T().wire('sb-share-close', function(){ _sboardProjectQuickMenu(boardRow); });
+    T().wire('sb-share-close', goBack);
     T().wire('sb-share-add-go', async function(){
       if(!isOwner) return;
       var errEl=document.getElementById('sb-share-err');
       var input=document.getElementById('sb-share-add-email');
       var email=(input&&input.value||'').trim().toLowerCase();
       if(!email){ if(errEl) errEl.textContent='Enter an email first.'; return; }
+      var viewOnlyEl=document.getElementById('sb-share-add-viewonly');
+      var accessLevel=(viewOnlyEl && viewOnlyEl.checked) ? 'view' : 'edit';
       var _sb=T().sb;
       try{
         var res=await _sb.rpc('find_member_by_email', {p_email: email});
         var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
         if(!match){ if(errEl) errEl.textContent='No T2T member found with that email -- they need an active Field Guide account first.'; return; }
         var myUser=(await _sb.auth.getUser()).data.user;
-        var ins=await _sb.from('storyboard_members').insert({project_id: boardRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null});
+        var ins=await _sb.from('storyboard_members').insert({project_id: boardRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null, access_level: accessLevel});
         if(ins.error){ if(errEl) errEl.textContent=ins.error.message||'Could not add that person.'; return; }
         if(input) input.value='';
+        if(viewOnlyEl) viewOnlyEl.checked=false;
         if(errEl) errEl.textContent='';
         await _sboardRenderShareList(boardRow, isOwner);
       }catch(err){ if(errEl) errEl.textContent=err.message; }
@@ -1399,7 +1410,7 @@
     // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
     // loose card sitting in the same visual column never both show "1".
     tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
-    // Custom Keys badge, Aug 3 2026 -- Larry: "Custom key goes on the
+    // Signal Flags badge, Aug 3 2026 -- Larry: "Custom key goes on the
     // outside of the card like the heart." Sits just left of the heart
     // badge, same bottom-right corner, so the two "how I feel about this
     // card" markers read together.
@@ -1690,7 +1701,7 @@
   }
 
   async function renderSeaBoard(){
-    // Custom Keys, Aug 3 2026 -- kicks off the one-time library fetch
+    // Signal Flags, Aug 3 2026 -- kicks off the one-time library fetch
     // (no-ops after the first call, see _sboardKeyLibLoaded) regardless
     // of which screen (9710 or 9711, delegated to just below) is
     // actually active, since the library is shared/global, not tied to
@@ -1948,10 +1959,10 @@
         // order computed just above -- Purpose/NEW/MISC included, and
         // unaffected by the alphabetical display toggle.
         hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
-    // Custom Keys, Aug 3 2026 (widened scope) -- Larry: "every card,
+    // Signal Flags, Aug 3 2026 (widened scope) -- Larry: "every card,
     // maybe like a briefing card on the back of the card instead of in
     // the gear?" Headers (top-level and Subbers alike) now get the same
-    // Keys row on their own DETAILS/back card and the same on-card dots
+    // Signal Flags row on their own DETAILS/back card and the same on-card dots
     // as plain idea cards -- originally scoped out to match hearts, but
     // Larry wants it everywhere.
     hd.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
@@ -2936,7 +2947,9 @@
     }catch(e){ _tmRosterOwner=null; }
     try{
       var res=await _sb.rpc('list_storyboard_members', {p_project_id: projectRow.id});
-      _tmRosterCache = (!res.error && res.data) ? res.data : [];
+      // View-only visitors (Aug 8 2026) aren't Team members -- they show
+      // up in People > Manage Access only, not in the role-based roster.
+      _tmRosterCache = (!res.error && res.data) ? res.data.filter(function(m){ return (m.access_level||'edit')==='edit'; }) : [];
     }catch(e){ _tmRosterCache=[]; }
   }
 
@@ -3094,6 +3107,19 @@
     }
   }
 
+  // Manage Access, reached from the gear menu's People tab (Aug 8 2026)
+  // -- same screen the PROJECT quick menu's own Manage Access opens,
+  // just a second door in. Computes isOwner itself since the gear menu
+  // doesn't already have it handy the way the quick menu does.
+  async function _sboardOpenShareManagerFromGear(){
+    var projectRow=_sboardCurrentProjectRow();
+    if(!projectRow) return;
+    var _sb=T().sb;
+    var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
+    var isOwner=!!me && projectRow.user_id===me.id;
+    _sboardOpenShareManager(projectRow, isOwner, function(){ _sboardOpenGearMenu(); });
+  }
+
   function _sboardOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -3101,19 +3127,42 @@
     var fsLabel=document.fullscreenElement?'Exit full screen':'Full screen';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
-      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-      +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">👥 Team</button>'
-      +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
-      +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
-      +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🔑 Custom Keys</button>'
-      +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
-      +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
-      +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
+      +'<div class="sb-gear-tabs">'
+        +'<button class="sb-gear-tab active" data-tab="people">&#128101; People</button>'
+        +'<button class="sb-gear-tab" data-tab="appearance">&#127912; Appearance</button>'
+        +'<button class="sb-gear-tab" data-tab="maintenance">&#128295; Maintenance</button>'
+      +'</div>'
+      +'<div class="sb-gear-pane" data-pane="people" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">👥 Team</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">&#129309; Manage Access</button>'
+      +'</div>'
+      +'<div class="sb-gear-pane" data-pane="appearance" style="display:none;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
+      +'</div>'
+      +'<div class="sb-gear-pane" data-pane="maintenance" style="display:none;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
+    // People/Appearance/Maintenance tabs, Aug 8 2026 -- Larry's clustering
+    // request, matching the same grouping now on the Briefing Board's
+    // Board Settings. Plain show/hide, rebuilt fresh every time this
+    // overlay opens (same as the rest of this function).
+    ov.querySelectorAll('.sb-gear-tab').forEach(function(tabBtn){
+      tabBtn.addEventListener('click', function(){
+        ov.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.remove('active'); });
+        tabBtn.classList.add('active');
+        var target=tabBtn.getAttribute('data-tab');
+        ov.querySelectorAll('.sb-gear-pane').forEach(function(p){ p.style.display = (p.getAttribute('data-pane')===target) ? 'flex' : 'none'; });
+      });
+    });
     T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(); });
+    T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(); });
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
     T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
@@ -3855,12 +3904,12 @@
     if(row) row.style.display='flex';
   }
 
-  // Custom Keys UI, Aug 3 2026 -- three small pieces reached from a
-  // card's DETAILS card: the Keys row itself (up to 3 slots + one "+"),
+  // Signal Flags UI, Aug 3 2026 -- three small pieces reached from a
+  // card's DETAILS card: the Signal Flags row itself (up to 3 slots + one "+"),
   // the picker that opens when any slot is tapped (assign/remove/build
   // new), and the builder (shape+color+meaning) reached either from the
   // picker or straight from the gear menu's library manager. Mirrors the
-  // Briefing Board's own Custom Keys flow (Choose a Key / Add a Key)
+  // Briefing Board's own Signal Flags flow (Choose a Signal Flag / Add a Signal Flag)
   // almost exactly -- proven UX, just pointed at the new shared
   // custom_keys table instead of a board-scoped one.
   var _sboardKeyDraft = {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
@@ -3902,7 +3951,7 @@
     var hasKey=!!keys[slotIndex];
     var listHTML;
     if(!_sboardKeyLib.length){
-      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:6px">No keys yet — build your first one below.</div>';
+      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:6px">No signal flags yet — build your first one below.</div>';
     } else {
       listHTML=_sboardKeyLib.map(function(k){
         var usedElsewhere = keys.indexOf(k.id)>=0 && keys[slotIndex]!==k.id;
@@ -3916,16 +3965,16 @@
           // he actually runs into a key, not just the library manager
           // buried in the gear menu. Same edit form as the library
           // manager (_sboardOpenKeyBuilder with existingKey), just
-          // reachable from the Choose-a-Key picker too.
-          +'<button class="sb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this key">✏️</button>'
+          // reachable from the Choose-a-Signal-Flag picker too.
+          +'<button class="sb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this signal flag">✏️</button>'
           +'</div>';
       }).join('');
     }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Key</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Signal Flag</div>'
       +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
-      +'<button class="sc-ov-btn save" id="sb-key-build-new" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Build a new key</button>'
-      +(hasKey?'<button class="sc-ov-btn" id="sb-key-remove" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">Remove this key</button>':'')
+      +'<button class="sc-ov-btn save" id="sb-key-build-new" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Build a new signal flag</button>'
+      +(hasKey?'<button class="sc-ov-btn" id="sb-key-remove" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">Remove this signal flag</button>':'')
       +'<button class="sc-ov-btn" id="sb-key-cancel" style="width:100%">Cancel</button>'
       +'</div>';
     ov.classList.add('active');
@@ -3975,12 +4024,12 @@
     if(affectedKeyId) await _sboardSyncKeyLinks(affectedKeyId);
   }
 
-  // Reached either from a card's Choose-a-Key ("+ Build a new key") or
+  // Reached either from a card's Choose-a-Signal-Flag ("+ Build a new signal flag") or
   // straight from the gear menu's library manager -- onSaved(newKeyRow)
   // decides what happens next in either case (assign it to the slot that
   // opened the picker, or just refresh the library list).
-  // existingKey -- optional (Aug 3 2026, pencil-to-edit from the Key
-  // Library manager). Pre-fills shape/color/meaning from a real row and
+  // existingKey -- optional (Aug 3 2026, pencil-to-edit from the Signal Flags
+  // manager). Pre-fills shape/color/meaning from a real row and
   // switches the Save button into update mode instead of insert.
   function _sboardOpenKeyBuilder(onSaved, existingKey){
     _sboardKeyDraft = existingKey
@@ -3989,7 +4038,7 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(existingKey?'Edit Key':'Add a Key')+'</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(existingKey?'Edit Signal Flag':'Add a Signal Flag')+'</div>'
       +'<div style="font-size:11px;color:#7a6040;margin-bottom:6px">Shape</div>'
       +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
         +_sboardKeyShapes.map(function(s){ return '<button class="sb-key-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:block;width:16px;height:16px;'+_sboardKeyShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
@@ -4028,7 +4077,7 @@
   }
 
   // Gear menu entry, Aug 3 2026 -- Larry: "This option could be in every
-  // gear?" View the whole shared library, delete keys nobody needs
+  // gear?" View the whole shared library, delete signal flags nobody needs
   // anymore (un-tags any card that had it -- the database does that
   // automatically, see the key_slot_1/2/3 foreign keys), or add a new
   // one straight from here without needing a card open first.
@@ -4037,22 +4086,22 @@
     if(!ov) return;
     var listHTML;
     if(!_sboardKeyLib.length){
-      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">No custom keys yet. Build one below — then tap any card\'s Keys row to use it.</div>';
+      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">No signal flags yet. Build one below — then tap any card\'s Signal Flags row to use it.</div>';
     } else {
       listHTML=_sboardKeyLib.map(function(k){
         return '<div class="sb-key-lib-row">'
           +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
           +'<span style="font-size:12px;flex:1;text-align:left">'+_sboardEsc(k.meaning||'')+'</span>'
-          +'<button class="sb-key-lib-edit" data-key-id="'+k.id+'" title="Edit this key" style="border:none;background:none;cursor:pointer;font-size:13px;color:#5b9bd5">✏️</button>'
-          +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this key" style="border:none;background:none;cursor:pointer;font-size:13px;color:#b8562f">🗑️</button>'
+          +'<button class="sb-key-lib-edit" data-key-id="'+k.id+'" title="Edit this signal flag" style="border:none;background:none;cursor:pointer;font-size:13px;color:#5b9bd5">✏️</button>'
+          +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this signal flag" style="border:none;background:none;cursor:pointer;font-size:13px;color:#b8562f">🗑️</button>'
           +'</div>';
       }).join('');
     }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:4px">Custom Keys</div>'
-      +'<div style="font-size:10px;font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a key on a card to see what it means.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:4px">Signal Flags</div>'
+      +'<div style="font-size:10px;font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a flag on a card to see what it means.</div>'
       +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
-      +'<button class="sc-ov-btn save" id="sb-keylib-add" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Add a key</button>'
+      +'<button class="sc-ov-btn save" id="sb-keylib-add" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Add a signal flag</button>'
       +'<button class="sc-ov-btn" id="sb-keylib-close" style="width:100%">Close</button>'
       +'</div>';
     ov.classList.add('active');

@@ -24,21 +24,21 @@
                                 renamed July 20: it holds everything
                                 on or about the card now, not just a
                                 flipped-over back face)
-     9390  bb-keybuilder-overlay  Add a Key -- builds one Custom Keys
+     9390  bb-keybuilder-overlay  Add a Signal Flag -- builds one Signal Flags
                                 library entry (shape+color+meaning).
                                 9380 stays reserved for the Done archive.
-     9395  bb-keypicker-overlay   Choose a Key -- opened by tapping any
+     9395  bb-keypicker-overlay   Choose a Signal Flag -- opened by tapping any
                                 of a card's 3 fixed key-slot circles.
                                 Lists the library to pick from, Remove
                                 (if the slot's filled), or Build a new
-                                key (drops into 9390, slot-aware).
+                                signal flag (drops into 9390, slot-aware).
      9396  (retired)          was Add a Link / Linked Items -- built
                                 Aug 3 2026, removed Aug 7 2026 per
                                 Larry: dropped the whole Linked Items
                                 field from the Briefing Card. Number
                                 held in reserve like 9380/9390.
-     9397  bb-keylibmanager-overlay  Custom Keys -- Aug 3 2026. View,
-                                edit (pencil), or delete (trash) any key
+     9397  bb-keylibmanager-overlay  Signal Flags -- Aug 3 2026. View,
+                                edit (pencil), or delete (trash) any signal flag
                                 in the shared custom_keys library.
                                 Twin of the Storyboard's own
                                 _sboardOpenKeyLibraryManager, same rows.
@@ -419,7 +419,7 @@
     {key:'clean',   label:'Clean',   head:'"Segoe UI",Helvetica,Arial,sans-serif', body:'"Segoe UI",Helvetica,Arial,sans-serif'}
   ];
 
-  // Custom Keys, July 21, 2026 -- replaces the old one-per-board Signal.
+  // Signal Flags, July 21, 2026 -- replaces the old one-per-board Signal.
   // A shared library of up to 12 traveler-defined keys (shape + color
   // + meaning), built from a fixed set of 6 shapes and 6 curated colors
   // so any two library entries stay visually distinct at card-face size.
@@ -511,7 +511,7 @@
     {value:'project', label:'Project'}
   ];
   var _bbBoards = [];
-  // Custom Keys, Aug 3 2026 -- merged into the Storyboard's shared,
+  // Signal Flags, Aug 3 2026 -- merged into the Storyboard's shared,
   // traveler-wide custom_keys table (was its own board-scoped
   // briefing_board_keys). Loaded once per session (_bbKeyLibraryLoaded
   // guards it), not re-fetched on every board switch -- see
@@ -577,7 +577,7 @@
   // else in this file had to change. If Supabase is unreachable, or
   // nobody's signed in, the board quietly keeps working exactly as it
   // always did, straight off sessionStorage.
-  // Custom Keys are a separate story, Aug 3 2026 -- originally their
+  // Signal Flags are a separate story, Aug 3 2026 -- originally their
   // own board-scoped briefing_board_keys table (mirroring this same
   // save-local-then-sync pattern), now merged into the Storyboard's
   // shared, traveler-wide custom_keys table -- see _bbEnsureKeyLibraryLoaded
@@ -941,7 +941,7 @@
     }catch(e){ console.error('Briefing Board: could not sync key-driven links', e); }
   }
   // Browsable Archive, added July 21, 2026 (evening) -- Touch Point 9380,
-  // held in reserve since the original Custom Keys work. Verified-
+  // held in reserve since the original Signal Flags work. Verified-
   // complete cards never left storage, just the board's 4 columns --
   // this is a read of the same in-memory card list already loaded for
   // the current board (archived cards ride along in _bbCards, only
@@ -1111,7 +1111,7 @@
   async function _bbInitBoardsAndData(){
     var uid=await _bbCurrentUserId();
     if(!uid){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
-    // Aug 3 2026 -- Custom Keys are traveler-wide now (merged with the
+    // Aug 3 2026 -- Signal Flags are traveler-wide now (merged with the
     // Storyboard's shared library), so they load once here rather than
     // per board switch. _bbEnsureKeyLibraryLoaded guards itself, so a
     // reload-and-return-here (Alt+C) or re-entering the screen never
@@ -1718,6 +1718,10 @@
       +'.bb-font-btn.bb-flag-active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
       +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
+      +'.bb-settings-tabs{display:flex;gap:4px;width:100%;max-width:280px;margin:0 auto 10px}'
+      +'.bb-settings-tab{flex:1;font-size:11px;padding:7px 3px;border-radius:6px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
+      +'.bb-settings-tab.active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
+      +'.bb-settings-pane{display:flex;flex-direction:column;align-items:center;width:100%}'
       +'.bb-key-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start}'
       +'.bb-key-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}'
       +'.bb-key-add{font-size:16px;color:var(--bb-sub);border-style:dashed}'
@@ -1738,7 +1742,7 @@
       +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
       +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
       +'.bb-links-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:2px 0}'
-      // Key Library manager (9397), Aug 3 2026 -- same row shape as
+      // Signal Flags manager (9397), Aug 3 2026 -- same row shape as
       // Linked Items/Checklist just above, pencil then trash per row.
       +'.bb-keylib-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
       +'.bb-keylib-row:last-child{border-bottom:none}'
@@ -1982,31 +1986,42 @@
       setOv.innerHTML=
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Board Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
+          +'<div class="bb-settings-tabs">'
+            +'<button class="bb-settings-tab active" data-tab="people">&#128101; People</button>'
+            +'<button class="bb-settings-tab" data-tab="appearance">&#127912; Appearance</button>'
+            +'<button class="bb-settings-tab" data-tab="maintenance">&#128295; Maintenance</button>'
+          +'</div>'
           +'<div class="bbw">'
-            +'<div class="bb-field"><label>Color theme</label><div class="bb-swatches">'
-              +THEMES.map(function(t){ return '<button class="bb-theme-swatch" data-theme="'+t.key+'" title="'+t.label+'" style="background:'+t.bg+';border-color:'+t.accent+'"></button>'; }).join('')
-            +'</div></div>'
-            +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
-              +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
-            +'</div></div>'
-            +'<div class="bb-field"><label>Text size</label>'
-              +'<button class="bb-flag-btn" id="bb-open-textsize" style="width:100%">🔠 Adjust text size</button>'
+            +'<div class="bb-settings-pane" data-pane="people">'
+              +'<div class="bb-field" id="bb-sharing-field"><label>Sharing</label>'
+                +'<div id="bb-sharing-summary" style="font-size:12px;color:var(--bb-sub);margin-bottom:6px"></div>'
+                +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
+              +'</div>'
+              +'<div class="bb-field" id="bb-team-roster-field">'
+                +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#128101; Team</button>'
+              +'</div>'
             +'</div>'
-            +'<div class="bb-field"><label>Start Date warning (days before, auto-sets H)</label>'
-              +'<input type="number" min="0" step="1" id="bb-start-warn-days" style="width:80px">'
+            +'<div class="bb-settings-pane" data-pane="appearance" style="display:none">'
+              +'<div class="bb-field"><label>Color theme</label><div class="bb-swatches">'
+                +THEMES.map(function(t){ return '<button class="bb-theme-swatch" data-theme="'+t.key+'" title="'+t.label+'" style="background:'+t.bg+';border-color:'+t.accent+'"></button>'; }).join('')
+              +'</div></div>'
+              +'<div class="bb-field"><label>Font</label><div class="bb-flags">'
+                +FONTS.map(function(f){ return '<button class="bb-font-btn" data-font="'+f.key+'">'+f.label+'</button>'; }).join('')
+              +'</div></div>'
+              +'<div class="bb-field"><label>Text size</label>'
+                +'<button class="bb-flag-btn" id="bb-open-textsize" style="width:100%">&#128288; Adjust text size</button>'
+              +'</div>'
             +'</div>'
-            +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
-              +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
-            +'</div>'
-            +'<div class="bb-field"><label>Custom Keys</label>'
-              +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128273; Manage Keys</button>'
-            +'</div>'
-            +'<div class="bb-field" id="bb-sharing-field"><label>Sharing</label>'
-              +'<div id="bb-sharing-summary" style="font-size:12px;color:var(--bb-sub);margin-bottom:6px"></div>'
-              +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
-            +'</div>'
-            +'<div class="bb-field" id="bb-team-roster-field">'
-              +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#128101; Team</button>'
+            +'<div class="bb-settings-pane" data-pane="maintenance" style="display:none">'
+              +'<div class="bb-field"><label>Start Date warning (days before, auto-sets H)</label>'
+                +'<input type="number" min="0" step="1" id="bb-start-warn-days" style="width:80px">'
+              +'</div>'
+              +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
+                +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
+              +'</div>'
+              +'<div class="bb-field"><label>Signal Flags</label>'
+                +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128681; Manage Signal Flags</button>'
+              +'</div>'
             +'</div>'
           +'</div>'
         +'</div>';
@@ -2017,6 +2032,18 @@
       // picker as Storyboard/Session's Options menus.
       var tsBtn=setOv.querySelector('#bb-open-textsize');
       if(tsBtn) tsBtn.addEventListener('click', function(){ if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
+      // People/Appearance/Maintenance tabs, Aug 8 2026 -- Larry's clustering
+      // request: Board Settings groups everything by kind instead of one
+      // long flat list. Plain show/hide, no framework -- matches every
+      // other lightweight control in this file.
+      setOv.querySelectorAll('.bb-settings-tab').forEach(function(tabBtn){
+        tabBtn.addEventListener('click', function(){
+          setOv.querySelectorAll('.bb-settings-tab').forEach(function(b){ b.classList.remove('active'); });
+          tabBtn.classList.add('active');
+          var target=tabBtn.getAttribute('data-tab');
+          setOv.querySelectorAll('.bb-settings-pane').forEach(function(p){ p.style.display = (p.getAttribute('data-pane')===target) ? '' : 'none'; });
+        });
+      });
     }
     // Team Roster (Settings > Team), Aug 8 2026 -- Larry's locked design:
     // reads like it would print, not a data-entry grid. Email/phone always
@@ -2058,9 +2085,9 @@
       klOv.id='bb-keylibmanager-overlay'; klOv.className='bb-overlay';
       klOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Custom Keys</span><button class="bb-close" id="bb-keylibmanager-close" aria-label="Close">✕</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Signal Flags</span><button class="bb-close" id="bb-keylibmanager-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a key link to each other automatically.</div>'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a signal flag link to each other automatically.</div>'
             +'<div id="bb-keylib-list"></div>'
             +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a key</button>'
           +'</div>'
@@ -2071,7 +2098,7 @@
     }
     // Board Sharing (Aug 4 2026) -- lets the owner of a project/departmental/
     // company Briefing Board add other signed-in members so they can see
-    // and edit it too. Same overlay shape as the Custom Keys manager.
+    // and edit it too. Same overlay shape as the Signal Flags manager.
     if(!document.getElementById('bb-sharing-overlay')){
       var shOv=document.createElement('div');
       shOv.id='bb-sharing-overlay'; shOv.className='bb-overlay';
@@ -2079,11 +2106,14 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Manage Access</span><button class="bb-close" id="bb-sharing-close" aria-label="Close">\u2715</button></div>'
           +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">Everyone added here can see and edit this board -- same access as you.</div>'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">Full access members can see and edit this board, same as you. View-only visitors can look but not change anything.</div>'
             +'<div id="bb-sharing-list"></div>'
-            +'<div id="bb-sharing-add-row" style="display:flex;gap:6px;margin-top:8px">'
-              +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
-              +'<button class="bb-icon-btn" id="bb-sharing-add-btn" title="Add">+</button>'
+            +'<div id="bb-sharing-add-row" style="margin-top:8px">'
+              +'<div style="display:flex;gap:6px;margin-bottom:6px">'
+                +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
+                +'<button class="bb-icon-btn" id="bb-sharing-add-btn" title="Add">+</button>'
+              +'</div>'
+              +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bb-sub);cursor:pointer"><input type="checkbox" id="bb-sharing-add-viewonly" style="width:auto"> Add as a view-only visitor</label>'
             +'</div>'
           +'</div>'
         +'</div>';
@@ -2135,7 +2165,7 @@
       kbOv.id='bb-keybuilder-overlay'; kbOv.className='bb-overlay';
       kbOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Key</span><button class="bb-close" id="bb-keybuilder-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Signal Flag</span><button class="bb-close" id="bb-keybuilder-close" aria-label="Close">\u2715</button></div>'
           +'<div class="bbw">'
             +'<div class="bb-field"><label>Shape</label><div class="bb-flags">'
               +SIGNAL_SHAPES.map(function(s){ return '<button class="bb-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:inline-block;width:18px;height:18px;'+_bbShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
@@ -2143,7 +2173,7 @@
             +'<div class="bb-field"><label>Color</label><div class="bb-swatches">'
               +KEY_COLORS.map(function(col){ return '<button class="bb-key-swatch" data-color="'+col+'" style="background:'+col+'"></button>'; }).join('')
             +'</div></div>'
-            +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this key mean?"></div>'
+            +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this signal flag mean?"></div>'
             +'<button class="bb-flag-btn" id="bb-keybuilder-save" style="width:100%">Save</button>'
           +'</div>'
         +'</div>';
@@ -2156,11 +2186,11 @@
       kpOv.id='bb-keypicker-overlay'; kpOv.className='bb-overlay';
       kpOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Choose a Key</span><button class="bb-close" id="bb-keypicker-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Choose a Signal Flag</span><button class="bb-close" id="bb-keypicker-close" aria-label="Close">\u2715</button></div>'
           +'<div class="bbw">'
             +'<div class="bb-field" id="bb-keypicker-list"></div>'
-            +'<button class="bb-flag-btn" id="bb-keypicker-remove" style="width:100%;margin-bottom:8px">Remove this key</button>'
-            +'<button class="bb-flag-btn" id="bb-keypicker-new" style="width:100%">Build a new key</button>'
+            +'<button class="bb-flag-btn" id="bb-keypicker-remove" style="width:100%;margin-bottom:8px">Remove this signal flag</button>'
+            +'<button class="bb-flag-btn" id="bb-keypicker-new" style="width:100%">Build a new signal flag</button>'
           +'</div>'
         +'</div>';
       fg.appendChild(kpOv);
@@ -2622,11 +2652,11 @@
     trash.addEventListener('click', openRecentlyDeleted);
   }
 
-  // Custom Keys -- a shared library of up to 12 traveler-defined
-  // keys (shape+color+meaning), built in the Add-a-Key overlay (9390).
+  // Signal Flags -- a shared library of up to 12 traveler-defined
+  // signal flags (shape+color+meaning), built in the Add-a-Signal-Flag overlay (9390).
   // A card holds up to 3 (c.keys, always kept gap-free -- see
   // removeKeyFromSlot). Tapping ANY circle (empty or filled) opens
-  // Choose a Key (9395), which does triple duty: assign an existing
+  // Choose a Signal Flag (9395), which does triple duty: assign an existing
   // library entry, remove what's there, or jump into building a brand
   // new one. Meanings stay hover-only by design ("can't remember what
   // it means? hover over it") -- no separate legend, kept intentionally
@@ -2659,7 +2689,7 @@
         +'</button>';
     }
     if(keys.length < MAX_KEYS_PER_CARD){
-      html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a key">+</button>';
+      html += '<button class="bb-key-btn bb-key-add" data-slot="'+keys.length+'" title="Add a signal flag">+</button>';
     }
     row.innerHTML = html;
     row.querySelectorAll('.bb-key-btn').forEach(function(btn){
@@ -2692,7 +2722,7 @@
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     var keys=(c && c.keys) || [];
     if(!lib.length){
-      list.innerHTML='<div class="bb-key-pick-empty-msg">No keys yet &mdash; build your first one below.</div>';
+      list.innerHTML='<div class="bb-key-pick-empty-msg">No signal flags yet &mdash; build your first one below.</div>';
     } else {
       list.innerHTML = lib.map(function(k){
         var usedElsewhere = keys.indexOf(k.id)>=0 && keys[_bbOpenSlotIndex]!==k.id;
@@ -2703,11 +2733,11 @@
           +'</button>'
           // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
           // edit or change the meaning of any one of them" from
-          // wherever he actually runs into a key, not just Board
+          // wherever he actually runs into a signal flag, not just Board
           // Settings' library manager. Same edit form (openKeyBuilder
           // with existingKey), reached straight from the card's own
-          // Choose-a-Key picker too.
-          +'<button class="bb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this key">&#9998;</button>'
+          // Choose-a-Signal-Flag picker too.
+          +'<button class="bb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this signal flag">&#9998;</button>'
           +'</div>';
       }).join('');
       list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
@@ -2761,12 +2791,12 @@
     renderBoard();
   }
 
-  // existingKey -- optional (Aug 3 2026, pencil-to-edit on the Key
-  // Library manager). Pre-fills the draft from a real key row and
+  // existingKey -- optional (Aug 3 2026, pencil-to-edit on the Signal Flags
+  // manager). Pre-fills the draft from a real key row and
   // switches saveNewKey (below) into update mode instead of insert.
   // onSaved(savedKeyRow) -- what to do once it's actually saved: assign
   // it to the card slot that opened this (bb-keypicker-new's case,
-  // below), or just refresh whatever list is showing it (Key Library
+  // below), or just refresh whatever list is showing it (Signal Flags
   // manager, Task 8). Always explicit now -- no implicit "guess from
   // whatever card/slot happens to still be open" fallback, since that
   // got fragile once this overlay had more than one way in.
@@ -2777,7 +2807,7 @@
       : {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
     _bbKeyBuilderOnSaved = onSaved || null;
     var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value=existingKey?(existingKey.meaning||''):'';
-    var t=document.querySelector('#bb-keybuilder-overlay .bb-overlay-title'); if(t) t.textContent=existingKey?'Edit Key':'Add a Key';
+    var t=document.querySelector('#bb-keybuilder-overlay .bb-overlay-title'); if(t) t.textContent=existingKey?'Edit Signal Flag':'Add a Signal Flag';
     var s=document.getElementById('bb-keybuilder-save'); if(s) s.textContent=existingKey?'Save changes':'Save';
     _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
     _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
@@ -2801,7 +2831,7 @@
   // set) -- Aug 3 2026, "we need to be able to edit or trash any custom
   // key." Calls back via _bbKeyBuilderOnSaved rather than hardcoding
   // what happens next, since this overlay now opens from more than one
-  // place (a card's Choose-a-Key, and the Key Library manager).
+  // place (a card's Choose-a-Signal-Flag, and the Signal Flags manager).
   async function saveNewKey(){
     var meaningEl=document.getElementById('bb-keybuilder-meaning');
     var meaning=meaningEl?meaningEl.value.trim():'';
@@ -2815,8 +2845,8 @@
         savedKey=await _bbCreateKey(_bbKeyDraft.shape, _bbKeyDraft.color, meaning);
       }
     }catch(e){
-      console.error('Briefing Board: could not save key', e);
-      window.alert('Could not save that key. Error: '+(e&&e.message?e.message:String(e))+'. Please try again.');
+      console.error('Briefing Board: could not save signal flag', e);
+      window.alert('Could not save that signal flag. Error: '+(e&&e.message?e.message:String(e))+'. Please try again.');
       return;
     }
     closeKeyBuilder();
@@ -2847,20 +2877,20 @@
     });
   }
 
-  // ---- Key Library manager (9397) ----
+  // ---- Signal Flags manager (9397) ----
 
   function _bbRenderKeyLibManager(){
     var list=document.getElementById('bb-keylib-list'); if(!list) return;
     var lib=_bbLoadKeyLibrary();
     if(!lib.length){
-      list.innerHTML='<div class="bb-links-empty">No custom keys yet. Build one below.</div>';
+      list.innerHTML='<div class="bb-links-empty">No signal flags yet. Build one below.</div>';
     } else {
       list.innerHTML=lib.map(function(k){
         return '<div class="bb-keylib-row">'
           +'<span class="bb-keylib-swatch" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
           +'<span class="bb-keylib-meaning">'+_esc(k.meaning||'')+'</span>'
-          +'<button class="bb-keylib-edit" data-key-id="'+_esc(k.id)+'" title="Edit this key">&#9998;</button>'
-          +'<button class="bb-keylib-del" data-key-id="'+_esc(k.id)+'" title="Delete this key">&#128465;&#65039;</button>'
+          +'<button class="bb-keylib-edit" data-key-id="'+_esc(k.id)+'" title="Edit this signal flag">&#9998;</button>'
+          +'<button class="bb-keylib-del" data-key-id="'+_esc(k.id)+'" title="Delete this signal flag">&#128465;&#65039;</button>'
           +'</div>';
       }).join('');
       list.querySelectorAll('.bb-keylib-edit').forEach(function(btn){
@@ -2872,9 +2902,9 @@
       list.querySelectorAll('.bb-keylib-del').forEach(function(btn){
         btn.addEventListener('click', async function(){
           var id=btn.getAttribute('data-key-id');
-          if(!window.confirm('Delete this key? It will be removed from every card and Storyboard item currently using it, and any links that exist only because of it.')) return;
+          if(!window.confirm('Delete this signal flag? It will be removed from every card and Storyboard item currently using it, and any links that exist only because of it.')) return;
           try{ await _bbDeleteKey(id); }
-          catch(e){ console.error('Briefing Board: could not delete key', e); window.alert('Could not delete that key. Please try again.'); return; }
+          catch(e){ console.error('Briefing Board: could not delete signal flag', e); window.alert('Could not delete that signal flag. Please try again.'); return; }
           _bbRenderKeyLibManager();
           renderBoard();
         });
@@ -2941,14 +2971,15 @@
     var list=document.getElementById('bb-sharing-list'); if(!list) return;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     var addRow=document.getElementById('bb-sharing-add-row');
-    if(addRow) addRow.style.display = _bbSharingIsOwner ? 'flex' : 'none';
+    if(addRow) addRow.style.display = _bbSharingIsOwner ? 'block' : 'none';
     if(!_bbSharingCache.length){
       list.innerHTML='<div class="bb-key-pick-empty-msg">Nobody else has access yet.</div>';
       return;
     }
     list.innerHTML=_bbSharingCache.map(function(m){
+      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:var(--bb-sub);font-style:italic;margin-left:6px">view-only visitor</span>' : '';
       return '<div class="bb-keylib-row" data-user-id="'+_esc(m.user_id)+'">'
-        +'<span class="bb-keylib-meaning">'+_esc(m.name||m.email)+'</span>'
+        +'<span class="bb-keylib-meaning">'+_esc(m.name||m.email)+viewOnlyTag+'</span>'
         +(_bbSharingIsOwner ? '<button class="bb-keylib-del" data-user-id="'+_esc(m.user_id)+'" title="Remove">&#128465;&#65039;</button>' : '')
         +'</div>';
     }).join('');
@@ -2983,6 +3014,8 @@
       var input=document.getElementById('bb-sharing-add-email');
       var email=input?input.value.trim().toLowerCase():'';
       if(!email) return;
+      var viewOnlyEl=document.getElementById('bb-sharing-add-viewonly');
+      var accessLevel=(viewOnlyEl && viewOnlyEl.checked) ? 'view' : 'edit';
       var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
       var sb=T().sb; if(!sb || !board) return;
       try{
@@ -2993,12 +3026,13 @@
           return;
         }
         var myUid=await _bbCurrentUserId();
-        var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid});
+        var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid, access_level: accessLevel});
         if(ins.error){
           window.alert('Could not add '+(match.name||email)+'. '+(ins.error.message||'Please try again.'));
           return;
         }
         if(input) input.value='';
+        if(viewOnlyEl) viewOnlyEl.checked=false;
         await _bbLoadSharing();
         _bbRenderSharingList();
       }catch(e){
@@ -3045,7 +3079,9 @@
     }catch(e){ _bbRosterOwner=null; }
     try{
       var res=await sb.rpc('list_board_members', {p_board_id: board.id});
-      _bbRosterCache = (!res.error && res.data) ? res.data : [];
+      // View-only visitors (Aug 8 2026) aren't Team members -- they show
+      // up in Sharing/Manage Access only, not in the role-based roster.
+      _bbRosterCache = (!res.error && res.data) ? res.data.filter(function(m){ return (m.access_level||'edit')==='edit'; }) : [];
     }catch(e){ _bbRosterCache=[]; }
   }
 
