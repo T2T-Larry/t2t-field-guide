@@ -1126,7 +1126,7 @@
     }
     list.innerHTML=rows.map(function(m){
       var safeLabel=(m.name||m.email||'').replace(/</g,'&lt;');
-      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:#a89a80;font-style:italic;margin-left:6px">view-only visitor</span>' : '';
+      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:#a89a80;font-style:italic;margin-left:6px">Guest</span>' : '';
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:12px">'
         +'<span>'+safeLabel+viewOnlyTag+'</span>'
         +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:13px" title="Remove">&#10005;</button>' : '')
@@ -1156,7 +1156,7 @@
           +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
           +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
         +'</div>'
-        +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;cursor:pointer"><input type="checkbox" id="sb-share-add-viewonly" style="width:auto"> Add as a view-only visitor</label>'
+        +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;cursor:pointer"><input type="checkbox" id="sb-share-add-viewonly" style="width:auto"> Add as a Guest</label>'
       +'</div>'
       +'<div id="sb-share-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<button class="sc-ov-btn" id="sb-share-close" style="width:100%">Back</button>'
@@ -2930,10 +2930,10 @@
   }
   function _tmRoleTitle(m){
     if(m.isOwner) return 'Owner';
-    if(m.role==='leader') return 'Leader';
+    if(m.role==='leader') return 'Director';
     if(m.is_facilitator) return 'Facilitator';
     if(m.can_facilitate) return 'Facilitator-qualified';
-    return 'Member';
+    return 'Cast Member';
   }
 
   async function _tmLoadRoster(projectRow){
@@ -2969,7 +2969,7 @@
       var clickable = (!m.isOwner && _tmRosterIsOwner);
       var panel = (!m.isOwner) ? (
         '<div class="tm-rolepanel" id="tm-rp-'+_esc9710(m.user_id)+'" style="display:none">'
-          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Leader &mdash; runs the board day to day</label>'
+          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Director &mdash; runs the board day to day</label>'
           +'<label><input type="checkbox" class="tm-r-canfac" data-uid="'+_esc9710(m.user_id)+'"'+(m.can_facilitate?' checked':'')+'> \u2726 Facilitator-qualified</label>'
           +'<label><input type="radio" name="tm-fac" class="tm-r-fac" data-uid="'+_esc9710(m.user_id)+'"'+(m.is_facilitator?' checked':'')+'> \uD83C\uDFA4 Facilitator &mdash; running sessions now</label>'
         +'</div>'
@@ -3041,7 +3041,7 @@
       +'<input type="text" class="tm-groupname" id="tm-groupname" value="'+_esc9710(projectRow.text_content||'')+'">'
       +'<div id="tm-list-view"></div>'
       +'<div class="tm-addrow">'
-        +'<div class="tm-add-tile" id="tm-add-tile" title="Add a team member">+</div>'
+        +'<div class="tm-add-tile" id="tm-add-tile" title="Add a cast member">+</div>'
         +'<div class="tm-print-tile" id="tm-print-tile" title="Print roster">&#128438;</div>'
       +'</div>'
       +'<div id="tm-add-row" style="display:none;margin-top:10px;gap:6px">'
@@ -3133,7 +3133,7 @@
         +'<button class="sb-gear-tab" data-tab="maintenance">&#128295; Maintenance</button>'
       +'</div>'
       +'<div class="sb-gear-pane" data-pane="people" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">👥 Team</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
         +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">&#129309; Manage Access</button>'
       +'</div>'
       +'<div class="sb-gear-pane" data-pane="appearance" style="display:none;flex-direction:column;gap:6px;margin-bottom:8px">'

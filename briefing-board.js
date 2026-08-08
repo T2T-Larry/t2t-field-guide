@@ -1998,7 +1998,7 @@
                 +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
               +'</div>'
               +'<div class="bb-field" id="bb-team-roster-field">'
-                +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#128101; Team</button>'
+                +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#127917; Cast</button>'
               +'</div>'
             +'</div>'
             +'<div class="bb-settings-pane" data-pane="appearance" style="display:none">'
@@ -2055,11 +2055,11 @@
       tmOv.id='bb-team-overlay'; tmOv.className='bb-overlay';
       tmOv.innerHTML=
          '<div class="bb-overlay-card bb-team-print" style="width:400px">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Team</span><button class="bb-close" id="bb-team-close" aria-label="Close">&#10005;</button></div>'
-          +'<input type="text" class="tm-groupname" id="bb-team-groupname" placeholder="Name this team...">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Cast</span><button class="bb-close" id="bb-team-close" aria-label="Close">&#10005;</button></div>'
+          +'<input type="text" class="tm-groupname" id="bb-team-groupname" placeholder="Name this cast...">'
           +'<div id="bb-team-list-view"></div>'
           +'<div class="tm-addrow">'
-            +'<div class="tm-add-tile" id="bb-team-add" title="Add a team member">+</div>'
+            +'<div class="tm-add-tile" id="bb-team-add" title="Add a cast member">+</div>'
             +'<div class="tm-print-tile" id="bb-team-print" title="Print roster">&#128438;</div>'
           +'</div>'
           +'<div id="bb-team-add-row" style="display:none;margin-top:10px;gap:6px">'
@@ -2106,14 +2106,14 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Manage Access</span><button class="bb-close" id="bb-sharing-close" aria-label="Close">\u2715</button></div>'
           +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">Full access members can see and edit this board, same as you. View-only visitors can look but not change anything.</div>'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">Full access Cast Members can see and edit this board, same as you. Guests can look but not change anything.</div>'
             +'<div id="bb-sharing-list"></div>'
             +'<div id="bb-sharing-add-row" style="margin-top:8px">'
               +'<div style="display:flex;gap:6px;margin-bottom:6px">'
                 +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
                 +'<button class="bb-icon-btn" id="bb-sharing-add-btn" title="Add">+</button>'
               +'</div>'
-              +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bb-sub);cursor:pointer"><input type="checkbox" id="bb-sharing-add-viewonly" style="width:auto"> Add as a view-only visitor</label>'
+              +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bb-sub);cursor:pointer"><input type="checkbox" id="bb-sharing-add-viewonly" style="width:auto"> Add as a Guest</label>'
             +'</div>'
           +'</div>'
         +'</div>';
@@ -2977,7 +2977,7 @@
       return;
     }
     list.innerHTML=_bbSharingCache.map(function(m){
-      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:var(--bb-sub);font-style:italic;margin-left:6px">view-only visitor</span>' : '';
+      var viewOnlyTag = m.access_level==='view' ? '<span style="font-size:10px;color:var(--bb-sub);font-style:italic;margin-left:6px">Guest</span>' : '';
       return '<div class="bb-keylib-row" data-user-id="'+_esc(m.user_id)+'">'
         +'<span class="bb-keylib-meaning">'+_esc(m.name||m.email)+viewOnlyTag+'</span>'
         +(_bbSharingIsOwner ? '<button class="bb-keylib-del" data-user-id="'+_esc(m.user_id)+'" title="Remove">&#128465;&#65039;</button>' : '')
@@ -3061,10 +3061,10 @@
   }
   function _bbRoleTitle(m){
     if(m.isOwner) return 'Owner';
-    if(m.role==='leader') return 'Leader';
+    if(m.role==='leader') return 'Director';
     if(m.is_facilitator) return 'Facilitator';
     if(m.can_facilitate) return 'Facilitator-qualified';
-    return 'Member';
+    return 'Cast Member';
   }
 
   async function _bbLoadRoster(){
@@ -3103,7 +3103,7 @@
       var clickable = (!m.isOwner && _bbRosterIsOwner);
       var panel = (!m.isOwner) ? (
         '<div class="tm-rolepanel" id="tm-rp-'+_esc(m.user_id)+'" style="display:none">'
-          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Leader &mdash; runs the board day to day</label>'
+          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Director &mdash; runs the board day to day</label>'
           +'<label><input type="checkbox" class="tm-r-canfac" data-uid="'+_esc(m.user_id)+'"'+(m.can_facilitate?' checked':'')+'> \u2726 Facilitator-qualified</label>'
           +'<label><input type="radio" name="tm-fac" class="tm-r-fac" data-uid="'+_esc(m.user_id)+'"'+(m.is_facilitator?' checked':'')+'> \uD83C\uDFA4 Facilitator &mdash; running sessions now</label>'
         +'</div>'
