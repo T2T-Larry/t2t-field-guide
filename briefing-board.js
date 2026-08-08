@@ -2035,7 +2035,7 @@
           +'<div class="bbw">'
             +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a signal flag link to each other automatically.</div>'
             +'<div id="bb-keylib-list"></div>'
-            +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a key</button>'
+            +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a Flag</button>'
           +'</div>'
         +'</div>';
       fg.appendChild(klOv);
@@ -2233,7 +2233,7 @@
               // from _bbKeyLinkCountCache rather than the card-wide
               // total badge, which lumps every key together.
               var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
-              return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this key':'')+'">'
+              return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
                 +(lc?'<span class="bb-key-link-count">'+lc+'</span>':'')
                 +'</span>';
