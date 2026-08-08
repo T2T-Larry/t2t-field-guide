@@ -200,6 +200,24 @@
         +'.sc-overlay-actions{display:flex;gap:8px;justify-content:flex-end}'
         +'.sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 12px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#5b9bd5}'
         +'.sc-ov-btn.save{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
+        +'.tm-groupname{font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#1a3a5c;text-align:center;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 12px}'
+        +'.tm-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #efe9dc;text-align:left}'
+        +'.tm-sym{width:22px;text-align:center;font-size:15px;padding-top:1px;flex-shrink:0}'
+        +'.tm-sym.tm-clickable{cursor:pointer}'
+        +'.tm-body{flex:1;min-width:0}'
+        +'.tm-name{font-size:13px;font-weight:600;color:#1a3a5c}'
+        +'.tm-role{font-weight:400;color:#7a6040;font-size:11px}'
+        +'.tm-contact{font-size:11px;color:#5b9bd5;line-height:1.25;margin-top:1px}'
+        +'.tm-notes-row{display:flex;align-items:baseline;gap:5px;line-height:1.25;margin-top:1px}'
+        +'.tm-notes-lbl{font-size:8px;letter-spacing:1px;color:#a89a80;flex-shrink:0}'
+        +'.tm-notes-input,.tm-phone-input{flex:1;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;font-size:10px;color:#7a6040;padding:0;font-family:inherit}'
+        +'.tm-rolepanel{margin:6px 0 0 32px;background:#f7fbfe;border:1px solid #cfe4f2;border-radius:8px;padding:8px 10px}'
+        +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:11px;color:#1a3a5c;margin-bottom:5px;cursor:pointer}'
+        +'.tm-rolepanel label:last-child{margin-bottom:0}'
+        +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
+        +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed #a9cce3;color:#5b9bd5;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+        +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid #cfe4f2;background:#fff;color:#5b9bd5;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+        +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
@@ -2877,6 +2895,205 @@
     else { T().goBackStack(); }
   }
 
+  // Team Roster (Aug 8 2026) -- same locked design as the Briefing
+  // Board's Settings > Team: reads like it would print, email/phone
+  // always visible, an always-on Notes field per person, role symbol
+  // doubles as the picker trigger. Scoped to the current PROJECT (the
+  // fractal root storyboard_members already keys off of), resolved via
+  // the same climb-to-root helper the PROJECT switcher uses.
+  var _tmRosterCache = [];
+  var _tmRosterOwner = null;
+  var _tmRosterIsOwner = false;
+
+  function _sboardCurrentProjectRow(){
+    if(!T2TShared.currentTopicId || !_sboardAllRowsById[T2TShared.currentTopicId]) return null;
+    return _sboardProjectRowFor(_sboardAllRowsById[T2TShared.currentTopicId]);
+  }
+
+  function _tmRoleSymbol(m){
+    if(m.isOwner) return '\uD83D\uDC51';
+    if(m.role==='leader') return '\uD83C\uDFAF';
+    if(m.is_facilitator) return '\uD83C\uDFA4';
+    if(m.can_facilitate) return '\u2726';
+    return '\u2610';
+  }
+  function _tmRoleTitle(m){
+    if(m.isOwner) return 'Owner';
+    if(m.role==='leader') return 'Leader';
+    if(m.is_facilitator) return 'Facilitator';
+    if(m.can_facilitate) return 'Facilitator-qualified';
+    return 'Member';
+  }
+
+  async function _tmLoadRoster(projectRow){
+    var _sb=T().sb; if(!_sb || !projectRow) return;
+    var uid=(await _sb.auth.getUser()).data.user;
+    uid=uid?uid.id:null;
+    _tmRosterIsOwner = !!uid && projectRow.user_id===uid;
+    try{
+      var ownerRes=await _sb.from('members').select('user_id,name,email,initials,phone').eq('user_id', projectRow.user_id).maybeSingle();
+      _tmRosterOwner = (!ownerRes.error && ownerRes.data) ? ownerRes.data : null;
+    }catch(e){ _tmRosterOwner=null; }
+    try{
+      var res=await _sb.rpc('list_storyboard_members', {p_project_id: projectRow.id});
+      _tmRosterCache = (!res.error && res.data) ? res.data : [];
+    }catch(e){ _tmRosterCache=[]; }
+  }
+
+  function _tmAllRosterRows(projectRow){
+    var rows=[];
+    if(_tmRosterOwner) rows.push({user_id:_tmRosterOwner.user_id, name:_tmRosterOwner.name, email:_tmRosterOwner.email, phone:_tmRosterOwner.phone, isOwner:true, role:null, can_facilitate:true, is_facilitator:false, notes:(projectRow&&projectRow.owner_notes)||''});
+    (_tmRosterCache||[]).forEach(function(m){ rows.push({user_id:m.user_id, name:m.name, email:m.email, phone:m.phone, isOwner:false, role:m.role, can_facilitate:m.can_facilitate, is_facilitator:m.is_facilitator, notes:m.notes||''}); });
+    return rows;
+  }
+
+  function _esc9710(s){ return String(s==null?'':s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+
+  function _tmRenderRoster(projectRow){
+    var wrap=document.getElementById('tm-list-view'); if(!wrap) return;
+    var rows=_tmAllRosterRows(projectRow);
+    wrap.innerHTML = rows.map(function(m){
+      var clickable = (!m.isOwner && _tmRosterIsOwner);
+      var panel = (!m.isOwner) ? (
+        '<div class="tm-rolepanel" id="tm-rp-'+_esc9710(m.user_id)+'" style="display:none">'
+          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Leader &mdash; runs the board day to day</label>'
+          +'<label><input type="checkbox" class="tm-r-canfac" data-uid="'+_esc9710(m.user_id)+'"'+(m.can_facilitate?' checked':'')+'> \u2726 Facilitator-qualified</label>'
+          +'<label><input type="radio" name="tm-fac" class="tm-r-fac" data-uid="'+_esc9710(m.user_id)+'"'+(m.is_facilitator?' checked':'')+'> \uD83C\uDFA4 Facilitator &mdash; running sessions now</label>'
+        +'</div>'
+      ) : '';
+      var contactLine, notesLine;
+      if(m.isOwner){
+        contactLine = '<div class="tm-contact">\u2709 '+_esc9710(m.email||'')+' &nbsp;&nbsp; \u260E <input type="text" class="tm-phone-input tm-owner-phone" placeholder="Add phone" value="'+_esc9710(m.phone||'')+'" '+(_tmRosterIsOwner?'':'disabled')+'></div>';
+        notesLine = '<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input tm-owner-notes" placeholder="\u2014" value="'+_esc9710(m.notes||'')+'" '+(_tmRosterIsOwner?'':'disabled')+'></div>';
+      } else {
+        var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+_esc9710(m.phone)) : '';
+        contactLine = '<div class="tm-contact">\u2709 '+_esc9710(m.email||'')+phoneLine+'</div>';
+        notesLine = '<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input" data-uid="'+_esc9710(m.user_id)+'" placeholder="\u2014" value="'+_esc9710(m.notes||'')+'" '+(_tmRosterIsOwner?'':'disabled')+'></div>';
+      }
+      return '<div class="tm-row">'
+        +'<div class="tm-sym'+(clickable?' tm-clickable':'')+'" '+(clickable?'data-uid="'+_esc9710(m.user_id)+'"':'')+'>'+_tmRoleSymbol(m)+'</div>'
+        +'<div class="tm-body">'
+          +'<div class="tm-name">'+_esc9710(m.name||m.email||'')+' <span class="tm-role">&middot; '+_tmRoleTitle(m)+'</span></div>'
+          +contactLine
+          +notesLine
+          +panel
+        +'</div>'
+      +'</div>';
+    }).join('');
+    var addTile=document.getElementById('tm-add-tile');
+    if(addTile) addTile.style.display = _tmRosterIsOwner ? 'flex' : 'none';
+  }
+
+  async function _tmSaveMemberRole(projectRow, uid, role, canFac, isFac){
+    var _sb=T().sb; if(!_sb) return;
+    try{ await _sb.rpc('update_storyboard_member', {p_project_id: projectRow.id, p_user_id: uid, p_role: role, p_can_facilitate: canFac, p_is_facilitator: isFac}); }catch(e){}
+    await _tmLoadRoster(projectRow); _tmRenderRoster(projectRow);
+  }
+  async function _tmSaveMemberNotes(projectRow, uid, notes){
+    var _sb=T().sb; if(!_sb) return;
+    try{ await _sb.rpc('update_storyboard_member_notes', {p_project_id: projectRow.id, p_user_id: uid, p_notes: notes}); }catch(e){}
+  }
+  async function _tmSaveOwnerNotes(projectRow, notes){
+    if(!_tmRosterIsOwner) return;
+    var _sb=T().sb; if(!_sb) return;
+    projectRow.owner_notes=notes;
+    try{ await _sb.from('ideas').update({owner_notes: notes}).eq('id', projectRow.id); }catch(e){}
+  }
+  async function _tmSaveOwnerPhone(phone){
+    if(!_tmRosterIsOwner) return;
+    var _sb=T().sb; if(!_sb) return;
+    if(_tmRosterOwner) _tmRosterOwner.phone=phone;
+    try{ await _sb.rpc('update_board_owner_contact', {p_phone: phone}); }catch(e){}
+  }
+  async function _tmAddMember(projectRow, email){
+    var rows=_tmAllRosterRows(projectRow);
+    var cap=(projectRow&&projectRow.member_cap) || 7;
+    if(rows.length>=cap) return {ok:false,msg:'This board is at its '+cap+'-person cap.'};
+    var _sb=T().sb; if(!_sb) return {ok:false,msg:'Not connected.'};
+    try{
+      var res=await _sb.rpc('find_member_by_email', {p_email: String(email||'').trim().toLowerCase()});
+      var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
+      if(!match) return {ok:false,msg:'No T2T member found with that email.'};
+      var myUser=(await _sb.auth.getUser()).data.user;
+      var ins=await _sb.from('storyboard_members').insert({project_id: projectRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null});
+      if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
+      return {ok:true};
+    }catch(e){ return {ok:false,msg:'Could not add them.'}; }
+  }
+
+  function _sboardOpenTeam(){
+    var projectRow=_sboardCurrentProjectRow();
+    var ov=document.getElementById('sb-detail-overlay'); if(!ov || !projectRow) return;
+    ov.innerHTML='<div class="sc-overlay-card sb-team-print" style="text-align:center;width:min(400px,92vw)">'
+      +'<input type="text" class="tm-groupname" id="tm-groupname" value="'+_esc9710(projectRow.text_content||'')+'">'
+      +'<div id="tm-list-view"></div>'
+      +'<div class="tm-addrow">'
+        +'<div class="tm-add-tile" id="tm-add-tile" title="Add a team member">+</div>'
+        +'<div class="tm-print-tile" id="tm-print-tile" title="Print roster">&#128438;</div>'
+      +'</div>'
+      +'<div id="tm-add-row" style="display:none;margin-top:10px;gap:6px">'
+        +'<input type="email" id="tm-add-email" placeholder="name@example.com" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
+        +'<button class="sc-ov-btn save" id="tm-add-confirm">Add</button>'
+      +'</div>'
+      +'<div id="tm-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
+      +'<button class="sc-ov-btn" id="tm-close" style="width:100%;margin-top:12px">Back</button>'
+    +'</div>';
+    ov.classList.add('active');
+    _tmLoadRoster(projectRow).then(function(){ _tmRenderRoster(projectRow); });
+    T().wire('tm-close', function(){ closeSbDetail(); });
+    T().wire('tm-print-tile', function(){ window.print(); });
+    T().wire('tm-add-tile', function(){
+      if(!_tmRosterIsOwner) return;
+      var row=document.getElementById('tm-add-row');
+      if(row) row.style.display = (row.style.display==='none') ? 'flex' : 'none';
+    });
+    var gnEl=document.getElementById('tm-groupname');
+    if(gnEl) gnEl.addEventListener('change', async function(){
+      if(!_tmRosterIsOwner) return;
+      var _sb=T().sb; if(!_sb) return;
+      projectRow.text_content=gnEl.value;
+      try{ await _sb.from('ideas').update({text_content: gnEl.value}).eq('id', projectRow.id); }catch(e){}
+    });
+    var confirmBtn=document.getElementById('tm-add-confirm');
+    if(confirmBtn) confirmBtn.addEventListener('click', async function(){
+      var input=document.getElementById('tm-add-email');
+      var errEl=document.getElementById('tm-error');
+      var email=input?input.value.trim():'';
+      if(!email) return;
+      var res=await _tmAddMember(projectRow, email);
+      if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+      if(errEl) errEl.style.display='none';
+      if(input) input.value='';
+      var row=document.getElementById('tm-add-row'); if(row) row.style.display='none';
+      await _tmLoadRoster(projectRow); _tmRenderRoster(projectRow);
+    });
+    var wrap=document.getElementById('tm-list-view');
+    if(wrap){
+      wrap.addEventListener('click', function(e){
+        var sym=e.target.closest('.tm-clickable'); if(!sym) return;
+        var p=document.getElementById('tm-rp-'+sym.getAttribute('data-uid'));
+        if(p) p.style.display = (p.style.display==='none') ? 'block' : 'none';
+      });
+      wrap.addEventListener('change', async function(e){
+        var t=e.target;
+        if(t.classList.contains('tm-r-leader') || t.classList.contains('tm-r-canfac') || t.classList.contains('tm-r-fac')){
+          var uid=t.getAttribute('data-uid');
+          var panel=document.getElementById('tm-rp-'+uid); if(!panel) return;
+          var role = panel.querySelector('.tm-r-leader').checked ? 'leader' : null;
+          var canFac = panel.querySelector('.tm-r-canfac').checked;
+          var isFac = panel.querySelector('.tm-r-fac').checked;
+          await _tmSaveMemberRole(projectRow, uid, role, canFac, isFac);
+        } else if(t.classList.contains('tm-owner-notes')){
+          await _tmSaveOwnerNotes(projectRow, t.value);
+        } else if(t.classList.contains('tm-owner-phone')){
+          await _tmSaveOwnerPhone(t.value);
+        } else if(t.classList.contains('tm-notes-input')){
+          await _tmSaveMemberNotes(projectRow, t.getAttribute('data-uid'), t.value);
+        }
+      });
+    }
+  }
+
   function _sboardOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
@@ -2885,6 +3102,7 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+      +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">👥 Team</button>'
       +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
       +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🔑 Custom Keys</button>'
@@ -2895,6 +3113,7 @@
       +'<button class="sc-ov-btn" id="sb-gear-close" style="width:100%" aria-label="Close">✕</button>'
       +'</div>';
     ov.classList.add('active');
+    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(); });
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
     T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
