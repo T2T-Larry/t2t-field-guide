@@ -519,7 +519,7 @@
   var _bbKeyLibCache = [];
   var _bbKeyLibraryLoaded = false;
   var _bbMembersCache = [];
-  var _bbTeamCache = [];
+
   var _bbChecklistCache = [];
   // Per-key link counts, Aug 4 2026 -- Larry: "Links are Key related...
   // One key on a card might have 7 links; another only 3." Same shape
@@ -1305,33 +1305,6 @@
     }).join('') + '<option value="__add__">+ Add a name&hellip;</option>';
   }
 
-  // Team roster management, July 22, 2026 -- edit/remove entries in
-  // the real members table (not just the read-only briefing_roster
-  // view used by the per-card picker). Only works for Larry once his
-  // admin_all_members RLS policy points at his actual login email --
-  // see that migration's notes. Deactivating (not deleting) a member
-  // keeps their account/history intact; they just stop appearing as
-  // an assignee.
-  async function _bbLoadTeam(){
-    var sb=T().sb; if(!sb) return;
-    try{
-      var res=await sb.from('members').select('email,name,initials').eq('membership_status','active').order('name',{ascending:true});
-      if(!res.error && res.data) _bbTeamCache = res.data;
-    }catch(e){ console.error('Briefing Board: could not load team', e); }
-    _bbRenderTeamList();
-  }
-
-  function _bbRenderTeamList(){
-    var wrap=document.getElementById('bb-team-list'); if(!wrap) return;
-    wrap.innerHTML = _bbTeamCache.map(function(m){
-      return '<div class="bb-team-row" data-email="'+_esc(m.email)+'">'
-        +'<input type="text" class="bb-team-name" value="'+_esc(m.name)+'">'
-        +'<input type="text" class="bb-team-initials" value="'+_esc(m.initials)+'" maxlength="4">'
-        +'<button class="bb-checklist-remove" type="button" title="Remove from team">&#10005;</button>'
-        +'</div>';
-    }).join('');
-  }
-
   function _bbInitials(person){
     if(!person) return '';
     var m=String(person).match(/\(([^)]+)\)/);
@@ -2032,10 +2005,9 @@
               +'<div id="bb-sharing-summary" style="font-size:12px;color:var(--bb-sub);margin-bottom:6px"></div>'
               +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#129309; Manage Access</button>'
             +'</div>'
-            +'<div class="bb-field" id="bb-team-roster-field"><label>Team &amp; Roles</label>'
-              +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#128101; Open Team Roster</button>'
+            +'<div class="bb-field" id="bb-team-roster-field">'
+              +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#128101; Team</button>'
             +'</div>'
-            +'<div class="bb-field"><label>All Members (admin)</label><div id="bb-team-list"></div><div style="font-size:11px;color:var(--bb-sub);margin-top:6px;font-style:italic">To add someone new, they need a real account first -- this only edits or removes existing team members.</div></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(setOv);
@@ -2058,7 +2030,6 @@
          '<div class="bb-overlay-card bb-team-print" style="width:400px">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Team</span><button class="bb-close" id="bb-team-close" aria-label="Close">&#10005;</button></div>'
           +'<input type="text" class="tm-groupname" id="bb-team-groupname" placeholder="Name this team...">'
-          +'<div class="tm-cap" id="bb-team-cap">Team roster</div>'
           +'<div id="bb-team-list-view"></div>'
           +'<div class="tm-addrow">'
             +'<div class="tm-add-tile" id="bb-team-add" title="Add a team member">+</div>'
@@ -2629,7 +2600,6 @@
     _bbHighlightAppearance();
     var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
     var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
-    _bbLoadTeam();
     _bbLoadSharing();
     var ov=document.getElementById('bb-settings-overlay'); if(ov) ov.classList.add('active');
   }
@@ -3093,9 +3063,6 @@
     var nameEl=document.getElementById('bb-team-groupname');
     if(nameEl){ nameEl.value=(board && (board.topic||board.name))||''; nameEl.disabled=!_bbRosterIsOwner; }
     var rows=_bbAllRosterRows();
-    var cap=(board && board.member_cap) || 7;
-    var capEl=document.getElementById('bb-team-cap');
-    if(capEl) capEl.textContent='Team roster \u00b7 '+rows.length+' of '+cap;
     wrap.innerHTML = rows.map(function(m){
       var clickable = (!m.isOwner && _bbRosterIsOwner);
       var panel = (!m.isOwner) ? (
@@ -3346,31 +3313,6 @@
       dueWarnEl.value=_bbDueWarnDays();
       renderBoard();
     });
-    var teamList=document.getElementById('bb-team-list');
-    if(teamList){
-      teamList.addEventListener('change', async function(e){
-        var row=e.target.closest('.bb-team-row'); if(!row) return;
-        var email=row.getAttribute('data-email');
-        var name=row.querySelector('.bb-team-name').value.trim();
-        var initials=row.querySelector('.bb-team-initials').value.trim().toUpperCase();
-        if(!name || !initials) return;
-        var sb=T().sb; if(!sb) return;
-        await sb.from('members').update({name:name, initials:initials}).eq('email', email);
-        await _bbLoadMembers();
-        await _bbLoadTeam();
-      });
-      teamList.addEventListener('click', async function(e){
-        var btn=e.target.closest('.bb-checklist-remove'); if(!btn) return;
-        var row=btn.closest('.bb-team-row'); if(!row) return;
-        var email=row.getAttribute('data-email');
-        var name=row.querySelector('.bb-team-name').value;
-        if(!window.confirm('Remove '+name+' from the team? They will stop showing up as an assignee (their account is untouched).')) return;
-        var sb=T().sb; if(!sb) return;
-        await sb.from('members').update({membership_status:'inactive'}).eq('email', email);
-        await _bbLoadMembers();
-        await _bbLoadTeam();
-      });
-    }
   }
 
   // Unhooking Ideas, July 21, 2026 -- hands a Hang-Up card's Situation
