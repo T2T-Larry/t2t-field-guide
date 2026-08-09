@@ -174,7 +174,7 @@
         // one corner nothing else on the tile claims (order badge is
         // top-left, lock/link are top-right/top-left-ish, heart+key dots+
         // corner-flip share the bottom-right).
-        +'.sb-person-badge{position:absolute;bottom:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:7px;font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
+        +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:7px;font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         // pointer-events:auto here, Aug 4 2026 -- same fix as the
         // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
         // stays click-through (so it never grabs a card drag), but a
@@ -1498,7 +1498,11 @@
     }
     if(item.locked){
       var lb=document.createElement('div');
-      lb.style.cssText='position:absolute;top:2px;right:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+      // Nudged from right:2px to right:18px, Aug 9 2026 -- Person
+      // Assigned now owns the top-right corner itself (Larry: "consistent
+      // assignment spot on all cards"), same pairing convention the
+      // heart/key-dots badges already use in the opposite corner.
+      lb.style.cssText='position:absolute;top:2px;right:18px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
       lb.textContent='\ud83d\udd12';
       tile.appendChild(lb);
     }
@@ -1605,7 +1609,10 @@
     front.appendChild(p);
     if(headerRow.locked){
       var hlb=document.createElement('div');
-      hlb.style.cssText='position:absolute;top:2px;right:2px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+      // Nudged from right:2px to right:18px, Aug 9 2026 -- same reasoning
+      // as the plain-card lock badge above: Person Assigned now owns the
+      // top-right corner consistently on every card.
+      hlb.style.cssText='position:absolute;top:2px;right:18px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
       hlb.textContent='\ud83d\udd12';
       front.appendChild(hlb);
     }
