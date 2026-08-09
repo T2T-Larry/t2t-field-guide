@@ -416,7 +416,7 @@
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:40px">'
       +'<div style="text-align:center">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
-      +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
+      +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
@@ -2647,6 +2647,7 @@
   function _sboardUpdateHeaderChrome(){
     var topicBox=document.getElementById('sc-topic-box');
     var topicText=document.getElementById('sc-topic-text');
+    var topicBadge=document.getElementById('sc-topic-badge');
     var areaEl=document.getElementById('sc-header-area');
     var parentHit=document.getElementById('sc-parent-hit');
     var parentLabel=document.getElementById('sc-parent-label');
@@ -2656,6 +2657,14 @@
       var topicRow=_sboardAllRowsById[T2TShared.currentTopicId];
       if(topicText){ topicText.textContent=topicRow.text_content||'(untitled)'; }
       if(topicBox){ topicBox.style.background=topicRow.color||''; }
+      if(topicBadge){
+        topicBadge.innerHTML=_sboardAssignedBadgeHTML(topicRow);
+        if(topicRow.assigned_user_id && !_sboardAssignedCache[topicRow.assigned_user_id]){
+          _sboardEnsureAssignedInitials([topicRow]).then(function(fetched){
+            if(fetched) _sboardUpdateHeaderChrome();
+          });
+        }
+      }
       // PROJECT — fixed root anchor, walks the cluster_id chain all the way
       // up regardless of how deep Topic currently is. Locked July 12, 2026:
       // at the project apex (nothing above Topic yet), Project/Parent/Topic
@@ -2680,6 +2689,7 @@
       }
     } else {
       if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
+      if(topicBadge){ topicBadge.innerHTML=''; }
       if(topicBox){ topicBox.style.background=''; }
       // Larry, Aug 3 2026 (bug report): "It claims to be in the Wish
       // Tank project but that is not true!!" This branch only runs
