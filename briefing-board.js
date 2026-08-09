@@ -1754,6 +1754,18 @@
       +'.bb-archive-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--bb-accent)}'
       +'.bb-archive-task{font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
       +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub)}'
+      +'.bb-mypri-sub{font-family:var(--bb-body-font);font-size:12px;color:var(--bb-sub);margin:4px 0 10px}'
+      +'.bb-mypri-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}'
+      +'.bb-mypri-chip{font-family:var(--bb-body-font);font-size:11px;padding:4px 9px;border-radius:12px;border:1.5px solid var(--bb-accent);background:#fff;color:var(--bb-sub);cursor:pointer;opacity:0.45}'
+      +'.bb-mypri-chip.active{opacity:1;background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
+      +'.bb-mypri-list{max-height:420px;overflow-y:auto}'
+      +'.bb-mypri-row{display:flex;align-items:stretch;gap:8px;padding:8px 0;border-bottom:1px solid rgba(201,168,124,.35)}'
+      +'.bb-mypri-rank{display:flex;flex-direction:column;gap:2px;flex-shrink:0}'
+      +'.bb-mypri-up,.bb-mypri-down{width:22px;height:18px;border-radius:4px;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-ink);font-size:9px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}'
+      +'.bb-mypri-up:disabled,.bb-mypri-down:disabled{opacity:0.3;cursor:default}'
+      +'.bb-mypri-body{flex:1;min-width:0}'
+      +'.bb-mypri-task{font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
+      +'.bb-mypri-meta{font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub)}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -1842,6 +1854,7 @@
               +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
               +'<button class="bb-icon-btn" id="bb-hx-btn" title="History">HX</button>'
+              +'<button class="bb-icon-btn" id="bb-mypri-btn" title="My Priorities \u2014 everything assigned to you, merged across every board you\u2019re on">\u2B50</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
@@ -2017,6 +2030,29 @@
       fg.appendChild(tmOv);
       tmOv.addEventListener('click', function(e){ if(e.target===tmOv) closeTeamRoster(); });
       _bbMakeDraggable(tmOv.querySelector('.bb-overlay-card'), tmOv.querySelector('.bb-overlay-head'));
+    }
+    // My Priorities (Personal BB), Aug 9 2026 -- Session 198 locked design:
+    // a merged, read-through view of every card assigned to the signed-in
+    // member across every board they can see (_bbBoards, already RLS-scoped
+    // to boards they own or are a Cast Member of), plus everything on their
+    // own board_type='personal' board outright. Reordered independently via
+    // personal_rank -- never touches a card's priority/sort_order on its
+    // home board. Filter chips are just the distinct home boards present in
+    // the merged set right now, built from data already on hand (no new
+    // fields to design).
+    if(!document.getElementById('bb-mypri-overlay')){
+      var mpOv=document.createElement('div');
+      mpOv.id='bb-mypri-overlay'; mpOv.className='bb-overlay';
+      mpOv.innerHTML=
+         '<div class="bb-overlay-card" style="width:420px">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">My Priorities</span><button class="bb-close" id="bb-mypri-close" aria-label="Close">&#10005;</button></div>'
+          +'<div class="bb-mypri-sub">Everything assigned to you, merged from every board you’re on. Reorder here without changing its priority on the home board.</div>'
+          +'<div class="bb-mypri-filters" id="bb-mypri-filters"></div>'
+          +'<div id="bb-mypri-list" class="bb-mypri-list"></div>'
+        +'</div>';
+      fg.appendChild(mpOv);
+      mpOv.addEventListener('click', function(e){ if(e.target===mpOv) closeMyPriorities(); });
+      _bbMakeDraggable(mpOv.querySelector('.bb-overlay-card'), mpOv.querySelector('.bb-overlay-head'));
     }
     // Key Library manager (9397), Aug 3 2026 -- Larry: "we need to be
     // able to edit or trash any custom key." Didn't exist for the
@@ -3202,6 +3238,155 @@
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
   }
 
+  // My Priorities (Personal BB) core logic, Aug 9 2026 -- Session 198.
+  // Card assignment (briefing_cards.person) is free text, not a real link
+  // to a member account (see _bbLoadMembers above) -- formatted "II Full
+  // Name" for anything assigned through the picker since July 22, 2026.
+  // Matching here is exact-string against the signed-in member's own
+  // roster label, same format. A card carrying an older/irregular person
+  // value (typed in before the picker existed) won't match until it's
+  // reassigned through the picker -- a known, honest limitation, not
+  // silently guessed at with fuzzy matching.
+  var _bbMyPriCache = [];
+  var _bbMyPriFilterBoards = null; // null = show all boards; else a Set of board ids currently shown
+  var _bbMyPriMyLabel = '';
+  var _bbMyPriMyUid = null;
+
+  async function _bbMyRosterLabel(uid){
+    var sb=T().sb; if(!sb||!uid) return '';
+    try{
+      var res = await sb.from('members').select('name').eq('user_id', uid).single();
+      if(res.error || !res.data || !res.data.name) return '';
+      var name = res.data.name;
+      var initials = _bbInitialsFromName(name);
+      return (initials?initials+' ':'')+name;
+    }catch(e){ return ''; }
+  }
+
+  async function _bbLoadMyPriorities(){
+    var sb=T().sb; var uid=await _bbCurrentUserId();
+    var listEl=document.getElementById('bb-mypri-list');
+    if(!sb||!uid){
+      if(listEl) listEl.innerHTML='<div class="bb-key-pick-empty-msg">Sign in to see My Priorities.</div>';
+      return;
+    }
+    _bbMyPriMyUid = uid;
+    _bbMyPriMyLabel = await _bbMyRosterLabel(uid);
+    var boards = _bbBoards||[];
+    var merged = [];
+    for(var i=0;i<boards.length;i++){
+      var b=boards[i];
+      var isOwnPersonalBoard = (b.board_type==='personal' && b.user_id===uid);
+      try{
+        var res = await sb.from('briefing_cards').select('*').eq('board_id', b.id).is('trashed_at', null).eq('archived', false);
+        if(res.error || !res.data) continue;
+        res.data.forEach(function(row){
+          var assignedToMe = !!(_bbMyPriMyLabel && row.person===_bbMyPriMyLabel);
+          if(isOwnPersonalBoard || assignedToMe){
+            merged.push(Object.assign({}, row, {_boardName: b.name||'Untitled Board', _boardType: b.board_type||'personal', _boardId: b.id}));
+          }
+        });
+      }catch(e){ console.error('My Priorities: could not load cards for board', b.id, e); }
+    }
+    merged.sort(function(a,c){
+      var ar=(a.personal_rank==null)?999999:a.personal_rank;
+      var cr=(c.personal_rank==null)?999999:c.personal_rank;
+      if(ar!==cr) return ar-cr;
+      return new Date(a.created_at||0) - new Date(c.created_at||0);
+    });
+    _bbMyPriCache = merged;
+    _bbRenderMyPriFilters();
+    _bbRenderMyPriorities();
+  }
+
+  function _bbMyPriVisible(){
+    if(!_bbMyPriFilterBoards) return _bbMyPriCache;
+    return _bbMyPriCache.filter(function(c){ return _bbMyPriFilterBoards.has(c._boardId); });
+  }
+
+  function _bbRenderMyPriFilters(){
+    var wrap=document.getElementById('bb-mypri-filters'); if(!wrap) return;
+    var seen={}; var chips=[];
+    _bbMyPriCache.forEach(function(c){
+      if(seen[c._boardId]) return; seen[c._boardId]=true;
+      chips.push({id:c._boardId, label:c._boardName, type:c._boardType});
+    });
+    if(!chips.length){ wrap.innerHTML=''; return; }
+    wrap.innerHTML = chips.map(function(ch){
+      var active = !_bbMyPriFilterBoards || _bbMyPriFilterBoards.has(ch.id);
+      return '<button class="bb-mypri-chip'+(active?' active':'')+'" data-board-id="'+_esc(ch.id)+'" title="'+_esc(ch.type)+'">'+_esc(ch.label)+'</button>';
+    }).join('');
+  }
+
+  function _bbRenderMyPriorities(){
+    var listEl=document.getElementById('bb-mypri-list'); if(!listEl) return;
+    var rows=_bbMyPriVisible();
+    if(!rows.length){ listEl.innerHTML='<div class="bb-key-pick-empty-msg">Nothing assigned to you yet.</div>'; return; }
+    listEl.innerHTML = rows.map(function(c, idx){
+      return '<div class="bb-mypri-row" data-id="'+_esc(c.id)+'">'
+        +'<div class="bb-mypri-rank">'
+          +'<button class="bb-mypri-up" data-id="'+_esc(c.id)+'" '+(idx===0?'disabled':'')+' title="Move up">▲</button>'
+          +'<button class="bb-mypri-down" data-id="'+_esc(c.id)+'" '+(idx===rows.length-1?'disabled':'')+' title="Move down">▼</button>'
+        +'</div>'
+        +'<div class="bb-mypri-body">'
+          +'<div class="bb-mypri-task">'+_esc(c.task||'(untitled)')+'</div>'
+          +'<div class="bb-mypri-meta">'+_esc(c._boardName)+' &middot; '+_esc(c._boardType)+(c.priority?' &middot; '+_esc(c.priority):'')+'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+
+  async function _bbMyPriMove(cardId, dir){
+    var rows=_bbMyPriVisible();
+    var idx=-1;
+    for(var i=0;i<rows.length;i++){ if(rows[i].id===cardId){ idx=i; break; } }
+    if(idx<0) return;
+    var swapIdx = idx+dir;
+    if(swapIdx<0 || swapIdx>=rows.length) return;
+    var order=rows.map(function(r){ return r.id; });
+    var tmp=order[idx]; order[idx]=order[swapIdx]; order[swapIdx]=tmp;
+    order.forEach(function(id, i){
+      var c=_bbMyPriCache.filter(function(x){ return x.id===id; })[0];
+      if(c) c.personal_rank=i;
+    });
+    _bbRenderMyPriorities();
+    var sb=T().sb; if(!sb) return;
+    try{
+      for(var j=0;j<order.length;j++){
+        await sb.from('briefing_cards').update({personal_rank: j}).eq('id', order[j]);
+      }
+    }catch(e){ console.error('My Priorities: could not save new order', e); }
+  }
+
+  function openMyPriorities(){
+    var ov=document.getElementById('bb-mypri-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+    _bbLoadMyPriorities();
+  }
+  function closeMyPriorities(){
+    var ov=document.getElementById('bb-mypri-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function wireMyPriorities(){
+    T().wire('bb-mypri-close', closeMyPriorities);
+    T().wire('bb-mypri-btn', openMyPriorities);
+    var filtersEl=document.getElementById('bb-mypri-filters');
+    if(filtersEl) filtersEl.addEventListener('click', function(e){
+      var chip=e.target.closest('.bb-mypri-chip'); if(!chip) return;
+      var id=chip.getAttribute('data-board-id');
+      if(!_bbMyPriFilterBoards) _bbMyPriFilterBoards=new Set(_bbMyPriCache.map(function(c){ return c._boardId; }));
+      if(_bbMyPriFilterBoards.has(id)) _bbMyPriFilterBoards.delete(id); else _bbMyPriFilterBoards.add(id);
+      _bbRenderMyPriFilters();
+      _bbRenderMyPriorities();
+    });
+    var listEl=document.getElementById('bb-mypri-list');
+    if(listEl) listEl.addEventListener('click', function(e){
+      var up=e.target.closest('.bb-mypri-up');
+      var down=e.target.closest('.bb-mypri-down');
+      if(up && !up.disabled) _bbMyPriMove(up.getAttribute('data-id'), -1);
+      else if(down && !down.disabled) _bbMyPriMove(down.getAttribute('data-id'), 1);
+    });
+  }
+
   function openTeamRoster(){
     _bbLoadRoster().then(_bbRenderRoster);
     var ov=document.getElementById('bb-team-overlay');
@@ -3632,6 +3817,7 @@
     wireKeyLibManager();
     wireSharingManager();
     wireTeamRoster();
+    wireMyPriorities();
     wireChecklist();
     wireDatePickers();
 
