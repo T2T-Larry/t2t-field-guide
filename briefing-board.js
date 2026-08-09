@@ -1070,13 +1070,13 @@
     if(!board){ grp.style.display='none'; return; }
     _bbSourceFilter=null;
     if(board.board_type==='personal'){
-      var seen={}; var opts=['<option value="">All sources</option>','<option value="origin:__native__">Added here</option>'];
+      var seen={}; var opts=['<option value="">Everything</option>','<option value="origin:__native__">Added here</option>'];
       _bbForeignCards.forEach(function(c){
         if(seen[c._homeBoardId]) return; seen[c._homeBoardId]=true;
-        opts.push('<option value="origin:'+_esc(c._homeBoardId)+'">'+_esc(c._homeBoardName)+'</option>');
+        opts.push('<option value="origin:'+_esc(c._homeBoardId)+'">From '+_esc(c._homeBoardName)+'</option>');
       });
       if(opts.length<=2){ grp.style.display='none'; return; }
-      eyebrow.textContent='Source';
+      eyebrow.textContent='View';
       sel.innerHTML=opts.join('');
       grp.style.display='';
     } else if(board.board_type==='project'){
@@ -1086,8 +1086,8 @@
         poptsSet.push(c.person);
       });
       if(!poptsSet.length){ grp.style.display='none'; return; }
-      eyebrow.textContent='Assigned to';
-      sel.innerHTML='<option value="">Everyone</option>'+poptsSet.map(function(p){ return '<option value="person:'+_esc(p)+'">'+_esc(p)+'</option>'; }).join('');
+      eyebrow.textContent='View';
+      sel.innerHTML='<option value="">Everyone</option>'+poptsSet.map(function(p){ return '<option value="person:'+_esc(p)+'">Assigned to '+_esc(p)+'</option>'; }).join('');
       grp.style.display='';
     } else {
       grp.style.display='none';
@@ -2034,7 +2034,7 @@
             +'<div class="bb-mh-typebox">'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><select id="bb-type-picker" class="bb-type-picker" title="Board type"></select></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Name</div><div class="bb-mh-namerow"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
-              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">Source</div><select id="bb-source-picker" class="bb-mh-source-picker" title="Filter"></select></div>'
+              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><select id="bb-source-picker" class="bb-mh-source-picker" title="Filter"></select></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
