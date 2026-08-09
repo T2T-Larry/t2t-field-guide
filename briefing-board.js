@@ -2244,10 +2244,10 @@
       fg.appendChild(addOv);
       // Aug 7 2026 -- Larry: ENTER pinning the card was right, but it was
       // also closing this screen, and it should only close with the X.
-      // Dropped the click-outside-the-card-to-close behavior here to
-      // match -- this overlay is meant to stay open through several
-      // quick adds in a row, same as the Storyboard's New Header prompt
-      // never auto-closed either.
+      // Aug 9 2026 -- Larry: clicking outside the card should close it too,
+      // same as the X -- restored that behavior, matching every other
+      // overlay on the board.
+      addOv.addEventListener('click', function(e){ if(e.target===addOv) closeAddCard(); });
       _bbMakeDraggable(addOv.querySelector('.bb-overlay-card'), addOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-detail-overlay')){
