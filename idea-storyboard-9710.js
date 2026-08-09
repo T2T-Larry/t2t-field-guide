@@ -1743,7 +1743,12 @@
     // 9711's own render in that case instead.
     var isxScreen=document.getElementById('s-idea-session');
     if(isxScreen && isxScreen.classList.contains('active') && window.T2TSea && window.T2TSea.renderBoard){
-      return window.T2TSea.renderBoard();
+      // Aug 9 2026 -- fromCache used to get dropped right here: a live
+      // patch (see _sboardRtSafeRefresh) always ended up back at 9711's
+      // own full re-fetch the instant 9711 was the active screen, no
+      // matter how cheap the 9710 side had just become. Forwarding it
+      // lets 9711's own cache-mode render (session.js) apply too.
+      return window.T2TSea.renderBoard(fromCache);
     }
     var wrap=document.getElementById('sc-board-wrap');
     var statusEl=document.getElementById('sc-status');
@@ -4790,6 +4795,11 @@
         _sboardAllRowsById[row.id] = row;
       }
     }
+    // 9711 (session.js) keeps its own separate cache of the same 'ideas'
+    // rows -- this is the only place either screen learns about a live
+    // change, so both need patching here regardless of which one is
+    // actually on screen right now. Aug 9 2026.
+    if(window.T2TSea && window.T2TSea.applyRemoteIdeaPatch) window.T2TSea.applyRemoteIdeaPatch(evt, row, oldRow);
     _sboardRtSafeRefresh();
   }
   function _sboardApplyRemoteKey(evt, row, oldRow){

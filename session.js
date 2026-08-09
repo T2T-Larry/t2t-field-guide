@@ -292,8 +292,9 @@
       headerLabel: T2TShared.isxHeaderLabel,
       boardId: _isxCurrentTopicId(),
       onSaved: function(row){
+        _isxAddRow(row);
         if(row && row.content_type==='header'){ _isxRenderLadder(); }
-        _isxRenderBoard();
+        _isxRenderBoard(true);
       }
     });
   }
@@ -407,15 +408,15 @@
       var row=await _isxFetchRow(ids[i]);
       if(!row) continue;
       var dup=await _isxDuplicateRow(row);
-      if(dup) created.push(dup.id);
+      if(dup){ _isxAddRow(dup); created.push(dup.id); }
     }
     if(!created.length) return;
     _isxSelected={};
     created.forEach(function(id){ _isxSelected[id]=true; });
-    await _isxRenderBoard();
+    await _isxRenderBoard(true);
     _isxPushAction({
       label:'Duplicate',
-      undo: async function(){ for(var i=0;i<created.length;i++){ await _sbDeleteIdea(created[i]); } await _isxRenderBoard(); },
+      undo: async function(){ for(var i=0;i<created.length;i++){ await _sbDeleteIdea(created[i]); delete _isxAllRowsById[created[i]]; } await _isxRenderBoard(true); },
       redo: async function(){ _isxShowToast('Redo not available for duplicate \u2014 use Ctrl/Cmd+D again.'); }
     });
     _isxShowToast(created.length>1 ? created.length+' cards duplicated.' : 'Card duplicated.');
@@ -449,15 +450,15 @@
         image_url:c.image_url, color:c.color, cluster_id:clusterId,
         canvas_x:40+i*24, canvas_y:40+i*24, created_at:new Date().toISOString()
       }).select().single();
-      if(!ins.error) created.push(ins.data.id);
+      if(!ins.error){ _isxAddRow(ins.data); created.push(ins.data.id); }
     }
     if(!created.length) return;
     _isxSelected={};
     created.forEach(function(id){ _isxSelected[id]=true; });
-    await _isxRenderBoard();
+    await _isxRenderBoard(true);
     _isxPushAction({
       label:'Paste',
-      undo: async function(){ for(var i=0;i<created.length;i++){ await _sbDeleteIdea(created[i]); } await _isxRenderBoard(); },
+      undo: async function(){ for(var i=0;i<created.length;i++){ await _sbDeleteIdea(created[i]); delete _isxAllRowsById[created[i]]; } await _isxRenderBoard(true); },
       redo: async function(){ _isxShowToast('Redo not available for paste \u2014 use Ctrl/Cmd+V again.'); }
     });
     _isxShowToast(created.length>1 ? created.length+' cards pasted.' : 'Card pasted.');
@@ -482,14 +483,15 @@
       if(!row) continue;
       prev.push({id:row.id, clusterId:row.cluster_id});
       await T2TStoryboard.moveCard(row.id, _isxTrashId);
+      _isxPatchRow(row.id, {cluster_id:_isxTrashId});
     }
     if(!prev.length) return;
     _isxSelected={};
-    await _isxRenderBoard();
+    await _isxRenderBoard(true);
     _isxPushAction({
       label:'Trash',
-      undo: async function(){ for(var i=0;i<prev.length;i++){ await T2TStoryboard.moveCard(prev[i].id, prev[i].clusterId); } await _isxRenderBoard(); },
-      redo: async function(){ for(var i=0;i<prev.length;i++){ await T2TStoryboard.moveCard(prev[i].id, _isxTrashId); } await _isxRenderBoard(); }
+      undo: async function(){ for(var i=0;i<prev.length;i++){ await T2TStoryboard.moveCard(prev[i].id, prev[i].clusterId); _isxPatchRow(prev[i].id, {cluster_id:prev[i].clusterId}); } await _isxRenderBoard(true); },
+      redo: async function(){ for(var i=0;i<prev.length;i++){ await T2TStoryboard.moveCard(prev[i].id, _isxTrashId); _isxPatchRow(prev[i].id, {cluster_id:_isxTrashId}); } await _isxRenderBoard(true); }
     });
     _isxShowToast(prev.length>1 ? prev.length+' items trashed. Ctrl/Cmd+Z to undo.' : 'Trashed. Ctrl/Cmd+Z to undo.');
   }
@@ -722,9 +724,30 @@
   // gap being hidden. Single-step only: one action deep each way, not a
   // full history stack.
   var _isxTrashId = null;
+  var _isxMiscId = null;
+  var _isxPurposeId = null;
   var _isxLastAction = null;
   var _isxLastUndone = null;
   var _isxClipboard = null;
+
+  // Row cache (Aug 9 2026, Supabase egress fix) -- every row _isxRenderBoardFetch
+  // has ever fetched, across every cluster visited this tab session, keyed
+  // by id. Not cleared on Topic change -- a Topic switch adds/refreshes
+  // that cluster's rows into this same map rather than replacing it, so
+  // re-visiting an already-seen Topic (or a live patch landing while a
+  // different Topic is open) has something real to render from without a
+  // network round trip. Mirrors idea-storyboard-9710.js's
+  // _sboardAllRowsById/_sboardCacheReady pattern exactly.
+  var _isxAllRowsById = {};
+  var _isxCacheReady = false;
+  function _isxPatchRow(id, fields){
+    if(!id || !_isxAllRowsById[id]) return;
+    var row=_isxAllRowsById[id];
+    for(var k in fields){ if(Object.prototype.hasOwnProperty.call(fields,k)) row[k]=fields[k]; }
+  }
+  function _isxAddRow(row){
+    if(row && row.id) _isxAllRowsById[row.id]=row;
+  }
 
   function _isxSavePos(rowId, x, y){
     var _sb=T().sb;
@@ -910,8 +933,9 @@
       for(var i=0;i<ids.length;i++){
         delete _isxCardPos[ids[i]];
         await _sb.from('ideas').update({canvas_x:null, canvas_y:null}).eq('id',ids[i]);
+        _isxPatchRow(ids[i], {canvas_x:null, canvas_y:null});
       }
-      _isxRenderBoard();
+      _isxRenderBoard(true);
     }catch(err){ _isxShowError('Couldn\u2019t reset headers: '+(err&&err.message?err.message:String(err))); }
   }
 
@@ -947,11 +971,11 @@
         sw.onclick=async function(){
           var c=sw.getAttribute('data-c');
           try{
-            for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); }
+            for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); _isxPatchRow(uniq[i], {color:c}); }
           }catch(e){}
           T().setDefaultHeaderColor(c);
           T2TStoryboard.closeDetail();
-          _isxRenderBoard();
+          _isxRenderBoard(true);
         };
       });
     }catch(err){ _isxShowError('Couldn\u2019t load headers to recolor: '+(err&&err.message?err.message:String(err))); }
@@ -973,18 +997,18 @@
   // still takes the normal blocking path so the ring/board is actually
   // there before the spinner hides.
   var _isxLastRenderedClusterId = null;
-  function _isxRenderBoard(){
+  function _isxRenderBoard(fromCache){
     var clusterId=_isxCurrentClusterId();
     var canvas=document.getElementById('isx-canvas');
     var isReturningToSameBoard = !!(clusterId && clusterId===_isxLastRenderedClusterId && canvas && canvas.children.length>0);
     if(isReturningToSameBoard){
-      _isxRenderBoardFetch();
+      _isxRenderBoardFetch(fromCache);
       return Promise.resolve();
     }
-    return _isxRenderBoardFetch();
+    return _isxRenderBoardFetch(fromCache);
   }
 
-  async function _isxRenderBoardFetch(){
+  async function _isxRenderBoardFetch(fromCache){
     var canvas=document.getElementById('isx-canvas');
     var strip=document.getElementById('isx-header-strip');
     var ringLayer=document.getElementById('isx-header-ring');
@@ -992,41 +1016,71 @@
     var empty=document.getElementById('isx-empty');
     if(!canvas||!strip) return;
     var clusterId=_isxCurrentClusterId();
+    // A live patch arrived before this tab ever did a real render of this
+    // canvas -- nothing cached to render from yet. Whatever screen the
+    // traveler actually opens next does a real (non-cached) render and
+    // picks up everything fresh. Aug 9 2026 (Supabase egress fix).
+    if(fromCache && !_isxCacheReady) return;
     try{
-      var _sb=T().sb;
-      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
-      if(!user||!clusterId) return;
+      // miscId/purposeId/trashId default to whatever this tab last
+      // resolved them to -- only actually recomputed below when this
+      // render does a real fetch. A cache-only patch render reuses them
+      // as-is, same reasoning as idea-storyboard-9710.js's renderSeaBoard.
+      var miscId=_isxMiscId, purposeId=_isxPurposeId, trashId=_isxTrashId;
 
-      // MISC is per-Topic (same ensure-call 9710 uses); Trash is a single
-      // global bucket for the whole account. Both are always shown, even
-      // empty — permanent slots, not something that only appears once it
-      // has content. July 14, 2026.
-      // Purpose — one per PROJECT, same rule 9710 already uses: only shown
-      // when the current Topic IS the project root itself (e.g. WISH TANK),
-      // not on every deeper Topic. 9711 never had this at all before —
-      // Larry caught it live, July 18, 2026.
-      var isAtProjectRoot = !!(T2TShared.isxPath && T2TShared.isxPath.length===1);
-      var projectId = (T2TShared.isxPath && T2TShared.isxPath[0]) ? T2TShared.isxPath[0].id : null;
-      var _ensureResults=await Promise.all([
-        T2TStoryboard.ensureMiscHeader(clusterId),
-        T2TStoryboard.ensureTrashHeader(),
-        (isAtProjectRoot && projectId && window.T2TData && window.T2TData.ensurePurposeHeader)
-          ? window.T2TData.ensurePurposeHeader(projectId) : Promise.resolve(null)
-      ]);
-      var miscId=_ensureResults[0], trashId=_ensureResults[1], purposeId=_ensureResults[2];
-      _isxTrashId = trashId;
+      if(!fromCache){
+        var _sb=T().sb;
+        var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+        if(!user||!clusterId) return;
 
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,key_slot_1,key_slot_2,key_slot_3')
-        .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
-        .order('created_at',{ascending:true}).limit(300);
-      // July 18, 2026: this used to fall through unchecked — a Supabase
-      // error left res.data undefined, allRows silently became [], and the
-      // WHOLE board (every header + every card) rendered as if genuinely
-      // empty, no error shown anywhere. Throwing here routes it into the
-      // catch below, which already shows a red banner via _isxShowError.
-      if(res.error) throw res.error;
+        // MISC is per-Topic (same ensure-call 9710 uses); Trash is a single
+        // global bucket for the whole account. Both are always shown, even
+        // empty — permanent slots, not something that only appears once it
+        // has content. July 14, 2026.
+        // Purpose — one per PROJECT, same rule 9710 already uses: only shown
+        // when the current Topic IS the project root itself (e.g. WISH TANK),
+        // not on every deeper Topic. 9711 never had this at all before —
+        // Larry caught it live, July 18, 2026.
+        var isAtProjectRoot = !!(T2TShared.isxPath && T2TShared.isxPath.length===1);
+        var projectId = (T2TShared.isxPath && T2TShared.isxPath[0]) ? T2TShared.isxPath[0].id : null;
+        var _ensureResults=await Promise.all([
+          T2TStoryboard.ensureMiscHeader(clusterId),
+          T2TStoryboard.ensureTrashHeader(),
+          (isAtProjectRoot && projectId && window.T2TData && window.T2TData.ensurePurposeHeader)
+            ? window.T2TData.ensurePurposeHeader(projectId) : Promise.resolve(null)
+        ]);
+        miscId=_ensureResults[0]; trashId=_ensureResults[1]; purposeId=_ensureResults[2];
+        _isxTrashId=trashId; _isxMiscId=miscId; _isxPurposeId=purposeId;
+
+        // Cluster-scoped fetch (only this Topic's own direct children, not
+        // the whole account like 9710's board-wide fetch) -- still a real
+        // Supabase round trip every time this ran, including for a remote
+        // update on a different tab and for every single local edit, which
+        // is what this cache mode now avoids. Aug 9 2026.
+        var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,key_slot_1,key_slot_2,key_slot_3')
+          .eq('user_id',user.id).eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
+          .order('created_at',{ascending:true}).limit(300);
+        // July 18, 2026: this used to fall through unchecked — a Supabase
+        // error left res.data undefined, allRows silently became [], and the
+        // WHOLE board (every header + every card) rendered as if genuinely
+        // empty, no error shown anywhere. Throwing here routes it into the
+        // catch below, which already shows a red banner via _isxShowError.
+        if(res.error) throw res.error;
+        var _freshRows=(res&&res.data)||[];
+        _freshRows.forEach(function(r){ _isxAllRowsById[r.id]=r; });
+        _isxCacheReady=true;
+      }
+
+      // Derived from the cache either way -- after a real fetch it's just
+      // been refreshed for this cluster above; for a cache-only patch it
+      // already holds whatever this cluster last had plus whatever a
+      // local edit or realtime patch just changed. _isxAllRowsById spans
+      // every cluster this tab has visited, not just this one, so filter
+      // down to this Topic's own direct children the same way the network
+      // query itself always scoped to (.eq('cluster_id', clusterId)).
       var excludedNames=['Purpose','NEW','New Additions'];
-      var allRows=((res&&res.data)||[]).filter(function(r){
+      var allRows=Object.keys(_isxAllRowsById).map(function(k){ return _isxAllRowsById[k]; }).filter(function(r){
+        if(String(r.cluster_id)!==String(clusterId)) return false;
         if(r.content_type!=='header') return true;
         // Let OUR ensured Purpose row through even though its name is in
         // excludedNames below — the name filter is only a backstop against
@@ -1036,7 +1090,7 @@
       });
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
       var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId) && String(r.id)!==String(purposeId); });
-      var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || await _isxFetchRow(miscId);
+      var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || _isxAllRowsById[miscId] || (fromCache ? null : await _isxFetchRow(miscId));
       var purposeRow=purposeId ? allRows.find(function(r){ return String(r.id)===String(purposeId); }) : null;
 
       // July 18, 2026 (Larry): the board used to wipe to blank the instant
@@ -1158,7 +1212,7 @@
 
   function _isxHandleTrashDrop(rowId, trashId, isHeader){
     if(isHeader){
-      if(!window.confirm('Trash this header and everything in it? This can\u2019t be undone.')){ _isxRenderBoard(); return; }
+      if(!window.confirm('Trash this header and everything in it? This can\u2019t be undone.')){ _isxRenderBoard(true); return; }
       delete _isxCardPos[rowId]; delete _isxFanned[rowId];
       T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard);
       return;
@@ -1180,7 +1234,7 @@
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-trash-yes" style="flex:1">Trash it</button><button class="sc-ov-btn" id="isx-trash-no" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('isx-trash-no', function(){ T2TStoryboard.closeDetail(); _isxRenderBoard(); });
+    T().wire('isx-trash-no', function(){ T2TStoryboard.closeDetail(); _isxRenderBoard(true); });
     T().wire('isx-trash-yes', function(){
       var cb=document.getElementById('isx-trash-skip');
       if(cb&&cb.checked) localStorage.setItem('isxSkipTrashConfirm','1');
@@ -1366,7 +1420,7 @@
       _isxClickTimers[row.id]=setTimeout(function(){
         delete _isxClickTimers[row.id];
         if(_isxFanned[row.id]) delete _isxFanned[row.id]; else _isxFanned[row.id]=true;
-        _isxRenderBoard();
+        _isxRenderBoard(true);
       }, 250);
     });
     t.addEventListener('dblclick', function(e){
@@ -1534,10 +1588,11 @@
           }
           _isxCardPos[rowId]={x:finalX,y:finalY};
           _isxSavePos(rowId, finalX, finalY);
+          _isxPatchRow(rowId, {canvas_x:finalX, canvas_y:finalY});
           // A moved header pile needs a refresh so its cascade/spread
           // children re-anchor around its new spot; a loose idea doesn't
           // need the whole board reloaded for a nudge.
-          if(pinned) _isxRenderBoard();
+          if(pinned) _isxRenderBoard(true);
         } else if(linkUrl){
           window.open(linkUrl, '_blank', 'noopener');
         }
@@ -1687,6 +1742,7 @@
         var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id', rowId).select().single();
         if(upd.error) throw upd.error;
         row=upd.data;
+        _isxAddRow(row);
       }catch(e){
         _isxShowError('Couldn\u2019t promote to header: '+(e&&e.message?e.message:String(e)));
         return;
@@ -1866,7 +1922,25 @@
     // never re-ran after a DETAILS action, which is why recoloring TOPIC
     // still looked like it wasn't working even after the color itself
     // saved correctly and the delegation fix above landed. July 18, 2026.
-    renderBoard: function(){ _isxRenderLadder(); return _isxRenderBoard(); }
+    renderBoard: function(fromCache){ if(!fromCache) _isxRenderLadder(); return _isxRenderBoard(fromCache); },
+    // Aug 9 2026 (Supabase egress fix) -- idea-storyboard-9710.js's own
+    // realtime handler (_sboardApplyRemoteIdea) is the only place that
+    // listens for live 'ideas' changes; it calls this straight after
+    // patching its own cache so 9711's cache stays correct too, whether
+    // or not 9711 happens to be the active screen when the update lands.
+    // Same account-scope guard as the 9710 side: the cache this was built
+    // from only ever holds rows from THIS tab's real fetches, all scoped
+    // to .eq('user_id', user.id) -- a shared-board collaborator's row is
+    // never in it regardless of what RLS lets this tab see over realtime.
+    applyRemoteIdeaPatch: function(evt, row, oldRow){
+      if(evt==='DELETE'){
+        if(oldRow) delete _isxAllRowsById[oldRow.id];
+        return;
+      }
+      if(!row) return;
+      var member=T().getMember && T().getMember();
+      if(!member || String(row.user_id)===String(member.user_id)) _isxAllRowsById[row.id]=row;
+    }
   };
 
   document.addEventListener('DOMContentLoaded', function(){
