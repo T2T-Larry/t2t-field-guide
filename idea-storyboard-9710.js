@@ -586,6 +586,26 @@
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
   var _sboardCacheReady = false;
+  // Merges known-good field values straight into the cached row instead
+  // of re-fetching it from Supabase to find out what it now looks like --
+  // safe specifically because these are fields THIS tab itself just wrote
+  // (we already know the new values without asking), unlike a realtime
+  // patch (_sboardApplyRemoteIdea) which has to trust whatever payload
+  // Supabase hands over instead. Aug 9 2026 (Supabase egress fix, local
+  // edits). No-ops harmlessly if the row isn't in the cache yet for some
+  // reason -- falls back to whatever the next real render fetches.
+  function _sboardPatchRow(id, fields){
+    if(!id || !_sboardAllRowsById[id]) return;
+    var row=_sboardAllRowsById[id];
+    for(var k in fields){ if(Object.prototype.hasOwnProperty.call(fields,k)) row[k]=fields[k]; }
+  }
+  // Same idea for a row THIS tab just inserted -- Supabase hands back the
+  // full new row (id, created_at, etc.) via .select(), so there's no need
+  // to re-fetch the account just to learn about the row we ourselves just
+  // created.
+  function _sboardAddRow(row){
+    if(row && row.id) _sboardAllRowsById[row.id]=row;
+  }
   // Set true the first time this tab has done a real (network) render of
   // the Storyboard. Realtime-triggered renders (see _sboardRtSafeRefresh)
   // patch the changed row straight into _sboardAllRowsById and re-render
@@ -1647,8 +1667,9 @@
         if(!user) throw new Error('Not signed in.');
         var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:T2TShared.currentTopicId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
+        _sboardAddRow(ins.data);
         closeSbDetail();
-        await renderSeaBoard();
+        await renderSeaBoard(true);
         _sboardVerifyAdded(ins.data&&ins.data.id, 'Your new header "'+name+'"');
       }catch(err){
         if(errEl) errEl.textContent=err.message;
@@ -1698,7 +1719,8 @@
       headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
       boardId: T2TShared.currentTopicId,
       onSaved: async function(row){
-        await renderSeaBoard();
+        _sboardAddRow(row);
+        await renderSeaBoard(true);
         _sboardVerifyAdded(row&&row.id, 'What you just added');
       }
     });
@@ -2284,8 +2306,9 @@
           var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
           var url=pub.data && pub.data.publicUrl;
           if(!url) throw new Error('No public URL returned.');
-          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'image',image_url:url,cluster_id:T2TShared.filter||null,created_at:new Date().toISOString()});
+          var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'image',image_url:url,cluster_id:T2TShared.filter||null,created_at:new Date().toISOString()}).select().single();
           if(ins.error) throw ins.error;
+          _sboardAddRow(ins.data);
           ok++;
         }catch(fileErr){ failed++; }
       }
@@ -2293,7 +2316,7 @@
         statusEl.textContent = failed ? (ok+' uploaded, '+failed+' failed.') : '';
         if(failed) statusEl.classList.add('err');
       }
-      renderSeaBoard();
+      renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent='Upload needs the sea-of-ideas Storage bucket set up in Supabase first: '+err.message; statusEl.classList.add('err'); }
     }
@@ -2334,8 +2357,9 @@
         var upd=await _sb.from('ideas').update({cluster_id:newParent}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
         if(!upd.data || !upd.data.length) throw new Error('Nothing changed — the header may not have matched.');
+        _sboardPatchRow(headerRow.id, {cluster_id:newParent});
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){
         if(errEl) errEl.textContent=err.message;
       }
@@ -2364,8 +2388,9 @@
         var trashId=await T2TData.ensureTrashHeader();
         var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
+        _sboardPatchRow(headerRow.id, {cluster_id:trashId});
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){
         var errBox=document.querySelector('.sc-overlay-card');
         if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
@@ -2498,7 +2523,8 @@
       var siblingCount=(_sboardIdeaOrderByParent[headerId]||[]).length;
       var upd=await _sb.from('ideas').update({cluster_id:headerId, sort_order:siblingCount}).eq('id',itemId);
       if(upd.error) throw upd.error;
-      renderSeaBoard();
+      _sboardPatchRow(itemId, {cluster_id:headerId, sort_order:siblingCount});
+      renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
     }
@@ -2521,11 +2547,13 @@
     try{
       var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId);
       if(updCluster.error) throw updCluster.error;
+      _sboardPatchRow(draggedId, {cluster_id:parentId});
       for(var i=0;i<ids.length;i++){
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
+        _sboardPatchRow(ids[i], {sort_order:i});
       }
-      renderSeaBoard();
+      renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
     }
@@ -2554,11 +2582,13 @@
     try{
       var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId);
       if(updCluster.error) throw updCluster.error;
+      _sboardPatchRow(draggedId, {cluster_id:parentId});
       for(var i=0;i<ids.length;i++){
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
+        _sboardPatchRow(ids[i], {sort_order:i});
       }
-      renderSeaBoard();
+      renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
     }
@@ -2617,12 +2647,14 @@
         }
         var updCluster=await _sb.from('ideas').update({cluster_id:T2TShared.currentTopicId}).eq('id',draggedId);
         if(updCluster.error) throw updCluster.error;
+        _sboardPatchRow(draggedId, {cluster_id:T2TShared.currentTopicId});
       }
       for(var i=0;i<ids.length;i++){
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
+        _sboardPatchRow(ids[i], {sort_order:i});
       }
-      renderSeaBoard();
+      renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
     }
@@ -2658,8 +2690,9 @@
         var upd=await _sb.from('ideas').update({cluster_id:newParent,text_content:newName}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
         if(!upd.data || !upd.data.length) throw new Error('Nothing changed — the header may not have matched.');
+        _sboardPatchRow(headerRow.id, {cluster_id:newParent,text_content:newName});
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){
         if(errEl) errEl.textContent=err.message;
       }
@@ -2742,10 +2775,11 @@
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
         var contentType=_sboardIsAutoHeaderText(text)?'header':'text';
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:contentType,text_content:text,cluster_id:T2TShared.filter||null,created_at:new Date().toISOString()});
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:contentType,text_content:text,cluster_id:T2TShared.filter||null,created_at:new Date().toISOString()}).select().single();
         if(ins.error) throw ins.error;
+        _sboardAddRow(ins.data);
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){
         if(errEl) errEl.textContent=err.message;
       }
@@ -2807,9 +2841,10 @@
             var newName=(o.text_content==='Purpose')?'Purpose':(o.text_content==='MISC'?'MISC':'Wish Tank Ideas');
             var upd=await _sb.from('ideas').update({cluster_id:wt.id,text_content:newName}).eq('id',o.id);
             if(upd.error) throw upd.error;
+            _sboardPatchRow(o.id, {cluster_id:wt.id,text_content:newName});
           }
           closeSbDetail();
-          renderSeaBoard();
+          renderSeaBoard(true);
         }catch(err){
           var errBox=document.querySelector('.sc-overlay-card');
           if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
@@ -2844,11 +2879,11 @@
         var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
         var _sb=T().sb;
         try{
-          for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); }
+          for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); _sboardPatchRow(uniq[i], {color:c}); }
         }catch(e){}
         T().setDefaultHeaderColor(c);
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       };
     });
   }
@@ -2910,7 +2945,7 @@
   // click handler above even returns.
   function _sboardSetAlphaHeaderView(on){
     _sboardAlphaHeaderView=!!on;
-    renderSeaBoard();
+    renderSeaBoard(true);
   }
 
   // Gear menu — consolidates the traveler options that used to be separate
@@ -3345,7 +3380,7 @@
         sw.onclick=async function(){
           var c=sw.getAttribute('data-c');
           try{ await _sb.from('ideas').update({color:c}).eq('id',item.id); item.color=c; }catch(e){}
-          closeSbDetail(); renderSeaBoard();
+          closeSbDetail(); renderSeaBoard(true);
         };
       });
       var rNotes=document.getElementById('sb-notes-box');
@@ -3632,7 +3667,7 @@
         if(upd.error) throw upd.error;
         item.content_type=newType;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
@@ -3646,7 +3681,7 @@
           if(upd.error) throw upd.error;
           item.cluster_id=newCluster;
           closeSbDetail();
-          renderSeaBoard();
+          renderSeaBoard(true);
         }catch(err){ if(statusBox) statusBox.textContent=err.message; }
       });
     });
@@ -3769,11 +3804,12 @@
         var parentId=T2TShared.filter||null;
         var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw new Error(ins.error.message);
+        _sboardAddRow(ins.data);
         var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.cluster_id=ins.data.id;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){
         if(statusBox) statusBox.textContent=err.message;
         if(newHeaderGoBtn){ newHeaderGoBtn.disabled=false; newHeaderGoBtn.textContent='Create & move here'; }
@@ -3815,7 +3851,7 @@
         item.text_content=patch.text_content;
         if(patch.content_type) item.content_type=patch.content_type;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
@@ -3841,7 +3877,7 @@
         item.image_url=url;
         if(patch.content_type) item.content_type=patch.content_type;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
@@ -3852,7 +3888,7 @@
         if(upd.error) throw upd.error;
         item.locked=newLocked;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
 
@@ -3902,7 +3938,7 @@
         if(upd.error) throw upd.error;
         item.cluster_id=newCluster;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
@@ -3915,7 +3951,7 @@
         if(upd.error) throw upd.error;
         item.cluster_id=newCluster;
         closeSbDetail();
-        renderSeaBoard();
+        renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     }
     var trashOverlay=document.getElementById('sb-trash-overlay');
@@ -3953,7 +3989,7 @@
           // true) when 9711 is active and the tile is actually on screen;
           // otherwise fall back to the old full-refresh delegation.
           var patchedInPlace = window.T2TStoryboard && T2TStoryboard.isxPatchColor && T2TStoryboard.isxPatchColor(item.id, c);
-          if(!patchedInPlace) renderSeaBoard();
+          if(!patchedInPlace) renderSeaBoard(true);
         }catch(err){ if(statusBox) statusBox.textContent='Color needs the color Supabase column: '+err.message; }
       });
     });
@@ -4054,7 +4090,7 @@
     ov.querySelectorAll('.sb-key-pick-edit').forEach(function(btn){
       btn.addEventListener('click', function(){
         var key=_sboardKeyById(btn.getAttribute('data-key-id'));
-        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(); }, key);
+        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }, key);
       });
     });
     T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAssignKeyToSlot(item, slotIndex, newKey.id); }); });
@@ -4083,7 +4119,7 @@
     // already on screen. Every other card edit (move, trash, recolor)
     // already calls renderSeaBoard() to pick up its own change; this one
     // was missing it.
-    renderSeaBoard();
+    renderSeaBoard(true);
     // "Place same symbol on cards and they automatically link" -- Larry,
     // Aug 3 2026. _sboardWriteItemKeys above already awaited, so this
     // key's own database row is current by the time _sboardSyncKeyLinks
@@ -4175,17 +4211,17 @@
     ov.querySelectorAll('.sb-key-lib-edit').forEach(function(btn){
       btn.addEventListener('click', function(){
         var key=_sboardKeyById(btn.getAttribute('data-key-id'));
-        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(); }, key);
+        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }, key);
       });
     });
     ov.querySelectorAll('.sb-key-lib-del').forEach(function(btn){
       btn.addEventListener('click', async function(){
         try{ await _sboardDeleteKey(btn.getAttribute('data-key-id')); }catch(e){}
         _sboardOpenKeyLibraryManager();
-        renderSeaBoard();
+        renderSeaBoard(true);
       });
     });
-    T().wire('sb-keylib-add', function(){ _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(); }); });
+    T().wire('sb-keylib-add', function(){ _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }); });
     T().wire('sb-keylib-close', closeSbDetail);
   }
 
@@ -4600,15 +4636,17 @@
       if(!user) throw new Error('Not signed in.');
       var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
       if(ins.error) throw ins.error;
+      _sboardAddRow(ins.data);
       var newHeaderId=ins.data.id;
       for(var i=0;i<allIds.length;i++){
         var upd=await _sb.from('ideas').update({cluster_id:newHeaderId}).eq('id',allIds[i]);
         if(upd.error) throw upd.error;
+        _sboardPatchRow(allIds[i], {cluster_id:newHeaderId});
       }
     }catch(err){}
     allIds.forEach(function(id){ delete _clusterCardPos[id]; delete _clusterSelected[id]; });
     closeSbDetail();
-    renderSeaBoard();
+    renderSeaBoard(true);
   }
 
   // Router for anything dropped onto a shelf bucket — a loose idea (plain id
@@ -4638,9 +4676,10 @@
     try{
       var upd=await _sb.from('ideas').update({cluster_id:targetBucketId}).eq('id',headerId);
       if(upd.error) throw upd.error;
+      _sboardPatchRow(headerId, {cluster_id:targetBucketId});
     }catch(err){}
     renderClusterView(headerRow);
-    renderSeaBoard();
+    renderSeaBoard(true);
   }
 
   // Drag one or more loose ideas onto a shelf bucket — re-renders CLUSTER (so
@@ -4655,11 +4694,12 @@
       for(var i=0;i<ids.length;i++){
         var upd=await _sb.from('ideas').update({cluster_id:bucketId, sort_order:siblingCount+i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
+        _sboardPatchRow(ids[i], {cluster_id:bucketId, sort_order:siblingCount+i});
       }
     }catch(err){}
     ids.forEach(function(id){ delete _clusterCardPos[id]; delete _clusterSelected[id]; });
     renderClusterView(headerRow);
-    renderSeaBoard();
+    renderSeaBoard(true);
   }
 
   // "+ new bucket" — Name the Baby, ADD flow. Swaps the button for an inline
@@ -4693,11 +4733,12 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()});
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
       if(ins.error) throw ins.error;
+      _sboardAddRow(ins.data);
     }catch(err){}
     renderClusterView(headerRow);
-    renderSeaBoard();
+    renderSeaBoard(true);
   }
 
   /* Renaming a bucket now happens via the ✏️ button inside openSbHeaderPeek,
