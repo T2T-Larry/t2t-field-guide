@@ -1856,7 +1856,16 @@
         // Supabase for the other few hundred rows that didn't change
         // wastes bandwidth for no benefit. _sboardAllRowsById is kept
         // current by that patch instead.
-        var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
+        //
+        // user_id is selected here too (Aug 9 2026 fix) -- every row this
+        // cache holds already belongs to this traveler (.eq('user_id', ...)
+        // below), but the column itself wasn't coming back, so any row read
+        // out of _sboardAllRowsById had row.user_id===undefined. That broke
+        // every Owner check downstream that reads _sboardCurrentProjectRow()
+        // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
+        // owner-only gating, and the People menu's isOwner check all silently
+        // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
           .eq('user_id', user.id).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(2000);
         if(res.error) throw new Error(res.error.message);
