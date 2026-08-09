@@ -1,6 +1,8 @@
 /* ============================================================
-   session.js — T2T Field Guide · ISB SESSION (9711, formerly
-   TOPIC IDEAS / "Idea Session", 9215).
+   session.js — T2T Field Guide · ISB SESSION (1014, was 9711, formerly
+   TOPIC IDEAS / "Idea Session", 9215). Renumbered from 9711 to 1014 on
+   Aug 9 2026 -- moved out of the 9700s Storyboard-family block into the
+   Dream Phase 1000s sequence, right after ISB itself (1010).
 
    Split out of sea-of-ideas.js on July 17, 2026 (Session 118).
    Behavior is UNCHANGED — this is a structural split, not a rebuild.
@@ -174,7 +176,7 @@
     T2TShared.ideaCaptureCtx=null;
     await _isxRenderLadder();
     await _isxRenderBoard();
-    var pnInit=document.getElementById('isx-pagenum'); if(pnInit) pnInit.textContent='9711';
+    var pnInit=document.getElementById('isx-pagenum'); if(pnInit) pnInit.textContent='1014'; // renumbered from 9711, Aug 9 2026
     if(!_isxWired){
       _isxWired=true;
       T().wire('isx-idea-btn', _isxOpenIdeaCaptureHere);

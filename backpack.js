@@ -1137,7 +1137,7 @@
     // s-idea-capture/theme/paste/link/custom (9210-legacy, 9211-9214)
     // registrations removed July 18, 2026 along with the screens
     // themselves — see idea-media-shared.js.
-    registerPageNum('s-idea-session','9711'); /* was 9210 — renumbered July 13, 2026 into the 9700-9799 Storyboard family, right after ISB (9710) */
+    registerPageNum('s-idea-session','1014'); /* was 9210, then 9711 (renumbered July 13, 2026 into the 9700-9799 Storyboard family) -- renumbered again Aug 9 2026, out of the 9700s and into the Dream Phase 1000s sequence, right after ISB (1010), same move ISB itself made from 9710. */
     registerPageNum('s-journal',        '9300');
     // 9300 became the NOTES chooser (Journal vs Briefing Board) July 19,
     // 2026 -- the Add Note/View Journal buttons that used to live directly
