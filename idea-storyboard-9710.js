@@ -2021,8 +2021,8 @@
         // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
         // owner-only gating, and the People menu's isOwner check all silently
         // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3')
-          .eq('user_id', user.id).in('content_type',['image','text','link','header'])
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id')
+          .in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(2000);
         if(res.error) throw new Error(res.error.message);
         var _freshRows=res.data||[];
@@ -2912,8 +2912,8 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3')
-        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id')
+        .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
@@ -3240,17 +3240,33 @@
     var _sb=T().sb; if(!_sb || !projectRow) return;
     var uid=(await _sb.auth.getUser()).data.user;
     uid=uid?uid.id:null;
-    _tmRosterIsOwner = !!uid && projectRow.user_id===uid;
-    try{
-      var ownerRes=await _sb.from('members').select('user_id,name,email,initials,phone').eq('user_id', projectRow.user_id).maybeSingle();
-      _tmRosterOwner = (!ownerRes.error && ownerRes.data) ? ownerRes.data : null;
-    }catch(e){ _tmRosterOwner=null; }
+    // Fractal Casting (Aug 9 2026): a delegated TOPIC's Owner isn't the
+    // header row's original creator (user_id) -- it's whoever it was
+    // delegated to, tracked via topic_owner_user_id and mirrored into
+    // storyboard_members (role='owner') by delegate_topic() so the same
+    // roster RPC already returns it. Root PROJECTs and plain headers are
+    // unaffected -- same creator-is-Owner convention as always.
+    var isTopic = !!projectRow.topic_owner_user_id;
+    _tmRosterIsOwner = !!uid && (isTopic ? projectRow.topic_owner_user_id===uid : projectRow.user_id===uid);
     try{
       var res=await _sb.rpc('list_storyboard_members', {p_project_id: projectRow.id});
-      // View-only visitors (Aug 8 2026) aren't Team members -- they show
-      // up in People > Manage Access only, not in the role-based roster.
-      _tmRosterCache = (!res.error && res.data) ? res.data.filter(function(m){ return (m.access_level||'edit')==='edit'; }) : [];
-    }catch(e){ _tmRosterCache=[]; }
+      var all=(!res.error && res.data) ? res.data : [];
+      if(isTopic){
+        var ownerRow=all.find(function(m){ return m.role==='owner'; });
+        _tmRosterOwner = ownerRow ? {user_id:ownerRow.user_id, name:ownerRow.name, email:ownerRow.email, initials:ownerRow.initials, phone:ownerRow.phone} : null;
+        // View-only visitors (Aug 8 2026) aren't Team members -- they show
+        // up in People > Manage Access only, not in the role-based roster.
+        // The owner row is pulled out above so it renders via the crown
+        // bucket instead of doubling as a regular Cast row.
+        _tmRosterCache = all.filter(function(m){ return m.role!=='owner' && (m.access_level||'edit')==='edit'; });
+      } else {
+        try{
+          var ownerRes=await _sb.from('members').select('user_id,name,email,initials,phone').eq('user_id', projectRow.user_id).maybeSingle();
+          _tmRosterOwner = (!ownerRes.error && ownerRes.data) ? ownerRes.data : null;
+        }catch(e){ _tmRosterOwner=null; }
+        _tmRosterCache = all.filter(function(m){ return (m.access_level||'edit')==='edit'; });
+      }
+    }catch(e){ _tmRosterCache=[]; _tmRosterOwner=null; }
   }
 
   function _tmAllRosterRows(projectRow){
@@ -3335,8 +3351,8 @@
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
   }
 
-  function _sboardOpenTeam(){
-    var projectRow=_sboardCurrentProjectRow();
+  function _sboardOpenTeam(scopeRow, backFn){
+    var projectRow=scopeRow||_sboardCurrentProjectRow();
     var ov=document.getElementById('sb-detail-overlay'); if(!ov || !projectRow) return;
     ov.innerHTML='<div class="sc-overlay-card sb-team-print" style="text-align:center;width:min(400px,92vw)">'
       +'<div style="display:flex;justify-content:flex-end;margin-bottom:2px"><button class="sc-ov-btn" id="tm-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
@@ -3357,7 +3373,7 @@
     +'</div>';
     ov.classList.add('active');
     _tmLoadRoster(projectRow).then(function(){ _tmRenderRoster(projectRow); });
-    T().wire('tm-close', function(){ closeSbDetail(); _sboardOpenPeopleMenu(); });
+    T().wire('tm-close', function(){ closeSbDetail(); (backFn||_sboardOpenPeopleMenu)(); });
     T().wire('tm-print-tile', function(){ window.print(); });
     async function _tmConfirmAddMember(email){
       var input=document.getElementById('tm-add-email');
@@ -3441,13 +3457,13 @@
   // -- same screen the PROJECT quick menu's own Manage Access opens,
   // just a second door in. Computes isOwner itself since the gear menu
   // doesn't already have it handy the way the quick menu does.
-  async function _sboardOpenShareManagerFromGear(){
-    var projectRow=_sboardCurrentProjectRow();
+  async function _sboardOpenShareManagerFromGear(scopeRow, backFn){
+    var projectRow=scopeRow||_sboardCurrentProjectRow();
     if(!projectRow) return;
     var _sb=T().sb;
     var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
-    var isOwner=!!me && projectRow.user_id===me.id;
-    _sboardOpenShareManager(projectRow, isOwner, function(){ _sboardOpenPeopleMenu(); });
+    var isOwner=!!me && (projectRow.topic_owner_user_id ? projectRow.topic_owner_user_id===me.id : projectRow.user_id===me.id);
+    _sboardOpenShareManager(projectRow, isOwner, backFn||function(){ _sboardOpenPeopleMenu(); });
   }
 
   // Settings screen stack, Aug 8 2026 -- Larry: Settings should be a
@@ -3468,25 +3484,86 @@
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-set-go-people', _sboardOpenPeopleMenu);
+    T().wire('sb-set-go-people', function(){ _sboardOpenPeopleMenu(); });
     T().wire('sb-set-go-appearance', _sboardOpenAppearanceMenu);
     T().wire('sb-set-go-preferences', _sboardOpenPreferencesMenu);
     T().wire('sb-gear-close', closeSbDetail);
   }
-  function _sboardOpenPeopleMenu(){
+  function _sboardOpenPeopleMenu(scopeRow, backFn){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    // Fractal Casting (Aug 9 2026): this same screen now also opens
+    // scoped to a delegated TOPIC header instead of always the root
+    // PROJECT -- a small subtitle makes clear whose Cast/Guests this is.
+    var isTopicScope=!!(scopeRow && scopeRow.topic_owner_user_id);
+    var subtitle=isTopicScope ? '<div style="font-size:10px;color:#7a6040;margin:-6px 0 8px">'+_esc9710(scopeRow.text_content||'this TOPIC')+'</div>' : '';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isTopicScope?'2px':'10px')+'"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +subtitle
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
         +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(); });
-    T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(); });
-    T().wire('sb-people-close', _sboardOpenGearMenu);
+    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
+    T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
+    T().wire('sb-people-close', backFn||_sboardOpenGearMenu);
+  }
+
+  // Fractal Casting entry points (Aug 9 2026) -- reuse every screen above
+  // completely unchanged, just handed a header row instead of always the
+  // root PROJECT. "Same pattern repeating at every scale."
+  function _sboardOpenPeopleMenuForTopic(headerRow){
+    _sboardOpenPeopleMenu(headerRow, function(){ closeSbDetail(); openSbDetail(headerRow); });
+  }
+
+  async function _sboardOpenDelegateTopicPicker(headerRow, scopeRow){
+    var ov=document.getElementById('sb-detail-overlay'); if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Make this a TOPIC</span><button class="sc-ov-btn" id="sb-deleg-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="font-size:10px;color:#7a6040;margin-bottom:8px">Pick who owns it. They\u2019ll get their own independent Cast to build \u2014 you\u2019ll become their Sponsor. Only people already on your own current team can be picked.</div>'
+      +'<div id="sb-deleg-list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;margin-bottom:8px"><div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">Loading your team\u2026</div></div>'
+      +'<div id="sb-deleg-error" style="font-size:11px;color:#b8562f;margin-top:4px;display:none"></div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-deleg-close', function(){ closeSbDetail(); openSbDetail(headerRow); });
+
+    await _tmLoadRoster(scopeRow);
+    var candidates=_tmAllRosterRows(scopeRow).filter(function(m){ return !m.isOwner; });
+    var list=document.getElementById('sb-deleg-list'); if(!list) return;
+    if(!candidates.length){
+      list.innerHTML='<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">Nobody\u2019s on your team yet \u2014 add a Cast Member first.</div>';
+      return;
+    }
+    list.innerHTML=candidates.map(function(m){
+      return '<div class="sb-hdr-vitem sb-deleg-cand" data-uid="'+_esc9710(m.user_id)+'" style="text-align:left;cursor:pointer">'
+        +'<div style="font-weight:600">'+_esc9710(m.name||m.email||'')+'</div>'
+        +'<div style="font-size:10px;color:#888">'+_esc9710(m.email||'')+'</div>'
+      +'</div>';
+    }).join('');
+    list.querySelectorAll('.sb-deleg-cand').forEach(function(row){
+      row.addEventListener('click', async function(){
+        var uid=row.getAttribute('data-uid');
+        var errEl=document.getElementById('sb-deleg-error'); if(errEl) errEl.style.display='none';
+        var _sb=T().sb;
+        try{
+          var res=await _sb.rpc('delegate_topic', {p_header_id: headerRow.id, p_new_owner_user_id: uid});
+          if(res.error) throw res.error;
+        }catch(e){
+          if(errEl){ errEl.textContent=(e&&e.message)||'Could not delegate this TOPIC.'; errEl.style.display='block'; }
+          return;
+        }
+        try{
+          var fresh=await _sb.from('ideas').select('*').eq('id',headerRow.id).maybeSingle();
+          if(!fresh.error && fresh.data){
+            _sboardAllRowsById[headerRow.id]=fresh.data;
+            headerRow=fresh.data;
+          }
+        }catch(e){}
+        closeSbDetail(); openSbDetail(headerRow);
+      });
+    });
   }
   function _sboardOpenAppearanceMenu(){
     var ov=document.getElementById('sb-detail-overlay');
@@ -3857,6 +3934,7 @@
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
+      + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
@@ -3911,6 +3989,38 @@
         }catch(err){ if(statusBox) statusBox.textContent=err.message; }
       });
     })();
+
+    // Fractal Casting entry point (Aug 9 2026) -- shown only for headers,
+    // and only once we know whether this one's already a TOPIC (offer its
+    // Cast/Guests) or this viewer is the current Owner of whatever's
+    // directly above it (offer to delegate it into a new one). Async
+    // because both need a roster/user lookup that can't finish before
+    // ov.innerHTML above already landed -- same pattern as Person
+    // Assigned just above.
+    if(isHeaderType){
+      (function(){
+        var btn=document.getElementById('sb-topic-btn'); if(!btn) return;
+        var effRowsById=(isOn9711 && _isxDetailCtx && _isxDetailCtx.rowsById) ? _isxDetailCtx.rowsById : _sboardAllRowsById;
+        (async function(){
+          if(item.topic_owner_user_id){
+            btn.title='Cast / Guests for this TOPIC';
+            btn.style.display='';
+            btn.onclick=function(){ _sboardOpenPeopleMenuForTopic(item); };
+            return;
+          }
+          var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
+          var myId=me?me.id:null; if(!myId) return;
+          var scopeRow=item.topic_scope_id?effRowsById[item.topic_scope_id]:null;
+          var isScopeOwner=!!scopeRow && (scopeRow.topic_owner_user_id?scopeRow.topic_owner_user_id===myId:scopeRow.user_id===myId);
+          if(isScopeOwner){
+            btn.title='Make this a TOPIC';
+            btn.textContent='\uD83C\uDF31';
+            btn.style.display='';
+            btn.onclick=function(){ _sboardOpenDelegateTopicPicker(item, scopeRow); };
+          }
+        })();
+      })();
+    }
 
     // Double-click-to-zoom lightbox — Locked July 13, 2026. The DETAILS
     // back is already the larger view of an image; some images (a
@@ -4592,8 +4702,8 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id')
-        .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id')
+        .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
       var rows=res.data||[];
