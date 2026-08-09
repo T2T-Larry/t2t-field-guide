@@ -983,6 +983,38 @@
     return cur;
   }
 
+  // Same climb as _sboardProjectRowFor, but takes the rows-by-id map as an
+  // argument instead of always reading the global _sboardAllRowsById --
+  // needed for Person Assigned (Aug 9 2026) since openSbDetail can be
+  // reached from 9711's Idea Session screen, where _sboardAllRowsById is
+  // stale/unset and the live map lives on _isxDetailCtx.rowsById instead
+  // (same staleness bug already documented above openSbDetail).
+  function _sbProjectRowForAny(row, rowsById){
+    var cur=row, guard=0;
+    while(cur && cur.cluster_id && guard<25){
+      var parent=(rowsById||{})[cur.cluster_id];
+      if(!parent) break;
+      cur=parent; guard++;
+    }
+    return cur;
+  }
+
+  // Person Assigned (Aug 9 2026, Larry): every card gets a dropdown of the
+  // card's own PROJECT's real Cast roster, same "real roster, not free
+  // text" convention as the Briefing Board's VIEW dropdown fix (Session
+  // 198) -- reuses the Team Roster's own _tmLoadRoster/_tmAllRosterRows
+  // rather than a second parallel roster fetch.
+  function _sbRenderPersonSelect(item, projectRow){
+    var sel=document.getElementById('sb-person-select'); if(!sel) return;
+    var rows=_tmAllRosterRows(projectRow);
+    var cur=item.assigned_user_id||'';
+    var opts=['<option value="">Unassigned</option>'];
+    rows.forEach(function(m){
+      opts.push('<option value="'+_esc9710(m.user_id)+'"'+(String(m.user_id)===String(cur)?' selected':'')+'>'+_esc9710(m.name||m.email||'')+'</option>');
+    });
+    sel.innerHTML=opts.join('');
+  }
+
   // Project switcher — added July 12, 2026. PROJECT was previously a
   // fixed-anchor label only; this makes it a real lateral jump between
   // top-level projects (the flat Top Banana root list), not just a return
@@ -1865,7 +1897,7 @@
         // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
         // owner-only gating, and the People menu's isOwner check all silently
         // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3')
           .eq('user_id', user.id).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(2000);
         if(res.error) throw new Error(res.error.message);
@@ -2732,7 +2764,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3')
         .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -3522,6 +3554,19 @@
       + '</div>'
       + '</div>';
 
+    // Person Assigned (Aug 9 2026, Larry): full-width row of its own,
+    // not a fourth eyebrow column -- the overlay card is only 260px wide
+    // (see .sc-overlay-card), so a 4-way split next to Parent/View/Order
+    // would leave no room for a real name. Options are filled in async
+    // right after this HTML lands (see _sbRenderPersonSelect below) --
+    // the roster fetch can't finish before ov.innerHTML is set.
+    var personRowHTML='<div class="sb-eyebrow-row">'
+      + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
+      + '<div class="sb-hdr-eyebrow2" style="text-align:left">Person Assigned</div>'
+      + '<select id="sb-person-select" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;box-sizing:border-box"><option value="">Loading…</option></select>'
+      + '</div>'
+      + '</div>';
+
     var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
       + '<div class="sb-hdr-vitem'+(isMisc?' current':'')+'" id="sb-misc-pinned" style="border:0.5px solid #D3D1C7;border-radius:8px;margin-bottom:6px;font-weight:600">'+(isMisc?'📦 Misc ✓ — tap to move out':'📦 Misc (project archive)')+'</div>'
@@ -3569,6 +3614,7 @@
       + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
       + topRowHTML
+      + personRowHTML
       + headerListHTML
       + bodyHTML
       // NOTES + SIGNAL FLAGS, Aug 7 2026 (Larry): Notes moved onto the same
@@ -3636,6 +3682,30 @@
     })();
 
     var statusBox=document.getElementById('sb-note-status');
+
+    // Person Assigned -- roster fetch can't finish before ov.innerHTML
+    // above already rendered "Loading...", so fill the real options in
+    // once _tmLoadRoster resolves, then save straight to the row on
+    // change (same immediate-save pattern as the VIEW toggle just below,
+    // not the field-by-field detail-save flow the Notes textarea uses).
+    (function(){
+      var effRowsById=(isOn9711 && _isxDetailCtx && _isxDetailCtx.rowsById) ? _isxDetailCtx.rowsById : _sboardAllRowsById;
+      var assignProjectRow=_sbProjectRowForAny(item, effRowsById);
+      var personSel=document.getElementById('sb-person-select');
+      if(!assignProjectRow){
+        if(personSel) personSel.innerHTML='<option value="">Unassigned</option>';
+      } else {
+        _tmLoadRoster(assignProjectRow).then(function(){ _sbRenderPersonSelect(item, assignProjectRow); });
+      }
+      if(personSel) personSel.addEventListener('change', async function(){
+        var newVal=personSel.value||null;
+        try{
+          var upd=await _sb.from('ideas').update({assigned_user_id:newVal}).eq('id',item.id).select();
+          if(upd.error) throw upd.error;
+          item.assigned_user_id=newVal;
+        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+      });
+    })();
 
     // Double-click-to-zoom lightbox — Locked July 13, 2026. The DETAILS
     // back is already the larger view of an image; some images (a
@@ -4317,7 +4387,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked')
+      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id')
         .eq('user_id',user.id).eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
