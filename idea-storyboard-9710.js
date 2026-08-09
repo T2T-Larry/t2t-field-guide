@@ -2962,6 +2962,7 @@
 
   function _tmRoleSymbol(m){
     if(m.isOwner) return '\uD83D\uDC51';
+    if(m.role==='sponsor') return '\uD83C\uDF31';
     if(m.role==='leader') return '\uD83C\uDFAF';
     if(m.is_facilitator) return '\uD83C\uDFA4';
     if(m.can_facilitate) return '\u2726';
@@ -2969,7 +2970,8 @@
   }
   function _tmRoleTitle(m){
     if(m.isOwner) return 'Owner';
-    if(m.role==='leader') return 'Director';
+    if(m.role==='sponsor') return 'Sponsor';
+    if(m.role==='leader') return 'Leader';
     if(m.is_facilitator) return 'Facilitator';
     if(m.can_facilitate) return 'Facilitator-qualified';
     return 'Cast Member';
@@ -3008,9 +3010,10 @@
       var clickable = (!m.isOwner && _tmRosterIsOwner);
       var panel = (!m.isOwner) ? (
         '<div class="tm-rolepanel" id="tm-rp-'+_esc9710(m.user_id)+'" style="display:none">'
-          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Director &mdash; runs the board day to day</label>'
+          +'<label><input type="radio" name="tm-sp" class="tm-r-sponsor" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='sponsor'?' checked':'')+'> \uD83C\uDF31 Sponsor</label>'
+          +'<label><input type="radio" name="tm-tl" class="tm-r-leader" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='leader'?' checked':'')+'> \uD83C\uDFAF Leader</label>'
           +'<label><input type="checkbox" class="tm-r-canfac" data-uid="'+_esc9710(m.user_id)+'"'+(m.can_facilitate?' checked':'')+'> \u2726 Facilitator-qualified</label>'
-          +'<label><input type="radio" name="tm-fac" class="tm-r-fac" data-uid="'+_esc9710(m.user_id)+'"'+(m.is_facilitator?' checked':'')+'> \uD83C\uDFA4 Facilitator &mdash; running sessions now</label>'
+          +'<label><input type="radio" name="tm-fac" class="tm-r-fac" data-uid="'+_esc9710(m.user_id)+'"'+(m.is_facilitator?' checked':'')+'> \uD83C\uDFA4 Facilitator</label>'
         +'</div>'
       ) : '';
       var contactLine, notesLine;
@@ -3128,10 +3131,12 @@
       });
       wrap.addEventListener('change', async function(e){
         var t=e.target;
-        if(t.classList.contains('tm-r-leader') || t.classList.contains('tm-r-canfac') || t.classList.contains('tm-r-fac')){
+        if(t.classList.contains('tm-r-sponsor') || t.classList.contains('tm-r-leader') || t.classList.contains('tm-r-canfac') || t.classList.contains('tm-r-fac')){
           var uid=t.getAttribute('data-uid');
           var panel=document.getElementById('tm-rp-'+uid); if(!panel) return;
-          var role = panel.querySelector('.tm-r-leader').checked ? 'leader' : null;
+          if(t.classList.contains('tm-r-sponsor') && t.checked){ panel.querySelector('.tm-r-leader').checked=false; }
+          if(t.classList.contains('tm-r-leader') && t.checked){ panel.querySelector('.tm-r-sponsor').checked=false; }
+          var role = panel.querySelector('.tm-r-sponsor').checked ? 'sponsor' : (panel.querySelector('.tm-r-leader').checked ? 'leader' : null);
           var canFac = panel.querySelector('.tm-r-canfac').checked;
           var isFac = panel.querySelector('.tm-r-fac').checked;
           await _tmSaveMemberRole(projectRow, uid, role, canFac, isFac);
