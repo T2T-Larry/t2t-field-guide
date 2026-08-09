@@ -167,6 +167,14 @@
         // two never overlap.
         +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
         +'.sb-key-dots{position:absolute;bottom:2px;right:18px;display:flex;gap:2px;pointer-events:none;z-index:5}'
+        // Person Assigned badge (Aug 9 2026, Larry: "look like the BB card
+        // with the initials on the front") -- same small circle-with-
+        // initials look as the Briefing Board's .bb-dot, scaled down to
+        // fit this board's much smaller ~70-76px tile. Bottom-left is the
+        // one corner nothing else on the tile claims (order badge is
+        // top-left, lock/link are top-right/top-left-ish, heart+key dots+
+        // corner-flip share the bottom-right).
+        +'.sb-person-badge{position:absolute;bottom:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:7px;font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         // pointer-events:auto here, Aug 4 2026 -- same fix as the
         // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
         // stays click-through (so it never grabs a card drag), but a
@@ -835,6 +843,47 @@
       return '<span class="sb-key-dot" style="'+_sboardKeyShapeCSS(k.shape,k.color)+'" title="'+_sboardEsc(k.meaning||'')+'"></span>';
     }).join('')+'</div>';
   }
+
+  // Person Assigned front-of-card badge (Aug 9 2026, Larry). Tile
+  // rendering (_sboardMakeTile/_sboardMakeHeaderStackTile, and 9711's own
+  // _isxMakeTile/_isxMakeHeaderStackTile via the T2TStoryboard bridge
+  // below) is synchronous, but the name behind an assigned_user_id lives
+  // in the members table -- a separate round trip. Rather than block
+  // every render on that, _sboardEnsureAssignedInitials fetches whatever's
+  // missing in the background and the caller re-renders (fromCache=true,
+  // so it's cheap) once new names actually land. Cache is keyed by
+  // user_id and never invalidated -- a member's initials essentially
+  // never change mid-session, same assumption _bbMembersCache already
+  // makes on the Briefing Board side.
+  var _sboardAssignedCache = {};
+  var _sboardAssignedFetchInFlight = {};
+  async function _sboardEnsureAssignedInitials(rows){
+    var missing=[], seen={};
+    (rows||[]).forEach(function(r){
+      var uid=r&&r.assigned_user_id;
+      if(!uid || _sboardAssignedCache[uid] || _sboardAssignedFetchInFlight[uid] || seen[uid]) return;
+      seen[uid]=true; missing.push(uid);
+    });
+    if(!missing.length) return false;
+    missing.forEach(function(uid){ _sboardAssignedFetchInFlight[uid]=true; });
+    var _sb=T().sb;
+    if(!_sb){ missing.forEach(function(uid){ delete _sboardAssignedFetchInFlight[uid]; }); return false; }
+    try{
+      var res=await _sb.from('members').select('user_id,name,initials').in('user_id', missing);
+      if(!res.error && res.data){
+        res.data.forEach(function(m){ _sboardAssignedCache[m.user_id]={name:m.name||'', initials:(m.initials||'').toUpperCase()}; });
+      }
+    }catch(e){}
+    missing.forEach(function(uid){ delete _sboardAssignedFetchInFlight[uid]; });
+    return true;
+  }
+  function _sboardAssignedBadgeHTML(item){
+    var uid=item&&item.assigned_user_id;
+    if(!uid) return '';
+    var m=_sboardAssignedCache[uid];
+    if(!m) return ''; // not fetched yet this pass -- next re-render (see _sboardEnsureAssignedInitials) fills it in
+    return '<div class="sb-person-badge" title="'+_sboardEsc(m.name||'')+'">'+_sboardEsc(m.initials||'')+'</div>';
+  }
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
   var _clusterWide = false;
@@ -1471,6 +1520,10 @@
     // badge, same bottom-right corner, so the two "how I feel about this
     // card" markers read together.
     tile.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(item));
+    // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
+    // with the initials on the front." Bottom-left, the one corner
+    // nothing else claims.
+    tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
     // one to a header if it wasn't already — same "first card placed stays
@@ -1573,6 +1626,7 @@
     // report here).
     front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
     front.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
+    front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
     // Drilling in is now done by dragging this card onto the TOPIC box
@@ -1913,6 +1967,11 @@
       // in. Order doesn't matter here (nothing downstream relies on fetch
       // order -- everything sorts explicitly off sort_order/name).
       var rows=Object.keys(_sboardAllRowsById).map(function(k){ return _sboardAllRowsById[k]; });
+      // Person Assigned badge names, Aug 9 2026 -- fire-and-forget; only
+      // triggers a (cheap, cache-only) re-render if it actually had new
+      // names to go fetch, so this never loops or blocks the render
+      // that's already in progress.
+      _sboardEnsureAssignedInitials(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
@@ -4920,6 +4979,8 @@
     drillInto: _sboardDrillInto,
     openKeyLibraryManager: _sboardOpenKeyLibraryManager,
     keyDotsHTML: _sboardKeyDotsHTML,
+    assignedBadgeHTML: _sboardAssignedBadgeHTML,
+    ensureAssignedInitials: _sboardEnsureAssignedInitials,
     closeBoard: _sboardCloseBoard
   };
 

@@ -1090,6 +1090,13 @@
         if(purposeId && String(r.id)===String(purposeId)) return true;
         return excludedNames.indexOf(r.text_content)===-1;
       });
+      // Person Assigned badge names, Aug 9 2026 -- same fire-and-forget
+      // pattern as idea-storyboard-9710.js's renderSeaBoard: only
+      // re-renders (cache-only, cheap) if this pass actually had a new
+      // name to go fetch.
+      if(window.T2TStoryboard && T2TStoryboard.ensureAssignedInitials){
+        T2TStoryboard.ensureAssignedInitials(allRows).then(function(fetchedSomething){ if(fetchedSomething) _isxRenderBoard(true); });
+      }
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
       var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId) && String(r.id)!==String(purposeId); });
       var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || _isxAllRowsById[miscId] || (fromCache ? null : await _isxFetchRow(miscId));
@@ -1347,6 +1354,10 @@
     // reaches the same shared library through T2TStoryboard.keyDotsHTML
     // since the key-shape helpers live in 9710's closure, not this file.
     if(window.T2TStoryboard && T2TStoryboard.keyDotsHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.keyDotsHTML(row));
+    // Person Assigned badge, Aug 9 2026 -- same bridge pattern as
+    // keyDotsHTML just above; the initials cache/lookup lives in 9710's
+    // closure, this just borrows it.
+    if(window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
     // Double-click is the color-options shortcut every card has (locked
     // July 27, 2026) -- this loose-idea tile never had a double-click job
     // of its own before, so this is a straight addition, not a migration.
@@ -1406,6 +1417,7 @@
     // plain cards now.
     var isxStackFront=t.querySelector('.isx-stack-front');
     if(isxStackFront && window.T2TStoryboard && T2TStoryboard.keyDotsHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.keyDotsHTML(row));
+    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
     // Single click = toggle this pile open/closed (spread its real cards
     // out to view/reorganize, or gather them back into the cascade) -- a
     // plain click waits ~250ms to make sure a second one isn't coming
