@@ -614,6 +614,7 @@
       budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
+      shared_to_board_id: c.sharedToBoardId||null,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
@@ -631,6 +632,7 @@
       budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
+      sharedToBoardId: row.shared_to_board_id||null,
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
@@ -1050,6 +1052,17 @@
   // roster label (see _bbLoadMembers) -- a card whose person field
   // predates the picker won't match until it's reassigned through it.
   var _bbForeignCards = [];
+  // Mirror boards, part 2 (Aug 9 2026): a card created directly on a
+  // member's own personal board can be tagged (via the card's own
+  // "Also show on" field) to also surface on a project/departmental/
+  // company board they belong to -- so whoever's watching that board
+  // can see, question, or stop the work without ever leaving it. The
+  // card's real home stays the personal board (board_id never changes);
+  // shared_to_board_id is just the tag. _bbSharedInCards holds the
+  // read-through merge for THIS board when it's a project/departmental/
+  // company board -- same separate-array, narrow-persist-path safety
+  // net as _bbForeignCards above, just the mirror image of it.
+  var _bbSharedInCards = [];
   // Source/assignee filter, Aug 9 2026 (Session 198, same pass): a
   // dropdown next to Name. On a personal board it filters the merged
   // view by where a card actually came from (your own board, or which
@@ -1172,12 +1185,40 @@
           fc._homeBoardId=b2.id;
           fc._homeBoardName=b2.name||'Untitled Board';
           fc.col = row.personal_col || row.col;
+          fc._realCol = row.col;
           fc.sortOrder = (typeof row.personal_rank==='number') ? row.personal_rank : Infinity;
           merged.push(fc);
         });
       }catch(e){ console.error('Personal BB: could not load assigned cards from board', b2.id, e); }
     }
     _bbForeignCards = merged;
+  }
+
+  // Loads cards tagged (shared_to_board_id) to THIS board when it's a
+  // project/departmental/company board -- the reverse direction of
+  // _bbLoadForeignCardsForPersonalBoard above. RLS ("shared cards -
+  // select", Aug 9 2026) is what actually allows reading a row whose
+  // real board_id belongs to someone else's personal board here --
+  // this query just asks for anything tagged to us.
+  async function _bbLoadSharedInCardsForProjectBoard(board){
+    _bbSharedInCards = [];
+    var sb=T().sb; if(!sb || !board) return;
+    if(board.board_type==='personal') return;
+    try{
+      var res=await sb.from('briefing_cards').select('*').eq('shared_to_board_id', board.id).eq('archived', false).is('trashed_at', null);
+      if(res.error || !res.data) return;
+      _bbSharedInCards = res.data.map(function(row){
+        var sc=_bbRowToCard(row);
+        sc._foreign=true; // reuses the dashed-border badge styling already built for merged cards
+        sc._sharedIn=true;
+        sc._homeBoardId=row.board_id;
+        sc._homeBoardName='Personal'+(row.person?(' \u2022 '+row.person):'');
+        sc.col = row.shared_col || row.col;
+        sc._realCol = row.col;
+        sc.sortOrder = (typeof row.shared_rank==='number') ? row.shared_rank : Infinity;
+        return sc;
+      });
+    }catch(e){ console.error('Could not load shared-in cards for board', board.id, e); }
   }
 
   // Persists a foreign card's position on THIS viewer's personal board
@@ -1193,15 +1234,80 @@
     }catch(e){ console.error('Personal BB: could not save card position', e); }
   }
 
-  // Dedicated drop path for the personal board's mixed native+foreign
-  // columns -- deliberately simpler than the native drop handler (no
-  // priority-family escalation, no hangup stamping, no completed-date
-  // stamping): those are project-process rules that belong to a card's
-  // home board, not to how Larry personally chooses to lay out his own
-  // view of it. Renumbers the whole target column (native and foreign
+  // Mirror boards, part 2 -- the reverse of the position write above.
+  // Persists a shared-in card's position on THIS viewer's project/
+  // departmental/company board only -- shared_col/shared_rank, never
+  // the card's real col/sort_order/board_id (those stay owned by the
+  // personal board it actually lives on).
+  async function _bbPersistSharedPosition(sc){
+    var sb=T().sb; if(!sb) return;
+    try{
+      await sb.from('briefing_cards').update({
+        shared_col: sc.col,
+        shared_rank: (typeof sc.sortOrder==='number') ? sc.sortOrder : null
+      }).eq('id', sc.id);
+    }catch(e){ console.error('Shared board: could not save card position', e); }
+  }
+
+  // Status changes mirror, priority stays personal -- Larry, Aug 9
+  // 2026. Applies identically to both merge directions (a card
+  // assigned to you elsewhere, shown on your personal board; or a
+  // card you started on your own personal board, tagged onto a
+  // project board): reshuffling within the 3 Do columns (H/M/L) is
+  // each viewer's own private priority call and never leaves their
+  // own display column (personal_col or shared_col). Crossing into or
+  // out of Doing/Done/Hang-Ups is a real fact about the work, not a
+  // personal preference, so it writes back to the card's one true
+  // row. wasCol/newCol are the DISPLAY columns being dragged between;
+  // priority/realRow describe the card's OWN true values (never
+  // touched by the other side's private reshuffling), so re-entering
+  // a Do column always lands on whichever H/M/L family that side's
+  // own priority says, ignoring whatever family the other viewer
+  // happened to drop it into. Returns null for a move that should
+  // stay private (no mirror needed).
+  function _bbStageMirrorUpdate(wasCol, newCol, priority, realRow){
+    function stage(k){ return _bbIsDoCol(k) ? 'do' : k; }
+    if(stage(wasCol)===stage(newCol)) return null;
+    var realNewCol = _bbIsDoCol(newCol) ? _bbDoColKey(priority) : newCol;
+    var wasRealCol = realRow.col;
+    var upd={col: realNewCol};
+    if(realNewCol==='doing' && _bbIsDoCol(wasRealCol) && !realRow.startDate) upd.startDate=_bbToday();
+    if(realNewCol==='done' && wasRealCol!=='done') upd.completedDate=_bbToday();
+    if(wasRealCol==='done' && realNewCol!=='done'){ upd.completedDate=''; upd.verified=false; upd.pro=false; upd.grow=false; }
+    if(realNewCol==='hangups' && wasRealCol!=='hangups') upd.hangupSince=_bbToday();
+    if(wasRealCol==='hangups' && realNewCol!=='hangups') upd.hangupSince='';
+    return upd;
+  }
+  // Writes a stage-mirror update straight to the card's real row --
+  // by id, so it always lands on the one true record regardless of
+  // which board's view triggered the move.
+  async function _bbWriteStageMirror(realCardId, upd){
+    var sb=T().sb; if(!sb) return;
+    var row={col: upd.col};
+    if('startDate' in upd) row.start_date=upd.startDate?_bbToISODate(upd.startDate):null;
+    if('completedDate' in upd) row.completed_date=upd.completedDate?_bbToISODate(upd.completedDate):null;
+    if('hangupSince' in upd) row.hangup_since=upd.hangupSince?_bbToISODate(upd.hangupSince):null;
+    if('verified' in upd) row.verified=upd.verified;
+    if('pro' in upd) row.pro=upd.pro;
+    if('grow' in upd) row.grow=upd.grow;
+    try{ await sb.from('briefing_cards').update(row).eq('id', realCardId); }
+    catch(e){ console.error('Stage mirror: could not update the card\'s real row', e); }
+  }
+
+  // Dedicated drop path for a board's mixed native+merged columns --
+  // used both for the personal board's foreign (assigned-to-me) cards
+  // and a project board's shared-in (tagged-from-someone's-personal-
+  // board) cards, since the two are mirror images of the same shape.
+  // Deliberately simpler than the native drop handler for anything
+  // that stays within the private side (no fine H/M/L escalation on
+  // top/bottom drop, just the coarse family) -- but DOES now mirror a
+  // stage crossing (into/out of Doing/Done/Hang-Ups) back to the
+  // card's real row via _bbStageMirrorUpdate/_bbWriteStageMirror, per
+  // Larry's Aug 9 2026 rule: status changes mirror, priority stays
+  // personal. Renumbers the whole target column (native and merged
   // cards share one ordering space so drag position stays intuitive),
-  // writing native changes through the normal save path and foreign
-  // changes through _bbPersistForeignPosition, one card at a time.
+  // writing native changes through the normal save path and merged
+  // changes through the given persistPositionFn, one card at a time.
   function _bbCardBeforeGeneric(zone, y, excludeId){
     var els=Array.prototype.slice.call(zone.querySelectorAll('.bb-card'))
       .filter(function(el){ return el.getAttribute('data-id')!==excludeId; });
@@ -1213,7 +1319,7 @@
     });
     return closest.el;
   }
-  async function _bbHandlePersonalBoardDrop(zone, e, draggedId){
+  async function _bbHandleMergedCardDrop(zone, e, draggedId, mergedList, persistPositionFn){
     var newCol=zone.getAttribute('data-col');
     var beforeEl=_bbCardBeforeGeneric(zone, e.clientY, draggedId);
     var order=Array.prototype.slice.call(zone.querySelectorAll('.bb-card'))
@@ -1222,7 +1328,7 @@
     var insertAt=beforeEl ? order.indexOf(beforeEl.getAttribute('data-id')) : order.length;
     order.splice(insertAt, 0, draggedId);
     var nativeTouched=false;
-    var foreignToPersist=[];
+    var mergedToPersist=[];
     order.forEach(function(cid, idx){
       var nc=_bbCardsList().filter(function(x){ return x.id===cid; })[0];
       if(nc){
@@ -1231,18 +1337,59 @@
         nativeTouched=true;
         return;
       }
-      var fc=_bbForeignCards.filter(function(x){ return x.id===cid; })[0];
-      if(fc){
-        if(cid===draggedId) fc.col=newCol;
-        fc.sortOrder=idx;
-        foreignToPersist.push(fc);
+      var mc=mergedList.filter(function(x){ return x.id===cid; })[0];
+      if(mc){
+        if(cid===draggedId){
+          var wasCol=mc.col;
+          var upd=_bbStageMirrorUpdate(wasCol, newCol, mc.priority, {col:mc._realCol, startDate:mc.startDate});
+          if(upd){
+            _bbWriteStageMirror(mc.id, upd);
+            mc._realCol=upd.col;
+            if('startDate' in upd) mc.startDate=upd.startDate;
+            if('completedDate' in upd) mc.completedDate=upd.completedDate;
+            if('hangupSince' in upd) mc.hangupSince=upd.hangupSince;
+            if('verified' in upd) mc.verified=upd.verified;
+            if('pro' in upd) mc.pro=upd.pro;
+            if('grow' in upd) mc.grow=upd.grow;
+          }
+          mc.col=newCol;
+        }
+        mc.sortOrder=idx;
+        mergedToPersist.push(mc);
       }
     });
     if(nativeTouched) _bbSaveLocal(_bbCardsList());
-    for(var i=0;i<foreignToPersist.length;i++){
-      await _bbPersistForeignPosition(foreignToPersist[i]);
+    for(var i=0;i<mergedToPersist.length;i++){
+      await persistPositionFn(mergedToPersist[i]);
     }
     renderBoard();
+  }
+  function _bbHandlePersonalBoardDrop(zone, e, draggedId){
+    return _bbHandleMergedCardDrop(zone, e, draggedId, _bbForeignCards, _bbPersistForeignPosition);
+  }
+  function _bbHandleSharedInDrop(zone, e, draggedId){
+    return _bbHandleMergedCardDrop(zone, e, draggedId, _bbSharedInCards, _bbPersistSharedPosition);
+  }
+
+  // Fired from closeCardDetail when a personal card's "Also show on"
+  // choice changes. Setting or switching a target seeds shared_col to
+  // this card's own current column (its starting priority on the
+  // project board, per Larry: a default the project side can then
+  // change independently) and shared_rank to the end of that column
+  // there. Clearing it just drops the tag -- the row itself is
+  // untouched and simply stops showing up on that board next load.
+  async function _bbHandleSharedTagChange(c, newTarget){
+    var sb=T().sb; if(!sb) return;
+    try{
+      if(newTarget){
+        var res=await sb.from('briefing_cards').select('shared_rank').eq('shared_to_board_id', newTarget).eq('shared_col', c.col);
+        var maxRank=-1;
+        if(!res.error && res.data) res.data.forEach(function(r){ if(typeof r.shared_rank==='number' && r.shared_rank>maxRank) maxRank=r.shared_rank; });
+        await sb.from('briefing_cards').update({shared_to_board_id:newTarget, shared_col:c.col, shared_rank:maxRank+1}).eq('id', c.id);
+      } else {
+        await sb.from('briefing_cards').update({shared_to_board_id:null, shared_col:null, shared_rank:null}).eq('id', c.id);
+      }
+    }catch(e){ console.error('Could not update this card\'s project tag', e); }
   }
 
   async function _bbSwitchToBoard(boardId){
@@ -1322,6 +1469,7 @@
     _bbRenderBoardPicker();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);
+    await _bbLoadSharedInCardsForProjectBoard(board);
     await _bbRenderSourcePicker();
     renderBoard();
   }
@@ -2122,6 +2270,7 @@
             +'<div class="bb-field"><label>Signal Flags</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
+            +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
             +'<div class="bb-field"><label>Due date</label><div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><select id="bb-d-routine" class="bb-routine-select"><option value="">Routine</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select></div><input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none"></div>'
             +'<div class="bb-field"><label>Start date</label><div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"></div></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
@@ -2397,6 +2546,7 @@
     _bbAutoEscalateDates();
     var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
     if(_bbForeignCards && _bbForeignCards.length) cards = cards.concat(_bbForeignCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
+    if(_bbSharedInCards && _bbSharedInCards.length) cards = cards.concat(_bbSharedInCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
     cards = _bbSourceFilterCards(cards);
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
@@ -2434,7 +2584,7 @@
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
-        var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Position here is independent.">'+_esc(c._homeBoardName)+'</span>') : '';
+        var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
@@ -2504,7 +2654,9 @@
         var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
         if(!c){
           var fc=_bbForeignCards.filter(function(x){ return x.id===id; })[0];
-          if(fc){ _bbHandlePersonalBoardDrop(zone, e, id); }
+          if(fc){ _bbHandlePersonalBoardDrop(zone, e, id); return; }
+          var sc=_bbSharedInCards.filter(function(x){ return x.id===id; })[0];
+          if(sc){ _bbHandleSharedInDrop(zone, e, id); return; }
           return;
         }
         if(c){
@@ -2650,6 +2802,27 @@
     if(_bbUnhookBtn){ _bbUnhookBtn.disabled=false; _bbUnhookBtn.textContent='\u{1FA9D} Unhooking Ideas'; }
     document.getElementById('bb-d-task').value=c.task||'';
     _bbRenderPersonSelect(c.person||'');
+    // Mirror boards, part 2, Aug 9 2026 -- "Also show on" only makes
+    // sense for a card native to a PERSONAL board (tagging it onto a
+    // project/departmental/company board this member belongs to).
+    // Options come straight from _bbBoards, already RLS-scoped to
+    // boards this member can actually see.
+    (function(){
+      var wrap=document.getElementById('bb-d-shared-wrap');
+      var sel=document.getElementById('bb-d-shared-board');
+      if(!wrap || !sel) return;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(board && board.board_type==='personal'){
+        var targets=_bbBoards.filter(function(b){ return b.board_type!=='personal'; });
+        sel.innerHTML='<option value="">Just here</option>'+targets.map(function(b){
+          return '<option value="'+b.id+'">'+_esc(b.name||'Untitled Board')+'</option>';
+        }).join('');
+        sel.value=c.sharedToBoardId||'';
+        wrap.style.display='';
+      } else {
+        wrap.style.display='none';
+      }
+    })();
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-due-time').value=c.dueTime||'';
     document.getElementById('bb-d-start').value=c.startDate||'';
@@ -2692,6 +2865,14 @@
       c.notes=document.getElementById('bb-d-notes').value;
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
       c.growNote=document.getElementById('bb-d-grow-note').value;
+      var sharedWrap=document.getElementById('bb-d-shared-wrap');
+      if(sharedWrap && sharedWrap.style.display!=='none'){
+        var newSharedTo=document.getElementById('bb-d-shared-board').value || null;
+        if(newSharedTo!==(c.sharedToBoardId||null)){
+          _bbHandleSharedTagChange(c, newSharedTo);
+          c.sharedToBoardId=newSharedTo;
+        }
+      }
       _bbSaveLocal(_bbCardsList());
     }
     _bbOpenCardId=null;
