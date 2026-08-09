@@ -585,6 +585,13 @@
   var _sboardTopLevelOrder = [];
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
+  var _sboardCacheReady = false;
+  // Set true the first time this tab has done a real (network) render of
+  // the Storyboard. Realtime-triggered renders (see _sboardRtSafeRefresh)
+  // patch the changed row straight into _sboardAllRowsById and re-render
+  // from that cache instead of re-fetching the whole account from
+  // Supabase -- but only once there's something real in the cache to
+  // render from. Aug 9 2026 (Supabase egress fix).
   // Set by 9711 (session.js, setIsxContext) after every render — lets the
   // shared DETAILS card compute an accurate "Current Location" breadcrumb
   // and header lookup when opened from 9711, instead of reading 9710's own
@@ -1697,7 +1704,7 @@
     });
   }
 
-  async function renderSeaBoard(){
+  async function renderSeaBoard(fromCache){
     // Signal Flags, Aug 3 2026 -- kicks off the one-time library fetch
     // (no-ops after the first call, see _sboardKeyLibLoaded) regardless
     // of which screen (9710 or 9711, delegated to just below) is
@@ -1720,6 +1727,12 @@
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     if(!wrap||!_sb) return;
+    // Realtime patch arrived before this tab ever did a real render of
+    // the Storyboard (e.g. it's sitting on a different screen entirely) --
+    // nothing cached to render from yet. Whatever screen the traveler
+    // actually opens next does a real (non-cached) render and picks up
+    // everything fresh, so this is a safe no-op, not a missed update.
+    if(fromCache && !_sboardCacheReady) return;
     // Alphabetical view resets on a real board change, Aug 3 2026 --
     // keyed off whatever topic actually rendered last time (however it
     // got here: drill in/out, PROJECT switcher, a TOC link...), not any
@@ -1731,11 +1744,8 @@
       _sboardAlphaHeaderView=false;
       _sboardLastRenderedTopicId=T2TShared.currentTopicId;
     }
-    if(statusEl){ statusEl.textContent='Loading…'; statusEl.classList.remove('err'); }
+    if(statusEl && !fromCache){ statusEl.textContent='Loading…'; statusEl.classList.remove('err'); }
     try{
-      var user=(await _sb.auth.getUser()).data.user;
-      if(!user) throw new Error('Not signed in.');
-
       // Resolve which project (if any) the current Topic actually belongs
       // to, using whatever's already cached from the last render (reliably
       // fresh in practice — you can't have navigated to a Topic without a
@@ -1747,7 +1757,10 @@
       // project, just placeholder text for that shared null slot. Locked
       // July 12, 2026: Purpose and the project-root Ideas bucket now
       // resolve to the actual project (Wish Tank, Field Guide, etc.), never
-      // to a shared null root.
+      // to a shared null root. Doesn't need the account fetch below to
+      // have just run -- only reads what's already cached -- so this runs
+      // the same way whether this render is fetching fresh or patching
+      // from cache.
       var currentTopicRowForProject=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
       var currentProjectRowForScope=currentTopicRowForProject?_sboardProjectRowFor(currentTopicRowForProject):null;
       // Fallback for a cold/stale cache — e.g. the first time this Topic is
@@ -1765,44 +1778,73 @@
       }
       var isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(T2TShared.currentTopicId));
 
-      // Ensure-calls run concurrently, added July 12, 2026 — these three
-      // are fully independent (none needs another's result), but were
-      // previously awaited one after another, each a separate Supabase
-      // round trip. That sequential chain is what made opening a project
-      // for the first time (Purpose/Ideas being created fresh) feel slow.
-      var _ensureResults=await Promise.all([
-        T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(
-          T2TShared.currentTopicId,
-          null
-        ) : Promise.resolve(null),
-        currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
-        T2TData.ensureMiscHeader(T2TShared.currentTopicId)
-      ]);
-      var newAdditionsId=_ensureResults[0];
-      _sboardNewAdditionsId=newAdditionsId;
-      // Purpose — one per PROJECT, reachable from anywhere inside that
-      // project (not just its exact root), never shared across projects
-      // and never shown when no project is selected at all.
-      var purposeId=_ensureResults[1];
-      _sboardPurposeId=purposeId;
-      var miscId=_ensureResults[2];
+      // miscId/purposeId/newAdditionsId default to whatever this tab last
+      // resolved them to (Aug 9 2026) -- only actually recomputed below
+      // when this render does a real fetch. A cache-only patch render
+      // (see fromCache) reuses them as-is: they're per-Topic and this
+      // tab can't be looking at a different Topic than the one its last
+      // real render resolved these for.
+      var miscId=_sboardMiscId, purposeId=_sboardPurposeId, newAdditionsId=_sboardNewAdditionsId;
 
-      // Whole-account fetch (every header, idea, image and link this user
-      // owns, across every board) -- unlike the cluster-scoped fetches
-      // elsewhere in this file, there's no .eq('cluster_id', ...) here to
-      // keep the row count small. limit(300) quietly capped this to the
-      // OLDEST 300 rows (ascending order), so once the account passed 300
-      // total rows, anything newer -- including a header added just now
-      // via [+] -- was silently left out of the fetch and never appeared
-      // anywhere, with no error. Raised well past current usage (~350
-      // rows and growing) so new content stops vanishing. Fixed Aug 6,
-      // 2026 -- Larry: "Added a header but it never showed anywhere."
-      var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
-        .eq('user_id', user.id).in('content_type',['image','text','link','header'])
-        .order('created_at',{ascending:true}).limit(2000);
-      if(res.error) throw new Error(res.error.message);
-      var rows=res.data||[];
-      _sboardAllRowsById={}; rows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
+      if(!fromCache){
+        var user=(await _sb.auth.getUser()).data.user;
+        if(!user) throw new Error('Not signed in.');
+
+        // Ensure-calls run concurrently, added July 12, 2026 — these three
+        // are fully independent (none needs another's result), but were
+        // previously awaited one after another, each a separate Supabase
+        // round trip. That sequential chain is what made opening a project
+        // for the first time (Purpose/Ideas being created fresh) feel slow.
+        var _ensureResults=await Promise.all([
+          T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(
+            T2TShared.currentTopicId,
+            null
+          ) : Promise.resolve(null),
+          currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
+          T2TData.ensureMiscHeader(T2TShared.currentTopicId)
+        ]);
+        newAdditionsId=_ensureResults[0];
+        _sboardNewAdditionsId=newAdditionsId;
+        // Purpose — one per PROJECT, reachable from anywhere inside that
+        // project (not just its exact root), never shared across projects
+        // and never shown when no project is selected at all.
+        purposeId=_ensureResults[1];
+        _sboardPurposeId=purposeId;
+        miscId=_ensureResults[2];
+
+        // Whole-account fetch (every header, idea, image and link this user
+        // owns, across every board) -- unlike the cluster-scoped fetches
+        // elsewhere in this file, there's no .eq('cluster_id', ...) here to
+        // keep the row count small. limit(300) quietly capped this to the
+        // OLDEST 300 rows (ascending order), so once the account passed 300
+        // total rows, anything newer -- including a header added just now
+        // via [+] -- was silently left out of the fetch and never appeared
+        // anywhere, with no error. Raised well past current usage (~350
+        // rows and growing) so new content stops vanishing. Fixed Aug 6,
+        // 2026 -- Larry: "Added a header but it never showed anywhere."
+        //
+        // Only runs for a real render, not a cache-only patch (Aug 9 2026)
+        // -- a live update from another traveler already hands over the
+        // one row that changed (see _sboardApplyRemoteIdea), so re-asking
+        // Supabase for the other few hundred rows that didn't change
+        // wastes bandwidth for no benefit. _sboardAllRowsById is kept
+        // current by that patch instead.
+        var res=await _sb.from('ideas').select('id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,key_slot_1,key_slot_2,key_slot_3')
+          .eq('user_id', user.id).in('content_type',['image','text','link','header'])
+          .order('created_at',{ascending:true}).limit(2000);
+        if(res.error) throw new Error(res.error.message);
+        var _freshRows=res.data||[];
+        _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
+        _sboardCacheReady=true;
+      }
+
+      // Derived fresh from _sboardAllRowsById either way -- after a real
+      // fetch it was just rebuilt from the network response above; for a
+      // cache-only patch it already holds every row it held before plus
+      // whatever _sboardApplyRemoteIdea/_sboardApplyRemoteKey just patched
+      // in. Order doesn't matter here (nothing downstream relies on fetch
+      // order -- everything sorts explicitly off sort_order/name).
+      var rows=Object.keys(_sboardAllRowsById).map(function(k){ return _sboardAllRowsById[k]; });
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
@@ -4658,24 +4700,52 @@
      already built) — see above. Kept CLUSTER's own rename code out of here
      on purpose, so there's exactly one rename dialog instead of two. */
 
-  // ── LIVE SYNC (Aug 4 2026) ── renderSeaBoard() already re-fetches
-  // fresh from Supabase and re-renders every time it's called (it's the
-  // same function every local action here already calls afterward), so
-  // reacting to a remote change just means calling it again -- no manual
-  // row-merging needed the way the Briefing Board's card list needs.
+  // ── LIVE SYNC (Aug 4 2026; row-merge added Aug 9 2026) ── used to just
+  // call renderSeaBoard() again on every remote change, which re-fetches
+  // this whole account's ideas from Supabase (up to 2000 rows) from
+  // scratch -- fine for one traveler working alone, but with several
+  // people on a board at once, every single edit anyone makes re-fetches
+  // the whole board on every OTHER open tab too, including the tab of
+  // whoever just made the edit (their own write echoes back to them).
+  // That's what was actually driving the Supabase usage warning, and it
+  // gets worse the more people collaborate live -- exactly the direction
+  // this project is headed. Now patches the one row Supabase already
+  // handed over straight into _sboardAllRowsById (same row-merge
+  // approach the Briefing Board's card list already used) and re-renders
+  // from that updated cache -- no network round trip. renderSeaBoard()
+  // itself is unchanged for every real navigation/local-edit call site;
+  // only this live-sync path renders from cache.
   // Coalesced/deferred the same way as the Briefing Board's live sync,
-  // so a burst of remote changes doesn't fire a network re-fetch per row,
-  // and paused while a card/header is mid-drag.
+  // so a burst of remote changes doesn't fire a re-render per row, and
+  // paused while a card/header is mid-drag.
   var _sboardRtPendingRender = false, _sboardRtTimer = null;
   function _sboardRtSafeRefresh(){
     if (T().isDragActive()) { _sboardRtPendingRender = true; return; }
     if (_sboardRtTimer) clearTimeout(_sboardRtTimer);
-    _sboardRtTimer = setTimeout(function(){ _sboardRtTimer = null; renderSeaBoard(); }, 300);
+    _sboardRtTimer = setTimeout(function(){ _sboardRtTimer = null; renderSeaBoard(true); }, 300);
   }
   window.addEventListener('t2t:drag-end', function(){
     if (_sboardRtPendingRender) { _sboardRtPendingRender = false; _sboardRtSafeRefresh(); }
   });
-  function _sboardApplyRemoteIdea(){ _sboardRtSafeRefresh(); }
+  function _sboardApplyRemoteIdea(evt, row, oldRow){
+    if (evt === 'DELETE') {
+      if (oldRow) delete _sboardAllRowsById[oldRow.id];
+    } else if (row) {
+      // The whole-account fetch this cache was built from is always
+      // scoped to this traveler's own rows (.eq('user_id', user.id)) --
+      // matters once a Storyboard can be shared (storyboard_members),
+      // since RLS may let this tab legitimately *see* a collaborator's
+      // row over the realtime channel even though the account-scoped
+      // fetch itself would never have pulled it in. Guarding here keeps
+      // the patched cache matching exactly what a real re-fetch would
+      // have contained.
+      var _me=T().getMember && T().getMember();
+      if (!_me || String(row.user_id) === String(_me.user_id)) {
+        _sboardAllRowsById[row.id] = row;
+      }
+    }
+    _sboardRtSafeRefresh();
+  }
   function _sboardApplyRemoteKey(evt, row, oldRow){
     if (!_sboardKeyLibLoaded) return; // library not fetched in this tab yet -- nothing cached to patch
     if (evt === 'DELETE') {
