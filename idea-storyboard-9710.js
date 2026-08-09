@@ -259,6 +259,17 @@
         +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:14px}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'.sc-hdr-frame-label{opacity:.72}'
+        // VIEW-by-person filter, Aug 9 2026 (Larry): a dropdown next to
+        // PARENT, same idea as the Briefing Board's own VIEW filter
+        // (Session 198) -- pulls the current project's real Cast roster
+        // and narrows which idea cards show. Purely a display filter,
+        // same rule as BB's: never touches sort_order/what's saved, and
+        // headers/Subbers always stay visible (they're navigation, not
+        // person-filterable content) -- only leaf idea/text/image/link
+        // cards get hidden when they don't match.
+        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:11px;font-family:inherit;max-width:104px;cursor:pointer;opacity:.85}'
+        +'.sc-hdr-select:hover{opacity:1}'
+        +'.sc-hdr-select option{color:#2C2C2A}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
         +'#sc-topic-box{display:inline-block;max-width:320px;box-sizing:border-box;white-space:normal;word-wrap:break-word}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
@@ -414,13 +425,16 @@
       +'</div>'
       +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
       +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:center">'
+      +'<div class="sc-hdr-eyebrow">View</div>'
+      +'<select id="sc-viewfilter-select" class="sc-hdr-select" title="Filter by person assigned"><option value="">Everyone</option></select>'
+      +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
-        +'<div style="display:flex;flex-direction:column;align-items:center;position:relative" id="sc-view-wrap">'
-        +'<div class="sc-hdr-eyebrow">View</div>'
-        +'<div class="sc-hdr-frame" id="sc-view-btn" style="cursor:pointer"><div class="sc-hdr-frame-label">Storyboard</div></div>'
-        +'<div class="sc-hdr-viewmenu" id="sc-view-menu"><div class="sc-hdr-viewmenu-item" id="b-sc-session-view">Switch to Session</div></div>'
-        +'</div>'
+        // Storyboard/Session toggle removed here, Aug 9 2026 (Larry): this
+        // header is the Idea Storyboard's own, Session-specific chrome
+        // stays out of it -- Session gets its own entry point dealt with
+        // separately later, not a switch living on this screen.
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Options">⚙️</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
@@ -456,19 +470,6 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
-    T().wire('b-sc-session-view', function(){ T2TMedia.openIdeaSession(); });
-    // VIEW button — click reveals the one other option (Session), closes
-    // again on an outside click. Larry, August 1 2026.
-    T().wire('sc-view-btn', function(e){
-      e.stopPropagation();
-      var m=document.getElementById('sc-view-menu');
-      if(m) m.classList.toggle('open');
-    });
-    document.addEventListener('click', function(e){
-      var wrap=document.getElementById('sc-view-wrap');
-      var menu=document.getElementById('sc-view-menu');
-      if(wrap && menu && menu.classList.contains('open') && !wrap.contains(e.target)) menu.classList.remove('open');
-    });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -518,6 +519,16 @@
     // project entirely (Wish Tank -> Field Guide), not just back to the
     // current one's own root.
     T().wire('sc-project-hit', openProjectSwitcher);
+
+    // VIEW-by-person filter select -- change re-renders from cache (cheap,
+    // no re-fetch) with the new filter applied. Aug 9 2026, Larry.
+    (function(){
+      var sel=document.getElementById('sc-viewfilter-select');
+      if(sel) sel.addEventListener('change', function(){
+        _sboardPersonFilterId = sel.value || null;
+        renderSeaBoard(true);
+      });
+    })();
 
     // PARENT still climbs one level on a simple click — the DETAILS slider
     // (added July 12, 2026) is now the primary way to move a specific card
@@ -591,6 +602,11 @@
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
+  // VIEW-by-person filter state -- Aug 9 2026. Null = everyone (default).
+  // Resets whenever the current project changes, same as BB resetting its
+  // own VIEW filter on a board switch.
+  var _sboardPersonFilterId = null;
+  var _sboardViewFilterProjectId = null;
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
   var _sboardCacheReady = false;
@@ -1046,6 +1062,34 @@
       cur=parent; guard++;
     }
     return cur;
+  }
+
+  // VIEW-by-person filter (Aug 9 2026, Larry): the board-level counterpart
+  // to Person Assigned above -- same roster source (_tmAllRosterRows), same
+  // "real Cast roster, not free text" rule the Briefing Board's own VIEW
+  // dropdown follows (Session 198). Purely a display filter: narrows which
+  // idea/text/image/link cards render, never touches sort_order or what's
+  // saved, and never hides headers/Subbers (they're navigation scaffolding,
+  // not person-filterable content). Only re-fetches the roster when the
+  // project actually changes (_sboardViewFilterProjectId), not on every
+  // render, to avoid re-querying on every drag/reorder.
+  function _sboardFilterByPerson(items){
+    if(!_sboardPersonFilterId) return items;
+    return items.filter(function(r){ return String(r.assigned_user_id||'')===String(_sboardPersonFilterId); });
+  }
+
+  function _sboardRenderPersonFilterPicker(projectRow){
+    var sel=document.getElementById('sc-viewfilter-select'); if(!sel || !projectRow) return;
+    var rows=_tmAllRosterRows(projectRow);
+    var cur=_sboardPersonFilterId||'';
+    var opts=['<option value="">Everyone</option>'];
+    var stillPresent=false;
+    rows.forEach(function(m){
+      if(String(m.user_id)===String(cur)) stillPresent=true;
+      opts.push('<option value="'+_esc9710(m.user_id)+'"'+(String(m.user_id)===String(cur)?' selected':'')+'>'+_esc9710(m.name||m.email||'')+'</option>');
+    });
+    sel.innerHTML=opts.join('');
+    if(cur && !stillPresent){ _sboardPersonFilterId=null; sel.value=''; }
   }
 
   // Person Assigned (Aug 9 2026, Larry): every card gets a dropdown of the
@@ -1897,6 +1941,18 @@
         }catch(e){ /* leave null — ensure-calls below just skip Purpose this render */ }
       }
       var isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(T2TShared.currentTopicId));
+      // VIEW-by-person filter picker -- only re-fetch the roster when the
+      // project actually changed (not on every render, which would mean
+      // every drag/reorder re-querying members). Aug 9 2026, Larry.
+      if(currentProjectRowForScope){
+        if(String(currentProjectRowForScope.id)!==String(_sboardViewFilterProjectId)){
+          _sboardViewFilterProjectId=currentProjectRowForScope.id;
+          _sboardPersonFilterId=null;
+          _tmLoadRoster(currentProjectRowForScope).then(function(){ _sboardRenderPersonFilterPicker(currentProjectRowForScope); });
+        } else {
+          _sboardRenderPersonFilterPicker(currentProjectRowForScope);
+        }
+      }
 
       // miscId/purposeId/newAdditionsId default to whatever this tab last
       // resolved them to (Aug 9 2026) -- only actually recomputed below
@@ -2205,7 +2261,7 @@
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
           subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
-          directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
+          _sboardFilterByPerson(directItems).forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
           // [+] under each header adds a new subber directly here — mirrors
           // the [+] after MISC for headers. MISC included now too (any
           // idea can land there, on-topic or not); Purpose joined them
@@ -2288,7 +2344,7 @@
         if(directItems.length || (newRow && !newRow.locked)){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
-          directItems.forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, parentIdForDrop, SUBBER_H)); });
+          _sboardFilterByPerson(directItems).forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, parentIdForDrop, SUBBER_H)); });
           if(newRow && !newRow.locked){
             scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
           }
