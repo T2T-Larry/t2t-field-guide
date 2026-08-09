@@ -2161,6 +2161,13 @@
       +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
       +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
       +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-sub);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+      +'.tm-add-wrap{position:relative;flex:1}'
+      +'.tm-add-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 16px rgba(59,37,16,0.18);max-height:160px;overflow-y:auto;z-index:5}'
+      +'.tm-add-suggest-row{padding:6px 10px;font-size:12px;color:var(--bb-ink);cursor:pointer;display:flex;justify-content:space-between;gap:8px}'
+      +'.tm-add-suggest-row:hover{background:var(--bb-bg)}'
+      +'.tm-add-suggest-name{font-weight:600}'
+      +'.tm-add-suggest-email{color:var(--bb-sub);font-size:11px}'
+      +'.tm-add-suggest-empty{padding:6px 10px;font-size:11px;color:var(--bb-sub);font-style:italic}'
       +'@media print{body *{visibility:hidden}.bb-team-print,.bb-team-print *{visibility:visible}.bb-team-print{position:absolute;left:0;top:0;width:100%!important;max-height:none!important;box-shadow:none!important}@page{size:landscape}}'
       +'.bb-close:hover{background:var(--bb-bg)}'
       +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
@@ -2382,7 +2389,10 @@
             +'<div class="tm-print-tile" id="bb-team-print" title="Print roster">&#128438;</div>'
           +'</div>'
           +'<div id="bb-team-add-row" style="display:none;margin-top:10px;gap:6px">'
-            +'<input type="email" id="bb-team-add-email" placeholder="name@example.com" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--bb-accent);border-radius:6px">'
+            +'<div class="tm-add-wrap">'
+              +'<input type="text" id="bb-team-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px;border:1px solid var(--bb-accent);border-radius:6px">'
+              +'<div class="tm-add-suggest" id="bb-team-add-suggest" style="display:none"></div>'
+            +'</div>'
             +'<button class="bb-flag-btn" id="bb-team-add-confirm" style="flex-shrink:0">Add</button>'
           +'</div>'
           +'<div id="bb-team-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
@@ -3488,6 +3498,36 @@
   var _bbRosterCache = [];
   var _bbRosterOwner = null;
   var _bbRosterIsOwner = false;
+  var _bbAllMembersCache = null; // list_members_for_picker() results, fetched once per session
+  async function _bbFetchAllMembers(){
+    if(_bbAllMembersCache) return _bbAllMembersCache;
+    var sb=T().sb; if(!sb) return [];
+    try{
+      var res=await sb.rpc('list_members_for_picker');
+      _bbAllMembersCache = (!res.error && res.data) ? res.data : [];
+    }catch(e){ _bbAllMembersCache=[]; }
+    return _bbAllMembersCache;
+  }
+  function _bbRenderMemberSuggestions(query){
+    var box=document.getElementById('bb-team-add-suggest'); if(!box) return;
+    var already={}; _bbAllRosterRows().forEach(function(r){ already[r.user_id]=true; });
+    var q=String(query||'').trim().toLowerCase();
+    var pool=(_bbAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
+    var matches = q ? pool.filter(function(m){
+      return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
+    }) : pool;
+    if(!matches.length){
+      box.innerHTML='<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone\u2019s already in this Cast.')+'</div>';
+    } else {
+      box.innerHTML=matches.map(function(m){
+        return '<div class="tm-add-suggest-row" data-email="'+_esc(m.email||'')+'">'
+          +'<span class="tm-add-suggest-name">'+_esc(m.name||m.email||'')+'</span>'
+          +'<span class="tm-add-suggest-email">'+_esc(m.email||'')+'</span>'
+        +'</div>';
+      }).join('');
+    }
+    box.style.display='block';
+  }
 
   function _bbRoleSymbol(m){
     if(m.isOwner) return '\uD83D\uDC51';
@@ -3625,7 +3665,25 @@
     var ov=document.getElementById('bb-team-overlay'); if(ov) ov.classList.remove('active');
     var addRow=document.getElementById('bb-team-add-row'); if(addRow) addRow.style.display='none';
     var errEl=document.getElementById('bb-team-error'); if(errEl) errEl.style.display='none';
+    var sugg=document.getElementById('bb-team-add-suggest'); if(sugg) sugg.style.display='none';
     _bbOpenSettingsAt('people');
+  }
+
+  async function _bbConfirmAddMember(email){
+    var input=document.getElementById('bb-team-add-email');
+    var errEl=document.getElementById('bb-team-error');
+    var sugg=document.getElementById('bb-team-add-suggest');
+    if(!email) return;
+    var res=await _bbTeamAddMember(email);
+    if(!res.ok){
+      if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; }
+      return;
+    }
+    if(errEl) errEl.style.display='none';
+    if(input) input.value='';
+    if(sugg) sugg.style.display='none';
+    var row=document.getElementById('bb-team-add-row'); if(row) row.style.display='none';
+    await _bbLoadRoster(); _bbRenderRoster();
   }
 
   function wireTeamRoster(){
@@ -3634,23 +3692,31 @@
     T().wire('bb-team-add', function(){
       if(!_bbRosterIsOwner) return;
       var row=document.getElementById('bb-team-add-row');
-      if(row) row.style.display = (row.style.display==='none') ? 'flex' : 'none';
+      var opening = row && row.style.display==='none';
+      if(row) row.style.display = opening ? 'flex' : 'none';
+      if(opening){
+        _bbFetchAllMembers().then(function(){ _bbRenderMemberSuggestions(''); });
+      } else {
+        var sugg=document.getElementById('bb-team-add-suggest'); if(sugg) sugg.style.display='none';
+      }
     });
+    var emailInput=document.getElementById('bb-team-add-email');
+    if(emailInput){
+      emailInput.addEventListener('input', function(){ _bbRenderMemberSuggestions(emailInput.value); });
+      emailInput.addEventListener('focus', function(){ _bbRenderMemberSuggestions(emailInput.value); });
+    }
+    var suggBox=document.getElementById('bb-team-add-suggest');
+    if(suggBox){
+      suggBox.addEventListener('click', function(e){
+        var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
+        _bbConfirmAddMember(row.getAttribute('data-email'));
+      });
+    }
     var confirmBtn=document.getElementById('bb-team-add-confirm');
     if(confirmBtn) confirmBtn.addEventListener('click', async function(){
       var input=document.getElementById('bb-team-add-email');
-      var errEl=document.getElementById('bb-team-error');
       var email=input?input.value.trim():'';
-      if(!email) return;
-      var res=await _bbTeamAddMember(email);
-      if(!res.ok){
-        if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; }
-        return;
-      }
-      if(errEl) errEl.style.display='none';
-      if(input) input.value='';
-      var row=document.getElementById('bb-team-add-row'); if(row) row.style.display='none';
-      await _bbLoadRoster(); _bbRenderRoster();
+      await _bbConfirmAddMember(email);
     });
     var nameEl=document.getElementById('bb-team-groupname');
     if(nameEl) nameEl.addEventListener('change', async function(){

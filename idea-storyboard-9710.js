@@ -228,6 +228,13 @@
         +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
         +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed #a9cce3;color:#5b9bd5;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
         +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid #cfe4f2;background:#fff;color:#5b9bd5;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+        +'.tm-add-wrap{position:relative;flex:1}'
+        +'.tm-add-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 6px 16px rgba(26,58,92,0.18);max-height:160px;overflow-y:auto;z-index:5}'
+        +'.tm-add-suggest-row{padding:6px 10px;font-size:12px;color:#1a3a5c;cursor:pointer;display:flex;justify-content:space-between;gap:8px}'
+        +'.tm-add-suggest-row:hover{background:#f7fbfe}'
+        +'.tm-add-suggest-name{font-weight:600}'
+        +'.tm-add-suggest-email{color:#7a6040;font-size:11px}'
+        +'.tm-add-suggest-empty{padding:6px 10px;font-size:11px;color:#7a6040;font-style:italic}'
         +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
@@ -3166,6 +3173,36 @@
   var _tmRosterCache = [];
   var _tmRosterOwner = null;
   var _tmRosterIsOwner = false;
+  var _tmAllMembersCache = null; // list_members_for_picker() results, fetched once per session
+  async function _tmFetchAllMembers(){
+    if(_tmAllMembersCache) return _tmAllMembersCache;
+    var _sb=T().sb; if(!_sb) return [];
+    try{
+      var res=await _sb.rpc('list_members_for_picker');
+      _tmAllMembersCache = (!res.error && res.data) ? res.data : [];
+    }catch(e){ _tmAllMembersCache=[]; }
+    return _tmAllMembersCache;
+  }
+  function _tmRenderMemberSuggestions(projectRow, query){
+    var box=document.getElementById('tm-add-suggest'); if(!box) return;
+    var already={}; _tmAllRosterRows(projectRow).forEach(function(r){ already[r.user_id]=true; });
+    var q=String(query||'').trim().toLowerCase();
+    var pool=(_tmAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
+    var matches = q ? pool.filter(function(m){
+      return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
+    }) : pool;
+    if(!matches.length){
+      box.innerHTML='<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone\u2019s already in this Cast.')+'</div>';
+    } else {
+      box.innerHTML=matches.map(function(m){
+        return '<div class="tm-add-suggest-row" data-email="'+_esc9710(m.email||'')+'">'
+          +'<span class="tm-add-suggest-name">'+_esc9710(m.name||m.email||'')+'</span>'
+          +'<span class="tm-add-suggest-email">'+_esc9710(m.email||'')+'</span>'
+        +'</div>';
+      }).join('');
+    }
+    box.style.display='block';
+  }
 
   function _sboardCurrentProjectRow(){
     if(!T2TShared.currentTopicId || !_sboardAllRowsById[T2TShared.currentTopicId]) return null;
@@ -3300,7 +3337,10 @@
         +'<div class="tm-print-tile" id="tm-print-tile" title="Print roster">&#128438;</div>'
       +'</div>'
       +'<div id="tm-add-row" style="display:none;margin-top:10px;gap:6px">'
-        +'<input type="email" id="tm-add-email" placeholder="name@example.com" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
+        +'<div class="tm-add-wrap">'
+          +'<input type="text" id="tm-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
+          +'<div class="tm-add-suggest" id="tm-add-suggest" style="display:none"></div>'
+        +'</div>'
         +'<button class="sc-ov-btn save" id="tm-add-confirm">Add</button>'
       +'</div>'
       +'<div id="tm-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
@@ -3309,11 +3349,42 @@
     _tmLoadRoster(projectRow).then(function(){ _tmRenderRoster(projectRow); });
     T().wire('tm-close', function(){ closeSbDetail(); _sboardOpenPeopleMenu(); });
     T().wire('tm-print-tile', function(){ window.print(); });
+    async function _tmConfirmAddMember(email){
+      var input=document.getElementById('tm-add-email');
+      var errEl=document.getElementById('tm-error');
+      var sugg=document.getElementById('tm-add-suggest');
+      if(!email) return;
+      var res=await _tmAddMember(projectRow, email);
+      if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+      if(errEl) errEl.style.display='none';
+      if(input) input.value='';
+      if(sugg) sugg.style.display='none';
+      var row=document.getElementById('tm-add-row'); if(row) row.style.display='none';
+      await _tmLoadRoster(projectRow); _tmRenderRoster(projectRow);
+    }
     T().wire('tm-add-tile', function(){
       if(!_tmRosterIsOwner) return;
       var row=document.getElementById('tm-add-row');
-      if(row) row.style.display = (row.style.display==='none') ? 'flex' : 'none';
+      var opening = row && row.style.display==='none';
+      if(row) row.style.display = opening ? 'flex' : 'none';
+      if(opening){
+        _tmFetchAllMembers().then(function(){ _tmRenderMemberSuggestions(projectRow, ''); });
+      } else {
+        var sugg=document.getElementById('tm-add-suggest'); if(sugg) sugg.style.display='none';
+      }
     });
+    var tmEmailInput=document.getElementById('tm-add-email');
+    if(tmEmailInput){
+      tmEmailInput.addEventListener('input', function(){ _tmRenderMemberSuggestions(projectRow, tmEmailInput.value); });
+      tmEmailInput.addEventListener('focus', function(){ _tmRenderMemberSuggestions(projectRow, tmEmailInput.value); });
+    }
+    var tmSuggBox=document.getElementById('tm-add-suggest');
+    if(tmSuggBox){
+      tmSuggBox.addEventListener('click', function(e){
+        var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
+        _tmConfirmAddMember(row.getAttribute('data-email'));
+      });
+    }
     var gnEl=document.getElementById('tm-groupname');
     if(gnEl) gnEl.addEventListener('change', async function(){
       if(!_tmRosterIsOwner) return;
@@ -3324,15 +3395,8 @@
     var confirmBtn=document.getElementById('tm-add-confirm');
     if(confirmBtn) confirmBtn.addEventListener('click', async function(){
       var input=document.getElementById('tm-add-email');
-      var errEl=document.getElementById('tm-error');
       var email=input?input.value.trim():'';
-      if(!email) return;
-      var res=await _tmAddMember(projectRow, email);
-      if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
-      if(errEl) errEl.style.display='none';
-      if(input) input.value='';
-      var row=document.getElementById('tm-add-row'); if(row) row.style.display='none';
-      await _tmLoadRoster(projectRow); _tmRenderRoster(projectRow);
+      await _tmConfirmAddMember(email);
     });
     var wrap=document.getElementById('tm-list-view');
     if(wrap){
