@@ -434,7 +434,7 @@
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">View</div>'
-      +'<select id="sc-viewfilter-select" class="sc-hdr-select" title="Filter by person assigned"><option value="">Everyone</option></select>'
+      +'<select id="sc-viewfilter-select" class="sc-hdr-select" title="Filter by person assigned"><option value="">Team</option></select>'
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
@@ -1089,7 +1089,7 @@
     var sel=document.getElementById('sc-viewfilter-select'); if(!sel || !projectRow) return;
     var rows=_tmAllRosterRows(projectRow);
     var cur=_sboardPersonFilterId||'';
-    var opts=['<option value="">Everyone</option>'];
+    var opts=['<option value="">Team</option>'];
     var stillPresent=false;
     rows.forEach(function(m){
       if(String(m.user_id)===String(cur)) stillPresent=true;

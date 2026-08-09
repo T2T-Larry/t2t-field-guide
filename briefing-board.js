@@ -1098,7 +1098,7 @@
     return names;
   }
 
-  var BB_TYPE_VIEW_LABEL = {project:'Project', departmental:'Department', company:'Company'};
+  var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Company'};
 
   async function _bbRenderSourcePicker(){
     var grp=document.getElementById('bb-source-fieldgrp');
