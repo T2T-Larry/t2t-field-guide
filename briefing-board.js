@@ -1061,7 +1061,33 @@
   // wired here; only the assigned-to half is live for project boards.
   var _bbSourceFilter = null; // null = no filter; else {mode:'origin'|'person', value:string}
 
-  function _bbRenderSourcePicker(){
+  // Builds VIEW options from the board's real Cast roster (Owner +
+  // board_members), Aug 9 2026 -- Larry: "the only other VIEW choices
+  // are the cast members," not just whoever happens to already have a
+  // card. Independent little query rather than reusing _bbRosterCache/
+  // _bbLoadRoster (Team Roster's own state) -- keeps this dropdown from
+  // depending on whether the Team overlay has ever been opened yet.
+  async function _bbCastRosterLabels(boardId, ownerUserId){
+    var sb=T().sb; if(!sb) return [];
+    var names=[];
+    try{
+      var ownerRes=await sb.from('members').select('name').eq('user_id', ownerUserId).single();
+      if(!ownerRes.error && ownerRes.data && ownerRes.data.name) names.push(ownerRes.data.name);
+    }catch(e){}
+    try{
+      var mRes=await sb.from('board_members').select('user_id').eq('board_id', boardId).eq('access_level','edit');
+      if(!mRes.error && mRes.data && mRes.data.length){
+        var uids=mRes.data.map(function(m){ return m.user_id; });
+        var nRes=await sb.from('members').select('name').in('user_id', uids);
+        if(!nRes.error && nRes.data) nRes.data.forEach(function(m){ if(m.name) names.push(m.name); });
+      }
+    }catch(e){}
+    return names;
+  }
+
+  var BB_TYPE_VIEW_LABEL = {project:'Project', departmental:'Department', company:'Company'};
+
+  async function _bbRenderSourcePicker(){
     var grp=document.getElementById('bb-source-fieldgrp');
     var sel=document.getElementById('bb-source-picker');
     var eyebrow=document.getElementById('bb-source-eyebrow');
@@ -1070,7 +1096,7 @@
     if(!board){ grp.style.display='none'; return; }
     _bbSourceFilter=null;
     if(board.board_type==='personal'){
-      var seen={}; var opts=['<option value="">Everything</option>','<option value="origin:__native__">Added here</option>'];
+      var seen={}; var opts=['<option value="">Everything</option>','<option value="origin:__native__">Personal</option>'];
       _bbForeignCards.forEach(function(c){
         if(seen[c._homeBoardId]) return; seen[c._homeBoardId]=true;
         opts.push('<option value="origin:'+_esc(c._homeBoardId)+'">From '+_esc(c._homeBoardName)+'</option>');
@@ -1079,19 +1105,18 @@
       eyebrow.textContent='View';
       sel.innerHTML=opts.join('');
       grp.style.display='';
-    } else if(board.board_type==='project'){
-      var seenP={}; var poptsSet=[];
-      _bbCardsList().forEach(function(c){
-        if(!c.person || seenP[c.person]) return; seenP[c.person]=true;
-        poptsSet.push(c.person);
-      });
-      if(!poptsSet.length){ grp.style.display='none'; return; }
-      eyebrow.textContent='View';
-      sel.innerHTML='<option value="">Everyone</option>'+poptsSet.map(function(p){ return '<option value="person:'+_esc(p)+'">Assigned to '+_esc(p)+'</option>'; }).join('');
-      grp.style.display='';
-    } else {
-      grp.style.display='none';
+      return;
     }
+    var typeLabel=BB_TYPE_VIEW_LABEL[board.board_type];
+    if(!typeLabel){ grp.style.display='none'; return; }
+    var names=await _bbCastRosterLabels(board.id, board.user_id);
+    if(!names.length){ grp.style.display='none'; return; }
+    eyebrow.textContent='View';
+    sel.innerHTML='<option value="">'+typeLabel+'</option>'+names.map(function(name){
+      var label=(_bbInitialsFromName(name)?_bbInitialsFromName(name)+' ':'')+name;
+      return '<option value="person:'+_esc(label)+'">'+_esc(name)+'</option>';
+    }).join('');
+    grp.style.display='';
   }
 
   function _bbSourceFilterCards(cards){
@@ -1297,7 +1322,7 @@
     _bbRenderBoardPicker();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);
-    _bbRenderSourcePicker();
+    await _bbRenderSourcePicker();
     renderBoard();
   }
 
