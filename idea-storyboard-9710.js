@@ -2132,6 +2132,15 @@
     // as plain idea cards -- originally scoped out to match hearts, but
     // Larry wants it everywhere.
     hd.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
+    // Person Assigned badge, Aug 9 2026 -- top-level column headers (this
+    // "hd" pill) are their own third rendering path, separate from both
+    // _sboardMakeTile (plain cards) and _sboardMakeHeaderStackTile
+    // (Subbers) -- missed the first time through, which is why "Website"
+    // and "Marketing" (both top-level headers) weren't showing a badge
+    // even though they were genuinely assigned. hd already has
+    // position:relative set above, same as front/tile do for the other
+    // two paths.
+    hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
         if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
