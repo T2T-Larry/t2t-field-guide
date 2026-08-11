@@ -70,7 +70,7 @@
     });
   }
   var _rtChannel = null, _rtStarted = false;
-  var LIVE_SYNC_TABLES = ['ideas','briefing_cards','briefing_checklist_items','briefing_card_links','custom_keys'];
+  var LIVE_SYNC_TABLES = ['ideas','briefing_cards','briefing_checklist_items','briefing_card_links','custom_keys','gems'];
   function startRealtimeSync(){
     if (_rtStarted || !_member.user_id) return;
     _rtStarted = true;

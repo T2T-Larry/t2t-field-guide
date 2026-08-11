@@ -35,6 +35,28 @@
     }
   });
 
+  // ── LIVE SYNC (Aug 11 2026) ── same pattern backpack.js's shared
+  // realtime channel already drives on the Briefing Board and Idea
+  // Storyboard (Aug 4 2026) -- a change to a Gem (yours, on another
+  // tab/device) now shows up here without a page reload too. Gems
+  // doesn't keep its own in-memory card list the way the other two
+  // boards do -- renderGemsBoard() already re-fetches fresh from
+  // Supabase every time it runs -- so this handler just re-renders,
+  // debounced (a multi-row change shouldn't hammer the DOM once per
+  // row) and paused entirely while a tile is mid-drag, only while the
+  // Gems screen is actually the one on show.
+  var _gemsRtPendingRender = false, _gemsRtTimer = null;
+  function _gemsRtSafeRender(){
+    var screen = document.getElementById('s-gems-board');
+    if (!screen || !screen.classList.contains('active')) return;
+    if (T().isDragActive && T().isDragActive()) { _gemsRtPendingRender = true; return; }
+    if (_gemsRtTimer) clearTimeout(_gemsRtTimer);
+    _gemsRtTimer = setTimeout(function(){ _gemsRtTimer = null; renderGemsBoard(); }, 300);
+  }
+  window.addEventListener('t2t:drag-end', function(){
+    if (_gemsRtPendingRender) { _gemsRtPendingRender = false; _gemsRtSafeRender(); }
+  });
+
   var SHAPES = ['circle','square','triangle','pentagon','hexagon'];
   var CLIPS = {
     circle:   'circle(46% at 50% 50%)',
@@ -443,6 +465,9 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     injectGemsBoard();
+    if (T().onRealtimeChange) {
+      T().onRealtimeChange('gems', _gemsRtSafeRender);
+    }
     T().wire('gb-notes-btn', function(){
       var w = document.getElementById('gb-notes-wrap');
       w.style.display = (w.style.display === 'none') ? 'block' : 'none';
