@@ -757,7 +757,14 @@
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
-      trashedAt: row.trashed_at || null
+      trashedAt: row.trashed_at || null,
+      // Header-linked task cards only (Aug 11 2026) -- auto-created and kept
+      // in sync by the ideas_sync_header_task_card DB trigger whenever an
+      // unlocked, active Idea Storyboard header exists. topicLabel is the
+      // TOPIC's name, denormalized so the eyebrow still reads right if this
+      // card is merged onto a different board (Personal BB read-through).
+      sourceHeaderId: row.source_header_id || null,
+      topicLabel: row.topic_label || ''
     };
   }
   function _bbSafeIdList(rows){
@@ -2156,6 +2163,7 @@
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px}'
+      +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
       +'.bb-done-date{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#3F6B3A;text-align:right;margin-top:1px}'
@@ -2405,6 +2413,7 @@
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
+            +'<div id="bb-d-source-header-wrap" style="display:none;margin-bottom:4px"><button class="jb" id="bb-d-open-header" type="button" style="width:100%">🧭 Open on Idea Storyboard</button></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -2773,8 +2782,14 @@
                 +(lc?'<span class="bb-key-link-count">'+lc+'</span>':'')
                 +'</span>';
             }).join('') : '';
+        // TOPIC eyebrow, Aug 11 2026 (Larry) -- header-linked task cards
+        // (c.topicLabel set by the DB trigger, see _bbRowToCard) show which
+        // TOPIC they came from right above the task line, same small-caps
+        // treatment as the board-header eyebrows elsewhere on this screen.
+        var topicEyebrow = c.topicLabel ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
+          +topicEyebrow
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
@@ -2957,6 +2972,13 @@
     document.getElementById('bb-d-situation').value=c.situation||'';
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
+    // Header-linked task cards only, Aug 11 2026 -- one-way "jump back to
+    // the header" button, same nav pattern _bbUnhookIdeas already uses
+    // (set T2TShared.currentTopicId/filter, then nav into the Storyboard
+    // already drilled into it). No header is created here -- it already
+    // exists, this card just points at it via c.sourceHeaderId.
+    var _bbSrcHdrWrap=document.getElementById('bb-d-source-header-wrap');
+    if(_bbSrcHdrWrap) _bbSrcHdrWrap.style.display = c.sourceHeaderId ? '' : 'none';
     // Problem-red back, July 21, 2026 (evening) -- Larry: the card back
     // itself should read as a problem card while it's sitting in
     // HANG-UPS, not just the field that's revealed. Reuses the same
@@ -4047,6 +4069,28 @@
   // Storyboard already drilled into that Header -- both are existing
   // cross-module integration points, not a new reach into
   // idea-storyboard-9710.js itself.
+  // Jump straight to the header this task card came from, Aug 11 2026 --
+  // sibling of _bbUnhookIdeas just below, minus the header-creation step
+  // (the header already exists; that's the whole reason this card does
+  // too). Same cross-module handoff: window.T2TShared holds the topic to
+  // land on, T().nav() switches screens, and markReturnOverride makes X
+  // on the Storyboard bring the traveler back to this exact card instead
+  // of falling back to the backpack menu.
+  function _bbOpenSourceHeader(){
+    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(!c || !c.sourceHeaderId) return;
+    if(window.T2TShared){ window.T2TShared.currentTopicId=c.sourceHeaderId; window.T2TShared.filter=c.sourceHeaderId; }
+    var _bbReturnCardId=c.id;
+    if(T().markReturnOverride){
+      T().markReturnOverride(function(){
+        T().nav('s-briefing-board');
+        openCardDetail(_bbReturnCardId);
+      });
+    }
+    closeCardDetail();
+    T().nav('s-sea-of-ideas-cluster');
+  }
+
   async function _bbUnhookIdeas(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c) return;
@@ -4316,6 +4360,7 @@
 
     T().wire('bb-detail-close', closeCardDetail);
     T().wire('bb-d-unhook-ideas', _bbUnhookIdeas);
+    T().wire('bb-d-open-header', _bbOpenSourceHeader);
     wirePriorityButtons();
     wireReviewButtons();
     wireRoutineControls();
