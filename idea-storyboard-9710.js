@@ -1544,12 +1544,12 @@
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
       lp.textContent='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
-      lp.style.fontSize='calc('+((height>=60?17:14)/2)+'px * var(--fg-text-scale,1))';
+      lp.style.fontSize='calc('+((height>=60?17:14)*2/3)+'px * var(--fg-text-scale,1))';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       p.textContent=item.text_content||'(untitled)';
-      p.style.fontSize='calc('+((height>=60?17:14)/2)+'px * var(--fg-text-scale,1))';
+      p.style.fontSize='calc('+((height>=60?17:14)*2/3)+'px * var(--fg-text-scale,1))';
       tile.appendChild(p);
     }
     if(item.heart_count){
