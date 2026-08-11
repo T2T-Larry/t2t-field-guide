@@ -2315,7 +2315,12 @@
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
-      +'.bb-notes-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      // pointer-events:auto here, Aug 11 2026 -- same fix as
+      // .bb-key-badge-wrap: the wrapping .bb-key-badges container it
+      // now lives inside stays click-through (never steals a card
+      // drag), but this badge needs its own pointer events back or its
+      // "Has notes" hover tooltip goes silent.
+      +'.bb-notes-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
       +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
       +'.bb-link-row{display:flex;gap:6px}'
       +'.bb-link-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
@@ -2725,6 +2730,11 @@
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
+        // Notes badge moved into the bottom-left corner alongside the
+        // Signal Flags, Aug 11 2026 (Larry: move it down "with other
+        // signal flags") -- was up top with the other card badges;
+        // now renders inside .bb-key-badges below instead, so every
+        // per-card "signal" lives in the same corner.
         var notesBadge = (c.notes && c.notes.trim()) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
         var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<span class="bb-link-badge" title="Has a video/link">🎬</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
@@ -2734,12 +2744,12 @@
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+notesBadge+linkBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
-          +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
-          +'<div class="bb-task">'+_esc(c.task)+'</div>'
-          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
-          +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +((c.keys && c.keys.some(function(k){ return k; })) ? ('<div class="bb-key-badges">'+c.keys.filter(function(kid){ return kid; }).map(function(kid){
+        // Signal Flags row, bottom-left corner -- Notes badge joined
+        // this group Aug 11 2026 (Larry: move it down "with other
+        // signal flags") instead of sitting up top with the rest of
+        // the badges, so the pencil-if-there-are-Notes marker and the
+        // card's actual Signal Flags read together as one cluster.
+        var keyBadgesHTML = (c.keys && c.keys.some(function(k){ return k; })) ? c.keys.filter(function(kid){ return kid; }).map(function(kid){
               var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
               if(!k) return '';
               // Link count next to the key, Aug 4 2026 -- Larry: "Links
@@ -2755,7 +2765,13 @@
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
                 +(lc?'<span class="bb-key-link-count">'+lc+'</span>':'')
                 +'</span>';
-            }).join('')+'</div>') : '')
+            }).join('') : '';
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+linkBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+          +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
+          +'<div class="bb-task">'+_esc(c.task)+'</div>'
+          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
+          +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
+          +((notesBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+notesBadge+keyBadgesHTML+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click also opens the card, Aug 11 2026 (Larry) -- same
