@@ -206,7 +206,7 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:calc(19px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:calc(28px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:calc(23px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -1648,6 +1648,7 @@
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
     width=width||(_sboardDesktop?76:70);
     height=height||width;
+    var _stMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
     var rot=straight?0:(Math.random()*6-3).toFixed(1);
     var wrap=document.createElement('div');
     wrap.className='sc-stack-tile';
@@ -1666,7 +1667,7 @@
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
-    var fitSize=_sboardFitFontSize(headerRow.text_content, height>=60?13:11, 8);
+    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?18:15)*_stMult), Math.round(11*_stMult));
     p.style.cssText='margin:0;font-weight:700;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
     if(headerRow.locked){
@@ -2192,7 +2193,7 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
-        var hdFitSize=_sboardFitFontSize(name, 15, 10);
+        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(13*_tsMult));
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
@@ -2318,7 +2319,7 @@
         // ideas here aren't necessarily freshly typed. Larry wants one
         // consistent label across every storyboard instead.
         var localLabel='NEW';
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,15,10)+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(13*_tsMult))+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
