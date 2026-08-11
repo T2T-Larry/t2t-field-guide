@@ -2194,7 +2194,7 @@
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
         var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(13*_tsMult));
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+hdFitSize+'px;font-weight:700;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
         // July 17, 2026 it's treated exactly like any other header — same
@@ -2319,7 +2319,7 @@
         // ideas here aren't necessarily freshly typed. Larry wants one
         // consistent label across every storyboard instead.
         var localLabel='NEW';
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(13*_tsMult))+'px;font-weight:800;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(13*_tsMult))+'px;font-weight:700;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
