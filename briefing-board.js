@@ -2432,11 +2432,10 @@
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
-            +'<div id="bb-d-source-header-wrap" style="display:none;margin-bottom:4px"><button class="jb" id="bb-d-open-header" type="button" style="width:100%">🧭 Open on Idea Storyboard</button></div>'
+            +'<div id="bb-d-source-header-wrap" style="margin-bottom:4px"><button class="jb" id="bb-d-open-header" type="button" style="width:100%">🧭 Idea Board</button></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
-              +'<button class="jb" id="bb-d-unhook-ideas" type="button" style="width:100%;margin-bottom:4px">&#129437; Unhooking Ideas</button>'
             +'</div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
@@ -2991,13 +2990,26 @@
     document.getElementById('bb-d-situation').value=c.situation||'';
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
-    // Header-linked task cards only, Aug 11 2026 -- one-way "jump back to
-    // the header" button, same nav pattern _bbUnhookIdeas already uses
-    // (set T2TShared.currentTopicId/filter, then nav into the Storyboard
-    // already drilled into it). No header is created here -- it already
-    // exists, this card just points at it via c.sourceHeaderId.
-    var _bbSrcHdrWrap=document.getElementById('bb-d-source-header-wrap');
-    if(_bbSrcHdrWrap) _bbSrcHdrWrap.style.display = c.sourceHeaderId ? '' : 'none';
+    // Idea Board button, Aug 11 2026 -- one button, every card, doing
+    // one of two things depending on whether this card is already
+    // linked (c.sourceHeaderId): a linked card opens its existing
+    // header in a new tab (was the separate "Open on Idea Storyboard"
+    // button); an unlinked card creates a brand-new blank Idea Board
+    // named after its own task text and links to that instead --
+    // Larry's "Idea" this session: a Briefing Card with no home on any
+    // board yet (e.g. "Routine Cards protocol") gets one on the spot,
+    // with its own task text promoted straight into the TOPIC name.
+    // Replaces the old Hang-Up-only "Unhooking Ideas" button -- same
+    // Situation-seeding behavior, just folded into this one control
+    // instead of a second, differently-named button. Reset here since
+    // this is a permanent overlay element, never re-created between
+    // cards -- its disabled/"Opening…" state from a previous click
+    // would otherwise stick on the next card opened.
+    var _bbOpenHdrBtn=document.getElementById('bb-d-open-header');
+    if(_bbOpenHdrBtn){
+      _bbOpenHdrBtn.disabled=false;
+      _bbOpenHdrBtn.textContent = c.sourceHeaderId ? '🧭 Open on Idea Storyboard' : '🧭 Idea Board';
+    }
     // Problem-red back, July 21, 2026 (evening) -- Larry: the card back
     // itself should read as a problem card while it's sitting in
     // HANG-UPS, not just the field that's revealed. Reuses the same
@@ -3005,13 +3017,6 @@
     // flag buttons -- one semantic color for "this is stuck," everywhere.
     var _bbDetailCard=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
-    // Unhooking Ideas button, July 21, 2026 (evening) -- this is a
-    // permanent overlay element, never re-created between cards, so its
-    // disabled/"Opening…" state from a previous click has to be reset
-    // explicitly here or it stays stuck disabled on the next card opened
-    // (the bug Larry hit working his way back to the card).
-    var _bbUnhookBtn=document.getElementById('bb-d-unhook-ideas');
-    if(_bbUnhookBtn){ _bbUnhookBtn.disabled=false; _bbUnhookBtn.textContent='\u{1FA9D} Unhooking Ideas'; }
     document.getElementById('bb-d-task').value=c.task||'';
     _bbRenderPersonSelect(c.person||'');
     // Mirror boards, part 2, Aug 9 2026 -- "Also show on" only makes
@@ -4075,86 +4080,77 @@
     });
   }
 
-  // Unhooking Ideas, July 21, 2026 -- hands a Hang-Up card's Situation
-  // off to the Idea Storyboard rather than building a second discussion
-  // tool here. First click creates a Storyboard Header named after the
-  // card's own task (the hang-up becomes the TOPIC, per Larry's framing)
-  // with the Situation seeded in as its first idea, and remembers that
-  // Header on the card (c.hangupHeaderId) so later clicks just re-open
-  // it instead of spawning duplicates. Uses window.T2TData.createHeader
-  // (header-data.js) to create the Header safely, then window.T2TShared
-  // (idea-media-shared.js, the same shared state 9710/9711 already read
-  // and write from other files) plus a plain nav() to hand off into the
-  // Storyboard already drilled into that Header -- both are existing
-  // cross-module integration points, not a new reach into
-  // idea-storyboard-9710.js itself.
-  // Jump straight to the header this task card came from, Aug 11 2026 --
-  // sibling of _bbUnhookIdeas just below, minus the header-creation step
-  // (the header already exists; that's the whole reason this card does
-  // too). Same cross-module handoff: window.T2TShared holds the topic to
-  // land on, T().nav() switches screens, and markReturnOverride makes X
-  // on the Storyboard bring the traveler back to this exact card instead
-  // of falling back to the backpack menu.
-  // Opens in a new tab, Aug 11 2026 (Larry: "it should open in a new
-  // tab") -- was an in-app nav (T().nav + markReturnOverride); now sets
-  // the same sessionStorage handoff bp_target already uses for
-  // cross-file landing (cloned into the new tab automatically, same-
-  // origin) plus a key _ideaOpenBoardResume (idea-media-shared.js)
-  // checks for and consumes, so the new tab lands straight on this
-  // exact header instead of resuming whatever topic was last open
-  // there.
-  function _bbOpenSourceHeader(){
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
-    if(!c || !c.sourceHeaderId) return;
-    try{
-      sessionStorage.setItem('bp_target','1010');
-      sessionStorage.setItem('fg_open_header_id', c.sourceHeaderId);
-    }catch(e){}
-    window.open(location.pathname+location.search, '_blank');
-  }
-
-  async function _bbUnhookIdeas(){
+  // Idea Board, Aug 11 2026 -- unified button, every card. Replaces
+  // the old Hang-Up-only "Unhooking Ideas" (July 21 2026) AND the
+  // header-linked-card-only "Open on Idea Storyboard" (earlier this
+  // session) with one control that does either job depending on
+  // whether c.sourceHeaderId is already set:
+  //   - Linked already -- open that header, new tab. No header is
+  //     created here; this card already points at one.
+  //   - Not linked -- Larry's idea this session: a card with no home on
+  //     any board yet (his example: "Routine Cards protocol" sitting on
+  //     the Briefing Board with nowhere to actually develop it) gets a
+  //     brand-new blank Idea Board on the spot, named after its own
+  //     task text (promoted straight into the new board's TOPIC name --
+  //     "Routine Cards protocol as the TOPIC," per Larry's framing).
+  //     For a Hang-Up card specifically, the Situation still seeds in
+  //     as the new header's first idea, exactly like Unhooking Ideas
+  //     always did. Links back via source_header_id so the very next
+  //     open just reopens the same header instead of spawning a
+  //     duplicate.
+  // New-tab handoff both ways: same sessionStorage bp_target already
+  // used for cross-file landing (cloned into the new tab automatically,
+  // same-origin) plus fg_open_header_id, which _ideaOpenBoardResume
+  // (idea-media-shared.js) checks for and consumes.
+  // Deliberately does NOT touch track_on_briefing_board or go through
+  // the ideas_sync_header_task_card trigger -- a brand-new blank board
+  // is always a root-level header (no parent), and roots never get an
+  // auto-managed task card (same rule that keeps sub-headers out) --
+  // this card IS that header's task card, hand-linked, not trigger-
+  // managed, so its own task text is never overwritten.
+  async function _bbOpenOrCreateIdeaHeader(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c) return;
+    if(c.sourceHeaderId){
+      try{
+        sessionStorage.setItem('bp_target','1010');
+        sessionStorage.setItem('fg_open_header_id', c.sourceHeaderId);
+      }catch(e){}
+      window.open(location.pathname+location.search, '_blank');
+      return;
+    }
     var taskField=document.getElementById('bb-d-task');
     var situationField=document.getElementById('bb-d-situation');
-    var situationText=situationField?situationField.value.trim():'';
+    var situationText=(c.col==='hangups' && situationField) ? situationField.value.trim() : '';
     c.situation=situationText;
-    var btn=document.getElementById('bb-d-unhook-ideas');
+    var btn=document.getElementById('bb-d-open-header');
     if(btn){ btn.disabled=true; btn.textContent='Opening…'; }
     try{
-      if(!c.hangupHeaderId){
-        if(!window.T2TData || !window.T2TData.createHeader) throw new Error('Storyboard not available yet');
-        var header=await window.T2TData.createHeader((taskField&&taskField.value.trim())||c.task||'Hang-Up', null);
-        c.hangupHeaderId=header.id;
-        if(situationText && T().sb){
-          var ures=await T().sb.auth.getUser();
-          var uid=ures && ures.data && ures.data.user && ures.data.user.id;
-          if(uid){
-            await T().sb.from('ideas').insert({user_id:uid, content_type:'text', text_content:situationText, cluster_id:header.id, created_at:new Date().toISOString()});
-          }
+      if(!window.T2TData || !window.T2TData.createHeader) throw new Error('Storyboard not available yet');
+      var name=(taskField && taskField.value.trim()) || c.task || 'Untitled';
+      var header=await window.T2TData.createHeader(name, null);
+      if(situationText && T().sb){
+        var ures=await T().sb.auth.getUser();
+        var uid=ures && ures.data && ures.data.user && ures.data.user.id;
+        if(uid){
+          await T().sb.from('ideas').insert({user_id:uid, content_type:'text', text_content:situationText, cluster_id:header.id, created_at:new Date().toISOString()});
         }
       }
+      var linkUpd=await T().sb.from('briefing_cards').update({source_header_id:header.id, topic_label:name}).eq('id', c.id);
+      if(linkUpd.error) throw linkUpd.error;
+      c.sourceHeaderId=header.id;
+      c.topicLabel=name;
       _bbSaveLocal(_bbCardsList());
-      if(window.T2TShared){ window.T2TShared.currentTopicId=c.hangupHeaderId; window.T2TShared.filter=c.hangupHeaderId; }
-      // Return override, July 21, 2026 -- without this, X on the
-      // Storyboard always fell back to the backpack menu, not back to
-      // the Hang-Up card that sent you there (confusing, per Larry).
-      // Captures the card id now, since _bbOpenCardId gets cleared by
-      // closeCardDetail() right below.
-      var _bbReturnCardId=c.id;
-      if(T().markReturnOverride){
-        T().markReturnOverride(function(){
-          T().nav('s-briefing-board');
-          openCardDetail(_bbReturnCardId);
-        });
-      }
-      closeCardDetail();
-      T().nav('s-sea-of-ideas-cluster');
+      try{
+        sessionStorage.setItem('bp_target','1010');
+        sessionStorage.setItem('fg_open_header_id', header.id);
+      }catch(e){}
+      window.open(location.pathname+location.search, '_blank');
+      if(btn){ btn.disabled=false; btn.textContent='\uD83E\uDDED Open on Idea Storyboard'; }
     }catch(e){
-      console.error('Unhooking Ideas failed', e);
-      if(btn){ btn.disabled=false; btn.textContent='\u{1FA9D} Unhooking Ideas'; }
-      alert('Could not open the storyboard: '+(e&&e.message?e.message:'unknown error'));
+      console.error('Idea Board: could not create/link header', e);
+      if(btn){ btn.disabled=false; btn.textContent='\uD83E\uDDED Idea Board'; }
+      alert('Could not open the Idea Board: '+(e&&e.message?e.message:'unknown error'));
     }
   }
 
@@ -4381,8 +4377,7 @@
     })();
 
     T().wire('bb-detail-close', closeCardDetail);
-    T().wire('bb-d-unhook-ideas', _bbUnhookIdeas);
-    T().wire('bb-d-open-header', _bbOpenSourceHeader);
+    T().wire('bb-d-open-header', _bbOpenOrCreateIdeaHeader);
     wirePriorityButtons();
     wireReviewButtons();
     wireRoutineControls();
