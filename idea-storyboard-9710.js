@@ -4043,10 +4043,10 @@
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
       + '<div class="sb-eyebrow-col">'
       + '<div class="sb-hdr-eyebrow2">Order</div>'
-      + '<div class="sb-view-frame" style="cursor:default;display:flex;align-items:center;gap:3px;justify-content:center" title="Order #">'
-      + '<button id="sb-order-up" type="button" aria-label="Move earlier"'+(orderCanUp?'':' disabled')+' style="border:0;background:none;padding:0 2px;font-size:inherit;color:inherit;cursor:'+(orderCanUp?'pointer':'default')+';opacity:'+(orderCanUp?'1':'0.3')+'">▲</button>'
-      + '<span id="sb-order-value">🔢 '+orderValueText+'</span>'
-      + '<button id="sb-order-down" type="button" aria-label="Move later"'+(orderCanDown?'':' disabled')+' style="border:0;background:none;padding:0 2px;font-size:inherit;color:inherit;cursor:'+(orderCanDown?'pointer':'default')+';opacity:'+(orderCanDown?'1':'0.3')+'">▼</button>'
+      + '<div style="display:flex;align-items:center;gap:4px;justify-content:center">'
+      + '<button id="sb-order-up" type="button" aria-label="Move earlier"'+(orderCanUp?'':' disabled')+' style="border:0.5px solid #B4B2A9;background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;padding:0;font-size:inherit;color:inherit;cursor:'+(orderCanUp?'pointer':'default')+';opacity:'+(orderCanUp?'1':'0.3')+'">▲</button>'
+      + '<div class="sb-view-frame" style="cursor:default" title="Order #">🔢 <span id="sb-order-value">'+orderValueText+'</span></div>'
+      + '<button id="sb-order-down" type="button" aria-label="Move later"'+(orderCanDown?'':' disabled')+' style="border:0.5px solid #B4B2A9;background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;padding:0;font-size:inherit;color:inherit;cursor:'+(orderCanDown?'pointer':'default')+';opacity:'+(orderCanDown?'1':'0.3')+'">▼</button>'
       + '</div>'
       + '</div>'
       + '</div>';
@@ -4299,7 +4299,7 @@
             _sboardPushAction({label:'Reorder', undo:function(){ return _sboardApplyRowSnapshot(item.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(item.id, after); }});
           }
           var valEl=document.getElementById('sb-order-value');
-          if(valEl) valEl.textContent='🔢 '+(swapIdx+1)+' of '+ids.length;
+          if(valEl) valEl.textContent=(swapIdx+1)+' of '+ids.length;
           setArrowState(upBtn, _sbOrderIdx>0);
           setArrowState(downBtn, _sbOrderIdx<ids.length-1);
           renderSeaBoard(true);
