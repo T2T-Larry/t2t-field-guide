@@ -608,6 +608,8 @@
       var file=imageItem.getAsFile();
       if(file) _sboardBatchUpload([file]);
     });
+
+    wireSboardUndoKeyboard();
   }
 
   /* ── Board (storyboard) state + rendering ── */
@@ -647,6 +649,78 @@
   // created.
   function _sboardAddRow(row){
     if(row && row.id) _sboardAllRowsById[row.id]=row;
+  }
+
+  // ---- Ctrl/Cmd+Z undo (single-step), Aug 11 2026 -- same shape as the
+  // Briefing Board's own slot (briefing-board.js, _bbPushAction/_bbUndo/
+  // _bbRedo), itself modeled on the Idea Session's (session.js, _isx*).
+  // Covers moves and deletes -- restores the ONE row that moved/was
+  // deleted to its exact previous cluster_id+sort_order, same fidelity
+  // as Briefing Board's move-undo (doesn't try to re-thread every
+  // sibling's order, just this row's own position). Text/color/detail
+  // edits are a separate follow-up, not covered here.
+  var _sboardLastAction = null;
+  var _sboardLastUndone = null;
+  function _sboardPushAction(entry){ _sboardLastAction=entry; _sboardLastUndone=null; }
+  function _sboardShowToast(msg){
+    var banner=document.getElementById('sb-undo-toast');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='sb-undo-toast';
+      banner.style.cssText='position:fixed;top:14px;right:16px;width:200px;background:#eaf6ea;border:2px solid #2d7a3d;'
+        +'color:#2d7a3d;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 9px;border-radius:8px;z-index:9999;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+      document.body.appendChild(banner);
+    }
+    banner.textContent=msg;
+    banner.style.display='block';
+    clearTimeout(banner._sboardTimer);
+    banner._sboardTimer=setTimeout(function(){ banner.style.display='none'; }, 3000);
+  }
+  async function _sboardUndo(){
+    if(!_sboardLastAction){ _sboardShowToast('Nothing to undo.'); return; }
+    var a=_sboardLastAction; _sboardLastAction=null;
+    await a.undo();
+    _sboardLastUndone=a;
+    _sboardShowToast(a.label+' undone.');
+  }
+  async function _sboardRedo(){
+    if(!_sboardLastUndone){ _sboardShowToast('Nothing to redo.'); return; }
+    var a=_sboardLastUndone; _sboardLastUndone=null;
+    await a.redo();
+    _sboardLastAction=a;
+    _sboardShowToast(a.label+' redone.');
+  }
+  function _sboardSnapshotRow(id){
+    var row=_sboardAllRowsById[id];
+    return row ? {cluster_id:row.cluster_id, sort_order:row.sort_order} : null;
+  }
+  // Shared write-back for undo AND redo -- writes the row's cluster_id+
+  // sort_order straight to Supabase, patches the cache, redraws. Doesn't
+  // replay any of the guarded logic in the move functions below (e.g.
+  // _sboardReorderHeader's "can't create a new project this way" rule)
+  // -- restoring a row to a state it has already legitimately been in
+  // before doesn't need to pass those gates again.
+  async function _sboardApplyRowSnapshot(id, snap){
+    if(!snap) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var upd=await _sb.from('ideas').update({cluster_id:snap.cluster_id, sort_order:snap.sort_order}).eq('id',id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(id, {cluster_id:snap.cluster_id, sort_order:snap.sort_order});
+      renderSeaBoard(true);
+    }catch(e){ console.error('Storyboard: undo/redo write failed', e); }
+  }
+  function wireSboardUndoKeyboard(){
+    document.addEventListener('keydown', function(e){
+      var screen=document.getElementById('s-sea-of-ideas-cluster');
+      if(!screen || !screen.classList.contains('active')) return;
+      var tag=(e.target&&e.target.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+      var mod=e.metaKey||e.ctrlKey;
+      if(!mod) return;
+      var k=e.key.toLowerCase();
+      if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); }
+    });
   }
   // Set true the first time this tab has done a real (network) render of
   // the Storyboard. Realtime-triggered renders (see _sboardRtSafeRefresh)
@@ -2588,11 +2662,15 @@
     T().wire('sb-trash-cancel', closeSbDetail);
     T().wire('sb-trash-go', async function(){
       var _sb=T().sb;
+      var before=_sboardSnapshotRow(headerRow.id);
       try{
         var trashId=await T2TData.ensureTrashHeader();
         var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',headerRow.id).select();
         if(upd.error) throw upd.error;
         _sboardPatchRow(headerRow.id, {cluster_id:trashId});
+        if(before){
+          _sboardPushAction({label:'Delete', undo:function(){ return _sboardApplyRowSnapshot(headerRow.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(headerRow.id, {cluster_id:trashId, sort_order:before.sort_order}); }});
+        }
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){
@@ -2733,11 +2811,16 @@
     if(_sboardAllRowsById[itemId] && _sboardAllRowsById[itemId].locked) return;
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
+    var before=_sboardSnapshotRow(itemId);
     try{
       var siblingCount=(_sboardIdeaOrderByParent[headerId]||[]).length;
       var upd=await _sb.from('ideas').update({cluster_id:headerId, sort_order:siblingCount}).eq('id',itemId);
       if(upd.error) throw upd.error;
       _sboardPatchRow(itemId, {cluster_id:headerId, sort_order:siblingCount});
+      if(before){
+        var after=_sboardSnapshotRow(itemId);
+        _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
+      }
       renderSeaBoard(true);
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
@@ -2752,6 +2835,7 @@
     if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
+    var before=_sboardSnapshotRow(draggedId);
     var ids=(_sboardIdeaOrderByParent[parentId]||[]).slice();
     var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
     if(fromIdx!==-1) ids.splice(fromIdx,1);
@@ -2766,6 +2850,10 @@
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
         _sboardPatchRow(ids[i], {sort_order:i});
+      }
+      if(before){
+        var after=_sboardSnapshotRow(draggedId);
+        _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(draggedId, before); }, redo:function(){ return _sboardApplyRowSnapshot(draggedId, after); }});
       }
       renderSeaBoard(true);
     }catch(err){
@@ -2786,6 +2874,7 @@
     if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
+    var before=_sboardSnapshotRow(draggedId);
     var ids=(_sboardSubberOrderByParent[parentId]||[]).slice();
     var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
     if(fromIdx!==-1) ids.splice(fromIdx,1);
@@ -2801,6 +2890,10 @@
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
         _sboardPatchRow(ids[i], {sort_order:i});
+      }
+      if(before){
+        var after=_sboardSnapshotRow(draggedId);
+        _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(draggedId, before); }, redo:function(){ return _sboardApplyRowSnapshot(draggedId, after); }});
       }
       renderSeaBoard(true);
     }catch(err){
@@ -2819,6 +2912,7 @@
   async function _sboardReorderHeader(draggedId, targetId, insertAfter){
     if(String(draggedId)===String(targetId)) return;
     var statusEl=document.getElementById('sc-status');
+    var before=_sboardSnapshotRow(draggedId);
     var ids=_sboardTopLevelOrder.slice();
     var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
     var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
@@ -2867,6 +2961,10 @@
         var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
         if(upd.error) throw upd.error;
         _sboardPatchRow(ids[i], {sort_order:i});
+      }
+      if(before){
+        var after=_sboardSnapshotRow(draggedId);
+        _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(draggedId, before); }, redo:function(){ return _sboardApplyRowSnapshot(draggedId, after); }});
       }
       renderSeaBoard(true);
     }catch(err){
@@ -4365,12 +4463,18 @@
 
     async function _sbDoTrash(){
       if(isHeaderType){ closeSbDetail(); _sboardConfirmTrashHeader(item); return; }
+      var beforeCluster=item.cluster_id, beforeSort=item.sort_order;
       try{
         var targetId=await T2TData.ensureTrashHeader();
         var newCluster=isTrashed?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.cluster_id=newCluster;
+        _sboardPatchRow(item.id, {cluster_id:newCluster});
+        (function(){
+          var itemId=item.id, before={cluster_id:beforeCluster, sort_order:beforeSort}, after={cluster_id:newCluster, sort_order:beforeSort};
+          _sboardPushAction({label:isTrashed?'Restore':'Delete', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
+        })();
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
