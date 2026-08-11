@@ -5347,6 +5347,7 @@
       p.style.cssText='margin:0;font-size:calc(8.5px * var(--fg-text-scale,1));line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
       tile.appendChild(p);
     }
+    tile.insertAdjacentHTML('beforeend', _sboardLinkBadgeHTML(item));
     if(item.heart_count){
       var hb=document.createElement('div');
       hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:calc(14px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
