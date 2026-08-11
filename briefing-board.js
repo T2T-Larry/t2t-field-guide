@@ -2296,6 +2296,7 @@
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      +'.bb-notes-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
       +'.bb-team-row{display:flex;gap:6px;align-items:center;padding:4px 0}'
       +'.bb-team-row input.bb-team-name{flex:1.6;min-width:0}'
       +'.bb-team-row input.bb-team-initials{width:50px;flex:none;text-transform:uppercase}'
@@ -2699,6 +2700,7 @@
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
+        var notesBadge = (c.notes && c.notes.trim()) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -2706,7 +2708,7 @@
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+notesBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'

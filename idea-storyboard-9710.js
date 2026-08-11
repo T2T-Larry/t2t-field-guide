@@ -186,6 +186,12 @@
         // top-left, lock/link are top-right/top-left-ish, heart+key dots+
         // corner-flip share the bottom-right).
         +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:calc(7px * var(--fg-text-scale,1));font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
+        // Notes badge (Larry, Aug 11 2026: "pencil as signal flag on the
+        // front of any card if there are Notes inside") -- bottom-left is
+        // the one corner nothing else on the tile claims (order badge is
+        // top-left, person/lock share top-right, heart+key-dots+corner-flip
+        // share bottom-right).
+        +'.sb-notes-badge{position:absolute;bottom:2px;left:2px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none;z-index:6}'
         // pointer-events:auto here, Aug 4 2026 -- same fix as the
         // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
         // stays click-through (so it never grabs a card drag), but a
@@ -1004,6 +1010,10 @@
     if(!m) return ''; // not fetched yet this pass -- next re-render (see _sboardEnsureAssignedInitials) fills it in
     return '<div class="sb-person-badge" title="'+_sboardEsc(m.name||'')+'">'+_sboardEsc(m.initials||'')+'</div>';
   }
+  function _sboardNotesBadgeHTML(item){
+    if(!item || !item.notes || !item.notes.trim()) return '';
+    return '<div class="sb-notes-badge" title="Has notes">✏️</div>';
+  }
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
   var _clusterWide = false;
@@ -1681,6 +1691,9 @@
     // with the initials on the front." Bottom-left, the one corner
     // nothing else claims.
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
+    // Notes badge, Aug 11 2026 -- pencil shows on the front whenever
+    // this card has Notes saved on its back, bottom-left corner.
+    tile.insertAdjacentHTML('beforeend', _sboardNotesBadgeHTML(item));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
     // one to a header if it wasn't already — same "first card placed stays
@@ -1788,6 +1801,7 @@
     front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
     front.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
+    front.insertAdjacentHTML('beforeend', _sboardNotesBadgeHTML(headerRow));
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
     // Drilling in is now done by dragging this card onto the TOPIC box
