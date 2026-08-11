@@ -1302,6 +1302,26 @@
       if (window.T2TSea) window.T2TSea.openTrash();
     });
     wire('b-go-change-pw',function(){nav('s-change-password');});
+    // Sign Out, Aug 11 2026 -- Larry (bug report): a device that's
+    // signed in and remembered (see the "Remember me" storage swap
+    // above) has no way to stop being signed in from inside the app --
+    // the session-resume path on load was finding it and skipping
+    // straight past Sign In into whatever screen was last open,
+    // forever, with nothing anywhere to break that. This clears the
+    // remembered Supabase session AND both saved-screen markers
+    // (bpLastPageNum/bpCurrentScreenNum, in whichever storage
+    // "Remember me" was actually using), then sends the browser back
+    // to the cover file fresh -- landing on Sign In, since the
+    // INITIAL_SESSION resume check there finds no session at all.
+    wire('b-sign-out',async function(){
+      if(!confirm('Sign out of the Field Guide on this device?')) return;
+      try{ await _sb.auth.signOut(); }catch(e){ console.error('Sign out failed', e); }
+      try{ localStorage.removeItem('bpLastPageNum'); }catch(e){}
+      try{ localStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
+      try{ sessionStorage.removeItem('bpLastPageNum'); }catch(e){}
+      try{ sessionStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
+      window.location.href='index.html';
+    });
 
     /* CHANGE PASSWORD */
     wire('b-cp-back',function(){nav('s-configure');}); wire('b-cp-mg',goMG);
