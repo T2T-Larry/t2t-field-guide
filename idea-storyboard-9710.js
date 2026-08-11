@@ -656,6 +656,16 @@
   function _sboardAddRow(row){
     if(row && row.id) _sboardAllRowsById[row.id]=row;
   }
+  // Shared with session.js's own tile renderer (_isxMakeTile), same
+  // bridge pattern as keyDotsHTML/assignedBadgeHTML below -- a card can
+  // carry a video/link attachment (Aug 11 2026) independent of its
+  // content_type, so both screens' tiles need to show it, not just
+  // 9710's own. Skipped for content_type==='link' cards themselves --
+  // those already show their own built-in 🔗 marker.
+  function _sboardLinkBadgeHTML(item){
+    if(!item.link_url || item.content_type==='link') return '';
+    return '<div style="position:absolute;top:2px;left:20px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none">🎬</div>';
+  }
 
   // ---- Ctrl/Cmd+Z undo (single-step), Aug 11 2026 -- same shape as the
   // Briefing Board's own slot (briefing-board.js, _bbPushAction/_bbUndo/
@@ -1648,6 +1658,7 @@
       p.style.fontSize='calc('+((height>=60?17:14)*2/3)+'px * var(--fg-text-scale,1))';
       tile.appendChild(p);
     }
+    tile.insertAdjacentHTML('beforeend', _sboardLinkBadgeHTML(item));
     if(item.heart_count){
       var hb=document.createElement('div');
       hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:calc(14px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
@@ -2160,7 +2171,7 @@
         // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
         // owner-only gating, and the People menu's isOwner check all silently
         // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
           .in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(2000);
         if(res.error) throw new Error(res.error.message);
@@ -3083,7 +3094,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -4133,6 +4144,10 @@
       + '<div class="sb-hdr-eyebrow2">Notes</div>'
       + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️</button>'
       + '</div>'
+      + '<div class="sb-eyebrow-col" style="flex:0 0 auto">'
+      + '<div class="sb-hdr-eyebrow2">Video/Link</div>'
+      + '<button id="sb-link-toggle" class="sb-notes-pill" title="Video/Link">🎬</button>'
+      + '</div>'
       + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
       + '<div class="sb-hdr-eyebrow2" style="text-align:left">Signal Flags</div>'
       + '<div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
@@ -4143,6 +4158,13 @@
       + '</div>'
       + '</div>'
       + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:8px">'+(item.notes||'')+'</textarea>'
+      + '<div id="sb-link-box" style="display:'+((item.link_url)?'block':'none')+';width:100%;box-sizing:border-box;margin-bottom:8px">'
+      + '<div style="display:flex;gap:6px">'
+      + '<input id="sb-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link…" value="'+_sboardEsc(item.link_url||'')+'" style="flex:1;box-sizing:border-box;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));background:#fff">'
+      + '<button id="sb-link-clear" type="button" title="Remove" style="width:28px;height:28px;flex-shrink:0;border-radius:6px;background:#fff;border:0.5px solid #B4B2A9;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1))">✕</button>'
+      + '</div>'
+      + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:#2C2C2A">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(item.link_title||item.link_url||'')+'</div>'
+      + '</div>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
@@ -4609,6 +4631,73 @@
       }catch(err){ if(statusBox) statusBox.textContent='Notes need the notes Supabase column.'; }
     });
 
+    // Video/Link, Aug 11 2026 (Larry: "just like on Briefing Card") --
+    // mirrors the Briefing Card DETAILS field, reusing the same shared
+    // oEmbed resolver (T2TMedia.resolveOEmbed) this file's own 'link'
+    // content-type cards already use. Deliberately independent of
+    // content_type -- any card (text, image, header) can carry one link
+    // attachment, same as a pure link-card can. Saves on blur, same
+    // immediate-save convention as Notes just above (not the
+    // save-on-close batching Briefing Board's DETAILS uses), then
+    // re-renders the board so the tile badge picks it up with no
+    // refresh -- the bug fixed earlier this session (idea-capture.js's
+    // onSaved ordering) only covered creating a brand-new link card;
+    // this is the separate "attach a link to an existing card" path.
+    T().wire('sb-link-toggle', function(){ document.getElementById('sb-link-box').style.display='block'; });
+    (function(){
+      var linkInput=document.getElementById('sb-link-url');
+      var linkPreview=document.getElementById('sb-link-preview');
+      var _sbLinkPendingUrl=item.link_url||null, _sbLinkPendingThumb=item.link_thumb||null, _sbLinkPendingTitle=item.link_title||null, _sbLinkTimer=null;
+      function renderLinkPreview(url, thumb, title){
+        if(!linkPreview) return;
+        if(!url){ linkPreview.style.display='none'; linkPreview.innerHTML=''; return; }
+        linkPreview.style.display='block';
+        linkPreview.innerHTML=(thumb?('<img src="'+_sboardEsc(thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(title||url);
+      }
+      async function saveLinkField(){
+        var val=linkInput?linkInput.value.trim():'';
+        var newUrl=val||null, newTitle=null, newThumb=null;
+        if(newUrl){
+          if(newUrl===_sbLinkPendingUrl){ newTitle=_sbLinkPendingTitle||newUrl; newThumb=_sbLinkPendingThumb||null; }
+          else { newTitle=newUrl; newThumb=null; }
+        }
+        if(newUrl===(item.link_url||null) && newTitle===(item.link_title||null) && newThumb===(item.link_thumb||null)) return;
+        var beforeFields={link_url:item.link_url||null, link_title:item.link_title||null, link_thumb:item.link_thumb||null};
+        var patch={link_url:newUrl, link_title:newTitle, link_thumb:newThumb};
+        try{
+          var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.link_url=newUrl; item.link_title=newTitle; item.link_thumb=newThumb;
+          _sboardPatchRow(item.id, patch);
+          (function(){
+            var itemId=item.id, before=beforeFields, after=patch;
+            _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
+          })();
+          renderSeaBoard(true);
+        }catch(err){ if(statusBox) statusBox.textContent='Video/Link needs the link_url Supabase column: '+err.message; }
+      }
+      if(linkInput) linkInput.addEventListener('input', function(){
+        var val=linkInput.value.trim();
+        if(_sbLinkTimer) clearTimeout(_sbLinkTimer);
+        if(!val){ _sbLinkPendingUrl=null; _sbLinkPendingThumb=null; _sbLinkPendingTitle=null; renderLinkPreview(null); return; }
+        if(!/^https?:\/\/\S+$/i.test(val)) return;
+        _sbLinkTimer=setTimeout(async function(){
+          var meta=(window.T2TMedia && window.T2TMedia.resolveOEmbed) ? await window.T2TMedia.resolveOEmbed(val) : null;
+          if(linkInput.value.trim()!==val) return;
+          _sbLinkPendingUrl=val; _sbLinkPendingThumb=(meta&&meta.thumbnail_url)||null; _sbLinkPendingTitle=(meta&&meta.title)||val;
+          renderLinkPreview(_sbLinkPendingUrl,_sbLinkPendingThumb,_sbLinkPendingTitle);
+        }, 500);
+      });
+      if(linkInput) linkInput.addEventListener('blur', saveLinkField);
+      T().wire('sb-link-clear', function(){
+        if(_sbLinkTimer){ clearTimeout(_sbLinkTimer); _sbLinkTimer=null; }
+        _sbLinkPendingUrl=null; _sbLinkPendingThumb=null; _sbLinkPendingTitle=null;
+        if(linkInput) linkInput.value='';
+        renderLinkPreview(null);
+        saveLinkField();
+      });
+    })();
+
     T().wire('sb-misc-pinned', async function(){
       try{
         // Card-details sweep, July 19, 2026: T2TShared.currentTopicId is
@@ -4998,7 +5087,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
@@ -5532,6 +5621,7 @@
     openKeyLibraryManager: _sboardOpenKeyLibraryManager,
     keyDotsHTML: _sboardKeyDotsHTML,
     assignedBadgeHTML: _sboardAssignedBadgeHTML,
+    linkBadgeHTML: _sboardLinkBadgeHTML,
     ensureAssignedInitials: _sboardEnsureAssignedInitials,
     closeBoard: _sboardCloseBoard
   };

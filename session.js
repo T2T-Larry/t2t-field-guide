@@ -1059,7 +1059,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1284,7 +1284,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1358,6 +1358,9 @@
     // keyDotsHTML just above; the initials cache/lookup lives in 9710's
     // closure, this just borrows it.
     if(window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
+    // Video/Link badge, Aug 11 2026 -- same bridge pattern as the two
+    // badges just above; the helper lives in 9710's closure.
+    if(window.T2TStoryboard && T2TStoryboard.linkBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.linkBadgeHTML(row));
     // Double-click is the color-options shortcut every card has (locked
     // July 27, 2026) -- this loose-idea tile never had a double-click job
     // of its own before, so this is a straight addition, not a migration.
@@ -1771,7 +1774,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
