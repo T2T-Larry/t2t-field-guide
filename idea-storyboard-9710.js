@@ -192,6 +192,14 @@
         // top-left, person/lock share top-right, heart+key-dots+corner-flip
         // share bottom-right).
         +'.sb-notes-badge{position:absolute;bottom:2px;left:2px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none;z-index:6}'
+        // Video/Link flag, Aug 11 2026 (Larry: "make link usable, move
+        // link flag to lower left corner") -- shares the bottom-left
+        // slot with Notes (left:2 / left:18, same stacking convention as
+        // heart+key-dots on the bottom-right), and is a real clickable
+        // link (not just a pointer-events:none marker) -- opens the
+        // attached URL in a new tab. draggable=false keeps a native link
+        // drag from hijacking the tile's own drag-to-reorder gesture.
+        +'.sb-link-badge{position:absolute;bottom:2px;left:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);cursor:pointer;text-decoration:none;z-index:6}'
         // pointer-events:auto here, Aug 4 2026 -- same fix as the
         // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
         // stays click-through (so it never grabs a card drag), but a
@@ -664,7 +672,7 @@
   // those already show their own built-in 🔗 marker.
   function _sboardLinkBadgeHTML(item){
     if(!item.link_url || item.content_type==='link') return '';
-    return '<div style="position:absolute;top:2px;left:20px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none">🎬</div>';
+    return '<a class="sb-link-badge" href="'+_sboardEsc(item.link_url)+'" target="_blank" rel="noopener" draggable="false" title="Open link">🎬</a>';
   }
 
   // ---- Ctrl/Cmd+Z undo (single-step), Aug 11 2026 -- same shape as the

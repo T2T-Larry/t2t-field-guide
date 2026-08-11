@@ -2321,7 +2321,14 @@
       // drag), but this badge needs its own pointer events back or its
       // "Has notes" hover tooltip goes silent.
       +'.bb-notes-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
-      +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      // Video/Link flag, Aug 11 2026 (Larry: "make link usable, move
+      // link flag to lower left corner") -- joins Notes in the
+      // bottom-left signal-flags row instead of the top badge row, and
+      // is a real link now (was a plain inert marker): opens the
+      // attached URL in a new tab. draggable=false on the element
+      // itself (see markup below) keeps a native link-drag from
+      // hijacking the card's own drag-to-move gesture.
+      +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-decoration:none;color:inherit}'
       +'.bb-link-row{display:flex;gap:6px}'
       +'.bb-link-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
       +'.bb-link-preview{margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:center;font-style:italic}'
@@ -2736,7 +2743,7 @@
         // now renders inside .bb-key-badges below instead, so every
         // per-card "signal" lives in the same corner.
         var notesBadge = (c.notes && c.notes.trim()) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
-        var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<span class="bb-link-badge" title="Has a video/link">🎬</span>' : '';
+        var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="Open link">🎬</a>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -2766,12 +2773,12 @@
                 +(lc?'<span class="bb-key-link-count">'+lc+'</span>':'')
                 +'</span>';
             }).join('') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+linkBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +((notesBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+notesBadge+keyBadgesHTML+'</div>') : '')
+          +((notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+notesBadge+linkBadge+keyBadgesHTML+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click also opens the card, Aug 11 2026 (Larry) -- same
