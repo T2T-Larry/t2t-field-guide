@@ -416,6 +416,31 @@
      overlay element, reused by whichever drawer opened it last, same
      pattern as the TV frame's picker (tv-frame.js). ---------- */
 
+  // Outside-click-to-close guard, Aug 11 2026 -- Larry (bug report): the
+  // text-size picker on Apple (Safari trackpad) was opening then
+  // closing itself again before he could tap a size option -- a stray
+  // click landing on the overlay's own backdrop right as it appeared,
+  // left over from the very same tap/click gesture that opened it.
+  // Every overlay in this family (drawer color, desk color, text size,
+  // rename card) closes the same way -- a plain click listener on the
+  // backdrop -- so all four share the same exposure. This ignores any
+  // backdrop click that lands within a short window of the overlay
+  // actually being opened -- long enough to absorb a stray/duplicate
+  // event carried over from the gesture that opened it, short enough
+  // that a traveler genuinely tapping outside the card afterward still
+  // closes it instantly, no perceptible delay. Each build*() wires its
+  // backdrop click through this once; each open*() calls the returned
+  // markOpened() right after showing the overlay.
+  function guardedBackdropClose(overlay, closeFn){
+    var openedAt = 0;
+    overlay.addEventListener('click', function(e){
+      if (e.target !== overlay) return;
+      if (Date.now() - openedAt < 400) return;
+      closeFn();
+    });
+    overlay._markOpened = function(){ openedAt = Date.now(); };
+  }
+
   function buildDrawerColorOverlay(){
     var overlay = document.createElement('div');
     overlay.id = 'sz-color-overlay';
@@ -430,7 +455,7 @@
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeDrawerColorPicker(); });
+    guardedBackdropClose(overlay, closeDrawerColorPicker);
     card.querySelector('#sz-color-close').addEventListener('click', closeDrawerColorPicker);
 
     return overlay;
@@ -466,6 +491,7 @@
       swatchRow.appendChild(sw);
     });
     overlay.classList.add('active');
+    if (overlay._markOpened) overlay._markOpened();
   }
 
   function closeDrawerColorPicker(){
@@ -1196,7 +1222,7 @@
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeTextSizePicker(); });
+    guardedBackdropClose(overlay, closeTextSizePicker);
     card.querySelector('#sz-text-close').addEventListener('click', closeTextSizePicker);
 
     return overlay;
@@ -1222,6 +1248,7 @@
       row.appendChild(opt);
     });
     overlay.classList.add('active');
+    if (overlay._markOpened) overlay._markOpened();
   }
 
   function closeTextSizePicker(){
@@ -3107,7 +3134,7 @@
       row.appendChild(sw);
     });
 
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeBgColorPicker(); });
+    guardedBackdropClose(overlay, closeBgColorPicker);
     card.querySelector('#sz-bg-color-close').addEventListener('click', closeBgColorPicker);
     return overlay;
   }
@@ -3164,7 +3191,7 @@
     document.body.appendChild(overlay);
 
     var input = card.querySelector('#sz-rename-input');
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeRenameCard(); });
+    guardedBackdropClose(overlay, closeRenameCard);
     card.querySelector('#sz-rename-cancel').addEventListener('click', closeRenameCard);
     card.querySelector('#sz-rename-save').addEventListener('click', saveRenameCard);
     input.addEventListener('keydown', function(e){
@@ -3181,6 +3208,7 @@
     input.value = currentValue || '';
     _renameOnSave = onSave;
     overlay.classList.add('active');
+    if (overlay._markOpened) overlay._markOpened();
     input.focus();
     input.select();
   }
@@ -3207,6 +3235,7 @@
       sw.classList.toggle('sz-bg-color-active', BG_PALETTE[i].key === cur);
     });
     overlay.classList.add('active');
+    if (overlay._markOpened) overlay._markOpened();
   }
 
   function closeBgColorPicker(){
