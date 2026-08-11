@@ -1661,6 +1661,11 @@
     cornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     cornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     tile.appendChild(cornerFlip);
+    // Double-click also opens the card, Aug 11 2026 (Larry) -- same
+    // openSbDetail the corner-flip already triggers, just a second,
+    // faster way to get there on a subber (plain idea card). The
+    // corner-flip stays as-is; this doesn't replace it.
+    tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
     // ORDER # badge, Aug 3 2026 -- Larry: "What if every card has an
     // ORDER #" -- plain idea cards get one too, numbered in the same
     // single top-to-bottom sequence as this parent's Subbers (see
