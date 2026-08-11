@@ -2179,7 +2179,7 @@
         // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
         // owner-only gating, and the People menu's isOwner check all silently
         // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
           .in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(2000);
         if(res.error) throw new Error(res.error.message);
@@ -3102,7 +3102,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -3940,6 +3940,12 @@
     // is a bucket (has something underneath it, at any depth). Never shown for
     // a lone card — there's nothing to sort into groups yet.
     var isBucket=isHeaderType && (_sboardChildCountById[item.id]||0)>0;
+    // Briefing Board tracking, Aug 11 2026 -- only a TOP-ROW header
+    // (its own parent is a root board, same rule the DB trigger uses)
+    // can be assigned; sub-headers never qualify, so the button doesn't
+    // even show for them rather than appearing to do something it can't.
+    var _bbAssignParent = item.cluster_id ? (_sboardHeadersById[item.cluster_id] || _sboardAllRowsById[item.cluster_id]) : null;
+    var isTopRowHeader = isHeaderType && !!item.cluster_id && !!_bbAssignParent && !_bbAssignParent.cluster_id;
     // Fractal-view slider gating — added July 12, 2026. PARENT needs a real
     // grandparent to land on (climbing two levels from this card's home);
     // HEADER needs a real parent to promote-into-view under; SUBBER is
@@ -4180,6 +4186,8 @@
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
+      + (isTopRowHeader ? '<button class="sb-blue-btn" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌':'📋')+'</button>' : '')
+      + (isTopRowHeader && item.track_on_briefing_board ? '<button class="sb-blue-btn" id="sb-bb-open" title="Open Briefing Card (new tab)">🧭</button>' : '')
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
@@ -4595,6 +4603,38 @@
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
+    });
+
+    // Briefing Board tracking, Aug 11 2026 -- deliberately its own
+    // button, separate from Lock (Larry: "lock is not the most
+    // effective selector" -- Lock already means read-only/fixed-
+    // position, unrelated to this). Toggling re-runs the DB trigger
+    // (ideas_sync_header_task_card) that actually creates/archives the
+    // task card; this just flips the flag and re-opens the same panel
+    // so the Open Briefing Card button appears/disappears immediately.
+    T().wire('sb-bb-assign', async function(){
+      try{
+        var newVal=!item.track_on_briefing_board;
+        var upd=await _sb.from('ideas').update({track_on_briefing_board:newVal}).eq('id',item.id);
+        if(upd.error) throw upd.error;
+        item.track_on_briefing_board=newVal;
+        openSbDetail(item);
+      }catch(err){ if(statusBox) statusBox.textContent='Could not update Briefing Board tracking: '+err.message; }
+    });
+    // Opens in a new tab, Aug 11 2026 (Larry) -- same sessionStorage
+    // handoff bp_target already uses for cross-file landing (cloned
+    // into the new tab automatically since it's same-origin), plus a
+    // second key the Briefing Board's own boot path
+    // (_bbInitBoardsAndData, briefing-board.js) checks for and
+    // consumes to land on the right card's board instead of whatever
+    // it would resume by default.
+    T().wire('sb-bb-open', function(){
+      if(!item.track_on_briefing_board) return;
+      try{
+        sessionStorage.setItem('bp_target','4010');
+        sessionStorage.setItem('fg_open_card_header_id', item.id);
+      }catch(e){}
+      window.open(location.pathname+location.search, '_blank');
     });
 
     (function(){
@@ -5095,7 +5135,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);

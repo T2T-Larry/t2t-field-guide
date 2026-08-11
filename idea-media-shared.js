@@ -172,6 +172,20 @@
   // _isxInit's Resume last Input topic block) — this mirrors that same
   // logic for 1010, so the desk button lands somewhere real instead.
   async function _ideaOpenBoardResume(push){
+    // Deep-link override, Aug 11 2026 -- a Briefing Card's "Open on Idea
+    // Storyboard" button (new-tab version) sets this before opening the
+    // tab; if present, it wins over the normal last-topic resume below.
+    // This is the one guaranteed entry point for landing on 1010
+    // whenever bp_target routes here (see navToPageNum's guard), so
+    // hooking here covers both the in-app nav and the new-tab case.
+    try{
+      var deepLinkHeaderId=sessionStorage.getItem('fg_open_header_id');
+      if(deepLinkHeaderId){
+        sessionStorage.removeItem('fg_open_header_id');
+        _ideaOpenBoard(deepLinkHeaderId, push);
+        return;
+      }
+    }catch(e){ console.warn('Idea Board deep-link check failed:', e); }
     var wt=await T2TData.ensureWishTank();
     if(!wt || !wt.id){
       await new Promise(function(r){ setTimeout(r,400); });

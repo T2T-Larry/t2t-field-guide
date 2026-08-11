@@ -1633,6 +1633,25 @@
       }catch(e){}
     }
     if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    // Deep-link override, Aug 11 2026 -- the Idea Storyboard's "Open
+    // Briefing Card" button (new-tab) sets this before opening the tab;
+    // if present, it wins over the remembered-board resume below and
+    // opens straight to that header's card. Looked up by
+    // source_header_id since the button only knows the header, not
+    // which card/board it landed on.
+    try{
+      var _bbDeepLinkHeaderId=sessionStorage.getItem('fg_open_card_header_id');
+      if(_bbDeepLinkHeaderId){
+        sessionStorage.removeItem('fg_open_card_header_id');
+        var _bbDeepLinkRes=await sb.from('briefing_cards').select('id,board_id').eq('source_header_id',_bbDeepLinkHeaderId).eq('archived',false).limit(1);
+        var _bbDeepLinkCard=(_bbDeepLinkRes.data && _bbDeepLinkRes.data[0]) || null;
+        if(_bbDeepLinkCard){
+          await _bbSwitchToBoard(_bbDeepLinkCard.board_id);
+          openCardDetail(_bbDeepLinkCard.id);
+          return;
+        }
+      }
+    }catch(e){ console.warn('Briefing Board deep-link check failed:', e); }
     // July 23, 2026, Larry: prefer the persisted database pointer over the
     // tab-only sessionStorage one -- it's what makes "which board is active"
     // work from a fresh tab, a different device, or a plain SQL lookup, not
@@ -4076,19 +4095,22 @@
   // land on, T().nav() switches screens, and markReturnOverride makes X
   // on the Storyboard bring the traveler back to this exact card instead
   // of falling back to the backpack menu.
+  // Opens in a new tab, Aug 11 2026 (Larry: "it should open in a new
+  // tab") -- was an in-app nav (T().nav + markReturnOverride); now sets
+  // the same sessionStorage handoff bp_target already uses for
+  // cross-file landing (cloned into the new tab automatically, same-
+  // origin) plus a key _ideaOpenBoardResume (idea-media-shared.js)
+  // checks for and consumes, so the new tab lands straight on this
+  // exact header instead of resuming whatever topic was last open
+  // there.
   function _bbOpenSourceHeader(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(!c || !c.sourceHeaderId) return;
-    if(window.T2TShared){ window.T2TShared.currentTopicId=c.sourceHeaderId; window.T2TShared.filter=c.sourceHeaderId; }
-    var _bbReturnCardId=c.id;
-    if(T().markReturnOverride){
-      T().markReturnOverride(function(){
-        T().nav('s-briefing-board');
-        openCardDetail(_bbReturnCardId);
-      });
-    }
-    closeCardDetail();
-    T().nav('s-sea-of-ideas-cluster');
+    try{
+      sessionStorage.setItem('bp_target','1010');
+      sessionStorage.setItem('fg_open_header_id', c.sourceHeaderId);
+    }catch(e){}
+    window.open(location.pathname+location.search, '_blank');
   }
 
   async function _bbUnhookIdeas(){
