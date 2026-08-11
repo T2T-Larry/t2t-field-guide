@@ -710,6 +710,18 @@
       renderSeaBoard(true);
     }catch(e){ console.error('Storyboard: undo/redo write failed', e); }
   }
+  // General-purpose version of the above for edit undo (text/color/notes)
+  // -- writes whatever fields are given, straight to Supabase + cache,
+  // then redraws. Added Aug 11 2026 alongside the move/delete undo.
+  async function _sboardApplyFields(id, fields){
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var upd=await _sb.from('ideas').update(fields).eq('id',id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(id, fields);
+      renderSeaBoard(true);
+    }catch(e){ console.error('Storyboard: undo/redo write failed', e); }
+  }
   function wireSboardUndoKeyboard(){
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-sea-of-ideas-cluster');
@@ -4356,6 +4368,7 @@
     T().wire('sb-text-save', async function(){
       var newText=document.getElementById('sb-text-input').value.trim();
       if(!newText){ if(statusBox) statusBox.textContent='Text can\'t be empty.'; return; }
+      var beforeFields={text_content:item.text_content, content_type:item.content_type};
       try{
         var patch;
         if(item.content_type==='link'){
@@ -4369,6 +4382,11 @@
         if(upd.error) throw upd.error;
         item.text_content=patch.text_content;
         if(patch.content_type) item.content_type=patch.content_type;
+        _sboardPatchRow(item.id, patch);
+        (function(){
+          var itemId=item.id, before=beforeFields, after={text_content:patch.text_content, content_type:patch.content_type||beforeFields.content_type};
+          _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
+        })();
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
@@ -4438,10 +4456,18 @@
     _sboardRenderKeyRow(item);
     var notesBox=document.getElementById('sb-notes-box');
     if(notesBox) notesBox.addEventListener('blur', async function(e){
+      var beforeNotes=item.notes||'';
+      var newNotes=e.target.value;
+      if(newNotes===beforeNotes) return;
       try{
-        var upd=await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id);
+        var upd=await _sb.from('ideas').update({notes:newNotes}).eq('id',item.id);
         if(upd.error) throw upd.error;
-        item.notes=e.target.value;
+        item.notes=newNotes;
+        _sboardPatchRow(item.id, {notes:newNotes});
+        (function(){
+          var itemId=item.id, before={notes:beforeNotes}, after={notes:newNotes};
+          _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
+        })();
       }catch(err){ if(statusBox) statusBox.textContent='Notes need the notes Supabase column.'; }
     });
 
@@ -4503,10 +4529,16 @@
     Array.prototype.forEach.call(document.querySelectorAll('.sb-swatch'), function(btn){
       btn.addEventListener('click', async function(){
         var c=btn.getAttribute('data-c');
+        var beforeColor=item.color;
         try{
           var upd=await _sb.from('ideas').update({color:c}).eq('id',item.id);
           if(upd.error) throw upd.error;
           item.color=c;
+          _sboardPatchRow(item.id, {color:c});
+          (function(){
+            var itemId=item.id, before={color:beforeColor}, after={color:c};
+            _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
+          })();
           try{ localStorage.setItem('t2t_seaOfIdeas_'+(isHeaderType?'header':'subber')+'Color', c); }catch(e){}
           // 9711 SESSION: patch the one on-screen tile directly instead of
           // a full board reload for a single-card color change — Larry,

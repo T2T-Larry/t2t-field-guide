@@ -367,6 +367,28 @@
     _bbSaveLocal(_bbCardsList());
     renderBoard();
   }
+  // Text/detail-edit undo, Aug 11 2026 -- the DETAILS card edits a bunch
+  // of fields at once and saves them together on close, so that's
+  // treated as one Edit action (not one per field). "Also show on"
+  // (sharedToBoardId) is deliberately left out -- it triggers a mirrored
+  // card on another board (_bbHandleSharedTagChange) and safely undoing
+  // that side effect is its own separate piece of work.
+  var BB_DETAIL_FIELDS = ['task','situation','person','due','dueTime','startDate','startTime','routineFreq','routineCustom','budget','notes','reviewedBy','growNote'];
+  function _bbSnapshotCardDetail(c){
+    var snap={};
+    BB_DETAIL_FIELDS.forEach(function(k){ snap[k]=c[k]||''; });
+    return snap;
+  }
+  function _bbApplyCardDetail(cardId, fields){
+    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    if(!c) return;
+    BB_DETAIL_FIELDS.forEach(function(k){ if(Object.prototype.hasOwnProperty.call(fields,k)) c[k]=fields[k]; });
+    _bbSaveLocal(_bbCardsList());
+    if(_bbOpenCardId===cardId) openCardDetail(cardId);
+    renderBoard();
+  }
+  var _bbDetailBeforeSnapshot = null;
+  var _bbDetailBeforeCardId = null;
   function wireBbUndoKeyboard(){
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-briefing-board');
@@ -2872,6 +2894,8 @@
     _bbOpenCardId=id;
     var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
     if(!c) return;
+    _bbDetailBeforeCardId=id;
+    _bbDetailBeforeSnapshot=_bbSnapshotCardDetail(c);
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
     document.getElementById('bb-d-situation').value=c.situation||'';
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
@@ -2961,6 +2985,15 @@
         if(newSharedTo!==(c.sharedToBoardId||null)){
           _bbHandleSharedTagChange(c, newSharedTo);
           c.sharedToBoardId=newSharedTo;
+        }
+      }
+      if(_bbDetailBeforeSnapshot && _bbDetailBeforeCardId===_bbOpenCardId){
+        var afterSnap=_bbSnapshotCardDetail(c);
+        if(JSON.stringify(_bbDetailBeforeSnapshot)!==JSON.stringify(afterSnap)){
+          (function(){
+            var cardId=_bbOpenCardId, beforeSnap=_bbDetailBeforeSnapshot;
+            _bbPushAction({label:'Edit', undo:function(){ _bbApplyCardDetail(cardId, beforeSnap); }, redo:function(){ _bbApplyCardDetail(cardId, afterSnap); }});
+          })();
         }
       }
       _bbSaveLocal(_bbCardsList());
