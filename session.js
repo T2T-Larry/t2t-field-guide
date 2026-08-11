@@ -164,7 +164,7 @@
         console.error('renderIdeaSession init failed', e);
         if(fgr){
           var err=document.createElement('div');
-          err.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;background:#5a1a1a;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9999';
+          err.style.cssText='position:fixed;bottom:16px;left:16px;right:16px;background:#5a1a1a;color:#fff;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 12px;border-radius:8px;z-index:9999';
           err.textContent='Could not open ISB — try again in a moment.';
           fgr.appendChild(err);
           setTimeout(function(){ err.remove(); }, 4000);
@@ -324,7 +324,7 @@
         // z-index 45: above #isx-header-ring (z-index:40, covers the whole
         // board) so this is never hidden behind the fixed alpha-ring headers.
         // Larry caught this live, July 18, 2026.
-        +'color:#A32D2D;font-size:10px;padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+        +'color:#A32D2D;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
       board.appendChild(banner);
     }
     banner.textContent=msg;
@@ -347,7 +347,7 @@
       // Same repositioning as the error banner above — small, right-
       // anchored, up near TOPIC/the toolbar. July 18, 2026.
       banner.style.cssText='position:absolute;top:14px;left:auto;right:16px;width:200px;background:#eaf6ea;border:2px solid #2d7a3d;'
-        +'color:#2d7a3d;font-size:10px;padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+        +'color:#2d7a3d;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
       board.appendChild(banner);
     }
     banner.textContent=msg;
@@ -590,16 +590,16 @@
     var rows=boards.map(function(b){
       var cur=String(b.id)===String(currentProjectId)?' current':'';
       return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
-    }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+    }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Project</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Project</div>'
       +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new project</label>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new project</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
-      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
       +'<button class="sc-ov-btn save" id="sb-proj-new-go">Create</button>'
       +'</div>'
-      +'<div id="sb-proj-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div id="sb-proj-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<button class="sc-ov-btn" id="sb-proj-cancel" style="width:100%">Cancel</button>'
       +'</div>';
     ov.style.justifyContent='flex-start';
@@ -659,16 +659,16 @@
     var rows=siblings.map(function(s){
       var cur=String(s.id)===String(currentTopicId)?' current':'';
       return '<div class="sb-hdr-vitem'+cur+'" data-tid="'+s.id+'">'+(s.text_content||'(untitled)')+'</div>';
-    }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No sibling topics yet.</div>';
+    }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No sibling topics yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Topic</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Topic</div>'
       +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new topic'+(parentEntry?(' under '+parentEntry.text):'')+'</label>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new topic'+(parentEntry?(' under '+parentEntry.text):'')+'</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
-      +'<input id="sb-topic-new-input" type="text" placeholder="Topic name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+      +'<input id="sb-topic-new-input" type="text" placeholder="Topic name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
       +'<button class="sc-ov-btn save" id="sb-topic-new-go">Create</button>'
       +'</div>'
-      +'<div id="sb-topic-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div id="sb-topic-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<button class="sc-ov-btn" id="sb-topic-cancel" style="width:100%">Cancel</button>'
       +'</div>';
     ov.style.justifyContent='flex-start';
@@ -873,7 +873,7 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
       +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
@@ -905,9 +905,9 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov){ _isxResetHeadersToAlpha(); return; }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Reset headers to A–Z?</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Sends every header on THIS Topic back to the alphabetical ring. Cards inside them are untouched.</div>'
-      +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;justify-content:center;margin-bottom:10px"><input type="checkbox" id="isx-reset-skip"> Don\u2019t ask me again</label>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Reset headers to A–Z?</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Sends every header on THIS Topic back to the alphabetical ring. Cards inside them are untouched.</div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;justify-content:center;margin-bottom:10px"><input type="checkbox" id="isx-reset-skip"> Don\u2019t ask me again</label>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-reset-yes" style="flex:1">Reset</button><button class="sc-ov-btn" id="isx-reset-no" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -962,8 +962,8 @@
         return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
       }).join('');
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
-        +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this Topic, including MISC, gets it.</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this Topic, including MISC, gets it.</div>'
         +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
         +'<button class="sc-ov-btn" id="isx-recolor-close" style="width:100%">Cancel</button>'
         +'</div>';
@@ -1237,9 +1237,9 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov){ T2TStoryboard.moveCard(rowId, trashId).then(_isxRenderBoard); return; }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash this?</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">One-way \u2014 off the board for good.</div>'
-      +'<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#7a6040;justify-content:center;margin-bottom:10px"><input type="checkbox" id="isx-trash-skip"> Don\u2019t ask me again</label>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash this?</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">One-way \u2014 off the board for good.</div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;justify-content:center;margin-bottom:10px"><input type="checkbox" id="isx-trash-skip"> Don\u2019t ask me again</label>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-trash-yes" style="flex:1">Trash it</button><button class="sc-ov-btn" id="isx-trash-no" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -1688,10 +1688,10 @@
     if(!ov) return;
     var targetName=targetRow.text_content||'(untitled)';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
-      +'<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">Skip to keep \u201c'+targetName+'\u201d as the header name \u2014 rename anytime from DETAILS.</div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
-      +'<input id="isx-stack-name" type="text" placeholder="'+targetName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic;margin-bottom:10px">Skip to keep \u201c'+targetName+'\u201d as the header name \u2014 rename anytime from DETAILS.</div>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
+      +'<input id="isx-stack-name" type="text" placeholder="'+targetName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-stack-save" style="flex:1">Save</button><button class="sc-ov-btn" id="isx-stack-skip" style="flex:1">Skip</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -1832,7 +1832,7 @@
     }
 
     layer.innerHTML='<div class="isx-tree-card"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
-      +'<div class="isx-ptitle" style="font-size:20px">\ud83e\udded Where This Sits</div>'
+      +'<div class="isx-ptitle" style="font-size:calc(20px * var(--fg-text-scale,1))">\ud83e\udded Where This Sits</div>'
       +'<div class="isx-psub">\ud83d\udccd marks you. Tap a name to jump there. Tap "+N more" to reveal the rest.</div>'
       +renderNode([apexId])+'</div>';
     layer.classList.add('active');

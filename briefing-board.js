@@ -349,24 +349,24 @@
   var _bbMovesCache = [];
   async function _bbRenderRecentMoves(){
     var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
-    wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Loading...</div>';
+    wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Loading...</div>';
     var sb=T().sb;
-    if(!sb || !_bbCurrentBoardId){ wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>'; return; }
+    if(!sb || !_bbCurrentBoardId){ wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>'; return; }
     try{
       var res=await sb.from('briefing_card_moves').select('*').eq('board_id', _bbCurrentBoardId).is('undone_at', null).order('moved_at',{ascending:false}).limit(20);
       if(res.error) throw res.error;
       _bbMovesCache = res.data||[];
     }catch(e){ console.error('Briefing Board: load moves failed', e); _bbMovesCache=[]; }
     if(!_bbMovesCache.length){
-      wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
+      wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
       return;
     }
     wrap.innerHTML=_bbMovesCache.map(function(m){
       return '<div class="bb-mv-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
-        +'<div style="font-size:13px;margin-bottom:2px">'+_esc(m.task||'(untitled)')+'</div>'
-        +'<div style="font-size:11px;color:#6b5a42;margin-bottom:2px">'+_esc(_bbMoveDesc(m.from_col,m.from_priority))+' \u2192 '+_esc(_bbMoveDesc(m.to_col,m.to_priority))+'</div>'
-        +'<div style="font-size:10px;color:#a3907a;margin-bottom:6px">'+_bbMoveAgo(m.moved_at)+'</div>'
-        +'<button class="bb-icon-btn" data-mv-undo="'+_esc(m.id)+'" style="width:auto;height:auto;font-size:11px;padding:4px 8px">Undo -- put it back</button>'
+        +'<div style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:2px">'+_esc(m.task||'(untitled)')+'</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#6b5a42;margin-bottom:2px">'+_esc(_bbMoveDesc(m.from_col,m.from_priority))+' \u2192 '+_esc(_bbMoveDesc(m.to_col,m.to_priority))+'</div>'
+        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">'+_bbMoveAgo(m.moved_at)+'</div>'
+        +'<button class="bb-icon-btn" data-mv-undo="'+_esc(m.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px">Undo -- put it back</button>'
       +'</div>';
     }).join('');
   }
@@ -1983,8 +1983,8 @@
       // just relocated.
       +'.bb-mh-typebox{display:flex;gap:10px;justify-self:start;align-items:flex-end}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px}'
-      +'.bb-mh-eyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
-      +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:120px}'
+      +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:120px}'
       // NAME row, Aug 3 2026 -- pencil button added so a traveler can
       // actually rename a board (Larry: "How can a traveler edit the
       // name of the Briefing Board?" -- there was no way; renaming only
@@ -1993,7 +1993,7 @@
       // scaled down (22px vs 30px) to sit level with the NAME select's
       // own smaller 13px text instead of towering over it.
       +'.bb-mh-namerow{display:flex;align-items:center;gap:4px}'
-      +'.bb-rename-btn{width:22px;height:22px;flex-shrink:0;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;padding:0}'
+      +'.bb-rename-btn{width:22px;height:22px;flex-shrink:0;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--fg-text-scale,1));cursor:pointer;padding:0}'
       +'.bb-rename-btn:hover{background:var(--bb-bg)}'
       // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
       // Push tagline lower." Was 20px (sized for when it sat next to the
@@ -2002,19 +2002,19 @@
       // 2px -> 10px so the tagline reads as its own line, not crowded
       // against the title's descenders.
       +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
-      +'.bb-mh{color:var(--bb-ink);font-size:38px;font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:13px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:150px}'
+      +'.bb-mh{color:var(--bb-ink);font-size:calc(38px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
+      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:150px}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
-      +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--bb-ink);padding:0}'
+      +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
-      +'.bb-mt{color:var(--bb-sub);font-size:13px;font-style:italic}'
+      +'.bb-mt{color:var(--bb-sub);font-size:calc(13px * var(--fg-text-scale,1));font-style:italic}'
       // Center the board's columns as a group (Larry, July 22 2026)
       // instead of always hugging the left edge -- still scrolls
       // normally once there are enough columns to overflow.
       +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex;justify-content:center}'
       +'#bb-cols{display:flex;gap:14px;height:100%}'
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
-      +'.bb-col-head{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
+      +'.bb-col-head{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
       +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
       // July 22, 2026, Larry: color the 3 Do column headers red/green/
       // yellow (H/M/L, in that order) so priority reads at a glance
@@ -2028,16 +2028,16 @@
       +'.bb-col[data-col="do-l"] .bb-col-head{background:#e0c22e;color:#3B2510}'
       +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
-      +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:12px;line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
+      +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
       +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
       +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
-      +'.bb-pri-badge{font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
-      +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:13px;color:#6b4a2e}'
-      +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
+      +'.bb-pri-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
+      +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
+      +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px}'
-      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub);min-height:12px}'
+      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
-      +'.bb-done-date{font-family:"Caveat",cursive;font-size:12px;color:#3F6B3A;text-align:right;margin-top:1px}'
+      +'.bb-done-date{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#3F6B3A;text-align:right;margin-top:1px}'
       +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:7px;pointer-events:none}'
       // pointer-events:auto here, Aug 4 2026 -- the container above stays
       // click-through (so it never steals a card drag), but the wrap
@@ -2050,10 +2050,10 @@
       // the right of the Key symbol. One key on a card might have 7
       // links; another only 3." Small enough to sit beside a 12px dot
       // without dominating the card face.
-      +'.bb-key-link-count{font-family:var(--bb-body-font);font-size:9px;font-weight:700;color:var(--bb-sub);line-height:1}'
+      +'.bb-key-link-count{font-family:var(--bb-body-font);font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-sub);line-height:1}'
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
-      +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:12px;color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
+      +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
       +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
       /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
          bottom-right" convention as 9711's isx-trash-fixed. Anchored to
@@ -2065,17 +2065,17 @@
       +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
       +'#bb-detail-overlay .bbw{align-items:flex-start}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
-      +'.bb-field label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
+      +'.bb-field label{display:block;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
       +'.bb-inline-field{display:flex;align-items:baseline;justify-content:flex-start;gap:6px;white-space:nowrap}'
       +'.bb-inline-field label{display:inline;margin:0}'
-      +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:16px;color:var(--bb-sub)}'
-      +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:14px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
-      +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:16px;resize:vertical}'
-      +'#bb-d-task{font-family:var(--bb-body-font);font-style:normal;font-size:14px;color:#000}'
-      +'#bb-d-notes{font-family:var(--bb-body-font)!important;font-style:normal;font-size:14px!important;min-height:160px}'
-      +'#bb-new-task{font-family:var(--bb-body-font)!important;font-style:normal;font-size:15px!important}'
+      +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)}'
+      +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:calc(14px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
+      +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));resize:vertical}'
+      +'#bb-d-task{font-family:var(--bb-body-font);font-style:normal;font-size:calc(14px * var(--fg-text-scale,1));color:#000}'
+      +'#bb-d-notes{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(14px * var(--fg-text-scale,1))!important;min-height:160px}'
+      +'#bb-new-task{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(15px * var(--fg-text-scale,1))!important}'
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
-      +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn,.bb-shape-btn{flex:1;font-size:11px;padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font);display:flex;align-items:center;justify-content:center}'
+      +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn,.bb-shape-btn{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font);display:flex;align-items:center;justify-content:center}'
       +'.bb-shape-btn.bb-shape-active{background:var(--bb-bg);border-color:var(--bb-ink)}'
       +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
       +'#bb-d-verify.bb-flag-active{background:#3F6B3A;border-color:#3F6B3A}'
@@ -2085,46 +2085,46 @@
       +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
       +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
       +'.bb-settings-tabs{display:flex;gap:4px;width:100%;max-width:280px;margin:0 auto 10px}'
-      +'.bb-settings-tab{flex:1;font-size:11px;padding:7px 3px;border-radius:6px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
+      +'.bb-settings-tab{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:7px 3px;border-radius:6px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
       +'.bb-settings-tab.active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
       +'.bb-settings-pane{display:flex;flex-direction:column;align-items:center;width:100%}'
       +'.bb-key-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start}'
       +'.bb-key-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}'
-      +'.bb-key-add{font-size:16px;color:var(--bb-sub);border-style:dashed}'
+      +'.bb-key-add{font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub);border-style:dashed}'
       +'.bb-key-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}'
       +'.bb-key-swatch.bb-swatch-active{border-color:#3B2510}'
       +'.bb-key-pick-row-wrap{display:flex;align-items:center;gap:6px;margin-bottom:6px}'
-      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);text-align:left}'
+      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:left}'
       +'.bb-key-pick-meaning{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-      +'.bb-key-pick-edit{background:none;border:none;cursor:pointer;font-size:14px;color:#4a7a95;flex-shrink:0;padding:0 4px}'
+      +'.bb-key-pick-edit{background:none;border:none;cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:#4a7a95;flex-shrink:0;padding:0 4px}'
       +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
-      +'.bb-key-pick-empty-msg{font-size:12px;color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
-      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
+      +'.bb-key-pick-empty-msg{font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
+      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.bb-checklist-row .bb-checklist-check{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0}'
       +'.bb-checklist-text{flex:1}'
       +'.bb-checklist-text.bb-checklist-done{text-decoration:line-through;color:var(--bb-sub)}'
-      +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:12px;padding:0 4px}'
+      +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:0 4px}'
       +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
-      +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
-      +'.bb-links-empty{font-size:12px;font-style:italic;color:var(--bb-sub);padding:2px 0}'
+      +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-links-empty{font-size:calc(12px * var(--fg-text-scale,1));font-style:italic;color:var(--bb-sub);padding:2px 0}'
       // Signal Flags manager (9397), Aug 3 2026 -- same row shape as
       // Linked Items/Checklist just above, pencil then trash per row.
-      +'.bb-keylib-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
+      +'.bb-keylib-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
       +'.bb-keylib-row:last-child{border-bottom:none}'
       +'.bb-keylib-swatch{display:inline-block;width:16px;height:16px;flex-shrink:0}'
       +'.bb-keylib-meaning{flex:1}'
-      +'.bb-keylib-edit,.bb-keylib-del{background:none;border:none;cursor:pointer;font-size:13px;padding:0 4px}'
+      +'.bb-keylib-edit,.bb-keylib-del{background:none;border:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));padding:0 4px}'
       +'.bb-keylib-edit{color:#4a7a95}'
       +'.bb-keylib-del{color:#a3372b}'
       +'.bb-archive-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--bb-accent)}'
-      +'.bb-archive-task{font-family:var(--bb-body-font);font-size:13px;color:var(--bb-ink)}'
-      +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:12px;color:var(--bb-sub)}'
+      +'.bb-archive-task{font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
+      +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub)}'
       +'.bb-card-foreign{border-style:dashed;opacity:0.92}'
       +'.bb-foreign-row{margin:1px 0 3px}'
-      +'.bb-foreign-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
+      +'.bb-foreign-badge{display:inline-block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
       +'.bb-mh-filtergrp{margin-top:6px}'
-      +'.bb-mh-source-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:12px;font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:170px}'
+      +'.bb-mh-source-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:170px}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -2140,60 +2140,60 @@
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
       +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
-      +'.bb-overlay-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.bb-overlay-title{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-overlay-card.bb-hangup-active .bb-overlay-title{color:#a3372b}'
-      +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:13px;color:var(--bb-ink)}'
-      +'.tm-groupname{font-family:var(--bb-head-font);font-size:16px;font-weight:700;color:var(--bb-ink);text-align:center;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 2px}'
-      +'.tm-cap{text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:10px}'
+      +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
+      +'.tm-groupname{font-family:var(--bb-head-font);font-size:calc(16px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);text-align:center;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 2px}'
+      +'.tm-cap{text-align:center;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:10px}'
       +'.tm-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(59,37,16,0.12)}'
-      +'.tm-sym{width:22px;text-align:center;font-size:15px;padding-top:1px;flex-shrink:0}'
+      +'.tm-sym{width:22px;text-align:center;font-size:calc(15px * var(--fg-text-scale,1));padding-top:1px;flex-shrink:0}'
       +'.tm-sym.tm-clickable{cursor:pointer}'
       +'.tm-body{flex:1;min-width:0}'
-      +'.tm-name{font-size:13px;font-weight:600;color:var(--bb-ink)}'
-      +'.tm-role{font-weight:400;color:var(--bb-sub);font-size:11px}'
-      +'.tm-contact{font-size:11px;color:#5b9bd5;line-height:1.25;margin-top:1px}'
+      +'.tm-name{font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:var(--bb-ink)}'
+      +'.tm-role{font-weight:400;color:var(--bb-sub);font-size:calc(11px * var(--fg-text-scale,1))}'
+      +'.tm-contact{font-size:calc(11px * var(--fg-text-scale,1));color:#5b9bd5;line-height:1.25;margin-top:1px}'
       +'.tm-notes-row{display:flex;align-items:baseline;gap:5px;line-height:1.25;margin-top:1px}'
-      +'.tm-notes-lbl{font-size:8px;letter-spacing:1px;color:var(--bb-sub);flex-shrink:0}'
-      +'.tm-notes-input{flex:1;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:10px;color:var(--bb-sub);padding:0;font-family:var(--bb-body-font)}'
+      +'.tm-notes-lbl{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;color:var(--bb-sub);flex-shrink:0}'
+      +'.tm-notes-input{flex:1;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);padding:0;font-family:var(--bb-body-font)}'
       +'.tm-rolepanel{margin:6px 0 0 32px;background:#fff;border:1px solid var(--bb-accent);border-radius:8px;padding:8px 10px}'
-      +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bb-ink);margin-bottom:5px;cursor:pointer}'
+      +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);margin-bottom:5px;cursor:pointer}'
       +'.tm-rolepanel label:last-child{margin-bottom:0}'
       +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
-      +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
-      +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-sub);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+      +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+      +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-sub);font-size:calc(12px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;cursor:pointer}'
       +'.tm-add-wrap{position:relative;flex:1;min-width:0}'
       +'.tm-add-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 16px rgba(59,37,16,0.18);max-height:160px;overflow-y:auto;overflow-x:hidden;z-index:5;box-sizing:border-box}'
-      +'.tm-add-suggest-row{padding:6px 10px;font-size:12px;color:var(--bb-ink);cursor:pointer;box-sizing:border-box}'
+      +'.tm-add-suggest-row{padding:6px 10px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-ink);cursor:pointer;box-sizing:border-box}'
       +'.tm-add-suggest-row:hover{background:var(--bb-bg)}'
       +'.tm-add-suggest-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.tm-add-suggest-email{color:var(--bb-sub);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.tm-add-suggest-empty{padding:6px 10px;font-size:11px;color:var(--bb-sub);font-style:italic}'
+      +'.tm-add-suggest-email{color:var(--bb-sub);font-size:calc(11px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.tm-add-suggest-empty{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic}'
       +'@media print{body *{visibility:hidden}.bb-team-print,.bb-team-print *{visibility:visible}.bb-team-print{position:absolute;left:0;top:0;width:100%!important;max-height:none!important;box-shadow:none!important}@page{size:landscape}}'
       +'.bb-close:hover{background:var(--bb-bg)}'
-      +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
+      +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.bb-hx-back:hover{background:var(--bb-bg)}'
-      +'.bb-routine-toggle{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:14px;color:var(--bb-ink)}'
+      +'.bb-routine-toggle{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.bb-routine-toggle:hover{background:var(--bb-bg)}'
       +'.bb-routine-toggle.bb-routine-on{background:var(--bb-accent);color:#fff}'
       +'.bb-overlay-card.bb-routine-active{border-top-color:#4a7a95}'
       +'.bb-date-row{display:flex;gap:6px;align-items:stretch}'
       +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
       +'.bb-date-row input.bb-date-time{width:60px;flex:none;min-width:0}'
-      +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:12px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
       +'.bb-datepicker-pop{position:fixed;z-index:10001;width:220px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-family:var(--bb-body-font)}'
       +'.bb-dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}'
-      +'.bb-dp-label{font-size:12px;font-weight:700;color:var(--bb-ink)}'
-      +'.bb-dp-nav{background:none;border:none;font-size:16px;line-height:1;cursor:pointer;color:var(--bb-ink);padding:0 6px}'
+      +'.bb-dp-label{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink)}'
+      +'.bb-dp-nav{background:none;border:none;font-size:calc(16px * var(--fg-text-scale,1));line-height:1;cursor:pointer;color:var(--bb-ink);padding:0 6px}'
       +'.bb-dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}'
-      +'.bb-dp-dow{font-size:9px;text-align:center;color:var(--bb-sub);font-weight:700;padding:2px 0}'
-      +'.bb-dp-day{background:none;border:none;font-size:12px;padding:5px 0;text-align:center;cursor:pointer;border-radius:4px;color:var(--bb-ink)}'
+      +'.bb-dp-dow{font-size:calc(9px * var(--fg-text-scale,1));text-align:center;color:var(--bb-sub);font-weight:700;padding:2px 0}'
+      +'.bb-dp-day{background:none;border:none;font-size:calc(12px * var(--fg-text-scale,1));padding:5px 0;text-align:center;cursor:pointer;border-radius:4px;color:var(--bb-ink)}'
       +'.bb-dp-day:hover{background:var(--bb-bg)}'
       +'.bb-dp-day.bb-dp-blank{cursor:default}'
       +'.bb-dp-day.bb-dp-blank:hover{background:none}'
       +'.bb-dp-day.bb-dp-today{border:1.5px solid var(--bb-accent);font-weight:700}'
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
-      +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:13px;border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
-      +'.bb-routine-badge{font-size:11px;line-height:1}'
+      +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
+      +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
       +'.bb-team-row{display:flex;gap:6px;align-items:center;padding:4px 0}'
       +'.bb-team-row input.bb-team-name{flex:1.6;min-width:0}'
       +'.bb-team-row input.bb-team-initials{width:50px;flex:none;text-transform:uppercase}'
@@ -2245,7 +2245,7 @@
           +'<div class="bbw">'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
             +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
-            +'<div id="bb-add-status" style="font-size:11px;color:#5a7a3a;min-height:14px;margin-top:4px;text-align:center"></div>'
+            +'<div id="bb-add-status" style="font-size:calc(11px * var(--fg-text-scale,1));color:#5a7a3a;min-height:14px;margin-top:4px;text-align:center"></div>'
           +'</div>'
         +'</div>';
       fg.appendChild(addOv);
@@ -2302,7 +2302,7 @@
          // no change needed to the shared .bb-overlay/.bb-overlay-card
          // rules every other overlay still relies on.
          '<div class="bb-overlay-card" style="width:280px;text-align:center;position:fixed;right:16px;bottom:76px;margin:0">'
-          +'<div style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700;color:#3B2510;margin-bottom:6px">Moose poop?</div>'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(18px * var(--fg-text-scale,1));font-weight:700;color:#3B2510;margin-bottom:6px">Moose poop?</div>'
           // Aug 7 2026 -- Larry: "We need a safety net for potential
           // errors." Trash used to delete the row from Supabase
           // outright, no undo -- now it's a real recoverable trash
@@ -2311,7 +2311,7 @@
           // can itself, not dragging to it) to restore from in the
           // meantime. Wording updated to match -- this is no longer a
           // "for good" action.
-          +'<div style="font-size:12px;color:#7A5C3A;font-style:italic;margin-bottom:14px">Off the board &mdash; kept for 30 days in case you change your mind.</div>'
+          +'<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:14px">Off the board &mdash; kept for 30 days in case you change your mind.</div>'
           +'<div style="display:flex;gap:8px">'
             +'<button class="bb-flag-btn" id="bb-trash-yes" style="background:#a3372b;color:#fff;border-color:#a3372b">Yes</button>'
             +'<button class="bb-flag-btn" id="bb-trash-no">Keep it</button>'
@@ -2332,7 +2332,7 @@
       rdOv.innerHTML=
          '<div class="bb-overlay-card" style="width:320px">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recently Deleted</span><button class="bb-close" id="bb-rd-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:11px;color:#7A5C3A;font-style:italic;margin-bottom:10px">Kept for 30 days, then removed for good.</div>'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Kept for 30 days, then removed for good.</div>'
           +'<div id="bb-rd-list" style="max-height:320px;overflow-y:auto"></div>'
         +'</div>';
       fg.appendChild(rdOv);
@@ -2353,7 +2353,7 @@
       mvOv.innerHTML=
          '<div class="bb-overlay-card" style="width:320px">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recent Moves</span><button class="bb-close" id="bb-moves-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:11px;color:#7A5C3A;font-style:italic;margin-bottom:10px">Every move you made, with a way back.</div>'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Every move you made, with a way back.</div>'
           +'<div id="bb-moves-list" style="max-height:320px;overflow-y:auto"></div>'
         +'</div>';
       fg.appendChild(mvOv);
@@ -2390,12 +2390,12 @@
           +'</div>'
           +'<div id="bb-team-add-row" style="display:none;margin-top:10px;gap:6px">'
             +'<div class="tm-add-wrap">'
-              +'<input type="text" id="bb-team-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px;border:1px solid var(--bb-accent);border-radius:6px">'
+              +'<input type="text" id="bb-team-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1));padding:6px 8px;border:1px solid var(--bb-accent);border-radius:6px">'
               +'<div class="tm-add-suggest" id="bb-team-add-suggest" style="display:none"></div>'
             +'</div>'
             +'<button class="bb-flag-btn" id="bb-team-add-confirm" style="flex-shrink:0">Add</button>'
           +'</div>'
-          +'<div id="bb-team-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
+          +'<div id="bb-team-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin-top:6px;display:none"></div>'
         +'</div>';
       fg.appendChild(tmOv);
       tmOv.addEventListener('click', function(e){ if(e.target===tmOv) closeTeamRoster(); });
@@ -2942,16 +2942,16 @@
     var trashed=_bbCardsList().filter(function(c){ return c.trashedAt; })
       .sort(function(a,b){ return new Date(b.trashedAt)-new Date(a.trashedAt); });
     if(!trashed.length){
-      wrap.innerHTML='<div style="font-size:12px;color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
+      wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
       return;
     }
     wrap.innerHTML=trashed.map(function(c){
       return '<div class="bb-rd-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
-        +'<div style="font-size:13px;margin-bottom:2px">'+_esc(c.task||'(untitled)')+'</div>'
-        +'<div style="font-size:10px;color:#a3907a;margin-bottom:6px">Trashed '+_bbDaysAgo(c.trashedAt)+'</div>'
+        +'<div style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:2px">'+_esc(c.task||'(untitled)')+'</div>'
+        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Trashed '+_bbDaysAgo(c.trashedAt)+'</div>'
         +'<div style="display:flex;gap:6px">'
-          +'<button class="bb-icon-btn" data-rd-restore="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:11px;padding:4px 8px">Restore</button>'
-          +'<button class="bb-icon-btn" data-rd-purge="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:11px;padding:4px 8px;color:#a3372b">Delete Forever</button>'
+          +'<button class="bb-icon-btn" data-rd-restore="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px">Restore</button>'
+          +'<button class="bb-icon-btn" data-rd-purge="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px;color:#a3372b">Delete Forever</button>'
         +'</div>'
       +'</div>';
     }).join('');
@@ -3426,9 +3426,9 @@
     }
     list.innerHTML=_bbGuestsOnly.map(function(m){
       var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+_esc(m.phone)) : '';
-      var sponsorLine = m.sponsor_name ? '<div style="font-size:10px;color:var(--bb-sub);font-style:italic;margin-top:2px">Cast sponsor: '+_esc(m.sponsor_name)+'</div>' : '';
+      var sponsorLine = m.sponsor_name ? '<div style="font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;margin-top:2px">Cast sponsor: '+_esc(m.sponsor_name)+'</div>' : '';
       return '<div class="bb-keylib-row" data-user-id="'+_esc(m.user_id)+'" style="align-items:flex-start">'
-        +'<span class="bb-keylib-meaning"><div>'+_esc(m.name||m.email)+'</div><div style="font-size:11px;color:var(--bb-sub)">\u2709 '+_esc(m.email||'')+phoneLine+'</div>'+sponsorLine+'</span>'
+        +'<span class="bb-keylib-meaning"><div>'+_esc(m.name||m.email)+'</div><div style="font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub)">\u2709 '+_esc(m.email||'')+phoneLine+'</div>'+sponsorLine+'</span>'
         +(_bbSharingIsOwner ? '<button class="bb-keylib-del" data-user-id="'+_esc(m.user_id)+'" title="Remove">&#128465;&#65039;</button>' : '')
         +'</div>';
     }).join('');

@@ -42,11 +42,11 @@
     if(!document.getElementById('sea-of-ideas-style')){
       var style=document.createElement('style');
       style.id='sea-of-ideas-style';
-      style.textContent='#s-sea-of-ideas .phase-header{background:#fdf8f0;padding:12px 16px 10px;text-align:center;border-bottom:2px solid #5b9bd5;flex-shrink:0}#s-sea-of-ideas .ph-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6040}#s-sea-of-ideas .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}#s-sea-of-ideas .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}#s-sea-of-ideas .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}';
+      style.textContent='#s-sea-of-ideas .phase-header{background:#fdf8f0;padding:12px 16px 10px;text-align:center;border-bottom:2px solid #5b9bd5;flex-shrink:0}#s-sea-of-ideas .ph-eyebrow{font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:3px;text-transform:uppercase;color:#7a6040}#s-sea-of-ideas .bar-dream-pp{background:#1a3a5c!important;border-color:#14305a!important;border-top-color:#2a5080!important}#s-sea-of-ideas .bar-dream-pp .tb{background:#d6eaf8!important;border-color:#a9cce3!important;color:#1a3a5c}#s-sea-of-ideas .bar-dream-pp .tb:hover:not(.dim){background:#5b9bd5!important;border-color:#5b9bd5!important;color:#fff}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
-    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;color:#1a3a5c;margin-bottom:2px">ISB</div><div style="font-size:13px;font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:36px;margin-bottom:6px">🌊</div><div style="font-size:12px;font-style:italic;color:#999">Your ISB</div></div></div><div id="b-sea-to-cluster" style="font-size:12px;color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button><button class="tb" id="b-sea-close" style="display:none">✕</button></div></div>';
+    div.innerHTML='<div class="sc card" id="s-sea-of-ideas"><div class="phase-header" style="text-align:left;display:flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden"><span class="ph-eyebrow">🌈 DREAM PHASE</span><span class="ph-eyebrow">·</span><span class="ph-eyebrow">CREATE</span></div><div class="sw" style="padding:16px 32px;align-items:center;text-align:center"><div style="font-family:\'Playfair Display\',serif;font-size:calc(26px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:2px">ISB</div><div style="font-size:calc(13px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:14px;line-height:1.7">Everything captured so far. No order. Just a blast of ideas.</div><div id="sea-thumb" style="width:100%;border:1.5px solid #b0a898;border-radius:10px;margin-bottom:10px;background:#f5f5f5;padding:6px"><div id="sea-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div><div id="sea-empty" style="text-align:center;padding:16px;display:none"><div style="font-size:calc(36px * var(--fg-text-scale,1));margin-bottom:6px">🌊</div><div style="font-size:calc(12px * var(--fg-text-scale,1));font-style:italic;color:#999">Your ISB</div></div></div><div id="b-sea-to-cluster" style="font-size:calc(12px * var(--fg-text-scale,1));color:#5b9bd5;font-weight:600;cursor:pointer;margin-bottom:4px">🧩 Try clustering these</div><div class="sp"></div></div><div class="bar2 bar-dream-pp"><button class="tb" id="b-sea-back">⬅️</button><button class="tb" id="b-sea-mg">🔍</button><button class="tb" id="b-sea-fwd">➡️</button><button class="tb" id="b-sea-close" style="display:none">✕</button></div></div>';
     fg.appendChild(div.firstChild);
     T().registerPageNum('s-sea-of-ideas', '9220');
     T().registerCtx('s-sea-of-ideas', 'ISB');
@@ -127,7 +127,7 @@
           var tile = document.createElement('div');
           tile.style.cssText = 'aspect-ratio:1/1;border-radius:6px;background:#fff;border:1px solid #ddd;padding:10px;display:flex;align-items:center;justify-content:center;overflow:hidden';
           var card = document.createElement('div');
-          card.style.cssText = 'font-family:Playfair Display,serif;font-style:italic;font-size:12px;color:#333;line-height:1.4;text-align:center';
+          card.style.cssText = 'font-family:Playfair Display,serif;font-style:italic;font-size:calc(12px * var(--fg-text-scale,1));color:#333;line-height:1.4;text-align:center';
           card.textContent = row.text_content;
           tile.appendChild(card);
           grid.appendChild(tile);
@@ -148,9 +148,9 @@
         +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(0,0,0,0.4);z-index:50}'
         +'.sc-tile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}'
         +'.sc-tile.text{padding:5px;display:flex;align-items:center;justify-content:center}'
-        +'.sc-tile.text p{margin:0;font-size:8.5px;line-height:1.25;color:#000;font-weight:600;text-align:center;pointer-events:none}'
+        +'.sc-tile.text p{margin:0;font-size:calc(8.5px * var(--fg-text-scale,1));line-height:1.25;color:#000;font-weight:600;text-align:center;pointer-events:none}'
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
-        +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:10px;font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}'
         +'.sc-pill.named{background:#fff;color:#1a3a5c;border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         // Corner-flip dog-ear — added July 16, 2026. Turned-up lower-right
         // corner on every card (idea/subber + header, any size). Click
@@ -165,7 +165,7 @@
         // reads first, before anything else on the card. The link badge
         // (top-left, link+image cards only) is nudged right below so the
         // two never overlap.
-        +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:9px;line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
+        +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:calc(9px * var(--fg-text-scale,1));line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
         +'.sb-key-dots{position:absolute;bottom:2px;right:18px;display:flex;gap:2px;pointer-events:none;z-index:5}'
         // Person Assigned badge (Aug 9 2026, Larry: "look like the BB card
         // with the initials on the front") -- same small circle-with-
@@ -174,7 +174,7 @@
         // one corner nothing else on the tile claims (order badge is
         // top-left, lock/link are top-right/top-left-ish, heart+key dots+
         // corner-flip share the bottom-right).
-        +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:7px;font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
+        +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:calc(7px * var(--fg-text-scale,1));font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         // pointer-events:auto here, Aug 4 2026 -- same fix as the
         // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
         // stays click-through (so it never grabs a card drag), but a
@@ -189,58 +189,58 @@
         +'.sb-key-pick-select{display:flex;align-items:center;gap:8px;flex:1;min-width:0;border:none;background:none;cursor:pointer;text-align:left;padding:0;font:inherit}'
         +'.sb-key-pick-select span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
         +'.sb-key-pick-select[disabled]{opacity:.35;cursor:not-allowed}'
-        +'.sb-key-pick-edit{border:none;background:none;cursor:pointer;font-size:13px;color:#5b9bd5;flex-shrink:0;padding:0 2px}'
+        +'.sb-key-pick-edit{border:none;background:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#5b9bd5;flex-shrink:0;padding:0 2px}'
         +'.sb-key-lib-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px}'
         +'.sc-corner-flip:hover{border-width:0 0 20px 20px;border-color:transparent transparent rgba(26,58,92,0.55) transparent}'
-        +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:19px;line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
+        +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:calc(19px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
-        +'.sb-icon-btn.misc{font-size:10px;font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:28px;font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        +'.sb-icon-btn.misc{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:14px 0}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:calc(28px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
-        +'#sc-status{font-size:10px;color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
+        +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
         +'#sc-status:empty{display:none;margin:0}'
         +'#sc-status.err{color:#b8562f}'
         +'#sc-status.pending{color:#3a6ea5;font-style:italic}'
         +'.sc-overlay-card{background:#fff;border-radius:14px;padding:16px;width:min(260px,84%);box-shadow:0 10px 24px rgba(0,0,0,0.3)}'
-        +'.sc-overlay-card label{display:block;font-size:11px;font-weight:700;color:#1a3a5c;margin-bottom:6px}'
-        +'.sc-overlay-card input{width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1a3a5c;margin-bottom:10px;box-sizing:border-box}'
+        +'.sc-overlay-card label{display:block;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:6px}'
+        +'.sc-overlay-card input{width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px 10px;font-size:calc(13px * var(--fg-text-scale,1));font-family:inherit;color:#1a3a5c;margin-bottom:10px;box-sizing:border-box}'
         +'.sc-overlay-actions{display:flex;gap:8px;justify-content:flex-end}'
-        +'.sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 12px;border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#5b9bd5}'
+        +'.sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 12px;border-radius:14px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;color:#5b9bd5}'
         +'.sc-ov-btn.save{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
         +'.sb-gear-tabs{display:flex;gap:4px;margin-bottom:10px}'
-        +'.sb-gear-tab{flex:1;font-size:11px;padding:7px 3px;border-radius:8px;border:1px solid #cfe4f2;background:#fff;cursor:pointer;color:#5b9bd5;font-family:inherit}'
+        +'.sb-gear-tab{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:7px 3px;border-radius:8px;border:1px solid #cfe4f2;background:#fff;cursor:pointer;color:#5b9bd5;font-family:inherit}'
         +'.sb-gear-tab.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
-        +'.tm-groupname{font-family:\'Playfair Display\',serif;font-size:16px;font-weight:700;color:#1a3a5c;text-align:center;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 12px}'
+        +'.tm-groupname{font-family:\'Playfair Display\',serif;font-size:calc(16px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;text-align:center;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 12px}'
         +'.tm-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #efe9dc;text-align:left}'
-        +'.tm-sym{width:22px;text-align:center;font-size:15px;padding-top:1px;flex-shrink:0}'
+        +'.tm-sym{width:22px;text-align:center;font-size:calc(15px * var(--fg-text-scale,1));padding-top:1px;flex-shrink:0}'
         +'.tm-sym.tm-clickable{cursor:pointer}'
         +'.tm-body{flex:1;min-width:0}'
-        +'.tm-name{font-size:13px;font-weight:600;color:#1a3a5c}'
-        +'.tm-role{font-weight:400;color:#7a6040;font-size:11px}'
-        +'.tm-contact{font-size:11px;color:#5b9bd5;line-height:1.25;margin-top:1px}'
+        +'.tm-name{font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:#1a3a5c}'
+        +'.tm-role{font-weight:400;color:#7a6040;font-size:calc(11px * var(--fg-text-scale,1))}'
+        +'.tm-contact{font-size:calc(11px * var(--fg-text-scale,1));color:#5b9bd5;line-height:1.25;margin-top:1px}'
         +'.tm-notes-row{display:flex;align-items:baseline;gap:5px;line-height:1.25;margin-top:1px}'
-        +'.tm-notes-lbl{font-size:8px;letter-spacing:1px;color:#a89a80;flex-shrink:0}'
-        +'.tm-notes-input,.tm-phone-input{flex:1;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;font-size:10px;color:#7a6040;padding:0;font-family:inherit}'
+        +'.tm-notes-lbl{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;color:#a89a80;flex-shrink:0}'
+        +'.tm-notes-input,.tm-phone-input{flex:1;border:none;border-bottom:1px dashed #cfe4f2;background:transparent;font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;padding:0;font-family:inherit}'
         +'.tm-rolepanel{margin:6px 0 0 32px;background:#f7fbfe;border:1px solid #cfe4f2;border-radius:8px;padding:8px 10px}'
-        +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:11px;color:#1a3a5c;margin-bottom:5px;cursor:pointer}'
+        +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#1a3a5c;margin-bottom:5px;cursor:pointer}'
         +'.tm-rolepanel label:last-child{margin-bottom:0}'
         +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
-        +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed #a9cce3;color:#5b9bd5;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
-        +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid #cfe4f2;background:#fff;color:#5b9bd5;font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+        +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed #a9cce3;color:#5b9bd5;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
+        +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid #cfe4f2;background:#fff;color:#5b9bd5;font-size:calc(12px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;cursor:pointer}'
         +'.tm-add-wrap{position:relative;flex:1;min-width:0}'
         +'.tm-add-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 6px 16px rgba(26,58,92,0.18);max-height:160px;overflow-y:auto;overflow-x:hidden;z-index:5;box-sizing:border-box}'
-        +'.tm-add-suggest-row{padding:6px 10px;font-size:12px;color:#1a3a5c;cursor:pointer;box-sizing:border-box}'
+        +'.tm-add-suggest-row{padding:6px 10px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer;box-sizing:border-box}'
         +'.tm-add-suggest-row:hover{background:#f7fbfe}'
         +'.tm-add-suggest-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-        +'.tm-add-suggest-email{color:#7a6040;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-        +'.tm-add-suggest-empty{padding:6px 10px;font-size:11px;color:#7a6040;font-style:italic}'
+        +'.tm-add-suggest-email{color:#7a6040;font-size:calc(11px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        +'.tm-add-suggest-empty{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic}'
         +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
-        +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:10px}'
+        +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:calc(10px * var(--fg-text-scale,1))}'
         +'#fg-root.sb-wide{max-width:1200px!important}'
         +'#fg-root.sb-wide #s-sea-of-ideas-cluster{min-height:calc(100vh - 24px)!important;max-height:calc(100vh - 24px)!important}'
         +'#fg-root.sb-wide #sc-board-wrap{display:flex}'
@@ -252,18 +252,18 @@
         +'#fg-root.isx-full #s-sea-of-ideas-cluster{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important}'
         +'#fg-root.isx-full #s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
-        +'.sc-hdr-eyebrow{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
+        +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
         +'.sc-hdr-side{min-width:72px;min-height:46px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end}'
         +'#sc-parent-hit{cursor:pointer}'
         +'#sc-parent-hit.inert{cursor:default}'
-        +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:700;color:#fff;line-height:1.2}'
+        +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:#fff;line-height:1.2}'
         +'#sc-project-hit{cursor:pointer}'
-        +'#sc-project-label{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:700;color:#fff;line-height:1.2}'
+        +'#sc-project-label{font-family:\'Playfair Display\',serif;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:#fff;line-height:1.2}'
         +'#sc-topic-box.dragover,#sc-parent-hit.dragover,#sc-project-hit.dragover{outline:2px solid #5b9bd5}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
-        +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:10px;font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
+        +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
-        +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:14px}'
+        +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'.sc-hdr-frame-label{opacity:.72}'
         // VIEW-by-person filter, Aug 9 2026 (Larry): a dropdown next to
@@ -274,7 +274,7 @@
         // headers/Subbers always stay visible (they're navigation, not
         // person-filterable content) -- only leaf idea/text/image/link
         // cards get hidden when they don't match.
-        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:11px;font-family:inherit;max-width:104px;cursor:pointer;opacity:.85}'
+        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:104px;cursor:pointer;opacity:.85}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
@@ -284,15 +284,15 @@
         +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
         +'.sc-peek-card{background:#fff;border-radius:14px;padding:14px;width:min(360px,94%);max-height:82vh;overflow-y:auto;box-sizing:border-box}'
         +'.sc-peek-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1.5px solid #cfe4f2}'
-        +'.sc-peek-topbar button{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:0 0 auto}'
-        +'.sc-peek-title{font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;text-align:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+        +'.sc-peek-topbar button{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:6px 10px;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;flex:0 0 auto}'
+        +'.sc-peek-title{font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;text-align:center;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
         +'.sc-peek-spacer{width:32px;flex:0 0 auto}'
         +'.sb-shape-card{background:#F5F1E8;border-radius:16px;padding:16px;width:min(320px,88%);max-height:calc(100vh - 40px);overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;box-sizing:border-box}'
         +'.sb-crumbs{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;min-height:20px}'
-        +'.sb-crumb-parent{font-size:10px;color:#7a6040;font-weight:600;opacity:.8}'
-        +'.sb-crumb-sep{font-size:10px;color:#cfc3ae}'
-        +'.sb-crumb-topic{font-size:16px;color:#1a3a5c;font-weight:700;font-family:\'Playfair Display\',serif}'
-        +'.sb-hdr-eyebrow2{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#5F5E5A;margin-bottom:3px;text-align:left}'
+        +'.sb-crumb-parent{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:600;opacity:.8}'
+        +'.sb-crumb-sep{font-size:calc(10px * var(--fg-text-scale,1));color:#cfc3ae}'
+        +'.sb-crumb-topic{font-size:calc(16px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;font-family:\'Playfair Display\',serif}'
+        +'.sb-hdr-eyebrow2{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:#5F5E5A;margin-bottom:3px;text-align:left}'
         // VIEW widget, Aug 7 2026 -- Header/Subber toggle on every card's
         // own DETAILS, same look/interaction as the board's own VIEW control
         // (sc-hdr-frame/sc-hdr-viewmenu up in the header band): shows only
@@ -300,21 +300,21 @@
         // card colors here instead of that control's dark-band ones, to sit
         // right on DETAILS's own cream background.
         +'.sb-view-wrap{display:inline-block;text-align:center;position:relative}'
-        +'.sb-view-frame{background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 14px;font-size:11px;font-weight:700;font-family:\'Playfair Display\',serif;cursor:pointer}'
+        +'.sb-view-frame{background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 14px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;cursor:pointer}'
         +'.sb-view-frame:active{transform:scale(0.96)}'
         +'.sb-view-menu{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.22);padding:4px;display:none;z-index:20;white-space:nowrap}'
         +'.sb-view-menu.open{display:block}'
-        +'.sb-view-menu-item{font-family:\'Playfair Display\',serif;font-size:11px;font-weight:700;color:#1a3a5c;padding:6px 12px;border-radius:6px;cursor:pointer}'
+        +'.sb-view-menu-item{font-family:\'Playfair Display\',serif;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;padding:6px 12px;border-radius:6px;cursor:pointer}'
         +'.sb-view-menu-item:hover{background:#eaf3fb}'
         +'.sb-view-menu-item.disabled{color:#c4c0b8;cursor:default}'
         +'.sb-view-menu-item.disabled:hover{background:transparent}'
         +'.sb-hdr-vlist{display:flex;flex-direction:column;gap:3px;max-height:112px;overflow-y:auto;margin-bottom:10px;border:0.5px solid #D3D1C7;border-radius:8px;padding:6px;flex-shrink:0;background:#fff}'
-        +'.sb-hdr-vitem{padding:6px 10px;border-radius:8px;font-size:12px;text-align:left;cursor:pointer;color:#2C2C2A;background:transparent}'
+        +'.sb-hdr-vitem{padding:6px 10px;border-radius:8px;font-size:calc(12px * var(--fg-text-scale,1));text-align:left;cursor:pointer;color:#2C2C2A;background:transparent}'
         +'.sb-hdr-vitem.current{background:#F5F1E8;font-weight:700}'
         +'.sb-hdr-vitem.newh{color:#0F6E56;font-weight:700;border-top:1px dashed #D3D1C7;margin-top:2px;padding-top:8px}'
         +'.sb-body-box{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:120px;max-height:50vh;border-radius:8px;background:#fff;border:0.5px solid #B4B2A9;padding:10px 12px;box-sizing:border-box;margin-bottom:8px;overflow:hidden;position:relative}'
         +'.sb-body-box img{max-width:100%;max-height:100%;border-radius:8px;object-fit:contain;display:block}'
-        +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#2C2C2A;font-weight:500;font-size:14px;cursor:pointer;word-break:break-word}'
+        +'.sb-body-text{font-family:\'Playfair Display\',serif;color:#2C2C2A;font-weight:500;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;word-break:break-word}'
         // 4-line cap, Aug 7, 2026 (Larry) -- replaces the old shrink-the-
         // font-to-cram-more-in behavior on a card's own text (see the
         // plain-idea branch of openSbDetail below): text now always shows
@@ -322,31 +322,31 @@
         // of getting smaller and smaller to fit everything.
         +'.sb-body-text-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}'
         +'.sb-blue-row{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
-        +'.sb-blue-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;flex:1 1 auto;min-width:36px}'
+        +'.sb-blue-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;flex:1 1 auto;min-width:36px}'
         +'.sb-blue-btn:active{transform:scale(0.95)}'
         +'.sb-blue-btn.misc-on{background:#EEECE4}'
         +'.sb-blue-row-sm{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
-        +'.sb-blue-btn-sm{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;flex:1 1 auto}'
+        +'.sb-blue-btn-sm{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:calc(12px * var(--fg-text-scale,1));cursor:pointer;flex:1 1 auto}'
         +'.sb-blue-btn-sm:active{transform:scale(0.95)}'
         +'.sb-blue-row-md{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
-        +'.sb-blue-btn-md{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer;flex:1 1 auto}'
+        +'.sb-blue-btn-md{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;flex:1 1 auto}'
         +'.sb-blue-btn-md:active{transform:scale(0.95)}'
-        +'.sb-viewas-eyebrow{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#5F5E5A;text-align:center;margin-bottom:4px}'
-        +'.sb-viewas-btn{box-sizing:border-box;background:#fff;color:#5F5E5A;border:0.5px solid #D3D1C7;border-radius:8px;padding:5px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;cursor:pointer;flex:1 1 auto}'
+        +'.sb-viewas-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:#5F5E5A;text-align:center;margin-bottom:4px}'
+        +'.sb-viewas-btn{box-sizing:border-box;background:#fff;color:#5F5E5A;border:0.5px solid #D3D1C7;border-radius:8px;padding:5px 8px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;cursor:pointer;flex:1 1 auto}'
         +'.sb-viewas-btn:active{transform:scale(0.95)}'
-        +'.sb-slider-project{font-size:10px;font-weight:700;letter-spacing:1px;text-align:center;color:#7c3aed;cursor:pointer;padding:4px 0;margin-bottom:2px}'
+        +'.sb-slider-project{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-align:center;color:#7c3aed;cursor:pointer;padding:4px 0;margin-bottom:2px}'
         +'.sb-slider-project:active{transform:scale(0.97)}'
         +'.sb-slider-track{display:flex;flex-direction:column;border:1px solid #B4B2A9;border-radius:10px;overflow:hidden}'
-        +'.sb-slider-notch{padding:8px 0;text-align:center;font-size:10.5px;font-weight:700;letter-spacing:1px;background:#fff;color:#2C2C2A;cursor:pointer;border-bottom:0.5px solid #e3e0d8}'
+        +'.sb-slider-notch{padding:8px 0;text-align:center;font-size:calc(10.5px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;background:#fff;color:#2C2C2A;cursor:pointer;border-bottom:0.5px solid #e3e0d8}'
         +'.sb-slider-notch:last-child{border-bottom:none}'
         +'.sb-slider-notch:active:not(.sb-slide-disabled){transform:scale(0.98)}'
         +'.sb-slider-notch.sb-slide-current{background:#1a3a5c;color:#fff}'
         +'.sb-slider-notch.sb-slide-disabled{color:#c4c0b8;background:#f5f3ee;cursor:default}'
-        +'.sb-card-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#5b9bd5;text-align:center;margin-bottom:6px}'
-        +'.sb-close-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;font-weight:700;border:0.5px solid #B4B2A9;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;flex-shrink:0}'
-        +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:12px;font-weight:500;color:#444441;margin-bottom:8px;text-align:left}'
-        +'.sb-topic-value{display:block;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 8px;font-size:12px;font-weight:500;color:#2C2C2A;font-family:\'Playfair Display\',serif;margin-bottom:8px;text-align:left}'
-        +'.sb-hdr-current{font-size:12px;color:#2C2C2A;font-weight:500;cursor:pointer;margin-bottom:6px;padding:5px 8px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;text-align:left}'
+        +'.sb-card-title{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:3px;text-transform:uppercase;color:#5b9bd5;text-align:center;margin-bottom:6px}'
+        +'.sb-close-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;font-weight:700;border:0.5px solid #B4B2A9;border-radius:8px;padding:10px 14px;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;width:100%;flex-shrink:0}'
+        +'.sb-parent-value{font-family:\'Playfair Display\',serif;font-size:calc(12px * var(--fg-text-scale,1));font-weight:500;color:#444441;margin-bottom:8px;text-align:left}'
+        +'.sb-topic-value{display:block;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-weight:500;color:#2C2C2A;font-family:\'Playfair Display\',serif;margin-bottom:8px;text-align:left}'
+        +'.sb-hdr-current{font-size:calc(12px * var(--fg-text-scale,1));color:#2C2C2A;font-weight:500;cursor:pointer;margin-bottom:6px;padding:5px 8px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;text-align:left}'
         /* DETAILS redesign — July 17, 2026. Large landscape card shape (distinct
            from the compact .sb-shape-card used by the Shape/reserved-header
            dialog), Current Location row + single MOVE button, HEART/NOTES
@@ -359,11 +359,11 @@
         +'.sb-eyebrow-row{display:flex;gap:8px;margin-bottom:10px}'
         +'.sb-eyebrow-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}'
         +'.sb-eyebrow-col .sb-hdr-eyebrow2{text-align:center}'
-        +'.sb-flag-add-btn{flex-shrink:0;width:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:14px;font-weight:700;cursor:pointer;opacity:.85;transition:opacity .15s,background .15s}'
+        +'.sb-flag-add-btn{flex-shrink:0;width:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.85;transition:opacity .15s,background .15s}'
         +'.sb-flag-add-btn:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
         +'.sb-flag-add-btn:active{transform:scale(0.95)}'
         +'.sb-below-content-row{display:flex;gap:6px;margin:6px 0 8px}'
-        +'.sb-notes-pill{font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A;font-family:inherit}'
+        +'.sb-notes-pill{font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A;font-family:inherit}'
         +'.sb-notes-pill.active{background:#EEECE4}'
         +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
         +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}'
@@ -375,10 +375,10 @@
         +'.cl-card{background:#eef2f6;border-radius:16px;padding:14px;width:min(560px,96%);height:min(700px,90vh);box-shadow:0 10px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;box-sizing:border-box;transition:width .15s,height .15s}'
         +'.cl-card.cl-wide{width:min(1100px,96vw);height:min(920px,92vh)}'
         +'.cl-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px;flex-shrink:0}'
-        +'.cl-title{font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;color:#1a3a5c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+        +'.cl-title{font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
         +'.cl-topbar-btns{display:flex;gap:6px;flex-shrink:0}'
-        +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0}'
-        +'.cl-hint{font-size:10px;font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
+        +'.cl-close{background:#e8f5f2;border:1px solid #a8d8cc;border-radius:8px;padding:5px 11px;font-size:calc(13px * var(--fg-text-scale,1));cursor:pointer;flex-shrink:0}'
+        +'.cl-hint{font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;color:#7a90a8;text-align:center;margin-bottom:6px;flex-shrink:0}'
         /* cl-body holds the shelf + starburst together so their arrangement can
            flip from stacked (shelf below, mobile/normal) to side-by-side (shelf
            column on the left, wide/desktop) without touching the topbar/hint
@@ -386,13 +386,13 @@
         +'.cl-body{flex:1;display:flex;flex-direction:column;min-height:0}'
         +'.cl-card.cl-wide .cl-body{flex-direction:row;gap:10px}'
         +'.cl-starburst{order:1;flex:1;position:relative;overflow-y:auto;overflow-x:hidden;padding:20px;border-radius:12px;background:radial-gradient(circle,rgba(91,155,213,0.10),transparent 70%);min-height:0}'
-        +'.cl-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-style:italic;color:#93a4b5;text-align:center;width:80%}'
+        +'.cl-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#93a4b5;text-align:center;width:80%}'
         +'.cl-canvas{position:relative;width:100%;cursor:crosshair}'
         +'.cl-lasso{position:absolute;border:2px solid #2f7fe0;background:rgba(47,127,224,0.16);pointer-events:none;z-index:900;box-shadow:0 0 14px rgba(47,127,224,0.4)}'
         +'.sc-tile.cl-selected{box-shadow:0 0 0 3px #2f7fe0,0 0 10px rgba(47,127,224,0.55)}'
         +'.cl-shelf-col{order:2;flex-shrink:0;display:flex;flex-direction:column;min-height:0}'
         +'.cl-card.cl-wide .cl-shelf-col{order:0;width:118px;border-right:1.5px solid #cfe4f2;padding-right:8px}'
-        +'.cl-shelf-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
+        +'.cl-shelf-label{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#7a6040;text-align:center;margin:8px 0 4px;flex-shrink:0}'
         +'.cl-card.cl-wide .cl-shelf-label{text-align:left;margin:0 0 6px}'
         +'.cl-shelf{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:4px 2px 2px;border-top:1.5px solid #cfe4f2;flex-shrink:0;align-items:flex-start}'
         +'.cl-card.cl-wide .cl-shelf{flex-direction:column;overflow-x:hidden;overflow-y:auto;border-top:none;flex:1;align-items:stretch}'
@@ -402,12 +402,12 @@
            name is; full text is still available via the title tooltip. Made
            smaller overall per Larry's request — these are wayfinding chips,
            not the main content, and were taking up more room than they earned. */
-        +'.cl-bucket{flex:0 0 auto;width:72px;height:36px;padding:3px 6px;border-radius:8px;background:#fff;border:1.5px solid #a9cce3;font-size:9.5px;font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;box-sizing:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.1;word-break:break-word;align-items:center;justify-content:center}'
-        +'.cl-card.cl-wide .cl-bucket{width:100%;height:34px;font-size:10px}'
+        +'.cl-bucket{flex:0 0 auto;width:72px;height:36px;padding:3px 6px;border-radius:8px;background:#fff;border:1.5px solid #a9cce3;font-size:calc(9.5px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;text-align:center;cursor:pointer;box-sizing:border-box;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.1;word-break:break-word;align-items:center;justify-content:center}'
+        +'.cl-card.cl-wide .cl-bucket{width:100%;height:34px;font-size:calc(10px * var(--fg-text-scale,1))}'
         +'.cl-bucket.dragover{outline:2px solid #5b9bd5}'
-        +'.cl-newbucket{flex:0 0 auto;min-width:36px;height:36px;padding:0 10px;border-radius:8px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:14px;line-height:36px;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
+        +'.cl-newbucket{flex:0 0 auto;min-width:36px;height:36px;padding:0 10px;border-radius:8px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:calc(14px * var(--fg-text-scale,1));line-height:36px;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
         +'.cl-card.cl-wide .cl-newbucket{width:100%;box-sizing:border-box}'
-        +'.cl-newbucket-input{flex:0 0 auto;width:90px;height:36px;padding:0 8px;border-radius:8px;border:1.5px solid #a9cce3;font-size:10px;font-family:inherit;box-sizing:border-box}'
+        +'.cl-newbucket-input{flex:0 0 auto;width:90px;height:36px;padding:0 8px;border-radius:8px;border:1.5px solid #a9cce3;font-size:calc(10px * var(--fg-text-scale,1));font-family:inherit;box-sizing:border-box}'
         +'.cl-card.cl-wide .cl-newbucket-input{width:100%}';
       document.head.appendChild(style);
     }
@@ -430,7 +430,7 @@
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Wish Tank</div>'
       +'</div>'
-      +'<div id="sc-pagenum" style="font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
+      +'<div id="sc-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">View</div>'
@@ -961,9 +961,9 @@
     var cur=_sboardGetRootPrompt();
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div class="sb-card-title">Shape</div>'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Root prompt</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px">Shown when no Topic is selected yet.</div>'
-      +'<textarea id="sb-rootprompt-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;min-height:50px">'+cur+'</textarea>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Root prompt</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:8px">Shown when no Topic is selected yet.</div>'
+      +'<textarea id="sb-rootprompt-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;min-height:50px">'+cur+'</textarea>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-rootprompt-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-rootprompt-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -1013,11 +1013,11 @@
     }).join('');
     var cur=_sboardGetBoardBg()||'#1a3a5c';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Storyboard background</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">One color for the whole screen. Stays until you change it.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Storyboard background</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">One color for the whole screen. Stays until you change it.</div>'
       +'<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:12px">'+swHTML+'</div>'
       +'<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">'
-      +'<label for="sb-bg-custom" style="font-size:11px;font-weight:700;color:#1a3a5c">Custom:</label>'
+      +'<label for="sb-bg-custom" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Custom:</label>'
       +'<input type="color" id="sb-bg-custom" value="'+cur+'" style="width:44px;height:36px;border:1.5px solid #cfe4f2;border-radius:8px;padding:0;cursor:pointer">'
       +'</div>'
       +'<button class="sc-ov-btn" id="sb-bg-close" aria-label="Close">✕</button>'
@@ -1142,21 +1142,21 @@
       var cur=isCur?' current':'';
       var mark=isCur?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'';
       return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+mark+(b.text_content||'(untitled)')+'</div>';
-    }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+    }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="position:relative;margin-bottom:10px">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;letter-spacing:1px">PROJECT</div>'
-      +'<button class="sc-ov-btn" id="sb-proj-close-x" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:12px;line-height:1">✕</button>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;letter-spacing:1px">PROJECT</div>'
+      +'<button class="sc-ov-btn" id="sb-proj-close-x" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1">✕</button>'
       +'</div>'
       +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-      +'<div style="font-size:9px;color:#a89a80;text-align:left;margin-bottom:10px">Double-click a project to rename, archive, or delete it.</div>'
+      +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;text-align:left;margin-bottom:10px">Double-click a project to rename, archive, or delete it.</div>'
       +'<div style="border-top:1px solid #e0dcd0;margin:0 0 10px"></div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;letter-spacing:1px;color:#7a6040;margin-bottom:4px;text-align:left">+ NEW PROJECT</label>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;color:#7a6040;margin-bottom:4px;text-align:left">+ NEW PROJECT</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
-      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
       +'<button class="sc-ov-btn save" id="sb-proj-new-go">Create</button>'
       +'</div>'
-      +'<div id="sb-proj-err" style="font-size:10px;color:#b8562f;margin-bottom:0;min-height:12px"></div>'
+      +'<div id="sb-proj-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:0;min-height:12px"></div>'
       +'</div>';
     // Positioned along the left side, near the Project chrome it was opened
     // from, rather than dead-center — added July 12, 2026. Reset in
@@ -1232,14 +1232,14 @@
     var _sb=T().sb;
     var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
     var isOwner=!!me && boardRow.user_id===me.id;
-    var body='<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+safeName+'</div>';
+    var body='<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">'+safeName+'</div>';
     if(isOwner){
       body+='<button class="sc-ov-btn" id="sb-pq-rename" style="width:100%;margin-bottom:6px">Rename</button>'
         +'<button class="sc-ov-btn" id="sb-pq-archive" style="width:100%;margin-bottom:6px">Archive</button>'
         +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83C\uDFAB Guests</button>'
         +'<button class="sc-ov-btn" id="sb-pq-delete" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete</button>';
     } else {
-      body+='<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Shared with you -- only the owner can rename, archive, or delete this project.</div>'
+      body+='<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Shared with you -- only the owner can rename, archive, or delete this project.</div>'
         +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83E\uDD1D View Access</button>';
     }
     body+='<button class="sc-ov-btn" id="sb-pq-cancel" style="width:100%">Cancel</button>';
@@ -1260,7 +1260,7 @@
           openProjectSwitcher();
         }catch(err){
           var errBox=document.querySelector('.sc-overlay-card');
-          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+err.message+'</div>');
         }
       });
       T().wire('sb-pq-delete', function(){ _sboardConfirmDeleteProject(boardRow); });
@@ -1280,16 +1280,16 @@
     var addRow=document.getElementById('sb-share-add-row');
     if(addRow) addRow.style.display = isOwner ? 'block' : 'none';
     if(!rows.length){
-      list.innerHTML='<div style="font-size:11px;color:#a89a80;font-style:italic;padding:6px 0">No guests yet.</div>';
+      list.innerHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#a89a80;font-style:italic;padding:6px 0">No guests yet.</div>';
       return;
     }
     list.innerHTML=rows.map(function(m){
       var safeLabel=(m.name||m.email||'').replace(/</g,'&lt;');
       var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+String(m.phone).replace(/</g,'&lt;')) : '';
-      var sponsorLine = m.sponsor_name ? '<div style="font-size:10px;color:#a89a80;font-style:italic;margin-top:2px">Cast sponsor: '+String(m.sponsor_name).replace(/</g,'&lt;')+'</div>' : '';
-      return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:12px">'
-        +'<span><div>'+safeLabel+'</div><div style="font-size:11px;color:#7a6040">\u2709 '+(m.email||'').replace(/</g,'&lt;')+phoneLine+'</div>'+sponsorLine+'</span>'
-        +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:13px" title="Remove">&#10005;</button>' : '')
+      var sponsorLine = m.sponsor_name ? '<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a89a80;font-style:italic;margin-top:2px">Cast sponsor: '+String(m.sponsor_name).replace(/</g,'&lt;')+'</div>' : '';
+      return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:calc(12px * var(--fg-text-scale,1))">'
+        +'<span><div>'+safeLabel+'</div><div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">\u2709 '+(m.email||'').replace(/</g,'&lt;')+phoneLine+'</div>'+sponsorLine+'</span>'
+        +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1))" title="Remove">&#10005;</button>' : '')
         +'</div>';
     }).join('');
     if(!isOwner) return;
@@ -1308,16 +1308,16 @@
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
     var goBack = backFn || function(){ _sboardProjectQuickMenu(boardRow); };
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Guests</span><button class="sc-ov-btn" id="sb-share-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
-      +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Guests</span><button class="sc-ov-btn" id="sb-share-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
       +'<div id="sb-share-list" style="text-align:left;margin-bottom:10px"></div>'
       +'<div id="sb-share-add-row" style="margin-bottom:10px">'
         +'<div style="display:flex;gap:6px;margin-bottom:6px">'
-          +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box">'
+          +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
           +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
         +'</div>'
       +'</div>'
-      +'<div id="sb-share-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div id="sb-share-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'</div>';
     ov.classList.add('active');
     _sboardRenderShareList(boardRow, isOwner);
@@ -1351,9 +1351,9 @@
     var ov=document.getElementById('sb-detail-overlay');
     var safeVal=(boardRow.text_content||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">Rename Project</div>'
-      +'<input id="sb-proj-rename-input" type="text" value="'+safeVal+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'
-      +'<div id="sb-proj-rename-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Rename Project</div>'
+      +'<input id="sb-proj-rename-input" type="text" value="'+safeVal+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
+      +'<div id="sb-proj-rename-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-proj-rename-go" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-proj-rename-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -1382,8 +1382,8 @@
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
-      +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Everything in it moves to Trash too — you can pull it back out later from Trash.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Everything in it moves to Trash too — you can pull it back out later from Trash.</div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-pdel-go" style="flex:1;background:#b8562f;border-color:#b8562f">Delete it</button><button class="sc-ov-btn" id="sb-pdel-cancel" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -1400,7 +1400,7 @@
         openProjectSwitcher();
       }catch(err){
         var errBox=document.querySelector('.sc-overlay-card');
-        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+err.message+'</div>');
       }
     });
   }
@@ -1526,24 +1526,24 @@
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
       if(item.content_type==='link'){
         var badge=document.createElement('div');
-        badge.style.cssText='position:absolute;top:2px;left:20px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+        badge.style.cssText='position:absolute;top:2px;left:20px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
         badge.textContent='\ud83d\udd17';
         tile.appendChild(badge);
       }
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
       lp.textContent='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
-      lp.style.fontSize=_sboardDesktop?'10.5px':'8.5px';
+      lp.style.fontSize=_sboardDesktop?'calc(10.5px * var(--fg-text-scale,1))':'calc(8.5px * var(--fg-text-scale,1))';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       p.textContent=item.text_content||'(untitled)';
-      p.style.fontSize=_sboardDesktop?'10.5px':'8.5px';
+      p.style.fontSize=_sboardDesktop?'calc(10.5px * var(--fg-text-scale,1))':'calc(8.5px * var(--fg-text-scale,1))';
       tile.appendChild(p);
     }
     if(item.heart_count){
       var hb=document.createElement('div');
-      hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:14px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
+      hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:calc(14px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
       hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
       tile.appendChild(hb);
     }
@@ -1553,7 +1553,7 @@
       // Assigned now owns the top-right corner itself (Larry: "consistent
       // assignment spot on all cards"), same pairing convention the
       // heart/key-dots badges already use in the opposite corner.
-      lb.style.cssText='position:absolute;top:2px;right:18px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+      lb.style.cssText='position:absolute;top:2px;right:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
       lb.textContent='\ud83d\udd12';
       tile.appendChild(lb);
     }
@@ -1663,7 +1663,7 @@
       // Nudged from right:2px to right:18px, Aug 9 2026 -- same reasoning
       // as the plain-card lock badge above: Person Assigned now owns the
       // top-right corner consistently on every card.
-      hlb.style.cssText='position:absolute;top:2px;right:18px;font-size:11px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
+      hlb.style.cssText='position:absolute;top:2px;right:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
       hlb.textContent='\ud83d\udd12';
       front.appendChild(hlb);
     }
@@ -1740,7 +1740,7 @@
     // vertically centered it against the *tallest column* (i.e. down by
     // the subbers) instead of sitting level with the header cards
     // themselves. Fixed July 16, 2026.
-    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:flex-start;margin-top:'+Math.max(0,(height-36)/2)+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#5b9bd5;font-size:18px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
+    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:flex-start;margin-top:'+Math.max(0,(height-36)/2)+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#5b9bd5;font-size:calc(18px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddHeaderPrompt(); });
     return tile;
@@ -1779,9 +1779,9 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:10px">New header</div>'
-      +'<input id="sb-addheader-input" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
-      +'<div id="sb-addheader-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">New header</div>'
+      +'<input id="sb-addheader-input" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
+      +'<div id="sb-addheader-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addheader-go" style="flex:1">Create</button><button class="sc-ov-btn" id="sb-addheader-cancel" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -1844,7 +1844,7 @@
     var tile=document.createElement('button');
     tile.className='sc-add-subber-tile';
     tile.title='Add a new card here';
-    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:15px;font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
+    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){
       e.stopPropagation();
@@ -2520,13 +2520,13 @@
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
     var options=_sboardTopicOptionsHTML(headerRow.id);
-    var apexTag=(!headerRow.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
+    var apexTag=(!headerRow.cluster_id)?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +apexTag
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+headerRow.text_content+'</div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move under</label>'
-      +'<select id="sb-hq-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
-      +'<div id="sb-hq-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">'+headerRow.text_content+'</div>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move under</label>'
+      +'<select id="sb-hq-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
+      +'<div id="sb-hq-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px;margin-bottom:6px"><button class="sc-ov-btn save" id="sb-hq-move" style="flex:1">Move here</button><button class="sc-ov-btn" id="sb-hq-open" style="flex:1">Open board</button></div>'
       +'<button class="sc-ov-btn" id="sb-hq-trash" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Trash this header</button>'
       +'<button class="sc-ov-btn" id="sb-hq-cancel" style="width:100%">Cancel</button>'
@@ -2560,8 +2560,8 @@
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash "'+safeName+'"?</div>'
-      +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Anything still nested under it moves to Trash too — you can pull it back out later from Trash.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash "'+safeName+'"?</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Anything still nested under it moves to Trash too — you can pull it back out later from Trash.</div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-trash-go" style="flex:1;background:#b8562f;border-color:#b8562f">Trash it</button><button class="sc-ov-btn" id="sb-trash-cancel" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -2577,7 +2577,7 @@
         renderSeaBoard(true);
       }catch(err){
         var errBox=document.querySelector('.sc-overlay-card');
-        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+err.message+'</div>');
       }
     });
   }
@@ -2861,14 +2861,14 @@
       .filter(function(h){ return String(h.id)!==String(headerRow.id); })
       .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
     var safeName=(headerRow.text_content||'').replace(/"/g,'&quot;');
-    var apexTag=(!headerRow.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
+    var apexTag=(!headerRow.cluster_id)?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +apexTag
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Name</label>'
-      +'<input id="sb-h-name" type="text" value="'+safeName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:\'Playfair Display\',serif;font-size:14px;color:#1a3a5c;font-weight:700;margin-bottom:10px;box-sizing:border-box">'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Nest under</label>'
-      +'<select id="sb-h-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
-      +'<div id="sb-h-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Name</label>'
+      +'<input id="sb-h-name" type="text" value="'+safeName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px;box-sizing:border-box">'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Nest under</label>'
+      +'<select id="sb-h-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
+      +'<div id="sb-h-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-h-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-h-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -2899,7 +2899,7 @@
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-peek-card">'
       +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">'+safeName+'</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
-      +'<div id="sb-peek-body" style="text-align:center;font-size:11px;font-style:italic;color:#999;padding:20px 0">Loading…</div>'
+      +'<div id="sb-peek-body" style="text-align:center;font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:20px 0">Loading…</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-peek-back', onBack||closeSbDetail);
@@ -2943,11 +2943,11 @@
   function openQuickAddIdea(){
     var ov=document.getElementById('sb-detail-overlay');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Add an idea</div>'
-      +'<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">'+(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId] ? 'Goes under '+_sboardHeadersById[T2TShared.currentTopicId].text_content : 'Goes into NEW')+'</div>'
-      +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:4px;min-height:70px"></textarea>'
-      +'<div style="font-size:9px;font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? to make it a Header automatically</div>'
-      +'<div id="qa-idea-err" style="font-size:10px;color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Add an idea</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">'+(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId] ? 'Goes under '+_sboardHeadersById[T2TShared.currentTopicId].text_content : 'Goes into NEW')+'</div>'
+      +'<textarea id="qa-idea-text" placeholder="What if…?" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:4px;min-height:70px"></textarea>'
+      +'<div style="font-size:calc(9px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;margin-bottom:6px">End with : or ? to make it a Header automatically</div>'
+      +'<div id="qa-idea-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="qa-idea-save" style="flex:1">Save</button><button class="sc-ov-btn" id="qa-idea-close" style="flex:1" aria-label="Close">✕</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -3012,17 +3012,17 @@
       var ov2=document.getElementById('sb-detail-overlay');
       if(!orphans.length){
         ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-          +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to fix</div>'
-          +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">No orphaned Purpose or Ideas headers found at the shared root.</div>'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to fix</div>'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">No orphaned Purpose or Ideas headers found at the shared root.</div>'
           +'<button class="sc-ov-btn" id="sb-fix-close" style="width:100%" aria-label="Close">✕</button></div>';
         ov2.classList.add('active');
         T().wire('sb-fix-close', closeSbDetail);
         return;
       }
-      var listHTML=orphans.map(function(o){ return '<div style="font-size:12px;padding:3px 0">• '+(o.text_content||'(untitled)')+'</div>'; }).join('');
+      var listHTML=orphans.map(function(o){ return '<div style="font-size:calc(12px * var(--fg-text-scale,1));padding:3px 0">• '+(o.text_content||'(untitled)')+'</div>'; }).join('');
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Found '+orphans.length+' orphaned header(s)</div>'
-        +'<div style="font-size:11px;color:#7a6040;margin-bottom:8px">These will move under Wish Tank. The Ideas header will be renamed "Wish Tank Ideas". Field Guide is untouched — it gets its own fresh Purpose and Ideas headers automatically the next time you open it.</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Found '+orphans.length+' orphaned header(s)</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">These will move under Wish Tank. The Ideas header will be renamed "Wish Tank Ideas". Field Guide is untouched — it gets its own fresh Purpose and Ideas headers automatically the next time you open it.</div>'
         +'<div style="text-align:left;margin-bottom:10px">'+listHTML+'</div>'
         +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-fix-go" style="flex:1">Fix it</button><button class="sc-ov-btn" id="sb-fix-cancel" style="flex:1">Cancel</button></div>'
         +'</div>';
@@ -3041,7 +3041,7 @@
           renderSeaBoard(true);
         }catch(err){
           var errBox=document.querySelector('.sc-overlay-card');
-          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:10px;margin-top:6px">'+err.message+'</div>');
+          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+err.message+'</div>');
         }
       });
     }catch(err){
@@ -3057,8 +3057,8 @@
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
     }).join('');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this board, including Purpose, MISC and NEW, gets it.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this board, including Purpose, MISC and NEW, gets it.</div>'
       +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
       +'<button class="sc-ov-btn" id="sb-recolor-close" style="width:100%">Cancel</button>'
       +'</div>';
@@ -3104,8 +3104,8 @@
     });
     if(headers.length<2){
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to sort</div>'
-        +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">This board needs at least two headers before an order means anything.</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to sort</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">This board needs at least two headers before an order means anything.</div>'
         +'<button class="sc-ov-btn" id="sb-sort-close" style="width:100%" aria-label="Close">✕</button></div>';
       ov.classList.add('active');
       T().wire('sb-sort-close', closeSbDetail);
@@ -3120,8 +3120,8 @@
     // active. Number order simply switches that view back off -- also no
     // write, since the real order was never touched to begin with.
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Sort headers</div>'
-      +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:10px">A → Z is just a look -- it never changes anyone\'s ORDER #. Number order always brings back the real arrangement.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Sort headers</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">A → Z is just a look -- it never changes anyone\'s ORDER #. Number order always brings back the real arrangement.</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
       +'<button class="sc-ov-btn" id="sb-sort-alpha" style="width:100%">A → Z</button>'
       +'<button class="sc-ov-btn" id="sb-sort-number" style="width:100%">Number order</button>'
@@ -3364,12 +3364,12 @@
       +'</div>'
       +'<div id="tm-add-row" style="display:none;margin-top:10px;gap:6px">'
         +'<div class="tm-add-wrap">'
-          +'<input type="text" id="tm-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
+          +'<input type="text" id="tm-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1));padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
           +'<div class="tm-add-suggest" id="tm-add-suggest" style="display:none"></div>'
         +'</div>'
         +'<button class="sc-ov-btn save" id="tm-add-confirm">Add</button>'
       +'</div>'
-      +'<div id="tm-error" style="font-size:11px;color:#b8562f;margin-top:6px;display:none"></div>'
+      +'<div id="tm-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin-top:6px;display:none"></div>'
     +'</div>';
     ov.classList.add('active');
     _tmLoadRoster(projectRow).then(function(){ _tmRenderRoster(projectRow); });
@@ -3476,7 +3476,7 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Settings</span><button class="sc-ov-btn" id="sb-gear-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Settings</span><button class="sc-ov-btn" id="sb-gear-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-set-go-people" style="width:100%">&#128101; People</button>'
         +'<button class="sc-ov-btn" id="sb-set-go-appearance" style="width:100%">&#127912; Appearance</button>'
@@ -3496,9 +3496,9 @@
     // scoped to a delegated TOPIC header instead of always the root
     // PROJECT -- a small subtitle makes clear whose Cast/Guests this is.
     var isTopicScope=!!(scopeRow && scopeRow.topic_owner_user_id);
-    var subtitle=isTopicScope ? '<div style="font-size:10px;color:#7a6040;margin:-6px 0 8px">'+_esc9710(scopeRow.text_content||'this TOPIC')+'</div>' : '';
+    var subtitle=isTopicScope ? '<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin:-6px 0 8px">'+_esc9710(scopeRow.text_content||'this TOPIC')+'</div>' : '';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isTopicScope?'2px':'10px')+'"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isTopicScope?'2px':'10px')+'"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +subtitle
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
@@ -3521,10 +3521,10 @@
   async function _sboardOpenDelegateTopicPicker(headerRow, scopeRow){
     var ov=document.getElementById('sb-detail-overlay'); if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Make this a TOPIC</span><button class="sc-ov-btn" id="sb-deleg-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
-      +'<div style="font-size:10px;color:#7a6040;margin-bottom:8px">Pick who owns it. They\u2019ll get their own independent Cast to build \u2014 you\u2019ll become their Sponsor. Only people already on your own current team can be picked.</div>'
-      +'<div id="sb-deleg-list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;margin-bottom:8px"><div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">Loading your team\u2026</div></div>'
-      +'<div id="sb-deleg-error" style="font-size:11px;color:#b8562f;margin-top:4px;display:none"></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Make this a TOPIC</span><button class="sc-ov-btn" id="sb-deleg-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">Pick who owns it. They\u2019ll get their own independent Cast to build \u2014 you\u2019ll become their Sponsor. Only people already on your own current team can be picked.</div>'
+      +'<div id="sb-deleg-list" style="display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;margin-bottom:8px"><div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">Loading your team\u2026</div></div>'
+      +'<div id="sb-deleg-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin-top:4px;display:none"></div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-deleg-close', function(){ closeSbDetail(); openSbDetail(headerRow); });
@@ -3533,13 +3533,13 @@
     var candidates=_tmAllRosterRows(scopeRow).filter(function(m){ return !m.isOwner; });
     var list=document.getElementById('sb-deleg-list'); if(!list) return;
     if(!candidates.length){
-      list.innerHTML='<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">Nobody\u2019s on your team yet \u2014 add a Cast Member first.</div>';
+      list.innerHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">Nobody\u2019s on your team yet \u2014 add a Cast Member first.</div>';
       return;
     }
     list.innerHTML=candidates.map(function(m){
       return '<div class="sb-hdr-vitem sb-deleg-cand" data-uid="'+_esc9710(m.user_id)+'" style="text-align:left;cursor:pointer">'
         +'<div style="font-weight:600">'+_esc9710(m.name||m.email||'')+'</div>'
-        +'<div style="font-size:10px;color:#888">'+_esc9710(m.email||'')+'</div>'
+        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#888">'+_esc9710(m.email||'')+'</div>'
       +'</div>';
     }).join('');
     list.querySelectorAll('.sb-deleg-cand').forEach(function(row){
@@ -3571,7 +3571,7 @@
     var fsIcon=document.fullscreenElement?'\u21a9':'\u26f6';
     var fsLabel=document.fullscreenElement?'Exit full screen':'Full screen';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="sb-appearance-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="sb-appearance-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
@@ -3591,7 +3591,7 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
         +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
@@ -3664,7 +3664,7 @@
       +'display:flex;align-items:center;justify-content:center;cursor:zoom-out';
     lb.innerHTML='<img src="'+url+'" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:4px;pointer-events:none">'
       +'<button id="sb-img-lightbox-close" aria-label="Close" style="position:absolute;top:16px;right:16px;width:38px;height:38px;'
-      +'border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:18px;cursor:pointer">\u2715</button>';
+      +'border-radius:50%;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:calc(18px * var(--fg-text-scale,1));cursor:pointer">\u2715</button>';
     document.body.appendChild(lb);
     function close(){
       if(lb.parentNode) lb.parentNode.removeChild(lb);
@@ -3697,10 +3697,10 @@
       }).join('');
       ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
         + '<div class="sb-card-title">Shape</div>'
-        + '<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
-        + '<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
+        + '<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
+        + '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
         + '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+rSwatches+'</div>'
-        + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px;flex:1"></textarea>'
+        + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:8px;flex:1"></textarea>'
         + '<button class="sb-close-btn" id="sb-close" aria-label="Close">✕</button>'
         + '</div>';
       ov.classList.add('active');
@@ -3741,7 +3741,7 @@
     // rule the old demote button used, now just a grayed notch instead of
     // a separate button). TOPIC is always reachable — any card can become
     // the viewed board.
-    var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
+    var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     var swatches=_sboardColorPalette.map(function(c){
       var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
@@ -3845,7 +3845,7 @@
     var personRowHTML='<div class="sb-eyebrow-row">'
       + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
       + '<div class="sb-hdr-eyebrow2" style="text-align:left">Person Assigned</div>'
-      + '<select id="sb-person-select" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:12px;box-sizing:border-box"><option value="">Loading…</option></select>'
+      + '<select id="sb-person-select" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box"><option value="">Loading…</option></select>'
       + '</div>'
       + '</div>';
 
@@ -3859,10 +3859,10 @@
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
       + '</div>'
-      + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
+      + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
       + '<div style="display:flex;gap:6px;margin-top:6px">'
-      + '<button class="sc-ov-btn" id="sb-hdr-othertopic" style="flex:1;font-size:10px">📍 Different Topic…</button>'
-      + '<button class="sc-ov-btn" id="sb-hdr-otherproj" style="flex:1;font-size:10px">🔀 Different Project…</button>'
+      + '<button class="sc-ov-btn" id="sb-hdr-othertopic" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">📍 Different Topic…</button>'
+      + '<button class="sc-ov-btn" id="sb-hdr-otherproj" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">🔀 Different Project…</button>'
       + '</div>'
       + '</div>';
 
@@ -3872,28 +3872,28 @@
     var bodyHTML;
     if(item.content_type==='link'){
       var linkData=T2TMedia.parseText(item.text_content);
-      bodyHTML='<div class="sb-body-box">'+(item.image_url?'<img id="sb-img-preview" src="'+item.image_url+'">':'<div style="font-size:40px">\ud83d\udd17</div>')+'</div>'
-        + '<div id="sb-text-display" class="sb-body-text" style="font-size:13px;margin-bottom:4px;color:'+(linkData.title?'#000':'#a3907a')+'" title="Tap to edit the title">'+(linkData.title||'+ Add a title')+'</div>'
-        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(linkData.title||'')+'</textarea>'
+      bodyHTML='<div class="sb-body-box">'+(item.image_url?'<img id="sb-img-preview" src="'+item.image_url+'">':'<div style="font-size:calc(40px * var(--fg-text-scale,1))">\ud83d\udd17</div>')+'</div>'
+        + '<div id="sb-text-display" class="sb-body-text" style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:4px;color:'+(linkData.title?'#000':'#a3907a')+'" title="Tap to edit the title">'+(linkData.title||'+ Add a title')+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(linkData.title||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div>'
-        + '<a href="'+linkData.url+'" target="_blank" rel="noopener" style="display:block;font-size:11px;color:#5b9bd5;word-break:break-word;margin-bottom:8px">'+linkData.url+' \u2197</a>';
+        + '<a href="'+linkData.url+'" target="_blank" rel="noopener" style="display:block;font-size:calc(11px * var(--fg-text-scale,1));color:#5b9bd5;word-break:break-word;margin-bottom:8px">'+linkData.url+' \u2197</a>';
     } else if(item.content_type==='image' && item.image_url){
       bodyHTML='<div class="sb-body-box"><img id="sb-img-preview" src="'+item.image_url+'"></div>'
-        + '<div id="sb-text-display" class="sb-body-text" style="font-size:13px;margin-bottom:8px;color:'+(item.text_content?'#000':'#a3907a')+'" title="Tap to add a title">'+(item.text_content||'+ Add a title')+'</div>'
-        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
+        + '<div id="sb-text-display" class="sb-body-text" style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:8px;color:'+(item.text_content?'#000':'#a3907a')+'" title="Tap to add a title">'+(item.text_content||'+ Add a title')+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div>';
     } else {
-      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:18px" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
-        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
+      bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:calc(18px * var(--fg-text-scale,1))" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
+        + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
     }
 
     ov.innerHTML='<div class="sc-overlay-card sb-shape-card sb-details-card" style="text-align:center;background:#F5F1E8;position:relative">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-      + '<span id="sb-details-eyebrow" style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">DETAILS</span>'
-      + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:13px;color:#2C2C2A">✕</button>'
+      + '<span id="sb-details-eyebrow" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">DETAILS</span>'
+      + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
       + '</div>'
-      + '<div id="sb-pagenum" style="font-size:8px;letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
+      + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
       + apexTag
       + topRowHTML
       + personRowHTML
@@ -3921,15 +3921,15 @@
       + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
       + '<div class="sb-hdr-eyebrow2" style="text-align:left">Signal Flags</div>'
       + '<div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
-      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:12px;padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
-      + '<span style="color:#D4537E;font-size:13px">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
+      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
+      + '<span style="color:#D4537E;font-size:calc(13px * var(--fg-text-scale,1))">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
       + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
       + '</div>'
       + '</div>'
       + '</div>'
-      + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:8px">'+(item.notes||'')+'</textarea>'
+      + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:8px">'+(item.notes||'')+'</textarea>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
-      + '<div id="sb-note-status" style="font-size:9px;color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
+      + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
@@ -3939,10 +3939,10 @@
       + '</div>'
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
-      + '<p style="font-size:14px;font-weight:500;margin:0 0 10px;color:#2C2C2A">Moose poop?</p>'
+      + '<p style="font-size:calc(14px * var(--fg-text-scale,1));font-weight:500;margin:0 0 10px;color:#2C2C2A">Moose poop?</p>'
       + '<div style="display:flex;gap:8px;justify-content:center">'
-      + '<button id="sb-trash-yes" style="font-size:12px;padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
-      + '<button id="sb-trash-no" style="font-size:12px;padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
+      + '<button id="sb-trash-yes" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
+      + '<button id="sb-trash-no" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
       + '</div></div></div>'
       + '<div class="sc-corner-flip" id="sb-detail-corner-flip" title="Flip back to front"></div>'
       + '</div>';
@@ -4092,10 +4092,10 @@
       });
       var rows=boards.filter(function(b){ return String(b.id)!==String(item.id); }).map(function(b){
         return '<div class="sb-hdr-vitem" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
-      }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+      }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+(item.text_content||'(untitled)')+'"</div>'
-        +'<div style="font-size:11px;color:#7a6040;margin-bottom:10px">Moves this card — and everything nested underneath it — into the top level of the project you pick.</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+(item.text_content||'(untitled)')+'"</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Moves this card — and everything nested underneath it — into the top level of the project you pick.</div>'
         +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
         +'<button class="sc-ov-btn" id="sb-moveproj-cancel" style="width:100%">Cancel</button>'
         +'</div>';
@@ -4149,9 +4149,9 @@
       candidates=candidates.slice().sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
       var rows=candidates.map(function(h){
         return '<div class="sb-hdr-vitem" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>';
-      }).join('') || '<div style="font-size:11px;color:#888;font-style:italic;padding:8px 0">No other topics in this project yet.</div>';
+      }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other topics in this project yet.</div>';
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">Move under a different Topic</div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Move under a different Topic</div>'
         +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:240px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
         +'<button class="sc-ov-btn" id="sb-movetopic-cancel" style="width:100%">Cancel</button>'
         +'</div>';
@@ -4453,14 +4453,14 @@
     var hasKey=!!keys[slotIndex];
     var listHTML;
     if(!_sboardKeyLib.length){
-      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:6px">No signal flags yet — build your first one below.</div>';
+      listHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:6px">No signal flags yet — build your first one below.</div>';
     } else {
       listHTML=_sboardKeyLib.map(function(k){
         var usedElsewhere = keys.indexOf(k.id)>=0 && keys[slotIndex]!==k.id;
         return '<div class="sb-key-pick-row">'
           +'<button class="sb-key-pick-select" data-key-id="'+k.id+'"'+(usedElsewhere?' disabled':'')+'>'
           +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span style="font-size:12px">'+_sboardEsc(k.meaning||'')+'</span>'
+          +'<span style="font-size:calc(12px * var(--fg-text-scale,1))">'+_sboardEsc(k.meaning||'')+'</span>'
           +'</button>'
           // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
           // edit or change the meaning of any one of them" from wherever
@@ -4473,7 +4473,7 @@
       }).join('');
     }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Signal Flag</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Signal Flag</div>'
       +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
       +'<button class="sc-ov-btn save" id="sb-key-build-new" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Build a new signal flag</button>'
       +(hasKey?'<button class="sc-ov-btn" id="sb-key-remove" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">Remove this signal flag</button>':'')
@@ -4540,16 +4540,16 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(existingKey?'Edit Signal Flag':'Add a Signal Flag')+'</div>'
-      +'<div style="font-size:11px;color:#7a6040;margin-bottom:6px">Shape</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(existingKey?'Edit Signal Flag':'Add a Signal Flag')+'</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px">Shape</div>'
       +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
         +_sboardKeyShapes.map(function(s){ return '<button class="sb-key-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:block;width:16px;height:16px;'+_sboardKeyShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
       +'</div>'
-      +'<div style="font-size:11px;color:#7a6040;margin-bottom:6px">Color</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px">Color</div>'
       +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
         +_sboardKeyColors.map(function(c){ return '<button class="sb-key-swatch-btn" data-color="'+c+'" style="background:'+c+'"></button>'; }).join('')
       +'</div>'
-      +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" value="'+(existingKey?_sboardEsc(existingKey.meaning||''):'')+'" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;margin-bottom:10px">'
+      +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" value="'+(existingKey?_sboardEsc(existingKey.meaning||''):'')+'" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">'+(existingKey?'Save changes':'Save')+'</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
@@ -4588,20 +4588,20 @@
     if(!ov) return;
     var listHTML;
     if(!_sboardKeyLib.length){
-      listHTML='<div style="font-size:11px;font-style:italic;color:#888;margin-bottom:10px">No signal flags yet. Build one below — then tap any card\'s Signal Flags row to use it.</div>';
+      listHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">No signal flags yet. Build one below — then tap any card\'s Signal Flags row to use it.</div>';
     } else {
       listHTML=_sboardKeyLib.map(function(k){
         return '<div class="sb-key-lib-row">'
           +'<span style="display:inline-block;width:16px;height:16px;flex-shrink:0;'+_sboardKeyShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span style="font-size:12px;flex:1;text-align:left">'+_sboardEsc(k.meaning||'')+'</span>'
-          +'<button class="sb-key-lib-edit" data-key-id="'+k.id+'" title="Edit this signal flag" style="border:none;background:none;cursor:pointer;font-size:13px;color:#5b9bd5">✏️</button>'
-          +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this signal flag" style="border:none;background:none;cursor:pointer;font-size:13px;color:#b8562f">🗑️</button>'
+          +'<span style="font-size:calc(12px * var(--fg-text-scale,1));flex:1;text-align:left">'+_sboardEsc(k.meaning||'')+'</span>'
+          +'<button class="sb-key-lib-edit" data-key-id="'+k.id+'" title="Edit this signal flag" style="border:none;background:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#5b9bd5">✏️</button>'
+          +'<button class="sb-key-lib-del" data-key-id="'+k.id+'" title="Delete this signal flag" style="border:none;background:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#b8562f">🗑️</button>'
           +'</div>';
       }).join('');
     }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:15px;color:#1a3a5c;font-weight:700;margin-bottom:4px">Signal Flags</div>'
-      +'<div style="font-size:10px;font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a flag on a card to see what it means.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:4px">Signal Flags</div>'
+      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a flag on a card to see what it means.</div>'
       +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
       +'<button class="sc-ov-btn save" id="sb-keylib-add" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Add a signal flag</button>'
       +'<button class="sc-ov-btn" id="sb-keylib-close" style="width:100%">Close</button>'
@@ -4954,17 +4954,17 @@
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
       lp.textContent='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
-      lp.style.cssText='margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
+      lp.style.cssText='margin:0;font-size:calc(8.5px * var(--fg-text-scale,1));line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       p.textContent=item.text_content||'(untitled)';
-      p.style.cssText='margin:0;font-size:8.5px;line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
+      p.style.cssText='margin:0;font-size:calc(8.5px * var(--fg-text-scale,1));line-height:1.25;color:#1a3a5c;font-weight:600;text-align:center;pointer-events:none';
       tile.appendChild(p);
     }
     if(item.heart_count){
       var hb=document.createElement('div');
-      hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:14px;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
+      hb.style.cssText='position:absolute;bottom:2px;right:2px;font-size:calc(14px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none';
       hb.textContent=item.heart_count>=2?'💕':'❤️';
       tile.appendChild(hb);
     }
@@ -5006,10 +5006,10 @@
     if(!ov) return;
     var count=draggedIds.length+1;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
-      +'<div style="font-size:11px;color:#7a6040;font-style:italic;margin-bottom:10px">Stacking these '+count+' ideas together — cancel to leave them loose instead.</div>'
-      +'<label style="display:block;font-size:10px;font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
-      +'<input id="cl-stack-name" type="text" placeholder="Name it…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;margin-bottom:10px;box-sizing:border-box">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic;margin-bottom:10px">Stacking these '+count+' ideas together — cancel to leave them loose instead.</div>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
+      +'<input id="cl-stack-name" type="text" placeholder="Name it…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="cl-stack-save" style="flex:1">Save</button><button class="sc-ov-btn" id="cl-stack-cancel" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');

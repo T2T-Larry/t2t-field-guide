@@ -172,8 +172,8 @@
       style.textContent =
         '#fg-root.isx-full #s-gems-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:row}' +
         '#gb-toolbar{width:150px;flex-shrink:0;background:#4C1D95;display:flex;flex-direction:column;padding:14px 12px;gap:10px;overflow-y:auto;color:#F5F3FF}' +
-        '#gb-toolbar .gb-tb-label{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;text-align:center;opacity:.75;margin-bottom:4px}' +
-        '#gb-toolbar button{background:#EFE7FB;color:#4C1D95;border:1.5px solid #111;border-radius:8px;padding:8px 6px;font-size:13px;cursor:pointer}';
+        '#gb-toolbar .gb-tb-label{font-size:calc(9.5px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;text-align:center;opacity:.75;margin-bottom:4px}' +
+        '#gb-toolbar button{background:#EFE7FB;color:#4C1D95;border:1.5px solid #111;border-radius:8px;padding:8px 6px;font-size:calc(13px * var(--fg-text-scale,1));cursor:pointer}';
       document.head.appendChild(style);
     }
 
@@ -187,31 +187,31 @@
         '</div>' +
         '<div style="position:relative;flex:1;width:100%;background:#EFE7FB;overflow:hidden">' +
           '<div style="position:absolute;top:16px;left:16px;z-index:1">' +
-            '<div style="font-size:32px;font-weight:700;line-height:1;color:#5B21B6">💎 GEMS</div>' +
-            '<div style="font-size:13px;font-style:italic;color:#7c3aed;margin-top:4px">Flashes of potential value</div>' +
+            '<div style="font-size:calc(32px * var(--fg-text-scale,1));font-weight:700;line-height:1;color:#5B21B6">💎 GEMS</div>' +
+            '<div style="font-size:calc(13px * var(--fg-text-scale,1));font-style:italic;color:#7c3aed;margin-top:4px">Flashes of potential value</div>' +
           '</div>' +
           '<button id="gb-close" aria-label="Close" style="position:absolute;top:10px;right:12px;width:32px;height:32px;border-radius:8px;background:#ede9fe;border:1px solid #c4b5fd;z-index:1;cursor:pointer">✕</button>' +
           '<div id="gb-pile" style="position:absolute;top:96px;left:16px;right:16px;bottom:16px"></div>' +
           '<div id="gb-empty" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;color:#7c3aed;text-align:center;padding:40px;box-sizing:border-box">' +
-            '<div style="font-size:15px;line-height:1.6">No Gems yet.<br>They surface when you\'re ready.</div>' +
+            '<div style="font-size:calc(15px * var(--fg-text-scale,1));line-height:1.6">No Gems yet.<br>They surface when you\'re ready.</div>' +
           '</div>' +
         '</div>' +
         '<div id="gb-detail" style="display:none;position:fixed;inset:0;background:rgba(59,37,16,0.4);align-items:center;justify-content:center;z-index:999">' +
           '<div style="background:#F5F3FF;border-radius:12px;border:2px solid #111;box-shadow:0 8px 24px rgba(0,0,0,.25);padding:1.25rem;max-width:340px;width:85%;box-sizing:border-box">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
-              '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#7c3aed">Gem</div>' +
+              '<div style="font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#7c3aed">Gem</div>' +
               '<button id="gb-detail-close" aria-label="Close" style="width:28px;height:28px;border-radius:50%;background:#ede9fe;border:1.5px solid #111;cursor:pointer">✕</button>' +
             '</div>' +
-            '<div id="gb-source" style="font-size:12px;color:#7c3aed;opacity:.8;margin-bottom:4px;min-height:14px"></div>' +
-            '<div id="gb-lock-note" style="display:none;font-size:12px;color:#7c3aed;opacity:.8;margin-bottom:12px">🔒 Locked — shape and color were chosen on purpose</div>' +
-            '<textarea id="gb-text" style="width:100%;min-height:70px;font-size:16px;color:#5B21B6;line-height:1.5;background:#fff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px;box-sizing:border-box;resize:none;margin-bottom:12px"></textarea>' +
+            '<div id="gb-source" style="font-size:calc(12px * var(--fg-text-scale,1));color:#7c3aed;opacity:.8;margin-bottom:4px;min-height:14px"></div>' +
+            '<div id="gb-lock-note" style="display:none;font-size:calc(12px * var(--fg-text-scale,1));color:#7c3aed;opacity:.8;margin-bottom:12px">🔒 Locked — shape and color were chosen on purpose</div>' +
+            '<textarea id="gb-text" style="width:100%;min-height:70px;font-size:calc(16px * var(--fg-text-scale,1));color:#5B21B6;line-height:1.5;background:#fff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px;box-sizing:border-box;resize:none;margin-bottom:12px"></textarea>' +
             '<div id="gb-notes-wrap" style="display:none;margin-bottom:12px">' +
-              '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Notes</div>' +
-              '<textarea id="gb-notes" placeholder="Anything that comes to mind" style="width:100%;min-height:60px;font-size:14px;color:#3B2510;background:#fff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px;box-sizing:border-box;resize:none"></textarea>' +
+              '<div style="font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Notes</div>' +
+              '<textarea id="gb-notes" placeholder="Anything that comes to mind" style="width:100%;min-height:60px;font-size:calc(14px * var(--fg-text-scale,1));color:#3B2510;background:#fff;border:1.5px solid #c4b5fd;border-radius:8px;padding:10px;box-sizing:border-box;resize:none"></textarea>' +
             '</div>' +
-            '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Shape</div>' +
+            '<div style="font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Shape</div>' +
             '<div id="gb-shapes" style="display:flex;gap:10px;margin-bottom:14px"></div>' +
-            '<div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Color</div>' +
+            '<div style="font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7c3aed;margin-bottom:6px">Color</div>' +
             '<div id="gb-colors" style="display:flex;gap:10px;margin-bottom:18px"></div>' +
             '<div style="display:flex;gap:8px">' +
               '<button id="gb-notes-btn" style="flex:1;cursor:pointer">✏️ Notes</button>' +

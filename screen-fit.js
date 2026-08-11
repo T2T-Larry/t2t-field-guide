@@ -61,10 +61,29 @@
 
   var boostIndex = loadBoostIndex();
 
+  // CSS variable twin of boostIndex, Aug 11 2026 -- Larry (bug report):
+  // this file's own scaling (the tick() loop below) only ever resizes
+  // #fg-root as a whole, which is why the boost above did nothing on
+  // Briefing Board / Idea Storyboard / Session Recorder / Gems -- all
+  // four go full-screen on purpose and are deliberately skipped by
+  // tick()'s isx-full branch, so there was never anything for the old
+  // boost to scale on those screens. Rather than teach this file about
+  // four other files' layouts, those tools' own CSS now reads its font
+  // sizes through this variable (calc(Npx * var(--fg-text-scale,1)))
+  // instead of a bare px value -- setting the variable here is enough
+  // to grow text on every one of them too, kept in sync with boostIndex
+  // at every point that changes it.
+  var CSS_VAR = '--fg-text-scale';
+  function applyCSSVar(){
+    try { document.documentElement.style.setProperty(CSS_VAR, String(BOOST_LEVELS[boostIndex].mult)); } catch(e){}
+  }
+  applyCSSVar();
+
   function setBoostIndex(i){
     if (i < 0 || i >= BOOST_LEVELS.length) return;
     boostIndex = i;
     try { localStorage.setItem(BOOST_KEY, String(i)); } catch(e){}
+    applyCSSVar();
   }
 
   // Public API -- screen-zero.js's gear popover reads/writes through
