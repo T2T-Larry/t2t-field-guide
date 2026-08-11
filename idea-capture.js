@@ -197,8 +197,17 @@
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_icSaveLinkCard exception:', e); }
 
     if(savedOk){
+      // Aug 11 2026 bug: _icClosePopup() nulls _icOnSaved as part of its
+      // own cleanup (see below), so checking _icOnSaved AFTER closing
+      // always found it already gone -- the callback that adds the new
+      // card into the board's cache and re-renders never fired for link
+      // (video/audio/etc.) cards, unlike _icSaveCard's text/image path
+      // which checks onSaved before any cleanup. That's why a pasted
+      // video sat invisible until the next manual refresh. Grab the
+      // callback first, close, then call it.
+      var _onSavedCb=_icOnSaved;
       _icClosePopup();
-      if(_icOnSaved) _icOnSaved(row);
+      if(_onSavedCb) _onSavedCb(row);
     } else {
       var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
       if(errBox){

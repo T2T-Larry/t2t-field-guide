@@ -373,7 +373,7 @@
   // (sharedToBoardId) is deliberately left out -- it triggers a mirrored
   // card on another board (_bbHandleSharedTagChange) and safely undoing
   // that side effect is its own separate piece of work.
-  var BB_DETAIL_FIELDS = ['task','situation','person','due','dueTime','startDate','startTime','routineFreq','routineCustom','budget','notes','reviewedBy','growNote'];
+  var BB_DETAIL_FIELDS = ['task','situation','person','due','dueTime','startDate','startTime','routineFreq','routineCustom','budget','notes','reviewedBy','growNote','linkUrl','linkTitle','linkThumb'];
   function _bbSnapshotCardDetail(c){
     var snap={};
     BB_DETAIL_FIELDS.forEach(function(k){ snap[k]=c[k]||''; });
@@ -389,6 +389,23 @@
   }
   var _bbDetailBeforeSnapshot = null;
   var _bbDetailBeforeCardId = null;
+  // Video/Link field, Aug 11 2026 (Larry: "adding a video should not
+  // require refreshing a screen or website") -- mirrors the Idea
+  // Storyboard's own link/oEmbed pattern (idea-media-shared.js /
+  // idea-capture.js), reusing the same resolver, but committed to the
+  // card the same way every other DETAILS field is: on close, together
+  // with everything else, which already saves + re-renders locally with
+  // no page reload, and briefing_cards is already on the live-sync
+  // channel so other open tabs/devices pick it up the same way.
+  var _bbLinkPendingUrl = null, _bbLinkPendingThumb = null, _bbLinkPendingTitle = null, _bbLinkTimer = null;
+  function _bbIsBareUrl(text){ return /^https?:\/\/\S+$/i.test((text||'').trim()); }
+  function _bbRenderLinkPreview(url, thumb, title){
+    var preview=document.getElementById('bb-d-link-preview');
+    if(!preview) return;
+    if(!url){ preview.style.display='none'; preview.innerHTML=''; return; }
+    preview.style.display='';
+    preview.innerHTML=(thumb ? ('<img src="'+thumb+'">') : '')+_esc(title||url);
+  }
   function wireBbUndoKeyboard(){
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-briefing-board');
@@ -719,6 +736,7 @@
       shared_to_board_id: c.sharedToBoardId||null,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
+      link_url: c.linkUrl||null, link_title: c.linkTitle||null, link_thumb: c.linkThumb||null,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       trashed_at: c.trashedAt || null
@@ -736,6 +754,7 @@
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
       sharedToBoardId: row.shared_to_board_id||null,
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
+      linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       trashedAt: row.trashed_at || null
@@ -2297,6 +2316,11 @@
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
       +'.bb-notes-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      +'.bb-link-row{display:flex;gap:6px}'
+      +'.bb-link-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
+      +'.bb-link-preview{margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:center;font-style:italic}'
+      +'.bb-link-preview img{max-width:100%;max-height:100px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain}'
       +'.bb-team-row{display:flex;gap:6px;align-items:center;padding:4px 0}'
       +'.bb-team-row input.bb-team-name{flex:1.6;min-width:0}'
       +'.bb-team-row input.bb-team-initials{width:50px;flex:none;text-transform:uppercase}'
@@ -2385,6 +2409,7 @@
             +'<div class="bb-field"><label>Start date</label><div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"></div></div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
             +'<div class="bb-field"><label>Notes</label><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div>'
+            +'<div class="bb-field"><label>Video / Link</label><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
@@ -2701,6 +2726,7 @@
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
         var notesBadge = (c.notes && c.notes.trim()) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
+        var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<span class="bb-link-badge" title="Has a video/link">🎬</span>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
@@ -2708,7 +2734,7 @@
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
         var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+notesBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+notesBadge+linkBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
@@ -2957,6 +2983,10 @@
     if(_bbDetailCardR) _bbDetailCardR.classList.toggle('bb-routine-active', !!c.routine);
     document.getElementById('bb-d-budget').value=c.budget||'';
     document.getElementById('bb-d-notes').value=c.notes||'';
+    document.getElementById('bb-d-link-url').value=c.linkUrl||'';
+    _bbLinkPendingUrl=c.linkUrl||null; _bbLinkPendingThumb=c.linkThumb||null; _bbLinkPendingTitle=c.linkTitle||null;
+    if(_bbLinkTimer){ clearTimeout(_bbLinkTimer); _bbLinkTimer=null; }
+    _bbRenderLinkPreview(_bbLinkPendingUrl, _bbLinkPendingThumb, _bbLinkPendingTitle);
     document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
     document.getElementById('bb-d-grow-note').value=c.growNote||'';
     document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
@@ -2985,6 +3015,13 @@
       c.routineCustom=document.getElementById('bb-d-routine-custom').value;
       c.budget=document.getElementById('bb-d-budget').value;
       c.notes=document.getElementById('bb-d-notes').value;
+      (function(){
+        var linkInput=document.getElementById('bb-d-link-url');
+        var val=linkInput?linkInput.value.trim():'';
+        if(!val){ c.linkUrl=null; c.linkTitle=null; c.linkThumb=null; }
+        else if(val===_bbLinkPendingUrl){ c.linkUrl=val; c.linkTitle=_bbLinkPendingTitle||val; c.linkThumb=_bbLinkPendingThumb||null; }
+        else { c.linkUrl=val; c.linkTitle=val; c.linkThumb=null; }
+      })();
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
       c.growNote=document.getElementById('bb-d-grow-note').value;
       var sharedWrap=document.getElementById('bb-d-shared-wrap');
@@ -4092,6 +4129,29 @@
     });
   }
 
+  function wireLinkField(){
+    var input=document.getElementById('bb-d-link-url');
+    if(input) input.addEventListener('input', function(){
+      var val=input.value.trim();
+      if(_bbLinkTimer) clearTimeout(_bbLinkTimer);
+      if(!val){ _bbLinkPendingUrl=null; _bbLinkPendingThumb=null; _bbLinkPendingTitle=null; _bbRenderLinkPreview(null); return; }
+      if(!_bbIsBareUrl(val)) return; // still mid-paste/typing -- wait for a clean URL
+      _bbLinkTimer=setTimeout(async function(){
+        var meta=(window.T2TMedia && window.T2TMedia.resolveOEmbed) ? await window.T2TMedia.resolveOEmbed(val) : null;
+        if(input.value.trim()!==val) return; // superseded by further typing meanwhile
+        _bbLinkPendingUrl=val;
+        _bbLinkPendingThumb=meta&&meta.thumbnail_url||null;
+        _bbLinkPendingTitle=meta&&meta.title||val;
+        _bbRenderLinkPreview(_bbLinkPendingUrl, _bbLinkPendingThumb, _bbLinkPendingTitle);
+      }, 500);
+    });
+    T().wire('bb-d-link-clear', function(){
+      if(_bbLinkTimer){ clearTimeout(_bbLinkTimer); _bbLinkTimer=null; }
+      _bbLinkPendingUrl=null; _bbLinkPendingThumb=null; _bbLinkPendingTitle=null;
+      var linkInput=document.getElementById('bb-d-link-url'); if(linkInput) linkInput.value='';
+      _bbRenderLinkPreview(null);
+    });
+  }
   function wireRoutineControls(){
     T().wire('bb-d-routine-toggle', function(){
       var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
@@ -4236,6 +4296,7 @@
     wirePriorityButtons();
     wireReviewButtons();
     wireRoutineControls();
+    wireLinkField();
     wirePersonSelect();
     wireKeyBuilder();
     wireKeyPicker();
