@@ -4005,6 +4005,16 @@
       + '</div>';
 
     var orderValueText='—';
+    // ORDER nudge, Aug 11 2026 (Larry: wants to change a card's order
+    // from the back of the card too, not just move it to a different
+    // Header). _sbOrderList/_sbOrderIdx below are the REAL per-type
+    // sibling list the drag-reorder math uses (_sboardIdeaOrderByParent/
+    // _sboardSubberOrderByParent/_sboardTopLevelOrder) -- deliberately
+    // NOT the same as _sboardCardOrderByParent just below, which mixes
+    // Subbers+cards into one display-only combined count and can't be
+    // written back to safely (see its own comment, above in renderGroup).
+    var _sbOrderList=null, _sbOrderIdx=-1;
+    var _sbOrderIsTopHeader=(isHeaderType && !item.cluster_id);
     (function(){
       function findIdx(list){
         for(var i=0;i<list.length;i++){ if(String(list[i])===String(item.id)) return i; }
@@ -4017,7 +4027,13 @@
         list=_sboardCardOrderByParent[item.cluster_id]; idx=findIdx(list);
       }
       if(list && idx!==-1){ orderValueText=(idx+1)+' of '+list.length; }
+      var realList=_sbOrderIsTopHeader ? _sboardTopLevelOrder
+        : isHeaderType ? (_sboardSubberOrderByParent[item.cluster_id]||null)
+        : (_sboardIdeaOrderByParent[item.cluster_id||'']||null);
+      if(realList){ _sbOrderList=realList; _sbOrderIdx=findIdx(realList); }
     })();
+    var orderCanUp=(_sbOrderList && _sbOrderIdx>0);
+    var orderCanDown=(_sbOrderList && _sbOrderIdx>-1 && _sbOrderIdx<_sbOrderList.length-1);
 
     var topRowHTML='<div class="sb-eyebrow-row">'
       + '<div class="sb-eyebrow-col">'
@@ -4027,7 +4043,11 @@
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
       + '<div class="sb-eyebrow-col">'
       + '<div class="sb-hdr-eyebrow2">Order</div>'
-      + '<div class="sb-view-frame" style="cursor:default" title="Order #">🔢 '+orderValueText+'</div>'
+      + '<div class="sb-view-frame" style="cursor:default;display:flex;align-items:center;gap:3px;justify-content:center" title="Order #">'
+      + '<button id="sb-order-up" type="button" aria-label="Move earlier"'+(orderCanUp?'':' disabled')+' style="border:0;background:none;padding:0 2px;font-size:inherit;color:inherit;cursor:'+(orderCanUp?'pointer':'default')+';opacity:'+(orderCanUp?'1':'0.3')+'">▲</button>'
+      + '<span id="sb-order-value">🔢 '+orderValueText+'</span>'
+      + '<button id="sb-order-down" type="button" aria-label="Move later"'+(orderCanDown?'':' disabled')+' style="border:0;background:none;padding:0 2px;font-size:inherit;color:inherit;cursor:'+(orderCanDown?'pointer':'default')+';opacity:'+(orderCanDown?'1':'0.3')+'">▼</button>'
+      + '</div>'
       + '</div>'
       + '</div>';
 
@@ -4235,6 +4255,61 @@
       var panel=document.getElementById('sb-move-panel');
       if(panel) panel.style.display=(panel.style.display==='none')?'block':'none';
     });
+
+    // ORDER nudge -- up/down arrows, Aug 11 2026 (Larry). Swaps this card
+    // with its immediate same-type sibling (one step, same shape as a
+    // one-notch drag reorder) and rewrites both sort_order values. Stays
+    // open afterward instead of closing (like the heart pill just below),
+    // since nudging more than once in a row is the normal case -- only
+    // the Order number + arrow states update in place here, plus a
+    // background board refresh so the front stays in sync. Undo/redo
+    // follows the same single-row convention as every other move in this
+    // file (_sboardApplyRowSnapshot) -- restores THIS card's own position,
+    // doesn't try to re-thread the sibling it swapped with.
+    (function(){
+      var upBtn=document.getElementById('sb-order-up');
+      var downBtn=document.getElementById('sb-order-down');
+      if(!upBtn && !downBtn) return;
+      function setArrowState(btn, can){
+        if(!btn) return;
+        btn.disabled=!can;
+        btn.style.opacity=can?'1':'0.3';
+        btn.style.cursor=can?'pointer':'default';
+      }
+      async function nudgeOrder(dir){
+        if(!_sbOrderList || item.locked) return;
+        var swapIdx=_sbOrderIdx+dir;
+        if(swapIdx<0 || swapIdx>=_sbOrderList.length) return;
+        var ids=_sbOrderList.slice();
+        var tmp=ids[_sbOrderIdx]; ids[_sbOrderIdx]=ids[swapIdx]; ids[swapIdx]=tmp;
+        var before=_sboardSnapshotRow(item.id);
+        try{
+          var updA=await _sb.from('ideas').update({sort_order:_sbOrderIdx}).eq('id',ids[_sbOrderIdx]);
+          if(updA.error) throw updA.error;
+          var updB=await _sb.from('ideas').update({sort_order:swapIdx}).eq('id',ids[swapIdx]);
+          if(updB.error) throw updB.error;
+          _sboardPatchRow(ids[_sbOrderIdx], {sort_order:_sbOrderIdx});
+          _sboardPatchRow(ids[swapIdx], {sort_order:swapIdx});
+          if(_sbOrderIsTopHeader) _sboardTopLevelOrder=ids;
+          else if(isHeaderType) _sboardSubberOrderByParent[item.cluster_id]=ids;
+          else _sboardIdeaOrderByParent[item.cluster_id||'']=ids;
+          _sbOrderList=ids; _sbOrderIdx=swapIdx;
+          if(before){
+            var after=_sboardSnapshotRow(item.id);
+            _sboardPushAction({label:'Reorder', undo:function(){ return _sboardApplyRowSnapshot(item.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(item.id, after); }});
+          }
+          var valEl=document.getElementById('sb-order-value');
+          if(valEl) valEl.textContent='🔢 '+(swapIdx+1)+' of '+ids.length;
+          setArrowState(upBtn, _sbOrderIdx>0);
+          setArrowState(downBtn, _sbOrderIdx<ids.length-1);
+          renderSeaBoard(true);
+        }catch(err){
+          if(statusBox) statusBox.textContent='Reordering needs the sort_order Supabase column: '+err.message;
+        }
+      }
+      if(upBtn) upBtn.addEventListener('click', function(){ nudgeOrder(-1); });
+      if(downBtn) downBtn.addEventListener('click', function(){ nudgeOrder(1); });
+    })();
 
     // VIEW -- Header/Subber toggle, Aug 7 2026 (Larry) -- replaces the old
     // one-way MAKE HEADER button above with a two-way control matching the
