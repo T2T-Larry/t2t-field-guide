@@ -289,7 +289,7 @@
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
-        +'#sc-topic-box{display:inline-block;max-width:calc(320px * var(--fg-text-scale,1));box-sizing:border-box;white-space:normal;word-wrap:break-word}'
+        +'#sc-topic-box{display:inline-block;max-width:calc(320px * (0.6 + 0.4 * var(--fg-text-scale,1)));box-sizing:border-box;white-space:normal;word-wrap:break-word;position:relative;z-index:1}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
         +'.sc-add-header-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
         +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
@@ -429,7 +429,7 @@
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
-      +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start">'
+      +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
@@ -1667,7 +1667,7 @@
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
-    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?22:19)*_stMult), Math.round(14*_stMult));
+    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?20:17)*_stMult), Math.round(13*_stMult));
     p.style.cssText='margin:0;font-weight:700;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
     if(headerRow.locked){
