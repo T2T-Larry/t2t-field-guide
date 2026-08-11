@@ -3913,7 +3913,14 @@
       localNewAdditionsTarget=_isxDetailCtx.topicId||'';
       isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
       var curHeaderRow9711=(item.cluster_id && !isInLocalNewAdditions)?(_isxDetailCtx.rowsById||{})[item.cluster_id]:null;
-      curHeaderLabel=curHeaderRow9711?(curHeaderRow9711.text_content||'(untitled)'):'NEW';
+      // Aug 11 2026 (Larry): a HEADER sitting directly on a Topic (no
+      // further sub-header wrapping it) was showing PARENT = "NEW" --
+      // "NEW" is only meaningful for a loose idea card living in the
+      // Topic's uncategorized bucket. A Header's parent is always the
+      // Topic it lives on ("The Parent of any Header is the TOPIC" --
+      // Larry's own Briefing Board card, Aug 9). Loose idea cards keep
+      // the "NEW" fallback unchanged.
+      curHeaderLabel=curHeaderRow9711?(curHeaderRow9711.text_content||'(untitled)'):(isHeaderType?topicLabel:'NEW');
     } else {
       var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
       topicLabel=(T2TShared.currentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
@@ -3928,7 +3935,8 @@
       localNewAdditionsTarget=T2TShared.currentTopicId||'';
       isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
       var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
-      curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):'NEW';
+      // Same Header-vs-loose-card fix as the 9711 branch above.
+      curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):(isHeaderType?topicLabel:'NEW');
     }
 
     // TOP ROW -- PARENT / VIEW / ORDER, Aug 7 2026 (Larry). Replaces the
