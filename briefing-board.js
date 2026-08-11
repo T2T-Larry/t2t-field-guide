@@ -2732,6 +2732,12 @@
             }).join('')+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
+        // Double-click also opens the card, Aug 11 2026 (Larry) -- same
+        // openCardDetail the corner-flip triangle already calls, just a
+        // second, faster way in (matches the subber-card double-click
+        // added to the Idea Storyboard this same session). Corner-flip
+        // stays as-is; this doesn't replace it.
+        el.addEventListener('dblclick', function(e){ e.stopPropagation(); openCardDetail(c.id); });
         target.appendChild(el);
       });
     });
