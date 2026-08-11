@@ -1984,7 +1984,7 @@
       +'.bb-mh-typebox{display:flex;gap:10px;justify-self:start;align-items:flex-end}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
-      +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:120px}'
+      +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:calc(120px * var(--fg-text-scale,1))}'
       // NAME row, Aug 3 2026 -- pencil button added so a traveler can
       // actually rename a board (Larry: "How can a traveler edit the
       // name of the Briefing Board?" -- there was no way; renaming only
@@ -2003,7 +2003,7 @@
       // against the title's descenders.
       +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
       +'.bb-mh{color:var(--bb-ink);font-size:calc(38px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:150px}'
+      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:calc(150px * var(--fg-text-scale,1))}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
@@ -2124,7 +2124,7 @@
       +'.bb-foreign-row{margin:1px 0 3px}'
       +'.bb-foreign-badge{display:inline-block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
       +'.bb-mh-filtergrp{margin-top:6px}'
-      +'.bb-mh-source-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:170px}'
+      +'.bb-mh-source-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:calc(170px * var(--fg-text-scale,1))}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
