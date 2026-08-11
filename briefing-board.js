@@ -308,6 +308,78 @@
     var label = BB_MOVE_COL_LABEL[col] || col || '?';
     return priority ? (label+' \u2014 '+priority) : label;
   }
+  // ---- Ctrl/Cmd+Z undo (single-step), Aug 11 2026 -- Larry: "I want that
+  // option on the website." Same shape as the Idea Session's own
+  // undo/redo slot (session.js, _isxPushAction/_isxUndo/_isxRedo) --
+  // one slot, most-recent action only, redo available until the next
+  // new action overwrites the slot. Covers moves and deletions for now;
+  // Storyboard and text/detail-edit coverage are separate follow-ups.
+  var _bbLastAction = null;
+  var _bbLastUndone = null;
+  function _bbPushAction(entry){ _bbLastAction=entry; _bbLastUndone=null; }
+  function _bbShowToast(msg){
+    var wrap=document.getElementById('bb-board-wrap');
+    if(!wrap) return;
+    var banner=document.getElementById('bb-undo-toast');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='bb-undo-toast';
+      banner.style.cssText='position:absolute;top:14px;right:16px;width:200px;background:#eaf6ea;border:2px solid #2d7a3d;'
+        +'color:#2d7a3d;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 9px;border-radius:8px;z-index:45;box-shadow:0 2px 6px rgba(0,0,0,.15)';
+      wrap.appendChild(banner);
+    }
+    banner.textContent=msg;
+    banner.style.display='block';
+    clearTimeout(banner._bbTimer);
+    banner._bbTimer=setTimeout(function(){ banner.style.display='none'; }, 3000);
+  }
+  async function _bbUndo(){
+    if(!_bbLastAction){ _bbShowToast('Nothing to undo.'); return; }
+    var a=_bbLastAction; _bbLastAction=null;
+    await a.undo();
+    _bbLastUndone=a;
+    _bbShowToast(a.label+' undone.');
+  }
+  async function _bbRedo(){
+    if(!_bbLastUndone){ _bbShowToast('Nothing to redo.'); return; }
+    var a=_bbLastUndone; _bbLastUndone=null;
+    await a.redo();
+    _bbLastAction=a;
+    _bbShowToast(a.label+' redone.');
+  }
+  // Shared apply-a-snapshot helper, reused by undo AND redo (they're the
+  // same operation pointed at a different snapshot) and by the existing
+  // Recent Moves panel's own per-item Undo button.
+  function _bbApplyCardSnapshot(cardId, snap){
+    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    if(!c) return;
+    c.col=snap.col; c.priority=snap.priority;
+    if(typeof snap.sortOrder==='number') c.sortOrder=snap.sortOrder;
+    if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
+    _bbStampDateEscalationHandled(c);
+    _bbSaveLocal(_bbCardsList());
+    renderBoard();
+  }
+  function _bbApplyTrashState(cardId, trashedAt){
+    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    if(!c) return;
+    c.trashedAt=trashedAt;
+    _bbSaveLocal(_bbCardsList());
+    renderBoard();
+  }
+  function wireBbUndoKeyboard(){
+    document.addEventListener('keydown', function(e){
+      var screen=document.getElementById('s-briefing-board');
+      if(!screen || !screen.classList.contains('active')) return;
+      var tag=(e.target&&e.target.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+      var mod=e.metaKey||e.ctrlKey;
+      if(!mod) return;
+      var k=e.key.toLowerCase();
+      if(k==='z'){ e.preventDefault(); if(e.shiftKey) _bbRedo(); else _bbUndo(); }
+    });
+  }
+
   function _bbSnapshotCard(c){
     return {col:c.col, priority:c.priority, sortOrder:c.sortOrder};
   }
@@ -317,6 +389,14 @@
   async function _bbLogCardMove(c, before){
     if(!_bbCurrentBoardId) return;
     if(before.col===c.col && before.priority===c.priority && before.sortOrder===c.sortOrder) return;
+    (function(){
+      var cardId=c.id, beforeSnap=before, afterSnap=_bbSnapshotCard(c);
+      _bbPushAction({
+        label:'Move',
+        undo: function(){ _bbApplyCardSnapshot(cardId, beforeSnap); },
+        redo: function(){ _bbApplyCardSnapshot(cardId, afterSnap); }
+      });
+    })();
     var sb=T().sb; if(!sb) return;
     try{
       await sb.from('briefing_card_moves').insert({
@@ -2915,7 +2995,15 @@
   function doTrashCard(){
     var id=_bbTrashPendingId;
     var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
-    if(c) c.trashedAt=new Date().toISOString();
+    if(c){
+      var ts=new Date().toISOString();
+      c.trashedAt=ts;
+      _bbPushAction({
+        label:'Delete',
+        undo: function(){ _bbApplyTrashState(id, null); },
+        redo: function(){ _bbApplyTrashState(id, ts); }
+      });
+    }
     _bbSaveLocal(_bbCardsList());
     _bbTrashPendingId=null;
     var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
@@ -4123,6 +4211,7 @@
     wireRecentMoves();
     T().wire('bb-moves', openRecentMoves);
     wireTopicBar();
+    wireBbUndoKeyboard();
   }
 
   document.addEventListener('DOMContentLoaded', function(){
