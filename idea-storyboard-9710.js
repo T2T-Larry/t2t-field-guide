@@ -1809,6 +1809,28 @@
     // mean color everywhere with zero header exceptions). Double-click here
     // is the same color-options shortcut every other card has.
     wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
+    // Click-and-hold a sub-header to peek at its subber cards, Aug 11 2026
+    // (Larry) -- reuses openSbHeaderPeek, the same grid view CLUSTER's
+    // bucket pill already opens on a plain click, so there's no new screen
+    // to build, just a second doorway into it. Same 550ms hold threshold
+    // as the heart-pill tap/hold pattern below, so the two "hold to do
+    // something different" gestures on this board feel consistent. A
+    // short click/tap still does nothing dedicated here (double-click for
+    // color, corner-flip to open the back) -- this is purely additive.
+    var stackHoldTimer=null;
+    function stackStartHold(e){
+      if(e && e.type==='mousedown' && e.button!==0) return;
+      clearTimeout(stackHoldTimer);
+      stackHoldTimer=setTimeout(function(){ openSbHeaderPeek(headerRow); }, 550);
+    }
+    function stackCancelHold(){ clearTimeout(stackHoldTimer); }
+    wrap.addEventListener('mousedown', stackStartHold);
+    wrap.addEventListener('touchstart', stackStartHold);
+    wrap.addEventListener('mouseup', stackCancelHold);
+    wrap.addEventListener('mouseleave', stackCancelHold);
+    wrap.addEventListener('touchend', stackCancelHold);
+    wrap.addEventListener('touchmove', stackCancelHold);
+    wrap.addEventListener('dragstart', stackCancelHold);
     // Reorder/move zoning, Aug 3 2026 -- top/bottom half of this Subber
     // tile reorders it among its siblings under the same Header (or moves
     // it in from a different Header entirely, inserting at this
