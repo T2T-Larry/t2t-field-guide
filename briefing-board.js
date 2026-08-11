@@ -2328,7 +2328,7 @@
       // attached URL in a new tab. draggable=false on the element
       // itself (see markup below) keeps a native link-drag from
       // hijacking the card's own drag-to-move gesture.
-      +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-decoration:none;color:inherit}'
+      +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:pointer;text-decoration:none;color:inherit}'
       +'.bb-link-row{display:flex;gap:6px}'
       +'.bb-link-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
       +'.bb-link-preview{margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:center;font-style:italic}'
@@ -2778,7 +2778,7 @@
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +((notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+notesBadge+linkBadge+keyBadgesHTML+'</div>') : '')
+          +((notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click also opens the card, Aug 11 2026 (Larry) -- same
