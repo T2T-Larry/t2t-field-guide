@@ -3095,7 +3095,21 @@
       var subRows=rows.filter(function(r){ return r.content_type==='header'; });
       var itemRows=rows.filter(function(r){ return r.content_type!=='header'; });
       var _peekMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
-      var _peekTile=Math.round(84*_peekMult);
+      // Aug 11 2026 -- Larry (bug report): "Subber Peek screen on Apple
+      // needs to clearly view every card." Root cause -- tile size here
+      // grew with the text-size boost multiplier, but nothing ever checked
+      // that three tiles + two gaps still fit inside the peek card. On an
+      // iPhone-width screen with Larger/Largest boost on, the 3rd column
+      // got pushed past the card's edge and, at the largest step, off the
+      // screen entirely with no way to scroll to it. Cap tile size to
+      // whatever the peek card can actually hold so all three columns
+      // always fit, on any screen, at any boost level -- boost still grows
+      // tiles wherever there's slack, it just can't push cards out of view
+      // anymore.
+      var _peekOverlayContentW=window.innerWidth-40; // .sb-overlay's 20px padding, both sides
+      var _peekCardW=Math.min(360,_peekOverlayContentW*0.94)-28; // .sc-peek-card's width:min(360px,94%) minus its own 14px*2 padding
+      var _peekMaxTile=Math.floor((_peekCardW-20)/3); // minus two 10px gaps, split three ways
+      var _peekTile=Math.max(56, Math.min(Math.round(84*_peekMult), _peekMaxTile));
       var grid=document.createElement('div');
       grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
       subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
