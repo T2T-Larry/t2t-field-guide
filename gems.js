@@ -24,6 +24,17 @@
 
   function T(){ return window.T2T; }
 
+  // Aug 11 2026 -- re-render Gems' own board when the text-size boost
+  // changes, but only if Gems is actually the screen on show right now
+  // (renderGemsBoard doesn't guard itself the way 9710's renderSeaBoard
+  // does -- it assumes its own DOM already exists).
+  window.addEventListener('fg-text-scale-changed', function(){
+    var screen = document.getElementById('s-gems-board');
+    if (screen && screen.classList.contains('active')) {
+      try { renderGemsBoard(); } catch(e){}
+    }
+  });
+
   var SHAPES = ['circle','square','triangle','pentagon','hexagon'];
   var CLIPS = {
     circle:   'circle(46% at 50% 50%)',
@@ -53,10 +64,18 @@
      Returns { el, fitText(), setShape(s), setColor(c) }. */
   function gemTile(data, opts){
     opts = opts || {};
+    // Card size scales with the text-size boost, Aug 11 2026 -- Larry:
+    // bigger text should mean a bigger card here too, same reasoning as
+    // Storyboard's tiles, otherwise a bigger label just gets clipped by
+    // this fixed-size square. Computed fresh per tile (not read once at
+    // load) so a boost change while Gems is open takes effect on the
+    // next render without needing a page reload.
+    var _gemMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
+    var cardSize=Math.round(CARD*_gemMult);
     var card = document.createElement('div');
     card.style.position = 'absolute';
-    card.style.width = CARD + 'px';
-    card.style.height = CARD + 'px';
+    card.style.width = cardSize + 'px';
+    card.style.height = cardSize + 'px';
     card.style.background = '#B5B5B5';
     card.style.border = '2px solid #111';
     card.style.borderRadius = '8px';
@@ -144,7 +163,7 @@
     card.addEventListener('dblclick', function(){ if (opts.onOpen) opts.onOpen(); });
 
     function fitText(){
-      var size = 13, tries = 0;
+      var size = Math.round(13*_gemMult), tries = 0;
       label.style.fontSize = size + 'px';
       while (tries < 12 && (label.scrollHeight > label.clientHeight || label.scrollWidth > label.clientWidth)) {
         size -= 1;

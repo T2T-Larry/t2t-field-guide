@@ -29,6 +29,17 @@
 
   function T(){ return window.T2T; }
 
+  // Aug 11 2026 -- when the text-size boost changes (see screen-fit.js),
+  // re-render whichever board is actually showing so its tiles pick up
+  // the new size immediately instead of only on the next natural
+  // refresh. renderSeaBoard already no-ops safely if neither this
+  // screen nor 9711 is on screen (see its own guard), and already
+  // delegates to 9711's own render when THAT'S the active one -- so one
+  // listener here covers both screens.
+  window.addEventListener('fg-text-scale-changed', function(){
+    try { renderSeaBoard(true); } catch(e){}
+  });
+
   /* ── SEA OF IDEAS — 9220 grid view. ARCHIVED July 29 2026: Larry --
      'now defunct 9220 which needs to be archived.' The Idea Board tool-
      tray button and the Map screen's Dream Phase step both used to point
@@ -2116,9 +2127,17 @@
       _sboardTopLevelOrder=orderedTop.map(function(h){ return h.id; });
       var displayTop=_sboardAlphaHeaderView ? orderedTop.slice().sort(_sboardByAlpha) : orderedTop;
 
-      var SUBBER_W=104;
-      var SUBBER_H=64;
-      var HEADER_W=152;
+      // Tile/column sizing, scaled by the text-size boost, Aug 11 2026 --
+      // Larry: bigger text should mean bigger cards here too, not text
+      // clipped inside a card that stayed the same size (this board's
+      // cards are fixed-size tiles, not the auto-growing kind Briefing
+      // Board uses). Rounded to a whole pixel; base numbers unchanged
+      // at Standard (mult 1) so nothing shifts for anyone who's never
+      // touched the text-size picker.
+      var _tsMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
+      var SUBBER_W=Math.round(104*_tsMult);
+      var SUBBER_H=Math.round(64*_tsMult);
+      var HEADER_W=Math.round(152*_tsMult);
       var HEADER_H=SUBBER_H;
 
       function renderGroup(headerRow, depth){
@@ -2923,10 +2942,12 @@
       }
       var subRows=rows.filter(function(r){ return r.content_type==='header'; });
       var itemRows=rows.filter(function(r){ return r.content_type!=='header'; });
+      var _peekMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
+      var _peekTile=Math.round(84*_peekMult);
       var grid=document.createElement('div');
-      grid.style.cssText='display:grid;grid-template-columns:repeat(3,84px);gap:10px;justify-content:center';
-      subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, 84, 84, true)); });
-      itemRows.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, 84, true)); });
+      grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
+      subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
+      itemRows.forEach(function(item){ grid.appendChild(_sboardMakeTile(item, _peekTile, true)); });
       body.innerHTML='';
       body.style.cssText='';
       body.appendChild(grid);

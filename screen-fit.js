@@ -76,6 +76,16 @@
   var CSS_VAR = '--fg-text-scale';
   function applyCSSVar(){
     try { document.documentElement.style.setProperty(CSS_VAR, String(BOOST_LEVELS[boostIndex].mult)); } catch(e){}
+    // Aug 11 2026 -- the full-screen tools (Idea Storyboard, Session
+    // Recorder, Gems) size their own tiles/cards with actual pixel math
+    // in JS, not CSS, so the variable above (which only helps plain CSS
+    // font-size rules) can't reach them -- and even where it can, a tile
+    // already on screen won't repaint itself just because the variable
+    // changed underneath it. This event tells any of those tools "the
+    // boost changed, re-measure yourself if you're currently showing,"
+    // same idea as a resize event; each tool decides for itself whether
+    // it's the one currently on screen and needs to act.
+    try { window.dispatchEvent(new CustomEvent('fg-text-scale-changed')); } catch(e){}
   }
   applyCSSVar();
 
@@ -91,7 +101,10 @@
   window.FGTextSize = {
     levels: BOOST_LEVELS.map(function(l){ return l.label; }),
     getIndex: function(){ return boostIndex; },
-    setIndex: setBoostIndex
+    setIndex: setBoostIndex,
+    // Aug 11 2026 -- for the full-screen tools' own JS pixel math
+    // (tile width/height), which can't read the CSS variable above.
+    getMult: function(){ return BOOST_LEVELS[boostIndex].mult; }
   };
 
   var MIN_SCALE = 0.6;   // floor -- keeps text legible on small screens
