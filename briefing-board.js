@@ -883,7 +883,12 @@
   // just a faster way to fill in the same field. Built fresh rather
   // than a native <input type="date"> so the look matches the rest of
   // the card and MM/DD/YYYY without a year still works for hand-typing.
-  function _bbAttachDatePicker(inputId){
+  function _bbAutoGrowNotes(){
+    var el=document.getElementById('bb-d-notes'); if(!el) return;
+    el.style.height='auto';
+    el.style.height=Math.max(44, el.scrollHeight)+'px';
+  }
+  function _bbAttachDatePicker(inputId, btnId){
     var input=document.getElementById(inputId); if(!input) return;
     var pop=null, viewYear=0, viewMonth=0;
     var MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -946,10 +951,17 @@
     }
     input.addEventListener('click', openPop);
     input.addEventListener('focus', openPop);
+    // Calendar-icon button, Aug 12 2026 -- same popup, opened from a
+    // visible trigger next to the field instead of only via clicking
+    // into the plain text input (which wasn't discoverable on its own).
+    if(btnId){
+      var btn=document.getElementById(btnId);
+      if(btn) btn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); openPop(); });
+    }
   }
   function wireDatePickers(){
-    _bbAttachDatePicker('bb-d-due');
-    _bbAttachDatePicker('bb-d-start');
+    _bbAttachDatePicker('bb-d-due', 'bb-d-due-cal');
+    _bbAttachDatePicker('bb-d-start', 'bb-d-start-cal');
   }
   function wireChecklist(){
     T().wire('bb-d-checklist-add-btn', function(){
@@ -2157,6 +2169,8 @@
       +'.bb-doors-row{display:flex;gap:6px;margin-bottom:10px}'
       +'.bb-door-btn{flex:0 0 auto}'
       +'.bb-icon-loading{opacity:.5;pointer-events:none}'
+      +'.bb-dates-block .bb-date-row{margin-bottom:4px}'
+      +'.bb-routine-select{width:140px}'
       +'.bb-mt{color:var(--bb-sub);font-size:calc(13px * var(--fg-text-scale,1));font-style:italic}'
       // Center the board's columns as a group (Larry, July 22 2026)
       // instead of always hugging the left edge -- still scrolls
@@ -2223,7 +2237,7 @@
       +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:calc(14px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));resize:vertical}'
       +'#bb-d-task{font-family:var(--bb-body-font);font-style:normal;font-size:calc(14px * var(--fg-text-scale,1));color:#000}'
-      +'#bb-d-notes{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(14px * var(--fg-text-scale,1))!important;min-height:160px}'
+      +'#bb-d-notes{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(14px * var(--fg-text-scale,1))!important;min-height:44px;overflow:hidden;resize:none;transition:height .1s}'
       +'#bb-new-task{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(15px * var(--fg-text-scale,1))!important}'
       +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
       +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn,.bb-shape-btn{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font);display:flex;align-items:center;justify-content:center}'
@@ -2433,8 +2447,10 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-routine-toggle" id="bb-d-routine-toggle" title="Routine card" aria-label="Toggle routine">🔄</button><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
-            +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
+            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
+              +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
+            +'</div></div>'
             +'<div id="bb-d-doors-row" class="bb-doors-row">'
               +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
               +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">\uD83D\uDCCB</button>'
@@ -2445,15 +2461,20 @@
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
             +'</div>'
-            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
-              +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
-            +'</div></div>'
             +'<div class="bb-field"><label>Signal Flags</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
-            +'<div class="bb-field"><label>Due date</label><div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><select id="bb-d-routine" class="bb-routine-select"><option value="">Routine</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select></div><input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none"></div>'
-            +'<div class="bb-field"><label>Start date</label><div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"></div></div>'
+            +'<div class="bb-field bb-dates-block"><label>Dates</label>'
+              +'<div class="bb-inline-field" style="margin-bottom:6px"><span class="bb-mh-eyebrow">Added</span><span id="bb-d-added">&mdash;</span></div>'
+              +'<div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="Start MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-start-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
+              +'<div style="margin:6px 0 8px">'
+                +'<div class="bb-mh-eyebrow">Routine</div>'
+                +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
+                +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
+              +'</div>'
+              +'<div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="Due MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-due-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
+            +'</div>'
             +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
             +'<div class="bb-field"><label>Notes</label><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div>'
             +'<div class="bb-field"><label>Video / Link</label><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div>'
@@ -3075,6 +3096,7 @@
     if(_bbDetailCardR) _bbDetailCardR.classList.toggle('bb-routine-active', !!c.routine);
     document.getElementById('bb-d-budget').value=c.budget||'';
     document.getElementById('bb-d-notes').value=c.notes||'';
+    _bbAutoGrowNotes();
     document.getElementById('bb-d-link-url').value=c.linkUrl||'';
     _bbLinkPendingUrl=c.linkUrl||null; _bbLinkPendingThumb=c.linkThumb||null; _bbLinkPendingTitle=c.linkTitle||null;
     if(_bbLinkTimer){ clearTimeout(_bbLinkTimer); _bbLinkTimer=null; }
@@ -4415,6 +4437,10 @@
     T().wire('bb-d-door-org', function(){ openDoorSoon('Organization'); });
     T().wire('bb-d-door-share', function(){ openDoorSoon('Share'); });
     T().wire('bb-door-soon-close', closeDoorSoon);
+    (function(){
+      var notesEl=document.getElementById('bb-d-notes');
+      if(notesEl) notesEl.addEventListener('input', _bbAutoGrowNotes);
+    })();
     wirePriorityButtons();
     wireReviewButtons();
     wireRoutineControls();
