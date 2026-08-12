@@ -158,6 +158,7 @@
         +'.sc-tile{position:absolute;width:64px;height:64px;border-radius:0;background:#fff;border:1px solid #cfe4f2;box-shadow:0 3px 10px rgba(0,0,0,0.28);overflow:hidden;cursor:grab;user-select:none}'
         +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(0,0,0,0.4);z-index:50}'
         +'.sc-tile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}'
+        +'.sc-tile-caption{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font-size:calc(8px * var(--fg-text-scale,1));line-height:1.2;font-weight:600;padding:6px 4px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}'
         +'.sc-tile.text{padding:5px;display:flex;align-items:center;justify-content:center}'
         +'.sc-tile.text p{margin:0;font-size:calc(8.5px * var(--fg-text-scale,1));line-height:1.25;color:#000;font-weight:400;text-align:center;pointer-events:none}'
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
@@ -1654,6 +1655,17 @@
         badge.style.cssText='position:absolute;top:2px;left:20px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
         badge.textContent='\ud83d\udd17';
         tile.appendChild(badge);
+      }
+      // Title on the outside of an image card, Aug 12 2026 -- the text a
+      // traveler typed alongside the image (text_content) was always
+      // saved, just never shown on the tile face -- only the picture
+      // rendered. Skipped for link cards, which already caption
+      // themselves with the parsed link title below.
+      if(item.content_type==='image' && item.text_content){
+        var cap=document.createElement('div');
+        cap.className='sc-tile-caption';
+        cap.textContent=item.text_content;
+        tile.appendChild(cap);
       }
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
@@ -5384,6 +5396,12 @@
       img.src=item.image_url;
       img.style.cssText='width:100%;height:100%;object-fit:contain;display:block;pointer-events:none';
       tile.appendChild(img);
+      if(item.content_type==='image' && item.text_content){
+        var cap=document.createElement('div');
+        cap.className='sc-tile-caption';
+        cap.textContent=item.text_content;
+        tile.appendChild(cap);
+      }
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
       lp.textContent='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
