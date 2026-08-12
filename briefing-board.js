@@ -2154,6 +2154,9 @@
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
+      +'.bb-doors-row{display:flex;gap:6px;margin-bottom:10px}'
+      +'.bb-door-btn{flex:0 0 auto}'
+      +'.bb-icon-loading{opacity:.5;pointer-events:none}'
       +'.bb-mt{color:var(--bb-sub);font-size:calc(13px * var(--fg-text-scale,1));font-style:italic}'
       // Center the board's columns as a group (Larry, July 22 2026)
       // instead of always hugging the left edge -- still scrolls
@@ -2432,7 +2435,12 @@
           +'<div class="bbw">'
             +'<div class="bb-field bb-inline-field"><label>Date Added</label><span id="bb-d-added">&mdash;</span></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
-            +'<div id="bb-d-source-header-wrap" style="margin-bottom:4px"><button class="jb" id="bb-d-open-header" type="button" style="width:100%">🧭 Idea Board</button></div>'
+            +'<div id="bb-d-doors-row" class="bb-doors-row">'
+              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
+              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">\uD83D\uDCCB</button>'
+              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-org" type="button" title="Organization">\uD83D\uDC65</button>'
+              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-share" type="button" title="Share">\uD83D\uDCAC</button>'
+            +'</div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -2457,6 +2465,21 @@
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
       _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.bb-overlay-head'));
+    }
+    // Door-Soon placeholder, Aug 12 2026 -- Plan/Organization/Share
+    // doors on the Briefing Card back all point here until their real
+    // Storyboards (PSB/OSB/CSB) exist. One shared overlay, title text
+    // swapped per door by openDoorSoon(label).
+    if(!document.getElementById('bb-door-soon-overlay')){
+      var doorSoonOv=document.createElement('div');
+      doorSoonOv.id='bb-door-soon-overlay'; doorSoonOv.className='bb-overlay';
+      doorSoonOv.innerHTML=
+         '<div class="bb-overlay-card" style="width:280px;text-align:center">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title" id="bb-door-soon-title">Coming Soon</span><button class="bb-close" id="bb-door-soon-close" aria-label="Close">\u2715</button></div>'
+          +'<div style="font-size:calc(13px * var(--fg-text-scale,1));color:#7A5C3A">This workspace isn\u2019t built yet &mdash; coming soon.</div>'
+        +'</div>';
+      fg.appendChild(doorSoonOv);
+      doorSoonOv.addEventListener('click', function(e){ if(e.target===doorSoonOv) closeDoorSoon(); });
     }
     if(!document.getElementById('bb-trash-overlay')){
       var trashOv=document.createElement('div');
@@ -3008,7 +3031,7 @@
     var _bbOpenHdrBtn=document.getElementById('bb-d-open-header');
     if(_bbOpenHdrBtn){
       _bbOpenHdrBtn.disabled=false;
-      _bbOpenHdrBtn.textContent = c.sourceHeaderId ? '🧭 Open on Idea Storyboard' : '🧭 Idea Board';
+      _bbOpenHdrBtn.title = c.sourceHeaderId ? 'Open on Idea Storyboard' : 'Idea Board';
     }
     // Problem-red back, July 21, 2026 (evening) -- Larry: the card back
     // itself should read as a problem card while it's sitting in
@@ -3070,6 +3093,16 @@
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
 
+  function openDoorSoon(label){
+    var t=document.getElementById('bb-door-soon-title');
+    if(t) t.textContent=label;
+    var ov=document.getElementById('bb-door-soon-overlay');
+    if(ov) ov.classList.add('active');
+  }
+  function closeDoorSoon(){
+    var ov=document.getElementById('bb-door-soon-overlay');
+    if(ov) ov.classList.remove('active');
+  }
   function closeCardDetail(){
     var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
     if(c){
@@ -4124,7 +4157,7 @@
     var situationText=(c.col==='hangups' && situationField) ? situationField.value.trim() : '';
     c.situation=situationText;
     var btn=document.getElementById('bb-d-open-header');
-    if(btn){ btn.disabled=true; btn.textContent='Opening…'; }
+    if(btn){ btn.disabled=true; btn.classList.add('bb-icon-loading'); btn.title='Opening…'; }
     try{
       if(!window.T2TData || !window.T2TData.createHeader) throw new Error('Storyboard not available yet');
       var name=(taskField && taskField.value.trim()) || c.task || 'Untitled';
@@ -4146,10 +4179,10 @@
         sessionStorage.setItem('fg_open_header_id', header.id);
       }catch(e){}
       window.open(location.pathname+location.search, '_blank');
-      if(btn){ btn.disabled=false; btn.textContent='\uD83E\uDDED Open on Idea Storyboard'; }
+      if(btn){ btn.disabled=false; btn.classList.remove('bb-icon-loading'); btn.title='Open on Idea Storyboard'; }
     }catch(e){
       console.error('Idea Board: could not create/link header', e);
-      if(btn){ btn.disabled=false; btn.textContent='\uD83E\uDDED Idea Board'; }
+      if(btn){ btn.disabled=false; btn.classList.remove('bb-icon-loading'); btn.title='Idea Board'; }
       alert('Could not open the Idea Board: '+(e&&e.message?e.message:'unknown error'));
     }
   }
@@ -4378,6 +4411,10 @@
 
     T().wire('bb-detail-close', closeCardDetail);
     T().wire('bb-d-open-header', _bbOpenOrCreateIdeaHeader);
+    T().wire('bb-d-door-plan', function(){ openDoorSoon('Plan'); });
+    T().wire('bb-d-door-org', function(){ openDoorSoon('Organization'); });
+    T().wire('bb-d-door-share', function(){ openDoorSoon('Share'); });
+    T().wire('bb-door-soon-close', closeDoorSoon);
     wirePriorityButtons();
     wireReviewButtons();
     wireRoutineControls();
