@@ -292,9 +292,21 @@
         // the dashed-circle (+), same shape as every other add on this
         // board (see .sc-dotted-add-btn).
         +'.sc-cdrop{position:relative}'
-        +'.sc-cdrop-trigger{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}'
+        // Centered, Aug 13 2026 (Larry: "Center TITLE on title field") --
+        // was space-between with the caret pinned to the far right,
+        // which read as left-aligned. Text and caret now sit together,
+        // centered as a unit, matching every other field's centered look.
+        +'.sc-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}'
         +'.sc-cdrop-trigger:after{content:\'\u25be\';font-size:calc(8px * var(--fg-text-scale,1));opacity:.7;flex-shrink:0}'
-        +'.sc-cdrop-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#1a3a5c;border:1px solid rgba(255,255,255,.24);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:50;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto}'
+        // position:fixed + moved to <body> on open (see _sboardRenderDropdown),
+        // Aug 13 2026 -- Larry: "dropdown lists drop under the headers and
+        // cannot be read." Board content underneath has its own stacked
+        // cards with their own z-index; nesting the menu inside the header
+        // band meant it was still trapped in *that* band's own stacking
+        // context no matter how high its own z-index went. Living as a
+        // direct child of <body> with a real viewport position escapes
+        // that entirely.
+        +'.sc-cdrop-menu{position:fixed;background:#1a3a5c;border:1px solid rgba(255,255,255,.24);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
         +'.sc-cdrop-row{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:#fff;border-radius:6px;cursor:pointer;white-space:nowrap}'
         +'.sc-cdrop-row:hover{background:rgba(255,255,255,.14)}'
         +'.sc-cdrop-row.active{background:rgba(255,255,255,.1);font-weight:700}'
@@ -493,17 +505,15 @@
       +'</div>'
       // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
       // Title now covers what it used to (picking which board is open),
-      // scoped to Type instead of listing every board at once. The small
-      // pencil icon opens the same rename/archive/delete/create screen
-      // PROJECT used to (openProjectSwitcher), so that's not stranded.
+      // scoped to Type instead of listing every board at once. Aug 13
+      // 2026: no separate manage/pencil button -- double-click Title the
+      // same way you'd double-click Topic to open its DETAILS card and
+      // rename it right there (see the dblclick wiring below).
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Title</div>'
-      +'<div style="display:flex;align-items:center;gap:4px">'
       +'<div class="sc-cdrop" id="sc-title-cdrop">'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger" title="Switch boards"></button>'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger" title="Double-click to rename; click to switch boards"></button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
-      +'</div>'
-      +'<button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-title-manage-btn" title="Rename, archive, or delete a board" style="width:22px;height:22px;font-size:calc(10px * var(--fg-text-scale,1))">\u270f\ufe0f</button>'
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
@@ -552,11 +562,18 @@
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
-    // PROJECT") -- Title now covers picking a board. Its old rename/
-    // archive/delete/create-new screen (openProjectSwitcher) still
-    // exists, just reachable from the small icon beside Title now
-    // instead of a standalone PROJECT field.
-    T().wire('sc-title-manage-btn', openProjectSwitcher);
+    // PROJECT") -- Title now covers picking a board. Renaming it is a
+    // double-click, same as Topic's own corner-flip: opens that board's
+    // own DETAILS card (openSbDetail), same editable-title field every
+    // header/subber card already has. No separate pencil/manage button.
+    (function(){
+      var titleTrigger=document.getElementById('sc-title-trigger');
+      if(titleTrigger) titleTrigger.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        var rootRow=_sboardCurrentRootRow();
+        if(rootRow) openSbDetail(rootRow);
+      });
+    })();
     _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
@@ -1415,11 +1432,26 @@
     });
     addRow.appendChild(addBtn);
     menu.appendChild(addRow);
+    // Moved to <body> so position:fixed has nothing above it in the DOM
+    // that could re-trap it in a low stacking context -- see the
+    // .sc-cdrop-menu CSS note above. Idempotent: harmless if already there.
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
     trigger.onclick=function(e){
       e.stopPropagation();
       var willOpen=menu.hidden;
       _sboardCloseAllDropdowns(willOpen?menuId:null);
-      menu.hidden=!willOpen;
+      if(willOpen){
+        var r=trigger.getBoundingClientRect();
+        menu.style.left=r.left+'px';
+        menu.style.top=(r.bottom+4)+'px';
+        menu.style.minWidth=Math.max(120,r.width)+'px';
+        menu.hidden=false;
+        // Clamp to the viewport's right edge for longer Title names.
+        var mr=menu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      } else {
+        menu.hidden=true;
+      }
     };
   }
 

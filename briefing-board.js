@@ -1758,11 +1758,24 @@
     });
     addRow.appendChild(addBtn);
     menu.appendChild(addRow);
+    // Moved to <body>, same reasoning as the Idea Board's own dropdown --
+    // see the .bb-cdrop-menu CSS note above. Idempotent.
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
     trigger.onclick=function(e){
       e.stopPropagation();
       var willOpen=menu.hidden;
       _bbCloseAllDropdowns(willOpen?menuId:null);
-      menu.hidden=!willOpen;
+      if(willOpen){
+        var r=trigger.getBoundingClientRect();
+        menu.style.left=r.left+'px';
+        menu.style.top=(r.bottom+4)+'px';
+        menu.style.minWidth=Math.max(120,r.width)+'px';
+        menu.hidden=false;
+        var mr=menu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      } else {
+        menu.hidden=true;
+      }
     };
   }
 
@@ -2224,9 +2237,16 @@
       // its own options, so Type/Title are a trigger button + a real
       // styled menu, ending in the same dashed-circle (+) as .tm-add-tile.
       +'.bb-cdrop{position:relative}'
-      +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;width:100%}'
+      // Centered, Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-trigger.
+      +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;width:100%}'
       +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(9px * var(--fg-text-scale,1));opacity:.6;flex-shrink:0}'
-      +'.bb-cdrop-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:50;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto}'
+      // position:fixed + moved to <body> on open (see _bbRenderDropdown),
+      // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
+      // inside the header band, the menu was trapped in that band's own
+      // stacking context no matter its own z-index, so board content
+      // underneath painted over it. Living as a direct child of <body>
+      // with a real viewport position escapes that.
+      +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
       +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
