@@ -2305,7 +2305,7 @@
       // model (height/padding/radius/opacity/hover) exactly; color and
       // font stay Briefing's own established theme (Gear > Colors),
       // which was never the part that had drifted.
-      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85}'
+      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-hdr-select:hover{opacity:1}'
       // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
       // gone; double-click the Title trigger to rename, same interaction
@@ -2360,6 +2360,11 @@
       +'.bb-mh{color:var(--bb-ink);font-size:calc(38px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
+      // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
+      // (+) should be surrounded by a dotted line for consistency") --
+      // same modifier pattern as .bb-key-add over .bb-key-btn: keep the
+      // icon button's box, swap corners for a dashed circle.
+      +'.bb-icon-btn-add{border-radius:50%;border-style:dashed}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
       +'.bb-doors-row{display:flex;gap:6px;margin-bottom:10px}'
       +'.bb-door-btn{flex:0 0 auto}'
@@ -2656,7 +2661,7 @@
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
             +'</div>'
-            +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
+            +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
             +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
             +'<div class="bb-field bb-dates-block"><label>Dates</label>'
@@ -2845,7 +2850,7 @@
             +'<div id="bb-sharing-add-row" style="margin-top:8px">'
               +'<div style="display:flex;gap:6px;margin-bottom:6px">'
                 +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
-                +'<button class="bb-icon-btn" id="bb-sharing-add-btn" title="Add">+</button>'
+                +'<button class="bb-icon-btn bb-icon-btn-add" id="bb-sharing-add-btn" title="Add">+</button>'
               +'</div>'
             +'</div>'
           +'</div>'
