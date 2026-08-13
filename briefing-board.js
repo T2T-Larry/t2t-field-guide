@@ -1680,13 +1680,12 @@
     await _bbSwitchToBoard((match||fallback).id);
   }
 
-  // NAME picker's list is scoped to whichever TYPE is currently
-  // selected (Aug 3 2026) -- reads the TYPE dropdown's live value so a
-  // rebuild mid-switch (see wireTypePicker) always reflects the type the
-  // traveler is actually looking at, not stale data from _bbBoards.
+  // NAME/Title's list is scoped to whichever TYPE is currently active.
+  // Derived straight from the real current board's own board_type (Aug
+  // 13 2026: same fix applied to the Idea Board's equivalent function,
+  // which had the bug this one was written correctly to avoid in the
+  // first place -- no DOM value read in the loop).
   function _bbActiveBoardType(){
-    var typeSel=document.getElementById('bb-type-picker');
-    if(typeSel && typeSel.value) return typeSel.value;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     return (board && board.board_type) || 'personal';
   }
@@ -1694,9 +1693,9 @@
   // Extra Types beyond the fixed four, Aug 13 2026 -- Larry: Type is
   // open-ended now, same (+) pattern as a header's own (+) for adding
   // subbers. Any board_type value already in use (created via the
-  // "(+) Add a type..." option below) shows up here automatically, no
-  // separate types table needed -- the distinct values already in
-  // briefing_boards ARE the list.
+  // dashed-circle (+) below) shows up here automatically, no separate
+  // types table needed -- the distinct values already in briefing_boards
+  // ARE the list.
   function _bbExtraBoardTypes(){
     var fixed={}; BB_BOARD_TYPES.forEach(function(t){ fixed[t.value]=true; });
     var seen={}, extra=[];
@@ -1711,29 +1710,104 @@
     if(hit) return hit.label;
     return String(value||'').replace(/(^|[_\s]+)([a-z])/g, function(m,p1,p2){ return (p1?' ':'')+p2.toUpperCase(); }).trim();
   }
+
+  // Custom dropdown, Aug 13 2026 -- Larry: "the (+) should be at the
+  // bottom of each dropdown list, not to the side" AND "the + in a
+  // dotted line circle just like every other add." A native <select>
+  // can't render a real dashed circle as one of its own options, so
+  // Type and Title are a small trigger button + a real styled menu
+  // instead, ending in that literal dashed-circle (+). Mirrors the Idea
+  // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
+  function _bbCloseAllDropdowns(exceptMenuId){
+    ['bb-type-menu','bb-board-menu'].forEach(function(id){
+      if(id===exceptMenuId) return;
+      var m=document.getElementById(id);
+      if(m) m.hidden=true;
+    });
+  }
+  document.addEventListener('click', function(){ _bbCloseAllDropdowns(null); });
+
+  function _bbRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle){
+    var trigger=document.getElementById(triggerId), menu=document.getElementById(menuId);
+    if(!trigger || !menu) return;
+    var current=options.filter(function(o){ return String(o.value)===String(currentValue); })[0];
+    trigger.textContent = current ? current.label : (options[0] ? options[0].label : '—');
+    menu.innerHTML='';
+    options.forEach(function(o){
+      var row=document.createElement('div');
+      row.className='bb-cdrop-row'+(current && String(current.value)===String(o.value) ? ' active' : '');
+      row.textContent=o.label;
+      row.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        onSelect(o.value);
+      });
+      menu.appendChild(row);
+    });
+    var addRow=document.createElement('div');
+    addRow.className='bb-cdrop-addrow';
+    var addBtn=document.createElement('button');
+    addBtn.type='button';
+    addBtn.className='bb-dotted-add-btn';
+    addBtn.title=addTitle||'Add';
+    addBtn.textContent='+';
+    addBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      menu.hidden=true;
+      onAdd();
+    });
+    addRow.appendChild(addBtn);
+    menu.appendChild(addRow);
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?menuId:null);
+      menu.hidden=!willOpen;
+    };
+  }
+
   function _bbRenderTypePicker(){
-    var sel=document.getElementById('bb-type-picker'); if(!sel) return;
     var extra=_bbExtraBoardTypes();
-    var opts=BB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_bbTypeLabel(v)}; }))
-      .map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
-    sel.innerHTML = opts;
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    sel.value = (board && board.board_type) || 'personal';
+    var opts=BB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_bbTypeLabel(v)}; }));
+    var activeType=_bbActiveBoardType();
+    _bbRenderDropdown('bb-type-trigger','bb-type-menu', opts, activeType, async function(newType){
+      var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===newType; });
+      if(matching.length){
+        await _bbSwitchToBoard(matching[0].id);
+      } else {
+        var hit=opts.filter(function(o){ return o.value===newType; })[0];
+        var typeLabel=hit?hit.label:newType;
+        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
+        if(!name || !name.trim()){ _bbRenderTypePicker(); return; }
+        await _bbCreateBoard(name.trim(), newType);
+      }
+    }, async function(){
+      var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
+      if(!typeName || !typeName.trim()) return;
+      var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
+      var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
+      if(!firstBoardName || !firstBoardName.trim()) return;
+      await _bbCreateBoard(firstBoardName.trim(), typeValue);
+    }, 'Add a type');
   }
 
   function _bbRenderBoardPicker(){
-    var sel=document.getElementById('bb-board-picker'); if(!sel) return;
     var activeType=_bbActiveBoardType();
     var filtered=_bbBoards.filter(function(b){ return (b.board_type||'personal')===activeType; });
-    var opts=filtered.map(function(b){
-      return '<option value="'+_esc(b.id)+'"'+(b.id===_bbCurrentBoardId?' selected':'')+'>'+_esc(b.name||'Untitled Board')+'</option>';
-    }).join('');
-    sel.innerHTML = opts;
+    var opts=filtered.map(function(b){ return {value:b.id, label:b.name||'Untitled Board'}; });
+    _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, _bbCurrentBoardId, async function(id){
+      await _bbSwitchToBoard(id);
+    }, async function(){
+      var typeLabel=_bbTypeLabel(_bbActiveBoardType());
+      var name=window.prompt('Name for the new '+typeLabel+' board:');
+      if(!name || !name.trim()) return;
+      await _bbCreateBoard(name.trim(), _bbActiveBoardType());
+    }, 'Add a board');
   }
 
-  // Shared by both the NAME picker's "+ Add a board..." and the TYPE
-  // picker's "no boards of this type yet" prompt (Aug 3 2026) -- one
-  // creation path instead of two copies of the same Supabase insert.
+  // Shared by both Title's own (+) and Type's "no boards of this type
+  // yet" prompt (Aug 3 2026) -- one creation path instead of two copies
+  // of the same Supabase insert.
   async function _bbCreateBoard(name, boardType){
     var uid=await _bbCurrentUserId();
     if(!uid){
@@ -1756,65 +1830,6 @@
       window.alert('Could not add the board "'+name+'". Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again or refresh the page.');
       return false;
     }
-  }
-
-  function wireBoardPicker(){
-    var sel=document.getElementById('bb-board-picker'); if(!sel) return;
-    sel.addEventListener('change', async function(){
-      if(sel.value) await _bbSwitchToBoard(sel.value);
-    });
-  }
-
-  // Dotted-circle (+) beside Title, Aug 13 2026 -- carries what the
-  // board picker's old "(+) Add a board..." text option used to do.
-  function wireBoardAddBtn(){
-    var btn=document.getElementById('bb-board-add-btn'); if(!btn) return;
-    btn.addEventListener('click', async function(e){
-      e.stopPropagation();
-      var typeSel=document.getElementById('bb-type-picker');
-      var boardType=_bbActiveBoardType();
-      var typeLabel=(typeSel && typeSel.options[typeSel.selectedIndex]) ? typeSel.options[typeSel.selectedIndex].text : 'board';
-      var name=window.prompt('Name for the new '+typeLabel+' board:');
-      if(!name || !name.trim()) return;
-      await _bbCreateBoard(name.trim(), boardType);
-    });
-  }
-
-  // TYPE picker, Aug 3 2026 -- switching TYPE jumps straight to that
-  // type's first board (matching NAME's own alphabetical-by-created-at
-  // order), or, if this traveler has none of that type yet, prompts to
-  // create the first one right there (mirrors NAME's own "+ Add a
-  // board..." flow, same _bbCreateBoard helper). Cancelling the prompt
-  // reverts TYPE back to whatever board is actually still active, same
-  // as NAME's own cancel-leaves-you-where-you-were behavior.
-  function wireTypePicker(){
-    var sel=document.getElementById('bb-type-picker'); if(!sel) return;
-    sel.addEventListener('change', async function(){
-      var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===sel.value; });
-      if(matching.length){
-        await _bbSwitchToBoard(matching[0].id);
-      } else {
-        var typeLabel=sel.options[sel.selectedIndex].text;
-        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
-        if(!name || !name.trim()){ _bbRenderTypePicker(); return; }
-        await _bbCreateBoard(name.trim(), sel.value);
-      }
-    });
-  }
-
-  // Dotted-circle (+) beside Type, Aug 13 2026 -- carries what the type
-  // picker's old "(+) Add a type..." text option used to do.
-  function wireTypeAddBtn(){
-    var btn=document.getElementById('bb-type-add-btn'); if(!btn) return;
-    btn.addEventListener('click', async function(e){
-      e.stopPropagation();
-      var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
-      if(!typeName || !typeName.trim()) return;
-      var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
-      var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
-      if(!firstBoardName || !firstBoardName.trim()) return;
-      await _bbCreateBoard(firstBoardName.trim(), typeValue);
-    });
   }
 
   function _esc(s){
@@ -2202,6 +2217,20 @@
       // dropdown itself.
       +'.bb-dotted-add-btn{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:transparent;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;padding:0;opacity:.8;transition:opacity .15s,background .15s}'
       +'.bb-dotted-add-btn:hover{opacity:1;background:var(--bb-bg)}'
+      // Custom Type/Title dropdowns, Aug 13 2026 -- Larry: "the (+)
+      // should be at the bottom of each dropdown list, not to the
+      // side." Same reasoning as the Idea Board's own sc-cdrop: a
+      // native <select> can't render a real dashed circle as one of
+      // its own options, so Type/Title are a trigger button + a real
+      // styled menu, ending in the same dashed-circle (+) as .tm-add-tile.
+      +'.bb-cdrop{position:relative}'
+      +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;width:100%}'
+      +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(9px * var(--fg-text-scale,1));opacity:.6;flex-shrink:0}'
+      +'.bb-cdrop-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:50;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto}'
+      +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
+      +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
+      +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
+      +'.bb-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
       // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
       // Push tagline lower." Was 20px (sized for when it sat next to the
       // big board-name pill); now the header's one permanent, static
@@ -2443,8 +2472,8 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-mh-namerow"><select id="bb-type-picker" class="bb-type-picker" title="Board type"></select><button type="button" id="bb-type-add-btn" class="bb-dotted-add-btn" title="Add a type">+</button></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-mh-namerow"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select><button type="button" id="bb-board-add-btn" class="bb-dotted-add-btn" title="Add a board">+</button><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-type-picker bb-cdrop-trigger" id="bb-type-trigger" title="Board type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-mh-namerow"><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-board-picker bb-cdrop-trigger" id="bb-board-trigger" title="Switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
               +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><select id="bb-source-picker" class="bb-mh-source-picker" title="Filter"></select></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
@@ -4150,10 +4179,8 @@
   }
 
   function wireTopicBar(){
-    wireTypePicker();
-    wireBoardPicker();
-    wireTypeAddBtn();
-    wireBoardAddBtn();
+    // Type/Title dropdowns wire themselves fresh on every render now
+    // (Aug 13 2026 -- see _bbRenderDropdown), no separate wire step.
     wireSourcePicker();
     wireRenameButton();
     T().wire('bb-close-x', function(){

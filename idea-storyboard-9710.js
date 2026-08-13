@@ -283,9 +283,22 @@
         +'#sc-parent-hit{cursor:pointer}'
         +'#sc-parent-hit.inert{cursor:default}'
         +'#sc-parent-label{font-family:\'Playfair Display\',serif;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:#fff;line-height:1.2}'
-        +'#sc-project-hit{cursor:pointer}'
-        +'#sc-project-label{font-family:\'Playfair Display\',serif;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:#fff;line-height:1.2}'
-        +'#sc-topic-box.dragover,#sc-parent-hit.dragover,#sc-project-hit.dragover{outline:2px solid #5b9bd5}'
+        +'#sc-topic-box.dragover,#sc-parent-hit.dragover{outline:2px solid #5b9bd5}'
+        // Custom Type/Title dropdowns, Aug 13 2026 -- Larry: "the (+)
+        // should be at the bottom of each dropdown list, not to the
+        // side." A native <select> can't put a real dashed circle inside
+        // one of its own options, so Type/Title are a small trigger
+        // button + a real styled menu instead; the menu's last row is
+        // the dashed-circle (+), same shape as every other add on this
+        // board (see .sc-dotted-add-btn).
+        +'.sc-cdrop{position:relative}'
+        +'.sc-cdrop-trigger{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}'
+        +'.sc-cdrop-trigger:after{content:\'\u25be\';font-size:calc(8px * var(--fg-text-scale,1));opacity:.7;flex-shrink:0}'
+        +'.sc-cdrop-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:100%;background:#1a3a5c;border:1px solid rgba(255,255,255,.24);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:50;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto}'
+        +'.sc-cdrop-row{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:#fff;border-radius:6px;cursor:pointer;white-space:nowrap}'
+        +'.sc-cdrop-row:hover{background:rgba(255,255,255,.14)}'
+        +'.sc-cdrop-row.active{background:rgba(255,255,255,.1);font-weight:700}'
+        +'.sc-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
         +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
@@ -473,22 +486,24 @@
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Type</div>'
-      +'<div style="display:flex;align-items:center;gap:4px">'
-      +'<select id="sc-type-picker" class="sc-hdr-select" title="Switch boards"></select>'
-      +'<button type="button" id="sc-type-add-btn" class="sc-dotted-add-btn" title="Add a type">+</button>'
+      +'<div class="sc-cdrop" id="sc-type-cdrop">'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-type-trigger" title="Switch boards"></button>'
+      +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
       +'</div>'
       +'</div>'
+      // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
+      // Title now covers what it used to (picking which board is open),
+      // scoped to Type instead of listing every board at once. The small
+      // pencil icon opens the same rename/archive/delete/create screen
+      // PROJECT used to (openProjectSwitcher), so that's not stranded.
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Title</div>'
       +'<div style="display:flex;align-items:center;gap:4px">'
-      +'<select id="sc-title-picker" class="sc-hdr-select" title="Switch boards"></select>'
-      +'<button type="button" id="sc-title-add-btn" class="sc-dotted-add-btn" title="Add a board">+</button>'
+      +'<div class="sc-cdrop" id="sc-title-cdrop">'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger" title="Switch boards"></button>'
+      +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'
-      +'</div>'
-      +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Project</div>'
-      +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
-      +'<div id="sc-project-label" class="sc-hdr-frame-label">Wish Tank</div>'
+      +'<button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-title-manage-btn" title="Rename, archive, or delete a board" style="width:22px;height:22px;font-size:calc(10px * var(--fg-text-scale,1))">\u270f\ufe0f</button>'
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
@@ -536,10 +551,12 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
-    _sboardWireTypePicker();
-    _sboardWireTitlePicker();
-    _sboardWireTypeAddBtn();
-    _sboardWireTitleAddBtn();
+    // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
+    // PROJECT") -- Title now covers picking a board. Its old rename/
+    // archive/delete/create-new screen (openProjectSwitcher) still
+    // exists, just reachable from the small icon beside Title now
+    // instead of a standalone PROJECT field.
+    T().wire('sc-title-manage-btn', openProjectSwitcher);
     _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
@@ -586,10 +603,6 @@
       });
     })();
 
-    // PROJECT opens the switcher — lets you move to a different top-level
-    // project entirely (Wish Tank -> Field Guide), not just back to the
-    // current one's own root.
-    T().wire('sc-project-hit', openProjectSwitcher);
 
     // VIEW-by-person filter select -- change re-renders from cache (cheap,
     // no re-fetch) with the new filter applied. Aug 9 2026, Larry.
@@ -1326,9 +1339,15 @@
     }
   }
 
+  // Aug 13 2026, Larry: TYPE reverting to Personal after picking Project
+  // was this function reading the <select>'s own DOM value right after
+  // that same select's innerHTML got rebuilt (which resets a <select> to
+  // its first option before the real value gets reapplied) -- a stale
+  // read racing its own render, not a real conflict with the old PROJECT
+  // field. Fixed by deriving straight from the real current board's own
+  // board_type (same approach Briefing Board's _bbActiveBoardType/
+  // _bbRenderTypePicker already used correctly), no DOM value in the loop.
   function _sboardActiveBoardType(){
-    var typeSel=document.getElementById('sc-type-picker');
-    if(typeSel && typeSel.value) return typeSel.value;
     var curRoot=_sboardCurrentRootRow();
     var roots=_sboardMyRoots||[];
     var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
@@ -1346,22 +1365,95 @@
     return null;
   }
 
+  // Custom dropdown, Aug 13 2026 -- Larry: "the (+) should be at the
+  // bottom of each dropdown list, not to the side" AND "the + in a
+  // dotted line circle just like every other add." A native <select>
+  // can only show plain text options -- there's no way to make one row
+  // render as a real dashed circle. So Type and Title are no longer
+  // native <select> elements: each is a small trigger button that opens
+  // a real, CSS-built menu, and that menu's own last row is the literal
+  // dashed-circle (+), same shape as the header/subber add tiles.
+  // Shared by both Type and Title below; closeAll() also lives here so
+  // opening one closes the other, and a page click anywhere closes both.
+  function _sboardCloseAllDropdowns(exceptMenuId){
+    ['sc-type-menu','sc-title-menu'].forEach(function(id){
+      if(id===exceptMenuId) return;
+      var m=document.getElementById(id);
+      if(m) m.hidden=true;
+    });
+  }
+  document.addEventListener('click', function(){ _sboardCloseAllDropdowns(null); });
+
+  function _sboardRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle){
+    var trigger=document.getElementById(triggerId), menu=document.getElementById(menuId);
+    if(!trigger || !menu) return;
+    var current=options.filter(function(o){ return String(o.value)===String(currentValue); })[0];
+    trigger.textContent = current ? current.label : (options[0] ? options[0].label : '—');
+    menu.innerHTML='';
+    options.forEach(function(o){
+      var row=document.createElement('div');
+      row.className='sc-cdrop-row'+(current && String(current.value)===String(o.value) ? ' active' : '');
+      row.textContent=o.label;
+      row.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        onSelect(o.value);
+      });
+      menu.appendChild(row);
+    });
+    var addRow=document.createElement('div');
+    addRow.className='sc-cdrop-addrow';
+    var addBtn=document.createElement('button');
+    addBtn.type='button';
+    addBtn.className='sc-dotted-add-btn';
+    addBtn.title=addTitle||'Add';
+    addBtn.textContent='+';
+    addBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      menu.hidden=true;
+      onAdd();
+    });
+    addRow.appendChild(addBtn);
+    menu.appendChild(addRow);
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?menuId:null);
+      menu.hidden=!willOpen;
+    };
+  }
+
   function _sboardRenderTypePicker(){
-    var sel=document.getElementById('sc-type-picker'); if(!sel) return;
     var roots=_sboardMyRoots;
     if(!roots){
       _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
       roots=[];
     }
     var extra=_sboardExtraBoardTypes(roots);
-    var opts=IB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_sboardTypeLabel(v)}; }))
-      .map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
-    // No more "(+) Add a type..." text option -- Aug 13 2026, Larry: the
-    // (+) belongs outside the list as the same dotted-circle button every
-    // other add uses (see .sc-dotted-add-btn / sc-type-add-btn below),
-    // not a row of text buried in the dropdown.
-    sel.innerHTML = opts;
-    sel.value = _sboardActiveBoardType();
+    var opts=IB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_sboardTypeLabel(v)}; }));
+    var activeType=_sboardActiveBoardType();
+    _sboardRenderDropdown('sc-type-trigger','sc-type-menu', opts, activeType, async function(newType){
+      var rts=await _sboardLoadMyRoots();
+      var matching=rts.filter(function(r){ return (r.board_type||'personal')===newType; });
+      if(matching.length){
+        _sboardSwitchToRootBoard(matching[0].id);
+      } else {
+        var hit=opts.filter(function(o){ return o.value===newType; })[0];
+        var typeLabel=hit?hit.label:newType;
+        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
+        if(!name || !name.trim()){ _sboardRenderTypePicker(); return; }
+        var newId2=await _sboardCreateRootBoard(name.trim(), newType);
+        if(newId2) _sboardSwitchToRootBoard(newId2); else _sboardRenderTypePicker();
+      }
+    }, async function(){
+      var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
+      if(!typeName || !typeName.trim()) return;
+      var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
+      var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
+      if(!firstBoardName || !firstBoardName.trim()) return;
+      var newId=await _sboardCreateRootBoard(firstBoardName.trim(), typeValue);
+      if(newId) _sboardSwitchToRootBoard(newId);
+    }, 'Add a type');
   }
 
   // TITLE picker, Aug 13 2026 -- Larry: "the next field is TITLE." Lists
@@ -1370,7 +1462,6 @@
   // never show up here) scoped to whichever Type is currently selected --
   // same relationship Briefing Board's Title/Type pair already has.
   function _sboardRenderTitlePicker(){
-    var sel=document.getElementById('sc-title-picker'); if(!sel) return;
     var roots=_sboardMyRoots;
     if(!roots){
       _sboardLoadMyRoots().then(function(){ _sboardRenderTitlePicker(); });
@@ -1379,64 +1470,16 @@
     var activeType=_sboardActiveBoardType();
     var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
     var curRoot=_sboardCurrentRootRow();
-    sel.innerHTML = filtered.map(function(r){
-      return '<option value="'+r.id+'"'+(curRoot&&String(curRoot.id)===String(r.id)?' selected':'')+'>'+(r.text_content||'(untitled)')+'</option>';
-    }).join('');
-  }
-
-  function _sboardWireTypePicker(){
-    var sel=document.getElementById('sc-type-picker'); if(!sel) return;
-    sel.addEventListener('change', async function(){
-      var roots=await _sboardLoadMyRoots();
-      var matching=roots.filter(function(r){ return (r.board_type||'personal')===sel.value; });
-      if(matching.length){
-        _sboardSwitchToRootBoard(matching[0].id);
-      } else {
-        var typeLabel=sel.options[sel.selectedIndex].text;
-        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
-        if(!name || !name.trim()){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); return; }
-        var newId2=await _sboardCreateRootBoard(name.trim(), sel.value);
-        if(newId2) _sboardSwitchToRootBoard(newId2); else { _sboardRenderTypePicker(); _sboardRenderTitlePicker(); }
-      }
-    });
-  }
-
-  function _sboardWireTitlePicker(){
-    var sel=document.getElementById('sc-title-picker'); if(!sel) return;
-    sel.addEventListener('change', function(){
-      if(sel.value) _sboardSwitchToRootBoard(sel.value);
-    });
-  }
-
-  // Dotted-circle (+) buttons beside Type and Title, Aug 13 2026 -- same
-  // "add a type"/"add a board" flows the pickers used to carry as a text
-  // option, now living on their own button so the (+) itself can be the
-  // real dashed-circle symbol instead of dropdown text.
-  function _sboardWireTypeAddBtn(){
-    var btn=document.getElementById('sc-type-add-btn'); if(!btn) return;
-    btn.addEventListener('click', async function(e){
-      e.stopPropagation();
-      var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
-      if(!typeName || !typeName.trim()) return;
-      var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
-      var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
-      if(!firstBoardName || !firstBoardName.trim()) return;
-      var newId=await _sboardCreateRootBoard(firstBoardName.trim(), typeValue);
-      if(newId) _sboardSwitchToRootBoard(newId);
-    });
-  }
-
-  function _sboardWireTitleAddBtn(){
-    var btn=document.getElementById('sc-title-add-btn'); if(!btn) return;
-    btn.addEventListener('click', async function(e){
-      e.stopPropagation();
-      var activeType=_sboardActiveBoardType();
-      var typeLabel=_sboardTypeLabel(activeType);
+    var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
+    _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
+      _sboardSwitchToRootBoard(id);
+    }, async function(){
+      var typeLabel=_sboardTypeLabel(_sboardActiveBoardType());
       var name=window.prompt('Name for the new '+typeLabel+' board:');
       if(!name || !name.trim()) return;
-      var newId=await _sboardCreateRootBoard(name.trim(), activeType);
+      var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
       if(newId) _sboardSwitchToRootBoard(newId);
-    });
+    }, 'Add a board');
   }
 
   // Same climb as _sboardProjectRowFor, but takes the rows-by-id map as an
@@ -3091,7 +3134,6 @@
     var areaEl=document.getElementById('sc-header-area');
     var parentHit=document.getElementById('sc-parent-hit');
     var parentLabel=document.getElementById('sc-parent-label');
-    var projectLabel=document.getElementById('sc-project-label');
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
       var topicRow=_sboardAllRowsById[T2TShared.currentTopicId];
@@ -3105,15 +3147,9 @@
           });
         }
       }
-      // PROJECT — fixed root anchor, walks the cluster_id chain all the way
-      // up regardless of how deep Topic currently is. Locked July 12, 2026:
-      // at the project apex (nothing above Topic yet), Project/Parent/Topic
-      // all read the same name — e.g. viewing Wish Tank itself shows
-      // "PROJECT Wish Tank · PARENT Wish Tank · TOPIC Wish Tank" — rather
-      // than Parent falling back to generic placeholder text.
-      var projectRow=_sboardProjectRowFor(topicRow);
-      var projectName=(projectRow?projectRow.text_content:topicRow.text_content)||'(untitled)';
-      if(projectLabel) projectLabel.textContent=projectName;
+      // PROJECT field dropped, Aug 13 2026 -- Title now shows/switches
+      // the current board; TYPE/TITLE both re-render on every Topic
+      // change so they stay in sync with whatever's actually on screen.
       _sboardRenderTypePicker();
       _sboardRenderTitlePicker();
       var parentId=topicRow.cluster_id||null;
@@ -3133,15 +3169,6 @@
       if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
       if(topicBadge){ topicBadge.innerHTML=''; }
       if(topicBox){ topicBox.style.background=''; }
-      // Larry, Aug 3 2026 (bug report): "It claims to be in the Wish
-      // Tank project but that is not true!!" This branch only runs
-      // when there's genuinely no real Topic selected (currentTopicId
-      // null/unresolved) -- PROJECT was hardcoded to the literal text
-      // "Wish Tank" here, which reads as a real (wrong) answer instead
-      // of the same "nothing selected" state PARENT already shows
-      // correctly with an em dash. Match that instead of naming any
-      // specific project when none is actually chosen.
-      if(projectLabel) projectLabel.textContent='\u2014';
       if(parentLabel) parentLabel.textContent='\u2014';
       if(parentHit){ parentHit.classList.add('inert'); }
     }
