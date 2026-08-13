@@ -1225,8 +1225,19 @@
   // is unaffected.
   var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Company'};
 
+  var BB_THEME_VARS=['--bb-bg','--bb-accent','--bb-ink','--bb-sub','--bb-head-font','--bb-body-font'];
+  function _bbSyncMenuTheme(menu){
+    var fgr=document.getElementById('fg-root'); if(!fgr) return;
+    var cs=getComputedStyle(fgr);
+    BB_THEME_VARS.forEach(function(v){
+      var val=cs.getPropertyValue(v);
+      if(val) menu.style.setProperty(v, val.trim());
+    });
+  }
+
   function _bbWireViewTrigger(trigger, menu){
-    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    if(menu.parentElement!==document.body){ document.body.appendChild(menu); }
+    _bbSyncMenuTheme(menu);
     trigger.onclick=function(e){
       e.stopPropagation();
       var willOpen=menu.hidden;
@@ -1845,8 +1856,11 @@
     addRow.appendChild(addBtn);
     menu.appendChild(addRow);
     // Moved to <body>, same reasoning as the Idea Board's own dropdown --
-    // see the .bb-cdrop-menu CSS note above. Idempotent.
-    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    // see the .bb-cdrop-menu CSS note above. Idempotent. Theme vars
+    // (--bb-accent etc.) live only on #fg-root, so re-synced onto the
+    // menu every time -- see _bbSyncMenuTheme.
+    if(menu.parentElement!==document.body){ document.body.appendChild(menu); }
+    _bbSyncMenuTheme(menu);
     trigger.onclick=function(e){
       e.stopPropagation();
       var willOpen=menu.hidden;
@@ -2488,7 +2502,6 @@
       +'.bb-card-foreign{border-style:dashed;opacity:0.92}'
       +'.bb-foreign-row{margin:1px 0 3px}'
       +'.bb-foreign-badge{display:inline-block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
-      +'.bb-mh-filtergrp{margin-top:6px}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
