@@ -1260,23 +1260,29 @@
   }
 
   async function _bbRenderSourcePicker(){
+    // Always visible, Aug 13 2026 (Larry: "exactly like the Idea Board...
+    // every new board will have this same setup") -- VIEW used to hide
+    // itself entirely when there was nothing to filter yet; the Idea
+    // Board's own VIEW never hides, so this no longer does either. An
+    // empty/quiet VIEW (just "Everything" or just the type label, no
+    // rows under it) is fine -- reserving the spot is what makes every
+    // board's header match.
     var grp=document.getElementById('bb-source-fieldgrp');
     var trigger=document.getElementById('bb-view-trigger');
     var menu=document.getElementById('bb-view-menu');
     var eyebrow=document.getElementById('bb-source-eyebrow');
     if(!grp || !trigger || !menu || !eyebrow) return;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    if(!board){ grp.style.display='none'; return; }
+    if(!board) return;
     _bbSourceFilter=null;
     menu.innerHTML='';
+    eyebrow.textContent='View';
     if(board.board_type==='personal'){
       var seen={}; var opts=[{value:'',label:'Everything'},{value:'origin:__native__',label:'Personal'}];
       _bbForeignCards.forEach(function(c){
         if(seen[c._homeBoardId]) return; seen[c._homeBoardId]=true;
         opts.push({value:'origin:'+c._homeBoardId, label:'From '+(c._homeBoardName||'')});
       });
-      if(opts.length<=2){ grp.style.display='none'; return; }
-      eyebrow.textContent='View';
       trigger.textContent='Everything';
       opts.forEach(function(o){
         var row=document.createElement('div');
@@ -1291,15 +1297,14 @@
         menu.appendChild(row);
       });
       _bbWireViewTrigger(trigger, menu);
-      grp.style.display='';
       return;
     }
-    var typeLabel=BB_TYPE_VIEW_LABEL[board.board_type];
-    if(!typeLabel){ grp.style.display='none'; return; }
+    // Falls back to "Team" for any custom/unrecognized board_type (from
+    // Type's own "+ Add a type..." flow) -- same universal default the
+    // Idea Board's VIEW always uses, never hidden for an unknown type.
+    var typeLabel=BB_TYPE_VIEW_LABEL[board.board_type] || 'Team';
     await _bbLoadRoster();
     var rows=_bbAllRosterRows();
-    if(!rows.length){ grp.style.display='none'; return; }
-    eyebrow.textContent='View';
     trigger.textContent=typeLabel;
 
     var teamRow=document.createElement('div');
@@ -1329,7 +1334,7 @@
       menu.appendChild(row);
     });
 
-    if(_bbRosterCanManage){
+    if(_bbRosterCanManage && board.board_type!=='personal'){
       var addRow=document.createElement('div');
       addRow.className='bb-cdrop-addrow';
       var addBtn=document.createElement('button');
@@ -1365,7 +1370,6 @@
     }
 
     _bbWireViewTrigger(trigger, menu);
-    grp.style.display='';
   }
 
   function _bbSourceFilterCards(cards){
@@ -2291,27 +2295,28 @@
       // "Accounting," "T2T," "Field Guide"). The center now carries the
       // permanent "Briefing Board" title, same text/size it always had,
       // just relocated.
-      +'.bb-mh-typebox{display:flex;gap:10px;justify-self:start;align-items:flex-end}'
-      +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px}'
+      +'.bb-mh-typebox{display:flex;gap:14px;justify-self:start;align-items:flex-start}'
+      +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
-      +'.bb-type-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:calc(120px * var(--fg-text-scale,1))}'
-      // NAME row, Aug 3 2026 -- pencil button added so a traveler can
-      // actually rename a board (Larry: "How can a traveler edit the
-      // name of the Briefing Board?" -- there was no way; renaming only
-      // ever happened by typing a fresh name into "+ Add a board...").
-      // Small and square like the header's other icon buttons, just
-      // scaled down (22px vs 30px) to sit level with the NAME select's
-      // own smaller 13px text instead of towering over it.
-      +'.bb-mh-namerow{display:flex;align-items:center;gap:4px}'
-      +'.bb-rename-btn{width:22px;height:22px;flex-shrink:0;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--fg-text-scale,1));cursor:pointer;padding:0}'
-      +'.bb-rename-btn:hover{background:var(--bb-bg)}'
+      // One shared trigger-box class for Type/Title/View, Aug 13 2026
+      // (Larry: "make the Briefing Board exactly like the Idea Board for
+      // TYPE, TITLE and VIEW... every new board will have this same
+      // setup") -- mirrors the Idea Board's single .sc-hdr-select box
+      // model (height/padding/radius/opacity/hover) exactly; color and
+      // font stay Briefing's own established theme (Gear > Colors),
+      // which was never the part that had drifted.
+      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85}'
+      +'.bb-hdr-select:hover{opacity:1}'
+      // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
+      // gone; double-click the Title trigger to rename, same interaction
+      // as the Idea Board's Title (see wireTopicBar's dblclick wiring).
       // Dotted-circle (+) beside Type/Title, Aug 13 2026 -- Larry: same
       // consistent symbol everywhere, matching .tm-add-tile's existing
       // dashed-circle look (Cast/team add) instead of the old text
       // "(+) Add a type/board..." row that used to live inside the
       // dropdown itself.
-      +'.bb-dotted-add-btn{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:transparent;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;padding:0;opacity:.8;transition:opacity .15s,background .15s}'
-      +'.bb-dotted-add-btn:hover{opacity:1;background:var(--bb-bg)}'
+      +'.bb-dotted-add-btn{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:transparent;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;padding:0;opacity:.75;transition:opacity .15s,background .15s,border-color .15s,color .15s}'
+      +'.bb-dotted-add-btn:hover{opacity:1;background:var(--bb-bg);border-color:var(--bb-ink);color:var(--bb-ink)}'
       // Custom Type/Title dropdowns, Aug 13 2026 -- Larry: "the (+)
       // should be at the bottom of each dropdown list, not to the
       // side." Same reasoning as the Idea Board's own sc-cdrop: a
@@ -2329,7 +2334,7 @@
       // underneath painted over it. Living as a direct child of <body>
       // with a real viewport position escapes that.
       +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
-      +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
+      +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
       +'.bb-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
@@ -2353,7 +2358,6 @@
       // against the title's descenders.
       +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
       +'.bb-mh{color:var(--bb-ink);font-size:calc(38px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      +'.bb-board-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:calc(150px * var(--fg-text-scale,1))}'
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       +'.bb-icon-btn:hover{background:var(--bb-bg)}'
@@ -2480,7 +2484,6 @@
       +'.bb-foreign-row{margin:1px 0 3px}'
       +'.bb-foreign-badge{display:inline-block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
       +'.bb-mh-filtergrp{margin-top:6px}'
-      +'.bb-mh-source-picker{background:#fff;border:1.5px solid var(--bb-accent);border-radius:6px;padding:5px 8px;font-family:var(--bb-head-font);font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);cursor:pointer;outline:none;max-width:calc(170px * var(--fg-text-scale,1))}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
          Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
          click-outside-closes" pattern as idea-storyboard-9710.js's
@@ -2586,9 +2589,9 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-type-picker bb-cdrop-trigger" id="bb-type-trigger" title="Board type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-mh-namerow"><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-board-picker bb-cdrop-trigger" id="bb-board-trigger" title="Switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
-              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-mh-source-picker bb-cdrop-trigger" id="bb-view-trigger" title="Filter"></button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Board type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
@@ -4271,38 +4274,45 @@
 
   // Rename, Aug 3 2026 -- Larry: "How can a traveler edit the name of
   // the Briefing Board?" There wasn't a way; the only place a name ever
-  // got typed in was "+ Add a board...". Small pencil button next to
-  // NAME does a plain rename-in-place -- same board, same cards, just a
-  // new label -- rather than creating a new board.
-  function wireRenameButton(){
-    T().wire('bb-rename-btn', async function(){
-      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      if(!board){ window.alert('No board is open yet -- nothing to rename.'); return; }
-      var newName=window.prompt('Rename this board:', board.name||'');
-      if(newName===null) return;
-      newName=newName.trim();
-      if(!newName || newName===board.name) return;
-      var sb=T().sb;
-      try{
-        var res=await sb.from('briefing_boards').update({name:newName}).eq('id', board.id).select().single();
-        if(res.error){
-          console.error('Briefing Board: could not rename board', res.error);
-          window.alert('Could not rename the board. Error: '+(res.error.message||'unknown error')+'. Nothing was saved -- please try again.');
-          return;
-        }
-        board.name = newName;
-        _bbRenderBoardPicker();
-      }catch(e){
-        console.error('Briefing Board: could not rename board', e);
-        window.alert('Could not rename the board. Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again.');
+  // got typed in was "+ Add a board...". Originally a small pencil
+  // button next to NAME; Aug 13 2026 (Larry, "exactly like the Idea
+  // Board"): the pencil is gone, double-click the Title trigger instead
+  // -- same rename-in-place result, same interaction as the Idea
+  // Board's own Title (see wireTopicBar's dblclick wiring below).
+  async function _bbRenameCurrentBoard(){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board){ window.alert('No board is open yet -- nothing to rename.'); return; }
+    var newName=window.prompt('Rename this board:', board.name||'');
+    if(newName===null) return;
+    newName=newName.trim();
+    if(!newName || newName===board.name) return;
+    var sb=T().sb;
+    try{
+      var res=await sb.from('briefing_boards').update({name:newName}).eq('id', board.id).select().single();
+      if(res.error){
+        console.error('Briefing Board: could not rename board', res.error);
+        window.alert('Could not rename the board. Error: '+(res.error.message||'unknown error')+'. Nothing was saved -- please try again.');
+        return;
       }
-    });
+      board.name = newName;
+      _bbRenderBoardPicker();
+    }catch(e){
+      console.error('Briefing Board: could not rename board', e);
+      window.alert('Could not rename the board. Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again.');
+    }
   }
 
   function wireTopicBar(){
     // Type/Title dropdowns wire themselves fresh on every render now
     // (Aug 13 2026 -- see _bbRenderDropdown), no separate wire step.
-    wireRenameButton();
+    // Title's double-click-to-rename is wired once here instead, same
+    // as the Idea Board's own Title trigger -- the button element
+    // itself is never replaced across renders, only its text/menu.
+    var boardTrigger=document.getElementById('bb-board-trigger');
+    if(boardTrigger) boardTrigger.addEventListener('dblclick', function(e){
+      e.stopPropagation();
+      _bbRenameCurrentBoard();
+    });
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
