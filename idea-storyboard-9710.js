@@ -1289,7 +1289,13 @@
     if(!user) return _sboardMyRoots||[];
     if(!force && _sboardMyRoots && _sboardMyRootsLoadedFor===user.id) return _sboardMyRoots;
     try{
-      var res=await _sb.from('ideas').select('id,text_content,board_type,created_at').eq('user_id',user.id).is('cluster_id',null).order('created_at',{ascending:true});
+      // content_type='header' added Aug 13 2026 (Larry: "the Mike Vance
+      // video as boards... they are not boards") -- this query only
+      // checked cluster_id IS NULL, so any orphaned non-header row (a
+      // stray image, link, or blank test card with no parent) also
+      // qualified as a "root" and showed up in Type/Title as if it were
+      // a real board. Only real headers are boards.
+      var res=await _sb.from('ideas').select('id,text_content,board_type,created_at').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', created_at:r.created_at}; });
       _sboardMyRootsLoadedFor=user.id;
