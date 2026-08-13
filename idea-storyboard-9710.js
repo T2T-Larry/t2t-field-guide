@@ -463,6 +463,10 @@
       +'</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
+      +'<div class="sc-hdr-eyebrow">Type</div>'
+      +'<select id="sc-type-picker" class="sc-hdr-select" title="Switch boards"></select>'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div id="sc-project-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-project-label" class="sc-hdr-frame-label">Wish Tank</div>'
@@ -513,6 +517,8 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
+    _sboardWireTypePicker();
+    _sboardLoadMyRoots().then(_sboardRenderTypePicker);
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -1189,6 +1195,163 @@
       cur=parent; guard++;
     }
     return cur;
+  }
+
+  // Board Type / switching between separate trees, Aug 13 2026 -- Larry:
+  // "What do you want?" was never a real project, just placeholder text
+  // for the empty state -- every root-level header (cluster_id null) is
+  // already its own independent tree in the data (self-scoped: its
+  // project_id and topic_scope_id both point at its own id), because a
+  // traveler can be mid-flight on several completely separate boards
+  // (different projects, companies, clients, or their own personal one).
+  // This section gives that already-real structure an actual front
+  // door: a Type picker that switches which of your root trees you're
+  // looking at, matching Briefing Board's Type exactly, including the
+  // same "(+) Add a type..." open-ended pattern. Parent/child (Fractal
+  // Casting) is a completely separate, independent thing -- it only
+  // ever comes from a HEADER being delegated into its own Topic, at any
+  // depth, inside whichever board this is.
+  var IB_BOARD_TYPES = [
+    {value:'personal', label:'Personal'},
+    {value:'project', label:'Project'},
+    {value:'departmental', label:'Department'},
+    {value:'company', label:'Company'}
+  ];
+  var _sboardMyRoots = null;
+  var _sboardMyRootsLoadedFor = null;
+
+  async function _sboardLoadMyRoots(force){
+    var _sb=T().sb; if(!_sb) return _sboardMyRoots||[];
+    var user=(await _sb.auth.getUser()).data.user;
+    if(!user) return _sboardMyRoots||[];
+    if(!force && _sboardMyRoots && _sboardMyRootsLoadedFor===user.id) return _sboardMyRoots;
+    try{
+      var res=await _sb.from('ideas').select('id,text_content,board_type,created_at').eq('user_id',user.id).is('cluster_id',null).order('created_at',{ascending:true});
+      if(res.error) throw res.error;
+      _sboardMyRoots=(res.data||[]).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', created_at:r.created_at}; });
+      _sboardMyRootsLoadedFor=user.id;
+    }catch(e){ console.warn('Idea Board: could not load your boards', e); _sboardMyRoots=_sboardMyRoots||[]; }
+    return _sboardMyRoots;
+  }
+
+  function _sboardExtraBoardTypes(roots){
+    var fixed={}; IB_BOARD_TYPES.forEach(function(t){ fixed[t.value]=true; });
+    var seen={}, extra=[];
+    (roots||[]).forEach(function(r){
+      var v=r.board_type||'personal';
+      if(!fixed[v] && !seen[v]){ seen[v]=true; extra.push(v); }
+    });
+    return extra;
+  }
+
+  function _sboardTypeLabel(value){
+    var hit=IB_BOARD_TYPES.filter(function(t){ return t.value===value; })[0];
+    if(hit) return hit.label;
+    return String(value||'').replace(/(^|[_\s]+)([a-z])/g, function(m,p1,p2){ return (p1?' ':'')+p2.toUpperCase(); }).trim();
+  }
+
+  // Switches straight to a different root tree -- same shape as
+  // _sboardDrillInto/_sboardGoUpOneLevel below, just targeting a root id
+  // directly instead of climbing from the current position. Persists via
+  // the root's own id (a root is always its own project_id per the
+  // self-scoping pattern above), not _sboardPersistLastTopic's row
+  // lookup, since a freshly created or just-loaded root may not be warm
+  // in _sboardAllRowsById yet.
+  function _sboardSwitchToRootBoard(rootId){
+    T2TShared.currentTopicId=rootId;
+    T2TShared.filter=rootId;
+    try{
+      if(window.T2TData && window.T2TData.setLastInputTopic) window.T2TData.setLastInputTopic(rootId, rootId);
+      if(window.T2TMedia && window.T2TMedia.rememberProject) window.T2TMedia.rememberProject(rootId);
+    }catch(e){}
+    _sboardSpinWhile(renderSeaBoard());
+  }
+
+  async function _sboardCreateRootBoard(name, boardType){
+    var _sb=T().sb;
+    var user=(await _sb.auth.getUser()).data.user;
+    if(!user){
+      window.alert('Could not add a board: your sign-in session appears to have expired. Please refresh the page and sign in again, then try adding the board.');
+      return null;
+    }
+    try{
+      var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', text_content:name, cluster_id:null, board_type:boardType||'personal', created_at:new Date().toISOString(), color:T().getDefaultHeaderColor?T().getDefaultHeaderColor():null}).select().single();
+      if(ins.error || !ins.data){
+        console.error('Idea Board: could not create board', ins.error);
+        window.alert('Could not add the board "'+name+'". Error: '+(ins.error&&ins.error.message?ins.error.message:'unknown error')+'. Nothing was saved -- please try again or refresh the page.');
+        return null;
+      }
+      // Self-scoping, matching every existing root: a root's own
+      // project_id and topic_scope_id both point at its own id.
+      await _sb.from('ideas').update({project_id:ins.data.id, topic_scope_id:ins.data.id}).eq('id',ins.data.id);
+      await _sboardLoadMyRoots(true);
+      return ins.data.id;
+    }catch(e){
+      console.error('Idea Board: could not create board', e);
+      window.alert('Could not add the board "'+name+'". Error: '+(e&&e.message?e.message:String(e))+'. Nothing was saved -- please try again or refresh the page.');
+      return null;
+    }
+  }
+
+  function _sboardActiveBoardType(){
+    var typeSel=document.getElementById('sc-type-picker');
+    if(typeSel && typeSel.value) return typeSel.value;
+    var curRoot=_sboardCurrentRootRow();
+    var roots=_sboardMyRoots||[];
+    var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
+    return (match && match.board_type) || 'personal';
+  }
+
+  // Root of whatever's currently on screen -- climbs cluster_id from the
+  // live in-memory map when warm, falls back to T2TData.ancestorChain
+  // (already used elsewhere in this file for the same cold-cache case)
+  // so this works right after a page load/reload too.
+  function _sboardCurrentRootRow(){
+    if(!T2TShared.currentTopicId) return null;
+    var row=_sboardAllRowsById[T2TShared.currentTopicId];
+    if(row) return _sboardProjectRowFor(row);
+    return null;
+  }
+
+  function _sboardRenderTypePicker(){
+    var sel=document.getElementById('sc-type-picker'); if(!sel) return;
+    var roots=_sboardMyRoots;
+    if(!roots){
+      _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); });
+      roots=[];
+    }
+    var extra=_sboardExtraBoardTypes(roots);
+    var opts=IB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_sboardTypeLabel(v)}; }))
+      .map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
+    sel.innerHTML = opts + '<option value="__add_type__">(+) Add a type&hellip;</option>';
+    sel.value = _sboardActiveBoardType();
+  }
+
+  function _sboardWireTypePicker(){
+    var sel=document.getElementById('sc-type-picker'); if(!sel) return;
+    sel.addEventListener('change', async function(){
+      if(sel.value==='__add_type__'){
+        var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
+        if(!typeName || !typeName.trim()){ _sboardRenderTypePicker(); return; }
+        var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
+        var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
+        if(!firstBoardName || !firstBoardName.trim()){ _sboardRenderTypePicker(); return; }
+        var newId=await _sboardCreateRootBoard(firstBoardName.trim(), typeValue);
+        if(newId) _sboardSwitchToRootBoard(newId); else _sboardRenderTypePicker();
+        return;
+      }
+      var roots=await _sboardLoadMyRoots();
+      var matching=roots.filter(function(r){ return (r.board_type||'personal')===sel.value; });
+      if(matching.length){
+        _sboardSwitchToRootBoard(matching[0].id);
+      } else {
+        var typeLabel=sel.options[sel.selectedIndex].text;
+        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
+        if(!name || !name.trim()){ _sboardRenderTypePicker(); return; }
+        var newId2=await _sboardCreateRootBoard(name.trim(), sel.value);
+        if(newId2) _sboardSwitchToRootBoard(newId2); else _sboardRenderTypePicker();
+      }
+    });
   }
 
   // Same climb as _sboardProjectRowFor, but takes the rows-by-id map as an
@@ -2866,6 +3029,7 @@
       var projectRow=_sboardProjectRowFor(topicRow);
       var projectName=(projectRow?projectRow.text_content:topicRow.text_content)||'(untitled)';
       if(projectLabel) projectLabel.textContent=projectName;
+      _sboardRenderTypePicker();
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       // PARENT is inert once there's nothing above the current Topic (i.e.

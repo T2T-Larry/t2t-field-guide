@@ -625,9 +625,9 @@
   // every board created before today just hardcoded 'personal').
   var BB_BOARD_TYPES = [
     {value:'personal', label:'Personal'},
-    {value:'departmental', label:'Departmental'},
-    {value:'company', label:'Company'},
-    {value:'project', label:'Project'}
+    {value:'project', label:'Project'},
+    {value:'departmental', label:'Department'},
+    {value:'company', label:'Company'}
   ];
   var _bbBoards = [];
   // Signal Flags, Aug 3 2026 -- merged into the Storyboard's shared,
@@ -1691,11 +1691,32 @@
     return (board && board.board_type) || 'personal';
   }
 
+  // Extra Types beyond the fixed four, Aug 13 2026 -- Larry: Type is
+  // open-ended now, same (+) pattern as a header's own (+) for adding
+  // subbers. Any board_type value already in use (created via the
+  // "(+) Add a type..." option below) shows up here automatically, no
+  // separate types table needed -- the distinct values already in
+  // briefing_boards ARE the list.
+  function _bbExtraBoardTypes(){
+    var fixed={}; BB_BOARD_TYPES.forEach(function(t){ fixed[t.value]=true; });
+    var seen={}, extra=[];
+    _bbBoards.forEach(function(b){
+      var v=(b.board_type||'personal');
+      if(!fixed[v] && !seen[v]){ seen[v]=true; extra.push(v); }
+    });
+    return extra;
+  }
+  function _bbTypeLabel(value){
+    var hit=BB_BOARD_TYPES.filter(function(t){ return t.value===value; })[0];
+    if(hit) return hit.label;
+    return String(value||'').replace(/(^|[_\s]+)([a-z])/g, function(m,p1,p2){ return (p1?' ':'')+p2.toUpperCase(); }).trim();
+  }
   function _bbRenderTypePicker(){
     var sel=document.getElementById('bb-type-picker'); if(!sel) return;
-    if(!sel.options.length){
-      sel.innerHTML = BB_BOARD_TYPES.map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
-    }
+    var extra=_bbExtraBoardTypes();
+    var opts=BB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_bbTypeLabel(v)}; }))
+      .map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
+    sel.innerHTML = opts + '<option value="__add_type__">(+) Add a type&hellip;</option>';
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     sel.value = (board && board.board_type) || 'personal';
   }
@@ -1707,7 +1728,7 @@
     var opts=filtered.map(function(b){
       return '<option value="'+_esc(b.id)+'"'+(b.id===_bbCurrentBoardId?' selected':'')+'>'+_esc(b.name||'Untitled Board')+'</option>';
     }).join('');
-    sel.innerHTML = opts + '<option value="__add__">+ Add a board&hellip;</option>';
+    sel.innerHTML = opts + '<option value="__add__">(+) Add a board&hellip;</option>';
   }
 
   // Shared by both the NAME picker's "+ Add a board..." and the TYPE
@@ -1764,6 +1785,15 @@
   function wireTypePicker(){
     var sel=document.getElementById('bb-type-picker'); if(!sel) return;
     sel.addEventListener('change', async function(){
+      if(sel.value==='__add_type__'){
+        var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
+        if(!typeName || !typeName.trim()){ _bbRenderTypePicker(); return; }
+        var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
+        var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
+        if(!firstBoardName || !firstBoardName.trim()){ _bbRenderTypePicker(); return; }
+        await _bbCreateBoard(firstBoardName.trim(), typeValue);
+        return;
+      }
       var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===sel.value; });
       if(matching.length){
         await _bbSwitchToBoard(matching[0].id);
