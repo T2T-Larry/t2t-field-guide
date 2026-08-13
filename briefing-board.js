@@ -1214,61 +1214,157 @@
   // wired here; only the assigned-to half is live for project boards.
   var _bbSourceFilter = null; // null = no filter; else {mode:'origin'|'person', value:string}
 
-  // Builds VIEW options from the board's real Cast roster (Owner +
-  // board_members), Aug 9 2026 -- Larry: "the only other VIEW choices
-  // are the cast members," not just whoever happens to already have a
-  // card. Independent little query rather than reusing _bbRosterCache/
-  // _bbLoadRoster (Team Roster's own state) -- keeps this dropdown from
-  // depending on whether the Team overlay has ever been opened yet.
-  async function _bbCastRosterLabels(boardId, ownerUserId){
-    var sb=T().sb; if(!sb) return [];
-    var names=[];
-    try{
-      var ownerRes=await sb.from('members').select('name').eq('user_id', ownerUserId).single();
-      if(!ownerRes.error && ownerRes.data && ownerRes.data.name) names.push(ownerRes.data.name);
-    }catch(e){}
-    try{
-      var mRes=await sb.from('board_members').select('user_id').eq('board_id', boardId).eq('access_level','edit');
-      if(!mRes.error && mRes.data && mRes.data.length){
-        var uids=mRes.data.map(function(m){ return m.user_id; });
-        var nRes=await sb.from('members').select('name').in('user_id', uids);
-        if(!nRes.error && nRes.data) nRes.data.forEach(function(m){ if(m.name) names.push(m.name); });
+  // VIEW options, Aug 9 2026 -- Larry: "the only other VIEW choices are
+  // the cast members," not just whoever happens to already have a card.
+  // Rewritten Aug 13 2026 (Larry): now sources from _bbAllRosterRows --
+  // the same Owner-or-Leader-aware roster Gear's Cast reads -- instead of
+  // a second, independent members/board_members query, so a role tag can
+  // show per person and an Owner-or-Leader can add someone right from
+  // this dropdown. person: filter values keep the exact same "II Name"
+  // label format as before, so matching against a card's saved c.person
+  // is unaffected.
+  var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Company'};
+
+  function _bbWireViewTrigger(trigger, menu){
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-view-menu':null);
+      if(willOpen){
+        var r=trigger.getBoundingClientRect();
+        menu.style.left=r.left+'px';
+        menu.style.top=(r.bottom+4)+'px';
+        menu.style.minWidth=Math.max(160,r.width)+'px';
+        menu.hidden=false;
+        var mr=menu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      } else {
+        menu.hidden=true;
       }
-    }catch(e){}
-    return names;
+    };
   }
 
-  var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Company'};
+  async function _bbViewConfirmAddMember(email){
+    var input=document.getElementById('bb-view-add-email');
+    var errEl=document.getElementById('bb-view-add-error');
+    var sugg=document.getElementById('bb-view-add-suggest');
+    if(!email) return;
+    var res=await _bbTeamAddMember(email);
+    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+    if(errEl) errEl.style.display='none';
+    if(input) input.value='';
+    if(sugg) sugg.style.display='none';
+    await _bbLoadRoster();
+    await _bbRenderSourcePicker();
+  }
 
   async function _bbRenderSourcePicker(){
     var grp=document.getElementById('bb-source-fieldgrp');
-    var sel=document.getElementById('bb-source-picker');
+    var trigger=document.getElementById('bb-view-trigger');
+    var menu=document.getElementById('bb-view-menu');
     var eyebrow=document.getElementById('bb-source-eyebrow');
-    if(!grp || !sel || !eyebrow) return;
+    if(!grp || !trigger || !menu || !eyebrow) return;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     if(!board){ grp.style.display='none'; return; }
     _bbSourceFilter=null;
+    menu.innerHTML='';
     if(board.board_type==='personal'){
-      var seen={}; var opts=['<option value="">Everything</option>','<option value="origin:__native__">Personal</option>'];
+      var seen={}; var opts=[{value:'',label:'Everything'},{value:'origin:__native__',label:'Personal'}];
       _bbForeignCards.forEach(function(c){
         if(seen[c._homeBoardId]) return; seen[c._homeBoardId]=true;
-        opts.push('<option value="origin:'+_esc(c._homeBoardId)+'">From '+_esc(c._homeBoardName)+'</option>');
+        opts.push({value:'origin:'+c._homeBoardId, label:'From '+(c._homeBoardName||'')});
       });
       if(opts.length<=2){ grp.style.display='none'; return; }
       eyebrow.textContent='View';
-      sel.innerHTML=opts.join('');
+      trigger.textContent='Everything';
+      opts.forEach(function(o){
+        var row=document.createElement('div');
+        row.className='bb-cdrop-row'+(o.value===''?' active':'');
+        row.textContent=o.label;
+        row.addEventListener('click', function(e){
+          e.stopPropagation(); menu.hidden=true;
+          _bbSourceFilter = o.value ? {mode:o.value.split(':')[0], value:o.value.split(':').slice(1).join(':')} : null;
+          trigger.textContent=o.label;
+          renderBoard();
+        });
+        menu.appendChild(row);
+      });
+      _bbWireViewTrigger(trigger, menu);
       grp.style.display='';
       return;
     }
     var typeLabel=BB_TYPE_VIEW_LABEL[board.board_type];
     if(!typeLabel){ grp.style.display='none'; return; }
-    var names=await _bbCastRosterLabels(board.id, board.user_id);
-    if(!names.length){ grp.style.display='none'; return; }
+    await _bbLoadRoster();
+    var rows=_bbAllRosterRows();
+    if(!rows.length){ grp.style.display='none'; return; }
     eyebrow.textContent='View';
-    sel.innerHTML='<option value="">'+typeLabel+'</option>'+names.map(function(name){
-      var label=(_bbInitialsFromName(name)?_bbInitialsFromName(name)+' ':'')+name;
-      return '<option value="person:'+_esc(label)+'">'+_esc(name)+'</option>';
-    }).join('');
+    trigger.textContent=typeLabel;
+
+    var teamRow=document.createElement('div');
+    teamRow.className='bb-cdrop-row active';
+    teamRow.textContent=typeLabel;
+    teamRow.addEventListener('click', function(e){
+      e.stopPropagation(); menu.hidden=true;
+      _bbSourceFilter=null; trigger.textContent=typeLabel; renderBoard();
+    });
+    menu.appendChild(teamRow);
+
+    rows.forEach(function(m){
+      var label=(_bbInitialsFromName(m.name)?_bbInitialsFromName(m.name)+' ':'')+(m.name||'');
+      var row=document.createElement('div');
+      row.className='bb-cdrop-row bb-view-row';
+      var nameSpan=document.createElement('span');
+      nameSpan.className='bb-view-row-name'; nameSpan.textContent=m.name||m.email||'';
+      var roleSpan=document.createElement('span');
+      roleSpan.className='bb-view-row-role'; roleSpan.textContent=_bbRoleTitle(m);
+      row.appendChild(nameSpan); row.appendChild(roleSpan);
+      row.addEventListener('click', function(e){
+        e.stopPropagation(); menu.hidden=true;
+        _bbSourceFilter={mode:'person', value:label};
+        trigger.textContent=m.name||m.email||'';
+        renderBoard();
+      });
+      menu.appendChild(row);
+    });
+
+    if(_bbRosterCanManage){
+      var addRow=document.createElement('div');
+      addRow.className='bb-cdrop-addrow';
+      var addBtn=document.createElement('button');
+      addBtn.type='button'; addBtn.className='bb-dotted-add-btn';
+      addBtn.title='Add a Cast Member'; addBtn.textContent='+';
+      addRow.appendChild(addBtn);
+      var addForm=document.createElement('div');
+      addForm.className='bb-view-addform'; addForm.style.display='none';
+      addForm.innerHTML='<input type="text" id="bb-view-add-email" placeholder="Type a name or email..." autocomplete="off">'
+        +'<div class="tm-add-suggest" id="bb-view-add-suggest" style="display:none"></div>'
+        +'<button type="button" class="bb-flag-btn bb-view-add-confirm" id="bb-view-add-confirm">Add</button>'
+        +'<div id="bb-view-add-error" class="bb-view-add-error" style="display:none"></div>';
+      addForm.addEventListener('click', function(e){ e.stopPropagation(); });
+      addBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var opening=addForm.style.display==='none';
+        addForm.style.display=opening?'block':'none';
+        if(opening){ _bbFetchAllMembers().then(function(){ _bbRenderMemberSuggestions('', 'bb-view-add-suggest'); }); }
+      });
+      var addInput=addForm.querySelector('#bb-view-add-email');
+      addInput.addEventListener('input', function(){ _bbRenderMemberSuggestions(addInput.value, 'bb-view-add-suggest'); });
+      addInput.addEventListener('focus', function(){ _bbRenderMemberSuggestions(addInput.value, 'bb-view-add-suggest'); });
+      addInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _bbViewConfirmAddMember(addInput.value.trim()); } });
+      var addSugg=addForm.querySelector('#bb-view-add-suggest');
+      addSugg.addEventListener('click', function(e){
+        var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
+        _bbViewConfirmAddMember(r.getAttribute('data-email'));
+      });
+      var addConfirmBtn=addForm.querySelector('#bb-view-add-confirm');
+      addConfirmBtn.addEventListener('click', function(){ _bbViewConfirmAddMember(addInput.value.trim()); });
+      menu.appendChild(addRow);
+      menu.appendChild(addForm);
+    }
+
+    _bbWireViewTrigger(trigger, menu);
     grp.style.display='';
   }
 
@@ -1283,20 +1379,6 @@
     }
     return cards;
   }
-
-  function wireSourcePicker(){
-    var sel=document.getElementById('bb-source-picker'); if(!sel) return;
-    sel.addEventListener('change', function(){
-      var v=sel.value;
-      if(!v){ _bbSourceFilter=null; }
-      else{
-        var parts=v.split(':'); 
-        _bbSourceFilter={mode:parts[0], value:parts.slice(1).join(':')};
-      }
-      renderBoard();
-    });
-  }
-
 
   async function _bbLoadForeignCardsForPersonalBoard(board){
     _bbForeignCards = [];
@@ -1719,7 +1801,7 @@
   // instead, ending in that literal dashed-circle (+). Mirrors the Idea
   // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
   function _bbCloseAllDropdowns(exceptMenuId){
-    ['bb-type-menu','bb-board-menu'].forEach(function(id){
+    ['bb-type-menu','bb-board-menu','bb-view-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2251,6 +2333,18 @@
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
       +'.bb-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
+      // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): same
+      // change as the Idea Board's own sc-view-row/-addform -- the
+      // person-filter list now shows each Cast member's role and lets
+      // an Owner or Leader add someone right from the board face.
+      +'.bb-view-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}'
+      +'.bb-view-row-name{overflow:hidden;text-overflow:ellipsis}'
+      +'.bb-view-row-role{font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);flex-shrink:0;text-transform:uppercase;letter-spacing:.03em;margin-left:10px}'
+      +'.bb-view-addform{padding:8px 6px 4px;border-top:1px solid var(--bb-bg);margin-top:2px}'
+      +'.bb-view-addform input{width:100%;box-sizing:border-box;font-size:calc(11px * var(--fg-text-scale,1));padding:5px 7px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;color:var(--bb-ink);font-family:var(--bb-body-font);margin-bottom:5px}'
+      +'.bb-view-addform .tm-add-suggest{position:static;box-shadow:none;margin-bottom:5px}'
+      +'.bb-view-add-confirm{width:100%;box-sizing:border-box;margin-bottom:4px}'
+      +'.bb-view-add-error{font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b;margin-top:2px}'
       // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
       // Push tagline lower." Was 20px (sized for when it sat next to the
       // big board-name pill); now the header's one permanent, static
@@ -2494,7 +2588,7 @@
             +'<div class="bb-mh-typebox">'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-type-picker bb-cdrop-trigger" id="bb-type-trigger" title="Board type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-mh-namerow"><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-board-picker bb-cdrop-trigger" id="bb-board-trigger" title="Switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
-              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><select id="bb-source-picker" class="bb-mh-source-picker" title="Filter"></select></div>'
+              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-mh-source-picker bb-cdrop-trigger" id="bb-view-trigger" title="Filter"></button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
@@ -3885,6 +3979,8 @@
   var _bbRosterCache = [];
   var _bbRosterOwner = null;
   var _bbRosterIsOwner = false;
+  var _bbRosterIsLeader = false; // Aug 13 2026, Larry: Owner-or-Leader can now manage the Cast too
+  var _bbRosterCanManage = false; // = _bbRosterIsOwner || _bbRosterIsLeader
   var _bbAllMembersCache = null; // list_members_for_picker() results, fetched once per session
   async function _bbFetchAllMembers(){
     if(_bbAllMembersCache) return _bbAllMembersCache;
@@ -3895,8 +3991,8 @@
     }catch(e){ _bbAllMembersCache=[]; }
     return _bbAllMembersCache;
   }
-  function _bbRenderMemberSuggestions(query){
-    var box=document.getElementById('bb-team-add-suggest'); if(!box) return;
+  function _bbRenderMemberSuggestions(query, targetId){
+    var box=document.getElementById(targetId||'bb-team-add-suggest'); if(!box) return;
     var already={}; _bbAllRosterRows().forEach(function(r){ already[r.user_id]=true; });
     var q=String(query||'').trim().toLowerCase();
     var pool=(_bbAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
@@ -3949,6 +4045,11 @@
       // up in Sharing/Manage Access only, not in the role-based roster.
       _bbRosterCache = (!res.error && res.data) ? res.data.filter(function(m){ return (m.access_level||'edit')==='edit'; }) : [];
     }catch(e){ _bbRosterCache=[]; }
+    // Owner-or-Leader (Aug 13 2026, Larry): a Leader can now add members
+    // and change others' roles too, everywhere that ability exists --
+    // Gear's Team screen and the VIEW dropdown's own add-row.
+    _bbRosterIsLeader = !!uid && (_bbRosterCache||[]).some(function(m){ return String(m.user_id)===String(uid) && m.role==='leader'; });
+    _bbRosterCanManage = _bbRosterIsOwner || _bbRosterIsLeader;
   }
 
   function _bbAllRosterRows(){
@@ -3966,7 +4067,7 @@
     if(nameEl){ nameEl.value=(board && (board.topic||board.name))||''; nameEl.disabled=!_bbRosterIsOwner; }
     var rows=_bbAllRosterRows();
     wrap.innerHTML = rows.map(function(m){
-      var clickable = (!m.isOwner && _bbRosterIsOwner);
+      var clickable = (!m.isOwner && _bbRosterCanManage);
       var panel = (!m.isOwner) ? (
         '<div class="tm-rolepanel" id="tm-rp-'+_esc(m.user_id)+'" style="display:none">'
           +'<label><input type="radio" name="tm-sp" class="tm-r-sponsor" data-uid="'+_esc(m.user_id)+'"'+(m.role==='sponsor'?' checked':'')+'> \uD83C\uDF31 Sponsor</label>'
@@ -3995,7 +4096,7 @@
       +'</div>';
     }).join('');
     var addTile=document.getElementById('bb-team-add');
-    if(addTile) addTile.style.display = _bbRosterIsOwner ? 'flex' : 'none';
+    if(addTile) addTile.style.display = _bbRosterCanManage ? 'flex' : 'none';
   }
 
   async function _bbSaveMemberRole(uid, role, canFac, isFac){
@@ -4077,7 +4178,7 @@
     T().wire('bb-team-close', closeTeamRoster);
     T().wire('bb-team-print', function(){ window.print(); });
     T().wire('bb-team-add', function(){
-      if(!_bbRosterIsOwner) return;
+      if(!_bbRosterCanManage) return;
       var row=document.getElementById('bb-team-add-row');
       var opening = row && row.style.display==='none';
       if(row) row.style.display = opening ? 'flex' : 'none';
@@ -4201,7 +4302,6 @@
   function wireTopicBar(){
     // Type/Title dropdowns wire themselves fresh on every render now
     // (Aug 13 2026 -- see _bbRenderDropdown), no separate wire step.
-    wireSourcePicker();
     wireRenameButton();
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');

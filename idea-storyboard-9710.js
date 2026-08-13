@@ -311,6 +311,21 @@
         +'.sc-cdrop-row:hover{background:rgba(255,255,255,.14)}'
         +'.sc-cdrop-row.active{background:rgba(255,255,255,.1);font-weight:700}'
         +'.sc-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}'
+        // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): the
+        // person-filter list now shows each Cast member's role and lets
+        // an Owner or Leader add someone right from the board face, no
+        // trip to Gear required -- same Cast data, same add-member flow
+        // (_tmAddMember/_tmRenderMemberSuggestions), just a second
+        // doorway to it.
+        +'.sc-view-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}'
+        +'.sc-view-row-name{overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-view-row-role{font-size:calc(9px * var(--fg-text-scale,1));color:#a9cce3;flex-shrink:0;text-transform:uppercase;letter-spacing:.03em;margin-left:10px}'
+        +'.sc-view-addform{padding:8px 6px 4px;border-top:1px solid rgba(255,255,255,.14);margin-top:2px}'
+        +'.sc-view-addform input{width:100%;box-sizing:border-box;font-size:calc(11px * var(--fg-text-scale,1));padding:5px 7px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.08);color:#fff;font-family:inherit;margin-bottom:5px}'
+        +'.sc-view-addform input::placeholder{color:rgba(255,255,255,.55)}'
+        +'.sc-view-addform .tm-add-suggest{position:static;box-shadow:none;margin-bottom:5px}'
+        +'.sc-view-add-confirm{width:100%;box-sizing:border-box}'
+        +'.sc-view-add-error{font-size:calc(10px * var(--fg-text-scale,1));color:#f0b090;margin-top:2px}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
         +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
@@ -518,7 +533,10 @@
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">View</div>'
-      +'<select id="sc-viewfilter-select" class="sc-hdr-select" title="Filter by person assigned"><option value="">Team</option></select>'
+      +'<div class="sc-cdrop" id="sc-view-cdrop">'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-view-trigger" title="Filter by person assigned">Team</button>'
+      +'<div class="sc-cdrop-menu" id="sc-view-menu" hidden></div>'
+      +'</div>'
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
@@ -620,16 +638,6 @@
       });
     })();
 
-
-    // VIEW-by-person filter select -- change re-renders from cache (cheap,
-    // no re-fetch) with the new filter applied. Aug 9 2026, Larry.
-    (function(){
-      var sel=document.getElementById('sc-viewfilter-select');
-      if(sel) sel.addEventListener('change', function(){
-        _sboardPersonFilterId = sel.value || null;
-        renderSeaBoard(true);
-      });
-    })();
 
     // PARENT still climbs one level on a simple click — the DETAILS slider
     // (added July 12, 2026) is now the primary way to move a specific card
@@ -1399,7 +1407,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-title-menu'].forEach(function(id){
+    ['sc-type-menu','sc-title-menu','sc-view-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -1550,18 +1558,110 @@
     return items.filter(function(r){ return String(r.assigned_user_id||'')===String(_sboardPersonFilterId); });
   }
 
+  async function _sboardViewConfirmAddMember(projectRow, email){
+    var input=document.getElementById('sc-view-add-email');
+    var errEl=document.getElementById('sc-view-add-error');
+    var sugg=document.getElementById('sc-view-add-suggest');
+    if(!email) return;
+    var res=await _tmAddMember(projectRow, email);
+    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+    if(errEl) errEl.style.display='none';
+    if(input) input.value='';
+    if(sugg) sugg.style.display='none';
+    await _tmLoadRoster(projectRow);
+    _sboardRenderPersonFilterPicker(projectRow);
+  }
+
   function _sboardRenderPersonFilterPicker(projectRow){
-    var sel=document.getElementById('sc-viewfilter-select'); if(!sel || !projectRow) return;
+    var trigger=document.getElementById('sc-view-trigger'), menu=document.getElementById('sc-view-menu');
+    if(!trigger || !menu || !projectRow) return;
     var rows=_tmAllRosterRows(projectRow);
     var cur=_sboardPersonFilterId||'';
-    var opts=['<option value="">Team</option>'];
-    var stillPresent=false;
-    rows.forEach(function(m){
-      if(String(m.user_id)===String(cur)) stillPresent=true;
-      opts.push('<option value="'+_esc9710(m.user_id)+'"'+(String(m.user_id)===String(cur)?' selected':'')+'>'+_esc9710(m.name||m.email||'')+'</option>');
+    var stillPresent=!cur;
+    rows.forEach(function(m){ if(String(m.user_id)===String(cur)) stillPresent=true; });
+    if(cur && !stillPresent){ _sboardPersonFilterId=null; cur=''; }
+    var curRow = cur ? rows.filter(function(m){ return String(m.user_id)===String(cur); })[0] : null;
+    trigger.textContent = curRow ? (curRow.name||curRow.email||'') : 'Team';
+
+    menu.innerHTML='';
+    var teamRow=document.createElement('div');
+    teamRow.className='sc-cdrop-row'+(!cur?' active':'');
+    teamRow.textContent='Team';
+    teamRow.addEventListener('click', function(e){
+      e.stopPropagation(); menu.hidden=true;
+      _sboardPersonFilterId=null; renderSeaBoard(true);
     });
-    sel.innerHTML=opts.join('');
-    if(cur && !stillPresent){ _sboardPersonFilterId=null; sel.value=''; }
+    menu.appendChild(teamRow);
+
+    rows.forEach(function(m){
+      var row=document.createElement('div');
+      row.className='sc-cdrop-row sc-view-row'+(String(m.user_id)===String(cur)?' active':'');
+      var nameSpan=document.createElement('span');
+      nameSpan.className='sc-view-row-name';
+      nameSpan.textContent=m.name||m.email||'';
+      var roleSpan=document.createElement('span');
+      roleSpan.className='sc-view-row-role';
+      roleSpan.textContent=_tmRoleTitle(m);
+      row.appendChild(nameSpan); row.appendChild(roleSpan);
+      row.addEventListener('click', function(e){
+        e.stopPropagation(); menu.hidden=true;
+        _sboardPersonFilterId=m.user_id; renderSeaBoard(true);
+      });
+      menu.appendChild(row);
+    });
+
+    if(_tmRosterCanManage){
+      var addRow=document.createElement('div');
+      addRow.className='sc-cdrop-addrow';
+      var addBtn=document.createElement('button');
+      addBtn.type='button'; addBtn.className='sc-dotted-add-btn';
+      addBtn.title='Add a Cast Member'; addBtn.textContent='+';
+      addRow.appendChild(addBtn);
+      var addForm=document.createElement('div');
+      addForm.className='sc-view-addform'; addForm.style.display='none';
+      addForm.innerHTML='<input type="text" id="sc-view-add-email" placeholder="Type a name or email..." autocomplete="off">'
+        +'<div class="tm-add-suggest" id="sc-view-add-suggest" style="display:none"></div>'
+        +'<button type="button" class="sc-ov-btn save sc-view-add-confirm" id="sc-view-add-confirm">Add</button>'
+        +'<div id="sc-view-add-error" class="sc-view-add-error" style="display:none"></div>';
+      addForm.addEventListener('click', function(e){ e.stopPropagation(); });
+      addBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var opening=addForm.style.display==='none';
+        addForm.style.display=opening?'block':'none';
+        if(opening){ _tmFetchAllMembers().then(function(){ _tmRenderMemberSuggestions(projectRow, '', 'sc-view-add-suggest'); }); }
+      });
+      var addInput=addForm.querySelector('#sc-view-add-email');
+      addInput.addEventListener('input', function(){ _tmRenderMemberSuggestions(projectRow, addInput.value, 'sc-view-add-suggest'); });
+      addInput.addEventListener('focus', function(){ _tmRenderMemberSuggestions(projectRow, addInput.value, 'sc-view-add-suggest'); });
+      addInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _sboardViewConfirmAddMember(projectRow, addInput.value.trim()); } });
+      var addSugg=addForm.querySelector('#sc-view-add-suggest');
+      addSugg.addEventListener('click', function(e){
+        var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
+        _sboardViewConfirmAddMember(projectRow, r.getAttribute('data-email'));
+      });
+      var addConfirmBtn=addForm.querySelector('#sc-view-add-confirm');
+      addConfirmBtn.addEventListener('click', function(){ _sboardViewConfirmAddMember(projectRow, addInput.value.trim()); });
+      menu.appendChild(addRow);
+      menu.appendChild(addForm);
+    }
+
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sc-view-menu':null);
+      if(willOpen){
+        var r=trigger.getBoundingClientRect();
+        menu.style.left=r.left+'px';
+        menu.style.top=(r.bottom+4)+'px';
+        menu.style.minWidth=Math.max(160,r.width)+'px';
+        menu.hidden=false;
+        var mr=menu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      } else {
+        menu.hidden=true;
+      }
+    };
   }
 
   // Person Assigned (Aug 9 2026, Larry): every card gets a dropdown of the
@@ -3726,6 +3826,8 @@
   var _tmRosterCache = [];
   var _tmRosterOwner = null;
   var _tmRosterIsOwner = false;
+  var _tmRosterIsLeader = false; // Aug 13 2026, Larry: Owner-or-Leader can now manage the Cast too
+  var _tmRosterCanManage = false; // = _tmRosterIsOwner || _tmRosterIsLeader
   var _tmAllMembersCache = null; // list_members_for_picker() results, fetched once per session
   async function _tmFetchAllMembers(){
     if(_tmAllMembersCache) return _tmAllMembersCache;
@@ -3736,8 +3838,8 @@
     }catch(e){ _tmAllMembersCache=[]; }
     return _tmAllMembersCache;
   }
-  function _tmRenderMemberSuggestions(projectRow, query){
-    var box=document.getElementById('tm-add-suggest'); if(!box) return;
+  function _tmRenderMemberSuggestions(projectRow, query, targetId){
+    var box=document.getElementById(targetId||'tm-add-suggest'); if(!box) return;
     var already={}; _tmAllRosterRows(projectRow).forEach(function(r){ already[r.user_id]=true; });
     var q=String(query||'').trim().toLowerCase();
     var pool=(_tmAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
@@ -3810,6 +3912,11 @@
         _tmRosterCache = all.filter(function(m){ return (m.access_level||'edit')==='edit'; });
       }
     }catch(e){ _tmRosterCache=[]; _tmRosterOwner=null; }
+    // Owner-or-Leader (Aug 13 2026, Larry): a Leader can now add members
+    // and change others' roles too, everywhere that ability exists --
+    // Gear's Team screen and the VIEW dropdown's own add-row.
+    _tmRosterIsLeader = !!uid && (_tmRosterCache||[]).some(function(m){ return String(m.user_id)===String(uid) && m.role==='leader'; });
+    _tmRosterCanManage = _tmRosterIsOwner || _tmRosterIsLeader;
   }
 
   function _tmAllRosterRows(projectRow){
@@ -3825,7 +3932,7 @@
     var wrap=document.getElementById('tm-list-view'); if(!wrap) return;
     var rows=_tmAllRosterRows(projectRow);
     wrap.innerHTML = rows.map(function(m){
-      var clickable = (!m.isOwner && _tmRosterIsOwner);
+      var clickable = (!m.isOwner && _tmRosterCanManage);
       var panel = (!m.isOwner) ? (
         '<div class="tm-rolepanel" id="tm-rp-'+_esc9710(m.user_id)+'" style="display:none">'
           +'<label><input type="radio" name="tm-sp" class="tm-r-sponsor" data-uid="'+_esc9710(m.user_id)+'"'+(m.role==='sponsor'?' checked':'')+'> \uD83C\uDF31 Sponsor</label>'
@@ -3854,7 +3961,7 @@
       +'</div>';
     }).join('');
     var addTile=document.getElementById('tm-add-tile');
-    if(addTile) addTile.style.display = _tmRosterIsOwner ? 'flex' : 'none';
+    if(addTile) addTile.style.display = _tmRosterCanManage ? 'flex' : 'none';
   }
 
   async function _tmSaveMemberRole(projectRow, uid, role, canFac, isFac){
@@ -3932,7 +4039,7 @@
       await _tmLoadRoster(projectRow); _tmRenderRoster(projectRow);
     }
     T().wire('tm-add-tile', function(){
-      if(!_tmRosterIsOwner) return;
+      if(!_tmRosterCanManage) return;
       var row=document.getElementById('tm-add-row');
       var opening = row && row.style.display==='none';
       if(row) row.style.display = opening ? 'flex' : 'none';
