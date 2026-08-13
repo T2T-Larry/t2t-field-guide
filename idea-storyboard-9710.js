@@ -604,14 +604,25 @@
     _sboardApplyBoardBg();
     _sboardWireAutoScroll();
 
-    var topicCornerFlip=document.getElementById('sc-topic-corner-flip');
-    if(topicCornerFlip) topicCornerFlip.addEventListener('click', function(e){
-      e.stopPropagation();
+    // Opening the TOPIC card, Aug 13 2026 (Larry: "Double click to open
+    // the TOPIC card") -- the corner-flip triangle was the only way in;
+    // double-click is a second way to the same place, same "second way
+    // in, not a replacement" rule already locked for Subber/Briefing
+    // cards. Kept separate from the plain-click drill-in that used to
+    // live here -- that was replaced by drag-and-drop onto TOPIC
+    // (locked July 27, 2026) and stays that way; this only opens the
+    // card, never changes what board is being viewed.
+    function _sboardOpenTopicCard(){
       if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
         openSbDetail(_sboardAllRowsById[T2TShared.currentTopicId]);
       } else {
         openRootPromptEditor();
       }
+    }
+    var topicCornerFlip=document.getElementById('sc-topic-corner-flip');
+    if(topicCornerFlip) topicCornerFlip.addEventListener('click', function(e){
+      e.stopPropagation();
+      _sboardOpenTopicCard();
     });
 
     // Drag any card (header or plain idea) onto the TOPIC box to make it
@@ -623,6 +634,7 @@
     (function(){
       var topicBoxEl=document.getElementById('sc-topic-box');
       if(!topicBoxEl) return;
+      topicBoxEl.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardOpenTopicCard(); });
       topicBoxEl.addEventListener('dragover', function(e){ e.preventDefault(); topicBoxEl.classList.add('dragover'); });
       topicBoxEl.addEventListener('dragleave', function(){ topicBoxEl.classList.remove('dragover'); });
       topicBoxEl.addEventListener('drop', function(e){
