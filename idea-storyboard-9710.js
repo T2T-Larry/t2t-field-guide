@@ -303,6 +303,15 @@
         +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
+        // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
+        // Larry: "the + in a dotted line circle just like every other
+        // add. Consistent symbol." Same shape/border/color as the
+        // header (+) and subber (+) tiles (see _sboardMakeAddHeaderTile /
+        // _sboardMakeAddSubberTile) instead of a text "(+) Add..." row
+        // buried inside the native <select>, which couldn't carry that
+        // look. Sits beside its dropdown, not inside it.
+        +'.sc-dotted-add-btn{flex-shrink:0;width:22px;height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#a9cce3;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;opacity:.75;transition:opacity .15s,background .15s,border-color .15s,color .15s;padding:0}'
+        +'.sc-dotted-add-btn:hover{opacity:1;background:rgba(255,255,255,.1);border-color:#fff;color:#fff}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
         +'#sc-topic-box{display:inline-block;max-width:calc(320px * (0.6 + 0.4 * var(--fg-text-scale,1)));box-sizing:border-box;white-space:normal;word-wrap:break-word;position:relative;z-index:1}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
@@ -464,7 +473,17 @@
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Type</div>'
+      +'<div style="display:flex;align-items:center;gap:4px">'
       +'<select id="sc-type-picker" class="sc-hdr-select" title="Switch boards"></select>'
+      +'<button type="button" id="sc-type-add-btn" class="sc-dotted-add-btn" title="Add a type">+</button>'
+      +'</div>'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:center">'
+      +'<div class="sc-hdr-eyebrow">Title</div>'
+      +'<div style="display:flex;align-items:center;gap:4px">'
+      +'<select id="sc-title-picker" class="sc-hdr-select" title="Switch boards"></select>'
+      +'<button type="button" id="sc-title-add-btn" class="sc-dotted-add-btn" title="Add a board">+</button>'
+      +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
@@ -518,7 +537,10 @@
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     _sboardWireTypePicker();
-    _sboardLoadMyRoots().then(_sboardRenderTypePicker);
+    _sboardWireTitlePicker();
+    _sboardWireTypeAddBtn();
+    _sboardWireTitleAddBtn();
+    _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -1217,6 +1239,17 @@
     {value:'departmental', label:'Department'},
     {value:'company', label:'Company'}
   ];
+  // Reserved/nested names, Aug 13 2026 -- Larry: NEW, MISC and Trash are
+  // consistent bucket elements every board gets, not boards themselves;
+  // Purpose and Idea Session Protocol are real headers that live nested
+  // inside a board, not independent boards either. None of the five
+  // should ever show up as a Type/Title picker option, no matter whose
+  // account they're under -- exact-name match, case-insensitive.
+  var IB_RESERVED_ROOT_NAMES = {'new':1,'misc':1,'trash':1,'purpose':1,'idea session protocol':1};
+  function _sboardIsRealBoard(r){
+    var name=String((r&&r.text_content)||'').trim().toLowerCase();
+    return !IB_RESERVED_ROOT_NAMES[name];
+  }
   var _sboardMyRoots = null;
   var _sboardMyRootsLoadedFor = null;
 
@@ -1228,7 +1261,7 @@
     try{
       var res=await _sb.from('ideas').select('id,text_content,board_type,created_at').eq('user_id',user.id).is('cluster_id',null).order('created_at',{ascending:true});
       if(res.error) throw res.error;
-      _sboardMyRoots=(res.data||[]).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', created_at:r.created_at}; });
+      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', created_at:r.created_at}; });
       _sboardMyRootsLoadedFor=user.id;
     }catch(e){ console.warn('Idea Board: could not load your boards', e); _sboardMyRoots=_sboardMyRoots||[]; }
     return _sboardMyRoots;
@@ -1317,29 +1350,43 @@
     var sel=document.getElementById('sc-type-picker'); if(!sel) return;
     var roots=_sboardMyRoots;
     if(!roots){
-      _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); });
+      _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
       roots=[];
     }
     var extra=_sboardExtraBoardTypes(roots);
     var opts=IB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_sboardTypeLabel(v)}; }))
       .map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
-    sel.innerHTML = opts + '<option value="__add_type__">(+) Add a type&hellip;</option>';
+    // No more "(+) Add a type..." text option -- Aug 13 2026, Larry: the
+    // (+) belongs outside the list as the same dotted-circle button every
+    // other add uses (see .sc-dotted-add-btn / sc-type-add-btn below),
+    // not a row of text buried in the dropdown.
+    sel.innerHTML = opts;
     sel.value = _sboardActiveBoardType();
+  }
+
+  // TITLE picker, Aug 13 2026 -- Larry: "the next field is TITLE." Lists
+  // this traveler's real boards (headers already filtered through
+  // _sboardIsRealBoard, so NEW/MISC/Trash/Purpose/Idea Session Protocol
+  // never show up here) scoped to whichever Type is currently selected --
+  // same relationship Briefing Board's Title/Type pair already has.
+  function _sboardRenderTitlePicker(){
+    var sel=document.getElementById('sc-title-picker'); if(!sel) return;
+    var roots=_sboardMyRoots;
+    if(!roots){
+      _sboardLoadMyRoots().then(function(){ _sboardRenderTitlePicker(); });
+      roots=[];
+    }
+    var activeType=_sboardActiveBoardType();
+    var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
+    var curRoot=_sboardCurrentRootRow();
+    sel.innerHTML = filtered.map(function(r){
+      return '<option value="'+r.id+'"'+(curRoot&&String(curRoot.id)===String(r.id)?' selected':'')+'>'+(r.text_content||'(untitled)')+'</option>';
+    }).join('');
   }
 
   function _sboardWireTypePicker(){
     var sel=document.getElementById('sc-type-picker'); if(!sel) return;
     sel.addEventListener('change', async function(){
-      if(sel.value==='__add_type__'){
-        var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
-        if(!typeName || !typeName.trim()){ _sboardRenderTypePicker(); return; }
-        var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
-        var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
-        if(!firstBoardName || !firstBoardName.trim()){ _sboardRenderTypePicker(); return; }
-        var newId=await _sboardCreateRootBoard(firstBoardName.trim(), typeValue);
-        if(newId) _sboardSwitchToRootBoard(newId); else _sboardRenderTypePicker();
-        return;
-      }
       var roots=await _sboardLoadMyRoots();
       var matching=roots.filter(function(r){ return (r.board_type||'personal')===sel.value; });
       if(matching.length){
@@ -1347,10 +1394,48 @@
       } else {
         var typeLabel=sel.options[sel.selectedIndex].text;
         var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
-        if(!name || !name.trim()){ _sboardRenderTypePicker(); return; }
+        if(!name || !name.trim()){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); return; }
         var newId2=await _sboardCreateRootBoard(name.trim(), sel.value);
-        if(newId2) _sboardSwitchToRootBoard(newId2); else _sboardRenderTypePicker();
+        if(newId2) _sboardSwitchToRootBoard(newId2); else { _sboardRenderTypePicker(); _sboardRenderTitlePicker(); }
       }
+    });
+  }
+
+  function _sboardWireTitlePicker(){
+    var sel=document.getElementById('sc-title-picker'); if(!sel) return;
+    sel.addEventListener('change', function(){
+      if(sel.value) _sboardSwitchToRootBoard(sel.value);
+    });
+  }
+
+  // Dotted-circle (+) buttons beside Type and Title, Aug 13 2026 -- same
+  // "add a type"/"add a board" flows the pickers used to carry as a text
+  // option, now living on their own button so the (+) itself can be the
+  // real dashed-circle symbol instead of dropdown text.
+  function _sboardWireTypeAddBtn(){
+    var btn=document.getElementById('sc-type-add-btn'); if(!btn) return;
+    btn.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
+      if(!typeName || !typeName.trim()) return;
+      var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
+      var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
+      if(!firstBoardName || !firstBoardName.trim()) return;
+      var newId=await _sboardCreateRootBoard(firstBoardName.trim(), typeValue);
+      if(newId) _sboardSwitchToRootBoard(newId);
+    });
+  }
+
+  function _sboardWireTitleAddBtn(){
+    var btn=document.getElementById('sc-title-add-btn'); if(!btn) return;
+    btn.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var activeType=_sboardActiveBoardType();
+      var typeLabel=_sboardTypeLabel(activeType);
+      var name=window.prompt('Name for the new '+typeLabel+' board:');
+      if(!name || !name.trim()) return;
+      var newId=await _sboardCreateRootBoard(name.trim(), activeType);
+      if(newId) _sboardSwitchToRootBoard(newId);
     });
   }
 
@@ -3030,6 +3115,7 @@
       var projectName=(projectRow?projectRow.text_content:topicRow.text_content)||'(untitled)';
       if(projectLabel) projectLabel.textContent=projectName;
       _sboardRenderTypePicker();
+      _sboardRenderTitlePicker();
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       // PARENT is inert once there's nothing above the current Topic (i.e.

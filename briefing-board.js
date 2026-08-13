@@ -1716,7 +1716,7 @@
     var extra=_bbExtraBoardTypes();
     var opts=BB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_bbTypeLabel(v)}; }))
       .map(function(t){ return '<option value="'+t.value+'">'+t.label+'</option>'; }).join('');
-    sel.innerHTML = opts + '<option value="__add_type__">(+) Add a type&hellip;</option>';
+    sel.innerHTML = opts;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     sel.value = (board && board.board_type) || 'personal';
   }
@@ -1728,7 +1728,7 @@
     var opts=filtered.map(function(b){
       return '<option value="'+_esc(b.id)+'"'+(b.id===_bbCurrentBoardId?' selected':'')+'>'+_esc(b.name||'Untitled Board')+'</option>';
     }).join('');
-    sel.innerHTML = opts + '<option value="__add__">(+) Add a board&hellip;</option>';
+    sel.innerHTML = opts;
   }
 
   // Shared by both the NAME picker's "+ Add a board..." and the TYPE
@@ -1761,17 +1761,22 @@
   function wireBoardPicker(){
     var sel=document.getElementById('bb-board-picker'); if(!sel) return;
     sel.addEventListener('change', async function(){
-      if(sel.value==='__add__'){
-        var typeSel=document.getElementById('bb-type-picker');
-        var boardType=_bbActiveBoardType();
-        var typeLabel=(typeSel && typeSel.options[typeSel.selectedIndex]) ? typeSel.options[typeSel.selectedIndex].text : 'board';
-        var name=window.prompt('Name for the new '+typeLabel+' board:');
-        _bbRenderBoardPicker();
-        if(!name || !name.trim()) return;
-        await _bbCreateBoard(name.trim(), boardType);
-        return;
-      }
-      await _bbSwitchToBoard(sel.value);
+      if(sel.value) await _bbSwitchToBoard(sel.value);
+    });
+  }
+
+  // Dotted-circle (+) beside Title, Aug 13 2026 -- carries what the
+  // board picker's old "(+) Add a board..." text option used to do.
+  function wireBoardAddBtn(){
+    var btn=document.getElementById('bb-board-add-btn'); if(!btn) return;
+    btn.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var typeSel=document.getElementById('bb-type-picker');
+      var boardType=_bbActiveBoardType();
+      var typeLabel=(typeSel && typeSel.options[typeSel.selectedIndex]) ? typeSel.options[typeSel.selectedIndex].text : 'board';
+      var name=window.prompt('Name for the new '+typeLabel+' board:');
+      if(!name || !name.trim()) return;
+      await _bbCreateBoard(name.trim(), boardType);
     });
   }
 
@@ -1785,15 +1790,6 @@
   function wireTypePicker(){
     var sel=document.getElementById('bb-type-picker'); if(!sel) return;
     sel.addEventListener('change', async function(){
-      if(sel.value==='__add_type__'){
-        var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
-        if(!typeName || !typeName.trim()){ _bbRenderTypePicker(); return; }
-        var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
-        var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
-        if(!firstBoardName || !firstBoardName.trim()){ _bbRenderTypePicker(); return; }
-        await _bbCreateBoard(firstBoardName.trim(), typeValue);
-        return;
-      }
       var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===sel.value; });
       if(matching.length){
         await _bbSwitchToBoard(matching[0].id);
@@ -1803,6 +1799,21 @@
         if(!name || !name.trim()){ _bbRenderTypePicker(); return; }
         await _bbCreateBoard(name.trim(), sel.value);
       }
+    });
+  }
+
+  // Dotted-circle (+) beside Type, Aug 13 2026 -- carries what the type
+  // picker's old "(+) Add a type..." text option used to do.
+  function wireTypeAddBtn(){
+    var btn=document.getElementById('bb-type-add-btn'); if(!btn) return;
+    btn.addEventListener('click', async function(e){
+      e.stopPropagation();
+      var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
+      if(!typeName || !typeName.trim()) return;
+      var typeValue=typeName.trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'') || ('type_'+Date.now());
+      var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
+      if(!firstBoardName || !firstBoardName.trim()) return;
+      await _bbCreateBoard(firstBoardName.trim(), typeValue);
     });
   }
 
@@ -2184,6 +2195,13 @@
       +'.bb-mh-namerow{display:flex;align-items:center;gap:4px}'
       +'.bb-rename-btn{width:22px;height:22px;flex-shrink:0;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(11px * var(--fg-text-scale,1));cursor:pointer;padding:0}'
       +'.bb-rename-btn:hover{background:var(--bb-bg)}'
+      // Dotted-circle (+) beside Type/Title, Aug 13 2026 -- Larry: same
+      // consistent symbol everywhere, matching .tm-add-tile's existing
+      // dashed-circle look (Cast/team add) instead of the old text
+      // "(+) Add a type/board..." row that used to live inside the
+      // dropdown itself.
+      +'.bb-dotted-add-btn{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:transparent;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;padding:0;opacity:.8;transition:opacity .15s,background .15s}'
+      +'.bb-dotted-add-btn:hover{opacity:1;background:var(--bb-bg)}'
       // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
       // Push tagline lower." Was 20px (sized for when it sat next to the
       // big board-name pill); now the header's one permanent, static
@@ -2425,8 +2443,8 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><select id="bb-type-picker" class="bb-type-picker" title="Board type"></select></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-mh-namerow"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-mh-namerow"><select id="bb-type-picker" class="bb-type-picker" title="Board type"></select><button type="button" id="bb-type-add-btn" class="bb-dotted-add-btn" title="Add a type">+</button></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-mh-namerow"><select id="bb-board-picker" class="bb-board-picker" title="Switch boards"></select><button type="button" id="bb-board-add-btn" class="bb-dotted-add-btn" title="Add a board">+</button><button class="bb-rename-btn" id="bb-rename-btn" title="Rename this board">\u270f\ufe0f</button></div></div>'
               +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp" style="display:none"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><select id="bb-source-picker" class="bb-mh-source-picker" title="Filter"></select></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
@@ -4134,6 +4152,8 @@
   function wireTopicBar(){
     wireTypePicker();
     wireBoardPicker();
+    wireTypeAddBtn();
+    wireBoardAddBtn();
     wireSourcePicker();
     wireRenameButton();
     T().wire('bb-close-x', function(){
