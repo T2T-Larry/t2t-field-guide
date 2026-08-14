@@ -2681,8 +2681,22 @@
       // one of these reserved names (pre-cleanup data, or any future
       // drift) is excluded here too, so it can never masquerade as a
       // top-level project.
+      //
+      // Scoped to orphaned rows only (no cluster_id), Aug 14 2026 -- Larry
+      // named a real header "Purpose" underneath an existing board and it
+      // never appeared, three tries in a row, refresh included. Root
+      // cause: the name backstop above was excluding EVERY header named
+      // Trash/MISC/Purpose/NEW/New Additions anywhere in the account, not
+      // just the orphaned top-level ones it was written to catch -- a
+      // header nested under a real cluster can't "masquerade as a
+      // top-level project" (the thing this backstop guards against), so
+      // it never needed the name check in the first place. All three
+      // "Purpose" headers Larry created were saved correctly the whole
+      // time; they were just being hidden by this filter every render.
       var contentHeaders=headerRows.filter(function(r){
-        return reservedIds.indexOf(String(r.id))===-1 && reservedNames.indexOf(r.text_content)===-1;
+        if(reservedIds.indexOf(String(r.id))!==-1) return false;
+        if(!r.cluster_id && reservedNames.indexOf(r.text_content)!==-1) return false;
+        return true;
       });
       _sboardHeaderList=contentHeaders.concat(newAdditionsRow?[newAdditionsRow]:[]);
 
