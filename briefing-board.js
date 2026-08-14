@@ -671,6 +671,45 @@
     _bbCards = cards;
     try{ sessionStorage.setItem('bbCards', JSON.stringify(cards)); }catch(e){}
     _bbSyncCardsToSupabase(cards, deletedIds);
+    // Foreign/shared-in card fix, Aug 14 2026 -- Larry: cards merged onto
+    // this board from elsewhere (Personal BB's assigned-to-me read-through,
+    // or a project board's shared-in cards) live in _bbForeignCards /
+    // _bbSharedInCards, never in _bbCards -- deliberately, so the
+    // whole-list sync just above can never steal one onto the wrong
+    // board_id (see the block comment above _bbForeignCards). But that
+    // also meant every edit made through the newly-openable shared Detail
+    // overlay -- Notes, Priority, a Signal Flag, anything -- silently
+    // never made it to the database: it patched the in-memory foreign-
+    // card object, which this function never looks at, so the very next
+    // fetch of that board quietly overwrote it back to the old value.
+    // Whichever card is currently open gets checked here and, if it's a
+    // foreign one, saved with its own narrow single-row write instead.
+    _bbPersistOpenForeignCardIfAny();
+  }
+  async function _bbPersistOpenForeignCardIfAny(){
+    if(!_bbOpenCardId) return;
+    var fc=(_bbForeignCards||[]).concat(_bbSharedInCards||[]).filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    if(!fc) return;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var row=_bbCardToRow(fc, fc._homeBoardId);
+      // Position (column + order) is intentionally left alone here and
+      // stays on its own separate path (_bbPersistForeignPosition /
+      // _bbPersistSharedPosition, driven only by dragging the card) --
+      // fc.col/fc.sortOrder are THIS viewer's merged display placement
+      // (personal_col/shared_col), not the card's real status on its
+      // home board, so writing them back here would silently move the
+      // card's actual Doing/Done/Hang-Ups status just because it happens
+      // to sit somewhere else on a mirrored view. id and board_id are
+      // dropped from the payload too, so this can never move a card onto
+      // a different board no matter what changes upstream.
+      row.col = fc._realCol;
+      delete row.id;
+      delete row.board_id;
+      delete row.sort_order;
+      var res=await sb.from('briefing_cards').update(row).eq('id', fc.id);
+      if(res.error) console.error('Briefing Board: foreign card save failed', res.error);
+    }catch(e){ console.error('Briefing Board: foreign card save failed', e); }
   }
   function _bbSeed(){
     return [
@@ -680,6 +719,27 @@
   function _bbCardsList(){
     if(!_bbCards){ _bbCards = _bbLoadLocal() || _bbSeed(); }
     return _bbCards;
+  }
+
+  // Finds a card wherever it actually lives, Aug 14 2026 -- Larry: "why
+  // can't I open some of the cards on the BB?" Root cause: every lookup
+  // by id in this file only ever checked _bbCardsList() (cards native to
+  // whichever board is currently open). Merged cards -- a Personal BB's
+  // assigned-to-me read-through (_bbForeignCards) and a project board's
+  // shared-in cards (_bbSharedInCards) -- were deliberately kept out of
+  // that list (see the block comment above _bbForeignCards) so a
+  // whole-list save could never steal one onto the wrong board_id. That
+  // safety was correct, but nothing ever widened the READ side to match,
+  // so double-clicking one of those cards found nothing and silently did
+  // nothing. This checks all three places a card can live; every open/
+  // edit/save path below should go through this instead of
+  // _bbCardsList() alone whenever it's resolving the currently-open card.
+  function _bbFindCardAnywhere(id){
+    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
+    if(c) return c;
+    c=(_bbForeignCards||[]).filter(function(x){ return x.id===id; })[0];
+    if(c) return c;
+    return (_bbSharedInCards||[]).filter(function(x){ return x.id===id; })[0];
   }
 
   function _bbCurrentBoardDefaultAssignee(){
@@ -1985,7 +2045,7 @@
     }catch(e){ console.error('Briefing Board: could not load members', e); }
     var sel=document.getElementById('bb-d-person');
     if(sel && _bbOpenCardId){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(c) _bbRenderPersonSelect(c.person||'');
     }
   }
@@ -3238,7 +3298,10 @@
 
   function openCardDetail(id){
     _bbOpenCardId=id;
-    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
+    // Aug 14 2026 fix -- see _bbFindCardAnywhere above: this used to only
+    // check _bbCardsList(), so a merged card (Personal BB read-through or
+    // a project board's shared-in card) never opened at all.
+    var c=_bbFindCardAnywhere(id);
     if(!c) return;
     _bbDetailBeforeCardId=id;
     _bbDetailBeforeSnapshot=_bbSnapshotCardDetail(c);
@@ -3285,7 +3348,11 @@
       var sel=document.getElementById('bb-d-shared-board');
       if(!wrap || !sel) return;
       var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      if(board && board.board_type==='personal'){
+      // Aug 14 2026 -- also require !c._foreign now that a merged
+      // (assigned-to-me) card can be opened from a Personal BB too: this
+      // field only makes sense for a card actually native here, not one
+      // just passing through on its way from someone else's board.
+      if(board && board.board_type==='personal' && !c._foreign){
         var targets=_bbBoards.filter(function(b){ return b.board_type!=='personal'; });
         sel.innerHTML='<option value="">Just here</option>'+targets.map(function(b){
           return '<option value="'+b.id+'">'+_esc(b.name||'Untitled Board')+'</option>';
@@ -3338,7 +3405,7 @@
     if(ov) ov.classList.remove('active');
   }
   function closeCardDetail(){
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(c){
       c.task=document.getElementById('bb-d-task').value;
       c.situation=document.getElementById('bb-d-situation').value;
@@ -3648,7 +3715,7 @@
   function openKeyPicker(slotIndex){
     _bbOpenSlotIndex = slotIndex;
     _bbRenderKeyPickerList();
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var c=_bbFindCardAnywhere(_bbOpenCardId);
     var hasKey = !!(c && c.keys && c.keys[slotIndex]);
     var removeBtn=document.getElementById('bb-keypicker-remove');
     if(removeBtn) removeBtn.style.display = hasKey ? '' : 'none';
@@ -3665,7 +3732,7 @@
   function _bbRenderKeyPickerList(){
     var list=document.getElementById('bb-keypicker-list'); if(!list) return;
     var lib=_bbLoadKeyLibrary();
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var c=_bbFindCardAnywhere(_bbOpenCardId);
     var keys=(c && c.keys) || [];
     if(!lib.length){
       list.innerHTML='<div class="bb-key-pick-empty-msg">No signal flags yet &mdash; build your first one below.</div>';
@@ -3703,7 +3770,7 @@
     if(newBtn) newBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
   }
   async function assignKeyToSlot(keyId){
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(!c) return;
     c.keys = c.keys || [];
     c.keys[_bbOpenSlotIndex] = keyId;
@@ -3720,7 +3787,7 @@
     renderBoard();
   }
   async function removeKeyFromSlot(){
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(!c || !c.keys) return;
     var removedKeyId=c.keys[_bbOpenSlotIndex];
     // Splice, don't null out -- keeps the array gap-free so the next
@@ -4269,7 +4336,7 @@
     for(var i=0;i<btns.length;i++){
       (function(btn){
         btn.addEventListener('click', function(){
-          var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+          var c=_bbFindCardAnywhere(_bbOpenCardId);
           if(!c) return;
           var _bbMoveBefore=_bbSnapshotCard(c);
           var base=btn.getAttribute('data-pri-base');
@@ -4389,7 +4456,7 @@
   // this card IS that header's task card, hand-linked, not trigger-
   // managed, so its own task text is never overwritten.
   async function _bbOpenOrCreateIdeaHeader(){
-    var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+    var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(!c) return;
     if(c.sourceHeaderId){
       try{
@@ -4448,14 +4515,14 @@
     // again to clear, same pattern as Signal flag. Neither one gates
     // anything; they just ride along on the card's history.
     T().wire('bb-d-pro', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.pro=!c.pro;
       _bbSaveLocal(_bbCardsList());
       _bbUpdateReviewUI(c);
     });
     T().wire('bb-d-grow', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.grow=!c.grow;
       _bbSaveLocal(_bbCardsList());
@@ -4472,7 +4539,7 @@
     // elsewhere it's a quiet no-op (another hidden Mickey -- the action
     // exists for later, nothing to explain about it now).
     T().wire('bb-d-verify', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c || c.col!=='done') return;
       c.verified=true;
       c.archived=true;
@@ -4519,7 +4586,7 @@
   }
   function wireRoutineControls(){
     T().wire('bb-d-routine-toggle', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.routine=!c.routine;
       _bbSaveLocal(_bbCardsList());
@@ -4530,7 +4597,7 @@
     });
     var sel=document.getElementById('bb-d-routine');
     if(sel) sel.addEventListener('change', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.routineFreq=sel.value;
       var custom=document.getElementById('bb-d-routine-custom');
@@ -4546,7 +4613,7 @@
     });
     var custom=document.getElementById('bb-d-routine-custom');
     if(custom) custom.addEventListener('change', function(){
-      var c=_bbCardsList().filter(function(x){ return x.id===_bbOpenCardId; })[0];
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.routineCustom=custom.value;
       _bbSaveLocal(_bbCardsList());
@@ -4569,8 +4636,47 @@
   window.addEventListener('t2t:drag-end', function(){
     if (_bbRtPendingRender) { _bbRtPendingRender = false; _bbRtSafeRender(); }
   });
+  var _bbRtForeignTimer = null, _bbRtSharedInTimer = null;
+  function _bbRtRefreshForeign(){
+    if (_bbRtForeignTimer) clearTimeout(_bbRtForeignTimer);
+    _bbRtForeignTimer = setTimeout(function(){
+      _bbRtForeignTimer = null;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(!board) return;
+      _bbLoadForeignCardsForPersonalBoard(board).then(_bbRtSafeRender);
+    }, 300);
+  }
+  function _bbRtRefreshSharedIn(){
+    if (_bbRtSharedInTimer) clearTimeout(_bbRtSharedInTimer);
+    _bbRtSharedInTimer = setTimeout(function(){
+      _bbRtSharedInTimer = null;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(!board) return;
+      _bbLoadSharedInCardsForProjectBoard(board).then(_bbRtSafeRender);
+    }, 300);
+  }
   function _bbApplyRemoteCard(evt, row, oldRow){
     var boardId = row ? row.board_id : (oldRow ? oldRow.board_id : null);
+    // Merged-view fix, Aug 14 2026 -- Larry: "when I change the
+    // assignment, the card should disappear from the personal board."
+    // Root cause: a Personal BB's read-through cards and a project
+    // board's shared-in cards live under a board_id/shared_to_board_id
+    // that's never the SAME as _bbCurrentBoardId, so the early return
+    // just below used to throw away every remote change to them --
+    // reassigning a card away from someone didn't drop it off their
+    // Personal BB live, a newly-assigned card didn't appear, and a
+    // status change on the real home board never showed up in the
+    // mirror. Either merge just gets a light, debounced re-fetch (not a
+    // precise in-place patch) on any card event that could plausibly
+    // touch it, since re-running the same query the merge was built from
+    // is simpler than trying to reconstruct the same filtering here.
+    var curBoard = _bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if (curBoard && boardId !== _bbCurrentBoardId) {
+      if (curBoard.board_type==='personal') { _bbRtRefreshForeign(); return; }
+      var sharedTo = row ? row.shared_to_board_id : null;
+      var oldSharedTo = oldRow ? oldRow.shared_to_board_id : null;
+      if (sharedTo===_bbCurrentBoardId || oldSharedTo===_bbCurrentBoardId) { _bbRtRefreshSharedIn(); return; }
+    }
     if (boardId !== _bbCurrentBoardId) return; // not the board currently open in this tab
     var list = _bbCardsList();
     if (evt === 'DELETE') {
