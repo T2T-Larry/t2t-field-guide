@@ -101,7 +101,17 @@
   async function ensureHeaderNamed(name, parentId){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return null;
-      var q=sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content',name);
+      // Shared-project fix, Aug 14 2026: the existence check used to be
+      // scoped to rows this same signed-in user created (.eq('user_id',...)),
+      // so a teammate opening a project before its Owner ever synced on
+      // their device wouldn't recognize the Owner's reserved header as
+      // already existing and would quietly spawn a second one. RLS already
+      // limits what this query can see to rows this user is allowed to
+      // read (own rows, or a project/topic they're a Cast member of), so
+      // dropping the extra user_id filter here just lets any Cast member
+      // find and reuse the one shared header instead of each person
+      // getting their own.
+      var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content',name);
       q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
       var existing=await q.limit(1);
       if(existing.error) console.warn('ensureHeaderNamed select error:', existing.error);
@@ -115,7 +125,10 @@
   async function ensureMiscHeader(parentId){
     var sb=_sb(); var u=await _currentUser();
     if(!u) throw new Error('Not signed in.');
-    var q=sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','MISC');
+    // Shared-project fix, Aug 14 2026 -- see ensureHeaderNamed above: drop
+    // the user_id filter on the lookup so every Cast member reuses the
+    // same MISC instead of each person spawning their own.
+    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','MISC');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
@@ -127,7 +140,13 @@
   async function ensurePurposeHeader(parentId){
     var sb=_sb(); var u=await _currentUser();
     if(!u) throw new Error('Not signed in.');
-    var q=sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Purpose');
+    // Shared-project fix, Aug 14 2026 -- Larry: 'one shared purpose for
+    // every story.' Drop the user_id filter on the lookup so every Cast
+    // member reuses the project's one true Purpose header instead of each
+    // person who opens it spawning their own. RLS still governs what this
+    // user is allowed to see, so this can't leak a Purpose header from a
+    // project they're not on.
+    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
@@ -142,7 +161,10 @@
     // Matches both the current label and the pre-rename one, so boards built
     // before the NEW rename self-heal the first time they're opened again
     // instead of spawning a duplicate reserved header.
-    var q=sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').in('text_content',['NEW','New Additions']);
+    // Shared-project fix, Aug 14 2026 -- see ensurePurposeHeader above:
+    // drop the user_id filter so every Cast member reuses the same NEW
+    // header instead of each person spawning their own.
+    var q=sb.from('ideas').select('id,text_content').eq('content_type','header').in('text_content',['NEW','New Additions']);
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){

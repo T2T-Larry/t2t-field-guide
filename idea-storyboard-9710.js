@@ -4285,7 +4285,13 @@
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var q=_sb.from('ideas').select('id').eq('user_id',user.id).eq('content_type','header').eq('text_content','Purpose');
+    // Shared-project fix, Aug 14 2026 -- Larry: 'one shared purpose for
+    // every story.' Drop the user_id filter on the lookup so every Cast
+    // member reuses the project's one true Purpose header instead of each
+    // person who opens it spawning their own. RLS still governs what this
+    // user is allowed to see, so this can't leak a Purpose header from a
+    // project they're not on.
+    var q=_sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
@@ -4303,7 +4309,10 @@
     // Matches the current label, the desired label, and the pre-rename one,
     // so boards from any earlier naming era self-heal instead of spawning
     // a duplicate reserved header.
-    var q=_sb.from('ideas').select('id,text_content').eq('user_id',user.id).eq('content_type','header').in('text_content',['NEW','New Additions',name]);
+    // Shared-project fix, Aug 14 2026 -- see _sboardEnsurePurposeHeader
+    // above: drop the user_id filter so every Cast member reuses the same
+    // NEW header instead of each person spawning their own.
+    var q=_sb.from('ideas').select('id,text_content').eq('content_type','header').in('text_content',['NEW','New Additions',name]);
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){
