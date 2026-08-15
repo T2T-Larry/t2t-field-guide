@@ -357,9 +357,7 @@
         // person-filterable content) -- only leaf idea/text/image/link
         // cards get hidden when they don't match.
         +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-        +'.sc-org-name-input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:2px 6px;box-sizing:border-box;height:22px;font-size:calc(10px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));width:calc(104px * var(--fg-text-scale,1));text-align:center;opacity:.85;margin-top:3px}'
-        +'.sc-org-name-input:focus{opacity:1;outline:none}'
-        +'.sc-org-name-input::placeholder{color:rgba(255,255,255,.5);font-style:italic}'
+        +'.sc-org-name-cdrop{margin-top:3px}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
@@ -536,7 +534,7 @@
       +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-type-trigger" title="Organization type"></button>'
       +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
       +'</div>'
-      +'<input type="text" id="sc-org-name" class="sc-org-name-input" placeholder="Name" title="Name for this Organization, e.g. Denver Broncos" autocomplete="off">'
+      +'<div class="sc-cdrop sc-org-name-cdrop" id="sc-orgname-cdrop"><button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-org-name-trigger" title="Name for this Organization, e.g. Denver Broncos"></button><div class="sc-cdrop-menu" id="sc-org-name-menu" hidden></div></div>'
       +'</div>'
       // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
       // Title now covers what it used to (picking which board is open),
@@ -1536,15 +1534,36 @@
   // (e.g. Type=Client, Name="Denver Broncos") -- independent of
   // Project/Title, which is the root board's own name. One value per
   // root board (ideas.org_name, only meaningful on root-level headers).
+  // Names already used for the current Type, Aug 15 2026 -- same
+  // "distinct values already in use" pattern as _sboardExtraBoardTypes,
+  // scoped to roots sharing the active Type.
+  function _sboardExtraOrgNames(){
+    var activeType=_sboardActiveBoardType();
+    var roots=_sboardMyRoots||[];
+    var seen={}, extra=[];
+    roots.forEach(function(r){
+      var v=(r.org_name||'').trim();
+      var t=(r.board_type||'personal');
+      if(v && t===activeType && !seen[v]){ seen[v]=true; extra.push(v); }
+    });
+    return extra;
+  }
   function _sboardRenderOrgName(){
-    var input=document.getElementById('sc-org-name');
-    if(!input) return;
     var curRoot=_sboardCurrentRootRow();
     var roots=_sboardMyRoots||[];
     var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
-    input.value=(match && match.org_name) || '';
-    input.onblur=function(){ _sboardSaveOrgName(input.value); };
-    input.onkeydown=function(e){ if(e.key==='Enter'){ input.blur(); } };
+    var current=((match && match.org_name) || '').trim();
+    var names=_sboardExtraOrgNames();
+    if(current && names.indexOf(current)===-1) names.push(current);
+    var opts=names.map(function(n){ return {value:n, label:n}; });
+    if(!opts.length) opts=[{value:'', label:'\u2014'}];
+    _sboardRenderDropdown('sc-org-name-trigger','sc-org-name-menu', opts, current, function(newName){
+      _sboardSaveOrgName(newName);
+    }, function(){
+      var name=window.prompt('Name for this Organization (e.g. "Denver Broncos"):');
+      if(!name || !name.trim()) return;
+      _sboardSaveOrgName(name.trim());
+    }, 'Add a name');
   }
   async function _sboardSaveOrgName(value){
     var curRoot=_sboardCurrentRootRow();
@@ -1554,6 +1573,7 @@
     var match=roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0];
     if(match && (match.org_name||'')===trimmed) return;
     if(match) match.org_name=trimmed;
+    _sboardRenderOrgName();
     var _sb=T().sb;
     try{
       var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', curRoot.id);

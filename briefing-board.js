@@ -1973,14 +1973,35 @@
   // (e.g. Type=Client, Name="Denver Broncos") -- independent of
   // Project/Title, which is the board's own name. Plain text,
   // save-on-blur/Enter, one value per board (briefing_boards.org_name).
+  // Names already used for the current Type, Aug 15 2026 -- same
+  // "distinct values already in use" pattern as _bbExtraBoardTypes,
+  // scoped to boards sharing the active Type so Client boards offer
+  // Client names, not a mix of every Type's names.
+  function _bbExtraOrgNames(){
+    var activeType=_bbActiveBoardType();
+    var seen={}, extra=[];
+    _bbBoards.forEach(function(b){
+      var v=(b.org_name||'').trim();
+      var t=(b.board_type||'personal');
+      if(v && t===activeType && !seen[v]){ seen[v]=true; extra.push(v); }
+    });
+    return extra;
+  }
   function _bbRenderOrgName(){
-    var input=document.getElementById('bb-org-name');
-    if(!input) return;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     if(!board) return;
-    input.value = board.org_name || '';
-    input.onblur = function(){ _bbSaveOrgName(input.value); };
-    input.onkeydown = function(e){ if(e.key==='Enter'){ input.blur(); } };
+    var current=(board.org_name||'').trim();
+    var names=_bbExtraOrgNames();
+    if(current && names.indexOf(current)===-1) names.push(current);
+    var opts=names.map(function(n){ return {value:n, label:n}; });
+    if(!opts.length) opts=[{value:'', label:'\u2014'}];
+    _bbRenderDropdown('bb-org-name-trigger','bb-org-name-menu', opts, current, function(newName){
+      _bbSaveOrgName(newName);
+    }, function(){
+      var name=window.prompt('Name for this Organization (e.g. "Denver Broncos"):');
+      if(!name || !name.trim()) return;
+      _bbSaveOrgName(name.trim());
+    }, 'Add a name');
   }
   async function _bbSaveOrgName(value){
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
@@ -1988,6 +2009,7 @@
     var trimmed=(value||'').trim();
     if((board.org_name||'')===trimmed) return;
     board.org_name=trimmed;
+    _bbRenderOrgName();
     var sb=T().sb;
     try{
       var upd=await sb.from('briefing_boards').update({org_name:trimmed||null}).eq('id', board.id);
@@ -2465,9 +2487,7 @@
       // which was never the part that had drifted.
       +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-hdr-select:hover{opacity:1}'
-      +'.bb-org-name-input{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:2px 6px;box-sizing:border-box;height:22px;font-family:var(--bb-body-font);font-size:calc(10px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));width:calc(104px * var(--fg-text-scale,1));text-align:center;opacity:.85}'
-      +'.bb-org-name-input:focus{opacity:1;outline:none}'
-      +'.bb-org-name-input::placeholder{color:var(--bb-sub);font-style:italic}'
+      +'.bb-org-name-cdrop{margin-top:3px}'
       // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
       // gone; double-click the Title trigger to rename, same interaction
       // as the Idea Board's Title (see wireTopicBar's dblclick wiring).
@@ -2770,7 +2790,7 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Organization</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Organization type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div><input type="text" id="bb-org-name" class="bb-org-name-input" placeholder="Name" title="Name for this Organization, e.g. Denver Broncos" autocomplete="off"></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Organization</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Organization type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div><div class="bb-cdrop bb-org-name-cdrop" id="bb-orgname-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Name for this Organization, e.g. Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">Team</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
