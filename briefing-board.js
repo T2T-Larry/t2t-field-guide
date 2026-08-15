@@ -3030,6 +3030,19 @@
       kpOv.addEventListener('click', function(e){ if(e.target===kpOv) closeKeyPicker(); });
       _bbMakeDraggable(kpOv.querySelector('.bb-overlay-card'), kpOv.querySelector('.bb-overlay-head'));
     }
+    if(!document.getElementById('bb-keypeek-overlay')){
+      var kkOv=document.createElement('div');
+      kkOv.id='bb-keypeek-overlay'; kkOv.className='bb-overlay';
+      kkOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title" id="bb-keypeek-title">Signal Flag</span><button class="bb-close" id="bb-keypeek-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bbw"><div id="bb-keypeek-body" style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;text-align:center;padding:16px 0">Loading\u2026</div></div>'
+        +'</div>';
+      fg.appendChild(kkOv);
+      kkOv.addEventListener('click', function(e){ if(e.target===kkOv) closeKeyPeek(); });
+      T().wire('bb-keypeek-close', closeKeyPeek);
+      _bbMakeDraggable(kkOv.querySelector('.bb-overlay-card'), kkOv.querySelector('.bb-overlay-head'));
+    }
     T().registerPageNum('s-briefing-board', '4010'); /* Larry, Aug 8 2026: renumbered off 9350 into the Journey phase sequence, mirroring ISB's July 29 move from 9710 to 1010 -- see Journey's 4810 Tools Crib link in Design Notes */
     T().registerUtilScreen('s-briefing-board');
     T().registerCtx('s-briefing-board', 'Briefing Board');
@@ -3729,9 +3742,29 @@
     }
     row.innerHTML = html;
     row.querySelectorAll('.bb-key-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        openKeyPicker(Number(btn.getAttribute('data-slot')));
-      });
+      var slotIdx=Number(btn.getAttribute('data-slot'));
+      var isFilled = !btn.classList.contains('bb-key-add');
+      // Click-and-hold a filled Signal Flag to see every other card
+      // carrying that same flag -- Aug 15 2026 (Larry: "click to travel
+      // from one to another... like the header stack but even from
+      // board to board"). Same 550ms hold as the Idea Storyboard's own
+      // flag peek, so the gesture reads the same on either board. A
+      // short click/tap still opens the picker as before.
+      if(isFilled){
+        var keyId=keys[slotIdx];
+        var kHoldTimer=null, kHeld=false;
+        function kStartHold(){ kHeld=false; kHoldTimer=setTimeout(function(){ kHeld=true; var k=lib.filter(function(x){ return x.id===keyId; })[0]; if(k) openKeyPeek(k); }, 550); }
+        function kCancelHold(){ clearTimeout(kHoldTimer); }
+        btn.addEventListener('mousedown', kStartHold);
+        btn.addEventListener('touchstart', kStartHold);
+        btn.addEventListener('mouseup', kCancelHold);
+        btn.addEventListener('mouseleave', kCancelHold);
+        btn.addEventListener('touchend', kCancelHold);
+        btn.addEventListener('touchmove', kCancelHold);
+        btn.addEventListener('click', function(){ if(!kHeld) openKeyPicker(slotIdx); kHeld=false; });
+      } else {
+        btn.addEventListener('click', function(){ openKeyPicker(slotIdx); });
+      }
     });
   }
 
@@ -3747,6 +3780,97 @@
   }
   function closeKeyPicker(){
     var ov=document.getElementById('bb-keypicker-overlay'); if(ov) ov.classList.remove('active');
+  }
+
+  // Signal Flag peek, Aug 15 2026 (Larry: "click to travel from one to
+  // another... like the header stack but even from board to board") --
+  // twin of the Idea Storyboard's openSbKeyPeek. Shows every other
+  // Briefing card carrying the same flag (opens right in place, same
+  // tab, switching boards first if needed), plus any Idea Storyboard
+  // matches as a jump-list to a new tab -- headers open straight to
+  // their own board (the existing fg_open_header_id handoff); a plain
+  // subber has no board of its own, so it opens the board it lives on
+  // (its parent header) rather than nothing at all.
+  async function openKeyPeek(keyObj){
+    var titleEl=document.getElementById('bb-keypeek-title');
+    if(titleEl){
+      titleEl.innerHTML='<span style="display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:6px;'+_bbShapeCSS(keyObj.shape,keyObj.color)+'"></span>'+_esc(keyObj.meaning||'Signal Flag');
+    }
+    var body=document.getElementById('bb-keypeek-body');
+    if(body){ body.textContent='Loading…'; body.style.color=''; }
+    var ov=document.getElementById('bb-keypeek-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+    var sb=T().sb;
+    if(!sb || !body) return;
+    try{
+      var cardRes=await sb.from('briefing_cards').select('id,board_id,task')
+        .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
+        .eq('archived',false).limit(200);
+      if(cardRes.error) throw new Error(cardRes.error.message);
+      var cardRows=cardRes.data||[];
+
+      var ideaRows=[];
+      try{
+        var ideaRes=await sb.from('ideas').select('id,content_type,text_content,cluster_id')
+          .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
+          .limit(200);
+        if(!ideaRes.error) ideaRows=ideaRes.data||[];
+      }catch(e){}
+
+      if(!cardRows.length && !ideaRows.length){
+        body.textContent='No other cards carry this Signal Flag yet.';
+        return;
+      }
+      body.innerHTML='';
+      body.style.cssText='';
+
+      if(cardRows.length){
+        var bbLbl=document.createElement('div');
+        bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin-bottom:6px;text-align:left';
+        bbLbl.textContent='On the Briefing Board:';
+        body.appendChild(bbLbl);
+        cardRows.forEach(function(c){
+          var b=document.createElement('button');
+          b.className='bb-flag-btn';
+          b.style.cssText='width:100%;margin-bottom:6px;text-align:left';
+          b.textContent=c.task||'(untitled)';
+          b.addEventListener('click', async function(){
+            closeKeyPeek();
+            await _bbSwitchToBoard(c.board_id);
+            openCardDetail(c.id);
+          });
+          body.appendChild(b);
+        });
+      }
+
+      if(ideaRows.length){
+        var ibLbl=document.createElement('div');
+        ibLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin:'+(cardRows.length?'12px':'0')+' 0 6px;text-align:left';
+        ibLbl.textContent='On the Idea Board:';
+        body.appendChild(ibLbl);
+        ideaRows.forEach(function(row){
+          var b=document.createElement('button');
+          b.className='bb-flag-btn';
+          b.style.cssText='width:100%;margin-bottom:6px;text-align:left';
+          b.textContent=row.text_content||'(untitled)';
+          b.addEventListener('click', function(){
+            var targetHeaderId = (row.content_type==='header') ? row.id : row.cluster_id;
+            try{
+              sessionStorage.setItem('bp_target','1010');
+              if(targetHeaderId) sessionStorage.setItem('fg_open_header_id', targetHeaderId);
+            }catch(e){}
+            window.open(location.pathname+location.search, '_blank');
+          });
+          body.appendChild(b);
+        });
+      }
+    }catch(err){
+      body.textContent=err.message;
+      body.style.color='#a3372b';
+    }
+  }
+  function closeKeyPeek(){
+    var ov=document.getElementById('bb-keypeek-overlay'); if(ov) ov.classList.remove('active');
   }
   // Shows the whole library every time a slot is tapped -- Larry's "so
   // you know what is already possible" ask -- greying out any entry
