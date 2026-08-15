@@ -357,6 +357,9 @@
         // person-filterable content) -- only leaf idea/text/image/link
         // cards get hidden when they don't match.
         +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-org-name-input{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:2px 6px;box-sizing:border-box;height:22px;font-size:calc(10px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));width:calc(104px * var(--fg-text-scale,1));text-align:center;opacity:.85;margin-top:3px}'
+        +'.sc-org-name-input:focus{opacity:1;outline:none}'
+        +'.sc-org-name-input::placeholder{color:rgba(255,255,255,.5);font-style:italic}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
@@ -533,6 +536,7 @@
       +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-type-trigger" title="Organization type"></button>'
       +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
       +'</div>'
+      +'<input type="text" id="sc-org-name" class="sc-org-name-input" placeholder="Name" title="Name for this Organization, e.g. Denver Broncos" autocomplete="off">'
       +'</div>'
       // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
       // Title now covers what it used to (picking which board is open),
@@ -608,7 +612,7 @@
         if(rootRow) openSbDetail(rootRow);
       });
     })();
-    _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
+    _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -1360,9 +1364,9 @@
       // stray image, link, or blank test card with no parent) also
       // qualified as a "root" and showed up in Type/Title as if it were
       // a real board. Only real headers are boards.
-      var res=await _sb.from('ideas').select('id,text_content,board_type,created_at').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
+      var res=await _sb.from('ideas').select('id,text_content,board_type,org_name,created_at').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
       if(res.error) throw res.error;
-      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', created_at:r.created_at}; });
+      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', org_name:r.org_name||'', created_at:r.created_at}; });
       _sboardMyRootsLoadedFor=user.id;
     }catch(e){ console.warn('Idea Board: could not load your boards', e); _sboardMyRoots=_sboardMyRoots||[]; }
     return _sboardMyRoots;
@@ -1526,10 +1530,41 @@
     };
   }
 
+  // ORGANIZATION's Name field, Aug 15 2026 -- mirrors the Briefing
+  // Board's own _bbRenderOrgName/_bbSaveOrgName. The field under
+  // Organization holds the name for whatever Type is selected above it
+  // (e.g. Type=Client, Name="Denver Broncos") -- independent of
+  // Project/Title, which is the root board's own name. One value per
+  // root board (ideas.org_name, only meaningful on root-level headers).
+  function _sboardRenderOrgName(){
+    var input=document.getElementById('sc-org-name');
+    if(!input) return;
+    var curRoot=_sboardCurrentRootRow();
+    var roots=_sboardMyRoots||[];
+    var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
+    input.value=(match && match.org_name) || '';
+    input.onblur=function(){ _sboardSaveOrgName(input.value); };
+    input.onkeydown=function(e){ if(e.key==='Enter'){ input.blur(); } };
+  }
+  async function _sboardSaveOrgName(value){
+    var curRoot=_sboardCurrentRootRow();
+    if(!curRoot) return;
+    var trimmed=(value||'').trim();
+    var roots=_sboardMyRoots||[];
+    var match=roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0];
+    if(match && (match.org_name||'')===trimmed) return;
+    if(match) match.org_name=trimmed;
+    var _sb=T().sb;
+    try{
+      var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', curRoot.id);
+      if(upd.error) console.error('Idea Board: could not save Organization name', upd.error);
+    }catch(e){ console.error('Idea Board: could not save Organization name', e); }
+  }
+
   function _sboardRenderTypePicker(){
     var roots=_sboardMyRoots;
     if(!roots){
-      _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderTitlePicker(); });
+      _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
       roots=[];
     }
     var extra=_sboardExtraBoardTypes(roots);
@@ -3348,6 +3383,7 @@
       // the current board; TYPE/TITLE both re-render on every Topic
       // change so they stay in sync with whatever's actually on screen.
       _sboardRenderTypePicker();
+      _sboardRenderOrgName();
       _sboardRenderTitlePicker();
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
