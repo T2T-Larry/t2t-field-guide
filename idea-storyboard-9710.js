@@ -3619,14 +3619,28 @@
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=_sboardEsc(keyObj.meaning||'Signal Flag');
     var swatchHTML='<span style="display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:6px;'+_sboardKeyShapeCSS(keyObj.shape,keyObj.color)+'"></span>';
+    // Aug 15 2026 (Larry: "does not look the same -- Idea Board has
+    // return arrow, BB has X... make it like BB card") -- topbar now
+    // matches the Briefing Board overlay's own layout: title on the
+    // left, a single X on the right, no back-arrow.
     ov.innerHTML='<div class="sc-peek-card">'
-      +'<div class="sc-peek-topbar"><button id="sb-keypeek-back">⬅️</button><div class="sc-peek-title">'+swatchHTML+safeName+'</div><span style="width:24px;display:inline-block"></span></div>'
+      +'<div class="sc-peek-topbar" style="justify-content:space-between"><div class="sc-peek-title" style="text-align:left;flex:1">'+swatchHTML+safeName+'</div><button id="sb-keypeek-back" title="Close" style="width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #1a3a5c;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c">\u2715</button></div>'
       +'<div id="sb-keypeek-body" style="text-align:center;font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:20px 0">Loading…</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-keypeek-back', onBack||closeSbDetail);
     var body=document.getElementById('sb-keypeek-body');
     var _sb=T().sb;
+    // Aug 15 2026 (Larry: "make it like BB card") -- every match in
+    // this peek, from either board, now renders with the exact same
+    // card look (the Briefing Board's own warm/brown .bb-card style,
+    // hand-matched here since this file doesn't share BB's stylesheet)
+    // instead of the native square tile grid. The group label above
+    // each set already says which board it's from, so the card itself
+    // doesn't need a different shape or color to say it again.
+    function _skpCardStyle(){
+      return 'width:100%;box-sizing:border-box;cursor:pointer;background:#FFFDF7;border:1px solid #9c8b73;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#3B2510;font-family:inherit';
+    }
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
@@ -3642,7 +3656,9 @@
         // each type... must include the TITLE") -- embeds the parent
         // board's own name via the existing board_id foreign key, so
         // each match can be grouped and labeled by its real board,
-        // never a generic bucket.
+        // never a generic bucket. Disambiguated !board_id since
+        // briefing_cards has a second FK into briefing_boards
+        // (shared_to_board_id) that would otherwise make this ambiguous.
         var cardRes=await _sb.from('briefing_cards').select('id,task,board_id,briefing_boards!board_id(name)').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
         if(!cardRes.error) cardRows=cardRes.data||[];
       }catch(e){}
@@ -3662,7 +3678,7 @@
         // real title (same resolution the header->card sync already
         // uses). A traveler can have many independent boards of this
         // type (Field Guide, LifeWave, a delegated TOPIC, etc.), so one
-        // ungrouped grid would blur matches from unrelated boards
+        // ungrouped list would blur matches from unrelated boards
         // together.
         var scopeIds=[]; var seenScope={};
         rows.forEach(function(r){
@@ -3681,24 +3697,25 @@
           if(!byScope[sid]){ byScope[sid]=[]; scopeOrder.push(sid); }
           byScope[sid].push(r);
         });
-        var _peekMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
-        var _peekOverlayContentW=window.innerWidth-40;
-        var _peekCardW=Math.min(360,_peekOverlayContentW*0.94)-28;
-        var _peekMaxTile=Math.floor((_peekCardW-20)/3);
-        var _peekTile=Math.max(56, Math.min(Math.round(84*_peekMult), _peekMaxTile));
         scopeOrder.forEach(function(sid, idx){
           var groupRows=byScope[sid];
           var boardName=scopeNameById[sid]||'Idea Board';
           var lbl=document.createElement('div');
-          lbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin:'+(idx?'14px':'0')+' 0 6px;text-align:left';
+          lbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:700;margin:'+(idx?'14px':'0')+' 0 6px;text-align:left';
           lbl.textContent='On the '+boardName+' Idea Board:';
           body.appendChild(lbl);
-          var subRows=groupRows.filter(function(r){ return r.content_type==='header'; });
-          var itemRows=groupRows.filter(function(r){ return r.content_type!=='header'; });
           var grid=document.createElement('div');
-          grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
-          subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
-          itemRows.forEach(function(item2){ grid.appendChild(_sboardMakeTile(item2, _peekTile, true)); });
+          grid.style.cssText='display:flex;flex-direction:column;gap:8px';
+          groupRows.forEach(function(r){
+            var isHeader=(r.content_type==='header');
+            var card=document.createElement('div');
+            card.style.cssText=_skpCardStyle();
+            card.textContent=r.text_content||'(untitled)';
+            card.addEventListener('click', function(){
+              if(isHeader) openSbHeaderDetail(r); else openSbDetail(r);
+            });
+            grid.appendChild(card);
+          });
           body.appendChild(grid);
         });
       } else {
@@ -3708,12 +3725,6 @@
         body.appendChild(noneMsg);
       }
 
-      // Aug 15 2026 (Larry: "looks awkward... more like cards than
-      // document links" / "must include the TITLE... many different
-      // boards of each type") -- Briefing Board matches render with the
-      // Briefing Board's own warm/brown card look, grouped and labeled
-      // by their real board name, not a generic "the Briefing Board"
-      // bucket.
       if(cardRows.length){
         var byBoard={}; var boardOrder=[];
         cardRows.forEach(function(c){
@@ -3734,7 +3745,7 @@
           bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
           groupCards.forEach(function(c){
             var b=document.createElement('div');
-            b.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#FFFDF7;border:1px solid #9c8b73;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#3B2510;font-family:inherit';
+            b.style.cssText=_skpCardStyle();
             b.textContent=c.task||'(untitled)';
             b.addEventListener('click', function(){
               try{
