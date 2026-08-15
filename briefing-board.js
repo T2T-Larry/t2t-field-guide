@@ -1823,6 +1823,24 @@
         }
       }
     }catch(e){ console.warn('Briefing Board deep-link check failed:', e); }
+    // Generic "open this exact card" deep-link, Aug 15 2026 -- the
+    // Idea Storyboard's Signal Flag peek ("also on the Briefing Board")
+    // sets this before opening the tab. Looked up by the card's own id,
+    // not source_header_id -- these are ordinary cards, not necessarily
+    // header-linked ones.
+    try{
+      var _bbDeepLinkCardId=sessionStorage.getItem('fg_open_card_id');
+      if(_bbDeepLinkCardId){
+        sessionStorage.removeItem('fg_open_card_id');
+        var _bbDeepLinkRes2=await sb.from('briefing_cards').select('id,board_id').eq('id',_bbDeepLinkCardId).eq('archived',false).limit(1);
+        var _bbDeepLinkCard2=(_bbDeepLinkRes2.data && _bbDeepLinkRes2.data[0]) || null;
+        if(_bbDeepLinkCard2){
+          await _bbSwitchToBoard(_bbDeepLinkCard2.board_id);
+          openCardDetail(_bbDeepLinkCard2.id);
+          return;
+        }
+      }
+    }catch(e){ console.warn('Briefing Board deep-link (by card id) check failed:', e); }
     // July 23, 2026, Larry: prefer the persisted database pointer over the
     // tab-only sessionStorage one -- it's what makes "which board is active"
     // work from a fresh tab, a different device, or a plain SQL lookup, not

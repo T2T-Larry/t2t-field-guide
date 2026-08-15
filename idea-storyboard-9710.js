@@ -3605,6 +3605,99 @@
     }
   }
 
+  // Signal Flag peek, Aug 15 2026 (Larry: click-and-hold a flag to see
+  // "all the cards with blue stars," same 550ms hold as the header-stack
+  // peek above -- "consistent process to see what is inside"). Twin of
+  // openSbHeaderPeek: same overlay, same grid, same tile renderers --
+  // just filtered by key_slot_1/2/3 instead of cluster_id. Signal Flags
+  // are a genuinely shared concept (one custom_keys table, both boards --
+  // see _sboardSyncKeyLinks above), so this also checks briefing_cards
+  // and lists any matches there as a simple jump-list underneath the
+  // grid, rather than building a second full tile-grid renderer for a
+  // different card shape.
+  async function openSbKeyPeek(keyObj, onBack){
+    var ov=document.getElementById('sb-detail-overlay');
+    var safeName=_sboardEsc(keyObj.meaning||'Signal Flag');
+    var swatchHTML='<span style="display:inline-block;width:14px;height:14px;vertical-align:middle;margin-right:6px;'+_sboardKeyShapeCSS(keyObj.shape,keyObj.color)+'"></span>';
+    ov.innerHTML='<div class="sc-peek-card">'
+      +'<div class="sc-peek-topbar"><button id="sb-keypeek-back">⬅️</button><div class="sc-peek-title">'+swatchHTML+safeName+'</div><span style="width:24px;display:inline-block"></span></div>'
+      +'<div id="sb-keypeek-body" style="text-align:center;font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:20px 0">Loading…</div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-keypeek-back', onBack||closeSbDetail);
+    var body=document.getElementById('sb-keypeek-body');
+    var _sb=T().sb;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
+        .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
+        .order('created_at',{ascending:true}).limit(200);
+      if(res.error) throw new Error(res.error.message);
+      var rows=res.data||[];
+
+      var cardRows=[];
+      try{
+        var cardRes=await _sb.from('briefing_cards').select('id,task').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
+        if(!cardRes.error) cardRows=cardRes.data||[];
+      }catch(e){}
+
+      if(!rows.length && !cardRows.length){
+        body.textContent='No cards carry this Signal Flag yet.';
+        return;
+      }
+      body.innerHTML='';
+      body.style.cssText='';
+
+      if(rows.length){
+        var subRows=rows.filter(function(r){ return r.content_type==='header'; });
+        var itemRows=rows.filter(function(r){ return r.content_type!=='header'; });
+        var _peekMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
+        var _peekOverlayContentW=window.innerWidth-40;
+        var _peekCardW=Math.min(360,_peekOverlayContentW*0.94)-28;
+        var _peekMaxTile=Math.floor((_peekCardW-20)/3);
+        var _peekTile=Math.max(56, Math.min(Math.round(84*_peekMult), _peekMaxTile));
+        var grid=document.createElement('div');
+        grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
+        subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
+        itemRows.forEach(function(item2){ grid.appendChild(_sboardMakeTile(item2, _peekTile, true)); });
+        body.appendChild(grid);
+      } else {
+        var noneMsg=document.createElement('div');
+        noneMsg.style.cssText='font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;margin-bottom:8px';
+        noneMsg.textContent='No Idea Board cards carry this flag yet.';
+        body.appendChild(noneMsg);
+      }
+
+      if(cardRows.length){
+        var bbWrap=document.createElement('div');
+        bbWrap.style.cssText='margin-top:12px;text-align:left;border-top:1px solid #e3d9c6;padding-top:8px';
+        var bbLbl=document.createElement('div');
+        bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:700;margin-bottom:6px';
+        bbLbl.textContent='Also on the Briefing Board:';
+        bbWrap.appendChild(bbLbl);
+        cardRows.forEach(function(c){
+          var b=document.createElement('button');
+          b.className='sb-key-pick-select';
+          b.style.cssText='width:100%;margin-bottom:4px';
+          b.innerHTML='<span style="font-size:calc(12px * var(--fg-text-scale,1))">'+_sboardEsc(c.task||'(untitled)')+'</span>';
+          b.addEventListener('click', function(){
+            try{
+              sessionStorage.setItem('bp_target','4010');
+              sessionStorage.setItem('fg_open_card_id', c.id);
+            }catch(e){}
+            window.open(location.pathname+location.search, '_blank');
+          });
+          bbWrap.appendChild(b);
+        });
+        body.appendChild(bbWrap);
+      }
+    }catch(err){
+      body.textContent=err.message;
+      body.style.color='#b8562f';
+    }
+  }
+
   function _sboardIsAutoHeaderText(text){
     return /[:?]\s*$/.test(text);
   }
@@ -5381,9 +5474,32 @@
     }
     row.innerHTML = html;
     row.querySelectorAll('.sb-key-slot-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        _sboardOpenKeyPicker(item, Number(btn.getAttribute('data-slot')));
-      });
+      var slotIdx=Number(btn.getAttribute('data-slot'));
+      var isFilled = slotIdx<keys.length;
+      // Click-and-hold a filled Signal Flag to see every other card
+      // carrying that same flag -- Aug 15 2026 (Larry: "consistent
+      // process to see what is 'inside'," same 550ms hold as the
+      // header-stack peek and the heart-pill tap/hold). A short
+      // click/tap still opens the picker as before; this is purely
+      // additive, and only applies to a slot that already has a flag
+      // in it -- the empty "+" slot has nothing to peek at.
+      if(isFilled){
+        var keyId=keys[slotIdx];
+        var kHoldTimer=null, kHeld=false;
+        function kStartHold(){ kHeld=false; kHoldTimer=setTimeout(function(){ kHeld=true; var k=_sboardKeyById(keyId); if(k) openSbKeyPeek(k); }, 550); }
+        function kCancelHold(){ clearTimeout(kHoldTimer); }
+        btn.addEventListener('mousedown', kStartHold);
+        btn.addEventListener('touchstart', kStartHold);
+        btn.addEventListener('mouseup', kCancelHold);
+        btn.addEventListener('mouseleave', kCancelHold);
+        btn.addEventListener('touchend', kCancelHold);
+        btn.addEventListener('touchmove', kCancelHold);
+        btn.addEventListener('click', function(){ if(!kHeld) _sboardOpenKeyPicker(item, slotIdx); kHeld=false; });
+      } else {
+        btn.addEventListener('click', function(){
+          _sboardOpenKeyPicker(item, slotIdx);
+        });
+      }
     });
   }
 
