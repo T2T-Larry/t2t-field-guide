@@ -649,6 +649,11 @@
   // source='key' rows rather than recomputing anything.
   var _bbKeyLinkCountCache = {};
   var _bbInitStarted = false;
+  // Overdue pink-flash, Aug 15 2026 -- ids that _bbAutoEscalateDates just
+  // discovered are newly overdue on THIS pass, so renderBoard's card
+  // loop knows to play the one-time flash animation instead of just the
+  // steady pink face it draws every time regardless.
+  var _bbOverdueFlashIds = [];
 
   function _bbUUID(){
     if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -800,6 +805,7 @@
       link_url: c.linkUrl||null, link_title: c.linkTitle||null, link_thumb: c.linkThumb||null,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
+      overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
       trashed_at: c.trashedAt || null
     };
   }
@@ -819,6 +825,7 @@
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
+      overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
       trashedAt: row.trashed_at || null,
       // Header-linked task cards only (Aug 11 2026) -- auto-created and kept
       // in sync by the ideas_sync_header_task_card DB trigger whenever an
@@ -2118,6 +2125,24 @@
     return d ? _bbDaysUntil(d) : Infinity;
   }
 
+  // Overdue pink-face signal, Aug 15 2026, Larry: "pink faced card" for
+  // anything whose due date has passed. Deliberately independent of
+  // priority (see the HH bump in _bbAutoEscalateDates below) -- Larry
+  // pulled a card back down from an auto-escalated HH once already, so
+  // this reads the calendar fact on its own rather than piggybacking on
+  // a priority the traveler may have deliberately overridden. Excludes
+  // Done (finished work can't be overdue) and Hang-Ups (already owns
+  // its own red signal) -- matches the Do/Doing scope of the HH bump
+  // plus Hang-Ups' existing color. "Overdue" means the date has fully
+  // passed, not just arrived today (_bbDaysUntil < 0, not <= 0).
+  function _bbIsOverdue(c){
+    if(!c || c.archived || c.trashedAt) return false;
+    if(c.col==='done' || c.col==='hangups') return false;
+    var d=_bbParseDue(c.due);
+    if(!d) return false;
+    return _bbDaysUntil(d) < 0;
+  }
+
   // Larry, July 20, 2026: anything WITH a priority outranks anything
   // without one (unset already sorts last, rank 7, below L's 5). On top
   // of that, a near or passed due date pulls a card's effective rank up
@@ -2212,8 +2237,18 @@
     var all=_bbCardsList();
     var changed=false;
     var startWarn=_bbStartWarnDays(), dueWarn=_bbDueWarnDays();
+    _bbOverdueFlashIds = [];
     all.forEach(function(c){
       if(c.archived) return;
+      // Overdue pink-flash, Aug 15 2026 -- stamped independently of the
+      // HH priority bump just below (see _bbIsOverdue). Only remembers
+      // c.due's value, same pattern as startEscalatedFor/dueEscalatedFor,
+      // so it fires again if the due date itself changes to something new.
+      if(_bbIsOverdue(c) && c.overdueFlashShownFor!==c.due){
+        _bbOverdueFlashIds.push(c.id);
+        c.overdueFlashShownFor=c.due;
+        changed=true;
+      }
       // July 22, 2026: c.col is now one of do-h/do-m/do-l, not a single
       // 'do' -- _bbIsDoCol covers all 3. When priority changes here,
       // also move the card into whichever Do column now matches (if
@@ -2579,6 +2614,20 @@
       +'.bb-archive-task{font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub)}'
       +'.bb-card-foreign{border-style:dashed;opacity:0.92}'
+      /* Overdue pink-face, Aug 15 2026, Larry: "pink faced card" for
+         anything whose due date has passed (see _bbIsOverdue -- Done
+         and Hang-Ups are excluded, they already have their own
+         meaning). Steady pink border+background applies every render;
+         bb-overdue-flash is added only on the render where a card is
+         first discovered overdue, playing a brief alarm-flash before
+         settling into the steady state above. animation has no
+         fill-mode, so it always relaxes back to the plain .bb-overdue
+         look once the 3 pulses finish -- no forced timeout needed. */
+      +'.bb-card.bb-overdue{border-color:#c2255c;background:#FDE7EF}'
+      +'.bb-card.bb-overdue .bb-task{color:#8a1a44}'
+      +'@keyframes bb-overdue-alarm{0%,100%{background:#FDE7EF;box-shadow:none}50%{background:#f48fb1;box-shadow:0 0 10px rgba(194,37,92,0.7)}}'
+      +'.bb-card.bb-overdue-flash{animation:bb-overdue-alarm 0.5s ease-in-out 3}'
+      +'@media (prefers-reduced-motion: reduce){.bb-card.bb-overdue-flash{animation:none}}'
       +'.bb-foreign-row{margin:1px 0 3px}'
       +'.bb-foreign-badge{display:inline-block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
       /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
@@ -2598,6 +2647,8 @@
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-overlay-card.bb-hangup-active .bb-overlay-title{color:#a3372b}'
+      +'.bb-overlay-card.bb-overdue-active{border-top-color:#c2255c;background:#FDE7EF}'
+      +'.bb-overlay-card.bb-overdue-active .bb-overlay-title{color:#c2255c}'
       +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.tm-groupname{font-family:var(--bb-head-font);font-size:calc(16px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);text-align:center;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 2px}'
       +'.tm-cap{text-align:center;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:10px}'
@@ -3107,7 +3158,17 @@
       });
       colCards.forEach(function(c){
         var el=document.createElement('div');
-        el.className='bb-card'+(c._foreign?' bb-card-foreign':'');
+        // Overdue pink-face, Aug 15 2026 -- bb-overdue is the steady
+        // state (recomputed fresh every render, so it's always right
+        // even for a card nobody's touched since it went overdue);
+        // bb-overdue-flash only lands on whichever cards
+        // _bbAutoEscalateDates just discovered are newly overdue THIS
+        // pass, so the alarm-flash animation plays once, not every
+        // reload.
+        var cardIsOverdue=_bbIsOverdue(c);
+        var cardJustWentOverdue=_bbOverdueFlashIds.indexOf(c.id)!==-1;
+        el.className='bb-card'+(c._foreign?' bb-card-foreign':'')
+          +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'');
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
@@ -3375,6 +3436,7 @@
     // flag buttons -- one semantic color for "this is stuck," everywhere.
     var _bbDetailCard=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
+    if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
     _bbRenderPersonSelect(c.person||'');
     // Mirror boards, part 2, Aug 9 2026 -- "Also show on" only makes
