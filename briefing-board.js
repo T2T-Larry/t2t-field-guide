@@ -2505,11 +2505,10 @@
       // "none" from its parent unless it opts back in like this.
       +'.bb-key-badge-wrap{display:inline-flex;align-items:center;gap:2px;pointer-events:auto;cursor:default}'
       +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3);flex-shrink:0}'
-      // Link count, Aug 4 2026 -- Larry: "links number should be to
-      // the right of the Key symbol. One key on a card might have 7
-      // links; another only 3." Small enough to sit beside a 12px dot
-      // without dominating the card face.
-      +'.bb-key-link-count{font-family:var(--bb-body-font);font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-sub);line-height:1}'
+      // .bb-key-link-count removed Aug 15 2026 (Larry: "delete number
+      // of like flags from front of every type of card") -- the count
+      // is still computed and available via each flag's hover tooltip,
+      // just no longer rendered as a visible number on the card face.
       +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
       +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
@@ -3142,18 +3141,18 @@
         var keyBadgesHTML = (c.keys && c.keys.some(function(k){ return k; })) ? c.keys.filter(function(kid){ return kid; }).map(function(kid){
               var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
               if(!k) return '';
-              // Link count next to the key, Aug 4 2026 -- Larry: "Links
-              // are Key related, therefore links number should be to
-              // the right of the Key symbol. One key on a card might
-              // have 7 links; another only 3." A key's count is exactly
-              // how many other cards/ideas currently share that same
-              // key (that's what auto-linking connects), read straight
-              // from _bbKeyLinkCountCache rather than the card-wide
-              // total badge, which lumps every key together.
+              // Link count removed from the card front, Aug 15 2026
+              // (Larry: "delete number of like flags from front of
+              // every type of card") -- the count still comes through
+              // on hover, via the title tooltip below; only the visible
+              // on-face number is gone. A key's count is exactly how
+              // many other cards/ideas currently share that same key
+              // (that's what auto-linking connects), read straight from
+              // _bbKeyLinkCountCache rather than the card-wide total
+              // badge, which lumps every key together.
               var lc=(_bbKeyLinkCountCache[c.id] && _bbKeyLinkCountCache[c.id][kid]) || 0;
               return '<span class="bb-key-badge-wrap" title="'+_esc(k.meaning||'')+(lc?' — '+lc+' linked via this flag':'')+'">'
                 +'<span class="bb-key-badge" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-                +(lc?'<span class="bb-key-link-count">'+lc+'</span>':'')
                 +'</span>';
             }).join('') : '';
         // TOPIC eyebrow, Aug 11 2026 (Larry) -- header-linked task cards
