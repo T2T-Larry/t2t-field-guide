@@ -347,6 +347,8 @@
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
         +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
+        +'button.sc-hdr-eyebrow{background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;width:auto}'
+        +'button.sc-hdr-eyebrow:hover{opacity:.65}'
         +'.sc-hdr-frame-label{opacity:.72}'
         // VIEW-by-person filter, Aug 9 2026 (Larry): a dropdown next to
         // PARENT, same idea as the Briefing Board's own VIEW filter
@@ -531,11 +533,9 @@
       +'</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Organization</div>'
-      +'<div class="sc-cdrop" id="sc-type-cdrop">'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-type-trigger" title="Click to change Type; double-click to set a name, e.g. Denver Broncos"></button>'
+      +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
       +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
-      +'</div>'
+      +'<button type="button" class="sc-hdr-select" id="sc-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button>'
       +'</div>'
       // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
       // Title now covers what it used to (picking which board is open),
@@ -610,13 +610,9 @@
         var rootRow=_sboardCurrentRootRow();
         if(rootRow) openSbDetail(rootRow);
       });
-      // Organization's Name, same double-click-to-edit shape as Title
-      // just above -- single click still opens the Type menu.
-      var typeTrigger=document.getElementById('sc-type-trigger');
-      if(typeTrigger) typeTrigger.addEventListener('dblclick', function(e){
-        e.stopPropagation();
-        _sboardEditOrgName();
-      });
+      // Organization's Name click-to-edit is wired fresh on every render
+      // in _sboardRenderOrgName() itself (sc-org-name-trigger.onclick),
+      // same pattern as the Type dropdown -- nothing to wire once here.
     })();
     Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
@@ -1595,24 +1591,24 @@
     };
   }
 
-  // ORGANIZATION's Name, Aug 15 2026, corrected -- mirrors the
-  // Briefing Board's own fix exactly: this needs to look like a single
-  // eyebrow (Type + Name together), not a second stray dropdown
-  // stacked underneath -- that broke the one-eyebrow/one-control shape
-  // Title/View already have. Folded into the Type trigger itself: the
-  // button reads "Client: Denver Broncos" when a name's set, or just
-  // "Client" otherwise; single-click still opens the Type menu;
-  // double-click prompts for the Name, same shape as Title's own
-  // single-click-switches / double-click-opens-DETAILS pattern.
+  // ORGANIZATION, Aug 15 2026, corrected again -- mirrors the
+  // Briefing Board's own fix exactly: the eyebrow WORD ITSELF is the
+  // dropdown (clicking "ORGANIZATION" opens the category menu, and the
+  // word then becomes whatever category was chosen -- e.g.
+  // "DEPARTMENT"). The field below is a separate, plain name for that
+  // category (e.g. "Accounting"), no longer combined into one button.
+  // sc-type-trigger/sc-type-menu now live on the eyebrow button itself
+  // (_sboardRenderTypePicker, unchanged) -- this function only handles
+  // the plain Name box underneath.
   function _sboardRenderOrgName(){
-    var trigger=document.getElementById('sc-type-trigger');
+    var trigger=document.getElementById('sc-org-name-trigger');
     var curRoot=_sboardCurrentRootRow();
     var roots=_sboardMyRoots||[];
     var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
     if(!trigger || !match) return;
-    var typeLabel=_sboardTypeLabel(match.board_type||'personal');
     var name=(match.org_name||'').trim();
-    trigger.textContent = name ? (typeLabel+': '+name) : typeLabel;
+    trigger.textContent = name || 'Add a name';
+    trigger.onclick = function(e){ e.stopPropagation(); _sboardEditOrgName(); };
   }
   async function _sboardSaveOrgName(value){
     var curRoot=_sboardCurrentRootRow();
@@ -1635,7 +1631,7 @@
     var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
     if(!match){ window.alert('No board is open yet.'); return; }
     var typeLabel=_sboardTypeLabel(match.board_type||'personal');
-    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Denver Broncos"):', match.org_name||'');
+    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', match.org_name||'');
     if(name===null) return;
     await _sboardSaveOrgName(name);
   }

@@ -2033,23 +2033,21 @@
     };
   }
 
-  // ORGANIZATION's Name, Aug 15 2026, corrected -- Larry: this needs
-  // to look and behave like a single eyebrow (Type + Name together),
-  // not a second stray dropdown stacked underneath -- that broke the
-  // one-eyebrow/one-control shape every other eyebrow (Project, Team)
-  // already has. Folded into the Type trigger itself instead: the
-  // button reads "Client: Denver Broncos" when a name's set, or just
-  // "Client" when it isn't; single-click still opens the Type menu;
-  // double-click prompts for the Name, exactly mirroring how Project's
-  // own trigger already does single-click-switches / double-click-
-  // renames. One row, one control, same shape as every other eyebrow.
+  // ORGANIZATION, Aug 15 2026, corrected again -- Larry: the eyebrow
+  // WORD ITSELF should be the dropdown (clicking "ORGANIZATION" opens
+  // the category menu, and the word then becomes whatever category was
+  // chosen -- e.g. "DEPARTMENT"). The field below is a separate, plain
+  // name for that category (e.g. "Accounting"), no longer combined
+  // into the same button. bb-type-trigger/bb-type-menu now live on the
+  // eyebrow button itself (_bbRenderTypePicker, unchanged) -- this
+  // function only handles the plain Name box underneath.
   function _bbRenderOrgName(){
-    var trigger=document.getElementById('bb-type-trigger');
+    var trigger=document.getElementById('bb-org-name-trigger');
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     if(!trigger || !board) return;
-    var typeLabel=_bbTypeLabel(board.board_type||'personal');
     var name=(board.org_name||'').trim();
-    trigger.textContent = name ? (typeLabel+': '+name) : typeLabel;
+    trigger.textContent = name || 'Add a name';
+    trigger.onclick = function(e){ e.stopPropagation(); _bbEditOrgName(); };
   }
   async function _bbSaveOrgName(value){
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
@@ -2068,7 +2066,7 @@
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     if(!board){ window.alert('No board is open yet.'); return; }
     var typeLabel=_bbTypeLabel(board.board_type||'personal');
-    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Denver Broncos"):', board.org_name||'');
+    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', board.org_name||'');
     if(name===null) return;
     await _bbSaveOrgName(name);
   }
@@ -2546,6 +2544,15 @@
       +'.bb-mh-typebox{display:flex;gap:14px;justify-self:start;align-items:flex-start}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      // Organization's eyebrow is itself the Type dropdown trigger now,
+      // Aug 15 2026 (Larry: "I want that word to actually be a dropdown
+      // choice") -- it's a <button> sharing .bb-mh-eyebrow's exact look,
+      // reset to have no box/border so it stays visually identical to
+      // Project's and Team's plain eyebrows, just clickable. Its own
+      // text becomes whatever category is chosen (e.g. "DEPARTMENT"),
+      // not a fixed word -- the one eyebrow that's genuinely dynamic.
+      +'button.bb-mh-eyebrow{background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;width:auto}'
+      +'button.bb-mh-eyebrow:hover{opacity:.65}'
       // One shared trigger-box class for Type/Title/View, Aug 13 2026
       // (Larry: "make the Briefing Board exactly like the Idea Board for
       // TYPE, TITLE and VIEW... every new board will have this same
@@ -2859,7 +2866,7 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Organization</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Click to change Type; double-click to set a name, e.g. Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">Team</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
@@ -4814,13 +4821,9 @@
       e.stopPropagation();
       _bbRenameCurrentBoard();
     });
-    // Organization's Name, same double-click-to-edit shape as Title/
-    // Project just above -- single click still opens the Type menu.
-    var typeTrigger=document.getElementById('bb-type-trigger');
-    if(typeTrigger) typeTrigger.addEventListener('dblclick', function(e){
-      e.stopPropagation();
-      _bbEditOrgName();
-    });
+    // Organization's Name click-to-edit is wired fresh on every render
+    // in _bbRenderOrgName() itself (bb-org-name-trigger.onclick), same
+    // pattern as the Type dropdown -- nothing to wire once here anymore.
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
