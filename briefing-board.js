@@ -3825,7 +3825,7 @@
       // board's own name via the existing board_id foreign key, so
       // matches can be grouped and labeled by their real board instead
       // of a generic "the Briefing Board" bucket.
-      var cardRes=await sb.from('briefing_cards').select('id,board_id,task,briefing_boards(name)')
+      var cardRes=await sb.from('briefing_cards').select('id,board_id,task,briefing_boards!board_id(name)')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .eq('archived',false).limit(200);
       if(cardRes.error) throw new Error(cardRes.error.message);

@@ -3643,7 +3643,7 @@
         // board's own name via the existing board_id foreign key, so
         // each match can be grouped and labeled by its real board,
         // never a generic bucket.
-        var cardRes=await _sb.from('briefing_cards').select('id,task,board_id,briefing_boards(name)').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
+        var cardRes=await _sb.from('briefing_cards').select('id,task,board_id,briefing_boards!board_id(name)').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
         if(!cardRes.error) cardRows=cardRes.data||[];
       }catch(e){}
 
