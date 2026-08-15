@@ -3752,15 +3752,32 @@
       // short click/tap still opens the picker as before.
       if(isFilled){
         var keyId=keys[slotIdx];
-        var kHoldTimer=null, kHeld=false;
-        function kStartHold(){ kHeld=false; kHoldTimer=setTimeout(function(){ kHeld=true; var k=lib.filter(function(x){ return x.id===keyId; })[0]; if(k) openKeyPeek(k); }, 550); }
+        var kHoldTimer=null, kHeld=false, kStartX=0, kStartY=0;
+        // Aug 15 2026 fix -- a real finger (or trackpad click) drifts a
+        // few pixels even when someone means to hold still, and the
+        // header-stack peek's plain touchmove-cancels-everything version
+        // got away with that because it has a fallback doorway (the
+        // CLUSTER pill). This flag peek has no second doorway, so a
+        // twitchy cancel would silently make it unreachable on touch.
+        // Only cancel once the press has actually moved (10px), not on
+        // the first touchmove event.
+        function kStartHold(e){
+          kHeld=false;
+          var pt=(e.touches && e.touches[0]) ? e.touches[0] : e;
+          kStartX=pt.clientX; kStartY=pt.clientY;
+          kHoldTimer=setTimeout(function(){ kHeld=true; var k=lib.filter(function(x){ return x.id===keyId; })[0]; if(k) openKeyPeek(k); }, 550);
+        }
         function kCancelHold(){ clearTimeout(kHoldTimer); }
+        function kMoveCheck(e){
+          var pt=(e.touches && e.touches[0]) ? e.touches[0] : e;
+          if(Math.abs(pt.clientX-kStartX)>10 || Math.abs(pt.clientY-kStartY)>10) kCancelHold();
+        }
         btn.addEventListener('mousedown', kStartHold);
         btn.addEventListener('touchstart', kStartHold);
         btn.addEventListener('mouseup', kCancelHold);
         btn.addEventListener('mouseleave', kCancelHold);
         btn.addEventListener('touchend', kCancelHold);
-        btn.addEventListener('touchmove', kCancelHold);
+        btn.addEventListener('touchmove', kMoveCheck);
         btn.addEventListener('click', function(){ if(!kHeld) openKeyPicker(slotIdx); kHeld=false; });
       } else {
         btn.addEventListener('click', function(){ openKeyPicker(slotIdx); });

@@ -5485,15 +5485,31 @@
       // in it -- the empty "+" slot has nothing to peek at.
       if(isFilled){
         var keyId=keys[slotIdx];
-        var kHoldTimer=null, kHeld=false;
-        function kStartHold(){ kHeld=false; kHoldTimer=setTimeout(function(){ kHeld=true; var k=_sboardKeyById(keyId); if(k) openSbKeyPeek(k); }, 550); }
+        var kHoldTimer=null, kHeld=false, kStartX=0, kStartY=0;
+        // Aug 15 2026 fix -- only cancel the hold once a touch has
+        // actually drifted (10px), not on the first touchmove event.
+        // Natural finger jitter fires touchmove almost immediately even
+        // when someone means to hold still, and unlike the header-stack
+        // peek (which has the CLUSTER pill as a fallback doorway), this
+        // is the only way in -- a twitchy cancel would make it silently
+        // unreachable on touch.
+        function kStartHold(e){
+          kHeld=false;
+          var pt=(e.touches && e.touches[0]) ? e.touches[0] : e;
+          kStartX=pt.clientX; kStartY=pt.clientY;
+          kHoldTimer=setTimeout(function(){ kHeld=true; var k=_sboardKeyById(keyId); if(k) openSbKeyPeek(k); }, 550);
+        }
         function kCancelHold(){ clearTimeout(kHoldTimer); }
+        function kMoveCheck(e){
+          var pt=(e.touches && e.touches[0]) ? e.touches[0] : e;
+          if(Math.abs(pt.clientX-kStartX)>10 || Math.abs(pt.clientY-kStartY)>10) kCancelHold();
+        }
         btn.addEventListener('mousedown', kStartHold);
         btn.addEventListener('touchstart', kStartHold);
         btn.addEventListener('mouseup', kCancelHold);
         btn.addEventListener('mouseleave', kCancelHold);
         btn.addEventListener('touchend', kCancelHold);
-        btn.addEventListener('touchmove', kCancelHold);
+        btn.addEventListener('touchmove', kMoveCheck);
         btn.addEventListener('click', function(){ if(!kHeld) _sboardOpenKeyPicker(item, slotIdx); kHeld=false; });
       } else {
         btn.addEventListener('click', function(){
