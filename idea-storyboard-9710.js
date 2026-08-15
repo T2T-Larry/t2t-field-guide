@@ -533,10 +533,9 @@
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Organization</div>'
       +'<div class="sc-cdrop" id="sc-type-cdrop">'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-type-trigger" title="Organization type"></button>'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-type-trigger" title="Click to change Type; double-click to set a name, e.g. Denver Broncos"></button>'
       +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
       +'</div>'
-      +'<div class="sc-cdrop sc-org-name-cdrop" id="sc-orgname-cdrop"><button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-org-name-trigger" title="Name for this Organization, e.g. Denver Broncos"></button><div class="sc-cdrop-menu" id="sc-org-name-menu" hidden></div></div>'
       +'</div>'
       // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
       // Title now covers what it used to (picking which board is open),
@@ -610,6 +609,13 @@
         e.stopPropagation();
         var rootRow=_sboardCurrentRootRow();
         if(rootRow) openSbDetail(rootRow);
+      });
+      // Organization's Name, same double-click-to-edit shape as Title
+      // just above -- single click still opens the Type menu.
+      var typeTrigger=document.getElementById('sc-type-trigger');
+      if(typeTrigger) typeTrigger.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        _sboardEditOrgName();
       });
     })();
     Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
@@ -1431,6 +1437,7 @@
       if(ins.error) console.error('Idea Board: could not hide Type', ins.error);
     }catch(e){ console.error('Idea Board: could not hide Type', e); }
     _sboardRenderTypePicker();
+    _sboardRenderOrgName();
   }
 
   // Switches straight to a different root tree -- same shape as
@@ -1588,42 +1595,24 @@
     };
   }
 
-  // ORGANIZATION's Name field, Aug 15 2026 -- mirrors the Briefing
-  // Board's own _bbRenderOrgName/_bbSaveOrgName. The field under
-  // Organization holds the name for whatever Type is selected above it
-  // (e.g. Type=Client, Name="Denver Broncos") -- independent of
-  // Project/Title, which is the root board's own name. One value per
-  // root board (ideas.org_name, only meaningful on root-level headers).
-  // Names already used for the current Type, Aug 15 2026 -- same
-  // "distinct values already in use" pattern as _sboardExtraBoardTypes,
-  // scoped to roots sharing the active Type.
-  function _sboardExtraOrgNames(){
-    var activeType=_sboardActiveBoardType();
-    var roots=_sboardMyRoots||[];
-    var seen={}, extra=[];
-    roots.forEach(function(r){
-      var v=(r.org_name||'').trim();
-      var t=(r.board_type||'personal');
-      if(v && t===activeType && !seen[v]){ seen[v]=true; extra.push(v); }
-    });
-    return extra;
-  }
+  // ORGANIZATION's Name, Aug 15 2026, corrected -- mirrors the
+  // Briefing Board's own fix exactly: this needs to look like a single
+  // eyebrow (Type + Name together), not a second stray dropdown
+  // stacked underneath -- that broke the one-eyebrow/one-control shape
+  // Title/View already have. Folded into the Type trigger itself: the
+  // button reads "Client: Denver Broncos" when a name's set, or just
+  // "Client" otherwise; single-click still opens the Type menu;
+  // double-click prompts for the Name, same shape as Title's own
+  // single-click-switches / double-click-opens-DETAILS pattern.
   function _sboardRenderOrgName(){
+    var trigger=document.getElementById('sc-type-trigger');
     var curRoot=_sboardCurrentRootRow();
     var roots=_sboardMyRoots||[];
     var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
-    var current=((match && match.org_name) || '').trim();
-    var names=_sboardExtraOrgNames();
-    if(current && names.indexOf(current)===-1) names.push(current);
-    var opts=names.map(function(n){ return {value:n, label:n}; });
-    if(!opts.length) opts=[{value:'', label:'\u2014'}];
-    _sboardRenderDropdown('sc-org-name-trigger','sc-org-name-menu', opts, current, function(newName){
-      _sboardSaveOrgName(newName);
-    }, function(){
-      var name=window.prompt('Name for this Organization (e.g. "Denver Broncos"):');
-      if(!name || !name.trim()) return;
-      _sboardSaveOrgName(name.trim());
-    }, 'Add a name');
+    if(!trigger || !match) return;
+    var typeLabel=_sboardTypeLabel(match.board_type||'personal');
+    var name=(match.org_name||'').trim();
+    trigger.textContent = name ? (typeLabel+': '+name) : typeLabel;
   }
   async function _sboardSaveOrgName(value){
     var curRoot=_sboardCurrentRootRow();
@@ -1639,6 +1628,16 @@
       var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', curRoot.id);
       if(upd.error) console.error('Idea Board: could not save Organization name', upd.error);
     }catch(e){ console.error('Idea Board: could not save Organization name', e); }
+  }
+  async function _sboardEditOrgName(){
+    var curRoot=_sboardCurrentRootRow();
+    var roots=_sboardMyRoots||[];
+    var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
+    if(!match){ window.alert('No board is open yet.'); return; }
+    var typeLabel=_sboardTypeLabel(match.board_type||'personal');
+    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Denver Broncos"):', match.org_name||'');
+    if(name===null) return;
+    await _sboardSaveOrgName(name);
   }
 
   function _sboardRenderTypePicker(){

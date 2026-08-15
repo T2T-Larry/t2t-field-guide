@@ -610,6 +610,7 @@
       if(ins.error) console.error('Briefing Board: could not hide Type', ins.error);
     }catch(e){ console.error('Briefing Board: could not hide Type', e); }
     _bbRenderTypePicker();
+    _bbRenderOrgName();
   }
   async function _bbCreateKey(shape, color, meaning){
     var sb=T().sb;
@@ -2032,40 +2033,23 @@
     };
   }
 
-  // ORGANIZATION's Name field, Aug 15 2026 -- Larry: the field under
-  // Organization holds the name for whatever Type is selected above it
-  // (e.g. Type=Client, Name="Denver Broncos") -- independent of
-  // Project/Title, which is the board's own name. Plain text,
-  // save-on-blur/Enter, one value per board (briefing_boards.org_name).
-  // Names already used for the current Type, Aug 15 2026 -- same
-  // "distinct values already in use" pattern as _bbExtraBoardTypes,
-  // scoped to boards sharing the active Type so Client boards offer
-  // Client names, not a mix of every Type's names.
-  function _bbExtraOrgNames(){
-    var activeType=_bbActiveBoardType();
-    var seen={}, extra=[];
-    _bbBoards.forEach(function(b){
-      var v=(b.org_name||'').trim();
-      var t=(b.board_type||'personal');
-      if(v && t===activeType && !seen[v]){ seen[v]=true; extra.push(v); }
-    });
-    return extra;
-  }
+  // ORGANIZATION's Name, Aug 15 2026, corrected -- Larry: this needs
+  // to look and behave like a single eyebrow (Type + Name together),
+  // not a second stray dropdown stacked underneath -- that broke the
+  // one-eyebrow/one-control shape every other eyebrow (Project, Team)
+  // already has. Folded into the Type trigger itself instead: the
+  // button reads "Client: Denver Broncos" when a name's set, or just
+  // "Client" when it isn't; single-click still opens the Type menu;
+  // double-click prompts for the Name, exactly mirroring how Project's
+  // own trigger already does single-click-switches / double-click-
+  // renames. One row, one control, same shape as every other eyebrow.
   function _bbRenderOrgName(){
+    var trigger=document.getElementById('bb-type-trigger');
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    if(!board) return;
-    var current=(board.org_name||'').trim();
-    var names=_bbExtraOrgNames();
-    if(current && names.indexOf(current)===-1) names.push(current);
-    var opts=names.map(function(n){ return {value:n, label:n}; });
-    if(!opts.length) opts=[{value:'', label:'\u2014'}];
-    _bbRenderDropdown('bb-org-name-trigger','bb-org-name-menu', opts, current, function(newName){
-      _bbSaveOrgName(newName);
-    }, function(){
-      var name=window.prompt('Name for this Organization (e.g. "Denver Broncos"):');
-      if(!name || !name.trim()) return;
-      _bbSaveOrgName(name.trim());
-    }, 'Add a name');
+    if(!trigger || !board) return;
+    var typeLabel=_bbTypeLabel(board.board_type||'personal');
+    var name=(board.org_name||'').trim();
+    trigger.textContent = name ? (typeLabel+': '+name) : typeLabel;
   }
   async function _bbSaveOrgName(value){
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
@@ -2079,6 +2063,14 @@
       var upd=await sb.from('briefing_boards').update({org_name:trimmed||null}).eq('id', board.id);
       if(upd.error) console.error('Briefing Board: could not save Organization name', upd.error);
     }catch(e){ console.error('Briefing Board: could not save Organization name', e); }
+  }
+  async function _bbEditOrgName(){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board){ window.alert('No board is open yet.'); return; }
+    var typeLabel=_bbTypeLabel(board.board_type||'personal');
+    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Denver Broncos"):', board.org_name||'');
+    if(name===null) return;
+    await _bbSaveOrgName(name);
   }
 
   function _bbRenderTypePicker(){
@@ -2563,7 +2555,6 @@
       // which was never the part that had drifted.
       +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-hdr-select:hover{opacity:1}'
-      +'.bb-org-name-cdrop{margin-top:3px}'
       // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
       // gone; double-click the Title trigger to rename, same interaction
       // as the Idea Board's Title (see wireTopicBar's dblclick wiring).
@@ -2868,7 +2859,7 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Organization</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Organization type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div><div class="bb-cdrop bb-org-name-cdrop" id="bb-orgname-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Name for this Organization, e.g. Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Organization</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Click to change Type; double-click to set a name, e.g. Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">Team</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
@@ -4822,6 +4813,13 @@
     if(boardTrigger) boardTrigger.addEventListener('dblclick', function(e){
       e.stopPropagation();
       _bbRenameCurrentBoard();
+    });
+    // Organization's Name, same double-click-to-edit shape as Title/
+    // Project just above -- single click still opens the Type menu.
+    var typeTrigger=document.getElementById('bb-type-trigger');
+    if(typeTrigger) typeTrigger.addEventListener('dblclick', function(e){
+      e.stopPropagation();
+      _bbEditOrgName();
     });
     T().wire('bb-close-x', function(){
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
