@@ -3669,6 +3669,11 @@
         body.appendChild(noneMsg);
       }
 
+      // Aug 15 2026 (Larry: "looks awkward... more like cards than
+      // document links") -- Briefing Board matches now render with the
+      // Briefing Board's own warm/brown card look, not a plain text
+      // link, so it visually reads as "a card from the other board"
+      // rather than a menu item.
       if(cardRows.length){
         var bbWrap=document.createElement('div');
         bbWrap.style.cssText='margin-top:12px;text-align:left;border-top:1px solid #e3d9c6;padding-top:8px';
@@ -3676,11 +3681,12 @@
         bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:700;margin-bottom:6px';
         bbLbl.textContent='Also on the Briefing Board:';
         bbWrap.appendChild(bbLbl);
+        var bbGrid=document.createElement('div');
+        bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
         cardRows.forEach(function(c){
-          var b=document.createElement('button');
-          b.className='sb-key-pick-select';
-          b.style.cssText='width:100%;margin-bottom:4px';
-          b.innerHTML='<span style="font-size:calc(12px * var(--fg-text-scale,1))">'+_sboardEsc(c.task||'(untitled)')+'</span>';
+          var b=document.createElement('div');
+          b.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#FFFDF7;border:1px solid #9c8b73;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#3B2510;font-family:inherit';
+          b.textContent=c.task||'(untitled)';
           b.addEventListener('click', function(){
             try{
               sessionStorage.setItem('bp_target','4010');
@@ -3688,8 +3694,9 @@
             }catch(e){}
             window.open(location.pathname+location.search, '_blank');
           });
-          bbWrap.appendChild(b);
+          bbGrid.appendChild(b);
         });
+        bbWrap.appendChild(bbGrid);
         body.appendChild(bbWrap);
       }
     }catch(err){

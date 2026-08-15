@@ -3841,45 +3841,57 @@
       body.innerHTML='';
       body.style.cssText='';
 
+      // Aug 15 2026 (Larry: "looks awkward... more like cards than
+      // document links") -- each match now renders as an actual small
+      // card, reusing the real .bb-card look for Briefing Board matches
+      // (same board, same card style) and the Idea Board's own blue/navy
+      // card language for Idea Board matches -- so which board a match
+      // lives on reads from its color alone, before you even read the
+      // label above it.
       if(cardRows.length){
         var bbLbl=document.createElement('div');
         bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin-bottom:6px;text-align:left';
         bbLbl.textContent='On the Briefing Board:';
         body.appendChild(bbLbl);
+        var bbGrid=document.createElement('div');
+        bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px;margin-bottom:'+(ideaRows.length?'14px':'0');
         cardRows.forEach(function(c){
-          var b=document.createElement('button');
-          b.className='bb-flag-btn';
-          b.style.cssText='width:100%;margin-bottom:6px;text-align:left';
-          b.textContent=c.task||'(untitled)';
-          b.addEventListener('click', async function(){
+          var card=document.createElement('div');
+          card.className='bb-card';
+          card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer';
+          card.textContent=c.task||'(untitled)';
+          card.addEventListener('click', async function(){
             closeKeyPeek();
             await _bbSwitchToBoard(c.board_id);
             openCardDetail(c.id);
           });
-          body.appendChild(b);
+          bbGrid.appendChild(card);
         });
+        body.appendChild(bbGrid);
       }
 
       if(ideaRows.length){
         var ibLbl=document.createElement('div');
-        ibLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin:'+(cardRows.length?'12px':'0')+' 0 6px;text-align:left';
+        ibLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin-bottom:6px;text-align:left';
         ibLbl.textContent='On the Idea Board:';
         body.appendChild(ibLbl);
+        var ibGrid=document.createElement('div');
+        ibGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
         ideaRows.forEach(function(row){
-          var b=document.createElement('button');
-          b.className='bb-flag-btn';
-          b.style.cssText='width:100%;margin-bottom:6px;text-align:left';
-          b.textContent=row.text_content||'(untitled)';
-          b.addEventListener('click', function(){
-            var targetHeaderId = (row.content_type==='header') ? row.id : row.cluster_id;
+          var targetHeaderId = (row.content_type==='header') ? row.id : row.cluster_id;
+          var card=document.createElement('div');
+          card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#eaf3fb;border:1px solid #1a3a5c;border-radius:3px;box-shadow:1px 2px 4px rgba(26,58,92,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#1a3a5c;font-family:inherit';
+          card.textContent=row.text_content||'(untitled)';
+          card.addEventListener('click', function(){
             try{
               sessionStorage.setItem('bp_target','1010');
               if(targetHeaderId) sessionStorage.setItem('fg_open_header_id', targetHeaderId);
             }catch(e){}
             window.open(location.pathname+location.search, '_blank');
           });
-          body.appendChild(b);
+          ibGrid.appendChild(card);
         });
+        body.appendChild(ibGrid);
       }
     }catch(err){
       body.textContent=err.message;
