@@ -1348,19 +1348,18 @@
     isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
     isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     t.appendChild(isxCornerFlip);
-    // Signal Flags badge, Aug 3 2026 -- Larry: "This option could be in
-    // every gear? Anywhere a traveler makes a note or adds an idea."
-    // 9710's own tile (_sboardMakeTile) shows these dots directly; 9711
-    // reaches the same shared library through T2TStoryboard.keyDotsHTML
-    // since the key-shape helpers live in 9710's closure, not this file.
-    if(window.T2TStoryboard && T2TStoryboard.keyDotsHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.keyDotsHTML(row));
-    // Person Assigned badge, Aug 9 2026 -- same bridge pattern as
-    // keyDotsHTML just above; the initials cache/lookup lives in 9710's
-    // closure, this just borrows it.
+    // Person Assigned badge, Aug 9 2026 -- bridge pattern, the
+    // initials cache/lookup lives in 9710's closure, this just borrows
+    // it.
     if(window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
-    // Video/Link badge, Aug 11 2026 -- same bridge pattern as the two
-    // badges just above; the helper lives in 9710's closure.
-    if(window.T2TStoryboard && T2TStoryboard.linkBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.linkBadgeHTML(row));
+    // Bottom-left signal cluster: Signal Flags (Aug 3 2026, Larry:
+    // "This option could be in every gear? Anywhere a traveler makes a
+    // note or adds an idea") + Video/Link (Aug 11 2026) -- wrapped as
+    // one positioned unit as of Aug 15 2026 so the two pack together
+    // with no dead space when only one is present. This loose-idea
+    // tile has no Lock badge (never has), matching its behavior before
+    // this refactor.
+    if(window.T2TStoryboard && T2TStoryboard.signalRowHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.signalRowHTML(row, {flags:true, link:true}));
     // Double-click is the color-options shortcut every card has (locked
     // July 27, 2026) -- this loose-idea tile never had a double-click job
     // of its own before, so this is a straight addition, not a migration.
@@ -1403,15 +1402,9 @@
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     t._isxPos=pos;
     var bg=row.color||'#fff';
-    // Lock badge, Aug 15 2026 -- now uses the shared bridge helper
-    // (matches 9710's own bottom-left signal cluster: Lock, Signal
-    // Flags, ...) instead of its own standalone top-right icon. Larry:
-    // "is the LOCK not just another FLAG?"
-    var lockBadgeHTML = (window.T2TStoryboard && T2TStoryboard.lockBadgeHTML) ? T2TStoryboard.lockBadgeHTML(row) : '';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-front" style="background:'+bg+'">'
-        +lockBadgeHTML
         +'<div>'+(iconPrefix||'')+(row.text_content||'(untitled)')+'</div>'
         +'<div class="isx-corner-flip" title="Flip card"></div>'
       +'</div>';
@@ -1420,12 +1413,20 @@
       isxStackCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
       isxStackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     }
-    // Signal Flags badge, Aug 3 2026 (widened same day to every card type,
-    // Larry: "every card") -- header piles get the same on-card dots as
-    // plain cards now.
+    // Person Assigned badge, Aug 9 2026 -- header piles get the same
+    // badge as plain cards.
     var isxStackFront=t.querySelector('.isx-stack-front');
-    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.keyDotsHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.keyDotsHTML(row));
     if(isxStackFront && window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
+    // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026
+    // (Larry: "is the LOCK not just another FLAG?"). Lock used to be
+    // its own standalone top-right .isx-stack-lock icon; Signal Flags
+    // (Aug 3 2026, "widened same day to every card type ... header
+    // piles get the same on-card dots as plain cards now") used to be
+    // its own unwrapped call. Both now come from one wrapped call so
+    // they pack together with no dead space when only one is present --
+    // this is what fixed the "Blue star sitting halfway across the
+    // card" bug Larry caught on the Marketing header.
+    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.signalRowHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.signalRowHTML(row, {lock:true, flags:true}));
     // Single click = toggle this pile open/closed (spread its real cards
     // out to view/reorganize, or gather them back into the cascade) -- a
     // plain click waits ~250ms to make sure a second one isn't coming
