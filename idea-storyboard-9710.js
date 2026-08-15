@@ -178,35 +178,46 @@
         // (top-left, link+image cards only) is nudged right below so the
         // two never overlap.
         +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:calc(9px * var(--fg-text-scale,1));line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
-        +'.sb-key-dots{position:absolute;bottom:2px;right:18px;display:flex;gap:2px;pointer-events:none;z-index:5}'
+        // Signal Flags moved from bottom-right (next to the heart) to
+        // bottom-left, Aug 15 2026 (Larry: "is the LOCK not just another
+        // FLAG? ... all signal flags are added to the lower left corner
+        // on all types of boards") -- matches the Briefing Board's own
+        // bottom-left signal cluster (.bb-key-badges) exactly. Sits after
+        // Lock/Notes/Link in that corner (left:44), heart keeps the
+        // bottom-right corner to itself now.
+        +'.sb-key-dots{position:absolute;bottom:2px;left:44px;display:flex;gap:2px;pointer-events:none;z-index:5}'
         // Person Assigned badge (Aug 9 2026, Larry: "look like the BB card
         // with the initials on the front") -- same small circle-with-
         // initials look as the Briefing Board's .bb-dot, scaled down to
-        // fit this board's much smaller ~70-76px tile. Bottom-left is the
+        // fit this board's much smaller ~70-76px tile. Top-right is the
         // one corner nothing else on the tile claims (order badge is
-        // top-left, lock/link are top-right/top-left-ish, heart+key dots+
-        // corner-flip share the bottom-right).
+        // top-left, heart is bottom-right, Lock/Signal Flags/Notes/Link
+        // all live bottom-left as of Aug 15 2026).
         +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:calc(7px * var(--fg-text-scale,1));font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         // Notes badge (Larry, Aug 11 2026: "pencil as signal flag on the
-        // front of any card if there are Notes inside") -- bottom-left is
-        // the one corner nothing else on the tile claims (order badge is
-        // top-left, person/lock share top-right, heart+key-dots+corner-flip
-        // share bottom-right).
-        +'.sb-notes-badge{position:absolute;bottom:2px;left:2px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none;z-index:6}'
+        // front of any card if there are Notes inside") -- bottom-left,
+        // alongside Lock/Signal Flags/Link (see the shared bottom-left
+        // signal cluster, Aug 15 2026).
+        +'.sb-notes-badge{position:absolute;bottom:2px;left:16px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none;z-index:6}'
         // Video/Link flag, Aug 11 2026 (Larry: "make link usable, move
         // link flag to lower left corner") -- shares the bottom-left
-        // slot with Notes (left:2 / left:18, same stacking convention as
-        // heart+key-dots on the bottom-right), and is a real clickable
-        // link (not just a pointer-events:none marker) -- opens the
-        // attached URL in a new tab. draggable=false keeps a native link
-        // drag from hijacking the tile's own drag-to-reorder gesture.
-        +'.sb-link-badge{position:absolute;bottom:2px;left:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);cursor:pointer;text-decoration:none;z-index:6}'
+        // signal cluster with Lock/Notes/Signal Flags, and is a real
+        // clickable link (not just a pointer-events:none marker) --
+        // opens the attached URL in a new tab. draggable=false keeps a
+        // native link drag from hijacking the tile's own drag-to-reorder
+        // gesture.
+        +'.sb-link-badge{position:absolute;bottom:2px;left:30px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);cursor:pointer;text-decoration:none;z-index:6}'
         // pointer-events:auto here, Aug 4 2026 -- same fix as the
         // Briefing Board's .bb-key-badge: the wrapping .sb-key-dots
         // stays click-through (so it never grabs a card drag), but a
         // dot inherits that "none" too unless it opts back in, which
         // was silently killing its own title-on-hover meaning tooltip.
         +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:auto;cursor:default}'
+        // Lock badge, moved here from a top-right icon Aug 15 2026 (Larry:
+        // treat LOCK as just another signal flag) -- now the leftmost
+        // item in the bottom-left signal cluster, same corner as Signal
+        // Flags/Notes/Link.
+        +'.sb-lock-badge{position:absolute;bottom:2px;left:2px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:auto;cursor:default;z-index:6}'
         +'.sb-key-shape-btn{width:28px;height:28px;border:2px solid transparent;border-radius:6px;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}'
         +'.sb-key-shape-btn.active{border-color:#5b9bd5}'
         +'.sb-key-swatch-btn{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}'
@@ -1120,6 +1131,15 @@
   function _sboardNotesBadgeHTML(item){
     if(!item || !item.notes || !item.notes.trim()) return '';
     return '<div class="sb-notes-badge" title="Has notes">✏️</div>';
+  }
+  // Lock badge, Aug 15 2026 -- previously an ad-hoc top-right icon built
+  // separately in _sboardMakeTile/_sboardMakeHeaderStackTile; centralized
+  // here so it's just another signal-flag-style helper, matching
+  // _sboardNotesBadgeHTML above. Larry: "is the LOCK not just another
+  // FLAG? ... all signal flags are added to the lower left corner."
+  function _sboardLockBadgeHTML(item){
+    if(!item || !item.locked) return '';
+    return '<span class="sb-lock-badge" title="Locked — parked here, paused before its turn. Was in progress; worth asking why.">🔒</span>';
   }
   var _clusterOpenHeaderId = null;
   var _clusterReturnFn = null;
@@ -2136,16 +2156,10 @@
       hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
       tile.appendChild(hb);
     }
-    if(item.locked){
-      var lb=document.createElement('div');
-      // Nudged from right:2px to right:18px, Aug 9 2026 -- Person
-      // Assigned now owns the top-right corner itself (Larry: "consistent
-      // assignment spot on all cards"), same pairing convention the
-      // heart/key-dots badges already use in the opposite corner.
-      lb.style.cssText='position:absolute;top:2px;right:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
-      lb.textContent='\ud83d\udd12';
-      tile.appendChild(lb);
-    }
+    // Lock badge moved to the bottom-left signal cluster, Aug 15 2026
+    // (Larry: "is the LOCK not just another FLAG?") -- was a standalone
+    // top-right icon; now inserted alongside Signal Flags below via
+    // _sboardLockBadgeHTML, same corner every signal lives in.
     var cornerFlip=document.createElement('div');
     cornerFlip.className='sc-corner-flip';
     cornerFlip.title='Flip card';
@@ -2164,17 +2178,18 @@
     // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
     // loose card sitting in the same visual column never both show "1".
     tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
-    // Signal Flags badge, Aug 3 2026 -- Larry: "Custom key goes on the
-    // outside of the card like the heart." Sits just left of the heart
-    // badge, same bottom-right corner, so the two "how I feel about this
-    // card" markers read together.
-    tile.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(item));
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
-    // with the initials on the front." Bottom-left, the one corner
-    // nothing else claims.
+    // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
-    // Notes badge, Aug 11 2026 -- pencil shows on the front whenever
-    // this card has Notes saved on its back, bottom-left corner.
+    // Bottom-left signal cluster: Lock, Signal Flags, Notes, in that
+    // order -- Aug 15 2026 (Larry: "is the LOCK not just another FLAG?
+    // ... all signal flags are added to the lower left corner on all
+    // types of boards"). Signal Flags moved here from bottom-right
+    // (was paired with the heart); Lock moved here from a standalone
+    // top-right icon. Every per-card signal now lives in one corner,
+    // matching the Briefing Board's own bb-key-badges cluster.
+    tile.insertAdjacentHTML('beforeend', _sboardLockBadgeHTML(item));
+    tile.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(item));
     tile.insertAdjacentHTML('beforeend', _sboardNotesBadgeHTML(item));
     // Reorder-vs-stack zoning, added July 12, 2026. The middle band of the
     // tile nests (stacks the dragged card under this one, promoting this
@@ -2256,15 +2271,9 @@
     var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.round(13*_stMult));
     p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
-    if(headerRow.locked){
-      var hlb=document.createElement('div');
-      // Nudged from right:2px to right:18px, Aug 9 2026 -- same reasoning
-      // as the plain-card lock badge above: Person Assigned now owns the
-      // top-right corner consistently on every card.
-      hlb.style.cssText='position:absolute;top:2px;right:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
-      hlb.textContent='\ud83d\udd12';
-      front.appendChild(hlb);
-    }
+    // Lock badge moved to the bottom-left signal cluster below, Aug 15
+    // 2026 (Larry: "is the LOCK not just another FLAG?") -- was a
+    // standalone top-right icon.
     wrap.appendChild(back2); wrap.appendChild(back1); wrap.appendChild(front);
     var stackCornerFlip=document.createElement('div');
     stackCornerFlip.className='sc-corner-flip';
@@ -2281,8 +2290,11 @@
     // which doesn't render through the main board and has no order to
     // report here).
     front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
-    front.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
+    // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
+    // order and reasoning as the plain-card tile above.
+    front.insertAdjacentHTML('beforeend', _sboardLockBadgeHTML(headerRow));
+    front.insertAdjacentHTML('beforeend', _sboardKeyDotsHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardNotesBadgeHTML(headerRow));
     // Double-click a HEADER or sub-header card to drill into it — that
     // card becomes the new TOPIC. Locked July 16, 2026.
@@ -6390,6 +6402,7 @@
     keyDotsHTML: _sboardKeyDotsHTML,
     assignedBadgeHTML: _sboardAssignedBadgeHTML,
     linkBadgeHTML: _sboardLinkBadgeHTML,
+    lockBadgeHTML: _sboardLockBadgeHTML,
     ensureAssignedInitials: _sboardEnsureAssignedInitials,
     closeBoard: _sboardCloseBoard
   };

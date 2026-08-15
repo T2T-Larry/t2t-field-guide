@@ -2651,7 +2651,7 @@
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
-      +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
       // pointer-events:auto here, Aug 11 2026 -- same fix as
       // .bb-key-badge-wrap: the wrapping .bb-key-badges container it
       // now lives inside stays click-through (never steals a card
@@ -3115,6 +3115,10 @@
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
+        // Lock badge moved into the bottom-left signal cluster, Aug 15
+        // 2026 (Larry: "is the LOCK not just another FLAG?") -- was up
+        // top with priority/routine/date; now reads as one more signal
+        // alongside Signal Flags/Notes/Link, same corner every time.
         var lockBadge = c.locked ? '<span class="bb-lock-badge" title="Locked — parked here, paused before its turn. Was in progress; worth asking why.">🔒</span>' : '';
         // Notes badge moved into the bottom-left corner alongside the
         // Signal Flags, Aug 11 2026 (Larry: move it down "with other
@@ -3157,13 +3161,13 @@
         // TOPIC they came from right above the task line, same small-caps
         // treatment as the board-header eyebrows elsewhere on this screen.
         var topicEyebrow = c.topicLabel ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+lockBadge+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +((notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '')
+          +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '')
           +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click also opens the card, Aug 11 2026 (Larry) -- same

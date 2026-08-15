@@ -541,11 +541,11 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-stack-front{position:absolute;top:0;left:0;width:100%;height:100%;border:1.5px solid #4a4a4a;border-radius:0;
     display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;text-align:center;
     overflow:hidden;font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));line-height:1.15;color:#000}
-  /* Nudged from right:2px to right:18px, Aug 9 2026 -- Person Assigned
-     badge (.sb-person-badge, idea-storyboard-9710.js) now owns the
-     top-right corner consistently on every card, 9711's header piles
-     included. */
-  .isx-stack-lock{position:absolute;top:2px;right:18px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  /* .isx-stack-lock removed Aug 15 2026 -- 9711's header-pile lock
+     badge now reuses idea-storyboard-9710.js's .sb-lock-badge via the
+     T2TStoryboard bridge (see session.js), living in the bottom-left
+     signal cluster like every other board's lock badge, instead of its
+     own standalone top-right icon. */
   .isx-tile.isx-tile-dropready{outline:2px solid #5b9bd5}
   /* Fixed Trash icon (July 18, 2026) — small and round, pinned to the
      board's bottom-right corner via #isx-header-ring, overriding the big

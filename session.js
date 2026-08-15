@@ -1403,10 +1403,15 @@
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     t._isxPos=pos;
     var bg=row.color||'#fff';
+    // Lock badge, Aug 15 2026 -- now uses the shared bridge helper
+    // (matches 9710's own bottom-left signal cluster: Lock, Signal
+    // Flags, ...) instead of its own standalone top-right icon. Larry:
+    // "is the LOCK not just another FLAG?"
+    var lockBadgeHTML = (window.T2TStoryboard && T2TStoryboard.lockBadgeHTML) ? T2TStoryboard.lockBadgeHTML(row) : '';
     t.innerHTML='<div class="isx-stack-layer" style="top:5px;left:5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-front" style="background:'+bg+'">'
-        +(row.locked?'<div class="isx-stack-lock">\ud83d\udd12</div>':'')
+        +lockBadgeHTML
         +'<div>'+(iconPrefix||'')+(row.text_content||'(untitled)')+'</div>'
         +'<div class="isx-corner-flip" title="Flip card"></div>'
       +'</div>';
