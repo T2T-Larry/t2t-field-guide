@@ -3925,7 +3925,13 @@
           groupRows.forEach(function(row){
             var targetHeaderId = (row.content_type==='header') ? row.id : row.cluster_id;
             var card=document.createElement('div');
-            card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#eaf3fb;border:1px solid #1a3a5c;border-radius:3px;box-shadow:1px 2px 4px rgba(26,58,92,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#1a3a5c;font-family:inherit';
+            // Aug 15 2026 (Larry: "make the Idea Board flag card look
+            // just like the BB flag card") -- same .bb-card look on
+            // both groups now; the board name is already carried by
+            // the label above each group, so the card itself doesn't
+            // need to carry it too via color.
+            card.className='bb-card';
+            card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer';
             card.textContent=row.text_content||'(untitled)';
             card.addEventListener('click', function(){
               try{
