@@ -1356,7 +1356,7 @@
     if(!board) return;
     _bbSourceFilter=null;
     menu.innerHTML='';
-    eyebrow.textContent='View';
+    eyebrow.textContent='Team';
     if(board.board_type==='personal'){
       var seen={}; var opts=[{value:'',label:'Everything'},{value:'origin:__native__',label:'Personal'}];
       _bbForeignCards.forEach(function(c){
@@ -2738,9 +2738,9 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Type</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Board type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Title</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Organization</div><div class="bb-cdrop" id="bb-type-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-type-trigger" title="Organization type"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">Team</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
