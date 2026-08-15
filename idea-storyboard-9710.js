@@ -326,7 +326,7 @@
         +'.sc-cdrop-row{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:#fff;border-radius:6px;cursor:pointer;white-space:nowrap}'
         +'.sc-cdrop-row:hover{background:rgba(255,255,255,.14)}'
         +'.sc-cdrop-row.active{background:rgba(255,255,255,.1);font-weight:700}'
-        +'.sc-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}'
+        +'.sc-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}'
         // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): the
         // person-filter list now shows each Cast member's role and lets
         // an Owner or Leader add someone right from the board face, no
@@ -369,6 +369,8 @@
         // look. Sits beside its dropdown, not inside it.
         +'.sc-dotted-add-btn{flex-shrink:0;width:22px;height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#a9cce3;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;opacity:.75;transition:opacity .15s,background .15s,border-color .15s,color .15s;padding:0}'
         +'.sc-dotted-add-btn:hover{opacity:1;background:rgba(255,255,255,.1);border-color:#fff;color:#fff}'
+        +'.sc-dotted-remove-btn{border-color:#e08a7d;color:#e08a7d}'
+        +'.sc-dotted-remove-btn:hover{background:rgba(224,138,125,.15);border-color:#e08a7d;color:#e08a7d}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
         +'#sc-topic-box{display:inline-block;max-width:calc(320px * (0.6 + 0.4 * var(--fg-text-scale,1)));box-sizing:border-box;white-space:normal;word-wrap:break-word;position:relative;z-index:1}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
@@ -610,7 +612,7 @@
         if(rootRow) openSbDetail(rootRow);
       });
     })();
-    _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
+    Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -1330,12 +1332,27 @@
   // Casting) is a completely separate, independent thing -- it only
   // ever comes from a HEADER being delegated into its own Topic, at any
   // depth, inside whichever board this is.
+  // Expanded Aug 15 2026 to the fuller starter set from the
+  // Organization design conversation, matching the Briefing Board's
+  // own BB_BOARD_TYPES exactly -- Project dropped from the seeded list
+  // (it's its own PROJECT eyebrow now, not a Type), but any root
+  // already using 'project' keeps working -- _sboardExtraBoardTypes
+  // always re-adds whatever's actually in use, seeded or not.
   var IB_BOARD_TYPES = [
-    {value:'personal', label:'Personal'},
-    {value:'project', label:'Project'},
+    {value:'organization', label:'Organization'},
+    {value:'company', label:'Company'},
     {value:'departmental', label:'Department'},
-    {value:'company', label:'Company'}
+    {value:'client', label:'Client'},
+    {value:'partner', label:'Partner'},
+    {value:'supplier', label:'Supplier'},
+    {value:'customer', label:'Customer'},
+    {value:'personal', label:'Personal'}
   ];
+  // Hidden presets, Aug 15 2026 -- mirrors the Briefing Board's own
+  // _bbHiddenTypesCache/org_type_hidden exactly (same table, shared
+  // per traveler across both boards).
+  var _sboardHiddenTypesCache = [];
+  var _sboardHiddenTypesLoaded = false;
   // Reserved/nested names, Aug 13 2026 -- Larry: NEW, MISC and Trash are
   // consistent bucket elements every board gets, not boards themselves;
   // Purpose and Idea Session Protocol are real headers that live nested
@@ -1384,6 +1401,36 @@
     var hit=IB_BOARD_TYPES.filter(function(t){ return t.value===value; })[0];
     if(hit) return hit.label;
     return String(value||'').replace(/(^|[_\s]+)([a-z])/g, function(m,p1,p2){ return (p1?' ':'')+p2.toUpperCase(); }).trim();
+  }
+
+  async function _sboardEnsureHiddenTypesLoaded(){
+    if(_sboardHiddenTypesLoaded) return;
+    _sboardHiddenTypesLoaded=true;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var user=(await _sb.auth.getUser()).data.user; if(!user) return;
+      var res=await _sb.from('org_type_hidden').select('value').eq('user_id',user.id);
+      if(res.error) throw res.error;
+      _sboardHiddenTypesCache=(res.data||[]).map(function(r){ return r.value; });
+    }catch(e){ console.error('Idea Board: could not load hidden Types', e); }
+  }
+  // Fixed Types minus whatever's hidden -- a value still in use by one
+  // of the traveler's own root boards always shows regardless (see
+  // Briefing Board's own _bbVisibleFixedTypes for the same rule).
+  function _sboardVisibleFixedTypes(roots){
+    var hidden={}; (_sboardHiddenTypesCache||[]).forEach(function(v){ hidden[v]=true; });
+    var inUse={}; (roots||[]).forEach(function(r){ inUse[(r.board_type||'personal')]=true; });
+    return IB_BOARD_TYPES.filter(function(t){ return !hidden[t.value] || inUse[t.value]; });
+  }
+  async function _sboardHideType(value){
+    var _sb=T().sb;
+    var user=(await _sb.auth.getUser()).data.user; if(!user || !value) return;
+    if(_sboardHiddenTypesCache.indexOf(value)===-1) _sboardHiddenTypesCache.push(value);
+    try{
+      var ins=await _sb.from('org_type_hidden').upsert({user_id:user.id, value:value});
+      if(ins.error) console.error('Idea Board: could not hide Type', ins.error);
+    }catch(e){ console.error('Idea Board: could not hide Type', e); }
+    _sboardRenderTypePicker();
   }
 
   // Switches straight to a different root tree -- same shape as
@@ -1474,7 +1521,7 @@
   }
   document.addEventListener('click', function(){ _sboardCloseAllDropdowns(null); });
 
-  function _sboardRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle){
+  function _sboardRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle, onRemove, removeTitle){
     var trigger=document.getElementById(triggerId), menu=document.getElementById(menuId);
     if(!trigger || !menu) return;
     var current=options.filter(function(o){ return String(o.value)===String(currentValue); })[0];
@@ -1504,6 +1551,19 @@
       onAdd();
     });
     addRow.appendChild(addBtn);
+    if(onRemove){
+      var removeBtn=document.createElement('button');
+      removeBtn.type='button';
+      removeBtn.className='sc-dotted-add-btn sc-dotted-remove-btn';
+      removeBtn.title=removeTitle||'Remove';
+      removeBtn.textContent='\u2212';
+      removeBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        onRemove();
+      });
+      addRow.appendChild(removeBtn);
+    }
     menu.appendChild(addRow);
     // Moved to <body> so position:fixed has nothing above it in the DOM
     // that could re-trap it in a low stacking context -- see the
@@ -1588,7 +1648,7 @@
       roots=[];
     }
     var extra=_sboardExtraBoardTypes(roots);
-    var opts=IB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_sboardTypeLabel(v)}; }));
+    var opts=_sboardVisibleFixedTypes(roots).concat(extra.map(function(v){ return {value:v, label:_sboardTypeLabel(v)}; }));
     var activeType=_sboardActiveBoardType();
     _sboardRenderDropdown('sc-type-trigger','sc-type-menu', opts, activeType, async function(newType){
       var rts=await _sboardLoadMyRoots();
@@ -1611,7 +1671,18 @@
       if(!firstBoardName || !firstBoardName.trim()) return;
       var newId=await _sboardCreateRootBoard(firstBoardName.trim(), typeValue);
       if(newId) _sboardSwitchToRootBoard(newId);
-    }, 'Add a type');
+    }, 'Add a type', function(){
+      // Remove, Aug 15 2026 -- mirrors the Briefing Board's own
+      // _bbHideType exactly (same shared org_type_hidden table).
+      var removable=_sboardVisibleFixedTypes(roots).filter(function(t){ return t.value!==activeType; });
+      if(!removable.length){ window.alert('Nothing left to remove.'); return; }
+      var listText=removable.map(function(t){ return t.label; }).join(', ');
+      var typeName=window.prompt('Which Type would you like to remove from the list? ('+listText+')\n\nAny board already using it keeps working either way.');
+      if(!typeName || !typeName.trim()) return;
+      var hit=removable.filter(function(t){ return t.label.toLowerCase()===typeName.trim().toLowerCase(); })[0];
+      if(!hit){ window.alert('Didn\'t recognize "'+typeName.trim()+'" -- type the name exactly as shown.'); return; }
+      _sboardHideType(hit.value);
+    }, 'Remove a type');
   }
 
   // TITLE picker, Aug 13 2026 -- Larry: "the next field is TITLE." Lists

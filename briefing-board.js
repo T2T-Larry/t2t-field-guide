@@ -582,6 +582,35 @@
       _bbKeyLibCache=res.data||[];
     }catch(e){ console.error('Briefing Board: could not load key library', e); }
   }
+  async function _bbEnsureHiddenTypesLoaded(){
+    if(_bbHiddenTypesLoaded) return;
+    _bbHiddenTypesLoaded=true;
+    var sb=T().sb; if(!sb) return;
+    try{
+      var uid=await _bbCurrentUserId(); if(!uid) return;
+      var res=await sb.from('org_type_hidden').select('value').eq('user_id',uid);
+      if(res.error) throw res.error;
+      _bbHiddenTypesCache=(res.data||[]).map(function(r){ return r.value; });
+    }catch(e){ console.error('Briefing Board: could not load hidden Types', e); }
+  }
+  // Fixed Types minus whatever's hidden -- but a value still in use by
+  // one of the traveler's own boards always shows regardless, so hiding
+  // a preset can never strand access to an existing board.
+  function _bbVisibleFixedTypes(){
+    var hidden={}; (_bbHiddenTypesCache||[]).forEach(function(v){ hidden[v]=true; });
+    var inUse={}; _bbBoards.forEach(function(b){ inUse[(b.board_type||'personal')]=true; });
+    return BB_BOARD_TYPES.filter(function(t){ return !hidden[t.value] || inUse[t.value]; });
+  }
+  async function _bbHideType(value){
+    var uid=await _bbCurrentUserId(); if(!uid || !value) return;
+    if(_bbHiddenTypesCache.indexOf(value)===-1) _bbHiddenTypesCache.push(value);
+    var sb=T().sb;
+    try{
+      var ins=await sb.from('org_type_hidden').upsert({user_id:uid, value:value});
+      if(ins.error) console.error('Briefing Board: could not hide Type', ins.error);
+    }catch(e){ console.error('Briefing Board: could not hide Type', e); }
+    _bbRenderTypePicker();
+  }
   async function _bbCreateKey(shape, color, meaning){
     var sb=T().sb;
     var uid=await _bbCurrentUserId();
@@ -619,16 +648,31 @@
 
   // Supabase-backed multi-board state, added July 21, 2026 (evening).
   var _bbCurrentBoardId = null;
-  // TYPE + NAME, Aug 3 2026 -- the 4 board types Larry named: "Briefing
-  // Boards can come in 4 types: Personal, Departmental, Company, and
-  // Project." Stored as briefing_boards.board_type (already existed,
-  // every board created before today just hardcoded 'personal').
+  // TYPE + NAME, Aug 3 2026 -- originally the 4 board types Larry
+  // named: Personal, Departmental, Company, Project. Expanded Aug 15
+  // 2026 to the fuller starter set from the Organization design
+  // conversation -- Project dropped from the seeded list (it's now its
+  // own PROJECT eyebrow, not a Type), but any board already using
+  // 'project' keeps working -- _bbExtraBoardTypes always re-adds
+  // whatever's actually in use, seeded or not.
   var BB_BOARD_TYPES = [
-    {value:'personal', label:'Personal'},
-    {value:'project', label:'Project'},
+    {value:'organization', label:'Organization'},
+    {value:'company', label:'Company'},
     {value:'departmental', label:'Department'},
-    {value:'company', label:'Company'}
+    {value:'client', label:'Client'},
+    {value:'partner', label:'Partner'},
+    {value:'supplier', label:'Supplier'},
+    {value:'customer', label:'Customer'},
+    {value:'personal', label:'Personal'}
   ];
+  // Hidden presets, Aug 15 2026 -- a traveler can remove a seeded Type
+  // they don't want cluttering the list (e.g. Jonny drops "Client" and
+  // keeps only "Partner"). Only ever hides *unused* presets -- a value
+  // still in use by one of the traveler's own boards always keeps
+  // showing regardless (see _bbVisibleFixedTypes), so removing one
+  // never strands access to an existing board.
+  var _bbHiddenTypesCache = [];
+  var _bbHiddenTypesLoaded = false;
   var _bbBoards = [];
   // Signal Flags, Aug 3 2026 -- merged into the Storyboard's shared,
   // traveler-wide custom_keys table (was its own board-scoped
@@ -1791,6 +1835,7 @@
     // reload-and-return-here (Alt+C) or re-entering the screen never
     // re-fetches needlessly.
     await _bbEnsureKeyLibraryLoaded();
+    await _bbEnsureHiddenTypesLoaded();
     var sb=T().sb;
     try{
       // Aug 4 2026, Larry: board sharing -- the owner can grant other
@@ -1913,7 +1958,13 @@
   }
   document.addEventListener('click', function(){ _bbCloseAllDropdowns(null); });
 
-  function _bbRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle){
+  // onRemove, Aug 15 2026 -- optional 8th param, so far only used by
+  // the Organization Type picker. When present, a second dashed-circle
+  // button (−) sits next to the existing (+) at the bottom of the
+  // menu; clicking it hands back to the caller, which decides what
+  // "remove" means for that particular list (Type hides an unused
+  // preset -- see _bbHideType).
+  function _bbRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle, onRemove, removeTitle){
     var trigger=document.getElementById(triggerId), menu=document.getElementById(menuId);
     if(!trigger || !menu) return;
     var current=options.filter(function(o){ return String(o.value)===String(currentValue); })[0];
@@ -1943,6 +1994,19 @@
       onAdd();
     });
     addRow.appendChild(addBtn);
+    if(onRemove){
+      var removeBtn=document.createElement('button');
+      removeBtn.type='button';
+      removeBtn.className='bb-dotted-add-btn bb-dotted-remove-btn';
+      removeBtn.title=removeTitle||'Remove';
+      removeBtn.textContent='−';
+      removeBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        onRemove();
+      });
+      addRow.appendChild(removeBtn);
+    }
     menu.appendChild(addRow);
     // Moved to <body>, same reasoning as the Idea Board's own dropdown --
     // see the .bb-cdrop-menu CSS note above. Idempotent. Theme vars
@@ -2019,7 +2083,7 @@
 
   function _bbRenderTypePicker(){
     var extra=_bbExtraBoardTypes();
-    var opts=BB_BOARD_TYPES.concat(extra.map(function(v){ return {value:v, label:_bbTypeLabel(v)}; }));
+    var opts=_bbVisibleFixedTypes().concat(extra.map(function(v){ return {value:v, label:_bbTypeLabel(v)}; }));
     var activeType=_bbActiveBoardType();
     _bbRenderDropdown('bb-type-trigger','bb-type-menu', opts, activeType, async function(newType){
       var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===newType; });
@@ -2039,7 +2103,19 @@
       var firstBoardName=window.prompt('Name for the first '+typeName.trim()+' board:');
       if(!firstBoardName || !firstBoardName.trim()) return;
       await _bbCreateBoard(firstBoardName.trim(), typeValue);
-    }, 'Add a type');
+    }, 'Add a type', function(){
+      // Remove, Aug 15 2026 -- only ever hides an unused preset (see
+      // _bbHideType/_bbVisibleFixedTypes); a Type still in use by one
+      // of the traveler's own boards keeps showing no matter what.
+      var removable=_bbVisibleFixedTypes().filter(function(t){ return t.value!==activeType; });
+      if(!removable.length){ window.alert('Nothing left to remove.'); return; }
+      var listText=removable.map(function(t){ return t.label; }).join(', ');
+      var typeName=window.prompt('Which Type would you like to remove from the list? ('+listText+')\n\nAny board already using it keeps working either way.');
+      if(!typeName || !typeName.trim()) return;
+      var hit=removable.filter(function(t){ return t.label.toLowerCase()===typeName.trim().toLowerCase(); })[0];
+      if(!hit){ window.alert('Didn\'t recognize "'+typeName.trim()+'" -- type the name exactly as shown.'); return; }
+      _bbHideType(hit.value);
+    }, 'Remove a type');
   }
 
   function _bbRenderBoardPicker(){
@@ -2498,6 +2574,8 @@
       // dropdown itself.
       +'.bb-dotted-add-btn{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:transparent;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;padding:0;opacity:.75;transition:opacity .15s,background .15s,border-color .15s,color .15s}'
       +'.bb-dotted-add-btn:hover{opacity:1;background:var(--bb-bg);border-color:var(--bb-ink);color:var(--bb-ink)}'
+      +'.bb-dotted-remove-btn{border-color:#a3372b;color:#a3372b}'
+      +'.bb-dotted-remove-btn:hover{background:#FFF4F2;border-color:#a3372b;color:#a3372b}'
       // Custom Type/Title dropdowns, Aug 13 2026 -- Larry: "the (+)
       // should be at the bottom of each dropdown list, not to the
       // side." Same reasoning as the Idea Board's own sc-cdrop: a
@@ -2518,7 +2596,7 @@
       +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
-      +'.bb-cdrop-addrow{display:flex;justify-content:center;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
+      +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
       // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): same
       // change as the Idea Board's own sc-view-row/-addform -- the
       // person-filter list now shows each Cast member's role and lets
