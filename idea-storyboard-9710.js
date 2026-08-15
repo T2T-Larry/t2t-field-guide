@@ -5076,9 +5076,43 @@
     T().wire('sb-lock', async function(){
       try{
         var newLocked=!item.locked;
-        var upd=await _sb.from('ideas').update({locked:newLocked}).eq('id',item.id);
+        if(!newLocked){
+          // Unlocking never needs a prompt -- if it was parking a real
+          // card, the linked card's own locked flag clears via the
+          // ideas_sync_header_lock DB trigger the moment this write lands.
+          var upd0=await _sb.from('ideas').update({locked:false}).eq('id',item.id);
+          if(upd0.error) throw upd0.error;
+          item.locked=false;
+          closeSbDetail();
+          renderSeaBoard(true);
+          return;
+        }
+        // Locking, Session 211 (Aug 15) -- a header with no linked,
+        // active Briefing card yet is a no-op for the card side: just
+        // park the idea, nothing to cascade to. Only when a real card
+        // exists does this become the two-outcome choice (Done vs
+        // genuinely-parked-mid-work, i.e. a Hang-Up).
+        var cardRes=await _sb.from('briefing_cards').select('id,col').eq('source_header_id',item.id).eq('archived',false).limit(1);
+        var linkedCard=cardRes.data && cardRes.data[0];
+        if(linkedCard){
+          if(!window.confirm('Lock this header? Its Briefing card will pause too, until you unlock it.')) return;
+          var isDone=window.confirm('Is the work actually finished? OK = Yes, move its card to Done. Cancel = No, it still needs to happen -- park the card until its time.');
+          if(isDone){
+            var cardUpd={col:'done'};
+            var colRes=await _sb.from('briefing_cards').select('completed_date,hangup_since').eq('id',linkedCard.id).limit(1);
+            var row0=colRes.data && colRes.data[0];
+            if(row0 && !row0.completed_date) cardUpd.completed_date=new Date().toISOString().slice(0,10);
+            if(linkedCard.col==='hangups') cardUpd.hangup_since=null;
+            var upd1=await _sb.from('briefing_cards').update(cardUpd).eq('id',linkedCard.id);
+            if(upd1.error) throw upd1.error;
+          } else {
+            var upd2=await _sb.from('briefing_cards').update({locked:true, lock_reason:'in_process'}).eq('id',linkedCard.id);
+            if(upd2.error) throw upd2.error;
+          }
+        }
+        var upd=await _sb.from('ideas').update({locked:true}).eq('id',item.id);
         if(upd.error) throw upd.error;
-        item.locked=newLocked;
+        item.locked=true;
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }

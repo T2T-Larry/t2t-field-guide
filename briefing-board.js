@@ -793,6 +793,7 @@
       budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
+      locked: !!c.locked, lock_reason: c.lockReason||null,
       shared_to_board_id: c.sharedToBoardId||null,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
@@ -812,6 +813,7 @@
       budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
+      locked: !!row.locked, lockReason: row.lock_reason||'',
       sharedToBoardId: row.shared_to_board_id||null,
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
@@ -2139,7 +2141,7 @@
   function _bbResortDoColumnByPriority(colKey){
     if(!_bbIsDoCol(colKey) || colKey==='new') return;
     var all=_bbCardsList();
-    var colCards=all.filter(function(c){ return !c.archived && c.col===colKey; });
+    var colCards=all.filter(function(c){ return !c.archived && !c.locked && c.col===colKey; });
     colCards.sort(function(a,b){
       var soa=(typeof a.sortOrder==='number')?a.sortOrder:Infinity;
       var sob=(typeof b.sortOrder==='number')?b.sortOrder:Infinity;
@@ -2631,6 +2633,7 @@
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
       // pointer-events:auto here, Aug 11 2026 -- same fix as
       // .bb-key-badge-wrap: the wrapping .bb-key-badges container it
       // now lives inside stays click-through (never steals a card
@@ -2719,6 +2722,7 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-routine-toggle" id="bb-d-routine-toggle" title="Routine card" aria-label="Toggle routine">🔄</button><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
+            +'<div class="bb-field"><button class="bb-flag-btn" id="bb-d-lock" type="button">🔓 Lock</button></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
@@ -3080,6 +3084,7 @@
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
+        var lockBadge = c.locked ? '<span class="bb-lock-badge" title="Locked — parked here, paused before its turn. Was in progress; worth asking why.">🔒</span>' : '';
         // Notes badge moved into the bottom-left corner alongside the
         // Signal Flags, Aug 11 2026 (Larry: move it down "with other
         // signal flags") -- was up top with the other card badges;
@@ -3121,7 +3126,7 @@
         // TOPIC they came from right above the task line, same small-caps
         // treatment as the board-header eyebrows elsewhere on this screen.
         var topicEyebrow = c.topicLabel ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+lockBadge+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
@@ -4508,6 +4513,12 @@
     if(vBtn) vBtn.classList.toggle('bb-flag-active', !!c.verified);
     if(pBtn) pBtn.classList.toggle('bb-flag-active', !!c.pro);
     if(gBtn) gBtn.classList.toggle('bb-flag-active', !!c.grow);
+    var lBtn=document.getElementById('bb-d-lock');
+    if(lBtn){
+      lBtn.classList.toggle('bb-flag-active', !!c.locked);
+      lBtn.textContent = c.locked ? '\uD83D\uDD12 Locked — click to unlock' : '\uD83D\uDD13 Lock';
+      lBtn.title = c.locked ? 'This card is parked. Unlocking lets it compete for priority again.' : 'Pause this card — it will stay here, marked, until you unlock it.';
+    }
   }
 
   function wireReviewButtons(){
@@ -4545,6 +4556,57 @@
       c.archived=true;
       _bbSaveLocal(_bbCardsList());
       closeCardDetail();
+    });
+  }
+
+  function wireLockButton(){
+    T().wire('bb-d-lock', function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c) return;
+      if(c.locked){
+        // Unlock -- no prompt needed. Header follows via the
+        // ideas_sync_header_lock DB trigger once this card's own
+        // locked flag clears.
+        c.locked=false;
+        c.lockReason='';
+        _bbUpdateReviewUI(c);
+        closeCardDetail();
+        return;
+      }
+      // Lock, Session 211 (Aug 15) -- Larry: a lock always pauses the
+      // header too, and has exactly two honest outcomes for the card:
+      // the work's actually done (move to Done, same as normal), or
+      // it's genuinely incomplete and needs to wait (stays right where
+      // it is, marked, out of priority ranking -- that's the Hang-Up:
+      // it started before its rightful turn). Plain confirm() dialogs,
+      // matching the existing pattern used elsewhere in this file
+      // (see wirePersonSelect's window.prompt just below).
+      if(!window.confirm('Lock this card? It will pause here until you unlock it.')) return;
+      var isDone=window.confirm('Is the work actually finished? OK = Yes, move it to Done. Cancel = No, it still needs to happen -- park it here until its time.');
+      if(isDone){
+        var wasCol=c.col;
+        c.col='done';
+        if(!c.completedDate) c.completedDate=_bbToday();
+        if(wasCol==='hangups') c.hangupSince='';
+      } else {
+        c.locked=true;
+        c.lockReason='in_process';
+      }
+      _bbUpdateReviewUI(c);
+      closeCardDetail();
+      // Header lock set directly here too (not just left to the DB
+      // trigger) so it's immediate even on the Done path, which never
+      // touches this card's own locked column. Fired after
+      // closeCardDetail's own card save so the card's real column
+      // (esp. 'done') is already on its way to the database first --
+      // the header-side trigger skips Done cards, but only once the
+      // database actually agrees this card is Done.
+      if(c.sourceHeaderId){
+        try{
+          var sb=T().sb;
+          if(sb) sb.from('ideas').update({locked:true}).eq('id', c.sourceHeaderId).then(function(){}, function(){});
+        }catch(e){}
+      }
     });
   }
 
@@ -4774,6 +4836,7 @@
     })();
     wirePriorityButtons();
     wireReviewButtons();
+    wireLockButton();
     wireRoutineControls();
     wireLinkField();
     wirePersonSelect();
