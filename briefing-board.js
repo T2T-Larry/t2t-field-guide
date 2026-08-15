@@ -3820,7 +3820,12 @@
     var sb=T().sb;
     if(!sb || !body) return;
     try{
-      var cardRes=await sb.from('briefing_cards').select('id,board_id,task')
+      // Aug 15 2026 (Larry: "there might be many different boards of
+      // each type... must include the TITLE") -- embeds the parent
+      // board's own name via the existing board_id foreign key, so
+      // matches can be grouped and labeled by their real board instead
+      // of a generic "the Briefing Board" bucket.
+      var cardRes=await sb.from('briefing_cards').select('id,board_id,task,briefing_boards(name)')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .eq('archived',false).limit(200);
       if(cardRes.error) throw new Error(cardRes.error.message);
@@ -3828,7 +3833,7 @@
 
       var ideaRows=[];
       try{
-        var ideaRes=await sb.from('ideas').select('id,content_type,text_content,cluster_id')
+        var ideaRes=await sb.from('ideas').select('id,content_type,text_content,cluster_id,topic_scope_id')
           .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
           .limit(200);
         if(!ideaRes.error) ideaRows=ideaRes.data||[];
@@ -3842,62 +3847,105 @@
       body.style.cssText='';
 
       // Aug 15 2026 (Larry: "looks awkward... more like cards than
-      // document links") -- each match now renders as an actual small
-      // card, reusing the real .bb-card look for Briefing Board matches
-      // (same board, same card style) and the Idea Board's own blue/navy
-      // card language for Idea Board matches -- so which board a match
-      // lives on reads from its color alone, before you even read the
-      // label above it.
+      // document links") -- each match renders as an actual small card,
+      // reusing the real .bb-card look for Briefing Board matches (same
+      // board, same card style) and the Idea Board's own blue/navy card
+      // language for Idea Board matches -- so which board a match lives
+      // on reads from its color alone, before you even read the label
+      // above it. Grouped and labeled by each match's real board name,
+      // since a traveler can have several boards of the same type.
       if(cardRows.length){
-        var bbLbl=document.createElement('div');
-        bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin-bottom:6px;text-align:left';
-        bbLbl.textContent='On the Briefing Board:';
-        body.appendChild(bbLbl);
-        var bbGrid=document.createElement('div');
-        bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px;margin-bottom:'+(ideaRows.length?'14px':'0');
+        var byBoard={}; var boardOrder=[];
         cardRows.forEach(function(c){
-          var card=document.createElement('div');
-          card.className='bb-card';
-          card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer';
-          card.textContent=c.task||'(untitled)';
-          card.addEventListener('click', async function(){
-            closeKeyPeek();
-            await _bbSwitchToBoard(c.board_id);
-            openCardDetail(c.id);
-          });
-          bbGrid.appendChild(card);
+          var bid=c.board_id||'';
+          if(!byBoard[bid]){ byBoard[bid]=[]; boardOrder.push(bid); }
+          byBoard[bid].push(c);
         });
-        body.appendChild(bbGrid);
+        var bbOuter=document.createElement('div');
+        bbOuter.style.cssText='margin-bottom:'+(ideaRows.length?'14px':'0');
+        boardOrder.forEach(function(bid, idx){
+          var groupCards=byBoard[bid];
+          var boardName=(groupCards[0].briefing_boards && groupCards[0].briefing_boards.name) || 'Untitled Board';
+          var bbLbl=document.createElement('div');
+          bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin:'+(idx?'12px':'0')+' 0 6px;text-align:left';
+          bbLbl.textContent='On the '+boardName+' Briefing Board:';
+          bbOuter.appendChild(bbLbl);
+          var bbGrid=document.createElement('div');
+          bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
+          groupCards.forEach(function(c){
+            var card=document.createElement('div');
+            card.className='bb-card';
+            card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer';
+            card.textContent=c.task||'(untitled)';
+            card.addEventListener('click', async function(){
+              closeKeyPeek();
+              await _bbSwitchToBoard(c.board_id);
+              openCardDetail(c.id);
+            });
+            bbGrid.appendChild(card);
+          });
+          bbOuter.appendChild(bbGrid);
+        });
+        body.appendChild(bbOuter);
       }
 
       if(ideaRows.length){
-        var ibLbl=document.createElement('div');
-        ibLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin-bottom:6px;text-align:left';
-        ibLbl.textContent='On the Idea Board:';
-        body.appendChild(ibLbl);
-        var ibGrid=document.createElement('div');
-        ibGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
-        ideaRows.forEach(function(row){
-          var targetHeaderId = (row.content_type==='header') ? row.id : row.cluster_id;
-          var card=document.createElement('div');
-          card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#eaf3fb;border:1px solid #1a3a5c;border-radius:3px;box-shadow:1px 2px 4px rgba(26,58,92,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#1a3a5c;font-family:inherit';
-          card.textContent=row.text_content||'(untitled)';
-          card.addEventListener('click', function(){
-            try{
-              sessionStorage.setItem('bp_target','1010');
-              if(targetHeaderId) sessionStorage.setItem('fg_open_header_id', targetHeaderId);
-            }catch(e){}
-            window.open(location.pathname+location.search, '_blank');
-          });
-          ibGrid.appendChild(card);
+        // Same grouping on the Idea Board side -- topic_scope_id is the
+        // nearest TOPIC-or-root ancestor, same id briefing_boards'
+        // storyboard_project_id keys off of, and that ancestor's own
+        // text_content is the board's real title (same resolution the
+        // header<->card sync already uses).
+        var scopeIds=[]; var seenScope={};
+        ideaRows.forEach(function(r){
+          if(r.topic_scope_id && !seenScope[r.topic_scope_id]){ seenScope[r.topic_scope_id]=true; scopeIds.push(r.topic_scope_id); }
         });
-        body.appendChild(ibGrid);
+        var scopeNameById={};
+        if(scopeIds.length){
+          try{
+            var scopeRes=await sb.from('ideas').select('id,text_content').in('id', scopeIds);
+            (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=s.text_content||'Untitled Board'; });
+          }catch(e){}
+        }
+        var byScope={}; var scopeOrder=[];
+        ideaRows.forEach(function(r){
+          var sid=r.topic_scope_id||'';
+          if(!byScope[sid]){ byScope[sid]=[]; scopeOrder.push(sid); }
+          byScope[sid].push(r);
+        });
+        var ibOuter=document.createElement('div');
+        scopeOrder.forEach(function(sid, idx){
+          var groupRows=byScope[sid];
+          var boardName=scopeNameById[sid]||'Idea Board';
+          var ibLbl=document.createElement('div');
+          ibLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;font-weight:700;margin:'+(idx?'12px':'0')+' 0 6px;text-align:left';
+          ibLbl.textContent='On the '+boardName+' Idea Board:';
+          ibOuter.appendChild(ibLbl);
+          var ibGrid=document.createElement('div');
+          ibGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
+          groupRows.forEach(function(row){
+            var targetHeaderId = (row.content_type==='header') ? row.id : row.cluster_id;
+            var card=document.createElement('div');
+            card.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#eaf3fb;border:1px solid #1a3a5c;border-radius:3px;box-shadow:1px 2px 4px rgba(26,58,92,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#1a3a5c;font-family:inherit';
+            card.textContent=row.text_content||'(untitled)';
+            card.addEventListener('click', function(){
+              try{
+                sessionStorage.setItem('bp_target','1010');
+                if(targetHeaderId) sessionStorage.setItem('fg_open_header_id', targetHeaderId);
+              }catch(e){}
+              window.open(location.pathname+location.search, '_blank');
+            });
+            ibGrid.appendChild(card);
+          });
+          ibOuter.appendChild(ibGrid);
+        });
+        body.appendChild(ibOuter);
       }
     }catch(err){
       body.textContent=err.message;
       body.style.color='#a3372b';
     }
   }
+
   function closeKeyPeek(){
     var ov=document.getElementById('bb-keypeek-overlay'); if(ov) ov.classList.remove('active');
   }

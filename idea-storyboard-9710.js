@@ -3638,7 +3638,12 @@
 
       var cardRows=[];
       try{
-        var cardRes=await _sb.from('briefing_cards').select('id,task').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
+        // Aug 15 2026 (Larry: "there might be many different boards of
+        // each type... must include the TITLE") -- embeds the parent
+        // board's own name via the existing board_id foreign key, so
+        // each match can be grouped and labeled by its real board,
+        // never a generic bucket.
+        var cardRes=await _sb.from('briefing_cards').select('id,task,board_id,briefing_boards(name)').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
         if(!cardRes.error) cardRows=cardRes.data||[];
       }catch(e){}
 
@@ -3650,18 +3655,52 @@
       body.style.cssText='';
 
       if(rows.length){
-        var subRows=rows.filter(function(r){ return r.content_type==='header'; });
-        var itemRows=rows.filter(function(r){ return r.content_type!=='header'; });
+        // Group Idea Board matches by which board (TOPIC) they actually
+        // live on -- topic_scope_id is the nearest TOPIC-or-root
+        // ancestor, same id briefing_boards.storyboard_project_id keys
+        // off of, and that ancestor's own text_content is the board's
+        // real title (same resolution the header->card sync already
+        // uses). A traveler can have many independent boards of this
+        // type (Field Guide, LifeWave, a delegated TOPIC, etc.), so one
+        // ungrouped grid would blur matches from unrelated boards
+        // together.
+        var scopeIds=[]; var seenScope={};
+        rows.forEach(function(r){
+          if(r.topic_scope_id && !seenScope[r.topic_scope_id]){ seenScope[r.topic_scope_id]=true; scopeIds.push(r.topic_scope_id); }
+        });
+        var scopeNameById={};
+        if(scopeIds.length){
+          try{
+            var scopeRes=await _sb.from('ideas').select('id,text_content').in('id', scopeIds);
+            (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=s.text_content||'Untitled Board'; });
+          }catch(e){}
+        }
+        var byScope={}; var scopeOrder=[];
+        rows.forEach(function(r){
+          var sid=r.topic_scope_id||'';
+          if(!byScope[sid]){ byScope[sid]=[]; scopeOrder.push(sid); }
+          byScope[sid].push(r);
+        });
         var _peekMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
         var _peekOverlayContentW=window.innerWidth-40;
         var _peekCardW=Math.min(360,_peekOverlayContentW*0.94)-28;
         var _peekMaxTile=Math.floor((_peekCardW-20)/3);
         var _peekTile=Math.max(56, Math.min(Math.round(84*_peekMult), _peekMaxTile));
-        var grid=document.createElement('div');
-        grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
-        subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
-        itemRows.forEach(function(item2){ grid.appendChild(_sboardMakeTile(item2, _peekTile, true)); });
-        body.appendChild(grid);
+        scopeOrder.forEach(function(sid, idx){
+          var groupRows=byScope[sid];
+          var boardName=scopeNameById[sid]||'Idea Board';
+          var lbl=document.createElement('div');
+          lbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin:'+(idx?'14px':'0')+' 0 6px;text-align:left';
+          lbl.textContent='On the '+boardName+' Idea Board:';
+          body.appendChild(lbl);
+          var subRows=groupRows.filter(function(r){ return r.content_type==='header'; });
+          var itemRows=groupRows.filter(function(r){ return r.content_type!=='header'; });
+          var grid=document.createElement('div');
+          grid.style.cssText='display:grid;grid-template-columns:repeat(3,'+_peekTile+'px);gap:10px;justify-content:center';
+          subRows.forEach(function(sub){ grid.appendChild(_sboardMakeHeaderStackTile(sub, _peekTile, _peekTile, true)); });
+          itemRows.forEach(function(item2){ grid.appendChild(_sboardMakeTile(item2, _peekTile, true)); });
+          body.appendChild(grid);
+        });
       } else {
         var noneMsg=document.createElement('div');
         noneMsg.style.cssText='font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;margin-bottom:8px';
@@ -3670,34 +3709,45 @@
       }
 
       // Aug 15 2026 (Larry: "looks awkward... more like cards than
-      // document links") -- Briefing Board matches now render with the
-      // Briefing Board's own warm/brown card look, not a plain text
-      // link, so it visually reads as "a card from the other board"
-      // rather than a menu item.
+      // document links" / "must include the TITLE... many different
+      // boards of each type") -- Briefing Board matches render with the
+      // Briefing Board's own warm/brown card look, grouped and labeled
+      // by their real board name, not a generic "the Briefing Board"
+      // bucket.
       if(cardRows.length){
-        var bbWrap=document.createElement('div');
-        bbWrap.style.cssText='margin-top:12px;text-align:left;border-top:1px solid #e3d9c6;padding-top:8px';
-        var bbLbl=document.createElement('div');
-        bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:700;margin-bottom:6px';
-        bbLbl.textContent='Also on the Briefing Board:';
-        bbWrap.appendChild(bbLbl);
-        var bbGrid=document.createElement('div');
-        bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
+        var byBoard={}; var boardOrder=[];
         cardRows.forEach(function(c){
-          var b=document.createElement('div');
-          b.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#FFFDF7;border:1px solid #9c8b73;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#3B2510;font-family:inherit';
-          b.textContent=c.task||'(untitled)';
-          b.addEventListener('click', function(){
-            try{
-              sessionStorage.setItem('bp_target','4010');
-              sessionStorage.setItem('fg_open_card_id', c.id);
-            }catch(e){}
-            window.open(location.pathname+location.search, '_blank');
-          });
-          bbGrid.appendChild(b);
+          var bid=c.board_id||'';
+          if(!byBoard[bid]){ byBoard[bid]=[]; boardOrder.push(bid); }
+          byBoard[bid].push(c);
         });
-        bbWrap.appendChild(bbGrid);
-        body.appendChild(bbWrap);
+        var bbOuter=document.createElement('div');
+        bbOuter.style.cssText='margin-top:12px;text-align:left;border-top:1px solid #e3d9c6;padding-top:8px';
+        boardOrder.forEach(function(bid, idx){
+          var groupCards=byBoard[bid];
+          var boardName=(groupCards[0].briefing_boards && groupCards[0].briefing_boards.name) || 'Untitled Board';
+          var bbLbl=document.createElement('div');
+          bbLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:700;margin:'+(idx?'12px':'0')+' 0 6px';
+          bbLbl.textContent='On the '+boardName+' Briefing Board:';
+          bbOuter.appendChild(bbLbl);
+          var bbGrid=document.createElement('div');
+          bbGrid.style.cssText='display:flex;flex-direction:column;gap:8px';
+          groupCards.forEach(function(c){
+            var b=document.createElement('div');
+            b.style.cssText='width:100%;box-sizing:border-box;cursor:pointer;background:#FFFDF7;border:1px solid #9c8b73;border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;color:#3B2510;font-family:inherit';
+            b.textContent=c.task||'(untitled)';
+            b.addEventListener('click', function(){
+              try{
+                sessionStorage.setItem('bp_target','4010');
+                sessionStorage.setItem('fg_open_card_id', c.id);
+              }catch(e){}
+              window.open(location.pathname+location.search, '_blank');
+            });
+            bbGrid.appendChild(b);
+          });
+          bbOuter.appendChild(bbGrid);
+        });
+        body.appendChild(bbOuter);
       }
     }catch(err){
       body.textContent=err.message;
