@@ -3625,7 +3625,15 @@
         // (c.topicLabel set by the DB trigger, see _bbRowToCard) show which
         // TOPIC they came from right above the task line, same small-caps
         // treatment as the board-header eyebrows elsewhere on this screen.
-        var topicEyebrow = c.topicLabel ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
+        // Skip it when it would just repeat the task line verbatim (Aug 16
+        // 2026 -- Larry found a card reading its own name twice, once in
+        // the eyebrow and once as the task, after the task line had been
+        // hand-edited to drop its usual "Develop " prefix) -- the eyebrow
+        // only earns its place on the card when it's telling you something
+        // the task line doesn't already say.
+        var topicEyebrowText = (c.topicLabel||'').trim();
+        var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
+          ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
