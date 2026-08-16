@@ -2923,6 +2923,7 @@
               +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
               +'<button class="bb-icon-btn" id="bb-hx-btn" title="History">HX</button>'
+              +'<button class="bb-icon-btn" id="bb-relations-btn" title="Relationships">🔗</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Colors &amp; fonts">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
@@ -3179,6 +3180,28 @@
       fg.appendChild(shOv);
       shOv.addEventListener('click', function(e){ if(e.target===shOv) closeSharingManager(); });
       _bbMakeDraggable(shOv.querySelector('.bb-overlay-card'), shOv.querySelector('.bb-overlay-head'));
+    }
+    // Relationships (Aug 16 2026) -- Larry: members need a real way to
+    // form/accept a parent-child adoption as it happens, not just have
+    // Claude write it into the database. Same overlay shape as Guests.
+    // Shows this board's parent + children, any pending requests
+    // touching any board you own (incoming ones need your Approve/
+    // Decline; outgoing ones show as waiting), and a form to start a
+    // new request -- either to one of your own boards, or to another
+    // member's by email (find_member_boards_by_email), going through
+    // request_board_adoption/respond_board_adoption so the same
+    // mutual-consent rule holds no matter who's using it.
+    if(!document.getElementById('bb-relations-overlay')){
+      var relOv=document.createElement('div');
+      relOv.id='bb-relations-overlay'; relOv.className='bb-overlay';
+      relOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Relationships</span><button class="bb-close" id="bb-relations-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw"><div id="bb-relations-body">Loading...</div></div>'
+        +'</div>';
+      fg.appendChild(relOv);
+      relOv.addEventListener('click', function(e){ if(e.target===relOv) closeRelationsManager(); });
+      _bbMakeDraggable(relOv.querySelector('.bb-overlay-card'), relOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-hx-overlay')){
       var hxOv=document.createElement('div');
@@ -3869,9 +3892,13 @@
         +'</div>'
         +'<div class="bb-field" id="bb-sharing-field">'
           +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#127915; Guests</button>'
+        +'</div>'
+        +'<div class="bb-field" id="bb-relations-field">'
+          +'<button class="bb-flag-btn" id="bb-open-relations" style="width:100%">&#128279; Relationships</button>'
         +'</div>';
       T().wire('bb-open-team-roster', function(){ closeSettings(); openTeamRoster(); });
       T().wire('bb-open-sharing', function(){ closeSettings(); openSharingManager(); });
+      T().wire('bb-open-relations', function(){ closeSettings(); openRelationsManager(); });
       _bbLoadSharing();
     } else if(screen==='appearance'){
       if(titleEl) titleEl.textContent='Appearance';
@@ -4527,6 +4554,192 @@
         window.alert('Could not add that person. Please try again.');
       }
     });
+  }
+
+  // Relationships (Aug 16 2026) -- the Organization Board work: a real
+  // on-screen way to form and accept the parent-child adoption links
+  // that board_relations has supported since Session 214-215, so this
+  // stops being something only Claude can do from the database. Every
+  // write here goes through request_board_adoption/respond_board_
+  // adoption -- both SECURITY DEFINER functions that re-check ownership
+  // and the mutual-consent rule server-side, so this UI can't bypass
+  // anything the database itself wouldn't allow.
+  var _bbRelationsFullCache = null;
+  async function _bbLoadRelationsFull(force){
+    var sb=T().sb; if(!sb) return [];
+    if(!force && _bbRelationsFullCache) return _bbRelationsFullCache;
+    try{
+      var res=await sb.rpc('list_my_board_relations');
+      _bbRelationsFullCache = res.error ? [] : (res.data||[]);
+    }catch(e){ console.error('Briefing Board: could not load relationships', e); _bbRelationsFullCache=[]; }
+    return _bbRelationsFullCache;
+  }
+
+  function _bbRelBoardLabel(name, type){
+    return (name||'(untitled)')+' — '+_bbTypeLabel(type||'personal');
+  }
+
+  async function _bbRenderRelations(){
+    var body=document.getElementById('bb-relations-body'); if(!body) return;
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board){ body.innerHTML='Open a board first.'; return; }
+    var myUid=await _bbCurrentUserId();
+    var rel=await _bbLoadRelationsFull(true);
+
+    var parentRow=rel.filter(function(r){ return r.status==='approved' && r.child_board_id===board.id; })[0];
+    var childRows=rel.filter(function(r){ return r.status==='approved' && r.parent_board_id===board.id; });
+    // Every pending request touching ANY board this member owns, not
+    // just the one open right now -- Larry: this should also work as
+    // one place to see everything, not just a per-board popup.
+    var allIncoming=rel.filter(function(r){
+      if(r.status!=='pending') return false;
+      if(r.child_owner_id===myUid && !r.child_approved_by) return true;
+      if(r.parent_owner_id===myUid && !r.parent_approved_by) return true;
+      return false;
+    });
+    var allOutgoing=rel.filter(function(r){ return r.status==='pending' && r.requested_by===myUid && allIncoming.indexOf(r)===-1; });
+
+    var html='<div class="bb-links-empty" style="margin-bottom:10px">'+_esc(board.name||'This board')+' — '+_bbTypeLabel(board.board_type||'personal')+'</div>';
+
+    html+='<div class="bb-field"><label>Parent</label>'
+      +(parentRow ? '<div class="bb-cdrop-row active" style="cursor:default">'+_esc(_bbRelBoardLabel(parentRow.parent_board_name, parentRow.parent_board_type))+'</div>'
+                  : '<div class="bb-links-empty">No parent yet.</div>')
+      +'</div>';
+
+    html+='<div class="bb-field"><label>Children ('+childRows.length+')</label>'
+      +(childRows.length ? childRows.map(function(r){ return '<div class="bb-cdrop-row active" style="cursor:default">'+_esc(_bbRelBoardLabel(r.child_board_name, r.child_board_type))+'</div>'; }).join('')
+                          : '<div class="bb-links-empty">None yet.</div>')
+      +'</div>';
+
+    if(allIncoming.length){
+      html+='<div class="bb-field"><label>Waiting on you</label>'
+        +allIncoming.map(function(r){
+          var otherName=(r.child_owner_id===myUid) ? r.parent_board_name : r.child_board_name;
+          var thisName=(r.child_owner_id===myUid) ? r.child_board_name : r.parent_board_name;
+          return '<div class="bb-cdrop-row" style="cursor:default;display:flex;justify-content:space-between;align-items:center;gap:8px">'
+            +'<span>'+_esc(otherName)+' → '+_esc(thisName)+'</span>'
+            +'<span style="display:flex;gap:4px">'
+              +'<button class="bb-icon-btn bb-icon-btn-add" data-relid="'+r.id+'" data-approve="1" title="Approve">✓</button>'
+              +'<button class="bb-icon-btn bb-dotted-remove-btn" data-relid="'+r.id+'" data-approve="0" title="Decline">✕</button>'
+            +'</span></div>';
+        }).join('')
+        +'</div>';
+    }
+    if(allOutgoing.length){
+      html+='<div class="bb-field"><label>Waiting on them</label>'
+        +allOutgoing.map(function(r){ return '<div class="bb-cdrop-row" style="cursor:default">'+_esc(r.child_board_name)+' → '+_esc(r.parent_board_name)+'</div>'; }).join('')
+        +'</div>';
+    }
+
+    html+='<div class="bb-field"><label>Start a new relationship</label>'
+      +'<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
+        +'<select id="bb-rel-direction" style="flex:1;min-width:160px">'
+          +'<option value="child">Adopt another board as a child of this one</option>'
+          +'<option value="parent">Make this board a child of another</option>'
+        +'</select>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
+        +'<select id="bb-rel-source" style="flex:1;min-width:160px">'
+          +'<option value="own">One of my own boards</option>'
+          +'<option value="email">Someone else’s, by email</option>'
+        +'</select>'
+      +'</div>'
+      +'<div id="bb-rel-own-row" style="margin-bottom:6px">'
+        +'<select id="bb-rel-own-board" style="width:100%">'
+          +_bbBoards.filter(function(b){ return b.id!==board.id; }).map(function(b){ return '<option value="'+b.id+'">'+_esc(_bbRelBoardLabel(b.name,b.board_type))+'</option>'; }).join('')
+        +'</select>'
+      +'</div>'
+      +'<div id="bb-rel-email-row" style="display:none;margin-bottom:6px">'
+        +'<div style="display:flex;gap:6px;margin-bottom:6px">'
+          +'<input id="bb-rel-email" type="email" placeholder="Their email address" style="flex:1">'
+          +'<button class="bb-icon-btn bb-icon-btn-add" id="bb-rel-email-search" title="Find their boards">🔍</button>'
+        +'</div>'
+        +'<select id="bb-rel-email-board" style="width:100%" disabled><option>Search an email first</option></select>'
+      +'</div>'
+      +'<button class="bb-flag-btn" id="bb-rel-submit" style="width:100%">Send Request</button>'
+      +'<div id="bb-rel-msg" class="bb-links-empty" style="margin-top:6px"></div>'
+    +'</div>';
+
+    body.innerHTML=html;
+    _bbWireRelationsForm(board);
+    body.querySelectorAll('[data-relid]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var relId=btn.getAttribute('data-relid'), approve=btn.getAttribute('data-approve')==='1';
+        var sb=T().sb; if(!sb) return;
+        try{
+          var res=await sb.rpc('respond_board_adoption', {p_relation_id: relId, p_approve: approve});
+          if(res.error){ window.alert(res.error.message||'Could not respond to that request.'); return; }
+          await _bbLoadRelationsFull(true);
+          await _bbRenderRelations();
+          _bbRenderBoardPicker();
+        }catch(e){ console.error('Briefing Board: could not respond to relationship request', e); window.alert('Could not respond to that request.'); }
+      });
+    });
+  }
+
+  function _bbWireRelationsForm(board){
+    var sourceSel=document.getElementById('bb-rel-source');
+    var ownRow=document.getElementById('bb-rel-own-row');
+    var emailRow=document.getElementById('bb-rel-email-row');
+    if(sourceSel) sourceSel.addEventListener('change', function(){
+      var useEmail=sourceSel.value==='email';
+      if(ownRow) ownRow.style.display=useEmail?'none':'';
+      if(emailRow) emailRow.style.display=useEmail?'':'none';
+    });
+    var searchBtn=document.getElementById('bb-rel-email-search');
+    if(searchBtn) searchBtn.addEventListener('click', async function(){
+      var input=document.getElementById('bb-rel-email');
+      var email=input?input.value.trim().toLowerCase():'';
+      var sel=document.getElementById('bb-rel-email-board');
+      var msg=document.getElementById('bb-rel-msg');
+      if(!email || !sel) return;
+      var sb=T().sb; if(!sb) return;
+      try{
+        var res=await sb.rpc('find_member_boards_by_email', {p_email: email});
+        if(res.error || !res.data || !res.data.length){
+          sel.innerHTML='<option>No boards found for that email</option>'; sel.disabled=true;
+          if(msg) msg.textContent='No T2T member with an active board was found at that email.';
+          return;
+        }
+        sel.innerHTML=res.data.map(function(r){ return '<option value="'+r.board_id+'">'+_esc(r.board_name)+' — '+_esc(_bbTypeLabel(r.board_type))+' ('+_esc(r.member_name)+')</option>'; }).join('');
+        sel.disabled=false;
+        if(msg) msg.textContent='';
+      }catch(e){ console.error('Briefing Board: could not search for member boards', e); }
+    });
+    var submitBtn=document.getElementById('bb-rel-submit');
+    if(submitBtn) submitBtn.addEventListener('click', async function(){
+      var direction=document.getElementById('bb-rel-direction').value;
+      var useEmail=document.getElementById('bb-rel-source').value==='email';
+      var otherId=useEmail
+        ? (document.getElementById('bb-rel-email-board')||{}).value
+        : (document.getElementById('bb-rel-own-board')||{}).value;
+      var msg=document.getElementById('bb-rel-msg');
+      if(!otherId){ if(msg) msg.textContent='Pick a board first.'; return; }
+      var childId = direction==='child' ? otherId : board.id;
+      var parentId = direction==='child' ? board.id : otherId;
+      var sb=T().sb; if(!sb) return;
+      try{
+        var res=await sb.rpc('request_board_adoption', {p_child_board_id: childId, p_parent_board_id: parentId, p_relation_label: 'project of'});
+        if(res.error){ if(msg) msg.textContent=res.error.message||'Could not send that request.'; return; }
+        if(msg) msg.textContent = (res.data && res.data.status==='approved') ? 'Connected.' : 'Request sent -- waiting on the other Owner.';
+        await _bbLoadRelationsFull(true);
+        await _bbRenderRelations();
+        _bbRenderBoardPicker();
+      }catch(e){ console.error('Briefing Board: could not request relationship', e); if(msg) msg.textContent='Could not send that request.'; }
+    });
+  }
+
+  function openRelationsManager(){
+    _bbRenderRelations();
+    var ov=document.getElementById('bb-relations-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeRelationsManager(){
+    var ov=document.getElementById('bb-relations-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function wireRelationsManager(){
+    T().wire('bb-relations-close', closeRelationsManager);
+    T().wire('bb-relations-btn', openRelationsManager);
   }
 
   // Team Roster -- board-level roles (Owner/Leader/Facilitator/Member),
@@ -5313,6 +5526,7 @@
     wireKeyPicker();
     wireKeyLibManager();
     wireSharingManager();
+    wireRelationsManager();
     wireTeamRoster();
     wireChecklist();
     wireDatePickers();
