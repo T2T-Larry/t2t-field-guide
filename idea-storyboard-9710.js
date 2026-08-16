@@ -1686,7 +1686,15 @@
           var created=(_sboardMyRoots||[]).filter(function(r){ return r.id===newId; })[0];
           if(created) await _sboardSaveOrgName(trimmed0, created);
         }
-      }, 'Add a name', null, 'Remove this name');
+      }, 'Add a name', function(){
+        // (-) while browsing an empty Type, Aug 16 2026 -- same fix as
+        // the Briefing Board, same day: both (+) and (-) always show.
+        // Nothing to delete yet, so this backs out of the browse.
+        _sboardPendingTypeOverride=null;
+        _sboardRenderTypePicker();
+        _sboardRenderOrgName();
+        _sboardRenderTitlePicker();
+      }, 'Stop browsing this Type');
       if(trigger) trigger.textContent='Add a name';
       return;
     }

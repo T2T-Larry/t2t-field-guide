@@ -2129,7 +2129,16 @@
           var created=_bbBoards.filter(function(b){ return b.name===trimmed0 && b.board_type===typeVal; }).slice(-1)[0];
           if(created) await _bbSaveOrgName(trimmed0, created);
         }
-      }, 'Add a name', null, 'Remove this name');
+      }, 'Add a name', function(){
+        // (-) while browsing an empty Type, Aug 16 2026 -- Larry: both
+        // (+) and (-) always show, no exceptions for blank. Nothing to
+        // delete yet, so this backs out of the browse instead -- the
+        // screen returns to whichever real board was open before.
+        _bbPendingTypeOverride=null;
+        _bbRenderTypePicker();
+        _bbRenderOrgName();
+        _bbRenderBoardPicker();
+      }, 'Stop browsing this Type');
       if(trigger) trigger.textContent='Add a name';
       return;
     }
