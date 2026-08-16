@@ -2736,16 +2736,17 @@
   function _sboardOpenAddHeaderPrompt(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center;position:relative">'
+      +'<button class="sc-ov-btn" id="sb-addheader-close" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1">✕</button>'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">New header</div>'
       +'<input id="sb-addheader-input" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
       +'<div id="sb-addheader-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addheader-go" style="flex:1">Create</button><button class="sc-ov-btn" id="sb-addheader-cancel" style="flex:1">Cancel</button></div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addheader-go" style="flex:1">Create</button></div>'
       +'</div>';
     ov.classList.add('active');
     var input=document.getElementById('sb-addheader-input');
     if(input) setTimeout(function(){ input.focus(); }, 50);
-    T().wire('sb-addheader-cancel', closeSbDetail);
+    T().wire('sb-addheader-close', closeSbDetail);
     // Aug 7 2026 -- Larry filed two DOING cards after using this screen:
     // ENTER should act as Create, and Create/Save felt like it "did
     // nothing" and only Cancel actually closed the screen. Root cause of
@@ -2757,11 +2758,18 @@
     // triggers the same Create path, and the button visibly goes into a
     // "Saving..." state (and can't be double-clicked) the instant it's
     // pressed, so there's always something to see happening.
+    // Aug 16 2026 -- Larry: ENTER (or Create) shouldn't close this
+    // screen at all -- only the ✕ or clicking outside should. The old
+    // behavior closed on every successful save, which meant adding
+    // several headers in a row required reopening this prompt each
+    // time. Now a successful save clears the field, shows a quiet
+    // "Added" confirmation, and leaves the screen open so the next
+    // header name can be typed and Entered right away.
     var goBtn=document.getElementById('sb-addheader-go');
     async function _sbAddHeaderGo(){
       var errEl=document.getElementById('sb-addheader-err');
       var name=((input&&input.value)||'').trim();
-      if(!name){ if(errEl) errEl.textContent='Name can\'t be empty.'; return; }
+      if(!name){ if(errEl){ errEl.style.color='#b8562f'; errEl.textContent='Name can\'t be empty.'; } return; }
       if(goBtn){ goBtn.disabled=true; goBtn.textContent='Saving...'; }
       var _sb=T().sb;
       try{
@@ -2770,17 +2778,23 @@
         var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:T2TShared.currentTopicId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         _sboardAddRow(ins.data);
-        closeSbDetail();
         await renderSeaBoard(true);
         _sboardVerifyAdded(ins.data&&ins.data.id, 'Your new header "'+name+'"');
+        if(input){ input.value=''; input.focus(); }
+        if(errEl){ errEl.style.color='#3a7d3a'; errEl.textContent='Added "'+name+'" ✓'; }
+        if(goBtn){ goBtn.disabled=false; goBtn.textContent='Create'; }
       }catch(err){
-        if(errEl) errEl.textContent=err.message;
+        if(errEl){ errEl.style.color='#b8562f'; errEl.textContent=err.message; }
         if(goBtn){ goBtn.disabled=false; goBtn.textContent='Create'; }
       }
     }
     T().wire('sb-addheader-go', _sbAddHeaderGo);
     if(input) input.addEventListener('keydown', function(e){
       if(e.key==='Enter'){ e.preventDefault(); _sbAddHeaderGo(); }
+    });
+    if(input) input.addEventListener('input', function(){
+      var errEl=document.getElementById('sb-addheader-err');
+      if(errEl && errEl.style.color==='rgb(58, 125, 58)') errEl.textContent='';
     });
   }
 
