@@ -1987,7 +1987,7 @@
   // instead, ending in that literal dashed-circle (+). Mirrors the Idea
   // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
   function _bbCloseAllDropdowns(exceptMenuId){
-    ['bb-type-menu','bb-board-menu','bb-view-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-view-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2077,13 +2077,47 @@
   // into the same button. bb-type-trigger/bb-type-menu now live on the
   // eyebrow button itself (_bbRenderTypePicker, unchanged) -- this
   // function only handles the plain Name box underneath.
+  // Org Name, Aug 16 2026 -- Larry: Type/Project/View all open as a
+  // real dropdown when clicked, even empty ones (dashed-circle (+) at
+  // the bottom either way) -- Org Name alone jumped straight to a
+  // prompt() on click, no menu step first. Rebuilt on the same
+  // _bbRenderDropdown component as the other three, for that same
+  // consistent feel: the dropdown lists any other names already used
+  // on boards of this same Type (so a repeat name is one click, not
+  // retyped), the current name is highlighted if it's among them, (+)
+  // still opens the rename prompt (unchanged flow, just reached one
+  // click later now), and (-) clears the name off this board.
+  function _bbOrgNameOptions(board){
+    var seen={}, opts=[];
+    _bbBoards.forEach(function(b){
+      if((b.board_type||'personal')!==(board.board_type||'personal')) return;
+      var n=(b.org_name||'').trim();
+      if(!n || seen[n]) return;
+      seen[n]=true; opts.push({value:n, label:n});
+    });
+    return opts;
+  }
   function _bbRenderOrgName(){
-    var trigger=document.getElementById('bb-org-name-trigger');
     var board=_bbOrgContextBoard(_bbCurrentBoardId);
-    if(!trigger || !board) return;
-    var name=(board.org_name||'').trim();
-    trigger.textContent = name || 'Add a name';
-    trigger.onclick = function(e){ e.stopPropagation(); _bbEditOrgName(); };
+    if(!board) return;
+    var current=(board.org_name||'').trim();
+    var opts=_bbOrgNameOptions(board);
+    _bbRenderDropdown('bb-org-name-trigger','bb-org-name-menu', opts, current||null, function(newName){
+      _bbSaveOrgName(newName, board);
+    }, async function(){
+      var typeLabel=_bbTypeLabel(board.board_type||'personal');
+      var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', board.org_name||'');
+      if(name===null) return;
+      await _bbSaveOrgName(name, board);
+      _bbRenderOrgName();
+    }, 'Add a name', current ? function(){
+      _bbSaveOrgName('', board);
+    } : null, 'Remove this name');
+    // _bbRenderDropdown falls back to the first option's label when
+    // nothing matches currentValue -- not what an unnamed board should
+    // show, so this overrides the trigger text directly afterward.
+    var trigger=document.getElementById('bb-org-name-trigger');
+    if(trigger && !current) trigger.textContent='Add a name';
   }
   async function _bbSaveOrgName(value, boardOverride){
     var board=boardOverride || _bbOrgContextBoard(_bbCurrentBoardId);
@@ -2097,14 +2131,6 @@
       var upd=await sb.from('briefing_boards').update({org_name:trimmed||null}).eq('id', board.id);
       if(upd.error) console.error('Briefing Board: could not save Organization name', upd.error);
     }catch(e){ console.error('Briefing Board: could not save Organization name', e); }
-  }
-  async function _bbEditOrgName(){
-    var board=_bbOrgContextBoard(_bbCurrentBoardId);
-    if(!board){ window.alert('No board is open yet.'); return; }
-    var typeLabel=_bbTypeLabel(board.board_type||'personal');
-    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', board.org_name||'');
-    if(name===null) return;
-    await _bbSaveOrgName(name, board);
   }
 
   function _bbRenderTypePicker(){
@@ -2938,7 +2964,7 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
-              +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button></div>'
+              +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'

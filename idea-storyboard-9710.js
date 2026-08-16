@@ -535,7 +535,8 @@
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
       +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
-      +'<button type="button" class="sc-hdr-select" id="sc-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button>'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button>'
+      +'<div class="sc-cdrop-menu" id="sc-org-name-menu" hidden></div>'
       +'</div>'
       // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
       // Title now covers what it used to (picking which board is open),
@@ -1559,7 +1560,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-title-menu','sc-view-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -1643,14 +1644,40 @@
   // sc-type-trigger/sc-type-menu now live on the eyebrow button itself
   // (_sboardRenderTypePicker, unchanged) -- this function only handles
   // the plain Name box underneath.
+  // Org Name, Aug 16 2026 -- same fix as the Briefing Board, same day:
+  // Type/Title/View all open as a real dropdown, Org Name alone jumped
+  // straight to a prompt(). Rebuilt on _sboardRenderDropdown like the
+  // other three -- lists other names already used on roots of this
+  // same Type, (+) still opens the rename prompt, (-) clears the name.
+  function _sboardOrgNameOptions(match){
+    var seen={}, opts=[];
+    (_sboardMyRoots||[]).forEach(function(r){
+      if((r.board_type||'personal')!==(match.board_type||'personal')) return;
+      var n=(r.org_name||'').trim();
+      if(!n || seen[n]) return;
+      seen[n]=true; opts.push({value:n, label:n});
+    });
+    return opts;
+  }
   function _sboardRenderOrgName(){
-    var trigger=document.getElementById('sc-org-name-trigger');
     var curRoot=_sboardCurrentRootRow();
     var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
-    if(!trigger || !match) return;
-    var name=(match.org_name||'').trim();
-    trigger.textContent = name || 'Add a name';
-    trigger.onclick = function(e){ e.stopPropagation(); _sboardEditOrgName(); };
+    if(!match) return;
+    var current=(match.org_name||'').trim();
+    var opts=_sboardOrgNameOptions(match);
+    _sboardRenderDropdown('sc-org-name-trigger','sc-org-name-menu', opts, current||null, function(newName){
+      _sboardSaveOrgName(newName, match);
+    }, async function(){
+      var typeLabel=_sboardTypeLabel(match.board_type||'personal');
+      var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', match.org_name||'');
+      if(name===null) return;
+      await _sboardSaveOrgName(name, match);
+      _sboardRenderOrgName();
+    }, 'Add a name', current ? function(){
+      _sboardSaveOrgName('', match);
+    } : null, 'Remove this name');
+    var trigger=document.getElementById('sc-org-name-trigger');
+    if(trigger && !current) trigger.textContent='Add a name';
   }
   async function _sboardSaveOrgName(value, rootOverride){
     var curRoot=_sboardCurrentRootRow();
@@ -1665,15 +1692,6 @@
       var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', match.id);
       if(upd.error) console.error('Idea Board: could not save Organization name', upd.error);
     }catch(e){ console.error('Idea Board: could not save Organization name', e); }
-  }
-  async function _sboardEditOrgName(){
-    var curRoot=_sboardCurrentRootRow();
-    var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
-    if(!match){ window.alert('No board is open yet.'); return; }
-    var typeLabel=_sboardTypeLabel(match.board_type||'personal');
-    var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', match.org_name||'');
-    if(name===null) return;
-    await _sboardSaveOrgName(name, match);
   }
 
   function _sboardRenderTypePicker(){
