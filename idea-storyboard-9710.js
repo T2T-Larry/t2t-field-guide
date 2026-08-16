@@ -513,19 +513,21 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:40px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:84px">'
       // Header row, Aug 16 2026 -- Larry: "Center TOPIC horizontally. Move
       // parent to left of topic. Add field to right of topic for logo or
-      // artwork. To right of logo say IDEA in light blue letters." Switched
-      // from a single centered flex row (where Parent's own width silently
-      // dragged Topic off-center whenever Logo wasn't showing) to a 3-column
-      // grid: two equal 1fr side columns (Parent left, Logo+label right)
-      // flank a middle auto column (Topic) that's mathematically centered no
-      // matter what either side column contains. justify-self:start on both
-      // side columns keeps Parent and Logo+label hugging Topic's edges
-      // rather than drifting out to the header's far corners.
+      // artwork. To right of logo say IDEA in light blue letters." 3-column
+      // grid (1fr auto 1fr): Parent in the left column, Topic in the middle
+      // auto column -- mathematically centered in the header no matter what
+      // either side holds, since both side tracks are equal 1fr. The right
+      // 1fr column is left empty on purpose (no child placed in it) just to
+      // hold its share of width so Topic's centering math stays balanced.
       +'<div style="display:grid;grid-template-columns:1fr auto 1fr;column-gap:14px;align-items:start">'
-      +'<div style="display:flex;flex-direction:column;align-items:center;justify-self:start">'
+      // justify-self:end, not start -- Larry, same day: "parent went to the
+      // left of the screen" -- start put Parent at the FAR edge of its own
+      // wide 1fr column; end puts it at that column's near edge, right up
+      // against Topic, which is what "left of Topic" actually meant.
+      +'<div style="display:flex;flex-direction:column;align-items:center;justify-self:end">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Wish Tank</div>'
@@ -536,23 +538,27 @@
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
-      +'<div style="display:flex;align-items:center;gap:10px;justify-self:start">'
-      // Logo slot, Aug 13 2026 -- shown to the right of Topic only when the
-      // current Topic's linked project has a logo set. Hidden (display:none)
-      // until that data-wiring lands; layout reserved now so this doesn't
-      // require another header reshuffle later.
-      +'<div id="sc-logo-slot" style="display:none;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Logo</div>'
-      +'<img id="sc-logo-img" src="" alt="Logo" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#fff;border:1.5px solid #a9cce3;padding:2px">'
       +'</div>'
-      // Board-kind label, Aug 16 2026 -- Larry: to the right of Logo, says
-      // which Storyboard family this is. Always shows on this file (the
-      // Idea Storyboard), reading IDEA -- the Planning Storyboard (not yet
-      // built) gets the same slot/styling reading PLAN once it exists.
-      // Static per board type, not a live/editable field.
-      +'<div id="sc-board-kind-label" style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(13px * var(--fg-text-scale,1));letter-spacing:2px;color:#5b9bd5">IDEA</div>'
+      // Logo frame + IDEA label, Aug 16 2026 -- Larry: IDEA should read
+      // larger than Topic and sit half way from Topic to the header's right
+      // edge, with a large square rounded-corner logo frame in the room
+      // between them. Positioned independently of the grid above (percent
+      // offsets against the full header width, header-area is already
+      // position:relative): Topic sits at the header's horizontal center
+      // (50%), so half way from there to the right edge (100%) is 75% --
+      // that's IDEA's position. The logo frame sits at 62.5%, the midpoint
+      // of the room between Topic and IDEA. Both vertically centered on the
+      // header band via top:50% + translate. Logo's frame itself stays
+      // visible now (unlike the old small hidden slot) so the reserved
+      // space is visible even with no logo image loaded yet; the image
+      // inside stays display:none until real logo data-wiring lands.
+      +'<div id="sc-logo-slot" style="position:absolute;top:50%;left:62.5%;transform:translate(-50%,-50%);width:64px;height:64px;box-sizing:border-box;border-radius:16px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
+      +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
       +'</div>'
-      +'</div>'
+      // Board-kind label -- static per board type. This file (the Idea
+      // Storyboard) always reads IDEA; the not-yet-built Planning
+      // Storyboard gets the same slot/styling reading PLAN.
+      +'<div id="sc-board-kind-label" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(34px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap">IDEA</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
