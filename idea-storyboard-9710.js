@@ -1513,10 +1513,27 @@
   // field. Fixed by deriving straight from the real current board's own
   // board_type (same approach Briefing Board's _bbActiveBoardType/
   // _bbRenderTypePicker already used correctly), no DOM value in the loop.
+  // Org context, Aug 16 2026 -- mirrors the Briefing Board's
+  // _bbOrgContextBoard exactly (same bug, same fix, same day): a
+  // project's own Type/org_name were never really its own, they
+  // belong to whichever board it's an adopted project OF. Returns the
+  // root itself if it has no approved parent; otherwise the parent's
+  // own root row, resolved through briefing_board_id since that's
+  // what board_relations actually links on, not the ideas id.
+  function _sboardOrgContextRoot(rootId){
+    var roots=_sboardMyRoots||[];
+    var root=roots.filter(function(r){ return String(r.id)===String(rootId); })[0];
+    if(!root) return null;
+    if(!root.briefing_board_id) return root;
+    var parentRel=_sboardRelationsCache.filter(function(r){ return r.child_board_id===root.briefing_board_id; })[0];
+    if(!parentRel) return root;
+    var parentRoot=roots.filter(function(r){ return r.briefing_board_id===parentRel.parent_board_id; })[0];
+    return parentRoot || root;
+  }
+
   function _sboardActiveBoardType(){
     var curRoot=_sboardCurrentRootRow();
-    var roots=_sboardMyRoots||[];
-    var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
+    var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     return (match && match.board_type) || 'personal';
   }
 
@@ -1629,37 +1646,34 @@
   function _sboardRenderOrgName(){
     var trigger=document.getElementById('sc-org-name-trigger');
     var curRoot=_sboardCurrentRootRow();
-    var roots=_sboardMyRoots||[];
-    var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
+    var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     if(!trigger || !match) return;
     var name=(match.org_name||'').trim();
     trigger.textContent = name || 'Add a name';
     trigger.onclick = function(e){ e.stopPropagation(); _sboardEditOrgName(); };
   }
-  async function _sboardSaveOrgName(value){
+  async function _sboardSaveOrgName(value, rootOverride){
     var curRoot=_sboardCurrentRootRow();
-    if(!curRoot) return;
+    var match=rootOverride || (curRoot?_sboardOrgContextRoot(curRoot.id):null);
+    if(!match) return;
     var trimmed=(value||'').trim();
-    var roots=_sboardMyRoots||[];
-    var match=roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0];
-    if(match && (match.org_name||'')===trimmed) return;
-    if(match) match.org_name=trimmed;
+    if((match.org_name||'')===trimmed) return;
+    match.org_name=trimmed;
     _sboardRenderOrgName();
     var _sb=T().sb;
     try{
-      var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', curRoot.id);
+      var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', match.id);
       if(upd.error) console.error('Idea Board: could not save Organization name', upd.error);
     }catch(e){ console.error('Idea Board: could not save Organization name', e); }
   }
   async function _sboardEditOrgName(){
     var curRoot=_sboardCurrentRootRow();
-    var roots=_sboardMyRoots||[];
-    var match=curRoot?roots.filter(function(r){ return String(r.id)===String(curRoot.id); })[0]:null;
+    var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     if(!match){ window.alert('No board is open yet.'); return; }
     var typeLabel=_sboardTypeLabel(match.board_type||'personal');
     var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', match.org_name||'');
     if(name===null) return;
-    await _sboardSaveOrgName(name);
+    await _sboardSaveOrgName(name, match);
   }
 
   function _sboardRenderTypePicker(){
@@ -1733,8 +1747,11 @@
     var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
     // Adopted children ride along too, Aug 16 2026 -- Larry: PROJECT must
     // be identical no matter which screen a board is opened from. Same
-    // dedup-by-id as the Briefing Board's matching fix.
-    var children=_sboardChildBoardsOf(curRoot&&curRoot.briefing_board_id);
+    // dedup-by-id as the Briefing Board's matching fix. Resolved off the
+    // org-context root (later same day), not the literally-open one, so
+    // opening a project shows the same family list as opening its parent.
+    var contextRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
+    var children=_sboardChildBoardsOf(contextRoot&&contextRoot.briefing_board_id);
     children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
     var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
     _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
