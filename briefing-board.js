@@ -1441,6 +1441,30 @@
         });
         menu.appendChild(row);
       });
+      // (+)/(-) pair, Aug 16 2026 (Larry): every other field's eyebrow
+      // dropdown shows the pair together even when there's nothing to
+      // add or remove yet, so VIEW shouldn't be the one exception. A
+      // personal board's View is just an origin filter, not a Cast --
+      // there's genuinely nothing to add or remove here yet, so both
+      // are shown as stubs (same posture as Project Hub's Archive/Trash
+      // buttons: visible on purpose, plain "not built yet" message).
+      var pAddRow=document.createElement('div');
+      pAddRow.className='bb-cdrop-addrow';
+      var pAddBtn=document.createElement('button');
+      pAddBtn.type='button'; pAddBtn.className='bb-dotted-add-btn'; pAddBtn.title='Add'; pAddBtn.textContent='+';
+      pAddBtn.addEventListener('click', function(e){
+        e.stopPropagation(); menu.hidden=true;
+        window.alert('There\'s nothing to add to a personal board\'s View yet -- it just filters by where a card came from.');
+      });
+      var pRemoveBtn=document.createElement('button');
+      pRemoveBtn.type='button'; pRemoveBtn.className='bb-dotted-add-btn bb-dotted-remove-btn'; pRemoveBtn.title='Remove';
+      pRemoveBtn.textContent='−';
+      pRemoveBtn.addEventListener('click', function(e){
+        e.stopPropagation(); menu.hidden=true;
+        window.alert('There\'s nothing to remove from a personal board\'s View yet -- it just filters by where a card came from.');
+      });
+      pAddRow.appendChild(pAddBtn); pAddRow.appendChild(pRemoveBtn);
+      menu.appendChild(pAddRow);
       _bbWireViewTrigger(trigger, menu);
       return;
     }
@@ -1486,6 +1510,15 @@
       addBtn.type='button'; addBtn.className='bb-dotted-add-btn';
       addBtn.title='Add a Cast Member'; addBtn.textContent='+';
       addRow.appendChild(addBtn);
+      // (-) Remove a Cast Member, Aug 16 2026 (Larry): the mirror of
+      // (+) -- pick someone off this board's own roster (never the
+      // Owner, who isn't a board_members row and can't be removed this
+      // way) and take them off the team. Same dashed-circle-pair
+      // treatment as every other field's eyebrow dropdown.
+      var removeBtn=document.createElement('button');
+      removeBtn.type='button'; removeBtn.className='bb-dotted-add-btn bb-dotted-remove-btn';
+      removeBtn.title='Remove a Cast Member'; removeBtn.textContent='−';
+      addRow.appendChild(removeBtn);
       var addForm=document.createElement('div');
       addForm.className='bb-view-addform'; addForm.style.display='none';
       addForm.innerHTML='<input type="text" id="bb-view-add-email" placeholder="Type a name or email..." autocomplete="off">'
@@ -1495,6 +1528,7 @@
       addForm.addEventListener('click', function(e){ e.stopPropagation(); });
       addBtn.addEventListener('click', function(e){
         e.stopPropagation();
+        removeForm.style.display='none';
         var opening=addForm.style.display==='none';
         addForm.style.display=opening?'block':'none';
         if(opening){ _bbFetchAllMembers().then(function(){ _bbRenderMemberSuggestions('', 'bb-view-add-suggest'); }); }
@@ -1510,8 +1544,38 @@
       });
       var addConfirmBtn=addForm.querySelector('#bb-view-add-confirm');
       addConfirmBtn.addEventListener('click', function(){ _bbViewConfirmAddMember(addInput.value.trim()); });
+
+      var removable=rows.filter(function(m){ return !m.isOwner; });
+      var removeForm=document.createElement('div');
+      removeForm.className='bb-view-addform bb-view-removeform'; removeForm.style.display='none';
+      if(!removable.length){
+        removeForm.innerHTML='<div class="bb-view-remove-empty">No one to remove yet.</div>';
+      } else {
+        removeForm.innerHTML=removable.map(function(m){
+          return '<div class="bb-view-remove-row" data-uid="'+_esc(m.user_id)+'">'
+            +'<span>'+_esc(m.name||m.email||'')+'</span>'
+            +'<button type="button" class="bb-flag-btn bb-view-remove-confirm" data-uid="'+_esc(m.user_id)+'" style="background:#a3372b;color:#fff;border-color:#a3372b;flex:0 0 auto;padding:3px 8px">Remove</button>'
+          +'</div>';
+        }).join('')+'<div id="bb-view-remove-error" class="bb-view-add-error" style="display:none"></div>';
+      }
+      removeForm.addEventListener('click', function(e){
+        e.stopPropagation();
+        var btn=e.target.closest('.bb-view-remove-confirm'); if(!btn) return;
+        var uid=btn.getAttribute('data-uid');
+        var row=btn.closest('.bb-view-remove-row');
+        var name=row ? row.querySelector('span').textContent : 'this person';
+        if(!window.confirm('Remove '+name+' from this Cast?')) return;
+        _bbViewConfirmRemoveMember(uid);
+      });
+      removeBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        addForm.style.display='none';
+        var opening=removeForm.style.display==='none';
+        removeForm.style.display=opening?'block':'none';
+      });
       menu.appendChild(addRow);
       menu.appendChild(addForm);
+      menu.appendChild(removeForm);
     }
 
     _bbWireViewTrigger(trigger, menu);
@@ -2764,6 +2828,10 @@
       +'.bb-view-addform{padding:8px 6px 4px;border-top:1px solid var(--bb-bg);margin-top:2px}'
       +'.bb-view-addform input{width:100%;box-sizing:border-box;font-size:calc(11px * var(--fg-text-scale,1));padding:5px 7px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;color:var(--bb-ink);font-family:var(--bb-body-font);margin-bottom:5px}'
       +'.bb-view-addform .tm-add-suggest{position:static;box-shadow:none;margin-bottom:5px}'
+      +'.bb-view-removeform{padding:6px}'
+      +'.bb-view-remove-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink)}'
+      +'.bb-view-remove-row:not(:last-child){border-bottom:1px solid var(--bb-bg)}'
+      +'.bb-view-remove-empty{font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);padding:4px 2px}'
       +'.bb-view-add-confirm{width:100%;box-sizing:border-box;margin-bottom:4px}'
       +'.bb-view-add-error{font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b;margin-top:2px}'
       // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
@@ -5106,6 +5174,27 @@
       if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
+  }
+
+  async function _bbTeamRemoveMember(uid){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board) return {ok:false,msg:'No board selected.'};
+    if(String(uid)===String(board.user_id)) return {ok:false,msg:'The Owner can\'t be removed.'};
+    var sb=T().sb; if(!sb) return {ok:false,msg:'Not connected.'};
+    try{
+      var del=await sb.from('board_members').delete().eq('board_id', board.id).eq('user_id', uid);
+      if(del.error) return {ok:false,msg:del.error.message||'Could not remove them.'};
+      return {ok:true};
+    }catch(e){ return {ok:false,msg:'Could not remove them.'}; }
+  }
+
+  async function _bbViewConfirmRemoveMember(uid){
+    var errEl=document.getElementById('bb-view-remove-error');
+    var res=await _bbTeamRemoveMember(uid);
+    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+    if(errEl) errEl.style.display='none';
+    await _bbLoadRoster();
+    await _bbRenderSourcePicker();
   }
 
   function openTeamRoster(){

@@ -340,6 +340,10 @@
         +'.sc-view-addform input{width:100%;box-sizing:border-box;font-size:calc(11px * var(--fg-text-scale,1));padding:5px 7px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.08);color:#fff;font-family:inherit;margin-bottom:5px}'
         +'.sc-view-addform input::placeholder{color:rgba(255,255,255,.55)}'
         +'.sc-view-addform .tm-add-suggest{position:static;box-shadow:none;margin-bottom:5px}'
+        +'.sc-view-removeform{padding:6px}'
+        +'.sc-view-remove-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px;font-size:calc(11px * var(--fg-text-scale,1));color:#fff}'
+        +'.sc-view-remove-row:not(:last-child){border-bottom:1px solid rgba(255,255,255,.14)}'
+        +'.sc-view-remove-empty{font-size:calc(11px * var(--fg-text-scale,1));color:rgba(255,255,255,.65);padding:4px 2px}'
         +'.sc-view-add-confirm{width:100%;box-sizing:border-box}'
         +'.sc-view-add-error{font-size:calc(10px * var(--fg-text-scale,1));color:#f0b090;margin-top:2px}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
@@ -1981,6 +1985,14 @@
       addBtn.type='button'; addBtn.className='sc-dotted-add-btn';
       addBtn.title='Add a Cast Member'; addBtn.textContent='+';
       addRow.appendChild(addBtn);
+      // (-) Remove a Cast Member, Aug 16 2026 (Larry): the mirror of
+      // (+), same pattern as the Briefing Board's own VIEW dropdown --
+      // pick someone off this project's roster (never the Owner) and
+      // take them off the team.
+      var removeBtn=document.createElement('button');
+      removeBtn.type='button'; removeBtn.className='sc-dotted-add-btn sc-dotted-remove-btn';
+      removeBtn.title='Remove a Cast Member'; removeBtn.textContent='−';
+      addRow.appendChild(removeBtn);
       var addForm=document.createElement('div');
       addForm.className='sc-view-addform'; addForm.style.display='none';
       addForm.innerHTML='<input type="text" id="sc-view-add-email" placeholder="Type a name or email..." autocomplete="off">'
@@ -1990,6 +2002,7 @@
       addForm.addEventListener('click', function(e){ e.stopPropagation(); });
       addBtn.addEventListener('click', function(e){
         e.stopPropagation();
+        removeForm.style.display='none';
         var opening=addForm.style.display==='none';
         addForm.style.display=opening?'block':'none';
         if(opening){ _tmFetchAllMembers().then(function(){ _tmRenderMemberSuggestions(projectRow, '', 'sc-view-add-suggest'); }); }
@@ -2005,8 +2018,38 @@
       });
       var addConfirmBtn=addForm.querySelector('#sc-view-add-confirm');
       addConfirmBtn.addEventListener('click', function(){ _sboardViewConfirmAddMember(projectRow, addInput.value.trim()); });
+
+      var removable=rows.filter(function(m){ return !m.isOwner; });
+      var removeForm=document.createElement('div');
+      removeForm.className='sc-view-addform sc-view-removeform'; removeForm.style.display='none';
+      if(!removable.length){
+        removeForm.innerHTML='<div class="sc-view-remove-empty">No one to remove yet.</div>';
+      } else {
+        removeForm.innerHTML=removable.map(function(m){
+          return '<div class="sc-view-remove-row" data-uid="'+_esc9710(m.user_id)+'">'
+            +'<span>'+_esc9710(m.name||m.email||'')+'</span>'
+            +'<button type="button" class="sc-ov-btn save sc-view-remove-confirm" data-uid="'+_esc9710(m.user_id)+'" style="background:#a3372b;border-color:#a3372b;flex:0 0 auto;padding:3px 8px">Remove</button>'
+          +'</div>';
+        }).join('')+'<div id="sc-view-remove-error" class="sc-view-add-error" style="display:none"></div>';
+      }
+      removeForm.addEventListener('click', function(e){
+        e.stopPropagation();
+        var btn=e.target.closest('.sc-view-remove-confirm'); if(!btn) return;
+        var uid=btn.getAttribute('data-uid');
+        var row=btn.closest('.sc-view-remove-row');
+        var name=row ? row.querySelector('span').textContent : 'this person';
+        if(!window.confirm('Remove '+name+' from this Cast?')) return;
+        _sboardViewConfirmRemoveMember(projectRow, uid);
+      });
+      removeBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        addForm.style.display='none';
+        var opening=removeForm.style.display==='none';
+        removeForm.style.display=opening?'block':'none';
+      });
       menu.appendChild(addRow);
       menu.appendChild(addForm);
+      menu.appendChild(removeForm);
     }
 
     if(menu.parentElement!==document.body) document.body.appendChild(menu);
@@ -4541,6 +4584,26 @@
       if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
+  }
+
+  async function _tmRemoveMember(projectRow, uid){
+    if(!projectRow) return {ok:false,msg:'No project selected.'};
+    if(_tmRosterOwner && String(uid)===String(_tmRosterOwner.user_id)) return {ok:false,msg:'The Owner can\'t be removed.'};
+    var _sb=T().sb; if(!_sb) return {ok:false,msg:'Not connected.'};
+    try{
+      var del=await _sb.from('storyboard_members').delete().eq('project_id', projectRow.id).eq('user_id', uid);
+      if(del.error) return {ok:false,msg:del.error.message||'Could not remove them.'};
+      return {ok:true};
+    }catch(e){ return {ok:false,msg:'Could not remove them.'}; }
+  }
+
+  async function _sboardViewConfirmRemoveMember(projectRow, uid){
+    var errEl=document.getElementById('sc-view-remove-error');
+    var res=await _tmRemoveMember(projectRow, uid);
+    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+    if(errEl) errEl.style.display='none';
+    await _tmLoadRoster(projectRow);
+    _sboardRenderPersonFilterPicker(projectRow);
   }
 
   function _sboardOpenTeam(scopeRow, backFn){
