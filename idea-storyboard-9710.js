@@ -513,7 +513,7 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:92px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:70px">'
       // Header row, Aug 16 2026 -- Larry: "Center TOPIC horizontally. Move
       // parent to left of topic. Add field to right of topic for logo or
       // artwork. To right of logo say IDEA in light blue letters." 3-column
@@ -558,9 +558,9 @@
       // upload/storage wiring is a separate build, not just layout). Once
       // an image is actually loaded, the (+) can be swapped out/hidden;
       // not needed until upload lands for real.
-      +'<div style="position:absolute;top:10px;left:62.5%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">'
+      +'<div style="position:absolute;top:10px;left:57%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Logo</div>'
-      +'<div id="sc-logo-slot" style="position:relative;width:64px;height:64px;box-sizing:border-box;border-radius:16px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
+      +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
       +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
       +'</div>'
@@ -571,7 +571,7 @@
       // look (Larry, same day: "make IDEA look raised") via a light
       // highlight above + dark shadow below -- classic emboss technique,
       // no new color needed.
-      +'<div id="sc-board-kind-label" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(34px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5)">IDEA</div>'
+      +'<div id="sc-board-kind-label" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5)">IDEA</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
