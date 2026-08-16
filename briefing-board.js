@@ -1929,13 +1929,32 @@
     await _bbSwitchToBoard((match||fallback).id);
   }
 
+  // Org context, Aug 16 2026 -- Larry: opening Field Guide flipped the
+  // Organization eyebrow to "Project" and asked him to name a project,
+  // instead of showing T2T. A child board's Organization identity
+  // (its Type and its org_name) was never really its own -- it belongs
+  // to whichever board it's an adopted project OF. This resolves
+  // "which board's identity should the eyebrow actually show right
+  // now": itself, if it has no approved parent; otherwise its
+  // immediate parent. Falls back to the board itself if the parent
+  // isn't loaded (shouldn't happen for a traveler's own boards, but
+  // never leave the eyebrow with nothing to show).
+  function _bbOrgContextBoard(boardId){
+    var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
+    if(!board) return null;
+    var parentRel=_bbRelationsCache.filter(function(r){ return r.child_board_id===boardId; })[0];
+    if(!parentRel) return board;
+    var parent=_bbBoards.filter(function(b){ return b.id===parentRel.parent_board_id; })[0];
+    return parent || board;
+  }
+
   // NAME/Title's list is scoped to whichever TYPE is currently active.
-  // Derived straight from the real current board's own board_type (Aug
-  // 13 2026: same fix applied to the Idea Board's equivalent function,
-  // which had the bug this one was written correctly to avoid in the
-  // first place -- no DOM value read in the loop).
+  // Derived from the org-context board's board_type (Aug 13 2026: same
+  // fix applied to the Idea Board's equivalent function; Aug 16 2026:
+  // routed through _bbOrgContextBoard so a project shows its parent's
+  // Type, not a Type of its own).
   function _bbActiveBoardType(){
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var board=_bbOrgContextBoard(_bbCurrentBoardId);
     return (board && board.board_type) || 'personal';
   }
 
@@ -2060,14 +2079,14 @@
   // function only handles the plain Name box underneath.
   function _bbRenderOrgName(){
     var trigger=document.getElementById('bb-org-name-trigger');
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var board=_bbOrgContextBoard(_bbCurrentBoardId);
     if(!trigger || !board) return;
     var name=(board.org_name||'').trim();
     trigger.textContent = name || 'Add a name';
     trigger.onclick = function(e){ e.stopPropagation(); _bbEditOrgName(); };
   }
-  async function _bbSaveOrgName(value){
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+  async function _bbSaveOrgName(value, boardOverride){
+    var board=boardOverride || _bbOrgContextBoard(_bbCurrentBoardId);
     if(!board) return;
     var trimmed=(value||'').trim();
     if((board.org_name||'')===trimmed) return;
@@ -2080,12 +2099,12 @@
     }catch(e){ console.error('Briefing Board: could not save Organization name', e); }
   }
   async function _bbEditOrgName(){
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var board=_bbOrgContextBoard(_bbCurrentBoardId);
     if(!board){ window.alert('No board is open yet.'); return; }
     var typeLabel=_bbTypeLabel(board.board_type||'personal');
     var name=window.prompt('Name for this '+typeLabel+' (e.g. "Accounting" or "Denver Broncos"):', board.org_name||'');
     if(name===null) return;
-    await _bbSaveOrgName(name);
+    await _bbSaveOrgName(name, board);
   }
 
   function _bbRenderTypePicker(){
@@ -2143,7 +2162,12 @@
     // T2T should list Field Guide and Professional History as its
     // projects, not just other boards that happen to share T2T's own
     // Type. Deduped by id in case a child's own Type already matched.
-    var children=_bbChildBoardsOf(_bbCurrentBoardId);
+    // Aug 16 2026 (later same day) -- resolved off the org-context
+    // board, not the literally-open one, so opening Field Guide shows
+    // the same T2T-family list as opening T2T itself, instead of an
+    // empty "children of Field Guide" list.
+    var contextBoard=_bbOrgContextBoard(_bbCurrentBoardId);
+    var children=_bbChildBoardsOf(contextBoard ? contextBoard.id : _bbCurrentBoardId);
     children.forEach(function(c){ if(!filtered.some(function(b){ return b.id===c.id; })) filtered=filtered.concat([c]); });
     var opts=filtered.map(function(b){ return {value:b.id, label:b.name||'Untitled Board'}; });
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, _bbCurrentBoardId, async function(id){
