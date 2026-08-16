@@ -513,7 +513,7 @@
     }
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:84px">'
+      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:92px">'
       // Header row, Aug 16 2026 -- Larry: "Center TOPIC horizontally. Move
       // parent to left of topic. Add field to right of topic for logo or
       // artwork. To right of logo say IDEA in light blue letters." 3-column
@@ -547,18 +547,31 @@
       // position:relative): Topic sits at the header's horizontal center
       // (50%), so half way from there to the right edge (100%) is 75% --
       // that's IDEA's position. The logo frame sits at 62.5%, the midpoint
-      // of the room between Topic and IDEA. Both vertically centered on the
-      // header band via top:50% + translate. Logo's frame itself stays
-      // visible now (unlike the old small hidden slot) so the reserved
-      // space is visible even with no logo image loaded yet; the image
-      // inside stays display:none until real logo data-wiring lands.
-      +'<div id="sc-logo-slot" style="position:absolute;top:50%;left:62.5%;transform:translate(-50%,-50%);width:64px;height:64px;box-sizing:border-box;border-radius:16px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
+      // of the room between Topic and IDEA.
+      //
+      // Same day, follow-up -- Larry: "(+) in the center of logo area?
+      // Eyebrow LOGO above it?" Both yes. Logo frame now top-anchored with
+      // its own LOGO eyebrow, same pattern as Parent/Topic, instead of
+      // floating centered on the header band. A dashed-circle (+) sits in
+      // the frame's middle -- same .sc-dotted-add-btn shape used for every
+      // other add on this board -- wired to a toast for now (real
+      // upload/storage wiring is a separate build, not just layout). Once
+      // an image is actually loaded, the (+) can be swapped out/hidden;
+      // not needed until upload lands for real.
+      +'<div style="position:absolute;top:10px;left:62.5%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">'
+      +'<div class="sc-hdr-eyebrow">Logo</div>'
+      +'<div id="sc-logo-slot" style="position:relative;width:64px;height:64px;box-sizing:border-box;border-radius:16px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
+      +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
+      +'</div>'
       +'</div>'
       // Board-kind label -- static per board type. This file (the Idea
       // Storyboard) always reads IDEA; the not-yet-built Planning
-      // Storyboard gets the same slot/styling reading PLAN.
-      +'<div id="sc-board-kind-label" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(34px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap">IDEA</div>'
+      // Storyboard gets the same slot/styling reading PLAN. Raised/embossed
+      // look (Larry, same day: "make IDEA look raised") via a light
+      // highlight above + dark shadow below -- classic emboss technique,
+      // no new color needed.
+      +'<div id="sc-board-kind-label" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(34px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5)">IDEA</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
@@ -627,6 +640,10 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
+    // Logo/artwork (+) , Aug 16 2026 -- Larry: '(+) in the center of logo
+    // area?' Real upload/storage isn't built yet, so this just lets a
+    // traveler know it's coming rather than doing nothing when clicked.
+    T().wire('sc-logo-add-btn', function(){ _sboardShowToast('Logo & artwork upload coming soon'); });
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
     // PROJECT") -- Title now covers picking a board. Renaming it is a
     // double-click, same as Topic's own corner-flip: opens that board's
