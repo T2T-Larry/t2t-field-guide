@@ -2248,6 +2248,13 @@
       children.forEach(function(c){ if(!filtered.some(function(b){ return b.id===c.id; })) filtered=filtered.concat([c]); });
     }
     var opts=filtered.map(function(b){ return {value:b.id, label:b.name||'Untitled Board'}; });
+    // (-) on the PROJECT field, Aug 16 2026 -- Larry: "how do we handle
+    // a (-) with a full project? Sounds like we need a hub screen, 3
+    // choices even if they do not all work yet." Only offered when a
+    // real, currently-open board is actually showing in this list --
+    // not while browsing an empty Type (nothing real to remove).
+    var currentBoardForRemove=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var canRemoveBoard=!_bbPendingTypeOverride && currentBoardForRemove && filtered.some(function(b){ return b.id===currentBoardForRemove.id; });
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, _bbCurrentBoardId, async function(id){
       await _bbSwitchToBoard(id);
     }, async function(){
@@ -2255,7 +2262,9 @@
       var name=window.prompt('Name for the new '+typeLabel+' board:');
       if(!name || !name.trim()) return;
       await _bbCreateBoard(name.trim(), _bbActiveBoardType());
-    }, 'Add a board');
+    }, 'Add a board', canRemoveBoard ? function(){
+      openProjectHub(currentBoardForRemove.id);
+    } : null, 'Remove this project');
   }
 
   // Shared by both Title's own (+) and Type's "no boards of this type
@@ -3304,6 +3313,33 @@
       fg.appendChild(relOv);
       relOv.addEventListener('click', function(e){ if(e.target===relOv) closeRelationsManager(); });
       _bbMakeDraggable(relOv.querySelector('.bb-overlay-card'), relOv.querySelector('.bb-overlay-head'));
+    }
+    // Project Hub (Aug 16 2026) -- Larry: the PROJECT field's (-) needs
+    // to do something real for a project with actual content in it, not
+    // just delete it outright. Three choices, shown together even
+    // though only Move is wired up yet -- Larry's call: "3 choices even
+    // if they do not all work yet." Move detaches this project from its
+    // current parent (if any) via detach_board_relation, then opens the
+    // existing Relationships overlay so a new parent can be requested
+    // right away. Archive/Trash are stubs for now -- board-level
+    // archive/trash don't exist yet, only the card-level versions do.
+    if(!document.getElementById('bb-project-hub-overlay')){
+      var phOv=document.createElement('div');
+      phOv.id='bb-project-hub-overlay'; phOv.className='bb-overlay';
+      phOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Remove Project</span><button class="bb-close" id="bb-hub-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-links-empty" id="bb-hub-board-label" style="margin-bottom:10px"></div>'
+            +'<button class="jb bb-hx-landing-btn" id="bb-hub-move-btn" style="width:100%">🔀 Move to another parent</button>'
+            +'<button class="jb bb-hx-landing-btn" id="bb-hub-archive-btn" style="width:100%">📁 Archive this project</button>'
+            +'<button class="jb bb-hx-landing-btn" id="bb-hub-trash-btn" style="width:100%">🗑️ Trash this project</button>'
+            +'<div id="bb-hub-msg" class="bb-links-empty" style="margin-top:6px"></div>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(phOv);
+      phOv.addEventListener('click', function(e){ if(e.target===phOv) closeProjectHub(); });
+      _bbMakeDraggable(phOv.querySelector('.bb-overlay-card'), phOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-hx-overlay')){
       var hxOv=document.createElement('div');
@@ -4844,6 +4880,60 @@
     T().wire('bb-relations-btn', openRelationsManager);
   }
 
+  // Project Hub, Aug 16 2026 -- backs the PROJECT field's (-) button.
+  // Reloads the approved-relations cache fresh (not the cached
+  // _bbRelationsFullCache) so Move always sees the true current parent
+  // even if something changed in another tab.
+  var _bbProjectHubBoardId = null;
+  async function _bbReloadRelationsCache(){
+    var sb=T().sb; if(!sb) return;
+    try{
+      var relRes=await sb.from('board_relations').select('*').eq('status','approved');
+      _bbRelationsCache=relRes.error?_bbRelationsCache:(relRes.data||[]);
+    }catch(e){ console.error('Briefing Board: could not reload board relations', e); }
+  }
+  function openProjectHub(boardId){
+    _bbProjectHubBoardId = boardId;
+    var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
+    var label=document.getElementById('bb-hub-board-label');
+    if(label) label.textContent = board ? ((board.name||'This project')+' — '+_bbTypeLabel(board.board_type||'personal')) : 'This project';
+    var msg=document.getElementById('bb-hub-msg'); if(msg) msg.textContent='';
+    var ov=document.getElementById('bb-project-hub-overlay');
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+  }
+  function closeProjectHub(){
+    var ov=document.getElementById('bb-project-hub-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function wireProjectHub(){
+    T().wire('bb-hub-close', closeProjectHub);
+    T().wire('bb-hub-move-btn', async function(){
+      var boardId=_bbProjectHubBoardId; if(!boardId) return;
+      var msg=document.getElementById('bb-hub-msg');
+      var parentRel=_bbRelationsCache.filter(function(r){ return r.child_board_id===boardId; })[0];
+      if(parentRel){
+        var sb=T().sb; if(!sb) return;
+        try{
+          var res=await sb.rpc('detach_board_relation', {p_relation_id: parentRel.id});
+          if(res.error){ if(msg) msg.textContent=res.error.message||'Could not detach from the current parent.'; return; }
+        }catch(e){ console.error('Briefing Board: could not detach board relation', e); if(msg) msg.textContent='Could not detach from the current parent.'; return; }
+        await _bbReloadRelationsCache();
+        _bbRelationsFullCache=null;
+        _bbRenderBoardPicker();
+        _bbRenderOrgName();
+      }
+      closeProjectHub();
+      openRelationsManager();
+    });
+    T().wire('bb-hub-archive-btn', function(){
+      var msg=document.getElementById('bb-hub-msg');
+      if(msg) msg.textContent='Archiving a whole project isn\'t built yet -- for now you can archive individual cards inside it.';
+    });
+    T().wire('bb-hub-trash-btn', function(){
+      var msg=document.getElementById('bb-hub-msg');
+      if(msg) msg.textContent='Trashing a whole project isn\'t built yet -- for now you can trash individual cards inside it.';
+    });
+  }
+
   // Team Roster -- board-level roles (Owner/Leader/Facilitator/Member),
   // separate from the Sharing list above (Sharing is just "who can see
   // this board," Team Roster is "what's their role on it"). Owner is
@@ -5629,6 +5719,7 @@
     wireKeyLibManager();
     wireSharingManager();
     wireRelationsManager();
+    wireProjectHub();
     wireTeamRoster();
     wireChecklist();
     wireDatePickers();

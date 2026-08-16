@@ -1814,6 +1814,12 @@
       children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
     }
     var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
+    // (-) on the PROJECT field, Aug 16 2026 -- mirrors the Briefing
+    // Board's own hub exactly (Larry: "3 choices even if they do not
+    // all work yet"). Only offered when a real, currently-open root is
+    // actually showing in this list -- not while browsing an empty
+    // Type.
+    var canRemoveRoot=!_sboardPendingTypeOverride && curRoot && filtered.some(function(r){ return r.id===curRoot.id; });
     _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
       _sboardSwitchToRootBoard(id);
     }, async function(){
@@ -1822,7 +1828,68 @@
       if(!name || !name.trim()) return;
       var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
       if(newId) _sboardSwitchToRootBoard(newId);
-    }, 'Add a board');
+    }, 'Add a board', canRemoveRoot ? function(){
+      openSbProjectHub(curRoot.id);
+    } : null, 'Remove this project');
+  }
+
+  // Project Hub, Aug 16 2026 -- Storyboard mirror of the Briefing
+  // Board's own hub. Reuses the shared one-off popup shell
+  // (#sb-detail-overlay/closeSbDetail) rather than a dedicated overlay,
+  // matching how every other small Storyboard dialog is built. Move
+  // detaches this project from its current parent via
+  // detach_board_relation (same RPC, same shared board_relations data
+  // as the Briefing Board) -- but the Storyboard doesn't have its own
+  // Relationships manager to pick a *new* parent yet, so Move hands
+  // that step off to the Briefing Board's existing 🔗 Relationships
+  // button rather than duplicating that whole request/approve UI here.
+  // Archive/Trash are stubs, same as the Briefing Board's.
+  async function _sboardReloadRelationsCache(){
+    var sb=T().sb; if(!sb) return;
+    try{
+      var relRes=await sb.from('board_relations').select('*').eq('status','approved');
+      _sboardRelationsCache=relRes.error?_sboardRelationsCache:(relRes.data||[]);
+    }catch(e){ console.warn('Idea Board: could not reload board relations', e); }
+  }
+  function openSbProjectHub(rootId){
+    var root=(_sboardMyRoots||[]).filter(function(r){ return r.id===rootId; })[0];
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Remove Project</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">'+_sboardEsc(root?(root.text_content||'This project'):'This project')+'</div>'
+      +'<button class="sc-ov-btn" id="sb-hub-move-btn" style="width:100%;margin-bottom:8px;padding:10px">🔀 Move to another parent</button>'
+      +'<button class="sc-ov-btn" id="sb-hub-archive-btn" style="width:100%;margin-bottom:8px;padding:10px">📁 Archive this project</button>'
+      +'<button class="sc-ov-btn" id="sb-hub-trash-btn" style="width:100%;margin-bottom:8px;padding:10px">🗑️ Trash this project</button>'
+      +'<div id="sb-hub-msg" style="font-size:calc(10px * var(--fg-text-scale,1));color:#5b9bd5;margin-bottom:8px;min-height:12px"></div>'
+      +'<button class="sc-ov-btn" id="sb-hub-close" style="width:100%">Close</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-hub-close', closeSbDetail);
+    T().wire('sb-hub-move-btn', async function(){
+      var msg=document.getElementById('sb-hub-msg');
+      var bbId=root&&root.briefing_board_id;
+      var parentRel=bbId?_sboardRelationsCache.filter(function(r){ return r.child_board_id===bbId; })[0]:null;
+      if(parentRel){
+        var sb=T().sb; if(!sb) return;
+        try{
+          var res=await sb.rpc('detach_board_relation', {p_relation_id: parentRel.id});
+          if(res.error){ if(msg) msg.textContent=res.error.message||'Could not detach from the current parent.'; return; }
+        }catch(e){ console.warn('Idea Board: could not detach board relation', e); if(msg) msg.textContent='Could not detach from the current parent.'; return; }
+        await _sboardReloadRelationsCache();
+        _sboardRenderTitlePicker();
+        _sboardRenderOrgName();
+      }
+      if(msg) msg.textContent='Detached. Open the Briefing Board\'s 🔗 Relationships button to pick a new parent for this project.';
+    });
+    T().wire('sb-hub-archive-btn', function(){
+      var msg=document.getElementById('sb-hub-msg');
+      if(msg) msg.textContent='Archiving a whole project isn\'t built yet -- for now you can archive individual cards inside it.';
+    });
+    T().wire('sb-hub-trash-btn', function(){
+      var msg=document.getElementById('sb-hub-msg');
+      if(msg) msg.textContent='Trashing a whole project isn\'t built yet -- for now you can trash individual cards inside it.';
+    });
   }
 
   // Same climb as _sboardProjectRowFor, but takes the rows-by-id map as an
