@@ -514,8 +514,18 @@
     var div=document.createElement('div');
     div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
       +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:40px">'
-      +'<div style="display:flex;align-items:flex-start;justify-content:center;gap:14px">'
-      +'<div style="display:flex;flex-direction:column;align-items:center">'
+      // Header row, Aug 16 2026 -- Larry: "Center TOPIC horizontally. Move
+      // parent to left of topic. Add field to right of topic for logo or
+      // artwork. To right of logo say IDEA in light blue letters." Switched
+      // from a single centered flex row (where Parent's own width silently
+      // dragged Topic off-center whenever Logo wasn't showing) to a 3-column
+      // grid: two equal 1fr side columns (Parent left, Logo+label right)
+      // flank a middle auto column (Topic) that's mathematically centered no
+      // matter what either side column contains. justify-self:start on both
+      // side columns keeps Parent and Logo+label hugging Topic's edges
+      // rather than drifting out to the header's far corners.
+      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;column-gap:14px;align-items:start">'
+      +'<div style="display:flex;flex-direction:column;align-items:center;justify-self:start">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Wish Tank</div>'
@@ -526,6 +536,7 @@
       +'<div class="sc-hdr-eyebrow">Topic</div>'
       +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px;justify-self:start">'
       // Logo slot, Aug 13 2026 -- shown to the right of Topic only when the
       // current Topic's linked project has a logo set. Hidden (display:none)
       // until that data-wiring lands; layout reserved now so this doesn't
@@ -533,6 +544,13 @@
       +'<div id="sc-logo-slot" style="display:none;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Logo</div>'
       +'<img id="sc-logo-img" src="" alt="Logo" style="width:34px;height:34px;object-fit:contain;border-radius:6px;background:#fff;border:1.5px solid #a9cce3;padding:2px">'
+      +'</div>'
+      // Board-kind label, Aug 16 2026 -- Larry: to the right of Logo, says
+      // which Storyboard family this is. Always shows on this file (the
+      // Idea Storyboard), reading IDEA -- the Planning Storyboard (not yet
+      // built) gets the same slot/styling reading PLAN once it exists.
+      // Static per board type, not a live/editable field.
+      +'<div id="sc-board-kind-label" style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(13px * var(--fg-text-scale,1));letter-spacing:2px;color:#5b9bd5">IDEA</div>'
       +'</div>'
       +'</div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
