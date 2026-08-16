@@ -1375,6 +1375,12 @@
   // _bbRelationsCache/_bbChildBoardsOf. Keyed on briefing_boards ids,
   // not ideas ids -- see ideas.briefing_board_id.
   var _sboardRelationsCache = [];
+  // Empty-Type browsing, Aug 16 2026 -- mirrors the Briefing
+  // Board's _bbPendingTypeOverride exactly. Set when a Type with
+  // zero roots is picked, so Type/Org Name/Project can all still
+  // show as dropdowns instead of an immediate prompt(). Reset the
+  // moment a real root opens (_sboardSwitchToRootBoard).
+  var _sboardPendingTypeOverride = null;
 
   async function _sboardLoadMyRoots(force){
     var _sb=T().sb; if(!_sb) return _sboardMyRoots||[];
@@ -1458,6 +1464,7 @@
   // lookup, since a freshly created or just-loaded root may not be warm
   // in _sboardAllRowsById yet.
   function _sboardSwitchToRootBoard(rootId){
+    _sboardPendingTypeOverride=null;
     T2TShared.currentTopicId=rootId;
     T2TShared.filter=rootId;
     try{
@@ -1533,6 +1540,7 @@
   }
 
   function _sboardActiveBoardType(){
+    if(_sboardPendingTypeOverride) return _sboardPendingTypeOverride;
     var curRoot=_sboardCurrentRootRow();
     var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     return (match && match.board_type) || 'personal';
@@ -1649,10 +1657,10 @@
   // straight to a prompt(). Rebuilt on _sboardRenderDropdown like the
   // other three -- lists other names already used on roots of this
   // same Type, (+) still opens the rename prompt, (-) clears the name.
-  function _sboardOrgNameOptions(match){
+  function _sboardOrgNameOptions(boardType){
     var seen={}, opts=[];
     (_sboardMyRoots||[]).forEach(function(r){
-      if((r.board_type||'personal')!==(match.board_type||'personal')) return;
+      if((r.board_type||'personal')!==boardType) return;
       var n=(r.org_name||'').trim();
       if(!n || seen[n]) return;
       seen[n]=true; opts.push({value:n, label:n});
@@ -1660,11 +1668,33 @@
     return opts;
   }
   function _sboardRenderOrgName(){
+    var trigger=document.getElementById('sc-org-name-trigger');
+    if(_sboardPendingTypeOverride){
+      // Browsing an empty Type, Aug 16 2026 -- no real root exists to
+      // attach a name to, so (+) has to create the first root of this
+      // Type rather than just save a field on one.
+      var typeVal=_sboardPendingTypeOverride;
+      var opts0=_sboardOrgNameOptions(typeVal);
+      _sboardRenderDropdown('sc-org-name-trigger','sc-org-name-menu', opts0, null, function(){ /* nothing to select onto yet */ }, async function(){
+        var typeLabel0=_sboardTypeLabel(typeVal);
+        var name0=window.prompt('Name for this '+typeLabel0+' (e.g. "Accounting" or "Denver Broncos"):', '');
+        if(!name0 || !name0.trim()) return;
+        var trimmed0=name0.trim();
+        var newId=await _sboardCreateRootBoard(trimmed0, typeVal);
+        if(newId){
+          _sboardSwitchToRootBoard(newId);
+          var created=(_sboardMyRoots||[]).filter(function(r){ return r.id===newId; })[0];
+          if(created) await _sboardSaveOrgName(trimmed0, created);
+        }
+      }, 'Add a name', null, 'Remove this name');
+      if(trigger) trigger.textContent='Add a name';
+      return;
+    }
     var curRoot=_sboardCurrentRootRow();
     var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     if(!match) return;
     var current=(match.org_name||'').trim();
-    var opts=_sboardOrgNameOptions(match);
+    var opts=_sboardOrgNameOptions(match.board_type||'personal');
     _sboardRenderDropdown('sc-org-name-trigger','sc-org-name-menu', opts, current||null, function(newName){
       _sboardSaveOrgName(newName, match);
     }, async function(){
@@ -1676,7 +1706,6 @@
     }, 'Add a name', current ? function(){
       _sboardSaveOrgName('', match);
     } : null, 'Remove this name');
-    var trigger=document.getElementById('sc-org-name-trigger');
     if(trigger && !current) trigger.textContent='Add a name';
   }
   async function _sboardSaveOrgName(value, rootOverride){
@@ -1707,14 +1736,15 @@
       var rts=await _sboardLoadMyRoots();
       var matching=rts.filter(function(r){ return (r.board_type||'personal')===newType; });
       if(matching.length){
+        _sboardPendingTypeOverride=null;
         _sboardSwitchToRootBoard(matching[0].id);
       } else {
-        var hit=opts.filter(function(o){ return o.value===newType; })[0];
-        var typeLabel=hit?hit.label:newType;
-        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
-        if(!name || !name.trim()){ _sboardRenderTypePicker(); return; }
-        var newId2=await _sboardCreateRootBoard(name.trim(), newType);
-        if(newId2) _sboardSwitchToRootBoard(newId2); else _sboardRenderTypePicker();
+        // Aug 16 2026 -- same fix as the Briefing Board, same day: an
+        // empty Type browses the same as a full one, dropdown and all.
+        _sboardPendingTypeOverride=newType;
+        _sboardRenderTypePicker();
+        _sboardRenderOrgName();
+        _sboardRenderTitlePicker();
       }
     }, async function(){
       var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
@@ -1768,9 +1798,13 @@
     // dedup-by-id as the Briefing Board's matching fix. Resolved off the
     // org-context root (later same day), not the literally-open one, so
     // opening a project shows the same family list as opening its parent.
-    var contextRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
-    var children=_sboardChildBoardsOf(contextRoot&&contextRoot.briefing_board_id);
-    children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
+    // Skipped while browsing an empty Type (_sboardPendingTypeOverride) --
+    // there's no real context root yet.
+    if(!_sboardPendingTypeOverride){
+      var contextRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
+      var children=_sboardChildBoardsOf(contextRoot&&contextRoot.briefing_board_id);
+      children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
+    }
     var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
     _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
       _sboardSwitchToRootBoard(id);

@@ -683,6 +683,18 @@
   // session alongside _bbBoards -- see _bbInitBoardsAndData and
   // _bbChildBoardsOf.
   var _bbRelationsCache = [];
+  // Empty-Type browsing, Aug 16 2026 -- Larry: "EVEN IF the field is
+  // BLANK, make it a dropdown with the (+) and (-) options... They
+  // all work the same way!" Picking a Type with zero boards used to
+  // jump straight to a prompt() since there was nothing to switch
+  // to. This override lets Type/Org Name/Project all show that empty
+  // Type's dropdown shell instead -- the actual board content area
+  // keeps showing whatever board was open before, since there's
+  // truly nothing to open yet; only the header reflects the browsed
+  // Type until a first board of it gets created via Org Name's or
+  // Project's own (+). Reset to null the moment a real board opens
+  // (_bbSwitchToBoard), so it never lingers.
+  var _bbPendingTypeOverride = null;
   // Signal Flags, Aug 3 2026 -- merged into the Storyboard's shared,
   // traveler-wide custom_keys table (was its own board-scoped
   // briefing_board_keys). Loaded once per session (_bbKeyLibraryLoaded
@@ -1752,6 +1764,7 @@
   }
 
   async function _bbSwitchToBoard(boardId){
+    _bbPendingTypeOverride=null;
     _bbCurrentBoardId=boardId;
     try{ sessionStorage.setItem('bbCurrentBoardId', boardId); }catch(e){}
     var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
@@ -1954,6 +1967,7 @@
   // routed through _bbOrgContextBoard so a project shows its parent's
   // Type, not a Type of its own).
   function _bbActiveBoardType(){
+    if(_bbPendingTypeOverride) return _bbPendingTypeOverride;
     var board=_bbOrgContextBoard(_bbCurrentBoardId);
     return (board && board.board_type) || 'personal';
   }
@@ -2087,10 +2101,10 @@
   // retyped), the current name is highlighted if it's among them, (+)
   // still opens the rename prompt (unchanged flow, just reached one
   // click later now), and (-) clears the name off this board.
-  function _bbOrgNameOptions(board){
+  function _bbOrgNameOptions(boardType){
     var seen={}, opts=[];
     _bbBoards.forEach(function(b){
-      if((b.board_type||'personal')!==(board.board_type||'personal')) return;
+      if((b.board_type||'personal')!==boardType) return;
       var n=(b.org_name||'').trim();
       if(!n || seen[n]) return;
       seen[n]=true; opts.push({value:n, label:n});
@@ -2098,10 +2112,31 @@
     return opts;
   }
   function _bbRenderOrgName(){
+    var trigger=document.getElementById('bb-org-name-trigger');
+    if(_bbPendingTypeOverride){
+      // Browsing a Type with nothing in it yet, Aug 16 2026 -- no real
+      // board exists to attach a name to, so (+) has to create the
+      // first board of this Type rather than just save a field on one.
+      var typeVal=_bbPendingTypeOverride;
+      var opts0=_bbOrgNameOptions(typeVal);
+      _bbRenderDropdown('bb-org-name-trigger','bb-org-name-menu', opts0, null, function(){ /* nothing to select onto yet */ }, async function(){
+        var typeLabel0=_bbTypeLabel(typeVal);
+        var name0=window.prompt('Name for this '+typeLabel0+' (e.g. "Accounting" or "Denver Broncos"):', '');
+        if(!name0 || !name0.trim()) return;
+        var trimmed0=name0.trim();
+        var ok=await _bbCreateBoard(trimmed0, typeVal);
+        if(ok){
+          var created=_bbBoards.filter(function(b){ return b.name===trimmed0 && b.board_type===typeVal; }).slice(-1)[0];
+          if(created) await _bbSaveOrgName(trimmed0, created);
+        }
+      }, 'Add a name', null, 'Remove this name');
+      if(trigger) trigger.textContent='Add a name';
+      return;
+    }
     var board=_bbOrgContextBoard(_bbCurrentBoardId);
     if(!board) return;
     var current=(board.org_name||'').trim();
-    var opts=_bbOrgNameOptions(board);
+    var opts=_bbOrgNameOptions(board.board_type||'personal');
     _bbRenderDropdown('bb-org-name-trigger','bb-org-name-menu', opts, current||null, function(newName){
       _bbSaveOrgName(newName, board);
     }, async function(){
@@ -2116,7 +2151,6 @@
     // _bbRenderDropdown falls back to the first option's label when
     // nothing matches currentValue -- not what an unnamed board should
     // show, so this overrides the trigger text directly afterward.
-    var trigger=document.getElementById('bb-org-name-trigger');
     if(trigger && !current) trigger.textContent='Add a name';
   }
   async function _bbSaveOrgName(value, boardOverride){
@@ -2140,13 +2174,17 @@
     _bbRenderDropdown('bb-type-trigger','bb-type-menu', opts, activeType, async function(newType){
       var matching=_bbBoards.filter(function(b){ return (b.board_type||'personal')===newType; });
       if(matching.length){
+        _bbPendingTypeOverride=null;
         await _bbSwitchToBoard(matching[0].id);
       } else {
-        var hit=opts.filter(function(o){ return o.value===newType; })[0];
-        var typeLabel=hit?hit.label:newType;
-        var name=window.prompt('No '+typeLabel+' boards yet. Name for the first one:');
-        if(!name || !name.trim()){ _bbRenderTypePicker(); return; }
-        await _bbCreateBoard(name.trim(), newType);
+        // Aug 16 2026 -- Larry: an empty Type should browse the same as
+        // a full one, dropdown and all, not jump straight to a prompt.
+        // No board content to show yet (nothing exists), so whatever
+        // was open stays open underneath; only the header switches.
+        _bbPendingTypeOverride=newType;
+        _bbRenderTypePicker();
+        _bbRenderOrgName();
+        _bbRenderBoardPicker();
       }
     }, async function(){
       var typeName=window.prompt('Name for the new Type (e.g. "Client", "Household"):');
@@ -2191,10 +2229,15 @@
     // Aug 16 2026 (later same day) -- resolved off the org-context
     // board, not the literally-open one, so opening Field Guide shows
     // the same T2T-family list as opening T2T itself, instead of an
-    // empty "children of Field Guide" list.
-    var contextBoard=_bbOrgContextBoard(_bbCurrentBoardId);
-    var children=_bbChildBoardsOf(contextBoard ? contextBoard.id : _bbCurrentBoardId);
-    children.forEach(function(c){ if(!filtered.some(function(b){ return b.id===c.id; })) filtered=filtered.concat([c]); });
+    // empty "children of Field Guide" list. Skipped entirely while
+    // browsing an empty Type (_bbPendingTypeOverride) -- there's no
+    // real context board yet, so _bbCurrentBoardId is just whatever
+    // was open before and its children don't belong in this list.
+    if(!_bbPendingTypeOverride){
+      var contextBoard=_bbOrgContextBoard(_bbCurrentBoardId);
+      var children=_bbChildBoardsOf(contextBoard ? contextBoard.id : _bbCurrentBoardId);
+      children.forEach(function(c){ if(!filtered.some(function(b){ return b.id===c.id; })) filtered=filtered.concat([c]); });
+    }
     var opts=filtered.map(function(b){ return {value:b.id, label:b.name||'Untitled Board'}; });
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, _bbCurrentBoardId, async function(id){
       await _bbSwitchToBoard(id);
