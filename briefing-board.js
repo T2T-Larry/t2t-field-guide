@@ -2174,6 +2174,20 @@
         return false;
       }
       _bbBoards.push(ins.data);
+      // Aug 16 2026 -- mirror onto the Idea Storyboard the moment a board
+      // is created, linked by briefing_board_id, so the two screens can
+      // never drift back into separate, unlinked board lists (that
+      // drift is what today's board-unification work was fixing).
+      // Best-effort: a failure here logs a warning but doesn't block the
+      // Briefing Board side, which already succeeded.
+      try{
+        var rootIns=await sb.from('ideas').insert({user_id:uid, content_type:'header', text_content:name, cluster_id:null, board_type:boardType||'personal', briefing_board_id:ins.data.id, created_at:new Date().toISOString()}).select().single();
+        if(!rootIns.error && rootIns.data){
+          await sb.from('ideas').update({project_id:rootIns.data.id, topic_scope_id:rootIns.data.id}).eq('id',rootIns.data.id);
+        } else {
+          console.warn('Briefing Board: could not mirror new board onto the Idea Storyboard', rootIns.error);
+        }
+      }catch(e){ console.warn('Briefing Board: could not mirror new board onto the Idea Storyboard', e); }
       await _bbSwitchToBoard(ins.data.id);
       return true;
     }catch(e){

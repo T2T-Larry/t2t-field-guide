@@ -1368,6 +1368,12 @@
   }
   var _sboardMyRoots = null;
   var _sboardMyRootsLoadedFor = null;
+  // Adoption edges, Aug 16 2026 -- board unification work. Loaded
+  // alongside _sboardMyRoots so the Project picker can fold a
+  // board's adopted children in, same as the Briefing Board's
+  // _bbRelationsCache/_bbChildBoardsOf. Keyed on briefing_boards ids,
+  // not ideas ids -- see ideas.briefing_board_id.
+  var _sboardRelationsCache = [];
 
   async function _sboardLoadMyRoots(force){
     var _sb=T().sb; if(!_sb) return _sboardMyRoots||[];
@@ -1381,10 +1387,17 @@
       // stray image, link, or blank test card with no parent) also
       // qualified as a "root" and showed up in Type/Title as if it were
       // a real board. Only real headers are boards.
-      var res=await _sb.from('ideas').select('id,text_content,board_type,org_name,created_at').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
+      var res=await _sb.from('ideas').select('id,text_content,board_type,org_name,created_at,briefing_board_id').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
       if(res.error) throw res.error;
-      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', org_name:r.org_name||'', created_at:r.created_at}; });
+      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', org_name:r.org_name||'', created_at:r.created_at, briefing_board_id:r.briefing_board_id||null}; });
       _sboardMyRootsLoadedFor=user.id;
+      // Aug 16 2026 -- same source of truth the Briefing Board reads
+      // (board_relations, RLS-scoped to boards this traveler owns),
+      // so an adoption made on one screen shows on both.
+      try{
+        var relRes=await _sb.from('board_relations').select('*').eq('status','approved');
+        _sboardRelationsCache=relRes.error?[]:(relRes.data||[]);
+      }catch(e){ _sboardRelationsCache=[]; console.warn('Idea Board: could not load board relations', e); }
     }catch(e){ console.warn('Idea Board: could not load your boards', e); _sboardMyRoots=_sboardMyRoots||[]; }
     return _sboardMyRoots;
   }
@@ -1470,6 +1483,19 @@
       // Self-scoping, matching every existing root: a root's own
       // project_id and topic_scope_id both point at its own id.
       await _sb.from('ideas').update({project_id:ins.data.id, topic_scope_id:ins.data.id}).eq('id',ins.data.id);
+      // Aug 16 2026 -- mirror onto the Briefing Board the moment a board
+      // is created here too, linked by briefing_board_id, so ownership/
+      // PROJECT/adoption always resolve from one shared record no
+      // matter which screen created the board. Best-effort, matching
+      // the Briefing Board's own mirror in _bbCreateBoard.
+      try{
+        var bbIns=await _sb.from('briefing_boards').insert({user_id:user.id, board_type:boardType||'personal', name:name}).select().single();
+        if(!bbIns.error && bbIns.data){
+          await _sb.from('ideas').update({briefing_board_id:bbIns.data.id}).eq('id',ins.data.id);
+        } else {
+          console.warn('Idea Board: could not mirror new board onto the Briefing Board', bbIns.error);
+        }
+      }catch(e){ console.warn('Idea Board: could not mirror new board onto the Briefing Board', e); }
       await _sboardLoadMyRoots(true);
       return ins.data.id;
     }catch(e){
@@ -1685,6 +1711,17 @@
   // _sboardIsRealBoard, so NEW/MISC/Trash/Purpose/Idea Session Protocol
   // never show up here) scoped to whichever Type is currently selected --
   // same relationship Briefing Board's Title/Type pair already has.
+  // Adopted children of a given board (Aug 16 2026), resolved through
+  // briefing_board_id -- mirrors the Briefing Board's _bbChildBoardsOf.
+  // A child not yet linked (no briefing_board_id set, e.g. an older
+  // board from before this pass) is silently skipped rather than
+  // shown as broken; run the link backfill instead of guessing here.
+  function _sboardChildBoardsOf(briefingBoardId){
+    if(!briefingBoardId) return [];
+    var childBBIds=_sboardRelationsCache.filter(function(r){ return r.parent_board_id===briefingBoardId; }).map(function(r){ return r.child_board_id; });
+    return (_sboardMyRoots||[]).filter(function(r){ return r.briefing_board_id && childBBIds.indexOf(r.briefing_board_id)!==-1; });
+  }
+
   function _sboardRenderTitlePicker(){
     var roots=_sboardMyRoots;
     if(!roots){
@@ -1692,8 +1729,13 @@
       roots=[];
     }
     var activeType=_sboardActiveBoardType();
-    var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
     var curRoot=_sboardCurrentRootRow();
+    var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
+    // Adopted children ride along too, Aug 16 2026 -- Larry: PROJECT must
+    // be identical no matter which screen a board is opened from. Same
+    // dedup-by-id as the Briefing Board's matching fix.
+    var children=_sboardChildBoardsOf(curRoot&&curRoot.briefing_board_id);
+    children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
     var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
     _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
       _sboardSwitchToRootBoard(id);
