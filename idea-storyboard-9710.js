@@ -4966,37 +4966,14 @@
     var isxScreenEl=document.getElementById('s-idea-session');
     var isOn9711=!!(isxScreenEl && isxScreenEl.classList.contains('active'));
     var isHeaderType=item.content_type==='header';
-    var reservedNames=['Trash','MISC','NEW'];
-    var isReservedItem=isHeaderType && reservedNames.indexOf(item.text_content)!==-1;
-
-    if(isReservedItem){
-      var rSwatches=_sboardColorPalette.map(function(c){
-        var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
-        return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
-      }).join('');
-      ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center">'
-        + '<div class="sb-card-title">Shape</div>'
-        + '<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:8px">'+item.text_content+'</div>'
-        + '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic;margin-bottom:10px">This is a system header — it can\'t be renamed, moved, or trashed.</div>'
-        + '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+rSwatches+'</div>'
-        + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:block;width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:8px;flex:1"></textarea>'
-        + '<button class="sb-close-btn" id="sb-close" aria-label="Close">✕</button>'
-        + '</div>';
-      ov.classList.add('active');
-      ov.querySelectorAll('.sb-swatch').forEach(function(sw){
-        sw.onclick=async function(){
-          var c=sw.getAttribute('data-c');
-          try{ await _sb.from('ideas').update({color:c}).eq('id',item.id); item.color=c; }catch(e){}
-          closeSbDetail(); renderSeaBoard(true);
-        };
-      });
-      var rNotes=document.getElementById('sb-notes-box');
-      if(rNotes){ rNotes.value=item.notes||''; rNotes.addEventListener('blur', async function(e){
-        try{ await _sb.from('ideas').update({notes:e.target.value}).eq('id',item.id); item.notes=e.target.value; }catch(err){}
-      }); }
-      T().wire('sb-close', closeSbDetail);
-      return;
-    }
+    // Reserved system headers (Trash/MISC/NEW) used to short-circuit here
+    // into a stripped-down "Shape" card (color + notes only, no rename/
+    // move/trash) while Purpose and ordinary headers got the full DETAILS
+    // card below. Larry, Aug 16 2026: "New, Purpose and MISC headers are
+    // headers and should have insides just like any other card... on
+    // every board. SOP." -- removed the special case entirely. All
+    // headers, reserved or not, now render the same full DETAILS card
+    // and can be renamed, moved, and trashed like any other card.
 
     // Card-details sweep, July 19, 2026: _sboardTrashId/_sboardMiscId/
     // _sboardPurposeId are only ever populated by 9710's own renderSeaBoard
@@ -5938,8 +5915,6 @@
   // Traveler color-options shortcut -- opens the normal DETAILS back but
   // auto-expands the swatch row so a double-click lands directly on color
   // choices instead of requiring an extra tap on the Appearance gear.
-  // Reserved system headers (Trash/MISC/NEW) already show swatches with
-  // no gear at all, so the extra step is a harmless no-op there.
   function openSbDetailToColor(item){
     openSbDetail(item);
     var row=document.getElementById('sb-swatch-row');
