@@ -675,6 +675,14 @@
   var _bbHiddenTypesCache = [];
   var _bbHiddenTypesLoaded = false;
   var _bbBoards = [];
+  // Adoption edges, Aug 16 2026 -- Larry opened T2T and expected
+  // Field Guide and Professional History to show in the PROJECT
+  // list underneath it; they didn't, because that list only ever
+  // matched on board_type, and board_relations (the adoption link
+  // from Session 214-215) was never consulted. Loaded once per
+  // session alongside _bbBoards -- see _bbInitBoardsAndData and
+  // _bbChildBoardsOf.
+  var _bbRelationsCache = [];
   // Signal Flags, Aug 3 2026 -- merged into the Storyboard's shared,
   // traveler-wide custom_keys table (was its own board-scoped
   // briefing_board_keys). Loaded once per session (_bbKeyLibraryLoaded
@@ -1847,6 +1855,15 @@
       var res=await sb.from('briefing_boards').select('*').order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _bbBoards=res.data||[];
+      // Aug 16 2026 -- adopted parent-child edges, so the PROJECT
+      // picker can show a board's children alongside its type-mates.
+      // RLS already scopes this to relations touching a board this
+      // traveler owns, same as briefing_boards above -- no extra filter
+      // needed here.
+      try{
+        var relRes=await sb.from('board_relations').select('*').eq('status','approved');
+        _bbRelationsCache=relRes.error?[]:(relRes.data||[]);
+      }catch(e){ _bbRelationsCache=[]; console.error('Briefing Board: could not load board relations', e); }
     }catch(e){
       console.error('Briefing Board: could not load boards, staying local', e);
       _bbCurrentBoardId=null; _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard();
@@ -2108,9 +2125,26 @@
     }, 'Remove a type');
   }
 
+  // Adopted children of a given board (Aug 16 2026) -- resolved
+  // against _bbBoards, so this only ever shows a child the traveler
+  // can actually see (their own, or one shared with them). A board
+  // not yet loaded (e.g. someone else's, not shared) is silently
+  // skipped rather than shown as a broken row.
+  function _bbChildBoardsOf(boardId){
+    if(!boardId) return [];
+    var childIds=_bbRelationsCache.filter(function(r){ return r.parent_board_id===boardId; }).map(function(r){ return r.child_board_id; });
+    return _bbBoards.filter(function(b){ return childIds.indexOf(b.id)!==-1; });
+  }
+
   function _bbRenderBoardPicker(){
     var activeType=_bbActiveBoardType();
     var filtered=_bbBoards.filter(function(b){ return (b.board_type||'personal')===activeType; });
+    // Adopted children ride along too, Aug 16 2026 -- Larry: opening
+    // T2T should list Field Guide and Professional History as its
+    // projects, not just other boards that happen to share T2T's own
+    // Type. Deduped by id in case a child's own Type already matched.
+    var children=_bbChildBoardsOf(_bbCurrentBoardId);
+    children.forEach(function(c){ if(!filtered.some(function(b){ return b.id===c.id; })) filtered=filtered.concat([c]); });
     var opts=filtered.map(function(b){ return {value:b.id, label:b.name||'Untitled Board'}; });
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, _bbCurrentBoardId, async function(id){
       await _bbSwitchToBoard(id);
