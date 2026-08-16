@@ -2609,20 +2609,33 @@
     // drop target into zones, rather than adding new DOM between tiles,
     // resolves the reorder-vs-nest ambiguity flagged July 7 without
     // restructuring the column layout.
+    //
+    // Colors/weight, Aug 16 2026 -- Larry: "make slot availability more
+    // obvious" when moving a card. This target was still on the original
+    // thin blue (#5b9bd5) cue from July 12 -- the same header drop zones
+    // got upgraded to a thicker bright green on Aug 3 (Larry, then: blue
+    // "didn't read as a go/no-go signal," green is the conventional
+    // "safe to let go" color), but that fix never made it back to plain
+    // card tiles. Matching it here: insert lines go from 3px to 4px, nest
+    // zone's outline goes from 2px to 3px and gets a soft green halo
+    // (box-shadow glow) added around the whole card so the valid-nest
+    // target reads as a highlighted slot, not just a thin ring easy to
+    // miss on a busy board. dragleave now restores the tile's real resting
+    // shadow (.sc-tile's own 0 3px 10px) instead of dropping it to 'none'.
     tile.addEventListener('dragover', function(e){
       e.preventDefault();
       var rect=tile.getBoundingClientRect();
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
-      if(frac<0.3){ tile.style.outline='none'; tile.style.boxShadow='inset 0 3px 0 0 #5b9bd5'; }
-      else if(frac>0.7){ tile.style.outline='none'; tile.style.boxShadow='inset 0 -3px 0 0 #5b9bd5'; }
-      else { tile.style.boxShadow='none'; tile.style.outline='2px solid #5b9bd5'; }
+      if(frac<0.3){ tile.style.outline='none'; tile.style.boxShadow='inset 0 4px 0 0 #22c55e'; }
+      else if(frac>0.7){ tile.style.outline='none'; tile.style.boxShadow='inset 0 -4px 0 0 #22c55e'; }
+      else { tile.style.outline='3px solid #22c55e'; tile.style.boxShadow='0 0 0 6px rgba(34,197,94,.28)'; }
     });
-    tile.addEventListener('dragleave', function(){ tile.style.outline='none'; tile.style.boxShadow='none'; });
+    tile.addEventListener('dragleave', function(){ tile.style.outline='none'; tile.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; });
     tile.addEventListener('drop', function(e){
       e.preventDefault();
       var rect=tile.getBoundingClientRect();
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
-      tile.style.outline='none'; tile.style.boxShadow='none';
+      tile.style.outline='none'; tile.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)';
       var raw=e.dataTransfer.getData('text/plain');
       if(!raw || raw==='sb-goup' || raw.indexOf('header:')===0) return;
       if(frac>=0.3 && frac<=0.7){
@@ -2742,12 +2755,16 @@
     // no drop behavior at all for another Subber dragged onto them (the
     // drop was silently ignored). A plain idea dropped here still just
     // files under this Subber, unchanged.
+    // Colors/weight, Aug 16 2026 -- Larry: "make slot availability more
+    // obvious." Matches the same green/thicker upgrade applied to the
+    // plain idea tile's own drop zones the same day (was thin blue,
+    // matching what the header drop zones moved off of back on Aug 3).
     wrap.addEventListener('dragover', function(e){
       e.preventDefault();
       var rect=wrap.getBoundingClientRect();
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
-      front.style.outline='2px solid #5b9bd5';
-      front.style.boxShadow = (frac<0.5) ? 'inset 0 3px 0 0 #5b9bd5' : 'inset 0 -3px 0 0 #5b9bd5';
+      front.style.outline='3px solid #22c55e';
+      front.style.boxShadow = (frac<0.5) ? 'inset 0 4px 0 0 #22c55e' : 'inset 0 -4px 0 0 #22c55e';
       wrap._dropSide = (frac<0.5) ? 'before' : 'after';
     });
     wrap.addEventListener('dragleave', function(){ front.style.outline='none'; front.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; wrap._dropSide=null; });
