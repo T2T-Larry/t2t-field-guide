@@ -351,7 +351,7 @@
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
         +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
-        +'button.sc-hdr-eyebrow{background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;width:auto}'
+        +'button.sc-hdr-eyebrow{background:none;border:none;padding:0;margin:0 0 3px;cursor:pointer;font-family:inherit;width:auto}'
         +'button.sc-hdr-eyebrow:hover{opacity:.65}'
         +'.sc-hdr-frame-label{opacity:.72}'
         // VIEW-by-person filter, Aug 9 2026 (Larry): a dropdown next to
