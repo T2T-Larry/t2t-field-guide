@@ -2611,24 +2611,25 @@
     // restructuring the column layout.
     //
     // Colors/weight, Aug 16 2026 -- Larry: "make slot availability more
-    // obvious" when moving a card. This target was still on the original
-    // thin blue (#5b9bd5) cue from July 12 -- the same header drop zones
-    // got upgraded to a thicker bright green on Aug 3 (Larry, then: blue
-    // "didn't read as a go/no-go signal," green is the conventional
-    // "safe to let go" color), but that fix never made it back to plain
-    // card tiles. Matching it here: insert lines go from 3px to 4px, nest
-    // zone's outline goes from 2px to 3px and gets a soft green halo
-    // (box-shadow glow) added around the whole card so the valid-nest
-    // target reads as a highlighted slot, not just a thin ring easy to
-    // miss on a busy board. dragleave now restores the tile's real resting
+    // obvious" when moving a card, then "bright green is fine but can it
+    // be larger?" as a same-day follow-up. This target was still on the
+    // original thin blue (#5b9bd5) cue from July 12 -- the same header
+    // drop zones got upgraded to a thicker bright green on Aug 3 (Larry,
+    // then: blue "didn't read as a go/no-go signal," green is the
+    // conventional "safe to let go" color), but that fix never made it
+    // back to plain card tiles. Sized well past that first pass now:
+    // insert lines are a 7px inset border, nest zone is a 5px outline plus
+    // an 11px soft green halo (box-shadow glow) around the whole card so
+    // the valid-nest target reads as a clearly highlighted slot on a busy
+    // board, not a thin ring. dragleave restores the tile's real resting
     // shadow (.sc-tile's own 0 3px 10px) instead of dropping it to 'none'.
     tile.addEventListener('dragover', function(e){
       e.preventDefault();
       var rect=tile.getBoundingClientRect();
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
-      if(frac<0.3){ tile.style.outline='none'; tile.style.boxShadow='inset 0 4px 0 0 #22c55e'; }
-      else if(frac>0.7){ tile.style.outline='none'; tile.style.boxShadow='inset 0 -4px 0 0 #22c55e'; }
-      else { tile.style.outline='3px solid #22c55e'; tile.style.boxShadow='0 0 0 6px rgba(34,197,94,.28)'; }
+      if(frac<0.3){ tile.style.outline='none'; tile.style.boxShadow='inset 0 7px 0 0 #22c55e'; }
+      else if(frac>0.7){ tile.style.outline='none'; tile.style.boxShadow='inset 0 -7px 0 0 #22c55e'; }
+      else { tile.style.outline='5px solid #22c55e'; tile.style.boxShadow='0 0 0 11px rgba(34,197,94,.28)'; }
     });
     tile.addEventListener('dragleave', function(){ tile.style.outline='none'; tile.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; });
     tile.addEventListener('drop', function(e){
@@ -2763,8 +2764,8 @@
       e.preventDefault();
       var rect=wrap.getBoundingClientRect();
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
-      front.style.outline='3px solid #22c55e';
-      front.style.boxShadow = (frac<0.5) ? 'inset 0 4px 0 0 #22c55e' : 'inset 0 -4px 0 0 #22c55e';
+      front.style.outline='5px solid #22c55e';
+      front.style.boxShadow = (frac<0.5) ? 'inset 0 7px 0 0 #22c55e' : 'inset 0 -7px 0 0 #22c55e';
       wrap._dropSide = (frac<0.5) ? 'before' : 'after';
     });
     wrap.addEventListener('dragleave', function(){ front.style.outline='none'; front.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; wrap._dropSide=null; });
