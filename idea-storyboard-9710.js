@@ -551,7 +551,7 @@
       +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Team</div>'
+      +'<div class="sc-hdr-eyebrow">View</div>'
       +'<div class="sc-cdrop" id="sc-view-cdrop">'
       +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-view-trigger" title="Filter by person assigned">Team</button>'
       +'<div class="sc-cdrop-menu" id="sc-view-menu" hidden></div>'
