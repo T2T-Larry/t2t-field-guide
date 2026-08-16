@@ -1357,7 +1357,7 @@
   // this dropdown. person: filter values keep the exact same "II Name"
   // label format as before, so matching against a card's saved c.person
   // is unaffected.
-  var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Company'};
+  var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Team'};
 
   var BB_THEME_VARS=['--bb-bg','--bb-accent','--bb-ink','--bb-sub','--bb-head-font','--bb-body-font'];
   function _bbSyncMenuTheme(menu){
