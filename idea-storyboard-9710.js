@@ -4588,8 +4588,14 @@
       var res=await _sb.rpc('find_member_by_email', {p_email: String(email||'').trim().toLowerCase()});
       var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
       if(!match) return {ok:false,msg:'No T2T member found with that email.'};
-      var myUser=(await _sb.auth.getUser()).data.user;
-      var ins=await _sb.from('storyboard_members').insert({project_id: projectRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null, access_level: 'edit'});
+      // Aug 16 2026, Larry: a root project linked to a Briefing Board
+      // shares that board's Cast now -- one roster, not two that can
+      // drift apart (this used to write straight to storyboard_members,
+      // independent of the Briefing Board's own board_members). The RPC
+      // resolves which table that actually is server-side, same as
+      // list/update_storyboard_member(_notes) below -- never trust a
+      // client-cached briefing_board_id for this.
+      var ins=await _sb.rpc('add_storyboard_member', {p_project_id: projectRow.id, p_user_id: match.user_id});
       if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
@@ -4600,7 +4606,7 @@
     if(_tmRosterOwner && String(uid)===String(_tmRosterOwner.user_id)) return {ok:false,msg:'The Owner can\'t be removed.'};
     var _sb=T().sb; if(!_sb) return {ok:false,msg:'Not connected.'};
     try{
-      var del=await _sb.from('storyboard_members').delete().eq('project_id', projectRow.id).eq('user_id', uid);
+      var del=await _sb.rpc('remove_storyboard_member', {p_project_id: projectRow.id, p_user_id: uid});
       if(del.error) return {ok:false,msg:del.error.message||'Could not remove them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not remove them.'}; }
