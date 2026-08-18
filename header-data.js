@@ -128,18 +128,30 @@
      headers." Before this, ensureMiscHeader/ensureNewAdditionsHeader/
      ensurePurposeHeader ran on every render and silently recreated
      whichever default was missing -- so trashing NEW or MISC never
-     actually stuck, it just came back on the next render. Now a default
-     is only auto-created for a genuinely brand-new parent (zero headers
-     of any kind under it yet); once a parent has at least one header,
-     a deliberately-removed default stays gone. Trash/Archived are
-     unaffected -- they're the single global buckets deletion itself
-     depends on, not per-board defaults a traveler would remove. */
-  async function _parentHasAnyHeader(parentId){
+     actually stuck, it just came back on the next render.
+     First attempt checked "does this parent currently have any header
+     at all" -- but that breaks the instant a traveler deletes the LAST
+     header standing on an otherwise-empty board (a very common shape:
+     most boards start with only NEW+MISC and nothing else), because at
+     that instant the count legitimately hits zero and looks exactly
+     like a genuinely brand-new board again. Larry hit this directly:
+     deleting MISC "did nothing" because it came right back.
+     Fixed properly with a persisted per-parent flag
+     (header_defaults_seeded column, migrated Aug 18 2026) instead of a
+     point-in-time count: once a parent has ever had its defaults
+     seeded, it stays seeded forever, so a deliberately-removed default
+     never comes back no matter how many headers remain. */
+  async function _parentDefaultsSeeded(parentId){
+    if(parentId===null||parentId===undefined) return false;
     var sb=_sb();
-    var q=sb.from('ideas').select('id').eq('content_type','header').limit(1);
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var res=await q;
-    return !!(res && !res.error && res.data && res.data.length);
+    var res=await sb.from('ideas').select('header_defaults_seeded').eq('id',parentId).limit(1);
+    if(res.error || !res.data || !res.data.length) return false;
+    return !!res.data[0].header_defaults_seeded;
+  }
+
+  async function _markParentDefaultsSeeded(parentId){
+    if(parentId===null||parentId===undefined) return;
+    try{ await _sb().from('ideas').update({header_defaults_seeded:true}).eq('id',parentId); }catch(e){}
   }
 
   async function ensureMiscHeader(parentId){
@@ -152,9 +164,10 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    if(await _parentHasAnyHeader(parentId)) return null;
+    if(await _parentDefaultsSeeded(parentId)) return null;
     var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'MISC',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('MISC setup failed: '+ins.error.message);
+    _markParentDefaultsSeeded(parentId);
     return ins.data.id;
   }
 
@@ -171,9 +184,10 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    if(await _parentHasAnyHeader(parentId)) return null;
+    if(await _parentDefaultsSeeded(parentId)) return null;
     var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
+    _markParentDefaultsSeeded(parentId);
     return ins.data.id;
   }
 
@@ -194,9 +208,10 @@
       if(row.text_content!=='NEW'){ try{ await sb.from('ideas').update({text_content:'NEW'}).eq('id',row.id); }catch(e){} }
       return row.id;
     }
-    if(await _parentHasAnyHeader(parentId)) return null;
+    if(await _parentDefaultsSeeded(parentId)) return null;
     var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'NEW',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('NEW setup failed: '+ins.error.message);
+    _markParentDefaultsSeeded(parentId);
     return ins.data.id;
   }
 

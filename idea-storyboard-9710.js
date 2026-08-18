@@ -5021,18 +5021,31 @@
   }
 
   /* Deletion-sticks backstop, Aug 18 2026 -- same rule as header-data.js's
-     _parentHasAnyHeader (Larry: "adding headers is only a default; if
+     _parentDefaultsSeeded (Larry: "adding headers is only a default; if
      headers already exist, do not add any default headers"). This file
      keeps its own local copy of the Purpose/NEW ensure-calls instead of
      going through T2TData, so the guard has to be duplicated here too or
      a deliberately-trashed Purpose/NEW header on the Idea Storyboard
-     would just get silently recreated on the next render. */
-  async function _sboardParentHasAnyHeader(parentId){
+     would just get silently recreated on the next render.
+     First cut checked "does this parent currently have any header at
+     all" -- broke the instant a traveler deleted the LAST header on an
+     otherwise-empty board (the common NEW+MISC-only shape), since the
+     count legitimately hits zero right when a deletion should be
+     sticking. Larry hit exactly this trying to delete MISC. Fixed with
+     the same persisted header_defaults_seeded column header-data.js
+     uses -- once a parent's defaults have ever been seeded, that stays
+     true forever, independent of how many headers remain. */
+  async function _sboardParentDefaultsSeeded(parentId){
+    if(parentId===null||parentId===undefined) return false;
     var _sb=T().sb;
-    var q=_sb.from('ideas').select('id').eq('content_type','header').limit(1);
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var res=await q;
-    return !!(res && !res.error && res.data && res.data.length);
+    var res=await _sb.from('ideas').select('header_defaults_seeded').eq('id',parentId).limit(1);
+    if(res.error || !res.data || !res.data.length) return false;
+    return !!res.data[0].header_defaults_seeded;
+  }
+
+  async function _sboardMarkParentDefaultsSeeded(parentId){
+    if(parentId===null||parentId===undefined) return;
+    try{ await T().sb.from('ideas').update({header_defaults_seeded:true}).eq('id',parentId); }catch(e){}
   }
 
   async function _sboardEnsurePurposeHeader(parentId){
@@ -5049,10 +5062,11 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
-    if(await _sboardParentHasAnyHeader(parentId)){ _sboardPurposeId=null; return null; }
+    if(await _sboardParentDefaultsSeeded(parentId)){ _sboardPurposeId=null; return null; }
     var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
     _sboardPurposeId=ins.data.id;
+    _sboardMarkParentDefaultsSeeded(parentId);
     return _sboardPurposeId;
   }
 
@@ -5076,10 +5090,11 @@
       if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
       return _sboardNewAdditionsId;
     }
-    if(await _sboardParentHasAnyHeader(parentId)){ _sboardNewAdditionsId=null; return null; }
+    if(await _sboardParentDefaultsSeeded(parentId)){ _sboardNewAdditionsId=null; return null; }
     var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
+    _sboardMarkParentDefaultsSeeded(parentId);
     return _sboardNewAdditionsId;
   }
 
