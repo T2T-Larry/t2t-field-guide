@@ -558,7 +558,20 @@
       // upload/storage wiring is a separate build, not just layout). Once
       // an image is actually loaded, the (+) can be swapped out/hidden;
       // not needed until upload lands for real.
-      +'<div style="position:absolute;top:10px;left:57%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">'
+      //
+      // Aug 18 2026, Larry: "keep Logo the same relative distance from
+      // Topic as Parent is." The 57% figure above was a one-time guess
+      // against the header's total width -- it held still even as
+      // Topic's own box grew/shrank with a longer or shorter name, so
+      // Logo could end up sitting closer to (or farther from) Topic than
+      // Parent does. Given an id here so _sboardPositionLogoNearTopic
+      // (below) can measure Parent's actual gap off Topic's left edge
+      // and mirror that same gap on Topic's right edge for Logo, instead
+      // of a fixed percentage. left:57% stays only as the pre-JS fallback
+      // position for the first paint; the position function overwrites
+      // it (and drops the translateX centering, since positioning is now
+      // done by measuring Logo's own frame, not by centering the wrapper).
+      +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:57%;display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Logo</div>'
       +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
@@ -3820,7 +3833,66 @@
     // board area) — no more separate hardcoded navy/purple fighting it.
     // Locked July 16, 2026.
     _sboardApplyBoardBg();
+    // Keep Logo the same distance off Topic as Parent, Aug 18 2026 --
+    // Parent/Topic content (and their widths) just changed above, so
+    // re-measure and reposition Logo every time this runs.
+    _sboardPositionLogoNearTopic();
   }
+
+  // Aug 18 2026, Larry: "allow Logo to keep same relative distance from
+  // Topic as Parent." Parent sits right up against Topic's left edge with
+  // a fixed column-gap (see the 3-column grid comment above, in the
+  // header markup) -- that gap already tracks Topic's own box naturally,
+  // since CSS grid handles it. Logo, being positioned independently by a
+  // fixed percentage of the header's total width, didn't: a longer or
+  // shorter Topic name changed Topic's box without moving Logo, so the
+  // visual gap on Logo's side drifted out of sync with Parent's.
+  //
+  // Fix: measure the real gap Parent currently keeps (its right edge to
+  // Topic's left edge) and re-place Logo's own frame that same distance
+  // off Topic's right edge, mirrored. Two-pass measure-then-adjust
+  // (place, measure where the frame actually landed, correct by the
+  // difference) rather than computing Logo-wrap's left directly, because
+  // the wrap is centered around its content (the frame plus the LOGO
+  // label above it) -- if the label text is ever wider than the frame,
+  // the wrap's own left edge and the frame's left edge aren't the same
+  // point, and only the frame's position is what "distance from Topic"
+  // actually means here.
+  function _sboardPositionLogoNearTopic(){
+    var wrap=document.getElementById('sc-logo-wrap');
+    var slot=document.getElementById('sc-logo-slot');
+    var topicBox=document.getElementById('sc-topic-box');
+    var parentHit=document.getElementById('sc-parent-hit');
+    var areaEl=document.getElementById('sc-header-area');
+    if(!wrap||!slot||!topicBox||!parentHit||!areaEl) return;
+    var topicRect=topicBox.getBoundingClientRect();
+    var parentRect=parentHit.getBoundingClientRect();
+    var areaRect=areaEl.getBoundingClientRect();
+    // Guard against a not-yet-laid-out screen (zero-width rects) --
+    // nothing to measure yet, leave the left:57% fallback in place.
+    if(!topicRect.width || !areaRect.width) return;
+    var gap=topicRect.left-parentRect.right;
+    if(!(gap>=0)) gap=14; // sane fallback -- matches the grid's own column-gap
+    var desiredSlotLeft=topicRect.right+gap;
+    var slotRect=slot.getBoundingClientRect();
+    var wrapRect=wrap.getBoundingClientRect();
+    var delta=desiredSlotLeft-slotRect.left;
+    wrap.style.left=((wrapRect.left-areaRect.left)+delta)+'px';
+  }
+  // Window resize, Aug 18 2026 -- this screen goes edge-to-edge
+  // (isx-full, see screen-fit.js's own note on why it skips the global
+  // auto-fit transform), so an actual browser-window resize changes
+  // Topic's real rendered width directly, not just the text-scale boost
+  // that renderSeaBoard already re-renders through. Same "each tool
+  // decides for itself whether it's currently on screen" approach as
+  // screen-fit.js's fg-text-scale-changed listener above -- no-ops
+  // instantly whenever this screen isn't the one showing.
+  window.addEventListener('resize', function(){
+    try{
+      var scr=document.getElementById('s-sea-of-ideas-cluster');
+      if(scr && scr.classList.contains('active')) _sboardPositionLogoNearTopic();
+    }catch(e){}
+  });
 
   async function _sboardMoveCard(itemId, headerId){
     if(_sboardAllRowsById[itemId] && _sboardAllRowsById[itemId].locked) return;
