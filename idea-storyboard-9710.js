@@ -2706,7 +2706,7 @@
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
-    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.round(13*_stMult), width-18);
+    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.round(10*_stMult), width-18);
     p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
@@ -3292,7 +3292,7 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
-        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(13*_tsMult), HEADER_W-28);
+        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(10*_tsMult), HEADER_W-28);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
@@ -3421,7 +3421,7 @@
         // ideas here aren't necessarily freshly typed. Larry wants one
         // consistent label across every storyboard instead.
         var localLabel='NEW';
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(13*_tsMult),HEADER_W-28)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(10*_tsMult),HEADER_W-28)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
