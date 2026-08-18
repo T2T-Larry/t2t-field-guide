@@ -2882,7 +2882,7 @@
       +'.bb-pri-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
-      +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px}'
+      +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px;word-break:break-word}'
       +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
@@ -3779,7 +3779,41 @@
     });
     var addTile=document.getElementById('bb-add-tile');
     if(addTile) addTile.addEventListener('click', openAddCard);
+    _bbFitTaskText();
   }
+
+  // Shrink-to-fit for card task text -- Aug 18 2026, Larry: "can we
+  // shrink text size when necessary to prevent splitting words on all
+  // boards?" Runs after every renderBoard() (and after a text-size-boost
+  // change) so each card's task line checks its OWN real, laid-out
+  // width and shrinks its font just enough that its longest word still
+  // fits, before ever falling back to .bb-task's word-break:break-word.
+  // Resets to the natural CSS size first so this is safe to call
+  // repeatedly (e.g. after the text-size boost changes) without ratcheting
+  // a card smaller and smaller across repeated calls.
+  function _bbFitTaskText(){
+    var els=document.querySelectorAll('.bb-card .bb-task');
+    for(var i=0;i<els.length;i++){
+      var el=els[i];
+      el.style.fontSize='';
+      var w=el.clientWidth;
+      if(!w) continue;
+      var cs=getComputedStyle(el);
+      var baseSize=parseFloat(cs.fontSize)||14;
+      var fitted=window.FGFitFontSize ? window.FGFitFontSize(el.textContent, w, {base:baseSize, min:Math.max(9, Math.round(baseSize*0.6)), step:0.5, fontFamily:cs.fontFamily, fontWeight:cs.fontWeight}) : baseSize;
+      if(fitted<baseSize) el.style.fontSize=fitted+'px';
+    }
+  }
+
+  // Text-size boost changes the CSS variable most card text scales off
+  // (calc(...px * var(--fg-text-scale,1))) automatically, no JS needed --
+  // but the fit pass above bakes in a fixed px value, so it has to
+  // re-run whenever the boost changes or it'd go stale. Safe to call any
+  // time; _bbFitTaskText() itself no-ops on any board that isn't showing
+  // (querySelectorAll just finds nothing).
+  window.addEventListener('fg-text-scale-changed', function(){
+    try { _bbFitTaskText(); } catch(e){}
+  });
 
   function openAddCard(){
     var t=document.getElementById('bb-new-task'); if(t) t.value='';
