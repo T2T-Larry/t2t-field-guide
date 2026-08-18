@@ -5020,6 +5020,21 @@
     T().wire('sb-preferences-close', _sboardOpenGearMenu);
   }
 
+  /* Deletion-sticks backstop, Aug 18 2026 -- same rule as header-data.js's
+     _parentHasAnyHeader (Larry: "adding headers is only a default; if
+     headers already exist, do not add any default headers"). This file
+     keeps its own local copy of the Purpose/NEW ensure-calls instead of
+     going through T2TData, so the guard has to be duplicated here too or
+     a deliberately-trashed Purpose/NEW header on the Idea Storyboard
+     would just get silently recreated on the next render. */
+  async function _sboardParentHasAnyHeader(parentId){
+    var _sb=T().sb;
+    var q=_sb.from('ideas').select('id').eq('content_type','header').limit(1);
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var res=await q;
+    return !!(res && !res.error && res.data && res.data.length);
+  }
+
   async function _sboardEnsurePurposeHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
@@ -5034,6 +5049,7 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
+    if(await _sboardParentHasAnyHeader(parentId)){ _sboardPurposeId=null; return null; }
     var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
     _sboardPurposeId=ins.data.id;
@@ -5060,6 +5076,7 @@
       if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
       return _sboardNewAdditionsId;
     }
+    if(await _sboardParentHasAnyHeader(parentId)){ _sboardNewAdditionsId=null; return null; }
     var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;

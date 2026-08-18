@@ -122,6 +122,26 @@
     }catch(e){ console.warn('ensureHeaderNamed exception:', e); return null; }
   }
 
+  /* Deletion-sticks backstop, Aug 18 2026 -- Larry: "Allow NEW and MISC
+     headers to be deleted like any other header. Adding headers is only
+     a default. If headers already exist, do not add any default
+     headers." Before this, ensureMiscHeader/ensureNewAdditionsHeader/
+     ensurePurposeHeader ran on every render and silently recreated
+     whichever default was missing -- so trashing NEW or MISC never
+     actually stuck, it just came back on the next render. Now a default
+     is only auto-created for a genuinely brand-new parent (zero headers
+     of any kind under it yet); once a parent has at least one header,
+     a deliberately-removed default stays gone. Trash/Archived are
+     unaffected -- they're the single global buckets deletion itself
+     depends on, not per-board defaults a traveler would remove. */
+  async function _parentHasAnyHeader(parentId){
+    var sb=_sb();
+    var q=sb.from('ideas').select('id').eq('content_type','header').limit(1);
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var res=await q;
+    return !!(res && !res.error && res.data && res.data.length);
+  }
+
   async function ensureMiscHeader(parentId){
     var sb=_sb(); var u=await _currentUser();
     if(!u) throw new Error('Not signed in.');
@@ -132,6 +152,7 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+    if(await _parentHasAnyHeader(parentId)) return null;
     var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'MISC',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('MISC setup failed: '+ins.error.message);
     return ins.data.id;
@@ -150,6 +171,7 @@
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+    if(await _parentHasAnyHeader(parentId)) return null;
     var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
     return ins.data.id;
@@ -172,6 +194,7 @@
       if(row.text_content!=='NEW'){ try{ await sb.from('ideas').update({text_content:'NEW'}).eq('id',row.id); }catch(e){} }
       return row.id;
     }
+    if(await _parentHasAnyHeader(parentId)) return null;
     var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'NEW',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
     if(ins.error) throw new Error('NEW setup failed: '+ins.error.message);
     return ins.data.id;
