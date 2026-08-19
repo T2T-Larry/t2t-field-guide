@@ -395,6 +395,21 @@
         +'.sc-view-remove-empty{font-size:calc(11px * var(--fg-text-scale,1));color:rgba(255,255,255,.65);padding:4px 2px}'
         +'.sc-view-add-confirm{width:100%;box-sizing:border-box}'
         +'.sc-view-add-error{font-size:calc(10px * var(--fg-text-scale,1));color:#f0b090;margin-top:2px}'
+        // 👥 in-place People dropdown, Session 226 (Aug 19) design, built
+        // Aug 19 2026 -- the card-back trigger used to jump straight to
+        // the full Call Sheet screen; now it opens this compact preview
+        // right where you clicked (same .sc-cdrop-menu shell as VIEW/
+        // Type/Title), so a quick glance or a quick add/remove never
+        // needs the full three-box screen at all.
+        +'.sb-people-row{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:default}'
+        +'.sb-people-row:hover{background:none}'
+        +'.sb-people-x{margin-left:8px;flex-shrink:0;background:none;border:0;color:#f0b090;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:2px}'
+        +'.sb-people-rolepick{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}'
+        +'.sb-people-rolepick-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.24);border-radius:6px;color:#fff;font-size:calc(12px * var(--fg-text-scale,1));padding:3px 7px;cursor:pointer;opacity:.55;font-family:inherit}'
+        +'.sb-people-rolepick-btn:hover{opacity:.8}'
+        +'.sb-people-rolepick-btn.active{opacity:1;background:#5b9bd5;border-color:#5b9bd5}'
+        +'.sb-people-call{border-style:solid;border-color:#5b9bd5;color:#5b9bd5}'
+        +'.sb-people-call:hover{background:rgba(255,255,255,.1);border-color:#fff;color:#fff}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
         +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
@@ -1675,7 +1690,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu','sb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -4935,23 +4950,44 @@
     box.style.display='block';
   }
 
-  async function _csConfirmAdd(role, email){
-    var errEl=document.getElementById('cs-error');
-    if(!email || !_csItem) return;
+  // Split into a DOM-free _csInsertRole (the actual card_roles write) plus
+  // a thin _csConfirmAdd wrapper that only knows about the full Call
+  // Sheet screen's own DOM, Aug 19 2026 -- added so the new 👥 dropdown
+  // (below) can reuse the exact same insert without dragging the full
+  // screen's form-hiding/input-clearing logic along with it. _csRefreshUI
+  // now redraws both the full screen (if open) and the compact dropdown
+  // (if open) after any card_roles change, whichever happens to be
+  // showing -- at most one of the two is ever on screen at once, both
+  // checks are no-ops when their own DOM isn't present.
+  function _csRefreshUI(){
+    _csRenderAllRoles();
+    _sbPeopleRenderList();
+  }
+
+  async function _csInsertRole(role, email){
+    if(!email || !_csItem) return {ok:false,msg:'Type a name or email.'};
     var match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.email||'').toLowerCase()===String(email).toLowerCase(); })[0];
-    if(!match){ if(errEl){ errEl.textContent='No T2T member found with that email.'; errEl.style.display='block'; } return; }
-    var _sb=T().sb; if(!_sb) return;
+    if(!match) return {ok:false,msg:'No T2T member found with that email.'};
+    var _sb=T().sb; if(!_sb) return {ok:false,msg:'Not connected.'};
     try{
       var meRes=await _sb.auth.getUser();
       var me=meRes && meRes.data ? meRes.data.user : null;
       var ins=await _sb.from('card_roles').insert({card_type:'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
       if(ins.error) throw ins.error;
-      if(errEl) errEl.style.display='none';
-      var form=document.querySelector('.cs-add-form[data-role-form="'+role+'"]'); if(form) form.style.display='none';
-      var input=document.querySelector('.cs-add-email[data-role="'+role+'"]'); if(input) input.value='';
       await _csLoadRoles(_csItem);
-      _csRenderAllRoles();
-    }catch(e){ if(errEl){ errEl.textContent=(e&&e.message)||'Could not add them.'; errEl.style.display='block'; } }
+      return {ok:true};
+    }catch(e){ return {ok:false,msg:(e&&e.message)||'Could not add them.'}; }
+  }
+
+  async function _csConfirmAdd(role, email){
+    var errEl=document.getElementById('cs-error');
+    if(!email || !_csItem) return;
+    var res=await _csInsertRole(role, email);
+    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+    if(errEl) errEl.style.display='none';
+    var form=document.querySelector('.cs-add-form[data-role-form="'+role+'"]'); if(form) form.style.display='none';
+    var input=document.querySelector('.cs-add-email[data-role="'+role+'"]'); if(input) input.value='';
+    _csRefreshUI();
   }
 
   async function _csRemoveRole(rowId){
@@ -4961,7 +4997,7 @@
       var del=await _sb.from('card_roles').delete().eq('id', rowId);
       if(del.error) throw del.error;
       await _csLoadRoles(_csItem);
-      _csRenderAllRoles();
+      _csRefreshUI();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not remove them.'; errEl.style.display='block'; } }
   }
 
@@ -4980,8 +5016,165 @@
       var upd=await _sb.from('card_roles').update({is_key: !row.is_key}).eq('id', rowId);
       if(upd.error) throw upd.error;
       await _csLoadRoles(_csItem);
-      _csRenderAllRoles();
+      _csRefreshUI();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
+  }
+
+  // ---- 👥 People dropdown -- Session 226 (Aug 19) design, built Aug 19
+  // 2026 after the four-role Stakeholder model shipped (Session 228).
+  // Reached from the card back's own 👥 icon (was 📋, jumping straight to
+  // the full Call Sheet -- see the sb-people-btn wiring below), this opens
+  // in place exactly like the board's own VIEW/Type/Title dropdowns: a
+  // small list right where you clicked, not a jump to a full screen,
+  // showing everyone currently on the card across all five roles. Bottom
+  // row carries Larry's three actions: (+) add someone -- pick a role
+  // first (defaults to Cast Member, the most common "put someone on this"
+  // case), then the same name/email picker/suggest-list every other add
+  // flow on this board uses (_csRenderSuggestions, reused as-is by
+  // pointing its data-role-suggest at whichever role is picked) -- ☎️ to
+  // open the full three-box Call Sheet screen when more detail (notes,
+  // KEY toggle) is actually needed, and (−) to reveal a ✕ next to each
+  // row so someone can be removed right here, no trip to the full screen.
+  // Shares _csRoles/_csItem and the card_roles helpers above with the
+  // full screen -- this is a second, lighter doorway onto the same data,
+  // not a parallel system, and _csRefreshUI keeps both in sync if a
+  // change happens to come from the other one.
+  var _sbPeopleRemoveMode = false;
+  var _sbPeopleAddRole = 'cast_member';
+  var _sbPeopleBackFn = null;
+
+  function _sbPeopleRenderList(){
+    var listEl=document.getElementById('sb-people-list');
+    if(!listEl) return; // dropdown not open -- no-op, safe to call from anywhere
+    var rows=(_csRoles||[]).slice().sort(function(a,b){
+      return CS_ROLE_ORDER.indexOf(a.role)-CS_ROLE_ORDER.indexOf(b.role);
+    });
+    if(!rows.length){
+      listEl.innerHTML='<div class="sc-cdrop-row sb-people-row" style="cursor:default;opacity:.6">Nobody yet</div>';
+      return;
+    }
+    listEl.innerHTML=rows.map(function(r){
+      var m=_csMemberLookup(r.user_id);
+      var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
+      var star=r.is_parent_connection?'<span class="cs-parent-star" title="Carried over from the parent">★</span>':'';
+      var key=(r.role==='stakeholder'&&r.is_key)?'<span class="cs-pr-keytag">KEY</span>':'';
+      return '<div class="sc-cdrop-row sb-people-row">'
+        +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+CS_ROLE_SYM[r.role]+' '+key+star+_esc9710(name)+'</span>'
+        +'<span style="display:flex;align-items:center;flex-shrink:0">'
+          +'<span class="sc-view-row-role">'+CS_ROLE_LABEL[r.role]+'</span>'
+          +(_sbPeopleRemoveMode?'<button type="button" class="sb-people-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</button>':'')
+        +'</span>'
+      +'</div>';
+    }).join('');
+  }
+
+  function _sbPeopleRenderRolePicker(){
+    var wrap=document.getElementById('sb-people-rolepick'); if(!wrap) return;
+    wrap.innerHTML=CS_ROLE_ORDER.map(function(role){
+      return '<button type="button" class="sb-people-rolepick-btn'+(role===_sbPeopleAddRole?' active':'')+'" data-role="'+role+'" title="Add as '+CS_ROLE_LABEL[role]+'">'+CS_ROLE_SYM[role]+'</button>';
+    }).join('');
+  }
+
+  async function _sbPeopleConfirmAdd(email){
+    var errEl=document.getElementById('sb-people-error');
+    if(!email) return;
+    var res=await _csInsertRole(_sbPeopleAddRole, email);
+    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
+    if(errEl) errEl.style.display='none';
+    var form=document.getElementById('sb-people-addform'); if(form) form.style.display='none';
+    var input=document.getElementById('sb-people-add-email'); if(input) input.value='';
+    _csRefreshUI();
+  }
+
+  async function _sboardOpenPeopleDropdown(triggerEl, item, backFn){
+    var menu=document.getElementById('sb-people-menu');
+    if(!triggerEl || !menu || !item) return;
+    var willOpen=menu.hidden;
+    _sboardCloseAllDropdowns(willOpen?'sb-people-menu':null);
+    if(!willOpen){ menu.hidden=true; return; }
+
+    _sbPeopleBackFn=backFn||function(){ openSbDetail(item); };
+    _sbPeopleRemoveMode=false;
+    _sbPeopleAddRole='cast_member';
+
+    menu.innerHTML='<div id="sb-people-list"></div>'
+      +'<div class="sc-cdrop-addrow">'
+        +'<button type="button" class="sc-dotted-add-btn" id="sb-people-add-btn" title="Add someone">+</button>'
+        +'<button type="button" class="sc-dotted-add-btn sb-people-call" id="sb-people-call-btn" title="Open the full Call Sheet">☎️</button>'
+        +'<button type="button" class="sc-dotted-add-btn sc-dotted-remove-btn" id="sb-people-remove-btn" title="Remove someone">−</button>'
+      +'</div>'
+      +'<div class="sc-view-addform" id="sb-people-addform" style="display:none">'
+        +'<div class="sb-people-rolepick" id="sb-people-rolepick"></div>'
+        +'<div class="tm-add-wrap">'
+          +'<input type="text" id="sb-people-add-email" placeholder="Type a name or email..." autocomplete="off">'
+          +'<div class="tm-add-suggest cs-add-suggest" data-role-suggest="cast_member" id="sb-people-add-suggest" style="display:none"></div>'
+        +'</div>'
+        +'<button type="button" class="sc-ov-btn save sc-view-add-confirm" id="sb-people-add-confirm">Add</button>'
+        +'<div id="sb-people-error" class="sc-view-add-error" style="display:none"></div>'
+      +'</div>';
+
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    menu.onclick=function(e){
+      e.stopPropagation();
+      var x=e.target.closest('.sb-people-x');
+      if(x){ _csRemoveRole(x.getAttribute('data-rowid')); }
+    };
+
+    var r=triggerEl.getBoundingClientRect();
+    menu.style.left=r.left+'px';
+    menu.style.top=(r.bottom+4)+'px';
+    menu.style.minWidth=Math.max(210,r.width)+'px';
+    menu.hidden=false;
+    var mr=menu.getBoundingClientRect();
+    if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+
+    await _tmFetchAllMembers();
+    await _csLoadRoles(item);
+    _sbPeopleRenderList();
+    _sbPeopleRenderRolePicker();
+
+    var addBtn=document.getElementById('sb-people-add-btn');
+    var addForm=document.getElementById('sb-people-addform');
+    var emailInput=document.getElementById('sb-people-add-email');
+    var suggBox=document.getElementById('sb-people-add-suggest');
+    var rolePick=document.getElementById('sb-people-rolepick');
+    var confirmBtn=document.getElementById('sb-people-add-confirm');
+    var callBtn=document.getElementById('sb-people-call-btn');
+    var removeBtn=document.getElementById('sb-people-remove-btn');
+
+    if(addBtn) addBtn.addEventListener('click', function(){
+      _sbPeopleRemoveMode=false; _sbPeopleRenderList();
+      var opening=addForm.style.display==='none';
+      addForm.style.display=opening?'block':'none';
+      if(opening){ _csRenderSuggestions(_sbPeopleAddRole, ''); }
+    });
+    if(rolePick) rolePick.addEventListener('click', function(e){
+      var btn=e.target.closest('.sb-people-rolepick-btn'); if(!btn) return;
+      _sbPeopleAddRole=btn.getAttribute('data-role');
+      _sbPeopleRenderRolePicker();
+      if(suggBox) suggBox.setAttribute('data-role-suggest', _sbPeopleAddRole);
+      _csRenderSuggestions(_sbPeopleAddRole, emailInput?emailInput.value:'');
+    });
+    if(emailInput){
+      emailInput.addEventListener('input', function(){ _csRenderSuggestions(_sbPeopleAddRole, emailInput.value); });
+      emailInput.addEventListener('focus', function(){ _csRenderSuggestions(_sbPeopleAddRole, emailInput.value); });
+      emailInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _sbPeopleConfirmAdd(emailInput.value.trim()); } });
+    }
+    if(suggBox) suggBox.addEventListener('click', function(e){
+      var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
+      _sbPeopleConfirmAdd(row.getAttribute('data-email'));
+    });
+    if(confirmBtn) confirmBtn.addEventListener('click', function(){ _sbPeopleConfirmAdd(emailInput?emailInput.value.trim():''); });
+    if(callBtn) callBtn.addEventListener('click', function(){
+      menu.hidden=true;
+      closeSbDetail();
+      openCallSheet(item, _sbPeopleBackFn);
+    });
+    if(removeBtn) removeBtn.addEventListener('click', function(){
+      if(addForm) addForm.style.display='none';
+      _sbPeopleRemoveMode=!_sbPeopleRemoveMode;
+      _sbPeopleRenderList();
+    });
   }
 
   // Call Sheet print, Session 228 (Aug 19) -- a proper single-page
@@ -5814,7 +6007,8 @@
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
-      + '<button class="sb-blue-btn" id="sb-callsheet" title="Call Sheet — who\'s on this card">📋</button>'
+      + '<button class="sb-blue-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
+      + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
       + (isTopRowHeader ? '<button class="sb-blue-btn" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌':'📋')+'</button>' : '')
@@ -6282,7 +6476,7 @@
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
 
-    T().wire('sb-callsheet', function(){ closeSbDetail(); openCallSheet(item, function(){ openSbDetail(item); }); });
+    T().wire('sb-people-btn', function(){ _sboardOpenPeopleDropdown(document.getElementById('sb-people-btn'), item, function(){ openSbDetail(item); }); });
 
     // Briefing Board tracking, Aug 11 2026 -- deliberately its own
     // button, separate from Lock (Larry: "lock is not the most
