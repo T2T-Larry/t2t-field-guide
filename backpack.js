@@ -775,18 +775,22 @@
         // Fixed July 17, 2026 — same priority pattern as mgOpen above,
         // using the public IdeaCapture.isOpen()/currentPageNum() API.
         var icOpen = window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen();
-        // DETAILS (9716, the shared Storyboard/Session card-back overlay)
-        // has the exact same "sits on top without calling nav()" problem
-        // the 1170/9713-9715 fix above already covers -- just never got added
-        // to this check, so triple-clicking the card back still reported
-        // whatever host screen (9710/9711) was underneath it. Larry, July
+        // IDEA CARD (1011 as of Aug 19, 2026 -- was DETAILS/9716; the
+        // shared Storyboard/Session card-back overlay) has the exact same
+        // "sits on top without calling nav()" problem the 1170/9713-9715
+        // fix above already covers -- just never got added to this check,
+        // so triple-clicking the card back still reported whatever host
+        // screen (9710/9711, now 1010/1014) was underneath it. Larry, July
         // 18, 2026.
         var detailOv=document.getElementById('sb-detail-overlay');
         var detailOpen = !!(detailOv && detailOv.classList.contains('active'));
-        // CLUSTER (9717) and the trash confirmation (9718) have the exact
-        // same "sits on top without calling nav()" problem DETAILS (9716)
-        // had - same fix, same reasoning. Every screen is a Touch Point and
-        // gets its own number, no exceptions. Larry, July 19, 2026.
+        // CLUSTER (1211 as of Aug 19, 2026 -- was 9717) and the Moose Poop
+        // trash confirmation (1221 as of Aug 19, 2026 -- was 9718) have the
+        // exact same "sits on top without calling nav()" problem IDEA CARD
+        // (1011) had - same fix, same reasoning. Every screen is a Touch
+        // Point and gets its own number, no exceptions. Larry, July 19,
+        // 2026. Renumbered into the Dream-phase methodology family
+        // (1200/1210/1220/1230/1240 -- see FG Design Notes) Aug 19, 2026.
         var clusterOv=document.getElementById('sb-cluster-overlay');
         var clusterOpen = !!(clusterOv && clusterOv.classList.contains('active'));
         var trashOv=document.getElementById('sb-trash-overlay');
@@ -856,7 +860,7 @@
                           e.clientY >= tvR.top && e.clientY <= tvR.bottom;
         }
         var outsideNum = onNavBar ? leftNum : (onRightDrawer ? rightNum : (onTvFrameRing ? '0007' : (outsideWidget ? '0000' : (_pageNums[cur] || '—')))); // backdrop renamed C001 -> 0000, July 31 2026, Larry: closing the desk via the TV X now leaves a real near-blank state (just the embossed T2T watermark + the two empty drawers) reachable and visible like any other screen, so it earns a screen number instead of a Component id (was A001, then C001 as of July 28 2026's Library A/M/T-prefix cleanup).
-        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '9718' : (clusterOpen ? '9717' : (detailOpen ? '9716' : (bbAddOpen ? '4020' : (bbDetailOpen ? '4030' : (bbKeyBuilderOpen ? '4050' : (bbKeyPickerOpen ? '4055' : outsideNum))))))));
+        var num = mgOpen ? '9000' : (icOpen ? window.IdeaCapture.currentPageNum() : (trashOpen ? '1221' : (clusterOpen ? '1211' : (detailOpen ? '1011' : (bbAddOpen ? '4020' : (bbDetailOpen ? '4030' : (bbKeyBuilderOpen ? '4050' : (bbKeyPickerOpen ? '4055' : outsideNum))))))));
         showPageToast(num);
       }
     });

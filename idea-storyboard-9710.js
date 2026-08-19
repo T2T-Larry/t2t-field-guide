@@ -5610,11 +5610,11 @@
     }
 
     ov.innerHTML='<div class="sc-overlay-card sb-shape-card sb-details-card" style="text-align:center;background:#F5F1E8;position:relative">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
-      + '<span id="sb-details-eyebrow" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">DETAILS</span>'
+      + '<div id="sb-details-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:grab">'
+      + '<span id="sb-details-eyebrow" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">IDEA CARD</span>'
       + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
       + '</div>'
-      + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">9716</div>'
+      + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
       + apexTag
       + topRowHTML
       + personRowHTML
@@ -5672,6 +5672,10 @@
       + (isTopRowHeader && item.track_on_briefing_board ? '<button class="sb-blue-btn" id="sb-bb-open" title="Open Briefing Card (new tab)">🧭</button>' : '')
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
+      // sb-trash-overlay ("Moose poop?" confirm) — renumbered 9718 → 1221
+      // (Aug 19, 2026, Larry): the Moose Poop step of the Dream-phase
+      // methodology family (1200/1210/1220/1230/1240 — see FG Design
+      // Notes), not a generic utility despite living inline on the card.
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
       + '<p style="font-size:calc(14px * var(--fg-text-scale,1));font-weight:500;margin:0 0 10px;color:#2C2C2A">Moose poop?</p>'
@@ -5683,6 +5687,14 @@
       + '</div>';
     ov.classList.add('active');
     T().wire('sb-detail-corner-flip', closeSbDetail);
+    // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
+    // Card overlay drags via _bbMakeDraggable in briefing-board.js, this
+    // just never got the same treatment. Ported the same pattern rather
+    // than screen-zero.js's makeDraggable, which is built for desktop
+    // icons, not modal overlay cards. Position resets on close/reopen
+    // (innerHTML is rebuilt from scratch) -- no saved-position persistence
+    // yet, matching what was asked for.
+    _sbMakeDraggable(ov.querySelector('.sb-details-card'), document.getElementById('sb-details-head'));
 
     (function(){
       var clicks=0, timer=null;
@@ -6612,6 +6624,65 @@
     T().wire('sb-keylib-close', closeSbDetail);
   }
 
+  // Drag helper for IDEA CARD (1011), Aug 19 2026 -- same behavior as
+  // briefing-board.js's _bbMakeDraggable, but NOT the same wiring: the
+  // Briefing Card overlay is built once and its DOM node reused on every
+  // open, so binding fresh document-level mousemove/mouseup listeners
+  // per-open is harmless there. IDEA CARD's ov.innerHTML is rebuilt from
+  // scratch every single time a card is opened (different card, different
+  // content) -- copying _bbMakeDraggable verbatim would stack up a new
+  // set of document listeners on every open, forever, since document
+  // itself never goes away. Fixed here by binding the document-level
+  // move/up listeners exactly once (module-level, guarded), and keeping
+  // only the per-open state (which card is moving) in a shared variable
+  // that mousedown on the fresh headEl sets and mouseup clears. The
+  // mousedown/touchstart listeners still get added to the current headEl
+  // each open, but that element (and its listeners) is discarded along
+  // with it when the overlay's innerHTML is cleared on close.
+  var _sbDragListenersBound=false, _sbDragState=null;
+  function _sbMakeDraggable(cardEl, headEl){
+    if(!cardEl || !headEl) return;
+    function onDown(e){
+      if(e.target.closest('#sb-close')) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var rect=cardEl.getBoundingClientRect();
+      _sbDragState={cardEl:cardEl, headEl:headEl, startX:pt.clientX, startY:pt.clientY, startLeft:rect.left, startTop:rect.top};
+      cardEl.style.position='fixed';
+      cardEl.style.margin='0';
+      cardEl.style.left=rect.left+'px';
+      cardEl.style.top=rect.top+'px';
+      headEl.style.cursor='grabbing';
+      e.preventDefault();
+    }
+    headEl.style.cursor='grab';
+    headEl.addEventListener('mousedown', onDown);
+    headEl.addEventListener('touchstart', onDown, {passive:false});
+    if(_sbDragListenersBound) return;
+    _sbDragListenersBound=true;
+    document.addEventListener('mousemove', function(e){
+      if(!_sbDragState) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var st=_sbDragState;
+      st.cardEl.style.left=(st.startLeft+(pt.clientX-st.startX))+'px';
+      st.cardEl.style.top=(st.startTop+(pt.clientY-st.startY))+'px';
+      e.preventDefault();
+    }, {passive:false});
+    document.addEventListener('touchmove', function(e){
+      if(!_sbDragState) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var st=_sbDragState;
+      st.cardEl.style.left=(st.startLeft+(pt.clientX-st.startX))+'px';
+      st.cardEl.style.top=(st.startTop+(pt.clientY-st.startY))+'px';
+      e.preventDefault();
+    }, {passive:false});
+    function onUp(){
+      if(_sbDragState) _sbDragState.headEl.style.cursor='grab';
+      _sbDragState=null;
+    }
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+  }
+
   function closeSbDetail(){
     var ov=document.getElementById('sb-detail-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; ov.style.justifyContent=''; ov.style.paddingLeft=''; }
@@ -6624,7 +6695,11 @@
     }
   }
 
-  /* ── CLUSTER view (9240 family) — Logged July 7, 2026 ──
+  /* ── CLUSTER view — Logged July 7, 2026. Renumbered 9717 → 1211 (Aug 19,
+     2026, Larry): joins the Dream-phase methodology family (Perceptions
+     1200 / Cluster 1210 / Moose Poop 1220 / Resonance 1230 / Sort to
+     Simplicity 1240 — see FG Design Notes) as the built screen for the
+     Cluster step, not just a Storyboard-proximity number. ──
      A per-bucket sense-making screen, opened from the SHAPING card's VIEW AS
      row. Center = the bucket's own loose ideas, rendered wobbly/unordered —
      same visual language as NEW, reused at this fractal level.
