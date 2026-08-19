@@ -293,7 +293,40 @@
         +'.cs-empty-role{font-size:calc(11px * var(--fg-text-scale,1));color:#a3907a;font-style:italic;padding:4px 0 6px}'
         +'.cs-remove-x{margin-left:6px;color:#b8562f;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1))}'
         +'.cs-parent-star{color:#c9a87c;margin-right:2px}'
+        // Key Stakeholder toggle, Session 228 -- a clickable 🔑, dimmed
+        // when off, full color when on. Deliberately not a star, so it
+        // can never be mistaken for cs-parent-star's gold ★ (a
+        // different meaning: carried over from the parent board).
+        +'.cs-key-toggle{cursor:pointer;margin-right:4px;opacity:0.32;filter:grayscale(1)}'
+        +'.cs-key-toggle:hover{opacity:0.6}'
+        +'.cs-key-toggle.cs-key-on{opacity:1;filter:none}'
         +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
+        // Call Sheet print document, Session 228 (Aug 19) -- portrait
+        // page, built and shown only for the print job (see _csPrint).
+        // Scoped to body.cs-printing so it never collides with the
+        // sb-team-print rule above, which stays in force for Team
+        // Roster's own (landscape) print button.
+        +'.cs-print-doc{display:none}'
+        +'.cs-pr-masthead{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #1a3a5c;padding-bottom:14px;margin-bottom:6px}'
+        +'.cs-pr-mast-left h1{margin:0;font-size:26px;letter-spacing:0.04em;font-weight:700;font-family:Georgia,\'Times New Roman\',serif;color:#1a3a5c}'
+        +'.cs-pr-sub{font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#7a6040;margin-top:4px}'
+        +'.cs-pr-mast-right{text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#7a6040}'
+        +'.cs-pr-date{font-weight:700;color:#1a3a5c;font-size:12px}'
+        +'.cs-pr-crumb{font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.06em;color:#7a6040;margin:12px 0 26px;text-align:center}'
+        +'.cs-pr-group{margin-bottom:22px}'
+        +'.cs-pr-group-title{font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#1a3a5c;border-bottom:1.5px solid #1a3a5c;padding-bottom:4px;margin-bottom:2px}'
+        +'.cs-pr-group-sub{font-family:Arial,sans-serif;font-size:10px;color:#7a6040;font-style:italic;margin:2px 0 10px}'
+        +'.cs-print-doc table{width:100%;border-collapse:collapse}'
+        +'.cs-pr-role{width:118px;font-weight:700;color:#5b9bd5;font-size:11px;letter-spacing:0.03em;padding:7px 0 6px;vertical-align:top;font-family:Arial,sans-serif}'
+        +'.cs-pr-name{font-family:Arial,sans-serif;font-size:12.5px;vertical-align:top;padding:6px 0;border-bottom:1px solid #efe9dc}'
+        +'.cs-pr-nameline{font-weight:700;color:#1a3a5c}'
+        +'.cs-pr-star{color:#c9a87c;margin-right:3px}'
+        +'.cs-pr-keytag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.05em;color:#fff;background:#b8562f;border-radius:3px;padding:1px 5px;margin-right:5px;vertical-align:middle}'
+        +'.cs-pr-email{color:#5b9bd5;font-size:11px;margin-top:1px}'
+        +'.cs-pr-notes{color:#7a6040;font-size:11px;margin-top:2px;font-style:italic}'
+        +'.cs-pr-empty{color:#b9ad98;font-style:italic;font-size:11.5px}'
+        +'.cs-pr-footer{margin-top:32px;padding-top:12px;border-top:1px solid #efe9dc;font-family:Arial,sans-serif;font-size:9.5px;color:#a3907a;display:flex;justify-content:space-between}'
+        +'@media print{body.cs-printing *{visibility:hidden}body.cs-printing .cs-print-doc{display:block;position:absolute;left:0;top:0;width:100%;padding:0.2in;box-sizing:border-box}body.cs-printing .cs-print-doc,body.cs-printing .cs-print-doc *{visibility:visible}}'
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
@@ -4788,29 +4821,37 @@
   // callable from any card (Subber/Header/TOPIC) via the 📋 button on
   // its DETAILS back -- 🎬 was already taken by the Video/Link toggle,
   // so Call Sheet gets its own icon instead of colliding with it.
-  // Reuses card_roles (six roles: principal/stakeholder/leader/
-  // facilitator/facilitator_qualified/cast_member) and the same
-  // name/email/notes row look as Team Roster (tm-* classes), grouped
-  // into three boxes per Larry's design: Principal & Stakeholder
-  // (invested, not doing), The Doers (Leader + Cast Member), and
-  // Facilitator (process, not outcome) with Facilitator-qualified
-  // alongside it. Idea Storyboard only so far -- the Briefing Board
-  // rollout (card_type='briefing_card') is a later step.
-  // Not yet built here: auto-defaulting Principal to whoever assigned
-  // the card, and auto-highlighting a Fractal Casting delegator as a
-  // starred Principal (is_parent_connection) -- both flagged open in
-  // Design Notes and left for a follow-up pass once this first screen
-  // is confirmed live.
+  // Reuses card_roles and the same name/email/notes row look as Team
+  // Roster (tm-* classes), grouped into three boxes per Larry's design:
+  // Stakeholders (invested, not doing), The Doers (Leader + Cast
+  // Member), and Facilitator (process, not outcome) with
+  // Facilitator-qualified alongside it. Idea Storyboard only so far --
+  // the Briefing Board rollout (card_type='briefing_card') is a later
+  // step.
+  // Session 228 (Aug 19): Principal folded into Stakeholder -- Larry's
+  // insight was that everyone in that box is really a Stakeholder,
+  // some just happen to be KEY (able to directly interfere with
+  // progress). Migrated live: card_roles gained an is_key boolean, the
+  // one existing 'principal' row became stakeholder+is_key=true, and
+  // 'principal' was dropped from the role check constraint. is_key is
+  // a per-row toggle (🔑, click to star/unstar) shown only on
+  // Stakeholder rows -- deliberately a different mark from
+  // is_parent_connection's gold ★ ("carried over from the parent" via
+  // Fractal Casting) so the two meanings can't be confused on the same
+  // row. Not yet built: auto-defaulting a new card's Stakeholder to
+  // whoever assigned it, and auto-marking a Fractal Casting delegator
+  // as is_parent_connection in the first place -- both still flagged
+  // open in Design Notes.
   var _csRoles = [];
   var _csItem = null;
-  var CS_ROLE_ORDER = ['principal','stakeholder','leader','cast_member','facilitator','facilitator_qualified'];
+  var CS_ROLE_ORDER = ['stakeholder','leader','cast_member','facilitator','facilitator_qualified'];
   var CS_ROLE_LABEL = {
-    principal:'Principal', stakeholder:'Stakeholder', leader:'Leader',
+    stakeholder:'Stakeholder', leader:'Leader',
     cast_member:'Cast Member', facilitator:'Facilitator',
     facilitator_qualified:'Facilitator-qualified'
   };
   var CS_ROLE_SYM = {
-    principal:'👑', stakeholder:'👤', leader:'🎯',
+    stakeholder:'👤', leader:'🎯',
     cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦'
   };
 
@@ -4840,10 +4881,13 @@
       var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
       var email=m?(m.email||''):'';
       var star=r.is_parent_connection?'<span class="cs-parent-star" title="Carried over from the parent">★</span>':'';
+      var keyToggle = role==='stakeholder'
+        ? '<span class="cs-key-toggle'+(r.is_key?' cs-key-on':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_key?'Key Stakeholder — can directly interfere with progress. Click to unmark.':'Mark as a Key Stakeholder — can directly interfere with progress')+'">🔑</span>'
+        : '';
       return '<div class="tm-row">'
         +'<div class="tm-sym">'+CS_ROLE_SYM[role]+'</div>'
         +'<div class="tm-body">'
-          +'<div class="tm-name">'+star+_esc9710(name)+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
+          +'<div class="tm-name">'+keyToggle+star+_esc9710(name)+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
           +(email?('<div class="tm-contact">✉ '+_esc9710(email)+'</div>'):'')
           +'<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="—" value="'+_esc9710(r.notes||'')+'"></div>'
         +'</div>'
@@ -4927,6 +4971,108 @@
     try{ await _sb.from('card_roles').update({notes:notes}).eq('id', rowId); }catch(e){}
   }
 
+  async function _csToggleKey(rowId){
+    if(!rowId) return;
+    var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
+    if(!row) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var upd=await _sb.from('card_roles').update({is_key: !row.is_key}).eq('id', rowId);
+      if(upd.error) throw upd.error;
+      await _csLoadRoles(_csItem);
+      _csRenderAllRoles();
+    }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
+  }
+
+  // Call Sheet print, Session 228 (Aug 19) -- a proper single-page
+  // portrait document, not a screenshot of the editable overlay (that's
+  // the tm-print-tile/sb-team-print pattern Team Roster uses, forced
+  // landscape). Builds a hidden #cs-print-doc from the same _csRoles
+  // data, revealed only for the print job via a body.cs-printing class
+  // scoped @media print rule -- kept fully separate from the existing
+  // sb-team-print print rule (own @page override, injected and removed
+  // around the print call) so neither print flow can bleed into the
+  // other's page orientation.
+  var CS_PRINT_GROUPS = [
+    {title:'Stakeholders', sub:'Invested, not doing — who controls or is affected by this. KEY = can directly interfere with progress.', roles:['stakeholder']},
+    {title:'The Doers', sub:'Leader stays accountable even if the work gets delegated', roles:['leader','cast_member']},
+    {title:'Facilitator', sub:'Responsible for the session, not the outcome', roles:['facilitator','facilitator_qualified']}
+  ];
+
+  function _csFmtToday(){
+    try{ return new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); }
+    catch(e){ return ''; }
+  }
+
+  function _csPrintRoleRows(role){
+    var rows=_csRowsForRole(role);
+    if(!rows.length){
+      return '<tr class="cs-pr-row"><td class="cs-pr-role">'+_esc9710(CS_ROLE_LABEL[role])+'</td><td class="cs-pr-name"><div class="cs-pr-empty">Nobody yet</div></td></tr>';
+    }
+    return rows.map(function(r,i){
+      var m=_csMemberLookup(r.user_id);
+      var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
+      var email=m?(m.email||''):'';
+      var star=r.is_parent_connection?'<span class="cs-pr-star">★</span>':'';
+      var keytag=r.is_key?'<span class="cs-pr-keytag">KEY</span>':'';
+      return '<tr class="cs-pr-row">'
+        +'<td class="cs-pr-role">'+(i===0?_esc9710(CS_ROLE_LABEL[role]):'')+'</td>'
+        +'<td class="cs-pr-name">'
+          +'<div class="cs-pr-nameline">'+keytag+star+_esc9710(name)+'</div>'
+          +(email?('<div class="cs-pr-email">'+_esc9710(email)+'</div>'):'')
+          +(r.notes?('<div class="cs-pr-notes">Notes: '+_esc9710(r.notes)+'</div>'):'')
+        +'</td>'
+      +'</tr>';
+    }).join('');
+  }
+
+  function _csPrintGroupHTML(g){
+    return '<div class="cs-pr-group">'
+      +'<div class="cs-pr-group-title">'+g.title+'</div>'
+      +'<div class="cs-pr-group-sub">'+g.sub+'</div>'
+      +'<table>'+g.roles.map(_csPrintRoleRows).join('')+'</table>'
+    +'</div>';
+  }
+
+  async function _csBuildPrintDoc(){
+    var crumbText='';
+    try{
+      var chain=(window.T2TData && window.T2TData.ancestorChain && _csItem) ? await window.T2TData.ancestorChain(_csItem.id) : [];
+      crumbText=(chain||[]).map(function(c){ return c.text||'(untitled)'; }).join(' / ');
+    }catch(e){}
+    if(!crumbText) crumbText=(_csItem&&_csItem.text_content)||'';
+    var doc=document.getElementById('cs-print-doc');
+    if(!doc){ doc=document.createElement('div'); doc.id='cs-print-doc'; doc.className='cs-print-doc'; document.body.appendChild(doc); }
+    var today=_csFmtToday();
+    doc.innerHTML='<div class="cs-pr-masthead">'
+        +'<div class="cs-pr-mast-left"><h1>📋 Call Sheet</h1><div class="cs-pr-sub">T2T Field Guide</div></div>'
+        +'<div class="cs-pr-mast-right"><div class="cs-pr-date">'+today+'</div><div>Printed from the Idea Storyboard</div></div>'
+      +'</div>'
+      +'<div class="cs-pr-crumb">'+_esc9710(crumbText)+'</div>'
+      +CS_PRINT_GROUPS.map(_csPrintGroupHTML).join('')
+      +'<div class="cs-pr-footer"><span>T2T Field Guide — Call Sheet</span><span>Generated '+today+'</span></div>';
+  }
+
+  function _csPrint(){
+    _csBuildPrintDoc().then(function(){
+      var styleId='cs-print-page-style';
+      var old=document.getElementById(styleId); if(old) old.remove();
+      var st=document.createElement('style'); st.id=styleId;
+      st.textContent='@page{size:portrait;margin:0.6in}';
+      document.head.appendChild(st);
+      document.body.classList.add('cs-printing');
+      var cleaned=false;
+      function cleanup(){
+        if(cleaned) return; cleaned=true;
+        document.body.classList.remove('cs-printing');
+        var s=document.getElementById(styleId); if(s) s.remove();
+        window.removeEventListener('afterprint', cleanup);
+      }
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+    });
+  }
+
   async function openCallSheet(item, backFn){
     _csItem=item;
     var ov=document.getElementById('sb-detail-overlay'); if(!ov || !item) return;
@@ -4934,14 +5080,16 @@
       +'<div id="cs-body">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
         +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">📋 CALL SHEET</span>'
-        +'<button id="cs-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+          +'<div class="tm-print-tile" id="cs-print-tile" title="Print Call Sheet">&#128438;</div>'
+          +'<button id="cs-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
+        +'</div>'
       +'</div>'
       +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
       +'<div class="cs-group">'
-        +'<div class="cs-group-title">Principal &amp; Stakeholder</div>'
-        +'<div class="cs-group-sub">Invested, not doing — who controls or is affected by this</div>'
-        +'<div class="cs-role-label">Principal</div><div id="cs-rows-principal"></div>'+_csRenderAddRow('principal')
-        +'<div class="cs-role-label">Stakeholder</div><div id="cs-rows-stakeholder"></div>'+_csRenderAddRow('stakeholder')
+        +'<div class="cs-group-title">Stakeholders</div>'
+        +'<div class="cs-group-sub">Invested, not doing — who controls or is affected by this. Tap 🔑 to mark a Key Stakeholder, someone who can directly interfere with progress.</div>'
+        +'<div id="cs-rows-stakeholder"></div>'+_csRenderAddRow('stakeholder')
       +'</div>'
       +'<div class="cs-group cs-doers">'
         +'<div class="cs-group-title">The Doers</div>'
@@ -4964,6 +5112,7 @@
     function goBack(){ closeSbDetail(); (backFn||function(){})(); }
     T().wire('cs-close', goBack);
     T().wire('cs-corner-flip', goBack);
+    T().wire('cs-print-tile', _csPrint);
 
     // Breadcrumb -- same ancestor walk header-data.js already uses to
     // resume a session at depth (ancestorChain), reused here purely for
@@ -5009,8 +5158,8 @@
         });
       });
       body.addEventListener('click', function(e){
-        var x=e.target.closest('.cs-remove-x'); if(!x) return;
-        _csRemoveRole(x.getAttribute('data-rowid'));
+        var x=e.target.closest('.cs-remove-x'); if(x){ _csRemoveRole(x.getAttribute('data-rowid')); return; }
+        var k=e.target.closest('.cs-key-toggle'); if(k){ _csToggleKey(k.getAttribute('data-rowid')); return; }
       });
       body.addEventListener('change', function(e){
         if(e.target.classList.contains('cs-notes-input')){
