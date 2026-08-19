@@ -277,6 +277,22 @@
         +'.tm-add-suggest-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'.tm-add-suggest-email{color:#7a6040;font-size:calc(11px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'.tm-add-suggest-empty{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic}'
+        // Role / Call Sheet overlay, Session 222 (Aug 18) design, built
+        // Session 223 -- reuses every tm-* row/contact/notes/add-suggest
+        // class above (same look as Team Roster) grouped into labeled
+        // boxes instead of one flat list. cs-doers boxes Leader + Cast
+        // Member together per Larry's "the doers" framing; Principal/
+        // Stakeholder and Facilitator each get their own box.
+        +'.cs-crumb{font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:0.06em;color:#7a6040;text-align:center;margin:-6px 0 12px}'
+        +'.cs-group{border:1px solid #efe9dc;border-radius:10px;padding:8px 10px 4px;margin-bottom:10px;text-align:left}'
+        +'.cs-group.cs-doers{background:#f7fbfe;border-color:#cfe4f2}'
+        +'.cs-group-title{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1a3a5c;margin-bottom:2px}'
+        +'.cs-group-sub{font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin:-2px 0 4px}'
+        +'.cs-role-label{font-size:calc(10px * var(--fg-text-scale,1));font-weight:600;color:#5b9bd5;letter-spacing:0.04em;margin-top:6px}'
+        +'.cs-role-label:first-child{margin-top:0}'
+        +'.cs-empty-role{font-size:calc(11px * var(--fg-text-scale,1));color:#a3907a;font-style:italic;padding:4px 0 6px}'
+        +'.cs-remove-x{margin-left:6px;color:#b8562f;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1))}'
+        +'.cs-parent-star{color:#c9a87c;margin-right:2px}'
         +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
@@ -4766,6 +4782,244 @@
     _sboardRenderPersonFilterPicker(projectRow);
   }
 
+  // ---- Role / Call Sheet -- Session 222 (Aug 18) design, built Session
+  // 223 (Aug 19) after the DB table (card_roles, created live Session
+  // 222) survived a lost-code restart untouched. One shared screen,
+  // callable from any card (Subber/Header/TOPIC) via the 📋 button on
+  // its DETAILS back -- 🎬 was already taken by the Video/Link toggle,
+  // so Call Sheet gets its own icon instead of colliding with it.
+  // Reuses card_roles (six roles: principal/stakeholder/leader/
+  // facilitator/facilitator_qualified/cast_member) and the same
+  // name/email/notes row look as Team Roster (tm-* classes), grouped
+  // into three boxes per Larry's design: Principal & Stakeholder
+  // (invested, not doing), The Doers (Leader + Cast Member), and
+  // Facilitator (process, not outcome) with Facilitator-qualified
+  // alongside it. Idea Storyboard only so far -- the Briefing Board
+  // rollout (card_type='briefing_card') is a later step.
+  // Not yet built here: auto-defaulting Principal to whoever assigned
+  // the card, and auto-highlighting a Fractal Casting delegator as a
+  // starred Principal (is_parent_connection) -- both flagged open in
+  // Design Notes and left for a follow-up pass once this first screen
+  // is confirmed live.
+  var _csRoles = [];
+  var _csItem = null;
+  var CS_ROLE_ORDER = ['principal','stakeholder','leader','cast_member','facilitator','facilitator_qualified'];
+  var CS_ROLE_LABEL = {
+    principal:'Principal', stakeholder:'Stakeholder', leader:'Leader',
+    cast_member:'Cast Member', facilitator:'Facilitator',
+    facilitator_qualified:'Facilitator-qualified'
+  };
+  var CS_ROLE_SYM = {
+    principal:'👑', stakeholder:'👤', leader:'🎯',
+    cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦'
+  };
+
+  async function _csLoadRoles(item){
+    var _sb=T().sb; if(!_sb || !item){ _csRoles=[]; return; }
+    try{
+      var res=await _sb.from('card_roles').select('*').eq('card_type','idea').eq('card_id', item.id);
+      _csRoles = (!res.error && res.data) ? res.data : [];
+    }catch(e){ _csRoles=[]; }
+  }
+
+  function _csRowsForRole(role){
+    return (_csRoles||[]).filter(function(r){ return r.role===role; });
+  }
+
+  function _csMemberLookup(uid){
+    var pool=_tmAllMembersCache||[];
+    for(var i=0;i<pool.length;i++){ if(String(pool[i].user_id)===String(uid)) return pool[i]; }
+    return null;
+  }
+
+  function _csRenderRoleRows(role){
+    var rows=_csRowsForRole(role);
+    if(!rows.length) return '<div class="cs-empty-role">Nobody yet</div>';
+    return rows.map(function(r){
+      var m=_csMemberLookup(r.user_id);
+      var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
+      var email=m?(m.email||''):'';
+      var star=r.is_parent_connection?'<span class="cs-parent-star" title="Carried over from the parent">★</span>':'';
+      return '<div class="tm-row">'
+        +'<div class="tm-sym">'+CS_ROLE_SYM[role]+'</div>'
+        +'<div class="tm-body">'
+          +'<div class="tm-name">'+star+_esc9710(name)+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
+          +(email?('<div class="tm-contact">✉ '+_esc9710(email)+'</div>'):'')
+          +'<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="—" value="'+_esc9710(r.notes||'')+'"></div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+
+  function _csRenderAddRow(role){
+    return '<div class="tm-addrow" style="margin-top:4px;justify-content:flex-start">'
+        +'<div class="tm-add-tile cs-add-tile" data-role="'+role+'" title="Add to '+CS_ROLE_LABEL[role]+'">+</div>'
+      +'</div>'
+      +'<div class="cs-add-form" data-role-form="'+role+'" style="display:none;margin:4px 0 2px">'
+        +'<div class="tm-add-wrap">'
+          +'<input type="text" class="cs-add-email" data-role="'+role+'" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1));padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
+          +'<div class="tm-add-suggest cs-add-suggest" data-role-suggest="'+role+'" style="display:none"></div>'
+        +'</div>'
+      +'</div>';
+  }
+
+  function _csRenderAllRoles(){
+    CS_ROLE_ORDER.forEach(function(role){
+      var el=document.getElementById('cs-rows-'+role);
+      if(el) el.innerHTML=_csRenderRoleRows(role);
+    });
+  }
+
+  function _csRenderSuggestions(role, query){
+    var box=document.querySelector('.cs-add-suggest[data-role-suggest="'+role+'"]'); if(!box) return;
+    var already={}; _csRowsForRole(role).forEach(function(r){ already[r.user_id]=true; });
+    var q=String(query||'').trim().toLowerCase();
+    var pool=(_tmAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
+    var matches = q ? pool.filter(function(m){
+      return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
+    }) : pool;
+    if(!matches.length){
+      box.innerHTML='<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone’s already in this role.')+'</div>';
+    } else {
+      box.innerHTML=matches.map(function(m){
+        return '<div class="tm-add-suggest-row" data-email="'+_esc9710(m.email||'')+'">'
+          +'<div class="tm-add-suggest-name">'+_esc9710(m.name||m.email||'')+'</div>'
+          +'<div class="tm-add-suggest-email">'+_esc9710(m.email||'')+'</div>'
+        +'</div>';
+      }).join('');
+    }
+    box.style.display='block';
+  }
+
+  async function _csConfirmAdd(role, email){
+    var errEl=document.getElementById('cs-error');
+    if(!email || !_csItem) return;
+    var match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.email||'').toLowerCase()===String(email).toLowerCase(); })[0];
+    if(!match){ if(errEl){ errEl.textContent='No T2T member found with that email.'; errEl.style.display='block'; } return; }
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var meRes=await _sb.auth.getUser();
+      var me=meRes && meRes.data ? meRes.data.user : null;
+      var ins=await _sb.from('card_roles').insert({card_type:'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
+      if(ins.error) throw ins.error;
+      if(errEl) errEl.style.display='none';
+      var form=document.querySelector('.cs-add-form[data-role-form="'+role+'"]'); if(form) form.style.display='none';
+      var input=document.querySelector('.cs-add-email[data-role="'+role+'"]'); if(input) input.value='';
+      await _csLoadRoles(_csItem);
+      _csRenderAllRoles();
+    }catch(e){ if(errEl){ errEl.textContent=(e&&e.message)||'Could not add them.'; errEl.style.display='block'; } }
+  }
+
+  async function _csRemoveRole(rowId){
+    if(!rowId || !_csItem) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var del=await _sb.from('card_roles').delete().eq('id', rowId);
+      if(del.error) throw del.error;
+      await _csLoadRoles(_csItem);
+      _csRenderAllRoles();
+    }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not remove them.'; errEl.style.display='block'; } }
+  }
+
+  async function _csSaveNotes(rowId, notes){
+    if(!rowId) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{ await _sb.from('card_roles').update({notes:notes}).eq('id', rowId); }catch(e){}
+  }
+
+  async function openCallSheet(item, backFn){
+    _csItem=item;
+    var ov=document.getElementById('sb-detail-overlay'); if(!ov || !item) return;
+    ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center;background:#F5F1E8;max-height:82vh;overflow-y:auto;position:relative">'
+      +'<div id="cs-body">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">📋 CALL SHEET</span>'
+        +'<button id="cs-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
+      +'</div>'
+      +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
+      +'<div class="cs-group">'
+        +'<div class="cs-group-title">Principal &amp; Stakeholder</div>'
+        +'<div class="cs-group-sub">Invested, not doing — who controls or is affected by this</div>'
+        +'<div class="cs-role-label">Principal</div><div id="cs-rows-principal"></div>'+_csRenderAddRow('principal')
+        +'<div class="cs-role-label">Stakeholder</div><div id="cs-rows-stakeholder"></div>'+_csRenderAddRow('stakeholder')
+      +'</div>'
+      +'<div class="cs-group cs-doers">'
+        +'<div class="cs-group-title">The Doers</div>'
+        +'<div class="cs-group-sub">Leader stays accountable even if the work gets delegated</div>'
+        +'<div class="cs-role-label">Leader</div><div id="cs-rows-leader"></div>'+_csRenderAddRow('leader')
+        +'<div class="cs-role-label">Cast Member</div><div id="cs-rows-cast_member"></div>'+_csRenderAddRow('cast_member')
+      +'</div>'
+      +'<div class="cs-group">'
+        +'<div class="cs-group-title">Facilitator</div>'
+        +'<div class="cs-group-sub">Responsible for the session, not the outcome</div>'
+        +'<div class="cs-role-label">Facilitator</div><div id="cs-rows-facilitator"></div>'+_csRenderAddRow('facilitator')
+        +'<div class="cs-role-label">Facilitator-qualified</div><div id="cs-rows-facilitator_qualified"></div>'+_csRenderAddRow('facilitator_qualified')
+      +'</div>'
+      +'<div id="cs-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin:4px 0;display:none"></div>'
+      +'</div>'
+      +'<div class="sc-corner-flip" id="cs-corner-flip" title="Flip back"></div>'
+    +'</div>';
+    ov.classList.add('active');
+    var body=document.getElementById('cs-body');
+    function goBack(){ closeSbDetail(); (backFn||function(){})(); }
+    T().wire('cs-close', goBack);
+    T().wire('cs-corner-flip', goBack);
+
+    // Breadcrumb -- same ancestor walk header-data.js already uses to
+    // resume a session at depth (ancestorChain), reused here purely for
+    // display: Organization/Project/.../this card's own name.
+    (function(){
+      var crumbEl=document.getElementById('cs-crumb');
+      if(!crumbEl) return;
+      (async function(){
+        try{
+          var chain=(window.T2TData && window.T2TData.ancestorChain) ? await window.T2TData.ancestorChain(item.id) : [];
+          var text=(chain||[]).map(function(c){ return c.text||'(untitled)'; }).join(' / ');
+          crumbEl.textContent=text||(item.text_content||'(untitled)');
+        }catch(e){ crumbEl.textContent=item.text_content||''; }
+      })();
+    })();
+
+    await _tmFetchAllMembers();
+    await _csLoadRoles(item);
+    _csRenderAllRoles();
+
+    if(body){
+      body.querySelectorAll('.cs-add-tile').forEach(function(tile){
+        tile.addEventListener('click', function(){
+          var role=tile.getAttribute('data-role');
+          var form=body.querySelector('.cs-add-form[data-role-form="'+role+'"]');
+          if(!form) return;
+          var opening=form.style.display==='none';
+          body.querySelectorAll('.cs-add-form').forEach(function(f){ f.style.display='none'; });
+          if(opening){ form.style.display='block'; _csRenderSuggestions(role, ''); }
+        });
+      });
+      body.querySelectorAll('.cs-add-email').forEach(function(input){
+        var role=input.getAttribute('data-role');
+        input.addEventListener('input', function(){ _csRenderSuggestions(role, input.value); });
+        input.addEventListener('focus', function(){ _csRenderSuggestions(role, input.value); });
+        input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); } });
+      });
+      body.querySelectorAll('.cs-add-suggest').forEach(function(box){
+        box.addEventListener('click', function(e){
+          var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
+          var role=box.getAttribute('data-role-suggest');
+          _csConfirmAdd(role, row.getAttribute('data-email'));
+        });
+      });
+      body.addEventListener('click', function(e){
+        var x=e.target.closest('.cs-remove-x'); if(!x) return;
+        _csRemoveRole(x.getAttribute('data-rowid'));
+      });
+      body.addEventListener('change', function(e){
+        if(e.target.classList.contains('cs-notes-input')){
+          _csSaveNotes(e.target.getAttribute('data-rowid'), e.target.value);
+        }
+      });
+    }
+  }
+
   function _sboardOpenTeam(scopeRow, backFn){
     var projectRow=scopeRow||_sboardCurrentProjectRow();
     var ov=document.getElementById('sb-detail-overlay'); if(!ov || !projectRow) return;
@@ -5411,6 +5665,7 @@
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
       + '<div class="sb-blue-row">'
       + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
+      + '<button class="sb-blue-btn" id="sb-callsheet" title="Call Sheet — who\'s on this card">📋</button>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
       + (isTopRowHeader ? '<button class="sb-blue-btn" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌':'📋')+'</button>' : '')
@@ -5865,6 +6120,8 @@
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
+
+    T().wire('sb-callsheet', function(){ closeSbDetail(); openCallSheet(item, function(){ openSbDetail(item); }); });
 
     // Briefing Board tracking, Aug 11 2026 -- deliberately its own
     // button, separate from Lock (Larry: "lock is not the most
