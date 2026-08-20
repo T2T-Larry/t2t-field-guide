@@ -2570,6 +2570,18 @@
   //    long sentence wrapping to more lines than the box is tall for --
   //    see FGFitFontSize's own comment for why that's a separate check
   //    from the per-word width one this function already did.
+  // Aug 20 2026, second follow-up -- Larry: "History of Briefing Board...
+  // text size is too large vertically. Appreciation is still too wide."
+  // Both the width and (new) height checks above were measuring against
+  // generic 'serif' -- but every board tile/header actually renders in
+  // 'Playfair Display' (with Georgia/serif as its own fallback, see the
+  // .fg class every board page sets), a noticeably WIDER face than a
+  // plain serif. Measuring the narrower stand-in made the fit logic
+  // think words/lines had more room than the real font actually gives
+  // them, so it under-shrank -- the exact class of bug this whole helper
+  // exists to prevent, just one level up (wrong font instead of no fit
+  // logic at all). Matching the real font stack here is what makes the
+  // canvas measurement mean anything.
   function _sboardFitFontSize(text, base, min, maxWidthPx, maxHeightPx, lineHeight){
     if(!maxWidthPx){
       var len=(text||'').length;
@@ -2577,7 +2589,7 @@
       var reduced=base-Math.floor((len-14)/5);
       return Math.max(min, reduced);
     }
-    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
+    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'"Playfair Display", Georgia, serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
   }
 
   function _sboardHeartsHTML(count){
@@ -2690,13 +2702,12 @@
     // faster way to get there on a subber (plain idea card). The
     // corner-flip stays as-is; this doesn't replace it.
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
-    // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
-    // "remove card numbers from the front of the Idea Cards, leave on
-    // back") -- the back/DETAILS view keeps its own separate ORDER
-    // field (see openSbDetail's "ORDER, not RANK" block), this was just
-    // the face-of-the-card duplicate. _sboardOrderBadgeHTML/
-    // _sboardCardOrderByParent stay in place; they still feed that back
-    // view and the other order bookkeeping this file does.
+    // ORDER # badge, Aug 3 2026 -- Larry: "What if every card has an
+    // ORDER #" -- plain idea cards get one too, numbered in the same
+    // single top-to-bottom sequence as this parent's Subbers (see
+    // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
+    // loose card sitting in the same visual column never both show "1".
+    tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
     // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
@@ -2814,9 +2825,14 @@
     stackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     stackCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     front.appendChild(stackCornerFlip);
-    // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
-    // "remove card numbers from the front of the Idea Cards, leave on
-    // back") -- see the matching note on the plain-card tile above.
+    // ORDER # badge, Aug 3 2026 -- Larry: "Subbers are numbered vertically
+    // top to bottom." Reads from _sboardCardOrderByParent (Subbers +
+    // loose cards under this Subber's own real parent, in one shared
+    // sequence -- see renderGroup) -- empty/no badge if that map hasn't
+    // been populated for this parent yet (e.g. the small peek-grid view,
+    // which doesn't render through the main board and has no order to
+    // report here).
+    front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,
@@ -3397,9 +3413,12 @@
         hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
         hd.appendChild(hdCornerFlip);
-        // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
-        // "remove card numbers from the front of the Idea Cards, leave on
-        // back") -- see the matching note on the plain-card tile above.
+        // ORDER # badge, Aug 3 2026 -- Larry: "Headers are numbered
+        // horizontally left to right and includes ALL headers." Reads
+        // straight from _sboardTopLevelOrder, the REAL (backfilled)
+        // order computed just above -- Purpose/NEW/MISC included, and
+        // unaffected by the alphabetical display toggle.
+        hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
     // Person Assigned badge, Aug 9 2026 -- top-level column headers (this
     // "hd" pill) are their own third rendering path, separate from both
     // _sboardMakeTile (plain cards) and _sboardMakeHeaderStackTile
