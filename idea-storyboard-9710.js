@@ -6476,7 +6476,10 @@
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
 
-    T().wire('sb-people-btn', function(){ _sboardOpenPeopleDropdown(document.getElementById('sb-people-btn'), item, function(){ openSbDetail(item); }); });
+    T().wire('sb-people-btn', function(e){
+      e.stopPropagation();
+      _sboardOpenPeopleDropdown(document.getElementById('sb-people-btn'), item, function(){ openSbDetail(item); });
+    });
 
     // Briefing Board tracking, Aug 11 2026 -- deliberately its own
     // button, separate from Lock (Larry: "lock is not the most
