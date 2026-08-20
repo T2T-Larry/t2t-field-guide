@@ -3755,32 +3755,51 @@
     T().wire('sb-hq-cancel', closeSbDetail);
   }
 
+  // Session 231 (Aug 20) -- Larry, in Hang-Ups: "DELETE ANY HEADER WHEN
+  // SENT TO TRASH." This used to be a soft move (cluster_id -> the
+  // reserved Trash header, recoverable via undo or by digging it back
+  // out of Trash) -- now it's a real delete the moment "Trash it" is
+  // confirmed, matching what Larry actually asked for. A DB migration
+  // this same session made ideas.cluster_id (the parent-child tree) and
+  // briefing_cards' source_header_id/hangup_header_id cascade, so one
+  // DELETE here also removes everything genuinely nested under this
+  // header (child headers, cards) and its own Briefing task-card
+  // mirror, atomically. Two things deliberately still block the delete
+  // with a normal Postgres error instead of silently cascading further:
+  // a header that's actually a project root (ideas.project_id) or has
+  // its own linked Briefing Board (briefing_boards.storyboard_project_id)
+  // -- those stay NO ACTION on purpose so trashing one ordinary header
+  // can never take out a whole project or Briefing Board as a side
+  // effect. No undo after this -- a real delete can't be undone by the
+  // existing snapshot/update mechanism, so the dialog says so plainly
+  // instead of pretending otherwise.
   function _sboardConfirmTrashHeader(headerRow){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Trash "'+safeName+'"?</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Anything still nested under it moves to Trash too — you can pull it back out later from Trash.</div>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-trash-go" style="flex:1;background:#b8562f;border-color:#b8562f">Trash it</button><button class="sc-ov-btn" id="sb-trash-cancel" style="flex:1">Cancel</button></div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">This permanently deletes it and anything nested under it. This can\'t be undone.</div>'
+      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-trash-go" style="flex:1;background:#b8562f;border-color:#b8562f">Delete it</button><button class="sc-ov-btn" id="sb-trash-cancel" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-trash-cancel', closeSbDetail);
     T().wire('sb-trash-go', async function(){
       var _sb=T().sb;
-      var before=_sboardSnapshotRow(headerRow.id);
       try{
-        var trashId=await T2TData.ensureTrashHeader();
-        var upd=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',headerRow.id).select();
-        if(upd.error) throw upd.error;
-        _sboardPatchRow(headerRow.id, {cluster_id:trashId});
-        if(before){
-          _sboardPushAction({label:'Delete', undo:function(){ return _sboardApplyRowSnapshot(headerRow.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(headerRow.id, {cluster_id:trashId, sort_order:before.sort_order}); }});
-        }
+        var del=await _sb.from('ideas').delete().eq('id',headerRow.id);
+        if(del.error) throw del.error;
+        // A real fetch, not fromCache=true -- the DB cascade above may
+        // have just removed a whole subtree of descendant rows (and any
+        // linked Briefing task-card mirrors) that this tab's in-memory
+        // cache still holds. A cache-only render would keep drawing
+        // those as ghosts until something else forced a real refetch.
         closeSbDetail();
-        renderSeaBoard(true);
+        renderSeaBoard(false);
       }catch(err){
         var errBox=document.querySelector('.sc-overlay-card');
-        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+err.message+'</div>');
+        var msg=err.message||String(err);
+        if(/foreign key|violates/i.test(msg)) msg='Can\'t delete this one — it\'s a project root or has its own linked Briefing Board with content depending on it.';
+        if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+msg+'</div>');
       }
     });
   }
@@ -5662,7 +5681,22 @@
     var _sb=T().sb;
     var res=await _sb.from('ideas').select('header_defaults_seeded').eq('id',parentId).limit(1);
     if(res.error || !res.data || !res.data.length) return false;
-    return !!res.data[0].header_defaults_seeded;
+    if(res.data[0].header_defaults_seeded) return true;
+    // Session 231 (Aug 20) -- same gap and same self-heal as
+    // header-data.js's _parentDefaultsSeeded (this file keeps its own
+    // local copy of the Purpose/NEW ensure-calls instead of going
+    // through T2TData, so the fix has to be duplicated here too): the
+    // flag only gets set on an actual auto-insert, so a board Larry
+    // built by hand still read as "unseeded" and kept getting a fresh
+    // default header shoved into it. If this parent already has ANY
+    // header at all, that's proof it's not brand-new -- mark it seeded
+    // and stop inserting.
+    var kids=await _sb.from('ideas').select('id').eq('content_type','header').eq('cluster_id',parentId).limit(1);
+    if(!kids.error && kids.data && kids.data.length){
+      _sboardMarkParentDefaultsSeeded(parentId);
+      return true;
+    }
+    return false;
   }
 
   async function _sboardMarkParentDefaultsSeeded(parentId){

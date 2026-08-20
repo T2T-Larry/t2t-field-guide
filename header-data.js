@@ -146,7 +146,26 @@
     var sb=_sb();
     var res=await sb.from('ideas').select('header_defaults_seeded').eq('id',parentId).limit(1);
     if(res.error || !res.data || !res.data.length) return false;
-    return !!res.data[0].header_defaults_seeded;
+    if(res.data[0].header_defaults_seeded) return true;
+    // Session 231 (Aug 20) gap -- Larry: "DO NOT ADD ANY HEADERS
+    // AUTOMATICALLY TO ANY BOARD THAT ALREADY HAS HEADERS." The flag
+    // above only gets set the first time ONE of NEW/MISC/Purpose is
+    // actually auto-inserted -- so a board Larry built by hand (headers
+    // with names other than NEW/MISC/Purpose, flag never touched) still
+    // looked "unseeded" to this check, and the very next render happily
+    // inserted a fresh NEW/MISC/Purpose default into a board that
+    // already had real content. Self-heal here instead: if the flag
+    // isn't set yet but this parent already has ANY header at all,
+    // that's proof it's not a brand-new board -- mark it seeded now
+    // (so this only ever costs one extra query, not one per render) and
+    // treat it as already seeded. A genuinely empty/new parent still
+    // correctly falls through to false and gets its defaults.
+    var kids=await sb.from('ideas').select('id').eq('content_type','header').eq('cluster_id',parentId).limit(1);
+    if(!kids.error && kids.data && kids.data.length){
+      _markParentDefaultsSeeded(parentId);
+      return true;
+    }
+    return false;
   }
 
   async function _markParentDefaultsSeeded(parentId){
