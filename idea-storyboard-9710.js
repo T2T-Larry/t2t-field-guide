@@ -572,7 +572,13 @@
         +'.cl-newbucket{flex:0 0 auto;min-width:36px;height:36px;padding:0 10px;border-radius:8px;background:#eaf3fb;border:1.5px dashed #a9cce3;font-size:calc(14px * var(--fg-text-scale,1));line-height:36px;color:#5b9bd5;cursor:pointer;text-align:center;box-sizing:border-box}'
         +'.cl-card.cl-wide .cl-newbucket{width:100%;box-sizing:border-box}'
         +'.cl-newbucket-input{flex:0 0 auto;width:90px;height:36px;padding:0 8px;border-radius:8px;border:1.5px solid #a9cce3;font-size:calc(10px * var(--fg-text-scale,1));font-family:inherit;box-sizing:border-box}'
-        +'.cl-card.cl-wide .cl-newbucket-input{width:100%}';
+        +'.cl-card.cl-wide .cl-newbucket-input{width:100%}'
+        // Keyboard-selected header highlight, Aug 20 2026 (Larry: MOVE vs
+        // VIEW shortcuts -- Tab/Shift+Tab to nest/un-nest a header,
+        // Ctrl+Down/Ctrl+Up to drill into/back out of one). Click a header
+        // or Subber tile to select it; this ring shows which one the
+        // keyboard shortcuts will act on.
+        +'#s-sea-of-ideas-cluster .sb-kbd-selected{outline:3px solid #2d7dff!important;outline-offset:-2px}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
@@ -867,6 +873,14 @@
   var _sboardPurposeId = null;
   var _sboardNewAdditionsId = null;
   var _sboardActiveId = null;
+  // Which header/Subber tile is "selected" for the Tab/Shift+Tab (nest/
+  // un-nest) and Ctrl+Down/Ctrl+Up (drill in/out) keyboard shortcuts --
+  // set by clicking a header or Subber tile (see renderGroup and
+  // _sboardMakeHeaderStackTile). Aug 20 2026 (Larry: MOVE vs VIEW
+  // shortcuts). Cleared whenever the board's current Topic changes (see
+  // _sboardDrillInto/_sboardGoUpOneLevel) since a selection from the old
+  // board wouldn't mean anything on the new one.
+  var _sboardSelectedHeaderId = null;
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
@@ -986,10 +1000,38 @@
       if(!screen || !screen.classList.contains('active')) return;
       var tag=(e.target&&e.target.tagName||'').toLowerCase();
       if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+      var k=e.key.toLowerCase();
+      // Tab / Shift+Tab -- MOVE: nest the selected header under the
+      // previous top-level header, or un-nest it back to top-level. Same
+      // "change level" key every outliner (Notion, Workflowy, Word's
+      // outline view) already uses, so no new modifier to learn. Only
+      // takes over Tab once a header is actually selected (click one
+      // first) -- otherwise Tab still does normal focus-cycling, so this
+      // never breaks keyboard access to the rest of the screen.
+      // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+      if(k==='tab' && _sboardSelectedHeaderId){
+        e.preventDefault();
+        if(e.shiftKey) _sboardPromoteSelectedHeader(); else _sboardDemoteSelectedHeader();
+        return;
+      }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
-      var k=e.key.toLowerCase();
-      if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); }
+      if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
+      // Ctrl/Cmd+Down / Ctrl/Cmd+Up -- VIEW only: drill into the selected
+      // header (make it the board's new Topic) or step back out one
+      // level. Doesn't move or rename anything -- purely which level
+      // you're looking at. Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+      if(k==='arrowdown'){
+        e.preventDefault();
+        var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
+        if(selRow) _sboardDrillInto(selRow); else _sboardShowToast('Click a header to select it first.');
+        return;
+      }
+      if(k==='arrowup'){
+        e.preventDefault();
+        if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel(); else _sboardShowToast('Already at the top of this board.');
+        return;
+      }
     });
   }
   // Set true the first time this tab has done a real (network) render of
@@ -2570,18 +2612,6 @@
   //    long sentence wrapping to more lines than the box is tall for --
   //    see FGFitFontSize's own comment for why that's a separate check
   //    from the per-word width one this function already did.
-  // Aug 20 2026, second follow-up -- Larry: "History of Briefing Board...
-  // text size is too large vertically. Appreciation is still too wide."
-  // Both the width and (new) height checks above were measuring against
-  // generic 'serif' -- but every board tile/header actually renders in
-  // 'Playfair Display' (with Georgia/serif as its own fallback, see the
-  // .fg class every board page sets), a noticeably WIDER face than a
-  // plain serif. Measuring the narrower stand-in made the fit logic
-  // think words/lines had more room than the real font actually gives
-  // them, so it under-shrank -- the exact class of bug this whole helper
-  // exists to prevent, just one level up (wrong font instead of no fit
-  // logic at all). Matching the real font stack here is what makes the
-  // canvas measurement mean anything.
   function _sboardFitFontSize(text, base, min, maxWidthPx, maxHeightPx, lineHeight){
     if(!maxWidthPx){
       var len=(text||'').length;
@@ -2589,7 +2619,7 @@
       var reduced=base-Math.floor((len-14)/5);
       return Math.max(min, reduced);
     }
-    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'"Playfair Display", Georgia, serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
+    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
   }
 
   function _sboardHeartsHTML(count){
@@ -2702,12 +2732,13 @@
     // faster way to get there on a subber (plain idea card). The
     // corner-flip stays as-is; this doesn't replace it.
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
-    // ORDER # badge, Aug 3 2026 -- Larry: "What if every card has an
-    // ORDER #" -- plain idea cards get one too, numbered in the same
-    // single top-to-bottom sequence as this parent's Subbers (see
-    // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
-    // loose card sitting in the same visual column never both show "1".
-    tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
+    // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
+    // "remove card numbers from the front of the Idea Cards, leave on
+    // back") -- the back/DETAILS view keeps its own separate ORDER
+    // field (see openSbDetail's "ORDER, not RANK" block), this was just
+    // the face-of-the-card duplicate. _sboardOrderBadgeHTML/
+    // _sboardCardOrderByParent stay in place; they still feed that back
+    // view and the other order bookkeeping this file does.
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
     // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
@@ -2795,7 +2826,7 @@
     var _stMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
     var rot=straight?0:(Math.random()*6-3).toFixed(1);
     var wrap=document.createElement('div');
-    wrap.className='sc-stack-tile';
+    wrap.className='sc-stack-tile'+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
     wrap.setAttribute('data-header-id', String(headerRow.id));
     wrap.draggable=!headerRow.locked;
     wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -2825,14 +2856,9 @@
     stackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     stackCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     front.appendChild(stackCornerFlip);
-    // ORDER # badge, Aug 3 2026 -- Larry: "Subbers are numbered vertically
-    // top to bottom." Reads from _sboardCardOrderByParent (Subbers +
-    // loose cards under this Subber's own real parent, in one shared
-    // sequence -- see renderGroup) -- empty/no badge if that map hasn't
-    // been populated for this parent yet (e.g. the small peek-grid view,
-    // which doesn't render through the main board and has no order to
-    // report here).
-    front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
+    // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
+    // "remove card numbers from the front of the Idea Cards, leave on
+    // back") -- see the matching note on the plain-card tile above.
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,
@@ -2845,6 +2871,19 @@
     // mean color everywhere with zero header exceptions). Double-click here
     // is the same color-options shortcut every other card has.
     wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
+    // Click to select this Subber for the Tab/Shift+Tab and
+    // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
+    // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+    wrap.addEventListener('click', function(e){
+      if(_sboardSelectedHeaderId===headerRow.id) return;
+      var prevId=_sboardSelectedHeaderId;
+      _sboardSelectedHeaderId=headerRow.id;
+      if(prevId){
+        var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(prevId))+'"]');
+        if(prevEl) prevEl.classList.remove('sb-kbd-selected');
+      }
+      wrap.classList.add('sb-kbd-selected');
+    });
     // Click-and-hold a sub-header to peek at its subber cards, Aug 11 2026
     // (Larry) -- reuses openSbHeaderPeek, the same grid view CLUSTER's
     // bucket pill already opens on a plain click, so there's no new screen
@@ -3395,7 +3434,7 @@
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
-        hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
+        hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'')+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
         var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(10*_tsMult), HEADER_W-28, HEADER_H-14, 1.2);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
@@ -3406,6 +3445,19 @@
         // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
         // is the color-options shortcut, same as every other card.
         hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
+        // Click to select this header for the Tab/Shift+Tab and
+        // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
+        // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+        hd.addEventListener('click', function(e){
+          if(_sboardSelectedHeaderId===headerRow.id) return;
+          var prevId=_sboardSelectedHeaderId;
+          _sboardSelectedHeaderId=headerRow.id;
+          if(prevId){
+            var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(prevId))+'"]');
+            if(prevEl) prevEl.classList.remove('sb-kbd-selected');
+          }
+          hd.classList.add('sb-kbd-selected');
+        });
         var hdCornerFlip=document.createElement('div');
         hdCornerFlip.className='sc-corner-flip';
         hdCornerFlip.title='Flip card';
@@ -3413,12 +3465,9 @@
         hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
         hd.appendChild(hdCornerFlip);
-        // ORDER # badge, Aug 3 2026 -- Larry: "Headers are numbered
-        // horizontally left to right and includes ALL headers." Reads
-        // straight from _sboardTopLevelOrder, the REAL (backfilled)
-        // order computed just above -- Purpose/NEW/MISC included, and
-        // unaffected by the alphabetical display toggle.
-        hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
+        // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
+        // "remove card numbers from the front of the Idea Cards, leave on
+        // back") -- see the matching note on the plain-card tile above.
     // Person Assigned badge, Aug 9 2026 -- top-level column headers (this
     // "hd" pill) are their own third rendering path, separate from both
     // _sboardMakeTile (plain cards) and _sboardMakeHeaderStackTile
@@ -3879,6 +3928,10 @@
   }
 
   function _sboardDrillInto(headerRow){
+    // A selection from the board you're leaving doesn't mean anything on
+    // the board you're drilling into -- clear it so a stray Tab/Ctrl+Down
+    // afterward can't act on a header that's no longer even in view.
+    _sboardSelectedHeaderId=null;
     T2TShared.currentTopicId=headerRow.id;
     T2TShared.filter=headerRow.id;
     _sboardPersistLastTopic(headerRow.id);
@@ -3886,12 +3939,76 @@
   }
 
   function _sboardGoUpOneLevel(){
+    _sboardSelectedHeaderId=null;
     var curRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
     var parentId=curRow?(curRow.cluster_id||null):null;
     T2TShared.currentTopicId=parentId;
     T2TShared.filter=parentId;
     _sboardPersistLastTopic(parentId);
     _sboardSpinWhile(renderSeaBoard());
+  }
+
+  // MOVE shortcuts (Tab/Shift+Tab) -- restructures the hierarchy, unlike
+  // Ctrl+Down/Ctrl+Up above which only change what you're looking at.
+  // Deliberately scoped to exactly the two levels this board actually
+  // renders as clickable tiles (top-level Header <-> Subber-of-a-top-
+  // level-Header) -- a Subber's own children aren't drawn as tiles here,
+  // so nesting a header a 3rd level deep would make it silently
+  // disappear from the board; these two functions refuse rather than do
+  // that. Same DB write shape (cluster_id + sort_order) and same
+  // undo/redo participation as every drag-based move already in this
+  // file (_sboardMoveCard, _sboardReorderHeader, etc.).
+  // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+  function _sboardHeaderIsTopLevel(id){
+    return _sboardTopLevelOrder.some(function(x){ return String(x)===String(id); });
+  }
+  async function _sboardDemoteSelectedHeader(){
+    var id=_sboardSelectedHeaderId;
+    var row=id && _sboardAllRowsById[id];
+    var statusEl=document.getElementById('sc-status');
+    function fail(msg){ if(statusEl){ statusEl.textContent=msg; statusEl.classList.add('err'); } }
+    if(!row){ fail('Click a header to select it first.'); return; }
+    if(row.locked){ fail('That header is locked.'); return; }
+    if(!_sboardHeaderIsTopLevel(id)){ fail('That header is already nested as far as this board supports.'); return; }
+    var idx=_sboardTopLevelOrder.findIndex(function(x){ return String(x)===String(id); });
+    if(idx<=0){ fail('Nothing above this header to nest it under.'); return; }
+    var prevId=_sboardTopLevelOrder[idx-1];
+    var prevRow=_sboardAllRowsById[prevId];
+    if(!prevRow || prevRow.locked){ fail('Can’t nest under a locked header.'); return; }
+    var _sb=T().sb;
+    var before=_sboardSnapshotRow(id);
+    var newOrder=(_sboardSubberOrderByParent[prevId]||[]).length;
+    try{
+      var upd=await _sb.from('ideas').update({cluster_id:prevId, sort_order:newOrder}).eq('id',id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(id, {cluster_id:prevId, sort_order:newOrder});
+      var after=_sboardSnapshotRow(id);
+      _sboardPushAction({label:'Nest header', undo:function(){ return _sboardApplyRowSnapshot(id, before); }, redo:function(){ return _sboardApplyRowSnapshot(id, after); }});
+      if(statusEl){ statusEl.textContent='Nested under “'+(prevRow.text_content||'that header')+'”.'; statusEl.classList.remove('err'); }
+      renderSeaBoard(true);
+    }catch(err){ fail('Couldn’t nest that header: '+err.message); }
+  }
+  async function _sboardPromoteSelectedHeader(){
+    var id=_sboardSelectedHeaderId;
+    var row=id && _sboardAllRowsById[id];
+    var statusEl=document.getElementById('sc-status');
+    function fail(msg){ if(statusEl){ statusEl.textContent=msg; statusEl.classList.add('err'); } }
+    if(!row){ fail('Click a header to select it first.'); return; }
+    if(row.locked){ fail('That header is locked.'); return; }
+    if(_sboardHeaderIsTopLevel(id)){ fail('Already at the top level for this board.'); return; }
+    if(!T2TShared.currentTopicId){ fail('Can’t make a new project this way — use + NEW PROJECT.'); return; }
+    var _sb=T().sb;
+    var before=_sboardSnapshotRow(id);
+    var newOrder=_sboardTopLevelOrder.length;
+    try{
+      var upd=await _sb.from('ideas').update({cluster_id:T2TShared.currentTopicId, sort_order:newOrder}).eq('id',id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(id, {cluster_id:T2TShared.currentTopicId, sort_order:newOrder});
+      var after=_sboardSnapshotRow(id);
+      _sboardPushAction({label:'Un-nest header', undo:function(){ return _sboardApplyRowSnapshot(id, before); }, redo:function(){ return _sboardApplyRowSnapshot(id, after); }});
+      if(statusEl){ statusEl.textContent='Moved up to the top level.'; statusEl.classList.remove('err'); }
+      renderSeaBoard(true);
+    }catch(err){ fail('Couldn’t promote that header: '+err.message); }
   }
 
   function _sboardUpdateHeaderChrome(){
