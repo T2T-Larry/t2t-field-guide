@@ -2554,14 +2554,30 @@
   // long the whole label is. word-break:break-word stays as the fallback
   // wherever this is used, for the rare word that's too wide even at the
   // floor size.
-  function _sboardFitFontSize(text, base, min, maxWidthPx){
+  //
+  // Aug 20 2026 -- two fixes, both from Larry hitting live cases the Aug
+  // 18 version missed:
+  // 1. This used to Math.round() the size FGFitFontSize returned. That
+  //    fit size is already exactly as large as it can be while still
+  //    fitting -- rounding it UP (JS rounds .5 up) could push the actual
+  //    rendered width back past the box edge by a hair, which was enough
+  //    for "Performance"/"Appreciation" etc. to split again despite the
+  //    fit logic having done its job correctly. Dropped the rounding --
+  //    fractional px font-size is fine, and FGFitFontSize's own built-in
+  //    safety margin covers the rest.
+  // 2. Optional maxHeightPx/lineHeight (5th/6th args) let a caller that
+  //    knows its box's real height also guard against a short-worded but
+  //    long sentence wrapping to more lines than the box is tall for --
+  //    see FGFitFontSize's own comment for why that's a separate check
+  //    from the per-word width one this function already did.
+  function _sboardFitFontSize(text, base, min, maxWidthPx, maxHeightPx, lineHeight){
     if(!maxWidthPx){
       var len=(text||'').length;
       if(len<=14) return base;
       var reduced=base-Math.floor((len-14)/5);
       return Math.max(min, reduced);
     }
-    return Math.round(window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'serif', fontWeight:'400'}));
+    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
   }
 
   function _sboardHeartsHTML(count){
@@ -2646,14 +2662,14 @@
       var lpText='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
       lp.textContent=lpText;
       var lpBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
-      lp.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(8,Math.round(lpBase*0.55)), width-16)+'px';
+      lp.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(8,Math.round(lpBase*0.55)), width-16, height-12, 1.25)+'px';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       var pText=item.text_content||'(untitled)';
       p.textContent=pText;
       var pBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
-      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(8,Math.round(pBase*0.55)), width-16)+'px';
+      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(8,Math.round(pBase*0.55)), width-16, height-12, 1.25)+'px';
       tile.appendChild(p);
     }
     if(item.heart_count){
@@ -2783,7 +2799,7 @@
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
-    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.round(10*_stMult), width-18);
+    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.round(10*_stMult), width-18, height-14, 1.15);
     p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
@@ -3369,7 +3385,7 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
-        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(10*_tsMult), HEADER_W-28);
+        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(10*_tsMult), HEADER_W-28, HEADER_H-14, 1.2);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
@@ -3498,7 +3514,7 @@
         // ideas here aren't necessarily freshly typed. Larry wants one
         // consistent label across every storyboard instead.
         var localLabel='NEW';
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(10*_tsMult),HEADER_W-28)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(10*_tsMult),HEADER_W-28,HEADER_H-14,1.2)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
