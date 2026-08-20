@@ -5042,6 +5042,24 @@
   var _sbPeopleRemoveMode = false;
   var _sbPeopleAddRole = 'cast_member';
   var _sbPeopleBackFn = null;
+  // Session 230 (Aug 20) bug: the menu below is part of THIS card's own
+  // overlay markup (rebuilt fresh every open, see id="sb-people-menu"
+  // a bit further down), but the moment it's used it gets reparented
+  // onto <body> so position:fixed works -- and reparenting never gets
+  // undone when the card closes. Opening a second card renders a
+  // second, independent element with the same id, so the DOM ends up
+  // with two #sb-people-menu nodes at once. getElementById only ever
+  // returns the FIRST one in document order, which after a reparent is
+  // whichever was appended to <body> earliest -- not necessarily the
+  // one that belongs to the card that's open right now. That's what
+  // made the dropdown look like it "never closes" (a click meant to
+  // toggle the current card's menu can silently open/repopulate a
+  // stale leftover from an earlier card instead) and left orphaned
+  // toolbars floating on the board after the card itself was closed.
+  // Tracking the live element by reference (not by re-querying the id)
+  // sidesteps the ambiguity, and removing the previous one before
+  // swapping to a new card's menu keeps at most one ever in the DOM.
+  var _sbPeopleMenuEl = null;
 
   function _sbPeopleRenderList(){
     var listEl=document.getElementById('sb-people-list');
@@ -5088,6 +5106,14 @@
 
   async function _sboardOpenPeopleDropdown(triggerEl, item, backFn){
     var menu=document.getElementById('sb-people-menu');
+    // If the card that's open now rendered a DIFFERENT #sb-people-menu
+    // than the one we last touched, the old one is a dead leftover --
+    // still sitting in <body>, possibly still visible -- so remove it
+    // before it can confuse getElementById on some later click.
+    if(_sbPeopleMenuEl && _sbPeopleMenuEl!==menu && _sbPeopleMenuEl.parentNode){
+      _sbPeopleMenuEl.parentNode.removeChild(_sbPeopleMenuEl);
+    }
+    _sbPeopleMenuEl=menu;
     if(!triggerEl || !menu || !item) return;
     var willOpen=menu.hidden;
     _sboardCloseAllDropdowns(willOpen?'sb-people-menu':null);
@@ -7032,6 +7058,14 @@
   function closeSbDetail(){
     var ov=document.getElementById('sb-detail-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; ov.style.justifyContent=''; ov.style.paddingLeft=''; }
+    // The 👥 dropdown (if this card had it open) lives outside `ov` by
+    // this point -- see _sbPeopleMenuEl above -- so clearing ov's own
+    // markup doesn't touch it. Without this it's left floating,
+    // visible, on the board after the card itself is gone. Session 230.
+    if(typeof _sbPeopleMenuEl!=='undefined' && _sbPeopleMenuEl && _sbPeopleMenuEl.parentNode){
+      _sbPeopleMenuEl.parentNode.removeChild(_sbPeopleMenuEl);
+      _sbPeopleMenuEl=null;
+    }
     _sboardActiveId=null;
     // If CLUSTER is open behind this SHAPING card, refresh it — whatever was
     // just edited (moved, renamed, trashed) may have changed what belongs here.
