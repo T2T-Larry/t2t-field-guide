@@ -2690,12 +2690,13 @@
     // faster way to get there on a subber (plain idea card). The
     // corner-flip stays as-is; this doesn't replace it.
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
-    // ORDER # badge, Aug 3 2026 -- Larry: "What if every card has an
-    // ORDER #" -- plain idea cards get one too, numbered in the same
-    // single top-to-bottom sequence as this parent's Subbers (see
-    // _sboardCardOrderByParent, set in renderGroup) so a Subber and a
-    // loose card sitting in the same visual column never both show "1".
-    tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
+    // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
+    // "remove card numbers from the front of the Idea Cards, leave on
+    // back") -- the back/DETAILS view keeps its own separate ORDER
+    // field (see openSbDetail's "ORDER, not RANK" block), this was just
+    // the face-of-the-card duplicate. _sboardOrderBadgeHTML/
+    // _sboardCardOrderByParent stay in place; they still feed that back
+    // view and the other order bookkeeping this file does.
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
     // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
@@ -2813,14 +2814,9 @@
     stackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     stackCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
     front.appendChild(stackCornerFlip);
-    // ORDER # badge, Aug 3 2026 -- Larry: "Subbers are numbered vertically
-    // top to bottom." Reads from _sboardCardOrderByParent (Subbers +
-    // loose cards under this Subber's own real parent, in one shared
-    // sequence -- see renderGroup) -- empty/no badge if that map hasn't
-    // been populated for this parent yet (e.g. the small peek-grid view,
-    // which doesn't render through the main board and has no order to
-    // report here).
-    front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
+    // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
+    // "remove card numbers from the front of the Idea Cards, leave on
+    // back") -- see the matching note on the plain-card tile above.
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,
@@ -3401,12 +3397,9 @@
         hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
         hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
         hd.appendChild(hdCornerFlip);
-        // ORDER # badge, Aug 3 2026 -- Larry: "Headers are numbered
-        // horizontally left to right and includes ALL headers." Reads
-        // straight from _sboardTopLevelOrder, the REAL (backfilled)
-        // order computed just above -- Purpose/NEW/MISC included, and
-        // unaffected by the alphabetical display toggle.
-        hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
+        // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
+        // "remove card numbers from the front of the Idea Cards, leave on
+        // back") -- see the matching note on the plain-card tile above.
     // Person Assigned badge, Aug 9 2026 -- top-level column headers (this
     // "hd" pill) are their own third rendering path, separate from both
     // _sboardMakeTile (plain cards) and _sboardMakeHeaderStackTile
