@@ -494,7 +494,13 @@
         // at the standard 18px size and simply clips after 4 lines instead
         // of getting smaller and smaller to fit everything.
         +'.sb-body-text-clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}'
-        +'.sb-blue-row{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
+        // Divider + even spread, Aug 21 2026 (Larry): a line above the
+        // bottom action row to set it apart from the rest of the card,
+        // and the icons spread across the full width instead of
+        // clustered in the center -- same treatment applied to the
+        // Briefing Card's own .bb-action-row (briefing-board.js) for
+        // consistency between the two card types.
+        +'.sb-blue-row{display:flex;gap:6px;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0;border-top:1.5px solid #B4B2A9;padding-top:10px}'
         +'.sb-blue-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;flex:1 1 auto;min-width:36px}'
         +'.sb-blue-btn:active{transform:scale(0.95)}'
         +'.sb-blue-btn.misc-on{background:#EEECE4}'

@@ -2876,6 +2876,13 @@
       // directly above it. Lock's "on" state borrows the same red already
       // used for Hang-Ups/locked elsewhere in this file.
       +'.bb-icon-btn.bb-lock-active{background:#a3372b;border-color:#a3372b;color:#fff}'
+      // Divider + even spread, Aug 21 2026 (Larry): a line above the
+      // bottom action row to set it apart from the rest of the card,
+      // and the 4 icons spread across the full width instead of
+      // clustered at the left -- same treatment applied to the Idea
+      // Card's own .sb-blue-row (idea-storyboard-9710.js) for
+      // consistency between the two card types.
+      +'.bb-action-row{border-top:1.5px solid var(--bb-accent);padding-top:10px;justify-content:space-between}'
       +'.bb-swatch-row{flex-wrap:wrap}'
       +'.bb-swatch{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bb-accent);cursor:pointer;padding:0}'
       +'.bb-swatch.bb-swatch-active{box-shadow:0 0 0 2px var(--bb-ink)}'
@@ -3216,7 +3223,7 @@
             // with the Idea Card. Trash reuses the existing drag-to-trash
             // "Moose poop?" confirm as a direct button here too.
             +'<div id="bb-d-color-row" class="bb-doors-row bb-swatch-row" style="display:none"></div>'
-            +'<div class="bb-doors-row">'
+            +'<div class="bb-doors-row bb-action-row">'
               +'<button class="bb-icon-btn" id="bb-d-lock" type="button">🔓</button>'
               +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who&rsquo;s on this card">👥</button>'
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
