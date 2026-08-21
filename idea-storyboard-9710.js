@@ -621,7 +621,7 @@
       +'</div>'
       +'<div style="text-align:center">'
       +'<div class="sc-hdr-eyebrow">Topic</div>'
-      +'<div id="sc-topic-box"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
+      +'<div id="sc-topic-box" data-header-id="__topic__"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
       +'</div>'
       // Logo frame + IDEA label, Aug 16 2026 -- Larry: IDEA should read
@@ -800,6 +800,23 @@
     (function(){
       var topicBoxEl=document.getElementById('sc-topic-box');
       if(!topicBoxEl) return;
+      // Click to select the TOPIC card itself for Ctrl+Down/Ctrl+Up, same
+      // as clicking any Header/Subheader tile does (see the matching
+      // handler in renderGroup and _sboardMakeHeaderStackTile). Uses the
+      // _SBOARD_TOPIC_SENTINEL value since there's no real row id for
+      // "the board's own current Topic" to store in _sboardSelectedHeaderId.
+      // Aug 21 2026 (Larry: "make the Topic card selectable and
+      // highlightable like headers are").
+      topicBoxEl.addEventListener('click', function(e){
+        if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL) return;
+        var prevId=_sboardSelectedHeaderId;
+        _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL;
+        if(prevId){
+          var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(prevId))+'"]');
+          if(prevEl) prevEl.classList.remove('sb-kbd-selected');
+        }
+        topicBoxEl.classList.add('sb-kbd-selected');
+      });
       topicBoxEl.addEventListener('dblclick', function(e){ e.stopPropagation(); _sboardOpenTopicCard(); });
       topicBoxEl.addEventListener('dragover', function(e){ e.preventDefault(); topicBoxEl.classList.add('dragover'); });
       topicBoxEl.addEventListener('dragleave', function(){ topicBoxEl.classList.remove('dragover'); });
@@ -896,6 +913,13 @@
   // _sboardDrillInto/_sboardGoUpOneLevel) since a selection from the old
   // board wouldn't mean anything on the new one.
   var _sboardSelectedHeaderId = null;
+  // Sentinel value for _sboardSelectedHeaderId meaning "the TOPIC card
+  // itself is selected" -- not a real row id (there's nothing to look up
+  // in _sboardAllRowsById for it), so every place that reads
+  // _sboardSelectedHeaderId to act on a card must check for this sentinel
+  // BEFORE doing the normal row lookup. Aug 21 2026 (Larry: "make the
+  // Topic card selectable and highlightable like headers are").
+  var _SBOARD_TOPIC_SENTINEL = '__topic__';
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
@@ -1024,7 +1048,7 @@
       // first) -- otherwise Tab still does normal focus-cycling, so this
       // never breaks keyboard access to the rest of the screen.
       // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
-      if(k==='tab' && _sboardSelectedHeaderId){
+      if(k==='tab' && _sboardSelectedHeaderId && _sboardSelectedHeaderId!==_SBOARD_TOPIC_SENTINEL){
         e.preventDefault();
         if(e.shiftKey) _sboardPromoteSelectedHeader(); else _sboardDemoteSelectedHeader();
         return;
@@ -1039,17 +1063,33 @@
       // currently selected instead of Up always acting on the board's
       // current Topic regardless of selection:
       //   Down on a selected card -> that card becomes the new Topic
-      //     (same result as double-clicking it).
-      //   Up on a selected card -> that card's own parent becomes the
-      //     new Topic, so the selected card itself rises one level (a
-      //     Subheader shows as a Header, etc.) and stays selected so
-      //     repeated Ctrl+Up keeps climbing the same card's lineage.
+      //     (same result as dragging it onto the TOPIC box).
+      //   Up on a selected card -> that card rises one level: a nested
+      //     Subheader's own parent (a Header) becomes the new Topic; a
+      //     top-level Header (whose parent already IS the Topic) becomes
+      //     the new Topic itself instead, same as Down would -- see the
+      //     Aug 21 2026 fix note in _sboardDrillUpFrom. Stays selected
+      //     afterward so repeated Ctrl+Up keeps climbing the same card's
+      //     lineage.
       // With nothing selected, both keys fall back to the existing
       // PARENT breadcrumb action (climb from the current Topic to its
       // own parent) -- there's no separate "select the Parent" gesture,
       // so an empty selection reads as "the Parent" itself.
+      // The TOPIC card is selectable too (see the topicBoxEl click
+      // handler above) via _SBOARD_TOPIC_SENTINEL -- checked first in
+      // both branches below since it's not a real row id and can't go
+      // through the normal _sboardAllRowsById lookup. Aug 21 2026
+      // (Larry: "make the Topic card selectable and highlightable like
+      // headers are"). Down on the selected Topic is a genuine no-op
+      // (it already IS the Topic); Up on it reuses the same PARENT climb
+      // as the "nothing selected" fallback, then keeps the Topic card
+      // selected afterward so repeated Ctrl+Up keeps climbing.
       if(k==='arrowdown'){
         e.preventDefault();
+        if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          _sboardShowToast('That’s already what you’re viewing.');
+          return;
+        }
         var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
         if(selRow) _sboardDrillInto(selRow);
         else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
@@ -1058,6 +1098,11 @@
       }
       if(k==='arrowup'){
         e.preventDefault();
+        if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
+          else _sboardShowToast('Already at the top of this board.');
+          return;
+        }
         var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
         if(selRowUp) _sboardDrillUpFrom(selRowUp);
         else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
@@ -4031,11 +4076,25 @@
     else { done(); }
   }
 
+  // Clears the current selection AND its visual highlight. A plain
+  // "_sboardSelectedHeaderId=null" isn't enough on its own once the TOPIC
+  // card can be selected (Aug 21 2026) -- unlike a Header/Subheader tile,
+  // the Topic card's DOM node is never rebuilt on re-render, so a
+  // highlight left on it by _SBOARD_TOPIC_SENTINEL would otherwise stick
+  // around forever, no longer matching the (now-null) selection state.
+  function _sboardClearHeaderSelection(){
+    if(_sboardSelectedHeaderId){
+      var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(_sboardSelectedHeaderId))+'"]');
+      if(prevEl) prevEl.classList.remove('sb-kbd-selected');
+    }
+    _sboardSelectedHeaderId=null;
+  }
+
   function _sboardDrillInto(headerRow){
     // A selection from the board you're leaving doesn't mean anything on
     // the board you're drilling into -- clear it so a stray Tab/Ctrl+Down
     // afterward can't act on a header that's no longer even in view.
-    _sboardSelectedHeaderId=null;
+    _sboardClearHeaderSelection();
     T2TShared.currentTopicId=headerRow.id;
     T2TShared.filter=headerRow.id;
     _sboardPersistLastTopic(headerRow.id);
@@ -4043,7 +4102,7 @@
   }
 
   function _sboardGoUpOneLevel(){
-    _sboardSelectedHeaderId=null;
+    _sboardClearHeaderSelection();
     var curRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
     var parentId=curRow?(curRow.cluster_id||null):null;
     T2TShared.currentTopicId=parentId;
@@ -4062,7 +4121,27 @@
   // one tier shallower -- so repeated Ctrl+Up keeps climbing that card's
   // lineage. Aug 21 2026 (Larry: "any card, including topic").
   function _sboardDrillUpFrom(row){
-    var parentId=row?(row.cluster_id||null):null;
+    if(!row) return;
+    // Bug fix, Aug 21 2026 (Larry: "ctrl-up on History of BB header --
+    // nothing happened"): a top-level Header's own parent IS the current
+    // Topic already, so climbing to row.cluster_id below was a silent
+    // no-op for every top-level Header -- it set currentTopicId to the
+    // same value it already had. A top-level Header rising one tier
+    // means the row itself becomes the new Topic (the same destination
+    // Ctrl+Down reaches on this same card) -- there's no shallower tier
+    // to land it on above that. Only a nested Subheader (whose parent is
+    // a Header, not the Topic) actually climbs to row.cluster_id below.
+    if(String(row.cluster_id)===String(T2TShared.currentTopicId)){
+      _sboardDrillInto(row);
+      // row is now the Topic -- select the Topic card itself (Aug 21
+      // 2026 sentinel) so repeated Ctrl+Up can keep climbing from here
+      // without needing a fresh click on the Topic card first.
+      _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL;
+      var topicBoxEl=document.getElementById('sc-topic-box');
+      if(topicBoxEl) topicBoxEl.classList.add('sb-kbd-selected');
+      return;
+    }
+    var parentId=row.cluster_id||null;
     if(!parentId){ _sboardShowToast('Already at the top of this board.'); return; }
     var keepSelectedId=row.id;
     T2TShared.currentTopicId=parentId;
