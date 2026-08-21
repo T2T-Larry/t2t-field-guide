@@ -3384,6 +3384,34 @@
         // rows and growing) so new content stops vanishing. Fixed Aug 6,
         // 2026 -- Larry: "Added a header but it never showed anywhere."
         //
+        // Same bug came back, Aug 21 2026 (Larry: "I added subbers to
+        // Organizes Daily Routine... they've disappeared") -- the account
+        // had grown to 1016 qualifying rows, and it turns out Supabase's
+        // own API server silently caps every request at 1000 rows no
+        // matter what limit() the app asks for -- the limit(2000) above
+        // was never actually being honored. So this fetch was quietly
+        // getting only the OLDEST 1000 rows (ascending order), same
+        // "anything newer just vanishes" shape as the July bug, just
+        // re-triggered by a higher, server-side ceiling this code couldn't
+        // see or raise. Confirmed live: querying the same account
+        // newest-first returned the missing notes every time; oldest-first
+        // never did.
+        //
+        // First patch just flipped the order so it'd always be the OLDEST
+        // rows getting cut, never whatever was just added -- band-aid, and
+        // it still meant every OTHER traveler would hit this exact same
+        // "my new stuff vanished" moment the day their own account crossed
+        // 1000 items too, plus flipping order risked reshuffling the rare
+        // top-level header that's never had a real sort_order written yet
+        // (see the fallback-order comment below `contentHeaders`/`orderedTop`).
+        // Real fix, same session: page through in chunks of 1000 via
+        // .range() until a page comes back short, so this always gets
+        // EVERY row regardless of how large any one traveler's account
+        // grows -- no ceiling left for anyone to quietly fall off of.
+        // Order restored to ascending (oldest-first, the original/intended
+        // order) since completeness no longer depends on which end is
+        // fetched first.
+        //
         // Only runs for a real render, not a cache-only patch (Aug 9 2026)
         // -- a live update from another traveler already hands over the
         // one row that changed (see _sboardApplyRemoteIdea), so re-asking
@@ -3399,11 +3427,24 @@
         // .user_id -- the Cast/Guest roster's crown, the Project quick-menu's
         // owner-only gating, and the People menu's isOwner check all silently
         // failed. Diagnosed Session 196 (Aug 8), fixed Session 198 (Aug 9).
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
-          .in('content_type',['image','text','link','header'])
-          .order('created_at',{ascending:true}).limit(2000);
-        if(res.error) throw new Error(res.error.message);
-        var _freshRows=res.data||[];
+        var _freshRows=[];
+        var _sboardFetchPageSize=1000;
+        var _sboardFetchFrom=0;
+        while(true){
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
+            .in('content_type',['image','text','link','header'])
+            .order('created_at',{ascending:true})
+            .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
+          if(pageRes.error) throw new Error(pageRes.error.message);
+          var pageRows=pageRes.data||[];
+          _freshRows=_freshRows.concat(pageRows);
+          // A short page (fewer than a full page size back) means this was
+          // the last one -- stop. The 50-page (50,000-row) backstop below
+          // is just a sanity guard against ever looping forever; no
+          // traveler's account is remotely close to that today.
+          if(pageRows.length<_sboardFetchPageSize || _sboardFetchFrom>50000) break;
+          _sboardFetchFrom+=_sboardFetchPageSize;
+        }
         _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
         _sboardCacheReady=true;
       }
