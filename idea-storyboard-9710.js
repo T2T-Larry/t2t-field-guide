@@ -1032,19 +1032,36 @@
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
-      // Ctrl/Cmd+Down / Ctrl/Cmd+Up -- VIEW only: drill into the selected
-      // header (make it the board's new Topic) or step back out one
-      // level. Doesn't move or rename anything -- purely which level
-      // you're looking at. Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+      // Ctrl/Cmd+Down / Ctrl/Cmd+Up -- VIEW only: doesn't move or rename
+      // anything, purely which level you're looking at. Aug 20 2026
+      // (Larry: MOVE vs VIEW shortcuts). Reworked Aug 21 2026 (Larry:
+      // "any card, including topic") to both pivot off whatever's
+      // currently selected instead of Up always acting on the board's
+      // current Topic regardless of selection:
+      //   Down on a selected card -> that card becomes the new Topic
+      //     (same result as double-clicking it).
+      //   Up on a selected card -> that card's own parent becomes the
+      //     new Topic, so the selected card itself rises one level (a
+      //     Subheader shows as a Header, etc.) and stays selected so
+      //     repeated Ctrl+Up keeps climbing the same card's lineage.
+      // With nothing selected, both keys fall back to the existing
+      // PARENT breadcrumb action (climb from the current Topic to its
+      // own parent) -- there's no separate "select the Parent" gesture,
+      // so an empty selection reads as "the Parent" itself.
       if(k==='arrowdown'){
         e.preventDefault();
         var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-        if(selRow) _sboardDrillInto(selRow); else _sboardShowToast('Click a header to select it first.');
+        if(selRow) _sboardDrillInto(selRow);
+        else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
+        else _sboardShowToast('Already at the top of this board.');
         return;
       }
       if(k==='arrowup'){
         e.preventDefault();
-        if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel(); else _sboardShowToast('Already at the top of this board.');
+        var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
+        if(selRowUp) _sboardDrillUpFrom(selRowUp);
+        else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
+        else _sboardShowToast('Already at the top of this board.');
         return;
       }
     });
@@ -4032,6 +4049,26 @@
     T2TShared.currentTopicId=parentId;
     T2TShared.filter=parentId;
     _sboardPersistLastTopic(parentId);
+    _sboardSpinWhile(renderSeaBoard());
+  }
+
+  // Ctrl+Up on a selected card -- unlike _sboardGoUpOneLevel (which always
+  // climbs from the board's current Topic), this climbs from the SELECTED
+  // card's own parent, whatever tier that card happens to be showing at.
+  // Net effect: the selected card rises one level in the display (a
+  // Subheader now renders as a Header, a Header now renders as the Topic)
+  // while its former parent becomes the new Topic. Keeps the same card
+  // selected afterward -- still a valid id on the freshly rendered board,
+  // one tier shallower -- so repeated Ctrl+Up keeps climbing that card's
+  // lineage. Aug 21 2026 (Larry: "any card, including topic").
+  function _sboardDrillUpFrom(row){
+    var parentId=row?(row.cluster_id||null):null;
+    if(!parentId){ _sboardShowToast('Already at the top of this board.'); return; }
+    var keepSelectedId=row.id;
+    T2TShared.currentTopicId=parentId;
+    T2TShared.filter=parentId;
+    _sboardPersistLastTopic(parentId);
+    _sboardSelectedHeaderId=keepSelectedId;
     _sboardSpinWhile(renderSeaBoard());
   }
 
