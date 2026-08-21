@@ -1090,10 +1090,14 @@
         if(purposeId && String(r.id)===String(purposeId)) return true;
         return excludedNames.indexOf(r.text_content)===-1;
       });
-      // Person Assigned badge names, Aug 9 2026 -- same fire-and-forget
-      // pattern as idea-storyboard-9710.js's renderSeaBoard: only
-      // re-renders (cache-only, cheap) if this pass actually had a new
-      // name to go fetch.
+      // Front-of-card badge names, Aug 9 2026 (Session 234: now sourced
+      // from the 👥 button's starred primary doer, legacy assigned_user_id
+      // as fallback) -- same fire-and-forget pattern as
+      // idea-storyboard-9710.js's renderSeaBoard: only re-renders
+      // (cache-only, cheap) if a pass actually had something new to fetch.
+      if(window.T2TStoryboard && T2TStoryboard.ensureCardPrimary){
+        T2TStoryboard.ensureCardPrimary(allRows).then(function(fetchedSomething){ if(fetchedSomething) _isxRenderBoard(true); });
+      }
       if(window.T2TStoryboard && T2TStoryboard.ensureAssignedInitials){
         T2TStoryboard.ensureAssignedInitials(allRows).then(function(fetchedSomething){ if(fetchedSomething) _isxRenderBoard(true); });
       }

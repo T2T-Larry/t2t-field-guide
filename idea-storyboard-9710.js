@@ -300,6 +300,12 @@
         +'.cs-key-toggle{cursor:pointer;margin-right:4px;opacity:0.32;filter:grayscale(1)}'
         +'.cs-key-toggle:hover{opacity:0.6}'
         +'.cs-key-toggle.cs-key-on{opacity:1;filter:none}'
+        // Primary doer star, Session 234 -- blue, not gold, so it's never
+        // mistaken for cs-parent-star's gold ★ (carried-over-from-parent
+        // marker) right next to it on the same row.
+        +'.cs-primary-toggle{cursor:pointer;margin-right:4px;opacity:0.32;color:#3a7ca8}'
+        +'.cs-primary-toggle:hover{opacity:0.6}'
+        +'.cs-primary-toggle.cs-primary-on{opacity:1}'
         +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
         // Call Sheet print document, Session 228 (Aug 19) -- portrait
         // page, built and shown only for the print job (see _csPrint).
@@ -403,6 +409,9 @@
         // needs the full three-box screen at all.
         +'.sb-people-row{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:default}'
         +'.sb-people-row:hover{background:none}'
+        +'.sb-people-star{flex-shrink:0;background:none;border:0;color:#3a7ca8;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:2px;opacity:0.4}'
+        +'.sb-people-star:hover{opacity:0.7}'
+        +'.sb-people-star.active{opacity:1}'
         +'.sb-people-x{margin-left:8px;flex-shrink:0;background:none;border:0;color:#f0b090;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:2px}'
         +'.sb-people-rolepick{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}'
         +'.sb-people-rolepick-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.24);border-radius:6px;color:#fff;font-size:calc(12px * var(--fg-text-scale,1));padding:3px 7px;cursor:pointer;opacity:.55;font-family:inherit}'
@@ -1264,12 +1273,12 @@
     }).join('')+'</div>';
   }
 
-  // Person Assigned front-of-card badge (Aug 9 2026, Larry). Tile
-  // rendering (_sboardMakeTile/_sboardMakeHeaderStackTile, and 9711's own
+  // Front-of-card badge (Aug 9 2026, Larry). Tile rendering
+  // (_sboardMakeTile/_sboardMakeHeaderStackTile, and 9711's own
   // _isxMakeTile/_isxMakeHeaderStackTile via the T2TStoryboard bridge
-  // below) is synchronous, but the name behind an assigned_user_id lives
-  // in the members table -- a separate round trip. Rather than block
-  // every render on that, _sboardEnsureAssignedInitials fetches whatever's
+  // below) is synchronous, but the name behind a user_id lives in the
+  // members table -- a separate round trip. Rather than block every
+  // render on that, _sboardEnsureMemberInitials fetches whatever's
   // missing in the background and the caller re-renders (fromCache=true,
   // so it's cheap) once new names actually land. Cache is keyed by
   // user_id and never invalidated -- a member's initials essentially
@@ -1277,10 +1286,9 @@
   // makes on the Briefing Board side.
   var _sboardAssignedCache = {};
   var _sboardAssignedFetchInFlight = {};
-  async function _sboardEnsureAssignedInitials(rows){
+  async function _sboardEnsureMemberInitials(uids){
     var missing=[], seen={};
-    (rows||[]).forEach(function(r){
-      var uid=r&&r.assigned_user_id;
+    (uids||[]).forEach(function(uid){
       if(!uid || _sboardAssignedCache[uid] || _sboardAssignedFetchInFlight[uid] || seen[uid]) return;
       seen[uid]=true; missing.push(uid);
     });
@@ -1297,11 +1305,60 @@
     missing.forEach(function(uid){ delete _sboardAssignedFetchInFlight[uid]; });
     return true;
   }
+  // Legacy path -- still feeds the badge for any card nobody has starred
+  // a primary doer on yet via the 👥 button (see _sboardCardPrimaryCache/
+  // _sboardEnsureCardPrimary below, which is now the primary source).
+  function _sboardEnsureAssignedInitials(rows){
+    var uids=(rows||[]).map(function(r){ return r&&r.assigned_user_id; }).filter(Boolean);
+    return _sboardEnsureMemberInitials(uids);
+  }
+
+  // Primary doer (Session 234, Aug 21) -- who the 👥 dropdown's star is
+  // on for a given card. Replaces the old single-field Person Assigned as
+  // the source for both this badge and the board's Team filter
+  // (_sboardFilterByPerson). Cache is keyed by card id; a value of null
+  // means "fetched, nobody's starred" (as opposed to undefined, "haven't
+  // asked yet"), so a card only falls back to its old assigned_user_id
+  // while genuinely unstarred -- not just before the fetch lands.
+  var _sboardCardPrimaryCache = {};
+  var _sboardCardPrimaryFetchInFlight = {};
+  async function _sboardEnsureCardPrimary(rows){
+    var missing=[], seen={};
+    (rows||[]).forEach(function(r){
+      var id=r&&r.id;
+      if(!id || _sboardCardPrimaryCache.hasOwnProperty(id) || _sboardCardPrimaryFetchInFlight[id] || seen[id]) return;
+      seen[id]=true; missing.push(id);
+    });
+    if(!missing.length) return false;
+    missing.forEach(function(id){ _sboardCardPrimaryFetchInFlight[id]=true; });
+    var _sb=T().sb;
+    if(!_sb){ missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[id]; }); return false; }
+    try{
+      var res=await _sb.from('card_roles').select('card_id,user_id').eq('card_type','idea').eq('is_primary',true).in('card_id', missing);
+      var found={};
+      if(!res.error && res.data){
+        res.data.forEach(function(row){ found[row.card_id]=row.user_id; _sboardCardPrimaryCache[row.card_id]=row.user_id; });
+      }
+      missing.forEach(function(id){ if(!(id in found)) _sboardCardPrimaryCache[id]=null; });
+      var uids=Object.keys(found).map(function(id){ return found[id]; });
+      if(uids.length) await _sboardEnsureMemberInitials(uids);
+    }catch(e){
+      missing.forEach(function(id){ if(!_sboardCardPrimaryCache.hasOwnProperty(id)) _sboardCardPrimaryCache[id]=null; });
+    }
+    missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[id]; });
+    return true;
+  }
+  function _sboardCardPrimaryUid(item){
+    if(!item) return '';
+    var cardId=item.id;
+    var uid = _sboardCardPrimaryCache.hasOwnProperty(cardId) ? _sboardCardPrimaryCache[cardId] : null;
+    return uid || item.assigned_user_id || '';
+  }
   function _sboardAssignedBadgeHTML(item){
-    var uid=item&&item.assigned_user_id;
+    var uid=_sboardCardPrimaryUid(item);
     if(!uid) return '';
     var m=_sboardAssignedCache[uid];
-    if(!m) return ''; // not fetched yet this pass -- next re-render (see _sboardEnsureAssignedInitials) fills it in
+    if(!m) return ''; // not fetched yet this pass -- next re-render (see _sboardEnsureCardPrimary/_sboardEnsureAssignedInitials) fills it in
     return '<div class="sb-person-badge" title="'+_sboardEsc(m.name||'')+'">'+_sboardEsc(m.initials||'')+'</div>';
   }
   function _sboardNotesBadgeHTML(item){
@@ -2056,22 +2113,6 @@
     });
   }
 
-  // Same climb as _sboardProjectRowFor, but takes the rows-by-id map as an
-  // argument instead of always reading the global _sboardAllRowsById --
-  // needed for Person Assigned (Aug 9 2026) since openSbDetail can be
-  // reached from 9711's Idea Session screen, where _sboardAllRowsById is
-  // stale/unset and the live map lives on _isxDetailCtx.rowsById instead
-  // (same staleness bug already documented above openSbDetail).
-  function _sbProjectRowForAny(row, rowsById){
-    var cur=row, guard=0;
-    while(cur && cur.cluster_id && guard<25){
-      var parent=(rowsById||{})[cur.cluster_id];
-      if(!parent) break;
-      cur=parent; guard++;
-    }
-    return cur;
-  }
-
   // VIEW-by-person filter (Aug 9 2026, Larry): the board-level counterpart
   // to Person Assigned above -- same roster source (_tmAllRosterRows), same
   // "real Cast roster, not free text" rule the Briefing Board's own VIEW
@@ -2083,7 +2124,11 @@
   // render, to avoid re-querying on every drag/reorder.
   function _sboardFilterByPerson(items){
     if(!_sboardPersonFilterId) return items;
-    return items.filter(function(r){ return String(r.assigned_user_id||'')===String(_sboardPersonFilterId); });
+    // Session 234: matches the same starred primary doer the corner badge
+    // shows (see _sboardCardPrimaryUid) instead of the old, now-removed
+    // Person Assigned field directly -- falls back to a card's legacy
+    // assigned_user_id only if nobody's been starred on it yet.
+    return items.filter(function(r){ return String(_sboardCardPrimaryUid(r))===String(_sboardPersonFilterId); });
   }
 
   async function _sboardViewConfirmAddMember(projectRow, email){
@@ -2229,22 +2274,6 @@
         menu.hidden=true;
       }
     };
-  }
-
-  // Person Assigned (Aug 9 2026, Larry): every card gets a dropdown of the
-  // card's own PROJECT's real Cast roster, same "real roster, not free
-  // text" convention as the Briefing Board's VIEW dropdown fix (Session
-  // 198) -- reuses the Team Roster's own _tmLoadRoster/_tmAllRosterRows
-  // rather than a second parallel roster fetch.
-  function _sbRenderPersonSelect(item, projectRow){
-    var sel=document.getElementById('sb-person-select'); if(!sel) return;
-    var rows=_tmAllRosterRows(projectRow);
-    var cur=item.assigned_user_id||'';
-    var opts=['<option value="">Unassigned</option>'];
-    rows.forEach(function(m){
-      opts.push('<option value="'+_esc9710(m.user_id)+'"'+(String(m.user_id)===String(cur)?' selected':'')+'>'+_esc9710(m.name||m.email||'')+'</option>');
-    });
-    sel.innerHTML=opts.join('');
   }
 
   // Project switcher — added July 12, 2026. PROJECT was previously a
@@ -3278,10 +3307,12 @@
       // in. Order doesn't matter here (nothing downstream relies on fetch
       // order -- everything sorts explicitly off sort_order/name).
       var rows=Object.keys(_sboardAllRowsById).map(function(k){ return _sboardAllRowsById[k]; });
-      // Person Assigned badge names, Aug 9 2026 -- fire-and-forget; only
-      // triggers a (cheap, cache-only) re-render if it actually had new
-      // names to go fetch, so this never loops or blocks the render
-      // that's already in progress.
+      // Front-of-card badge names, Aug 9 2026 (Session 234: now sourced
+      // from the 👥 button's starred primary doer, legacy assigned_user_id
+      // as fallback) -- fire-and-forget; only triggers a (cheap,
+      // cache-only) re-render if either fetch actually had something new,
+      // so this never loops or blocks the render already in progress.
+      _sboardEnsureCardPrimary(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
       _sboardEnsureAssignedInitials(rows).then(function(fetchedSomething){ if(fetchedSomething) renderSeaBoard(true); });
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
@@ -4025,6 +4056,11 @@
       if(topicBox){ topicBox.style.background=topicRow.color||''; }
       if(topicBadge){
         topicBadge.innerHTML=_sboardAssignedBadgeHTML(topicRow);
+        if(!_sboardCardPrimaryCache.hasOwnProperty(topicRow.id)){
+          _sboardEnsureCardPrimary([topicRow]).then(function(fetched){
+            if(fetched) _sboardUpdateHeaderChrome();
+          });
+        }
         if(topicRow.assigned_user_id && !_sboardAssignedCache[topicRow.assigned_user_id]){
           _sboardEnsureAssignedInitials([topicRow]).then(function(fetched){
             if(fetched) _sboardUpdateHeaderChrome();
@@ -5063,10 +5099,14 @@
       var keyToggle = role==='stakeholder'
         ? '<span class="cs-key-toggle'+(r.is_key?' cs-key-on':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_key?'Key Stakeholder — can directly interfere with progress. Click to unmark.':'Mark as a Key Stakeholder — can directly interfere with progress')+'">🔑</span>'
         : '';
+      // Primary doer star, Session 234 -- same toggle as the compact 👥
+      // dropdown (_sbPeopleRenderList); both read/write the same
+      // card_roles.is_primary column via _csTogglePrimary.
+      var primaryToggle='<span class="cs-primary-toggle'+(r.is_primary?' cs-primary-on':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'Primary doer — click to unstar':'Mark as the primary doer')+'">'+(r.is_primary?'★':'☆')+'</span>';
       return '<div class="tm-row">'
         +'<div class="tm-sym">'+CS_ROLE_SYM[role]+'</div>'
         +'<div class="tm-body">'
-          +'<div class="tm-name">'+keyToggle+star+_esc9710(name)+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
+          +'<div class="tm-name">'+primaryToggle+keyToggle+star+_esc9710(name)+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
           +(email?('<div class="tm-contact">✉ '+_esc9710(email)+'</div>'):'')
           +'<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="—" value="'+_esc9710(r.notes||'')+'"></div>'
         +'</div>'
@@ -5184,6 +5224,39 @@
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }
 
+  // Primary doer star, Session 234 (Aug 21) -- replaces the old Person
+  // Assigned dropdown. card_roles.is_primary has a DB constraint allowing
+  // at most one true row per card (card_roles_one_primary_per_card), so
+  // setting a new primary clears any other starred row on this card FIRST
+  // -- setting the new one true before that clear would trip the
+  // constraint. Un-starring the current primary (tap it again) just
+  // leaves nobody starred; the corner badge/Team filter fall back to
+  // whatever pre-twin-heads assigned_user_id the card already had, if any
+  // (see _sboardEnsureCardPrimary).
+  async function _csTogglePrimary(rowId){
+    if(!rowId || !_csItem) return;
+    var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
+    if(!row) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      if(row.is_primary){
+        var off=await _sb.from('card_roles').update({is_primary:false}).eq('id', rowId);
+        if(off.error) throw off.error;
+      } else {
+        var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type','idea').eq('card_id',_csItem.id).neq('id', rowId);
+        if(clear.error) throw clear.error;
+        var on=await _sb.from('card_roles').update({is_primary:true}).eq('id', rowId);
+        if(on.error) throw on.error;
+      }
+      await _csLoadRoles(_csItem);
+      _csRefreshUI();
+      // The card's own tile(s) on the board carry a cached primary/badge
+      // (see _sboardCardPrimaryCache) that predates this change -- drop it
+      // so the next render re-fetches instead of showing a stale star.
+      delete _sboardCardPrimaryCache[_csItem.id];
+    }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
+  }
+
   // ---- 👥 People dropdown -- Session 226 (Aug 19) design, built Aug 19
   // 2026 after the four-role Stakeholder model shipped (Session 228).
   // Reached from the card back's own 👥 icon (was 📋, jumping straight to
@@ -5243,6 +5316,12 @@
       return '<div class="sc-cdrop-row sb-people-row">'
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+CS_ROLE_SYM[r.role]+' '+key+star+_esc9710(name)+'</span>'
         +'<span style="display:flex;align-items:center;flex-shrink:0">'
+          // Primary doer star, Session 234 (Aug 21, replaces the old
+          // Person Assigned dropdown): tap to make this person the one
+          // whose initials show on the card's corner badge and who the
+          // board's Team filter matches. At most one starred per card --
+          // _csTogglePrimary clears any other before setting this one.
+          +'<button type="button" class="sb-people-star'+(r.is_primary?' active':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'Primary doer — tap to unstar':'Tap to make primary doer')+'">'+(r.is_primary?'★':'☆')+'</button>'
           +'<span class="sc-view-row-role">'+CS_ROLE_LABEL[r.role]+'</span>'
           +(_sbPeopleRemoveMode?'<button type="button" class="sb-people-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</button>':'')
         +'</span>'
@@ -5306,6 +5385,8 @@
     if(menu.parentElement!==document.body) document.body.appendChild(menu);
     menu.onclick=function(e){
       e.stopPropagation();
+      var star=e.target.closest('.sb-people-star');
+      if(star){ _csTogglePrimary(star.getAttribute('data-rowid')); return; }
       var x=e.target.closest('.sb-people-x');
       if(x){ _csRemoveRole(x.getAttribute('data-rowid')); }
     };
@@ -5543,6 +5624,7 @@
       body.addEventListener('click', function(e){
         var x=e.target.closest('.cs-remove-x'); if(x){ _csRemoveRole(x.getAttribute('data-rowid')); return; }
         var k=e.target.closest('.cs-key-toggle'); if(k){ _csToggleKey(k.getAttribute('data-rowid')); return; }
+        var p=e.target.closest('.cs-primary-toggle'); if(p){ _csTogglePrimary(p.getAttribute('data-rowid')); return; }
       });
       body.addEventListener('change', function(e){
         if(e.target.classList.contains('cs-notes-input')){
@@ -6104,18 +6186,11 @@
       + '</div>'
       + '</div>';
 
-    // Person Assigned (Aug 9 2026, Larry): full-width row of its own,
-    // not a fourth eyebrow column -- the overlay card is only 260px wide
-    // (see .sc-overlay-card), so a 4-way split next to Parent/View/Order
-    // would leave no room for a real name. Options are filled in async
-    // right after this HTML lands (see _sbRenderPersonSelect below) --
-    // the roster fetch can't finish before ov.innerHTML is set.
-    var personRowHTML='<div class="sb-eyebrow-row">'
-      + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
-      + '<div class="sb-hdr-eyebrow2" style="text-align:left">Person Assigned</div>'
-      + '<select id="sb-person-select" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box"><option value="">Loading…</option></select>'
-      + '</div>'
-      + '</div>';
+    // Person Assigned (Aug 9 2026) removed Session 234 (Aug 21, Larry:
+    // "covered by the twin heads button") -- the 👥 people dropdown is now
+    // the one place to put someone on a card. Its star toggle sets
+    // card_roles.is_primary, which is what the corner badge and the Team
+    // filter read now (see _sboardEnsureCardPrimary / _csSetPrimary).
 
     var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
@@ -6164,7 +6239,6 @@
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
       + apexTag
       + topRowHTML
-      + personRowHTML
       + headerListHTML
       + bodyHTML
       // NOTES + SIGNAL FLAGS, Aug 7 2026 (Larry): Notes moved onto the same
@@ -6260,30 +6334,6 @@
     })();
 
     var statusBox=document.getElementById('sb-note-status');
-
-    // Person Assigned -- roster fetch can't finish before ov.innerHTML
-    // above already rendered "Loading...", so fill the real options in
-    // once _tmLoadRoster resolves, then save straight to the row on
-    // change (same immediate-save pattern as the VIEW toggle just below,
-    // not the field-by-field detail-save flow the Notes textarea uses).
-    (function(){
-      var effRowsById=(isOn9711 && _isxDetailCtx && _isxDetailCtx.rowsById) ? _isxDetailCtx.rowsById : _sboardAllRowsById;
-      var assignProjectRow=_sbProjectRowForAny(item, effRowsById);
-      var personSel=document.getElementById('sb-person-select');
-      if(!assignProjectRow){
-        if(personSel) personSel.innerHTML='<option value="">Unassigned</option>';
-      } else {
-        _tmLoadRoster(assignProjectRow).then(function(){ _sbRenderPersonSelect(item, assignProjectRow); });
-      }
-      if(personSel) personSel.addEventListener('change', async function(){
-        var newVal=personSel.value||null;
-        try{
-          var upd=await _sb.from('ideas').update({assigned_user_id:newVal}).eq('id',item.id).select();
-          if(upd.error) throw upd.error;
-          item.assigned_user_id=newVal;
-        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-      });
-    })();
 
     // Fractal Casting entry point (Aug 9 2026) -- shown only for headers,
     // and only once we know whether this one's already a TOPIC (offer its
@@ -7872,6 +7922,7 @@
     lockBadgeHTML: _sboardLockBadgeHTML,
     signalRowHTML: _sboardSignalRowHTML,
     ensureAssignedInitials: _sboardEnsureAssignedInitials,
+    ensureCardPrimary: _sboardEnsureCardPrimary,
     closeBoard: _sboardCloseBoard
   };
 
