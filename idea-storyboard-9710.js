@@ -1080,14 +1080,21 @@
       // both branches below since it's not a real row id and can't go
       // through the normal _sboardAllRowsById lookup. Aug 21 2026
       // (Larry: "make the Topic card selectable and highlightable like
-      // headers are"). Down on the selected Topic is a genuine no-op
-      // (it already IS the Topic); Up on it reuses the same PARENT climb
-      // as the "nothing selected" fallback, then keeps the Topic card
-      // selected afterward so repeated Ctrl+Up keeps climbing.
+      // headers are"). With Topic selected, Down and Up do the SAME
+      // thing: Parent becomes the new Topic and the old Topic drops down
+      // to show as a Header under it. Fixed Aug 21 2026 (Larry: "ctrl-down
+      // from topic should move topic to header and parent to topic") --
+      // Down on Topic isn't a no-op after all. There's no other card to
+      // descend INTO from the Topic card itself (unlike a Header/Subheader,
+      // which has one specific parent to climb to or child-of-itself to
+      // drill into), so both keys collapse to the one direction that
+      // actually exists from here: out to Parent. Stays selected
+      // afterward so repeated presses keep climbing.
       if(k==='arrowdown'){
         e.preventDefault();
         if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
-          _sboardShowToast('That’s already what you’re viewing.');
+          if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
+          else _sboardShowToast('Already at the top of this board.');
           return;
         }
         var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
