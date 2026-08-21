@@ -3449,7 +3449,13 @@
       // at Standard (mult 1) so nothing shifts for anyone who's never
       // touched the text-size picker.
       var _tsMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
-      var SUBBER_W=Math.round(104*_tsMult);
+      // Widened 104->114, Aug 21 2026 -- Larry: a long word (e.g.
+      // "Appreciation") was shrinking all the way down but still losing
+      // its last letter or two to a 2nd line on Subber tiles. Rather than
+      // shrink text even further, a small width bump gives every idea/
+      // text/Subber tile (they all share this one constant) a little more
+      // room so the shrink-to-fit logic has to give up less ground.
+      var SUBBER_W=Math.round(114*_tsMult);
       var SUBBER_H=Math.round(64*_tsMult);
       var HEADER_W=Math.round(152*_tsMult);
       // Aug 21 2026, Larry: header names were shrinking down to tiny type
