@@ -2890,6 +2890,14 @@
       // at the left. (.bb-field already sets width:100% for the same
       // reason -- this row just never had to before now.)
       +'.bb-action-row{width:100%;box-sizing:border-box;border-top:1.5px solid var(--bb-accent);padding-top:10px;justify-content:space-between}'
+      // Match the Idea Card's bottom row exactly, Aug 21 2026 (Larry:
+      // "make them both look like the IDEA CARD, same width of buttons
+      // and same icon for trash") -- .bb-icon-btn everywhere else on the
+      // Briefing Card stays a fixed 30x30 square (top toolbar, checklist
+      // add, date pickers, etc.), but inside this specific bottom row the
+      // 4 buttons now stretch and share the row evenly, same as
+      // .sb-blue-btn on the Idea Card (idea-storyboard-9710.js).
+      +'.bb-action-row .bb-icon-btn{width:auto;height:auto;flex:1 1 auto;min-width:36px;padding:6px 10px;border-radius:8px;border-width:0.5px}'
       +'.bb-swatch-row{flex-wrap:wrap}'
       +'.bb-swatch{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bb-accent);cursor:pointer;padding:0}'
       +'.bb-swatch.bb-swatch-active{box-shadow:0 0 0 2px var(--bb-ink)}'
@@ -3235,7 +3243,7 @@
               +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who&rsquo;s on this card">👥</button>'
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
               +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Appearance">⚙️</button>'
-              +'<button class="bb-icon-btn" id="bb-d-trash" type="button" title="Trash">🗑️</button>'
+              +'<button class="bb-icon-btn" id="bb-d-trash" type="button" title="Trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>'
             +'</div>'
           +'</div>'
         +'</div>';
