@@ -2761,14 +2761,22 @@
       var lpText='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
       lp.textContent=lpText;
       var lpBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
-      lp.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(8,Math.round(lpBase*0.55)), width-16, height-12, 1.25)+'px';
+      // Floor lowered Aug 21 2026 (Larry: long words like "Appreciation"
+      // were still splitting onto a 2nd line on these small tiles) --
+      // 8px/55% wasn't always low enough to get a long single word under
+      // the tile's real width, so it fell through to word-break more
+      // than it should have. Letting it shrink further first keeps the
+      // word intact and readable at a smaller size, which is what Larry
+      // asked for over splitting it.
+      lp.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(6,Math.round(lpBase*0.4)), width-16, height-12, 1.25)+'px';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');
       var pText=item.text_content||'(untitled)';
       p.textContent=pText;
       var pBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
-      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(8,Math.round(pBase*0.55)), width-16, height-12, 1.25)+'px';
+      // Floor lowered, same reasoning as the link tile above.
+      p.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(pText, pBase, Math.max(6,Math.round(pBase*0.4)), width-16, height-12, 1.25)+'px';
       tile.appendChild(p);
     }
     if(item.heart_count){
@@ -2899,7 +2907,10 @@
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
     p.textContent=headerRow.text_content||'(untitled)';
-    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.round(10*_stMult), width-18, height-14, 1.15);
+    // Floor lowered Aug 21 2026, same reasoning as the idea/link tiles --
+    // a long single word (a Subber name) shrinking further beats it
+    // wrapping in this small, fixed, overflow-hidden card.
+    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
@@ -3441,7 +3452,14 @@
       var SUBBER_W=Math.round(104*_tsMult);
       var SUBBER_H=Math.round(64*_tsMult);
       var HEADER_W=Math.round(152*_tsMult);
-      var HEADER_H=SUBBER_H;
+      // Aug 21 2026, Larry: header names were shrinking down to tiny type
+      // (or clipping to a cramped 3rd line) inside a pill sized like a
+      // regular Subber tile. He asked for more room on the card instead of
+      // smaller text -- so this is now its own, taller constant, no longer
+      // tied to SUBBER_H. Only the named header pill (and its "add header"
+      // placeholder, sized to match) uses this; regular idea/Subber tiles
+      // are untouched.
+      var HEADER_H=Math.round(84*_tsMult);
 
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
@@ -3495,7 +3513,11 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'')+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
-        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(10*_tsMult), HEADER_W-28, HEADER_H-14, 1.2);
+        // Floor dropped 10->8, Aug 21 2026 -- taller HEADER_H above should
+        // handle nearly everything at a normal size now; this lower floor
+        // is just the last-resort backstop for a genuinely long name, so
+        // it can still shrink a little further before word-break kicks in.
+        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(8*_tsMult), HEADER_W-28, HEADER_H-14, 1.2);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
@@ -3634,7 +3656,7 @@
         // ideas here aren't necessarily freshly typed. Larry wants one
         // consistent label across every storyboard instead.
         var localLabel='NEW';
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(10*_tsMult),HEADER_W-28,HEADER_H-14,1.2)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click

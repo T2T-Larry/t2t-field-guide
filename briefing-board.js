@@ -3878,7 +3878,10 @@
       if(!w) continue;
       var cs=getComputedStyle(el);
       var baseSize=parseFloat(cs.fontSize)||14;
-      var fitted=window.FGFitFontSize ? window.FGFitFontSize(el.textContent, w, {base:baseSize, min:Math.max(9, Math.round(baseSize*0.6)), step:0.5, fontFamily:cs.fontFamily, fontWeight:cs.fontWeight}) : baseSize;
+      // Floor lowered Aug 21 2026, same SOP as the storyboard's card text --
+      // a long word (e.g. "Appreciation") shrinking further is better than
+      // it wrapping/splitting, so the floor here is no longer 9px/60%.
+      var fitted=window.FGFitFontSize ? window.FGFitFontSize(el.textContent, w, {base:baseSize, min:Math.max(7, Math.round(baseSize*0.45)), step:0.5, fontFamily:cs.fontFamily, fontWeight:cs.fontWeight}) : baseSize;
       if(fitted<baseSize) el.style.fontSize=fitted+'px';
     }
   }
