@@ -219,6 +219,14 @@
   ];
 
   var REVIEWERS = ['Larry']; // stand-in list until the real roster exists
+  // Card background color, Session 234 (Aug 21) -- new for Briefing Cards,
+  // added for bottom-row consistency with the Idea Card (Larry: "add the
+  // same bottom row as on the IDEA CARD to the BB Cards... gear..."). Same
+  // 8-color palette as idea-storyboard-9710.js's _sboardColorPalette,
+  // hardcoded here rather than piped through the T2TStoryboard bridge --
+  // it's a fixed list, not live state, so a cross-file dependency would
+  // just be overhead.
+  var BB_COLOR_PALETTE = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
   // Priority, corrected July 21, 2026 (second pass) -- 3 buttons (H, M,
   // L), each its own 3-click cycle that always escalates toward more
   // urgent: H:[H,HH,off], M:[M,MH,off], L:[L,ML,off]. PRI_BASE_OF maps
@@ -365,6 +373,19 @@
     if(!c) return;
     c.trashedAt=trashedAt;
     _bbSaveLocal(_bbCardsList());
+    renderBoard();
+  }
+  // Card color, Session 234 (Aug 21) -- new for Briefing Cards, set from
+  // the bottom row's ⚙️ Gear swatches. Own tiny undo/redo helper, same
+  // shape as _bbApplyTrashState just above, rather than folding it into
+  // BB_DETAIL_FIELDS (that group only covers fields the detail form
+  // saves together on close; color saves immediately on click instead).
+  function _bbApplyColor(cardId, color){
+    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    if(!c) return;
+    c.color=color;
+    _bbSaveLocal(_bbCardsList());
+    if(_bbOpenCardId===cardId) _bbRenderColorSwatches(c);
     renderBoard();
   }
   // Text/detail-edit undo, Aug 11 2026 -- the DETAILS card edits a bunch
@@ -702,7 +723,6 @@
   // _bbEnsureKeyLibraryLoaded, called from _bbInitBoardsAndData.
   var _bbKeyLibCache = [];
   var _bbKeyLibraryLoaded = false;
-  var _bbMembersCache = [];
 
   var _bbChecklistCache = [];
   // Per-key link counts, Aug 4 2026 -- Larry: "Links are Key related...
@@ -865,6 +885,7 @@
       archived: !!c.archived,
       locked: !!c.locked, lock_reason: c.lockReason||null,
       shared_to_board_id: c.sharedToBoardId||null,
+      color: c.color||null,
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
       link_url: c.linkUrl||null, link_title: c.linkTitle||null, link_thumb: c.linkThumb||null,
@@ -886,6 +907,7 @@
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
       locked: !!row.locked, lockReason: row.lock_reason||'',
       sharedToBoardId: row.shared_to_board_id||null,
+      color: row.color||'',
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
@@ -1323,8 +1345,11 @@
   // personal_rank -- never col, sort_order, or board_id.
   //
   // Matching "assigned to me" is exact-string against this member's own
-  // roster label (see _bbLoadMembers) -- a card whose person field
-  // predates the picker won't match until it's reassigned through it.
+  // roster label, straight off the legacy person field (see
+  // _bbLoadForeignCardsForPersonalBoard) -- Session 234 (Aug 21) known
+  // gap: a card whose only assignment is a 👥 star (no legacy person
+  // text) won't surface here yet. Logged for a future pass; out of
+  // scope for the bottom-row build itself.
   var _bbForeignCards = [];
   // Mirror boards, part 2 (Aug 9 2026): a card created directly on a
   // member's own personal board can be tagged (via the card's own
@@ -1496,7 +1521,11 @@
       row.appendChild(nameSpan); row.appendChild(roleSpan);
       row.addEventListener('click', function(e){
         e.stopPropagation(); menu.hidden=true;
-        _bbSourceFilter={mode:'person', value:label};
+        // uid added Session 234 (Aug 21) -- lets _bbSourceFilterCards
+        // match against the 👥 primary-doer star first, same as the
+        // corner badge; value/label stays as the legacy text fallback
+        // for any card nobody's starred yet.
+        _bbSourceFilter={mode:'person', value:label, uid:m.user_id||null};
         trigger.textContent=m.name||m.email||'';
         renderBoard();
       });
@@ -1588,7 +1617,21 @@
       return cards.filter(function(c){ return c._foreign && c._homeBoardId===_bbSourceFilter.value; });
     }
     if(_bbSourceFilter.mode==='person'){
-      return cards.filter(function(c){ return c.person===_bbSourceFilter.value; });
+      // Session 234 (Aug 21) -- match the 👥 primary-doer star first
+      // (same source as the corner badge), same legacy person-text
+      // fallback as before for a card nobody's starred yet. A card
+      // whose primary fetch genuinely landed with "nobody starred"
+      // (cardPrimaryUidRaw returns null, not undefined) still falls
+      // through to the text match rather than being excluded outright.
+      var uid=_bbSourceFilter.uid;
+      var hasPrimaryLookup = uid && window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw;
+      return cards.filter(function(c){
+        if(hasPrimaryLookup){
+          var pUid=T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id);
+          if(pUid) return String(pUid)===String(uid);
+        }
+        return c.person===_bbSourceFilter.value;
+      });
     }
     return cards;
   }
@@ -1856,7 +1899,6 @@
     // won't come back next reload).
     _bbPurgeOldTrash(boardId);
     _bbPurgeOldMoves(boardId);
-    _bbLoadMembers();
 
     // One-time migration, July 21, 2026 (evening): the first time Field
     // Guide BB is opened empty after named multi-board storage shipped,
@@ -2391,40 +2433,16 @@
     return (letters[0].charAt(0)+letters[letters.length-1].charAt(0)).toUpperCase();
   }
 
-  // Member roster picker for Assigned To, July 22, 2026 -- pulled from
-  // the real members table (the same roster used for login), formatted
-  // "II Full Name" (e.g. "LS Larry Smithers") to match the initials
-  // convention _bbInitials already parses. Loaded once per board
-  // switch and cached; a card can still carry a person value that
-  // isn't in the roster (typed in before this existed, or added via
-  // "+ Add a name..."), so the select always includes whatever's
-  // currently on the card even if it's not a known member.
-  async function _bbLoadMembers(){
-    var sb=T().sb; if(!sb) return;
-    try{
-      var res=await sb.from('briefing_roster').select('name,initials').order('name',{ascending:true});
-      if(!res.error && res.data){
-        _bbMembersCache = res.data.map(function(m){
-          var initials=(m.initials||_bbInitialsFromName(m.name)).toUpperCase();
-          return initials+' '+(m.name||'');
-        });
-      }
-    }catch(e){ console.error('Briefing Board: could not load members', e); }
-    var sel=document.getElementById('bb-d-person');
-    if(sel && _bbOpenCardId){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(c) _bbRenderPersonSelect(c.person||'');
-    }
-  }
-
-  function _bbRenderPersonSelect(currentValue){
-    var sel=document.getElementById('bb-d-person'); if(!sel) return;
-    var list=_bbMembersCache.slice();
-    if(currentValue && list.indexOf(currentValue)===-1) list.unshift(currentValue);
-    sel.innerHTML = list.map(function(v){
-      return '<option value="'+_esc(v)+'"'+(v===currentValue?' selected':'')+'>'+_esc(v)+'</option>';
-    }).join('') + '<option value="__add__">+ Add a name&hellip;</option>';
-  }
+  // Assigned To / member roster picker -- retired Session 234 (Aug 21,
+  // Larry: "add the same bottom row as on the IDEA CARD to the BB
+  // Cards... twin heads"). Used to populate a select from a
+  // 'briefing_roster' table that never actually existed in Supabase
+  // (confirmed via list_tables -- always silently failed, caught by its
+  // own try/catch), so nothing here was ever really live; the 👥 people
+  // dropdown (wireBbDetailActions, T2TStoryboard.openPeopleDropdown)
+  // is the one place to put someone on a card now, same as the Idea
+  // Card. _bbInitials just below is kept -- it's still the legacy-
+  // fallback initials source for any card nobody's starred yet.
 
   function _bbInitials(person){
     if(!person) return '';
@@ -2853,6 +2871,14 @@
       +'.bb-doors-row{display:flex;gap:6px;margin-bottom:10px}'
       +'.bb-door-btn{flex:0 0 auto}'
       +'.bb-icon-loading{opacity:.5;pointer-events:none}'
+      // Bottom action row, Session 234 (Aug 21) -- Lock/People/Gear/Trash,
+      // reuses .bb-doors-row's own layout so it matches the doors row
+      // directly above it. Lock's "on" state borrows the same red already
+      // used for Hang-Ups/locked elsewhere in this file.
+      +'.bb-icon-btn.bb-lock-active{background:#a3372b;border-color:#a3372b;color:#fff}'
+      +'.bb-swatch-row{flex-wrap:wrap}'
+      +'.bb-swatch{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bb-accent);cursor:pointer;padding:0}'
+      +'.bb-swatch.bb-swatch-active{box-shadow:0 0 0 2px var(--bb-ink)}'
       +'.bb-dates-block .bb-date-row{margin-bottom:4px}'
       +'.bb-routine-select{width:140px}'
       +'.bb-mt{color:var(--bb-sub);font-size:calc(13px * var(--fg-text-scale,1));font-style:italic}'
@@ -3146,7 +3172,6 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-routine-toggle" id="bb-d-routine-toggle" title="Routine card" aria-label="Toggle routine">🔄</button><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
-            +'<div class="bb-field"><button class="bb-flag-btn" id="bb-d-lock" type="button">🔓 Lock</button></div>'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
@@ -3163,7 +3188,6 @@
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
             +'</div>'
             +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
-            +'<div class="bb-field"><label>Assigned to</label><select id="bb-d-person"></select></div>'
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
             +'<div class="bb-field bb-dates-block"><label>Dates</label>'
               +'<div class="bb-inline-field" style="margin-bottom:6px"><span class="bb-mh-eyebrow">Added</span><span id="bb-d-added">&mdash;</span></div>'
@@ -3181,6 +3205,24 @@
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
+            // Bottom action row, Session 234 (Aug 21, Larry: "add the same
+            // bottom row as on the IDEA CARD to the BB Cards? lock - twin
+            // heads - gear - trash"). Lock moved down here (was the big
+            // top button, Larry: "too in your face"). Assigned-to is gone
+            // -- retired the same way Person Assigned was on the Idea
+            // Card, in favor of the 👥 star (see wireBbDetailActions).
+            // Color swatch row is new for Briefing Cards (no prior
+            // per-card color existed) -- built for Gear-button parity
+            // with the Idea Card. Trash reuses the existing drag-to-trash
+            // "Moose poop?" confirm as a direct button here too.
+            +'<div id="bb-d-color-row" class="bb-doors-row bb-swatch-row" style="display:none"></div>'
+            +'<div class="bb-doors-row">'
+              +'<button class="bb-icon-btn" id="bb-d-lock" type="button">🔓</button>'
+              +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who&rsquo;s on this card">👥</button>'
+              +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
+              +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Appearance">⚙️</button>'
+              +'<button class="bb-icon-btn" id="bb-d-trash" type="button" title="Trash">🗑️</button>'
+            +'</div>'
           +'</div>'
         +'</div>';
       fg.appendChild(detailOv);
@@ -3531,6 +3573,16 @@
     if(_bbForeignCards && _bbForeignCards.length) cards = cards.concat(_bbForeignCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
     if(_bbSharedInCards && _bbSharedInCards.length) cards = cards.concat(_bbSharedInCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
     cards = _bbSourceFilterCards(cards);
+    // Primary-doer warm-up, Session 234 (Aug 21) -- same fire-and-forget
+    // fetch-then-conditional-re-render pattern session.js already uses
+    // for the Idea Board (T2TStoryboard.ensureCardPrimary), generalized
+    // here via ensureCardPrimaryRaw for card_type:'briefing_card'. Feeds
+    // both the corner badge (dotHTML below) and _bbSourceFilterCards's
+    // person-mode match.
+    if(window.T2TStoryboard && T2TStoryboard.ensureCardPrimaryRaw){
+      var _bbPrimaryIds=cards.map(function(c){ return c.id; }).filter(Boolean);
+      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
+    }
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
       col.className='bb-col';
@@ -3576,7 +3628,19 @@
           +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'');
         el.draggable=true;
         el.setAttribute('data-id', c.id);
-        var dotHTML = c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '';
+        if(c.color) el.style.background=c.color;
+        // Corner badge, Session 234 (Aug 21) -- 👥's ★ primary doer is
+        // now the first source (same as the Idea Card's own badge),
+        // falling back to the legacy person text field for any card
+        // nobody's starred yet. cardPrimaryUidRaw returns undefined
+        // before this pass's ensureCardPrimaryRaw fetch lands (falls
+        // back same as "nobody starred" until then -- next re-render
+        // fills it in), null once fetched with nobody starred, or a uid.
+        var _bbPrimaryUid = (window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
+        var _bbPrimaryInfo = (_bbPrimaryUid && window.T2TStoryboard && T2TStoryboard.memberInfo) ? T2TStoryboard.memberInfo(_bbPrimaryUid) : null;
+        var dotHTML = _bbPrimaryInfo
+          ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>')
+          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
@@ -3885,7 +3949,10 @@
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
-    _bbRenderPersonSelect(c.person||'');
+    _bbRenderColorSwatches(c);
+    // Color row starts collapsed on every open -- Gear (bb-d-gear) toggles
+    // it, same as the Idea Card's Appearance gear.
+    (function(){ var row=document.getElementById('bb-d-color-row'); if(row) row.style.display='none'; })();
     // Mirror boards, part 2, Aug 9 2026 -- "Also show on" only makes
     // sense for a card native to a PERSONAL board (tagging it onto a
     // project/departmental/company board this member belongs to).
@@ -3957,7 +4024,11 @@
     if(c){
       c.task=document.getElementById('bb-d-task').value;
       c.situation=document.getElementById('bb-d-situation').value;
-      c.person=document.getElementById('bb-d-person').value;
+      // c.person (Assigned to) no longer has a field on this screen --
+      // retired Session 234, see the comment above _bbInitials. It's
+      // left untouched here (never cleared) purely as the legacy
+      // fallback source for any card nobody's starred a 👥 primary
+      // doer on yet.
       c.due=document.getElementById('bb-d-due').value;
       c.dueTime=document.getElementById('bb-d-due-time').value;
       c.startDate=document.getElementById('bb-d-start').value;
@@ -4036,6 +4107,15 @@
     _bbSaveLocal(_bbCardsList());
     _bbTrashPendingId=null;
     var ov=document.getElementById('bb-trash-overlay'); if(ov) ov.classList.remove('active');
+    // Session 234 (Aug 21) -- Trash is now also reachable straight from
+    // the card detail overlay's bottom row (bb-d-trash), not just by
+    // dragging to the trash can. If the card just trashed is the one
+    // still sitting open behind this confirm, close it too rather than
+    // leaving an empty/stale detail screen up.
+    if(_bbOpenCardId===id){
+      _bbOpenCardId=null;
+      var detailOv=document.getElementById('bb-detail-overlay'); if(detailOv) detailOv.classList.remove('active');
+    }
     renderBoard();
   }
 
@@ -5520,9 +5600,12 @@
     if(gBtn) gBtn.classList.toggle('bb-flag-active', !!c.grow);
     var lBtn=document.getElementById('bb-d-lock');
     if(lBtn){
-      lBtn.classList.toggle('bb-flag-active', !!c.locked);
-      lBtn.textContent = c.locked ? '\uD83D\uDD12 Locked — click to unlock' : '\uD83D\uDD13 Lock';
-      lBtn.title = c.locked ? 'This card is parked. Unlocking lets it compete for priority again.' : 'Pause this card — it will stay here, marked, until you unlock it.';
+      // Icon-only, Session 234 (Aug 21) -- moved down into the bottom
+      // action row (Larry: the old full-width top button was "too in
+      // your face"). Title still carries the full sentence.
+      lBtn.classList.toggle('bb-lock-active', !!c.locked);
+      lBtn.textContent = c.locked ? '\uD83D\uDD12' : '\uD83D\uDD13';
+      lBtn.title = c.locked ? 'Locked — click to unlock. This card is parked. Unlocking lets it compete for priority again.' : 'Lock — pause this card. It will stay here, marked, until you unlock it.';
     }
   }
 
@@ -5584,8 +5667,8 @@
       // it's genuinely incomplete and needs to wait (stays right where
       // it is, marked, out of priority ranking -- that's the Hang-Up:
       // it started before its rightful turn). Plain confirm() dialogs,
-      // matching the existing pattern used elsewhere in this file
-      // (see wirePersonSelect's window.prompt just below).
+      // matching the existing window.confirm/window.prompt pattern used
+      // elsewhere in this file.
       if(!window.confirm('Lock this card? It will pause here until you unlock it.')) return;
       var isDone=window.confirm('Is the work actually finished? OK = Yes, move it to Done. Cancel = No, it still needs to happen -- park it here until its time.');
       if(isDone){
@@ -5615,16 +5698,66 @@
     });
   }
 
-  function wirePersonSelect(){
-    var sel=document.getElementById('bb-d-person'); if(!sel) return;
-    sel.addEventListener('change', function(){
-      if(sel.value!=='__add__') return;
-      var name=window.prompt('Full name for the new person:');
-      if(!name || !name.trim()){ _bbRenderPersonSelect(''); return; }
-      var initials=_bbInitialsFromName(name);
-      var display=initials+' '+name.trim();
-      if(_bbMembersCache.indexOf(display)===-1) _bbMembersCache.push(display);
-      _bbRenderPersonSelect(display);
+  // Color swatch row (⚙️ Gear), Session 234 (Aug 21) -- same palette and
+  // "circle with a ring when selected" look as the Idea Card's own
+  // sb-swatch row, rebuilt fresh every time the card detail opens (this
+  // overlay is a permanent DOM node reused across cards, never rebuilt
+  // from scratch, so the selected-swatch highlight has to be redrawn
+  // per-card the same way _bbHighlightPriority/_bbUpdateReviewUI are).
+  function _bbRenderColorSwatches(c){
+    var row=document.getElementById('bb-d-color-row'); if(!row) return;
+    row.innerHTML = BB_COLOR_PALETTE.map(function(clr){
+      var active=(c.color===clr)?' bb-swatch-active':'';
+      return '<button type="button" class="bb-swatch'+active+'" data-c="'+_esc(clr)+'" style="background:'+_esc(clr)+'" title="Card color"></button>';
+    }).join('');
+    row.onclick=function(e){
+      var btn=e.target.closest('.bb-swatch'); if(!btn) return;
+      var clr=btn.getAttribute('data-c');
+      if(clr===c.color) return;
+      var before=c.color;
+      c.color=clr;
+      _bbSaveLocal(_bbCardsList());
+      _bbRenderColorSwatches(c);
+      renderBoard();
+      _bbPushAction({label:'Edit', undo:function(){ _bbApplyColor(c.id, before); }, redo:function(){ _bbApplyColor(c.id, clr); }});
+    };
+  }
+
+  // Bottom action row (Lock is wired separately, wireLockButton), Session
+  // 234 (Aug 21) -- Larry: "add the same bottom row as on the IDEA CARD
+  // to the BB Cards? lock - twin heads - gear - trash".
+  function wireBbDetailActions(){
+    // 👥 People -- reuses the Idea Card's own Call Sheet/star system via
+    // the T2TStoryboard bridge (idea-storyboard-9710.js), generalized for
+    // card_type:'briefing_card'. This is now the one place to put
+    // someone on a Briefing Card -- see the retired Assigned to field,
+    // just above _bbInitials.
+    T().wire('bb-d-people', function(e){
+      e.stopPropagation();
+      var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+      if(window.T2TStoryboard && T2TStoryboard.openPeopleDropdown){
+        T2TStoryboard.openPeopleDropdown(
+          document.getElementById('bb-d-people'), c,
+          function(){ openCardDetail(c.id); },
+          'briefing_card', document.getElementById('bb-people-menu')
+        );
+      }
+    });
+
+    // ⚙️ Gear -- toggles the color swatch row. New for Briefing Cards
+    // (no per-card color existed before this); built for bottom-row
+    // parity with the Idea Card's own Appearance gear.
+    T().wire('bb-d-gear', function(e){
+      e.stopPropagation();
+      var row=document.getElementById('bb-d-color-row'); if(!row) return;
+      row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
+    });
+
+    // 🗑️ Trash -- same "Moose poop?" confirm dragging a card to the
+    // trash can already triggers (openTrashConfirm/doTrashCard); just
+    // reachable straight from inside the card now too.
+    T().wire('bb-d-trash', function(){
+      if(_bbOpenCardId) openTrashConfirm(_bbOpenCardId);
     });
   }
 
@@ -5842,9 +5975,9 @@
     wirePriorityButtons();
     wireReviewButtons();
     wireLockButton();
+    wireBbDetailActions();
     wireRoutineControls();
     wireLinkField();
-    wirePersonSelect();
     wireKeyBuilder();
     wireKeyPicker();
     wireKeyLibManager();

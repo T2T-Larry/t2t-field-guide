@@ -1316,42 +1316,64 @@
   // Primary doer (Session 234, Aug 21) -- who the 👥 dropdown's star is
   // on for a given card. Replaces the old single-field Person Assigned as
   // the source for both this badge and the board's Team filter
-  // (_sboardFilterByPerson). Cache is keyed by card id; a value of null
-  // means "fetched, nobody's starred" (as opposed to undefined, "haven't
-  // asked yet"), so a card only falls back to its old assigned_user_id
-  // while genuinely unstarred -- not just before the fetch lands.
+  // (_sboardFilterByPerson). Cache is keyed by "cardType:cardId" -- Session
+  // 234's extension to Briefing Cards (via the T2TStoryboard bridge) means
+  // this cache can hold entries for more than one card_roles.card_type at
+  // once, and a compound key keeps them from ever colliding even though
+  // idea/briefing_card ids come from separate uuid columns already. A
+  // cached value of null means "fetched, nobody's starred" (as opposed to
+  // undefined/absent, "haven't asked yet"), so a card only falls back to
+  // its legacy single-field value while genuinely unstarred -- not just
+  // before the fetch lands.
   var _sboardCardPrimaryCache = {};
   var _sboardCardPrimaryFetchInFlight = {};
-  async function _sboardEnsureCardPrimary(rows){
+  function _sboardCpKey(cardType, cardId){ return (cardType||'idea')+':'+cardId; }
+  // Raw, card_type-generic fetch -- exposed on the T2TStoryboard bridge as
+  // ensureCardPrimaryRaw so briefing-board.js can warm its own cards'
+  // primaries the same way the Idea Board does for its own.
+  async function _sboardEnsureCardPrimaryRaw(cardType, ids){
+    cardType = cardType||'idea';
     var missing=[], seen={};
-    (rows||[]).forEach(function(r){
-      var id=r&&r.id;
-      if(!id || _sboardCardPrimaryCache.hasOwnProperty(id) || _sboardCardPrimaryFetchInFlight[id] || seen[id]) return;
-      seen[id]=true; missing.push(id);
+    (ids||[]).forEach(function(id){
+      var key=_sboardCpKey(cardType, id);
+      if(!id || _sboardCardPrimaryCache.hasOwnProperty(key) || _sboardCardPrimaryFetchInFlight[key] || seen[key]) return;
+      seen[key]=true; missing.push(id);
     });
     if(!missing.length) return false;
-    missing.forEach(function(id){ _sboardCardPrimaryFetchInFlight[id]=true; });
+    missing.forEach(function(id){ _sboardCardPrimaryFetchInFlight[_sboardCpKey(cardType,id)]=true; });
     var _sb=T().sb;
-    if(!_sb){ missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[id]; }); return false; }
+    if(!_sb){ missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[_sboardCpKey(cardType,id)]; }); return false; }
     try{
-      var res=await _sb.from('card_roles').select('card_id,user_id').eq('card_type','idea').eq('is_primary',true).in('card_id', missing);
+      var res=await _sb.from('card_roles').select('card_id,user_id').eq('card_type',cardType).eq('is_primary',true).in('card_id', missing);
       var found={};
       if(!res.error && res.data){
-        res.data.forEach(function(row){ found[row.card_id]=row.user_id; _sboardCardPrimaryCache[row.card_id]=row.user_id; });
+        res.data.forEach(function(row){ found[row.card_id]=row.user_id; _sboardCardPrimaryCache[_sboardCpKey(cardType,row.card_id)]=row.user_id; });
       }
-      missing.forEach(function(id){ if(!(id in found)) _sboardCardPrimaryCache[id]=null; });
+      missing.forEach(function(id){ if(!(id in found)) _sboardCardPrimaryCache[_sboardCpKey(cardType,id)]=null; });
       var uids=Object.keys(found).map(function(id){ return found[id]; });
       if(uids.length) await _sboardEnsureMemberInitials(uids);
     }catch(e){
-      missing.forEach(function(id){ if(!_sboardCardPrimaryCache.hasOwnProperty(id)) _sboardCardPrimaryCache[id]=null; });
+      missing.forEach(function(id){ var key=_sboardCpKey(cardType,id); if(!_sboardCardPrimaryCache.hasOwnProperty(key)) _sboardCardPrimaryCache[key]=null; });
     }
-    missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[id]; });
+    missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[_sboardCpKey(cardType,id)]; });
     return true;
+  }
+  // Raw lookup -- undefined means "not fetched yet" (caller's choice what
+  // to show meanwhile), null means "fetched, nobody starred" (caller
+  // applies its own legacy fallback), a uuid string means "this person".
+  function _sboardCardPrimaryUidRaw(cardType, cardId){
+    var key=_sboardCpKey(cardType, cardId);
+    return _sboardCardPrimaryCache.hasOwnProperty(key) ? _sboardCardPrimaryCache[key] : undefined;
+  }
+  // Idea Board's own convenience wrappers -- unchanged signatures, every
+  // existing call site in this file/session.js keeps working as-is.
+  async function _sboardEnsureCardPrimary(rows){
+    var ids=(rows||[]).map(function(r){ return r&&r.id; }).filter(Boolean);
+    return _sboardEnsureCardPrimaryRaw('idea', ids);
   }
   function _sboardCardPrimaryUid(item){
     if(!item) return '';
-    var cardId=item.id;
-    var uid = _sboardCardPrimaryCache.hasOwnProperty(cardId) ? _sboardCardPrimaryCache[cardId] : null;
+    var uid=_sboardCardPrimaryUidRaw('idea', item.id);
     return uid || item.assigned_user_id || '';
   }
   function _sboardAssignedBadgeHTML(item){
@@ -1789,7 +1811,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu','sb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -4056,7 +4078,7 @@
       if(topicBox){ topicBox.style.background=topicRow.color||''; }
       if(topicBadge){
         topicBadge.innerHTML=_sboardAssignedBadgeHTML(topicRow);
-        if(!_sboardCardPrimaryCache.hasOwnProperty(topicRow.id)){
+        if(!_sboardCardPrimaryCache.hasOwnProperty(_sboardCpKey('idea', topicRow.id))){
           _sboardEnsureCardPrimary([topicRow]).then(function(fetched){
             if(fetched) _sboardUpdateHeaderChrome();
           });
@@ -5059,6 +5081,11 @@
   // open in Design Notes.
   var _csRoles = [];
   var _csItem = null;
+  // Which card_roles.card_type the module-level _csItem/_csRoles state
+  // above belongs to right now -- 'idea' unless something outside this
+  // file (briefing-board.js, via the T2TStoryboard bridge) opened the
+  // 👥 dropdown for its own card type. Session 234 (Aug 21).
+  var _csCardType = 'idea';
   var CS_ROLE_ORDER = ['stakeholder','leader','cast_member','facilitator','facilitator_qualified'];
   var CS_ROLE_LABEL = {
     stakeholder:'Stakeholder', leader:'Leader',
@@ -5073,7 +5100,7 @@
   async function _csLoadRoles(item){
     var _sb=T().sb; if(!_sb || !item){ _csRoles=[]; return; }
     try{
-      var res=await _sb.from('card_roles').select('*').eq('card_type','idea').eq('card_id', item.id);
+      var res=await _sb.from('card_roles').select('*').eq('card_type',_csCardType||'idea').eq('card_id', item.id);
       _csRoles = (!res.error && res.data) ? res.data : [];
     }catch(e){ _csRoles=[]; }
   }
@@ -5176,7 +5203,7 @@
     try{
       var meRes=await _sb.auth.getUser();
       var me=meRes && meRes.data ? meRes.data.user : null;
-      var ins=await _sb.from('card_roles').insert({card_type:'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
+      var ins=await _sb.from('card_roles').insert({card_type:_csCardType||'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
       if(ins.error) throw ins.error;
       await _csLoadRoles(_csItem);
       return {ok:true};
@@ -5243,7 +5270,7 @@
         var off=await _sb.from('card_roles').update({is_primary:false}).eq('id', rowId);
         if(off.error) throw off.error;
       } else {
-        var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type','idea').eq('card_id',_csItem.id).neq('id', rowId);
+        var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
         if(clear.error) throw clear.error;
         var on=await _sb.from('card_roles').update({is_primary:true}).eq('id', rowId);
         if(on.error) throw on.error;
@@ -5253,7 +5280,7 @@
       // The card's own tile(s) on the board carry a cached primary/badge
       // (see _sboardCardPrimaryCache) that predates this change -- drop it
       // so the next render re-fetches instead of showing a stale star.
-      delete _sboardCardPrimaryCache[_csItem.id];
+      delete _sboardCardPrimaryCache[_sboardCpKey(_csCardType, _csItem.id)];
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }
 
@@ -5347,29 +5374,48 @@
     _csRefreshUI();
   }
 
-  async function _sboardOpenPeopleDropdown(triggerEl, item, backFn){
-    var menu=document.getElementById('sb-people-menu');
-    // If the card that's open now rendered a DIFFERENT #sb-people-menu
-    // than the one we last touched, the old one is a dead leftover --
-    // still sitting in <body>, possibly still visible -- so remove it
-    // before it can confuse getElementById on some later click.
+  // Generalized Session 234 (Aug 21) to work for any card_type, not just
+  // 'idea' -- Larry wants the same 👥 button/dropdown on Briefing Cards
+  // too. cardType/menuEl let a caller outside this file (briefing-board.js,
+  // via the T2TStoryboard bridge) supply its own card_roles card_type and
+  // its own menu element instead of always assuming the Idea Card's own
+  // #sb-people-menu. The full ☎️ Call Sheet screen stays Idea-Card-only
+  // for now (it leans on Idea-Card-specific chrome like closeSbDetail/
+  // openCallSheet's breadcrumb) -- omitted from the dropdown entirely for
+  // any other card type rather than half-wiring a button that'd break.
+  async function _sboardOpenPeopleDropdown(triggerEl, item, backFn, cardType, menuEl){
+    cardType = cardType || 'idea';
+    var menu = menuEl || document.getElementById('sb-people-menu');
+    // If the card that's open now rendered a DIFFERENT people-menu than
+    // the one we last touched, the old one is a dead leftover -- still
+    // sitting in <body>, possibly still visible -- so remove it before
+    // it can confuse getElementById/reuse on some later click.
     if(_sbPeopleMenuEl && _sbPeopleMenuEl!==menu && _sbPeopleMenuEl.parentNode){
       _sbPeopleMenuEl.parentNode.removeChild(_sbPeopleMenuEl);
     }
     _sbPeopleMenuEl=menu;
     if(!triggerEl || !menu || !item) return;
     var willOpen=menu.hidden;
-    _sboardCloseAllDropdowns(willOpen?'sb-people-menu':null);
+    _sboardCloseAllDropdowns(willOpen?menu.id:null);
     if(!willOpen){ menu.hidden=true; return; }
 
+    // _csItem/_csCardType drive every card_roles read/write below
+    // (_csLoadRoles, _csInsertRole, _csRemoveRole, _csToggleKey,
+    // _csTogglePrimary) -- setting them here (not just inside
+    // openCallSheet) fixes a real bug: add/remove/star from this compact
+    // dropdown silently did nothing if the full Call Sheet screen had
+    // never been opened first this session, since _csItem stayed null.
+    _csItem=item;
+    _csCardType=cardType;
     _sbPeopleBackFn=backFn||function(){ openSbDetail(item); };
     _sbPeopleRemoveMode=false;
     _sbPeopleAddRole='cast_member';
 
+    var isIdea=(cardType==='idea');
     menu.innerHTML='<div id="sb-people-list"></div>'
       +'<div class="sc-cdrop-addrow">'
         +'<button type="button" class="sc-dotted-add-btn" id="sb-people-add-btn" title="Add someone">+</button>'
-        +'<button type="button" class="sc-dotted-add-btn sb-people-call" id="sb-people-call-btn" title="Open the full Call Sheet">☎️</button>'
+        +(isIdea?'<button type="button" class="sc-dotted-add-btn sb-people-call" id="sb-people-call-btn" title="Open the full Call Sheet">☎️</button>':'')
         +'<button type="button" class="sc-dotted-add-btn sc-dotted-remove-btn" id="sb-people-remove-btn" title="Remove someone">−</button>'
       +'</div>'
       +'<div class="sc-view-addform" id="sb-people-addform" style="display:none">'
@@ -5539,6 +5585,7 @@
 
   async function openCallSheet(item, backFn){
     _csItem=item;
+    _csCardType='idea'; // this full-screen path is Idea-Card-only (see _sboardOpenPeopleDropdown)
     var ov=document.getElementById('sb-detail-overlay'); if(!ov || !item) return;
     ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center;background:#F5F1E8;max-height:82vh;overflow-y:auto;position:relative">'
       +'<div id="cs-body">'
@@ -7923,6 +7970,15 @@
     signalRowHTML: _sboardSignalRowHTML,
     ensureAssignedInitials: _sboardEnsureAssignedInitials,
     ensureCardPrimary: _sboardEnsureCardPrimary,
+    // Session 234 (Aug 21) -- generalized so briefing-board.js can bring
+    // the same 👥 people/Call Sheet system + primary-doer star to
+    // Briefing Cards (card_type:'briefing_card') without duplicating any
+    // of this logic. See _sboardOpenPeopleDropdown's own comment.
+    openPeopleDropdown: _sboardOpenPeopleDropdown,
+    ensureCardPrimaryRaw: _sboardEnsureCardPrimaryRaw,
+    cardPrimaryUidRaw: _sboardCardPrimaryUidRaw,
+    ensureMemberInitials: _sboardEnsureMemberInitials,
+    memberInfo: function(uid){ return _sboardAssignedCache[uid]||null; },
     closeBoard: _sboardCloseBoard
   };
 
