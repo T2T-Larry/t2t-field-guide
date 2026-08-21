@@ -2881,8 +2881,15 @@
       // and the 4 icons spread across the full width instead of
       // clustered at the left -- same treatment applied to the Idea
       // Card's own .sb-blue-row (idea-storyboard-9710.js) for
-      // consistency between the two card types.
-      +'.bb-action-row{border-top:1.5px solid var(--bb-accent);padding-top:10px;justify-content:space-between}'
+      // consistency between the two card types. width:100% is required
+      // here (unlike the Idea Card) because #bb-detail-overlay .bbw is
+      // a flex column with align-items:flex-start -- every direct child
+      // shrinks to its own content width there instead of filling the
+      // card, so without an explicit width justify-content:space-between
+      // has no extra space to distribute and the icons just sit bunched
+      // at the left. (.bb-field already sets width:100% for the same
+      // reason -- this row just never had to before now.)
+      +'.bb-action-row{width:100%;box-sizing:border-box;border-top:1.5px solid var(--bb-accent);padding-top:10px;justify-content:space-between}'
       +'.bb-swatch-row{flex-wrap:wrap}'
       +'.bb-swatch{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bb-accent);cursor:pointer;padding:0}'
       +'.bb-swatch.bb-swatch-active{box-shadow:0 0 0 2px var(--bb-ink)}'
