@@ -1094,12 +1094,30 @@
       // shortcut: "ctrl-down moved the card UP instead" -- selecting a
       // Header and pressing Down was drilling INTO it, which read to him
       // as the wrong way). Down now climbs OUT to the selected card's own
-      // parent (_sboardDrillUpFrom -- what Up used to do); Up now drills
-      // IN to the selected card's children (_sboardDrillInto -- what Down
-      // used to do). The TOPIC-sentinel branch and the no-selection
-      // fallback are unchanged by this swap -- both still just climb via
-      // PARENT, since there's nothing to drill "into" from the Topic card
-      // itself or with nothing selected, in either direction.
+      // parent; Up now drills IN to the selected card's children
+      // (_sboardDrillInto -- what Down used to do). The TOPIC-sentinel
+      // branch and the no-selection fallback are unchanged by this swap
+      // -- both still just climb via PARENT, since there's nothing to
+      // drill "into" from the Topic card itself or with nothing selected,
+      // in either direction.
+      //
+      // Second bug fix, same session (Larry: "still going wrong way
+      // nothing from TOPIC card at all" -- the swap above alone didn't
+      // fix a TOP-LEVEL header, only a nested Subheader). Root cause:
+      // _sboardDrillUpFrom has its OWN internal fallback for a top-level
+      // Header (row.cluster_id === the current Topic already -- see its
+      // "Bug fix, Aug 21 2026" comment below) that calls _sboardDrillInto
+      // and promotes the row to Topic ANYWAY, because that used to be the
+      // only sensible thing for the old Ctrl+Up to do there. Calling that
+      // same function from Down (after the swap above) silently
+      // reproduced the exact "becomes Topic" result Larry flagged as
+      // backwards -- Down and Up were doing the identical thing for any
+      // top-level Header, so swapping which key called which function
+      // never changed what he actually saw. Fixed by checking for that
+      // top-level case here, before ever reaching _sboardDrillUpFrom, and
+      // treating it as a real no-op (toast) instead -- Down now only ever
+      // climbs a genuinely nested Subheader to its real parent; it never
+      // promotes a card to Topic, full stop.
       if(k==='arrowdown'){
         e.preventDefault();
         if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
@@ -1108,7 +1126,13 @@
           return;
         }
         var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-        if(selRow) _sboardDrillUpFrom(selRow);
+        if(selRow){
+          if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
+            _sboardShowToast('Already at the top of this board.');
+          } else {
+            _sboardDrillUpFrom(selRow);
+          }
+        }
         else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
         else _sboardShowToast('Already at the top of this board.');
         return;
