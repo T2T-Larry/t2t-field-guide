@@ -1138,11 +1138,25 @@
   // another reorder them, the same way dragging a plain idea onto
   // another already reorders those.
   var _sboardSubberOrderByParent = {};
-  // Aug 3 2026 -- combined Subber+idea display order per parent, used only
-  // by the ORDER # badge (and the DETAILS card's order pill) so the whole
-  // visual column numbers 1,2,3... straight down with no repeats. See the
-  // long comment in renderGroup for why this has to be separate from
-  // _sboardIdeaOrderByParent/_sboardSubberOrderByParent.
+  // Aug 22 2026 (Larry: "sub-headers always cluster to the top... I want
+  // to mix them into the story") -- the ONE real shared order for a
+  // column's Subbers and plain cards together, per parent Header. Until
+  // this, Subbers and cards each had their own independently-numbered
+  // sequence (_sboardSubberOrderByParent / _sboardIdeaOrderByParent) and
+  // always rendered as two stacked blocks, Subbers first -- no drag could
+  // cross that line. This map is what dragging either kind now reorders
+  // against, and what the column actually renders from (see renderGroup);
+  // _sboardIdeaOrderByParent/_sboardSubberOrderByParent are still kept in
+  // sync (as same-type subsets of this) purely for other, unrelated code
+  // that only ever asks about one type (CLUSTER's own bucket count, the
+  // top-level header promote/demote pair).
+  var _sboardColumnOrderByParent = {};
+  // Aug 3 2026 -- combined Subber+idea DISPLAY order per parent, used by
+  // the ORDER # badge and the DETAILS card's order pill so the whole
+  // visual column numbers 1,2,3... straight down with no repeats. As of
+  // Aug 22 2026 this is simply set equal to _sboardColumnOrderByParent
+  // each render (the real order now IS the display order) -- kept as its
+  // own map since some callers still read it by this name.
   var _sboardCardOrderByParent = {};
   var _sboardChildCountById = {};
   // Alphabetical header view -- Larry, Aug 3 2026: "If headers or subbers
@@ -2704,6 +2718,40 @@
     });
   }
 
+  // Same idea as _sboardBackfillSortOrder just above, but for a column
+  // that used to be TWO independently-numbered groups (Subbers, then plain
+  // cards) now being treated as ONE. Aug 22 2026 (Larry: "sub-headers
+  // always cluster to the top... I want to mix them into the story").
+  // Straight reuse of _sboardBackfillSortOrder would miss the real
+  // problem here: every row already HAS a real sort_order (no nulls), it's
+  // just that the two old groups each started counting from 0, so a
+  // Subber and a card can easily share the same number -- sorting the
+  // combined list by that alone still clusters them. This checks that the
+  // given order (whatever it already is -- callers pass it in exactly
+  // today's on-screen order, Subbers then cards, so nothing visually jumps
+  // the first time this runs) is a real, strictly increasing sequence with
+  // no collisions, and only if it isn't, renumbers every row 0..n-1 to
+  // match that order for good. Once a column's been through this, its
+  // values stay strictly increasing on their own (every reorder writes a
+  // fresh clean 0..n-1 sequence), so this is a one-time migration per
+  // column, not a rewrite on every render.
+  function _sboardBackfillColumnOrder(orderedRows){
+    var needsWrite=false, prev=-Infinity;
+    for(var i=0;i<orderedRows.length;i++){
+      var so=orderedRows[i].sort_order;
+      if(so===null||so===undefined||so<=prev){ needsWrite=true; break; }
+      prev=so;
+    }
+    if(!needsWrite) return;
+    var _sb=T().sb;
+    orderedRows.forEach(function(r,i){
+      if(r.sort_order!==i){
+        r.sort_order=i;
+        _sb.from('ideas').update({sort_order:i}).eq('id',r.id).then(function(){}, function(){});
+      }
+    });
+  }
+
   // Small on-card badge -- Larry, Aug 3 2026: "small, no bigger that Notes
   // field" (see .sb-notes-pill, 12px). orderedIds must always be the REAL
   // persisted order (post-backfill), never whatever order the row is
@@ -2922,11 +2970,29 @@
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
       tile.style.outline='none'; tile.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)';
       var raw=e.dataTransfer.getData('text/plain');
-      if(!raw || raw==='sb-goup' || raw.indexOf('header:')===0) return;
-      if(frac>=0.3 && frac<=0.7){
+      if(!raw || raw==='sb-goup') return;
+      var parentId=groupParentId!==undefined?groupParentId:(item.cluster_id||null);
+      if(raw.indexOf('header:')===0){
+        // A Subber dropped onto a plain card -- Aug 22 2026 (Larry: "sub-
+        // headers always cluster to the top... I want to mix them into
+        // the story"). Used to be silently ignored (this whole branch
+        // didn't exist -- a dragged Subber over a plain-card tile just
+        // did nothing on drop). Always a sibling reorder here, never the
+        // middle "stack into a header" zone plain-idea-on-idea gets --
+        // that zone specifically converts the TARGET card into a brand
+        // new header, which isn't what dragging an EXISTING Subber onto
+        // it should trigger. (Nesting a Subber under another header is a
+        // perfectly normal move elsewhere -- Larry corrected an earlier,
+        // wrong pass here that treated it as something to avoid -- it's
+        // just not what this particular gesture is for.) So this simply
+        // goes by which half of the card it landed on.
+        var draggedHeaderId=raw.slice(7);
+        if(String(draggedHeaderId)===String(item.id)) return;
+        _sboardReorderOrMoveColumnItem(draggedHeaderId, item.id, parentId, frac>=0.5);
+      } else if(frac>=0.3 && frac<=0.7){
         _sboardStackIntoHeader(raw, item);
       } else {
-        _sboardReorderOrMoveIdea(raw, item.id, groupParentId!==undefined?groupParentId:(item.cluster_id||null));
+        _sboardReorderOrMoveColumnItem(raw, item.id, parentId, frac>0.7);
       }
     });
     return tile;
@@ -3043,14 +3109,24 @@
     wrap.addEventListener('touchend', stackCancelHold);
     wrap.addEventListener('touchmove', stackCancelHold);
     wrap.addEventListener('dragstart', stackCancelHold);
-    // Reorder/move zoning, Aug 3 2026 -- top/bottom half of this Subber
-    // tile reorders it among its siblings under the same Header (or moves
-    // it in from a different Header entirely, inserting at this
-    // position) -- same "drag one card onto another" language plain idea
-    // cards already use, just applied to Subbers, which previously had
-    // no drop behavior at all for another Subber dragged onto them (the
-    // drop was silently ignored). A plain idea dropped here still just
-    // files under this Subber, unchanged.
+    // Reorder/move/bucket zoning, Aug 3 2026, reworked Aug 22 2026 (Larry:
+    // "Sub-headers are still buckets. Dropping a card into a sub-header
+    // should still be possible") -- Subbers are real containers, same as
+    // any Header: a card filed under one is meant to be found by drilling
+    // into that Subber (making it the Topic), not by staying on this
+    // board and expecting it to show as a tile here. That's how the
+    // Topic/Header/Subber system already works everywhere else (see
+    // Ctrl+Up/Ctrl+Down), not a trap. So this now gets the SAME 3-zone
+    // split the plain idea tile already uses (top/bottom edge = reorder,
+    // middle = bucket) instead of the top/bottom-half-only split a
+    // same-day-earlier pass had narrowed it to:
+    //  - top/bottom edge: sibling reorder, same as before -- the dropped
+    //    card or Subber lands right next to this Subber, in this same
+    //    visible column.
+    //  - middle: a plain card files IN UNDER this Subber (the restored
+    //    "bucket" gesture); a Subber dropped in the middle of another
+    //    Subber just reorders too (no drag gesture nests one Subber
+    //    under another -- that stays Tab/Shift+Tab/DETAILS-panel-only).
     // Colors/weight, Aug 16 2026 -- Larry: "make slot availability more
     // obvious." Matches the same green/thicker upgrade applied to the
     // plain idea tile's own drop zones the same day (was thin blue,
@@ -3059,9 +3135,9 @@
       e.preventDefault();
       var rect=wrap.getBoundingClientRect();
       var frac=rect.height?(e.clientY-rect.top)/rect.height:0.5;
-      front.style.outline='5px solid #22c55e';
-      front.style.boxShadow = (frac<0.5) ? 'inset 0 7px 0 0 #22c55e' : 'inset 0 -7px 0 0 #22c55e';
-      wrap._dropSide = (frac<0.5) ? 'before' : 'after';
+      if(frac<0.3){ front.style.outline='none'; front.style.boxShadow='inset 0 7px 0 0 #22c55e'; wrap._dropSide='before'; }
+      else if(frac>0.7){ front.style.outline='none'; front.style.boxShadow='inset 0 -7px 0 0 #22c55e'; wrap._dropSide='after'; }
+      else { front.style.outline='5px solid #22c55e'; front.style.boxShadow='0 0 0 11px rgba(34,197,94,.28)'; wrap._dropSide='bucket'; }
     });
     wrap.addEventListener('dragleave', function(){ front.style.outline='none'; front.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; wrap._dropSide=null; });
     wrap.addEventListener('drop', function(e){
@@ -3072,9 +3148,14 @@
       if(raw.indexOf('header:')===0){
         var draggedHeaderId=raw.slice(7);
         if(String(draggedHeaderId)===String(headerRow.id)) return;
-        _sboardReorderOrMoveSubber(draggedHeaderId, headerRow.id, headerRow.cluster_id||null, side==='after');
-      } else {
+        // No drag gesture nests one Subber under another -- a "bucket"
+        // drop here just reorders (treated as 'after'), same as it did
+        // before this zoning got a middle band.
+        _sboardReorderOrMoveColumnItem(draggedHeaderId, headerRow.id, headerRow.cluster_id||null, side!=='before');
+      } else if(side==='bucket'){
         _sboardMoveCard(raw, headerRow.id);
+      } else {
+        _sboardReorderOrMoveColumnItem(raw, headerRow.id, headerRow.cluster_id||null, side==='after');
       }
     });
     return wrap;
@@ -3606,24 +3687,35 @@
         // view for this level (yet), so no separate display copy needed.
         _sboardBackfillSortOrder(subs);
         _sboardBackfillSortOrder(directItems);
-        _sboardIdeaOrderByParent[headerRow.id]=directItems.map(function(r){ return r.id; });
-        _sboardSubberOrderByParent[headerRow.id]=subs.map(function(r){ return r.id; });
+        // Unified column order, Aug 22 2026 (Larry: "sub-headers always
+        // cluster to the top... I want to mix them into the story"). Used
+        // to be two entirely separate 0-based sequences (Subbers, plain
+        // cards), always rendered as two stacked blocks -- Subbers first,
+        // cards after -- with no way to drag either kind across that line.
+        // Starting from exactly today's on-screen order (Subbers, then
+        // cards) so nothing jumps the moment this ships,
+        // _sboardBackfillColumnOrder renumbers the whole column as ONE
+        // real sequence the first time it finds the two old groups'
+        // sort_order values colliding (both started at 0) -- from then on
+        // dragging either kind can freely land it anywhere in this one
+        // shared order (see _sboardReorderOrMoveColumnItem).
+        var combined=subs.concat(directItems);
+        _sboardBackfillColumnOrder(combined);
+        combined.sort(_sboardBySortOrder);
+        // Same-type subsets of the line above, kept in sync purely for
+        // other code that only ever asks about one type (CLUSTER's own
+        // bucket count, the top-level header promote/demote pair) -- see
+        // the comment on _sboardColumnOrderByParent's declaration.
+        _sboardIdeaOrderByParent[headerRow.id]=combined.filter(function(r){ return r.content_type!=='header'; }).map(function(r){ return r.id; });
+        _sboardSubberOrderByParent[headerRow.id]=combined.filter(function(r){ return r.content_type==='header'; }).map(function(r){ return r.id; });
+        _sboardColumnOrderByParent[headerRow.id]=combined.map(function(r){ return r.id; });
         // ORDER # display numbering, Aug 3 2026 -- Larry noticed "Long
         // Ideas has 2 number 1's": Subbers and plain idea/text cards
-        // render in ONE shared vertical column here (Subbers on top,
-        // then loose cards below), but their ORDER # badges came from
-        // two separate sequences that both start at 1 -- so the first
-        // Subber and the first loose card could both show badge "1"
-        // even though they're two different rows in the same visual
-        // stack. Larry's Planning Board use case (cards as steps in a
-        // plan) needs one continuous count straight down the column.
-        // _sboardIdeaOrderByParent/_sboardSubberOrderByParent above stay
-        // exactly as they were -- they're what the actual drag-reorder
-        // math (_sboardReorderOrMoveIdea/_sboardReorderOrMoveSubber)
-        // uses to rewrite sort_order, and mixing Subber ids into an
-        // idea-only reorder (or vice versa) would corrupt that. This
-        // separate map is ONLY for what number a badge shows.
-        _sboardCardOrderByParent[headerRow.id]=subs.concat(directItems).map(function(r){ return r.id; });
+        // render in ONE shared vertical column. As of Aug 22 2026 this is
+        // just the real combined order above -- no longer a display-only
+        // concat that always put Subbers first regardless of how the
+        // column was actually dragged into order.
+        _sboardCardOrderByParent[headerRow.id]=combined.map(function(r){ return r.id; });
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
@@ -3740,8 +3832,19 @@
         if(directItems.length || subs.length || !blocksNewSubbers){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
-          subs.forEach(function(sub){ scroll.appendChild(_sboardMakeHeaderStackTile(sub, SUBBER_W, SUBBER_H, straight)); });
-          _sboardFilterByPerson(directItems).forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, straight, headerRow.id, SUBBER_H)); });
+          // Renders in the ONE combined order now, Aug 22 2026 (Larry:
+          // "mix them into the story") -- Subbers and cards interleaved
+          // exactly as dragged, instead of two separate passes (all
+          // Subbers, then all cards). The person filter still only ever
+          // hides plain cards, never Subbers (structural, not something a
+          // traveler is "assigned"), same as before -- just checked
+          // per-item instead of pre-filtering a separate list.
+          var _sbAllowedDirectIds={};
+          _sboardFilterByPerson(directItems).forEach(function(r){ _sbAllowedDirectIds[r.id]=true; });
+          combined.forEach(function(r){
+            if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }
+            else if(_sbAllowedDirectIds[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, straight, headerRow.id, SUBBER_H)); }
+          });
           // [+] under each header adds a new subber directly here — mirrors
           // the [+] after MISC for headers. MISC included now too (any
           // idea can land there, on-topic or not); Purpose joined them
@@ -4228,7 +4331,12 @@
     if(!prevRow || prevRow.locked){ fail('Can’t nest under a locked header.'); return; }
     var _sb=T().sb;
     var before=_sboardSnapshotRow(id);
-    var newOrder=(_sboardSubberOrderByParent[prevId]||[]).length;
+    // Aug 22 2026: was _sboardSubberOrderByParent's own length (only
+    // counted existing Subbers) -- with Subbers and cards now sharing one
+    // column order, this needs the combined column's length so a newly
+    // nested header doesn't land on top of a card that already holds
+    // that same position number.
+    var newOrder=(_sboardColumnOrderByParent[prevId]||[]).length;
     try{
       var upd=await _sb.from('ideas').update({cluster_id:prevId, sort_order:newOrder}).eq('id',id);
       if(upd.error) throw upd.error;
@@ -4384,7 +4492,12 @@
     var _sb=T().sb;
     var before=_sboardSnapshotRow(itemId);
     try{
-      var siblingCount=(_sboardIdeaOrderByParent[headerId]||[]).length;
+      // Aug 22 2026: was _sboardIdeaOrderByParent's own length (only
+      // counted plain cards) -- with Subbers and cards now sharing one
+      // column order, "the bottom of the column" has to mean past both,
+      // or a fresh drop could land in the middle of the Subbers instead
+      // of truly at the end.
+      var siblingCount=(_sboardColumnOrderByParent[headerId]||[]).length;
       var upd=await _sb.from('ideas').update({cluster_id:headerId, sort_order:siblingCount}).eq('id',itemId);
       if(upd.error) throw upd.error;
       _sboardPatchRow(itemId, {cluster_id:headerId, sort_order:siblingCount});
@@ -4398,55 +4511,25 @@
     }
   }
 
-  // Drop an idea onto another idea tile: reorders among siblings if already
-  // in the same header, or moves + inserts at that position if dragged in
-  // from somewhere else — one gesture covers both cases.
-  async function _sboardReorderOrMoveIdea(draggedId, targetId, parentId){
+  // Drop a card OR a Subber onto another card/Subber in the same column --
+  // unified Aug 22 2026 (Larry: "sub-headers always cluster to the top...
+  // I want to mix them into the story"). Used to be two separate
+  // functions (_sboardReorderOrMoveIdea / _sboardReorderOrMoveSubber),
+  // each only able to reorder within its own kind, matching the two
+  // separately-numbered lists the column used to render from. This one
+  // reorders against the single shared _sboardColumnOrderByParent instead,
+  // so a Subber and a plain card can trade places freely and land exactly
+  // where dropped, interleaved. Reorders among siblings if the dragged
+  // card is already in this column, or moves + inserts at that position
+  // if it's coming from somewhere else — one gesture covers both, same as
+  // the two functions it replaces.
+  async function _sboardReorderOrMoveColumnItem(draggedId, targetId, parentId, insertAfter){
     if(String(draggedId)===String(targetId)) return;
     if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     var before=_sboardSnapshotRow(draggedId);
-    var ids=(_sboardIdeaOrderByParent[parentId]||[]).slice();
-    var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
-    if(fromIdx!==-1) ids.splice(fromIdx,1);
-    var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
-    ids.splice(toIdx===-1?ids.length:toIdx, 0, draggedId);
-    if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
-    try{
-      var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId);
-      if(updCluster.error) throw updCluster.error;
-      _sboardPatchRow(draggedId, {cluster_id:parentId});
-      for(var i=0;i<ids.length;i++){
-        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
-        if(upd.error) throw upd.error;
-        _sboardPatchRow(ids[i], {sort_order:i});
-      }
-      if(before){
-        var after=_sboardSnapshotRow(draggedId);
-        _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(draggedId, before); }, redo:function(){ return _sboardApplyRowSnapshot(draggedId, after); }});
-      }
-      renderSeaBoard(true);
-    }catch(err){
-      if(statusEl){ statusEl.textContent='Reordering needs the sort_order Supabase column: '+err.message; statusEl.classList.add('err'); }
-    }
-  }
-
-  // Drop a Subber onto another Subber tile, Aug 3 2026 -- same gesture as
-  // _sboardReorderOrMoveIdea just above, but for Subbers (nested Header
-  // cards) instead of plain ideas: reorders among siblings under the same
-  // Header if the dragged Subber is already there, or moves it in (and
-  // inserts it at that position) if it's coming from a different Header
-  // entirely. One gesture covers both, matching how plain-idea cards
-  // already behave -- this was the missing piece that made moving a
-  // Subber require opening its DETAILS card instead of just dragging it.
-  async function _sboardReorderOrMoveSubber(draggedId, targetId, parentId, insertAfter){
-    if(String(draggedId)===String(targetId)) return;
-    if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
-    var statusEl=document.getElementById('sc-status');
-    var _sb=T().sb;
-    var before=_sboardSnapshotRow(draggedId);
-    var ids=(_sboardSubberOrderByParent[parentId]||[]).slice();
+    var ids=(_sboardColumnOrderByParent[parentId]||[]).slice();
     var fromIdx=ids.findIndex(function(id){ return String(id)===String(draggedId); });
     if(fromIdx!==-1) ids.splice(fromIdx,1);
     var toIdx=ids.findIndex(function(id){ return String(id)===String(targetId); });
@@ -6387,12 +6470,17 @@
     var orderValueText='—';
     // ORDER nudge, Aug 11 2026 (Larry: wants to change a card's order
     // from the back of the card too, not just move it to a different
-    // Header). _sbOrderList/_sbOrderIdx below are the REAL per-type
-    // sibling list the drag-reorder math uses (_sboardIdeaOrderByParent/
-    // _sboardSubberOrderByParent/_sboardTopLevelOrder) -- deliberately
-    // NOT the same as _sboardCardOrderByParent just below, which mixes
-    // Subbers+cards into one display-only combined count and can't be
-    // written back to safely (see its own comment, above in renderGroup).
+    // Header). _sbOrderList/_sbOrderIdx below are the REAL sibling list
+    // the drag-reorder math uses (_sboardTopLevelOrder for a top-level
+    // Header, _sboardColumnOrderByParent for anything nested one level
+    // in). Until Aug 22 2026 this deliberately avoided
+    // _sboardCardOrderByParent, back when that was just a display-only
+    // Subbers-then-cards concat that couldn't be written back to safely
+    // (see its own comment, above in renderGroup) -- now that Subbers and
+    // cards share one real combined order, _sboardCardOrderByParent IS
+    // that real order, so the nudge arrows use the same
+    // _sboardColumnOrderByParent it's built from and can swap a Subber
+    // past a card (or vice versa), same as dragging can.
     var _sbOrderList=null, _sbOrderIdx=-1;
     var _sbOrderIsTopHeader=(isHeaderType && !item.cluster_id);
     (function(){
@@ -6408,8 +6496,7 @@
       }
       if(list && idx!==-1){ orderValueText=(idx+1)+' of '+list.length; }
       var realList=_sbOrderIsTopHeader ? _sboardTopLevelOrder
-        : isHeaderType ? (_sboardSubberOrderByParent[item.cluster_id]||null)
-        : (_sboardIdeaOrderByParent[item.cluster_id||'']||null);
+        : (_sboardColumnOrderByParent[item.cluster_id||'']||null);
       if(realList){ _sbOrderList=realList; _sbOrderIdx=findIdx(realList); }
     })();
     var orderCanUp=(_sbOrderList && _sbOrderIdx>0);
@@ -6665,9 +6752,11 @@
           if(updB.error) throw updB.error;
           _sboardPatchRow(ids[_sbOrderIdx], {sort_order:_sbOrderIdx});
           _sboardPatchRow(ids[swapIdx], {sort_order:swapIdx});
+          // Aug 22 2026: was two separate maps depending on isHeaderType --
+          // now one shared column order, so a Subber can nudge past a
+          // card (or vice versa) the same way dragging can.
           if(_sbOrderIsTopHeader) _sboardTopLevelOrder=ids;
-          else if(isHeaderType) _sboardSubberOrderByParent[item.cluster_id]=ids;
-          else _sboardIdeaOrderByParent[item.cluster_id||'']=ids;
+          else _sboardColumnOrderByParent[item.cluster_id||'']=ids;
           _sbOrderList=ids; _sbOrderIdx=swapIdx;
           if(before){
             var after=_sboardSnapshotRow(item.id);
