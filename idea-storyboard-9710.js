@@ -3699,9 +3699,29 @@
         // sort_order values colliding (both started at 0) -- from then on
         // dragging either kind can freely land it anywhere in this one
         // shared order (see _sboardReorderOrMoveColumnItem).
+        //
+        // Bug fix, Aug 22 2026 (Larry: "all sub-headers are remaining
+        // above all subbers" -- a Subber dragged in among the cards kept
+        // snapping right back above every card, every time). Root cause:
+        // this used to check/backfill BEFORE sorting by real sort_order,
+        // on the raw subs-then-cards concatenation. Subs and cards are
+        // each sorted only WITHIN their own kind above, so that
+        // concatenation is "all Subbers (in order), then all cards (in
+        // order)" regardless of their real interleaved values -- it is
+        // never actually increasing once a Subber and a card are
+        // genuinely mixed (e.g. Subber=0, card=1, Subber=2 concatenates
+        // as 0,2,1,3 -- not increasing), so the collision check below
+        // treated every real interleave as "the old broken data,
+        // renumber it" and rewrote it straight back into Subbers-first
+        // order on the very next render, immediately undoing the very
+        // drag that just interleaved them. Sorting first means the
+        // check below only ever sees genuine collisions (true
+        // duplicate/out-of-order values, the actual one-time-migration
+        // case it was built for), never a false alarm from this
+        // concatenation artifact.
         var combined=subs.concat(directItems);
-        _sboardBackfillColumnOrder(combined);
         combined.sort(_sboardBySortOrder);
+        _sboardBackfillColumnOrder(combined);
         // Same-type subsets of the line above, kept in sync purely for
         // other code that only ever asks about one type (CLUSTER's own
         // bucket count, the top-level header promote/demote pair) -- see
