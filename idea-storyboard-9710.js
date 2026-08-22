@@ -3766,20 +3766,16 @@
     // position:relative set above, same as front/tile do for the other
     // two paths.
     hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
-    // Bottom-left signal cluster: Lock, Signal Flags, Notes -- Aug 15 2026
-    // (Lock), Aug 22 2026 (Notes). Signal Flags were here since Aug 3
-    // (Larry: "every card ... Larry wants it everywhere"), but this
-    // particular render path (top-level column headers, this "hd" pill --
-    // a THIRD tile path, separate from both _sboardMakeTile's plain cards
-    // and _sboardMakeHeaderStackTile's Subbers) has twice now been the one
-    // spot a signal quietly missed: Lock was absent until Session 211
-    // ("the header is not [showing locked]" on the Marketing header), and
-    // Notes was absent until Larry caught it again here on a header named
-    // "test" -- "ALL CARDS must display pencil on front if card contains
-    // notes. RULE." Every _sboardSignalRowHTML call site in this file
-    // should be treated as required to include notes:true unless a card
-    // type is deliberately excluded (documented at its own call site).
-    hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, flags:true, notes:true}));
+    // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026.
+    // Signal Flags were here since Aug 3 (Larry: "every card ... Larry
+    // wants it everywhere"), but Lock was never added to this
+    // particular render path (top-level column headers, this "hd"
+    // pill) even after Session 211 built the real Lock feature --
+    // Larry: "the header is not [showing locked]" on the Marketing
+    // header was this gap, not a data sync problem (checked the
+    // database directly: header and its linked Briefing card both
+    // show locked, in sync).
+    hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, flags:true}));
         if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
@@ -4512,8 +4508,14 @@
       // or a fresh drop could land in the middle of the Subbers instead
       // of truly at the end.
       var siblingCount=(_sboardColumnOrderByParent[headerId]||[]).length;
-      var upd=await _sb.from('ideas').update({cluster_id:headerId, sort_order:siblingCount}).eq('id',itemId);
+      // .select() + row-count check, Aug 22 2026 -- same fix as the
+      // reorder functions above (Larry: moves that silently didn't
+      // save). Without this, a write that matches zero rows still comes
+      // back with no .error, so it looked like the move worked even
+      // when nothing was touched.
+      var upd=await _sb.from('ideas').update({cluster_id:headerId, sort_order:siblingCount}).eq('id',itemId).select('id');
       if(upd.error) throw upd.error;
+      if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- nothing moved.');
       _sboardPatchRow(itemId, {cluster_id:headerId, sort_order:siblingCount});
       if(before){
         var after=_sboardSnapshotRow(itemId);
@@ -4551,12 +4553,24 @@
     ids.splice(insertAt, 0, draggedId);
     if(statusEl){ statusEl.textContent='Reordering…'; statusEl.classList.remove('err'); }
     try{
-      var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId);
+      // .select() added Aug 22 2026 -- Larry: "moved word wall sub-header
+      // to card order number 4. It did not move" (and, separately, a
+      // subber wouldn't move above it either). Without .select(), Supabase
+      // returns success with zero rows touched if a write gets filtered
+      // out for any reason (RLS, a stale/mismatched id, etc.) -- the old
+      // code only checked .error, which stays null in that case, so the
+      // screen showed the reorder as done while nothing was actually
+      // saved. Now checks the real row count and surfaces a visible error
+      // (see statusEl below) the moment a write silently no-ops, instead
+      // of pretending it worked.
+      var updCluster=await _sb.from('ideas').update({cluster_id:parentId}).eq('id',draggedId).select('id');
       if(updCluster.error) throw updCluster.error;
+      if(!updCluster.data || !updCluster.data.length) throw new Error('Save was blocked for this card (no rows matched) -- nothing moved.');
       _sboardPatchRow(draggedId, {cluster_id:parentId});
       for(var i=0;i<ids.length;i++){
-        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
+        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]).select('id');
         if(upd.error) throw upd.error;
+        if(!upd.data || !upd.data.length) throw new Error('Save was blocked for one of the cards in this column (no rows matched) -- reorder stopped partway.');
         _sboardPatchRow(ids[i], {sort_order:i});
       }
       if(before){
@@ -4621,13 +4635,17 @@
           if(statusEl){ statusEl.textContent='Can\'t make a new project this way — use + NEW PROJECT.'; statusEl.classList.add('err'); }
           return;
         }
-        var updCluster=await _sb.from('ideas').update({cluster_id:T2TShared.currentTopicId}).eq('id',draggedId);
+        var updCluster=await _sb.from('ideas').update({cluster_id:T2TShared.currentTopicId}).eq('id',draggedId).select('id');
         if(updCluster.error) throw updCluster.error;
+        if(!updCluster.data || !updCluster.data.length) throw new Error('Save was blocked for this card (no rows matched) -- nothing moved.');
         _sboardPatchRow(draggedId, {cluster_id:T2TShared.currentTopicId});
       }
+      // .select() + row-count check, Aug 22 2026 -- same silent-no-op fix
+      // as the nested-column reorder functions above.
       for(var i=0;i<ids.length;i++){
-        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]);
+        var upd=await _sb.from('ideas').update({sort_order:i}).eq('id',ids[i]).select('id');
         if(upd.error) throw upd.error;
+        if(!upd.data || !upd.data.length) throw new Error('Save was blocked for one of the headers in this row (no rows matched) -- reorder stopped partway.');
         _sboardPatchRow(ids[i], {sort_order:i});
       }
       if(before){
@@ -6760,10 +6778,22 @@
         var tmp=ids[_sbOrderIdx]; ids[_sbOrderIdx]=ids[swapIdx]; ids[swapIdx]=tmp;
         var before=_sboardSnapshotRow(item.id);
         try{
-          var updA=await _sb.from('ideas').update({sort_order:_sbOrderIdx}).eq('id',ids[_sbOrderIdx]);
+          // .select() + row-count check added Aug 22 2026 -- Larry: "moved
+          // word wall sub-header to card order number 4. It did not
+          // move" -- the ORDER number on this very card was updating
+          // ("2 of 7") right after clicking, but the database never
+          // actually changed. Root cause: without .select(), Supabase
+          // reports success (no .error) even when a write matches zero
+          // rows -- so this always trusted the write and updated the
+          // on-screen number regardless of whether anything really
+          // saved. Now checks the actual row count and shows a real
+          // error via statusBox (below) instead of a number that lies.
+          var updA=await _sb.from('ideas').update({sort_order:_sbOrderIdx}).eq('id',ids[_sbOrderIdx]).select('id');
           if(updA.error) throw updA.error;
-          var updB=await _sb.from('ideas').update({sort_order:swapIdx}).eq('id',ids[swapIdx]);
+          if(!updA.data || !updA.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
+          var updB=await _sb.from('ideas').update({sort_order:swapIdx}).eq('id',ids[swapIdx]).select('id');
           if(updB.error) throw updB.error;
+          if(!updB.data || !updB.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
           _sboardPatchRow(ids[_sbOrderIdx], {sort_order:_sbOrderIdx});
           _sboardPatchRow(ids[swapIdx], {sort_order:swapIdx});
           // Aug 22 2026: was two separate maps depending on isHeaderType --
