@@ -3766,16 +3766,20 @@
     // position:relative set above, same as front/tile do for the other
     // two paths.
     hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
-    // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026.
-    // Signal Flags were here since Aug 3 (Larry: "every card ... Larry
-    // wants it everywhere"), but Lock was never added to this
-    // particular render path (top-level column headers, this "hd"
-    // pill) even after Session 211 built the real Lock feature --
-    // Larry: "the header is not [showing locked]" on the Marketing
-    // header was this gap, not a data sync problem (checked the
-    // database directly: header and its linked Briefing card both
-    // show locked, in sync).
-    hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, flags:true}));
+    // Bottom-left signal cluster: Lock, Signal Flags, Notes -- Aug 15 2026
+    // (Lock), Aug 22 2026 (Notes). Signal Flags were here since Aug 3
+    // (Larry: "every card ... Larry wants it everywhere"), but this
+    // particular render path (top-level column headers, this "hd" pill --
+    // a THIRD tile path, separate from both _sboardMakeTile's plain cards
+    // and _sboardMakeHeaderStackTile's Subbers) has twice now been the one
+    // spot a signal quietly missed: Lock was absent until Session 211
+    // ("the header is not [showing locked]" on the Marketing header), and
+    // Notes was absent until Larry caught it again here on a header named
+    // "test" -- "ALL CARDS must display pencil on front if card contains
+    // notes. RULE." Every _sboardSignalRowHTML call site in this file
+    // should be treated as required to include notes:true unless a card
+    // type is deliberately excluded (documented at its own call site).
+    hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, flags:true, notes:true}));
         if(depth===0 && !headerRow.locked){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });

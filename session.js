@@ -1358,12 +1358,14 @@
     if(window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
     // Bottom-left signal cluster: Signal Flags (Aug 3 2026, Larry:
     // "This option could be in every gear? Anywhere a traveler makes a
-    // note or adds an idea") + Video/Link (Aug 11 2026) -- wrapped as
-    // one positioned unit as of Aug 15 2026 so the two pack together
-    // with no dead space when only one is present. This loose-idea
-    // tile has no Lock badge (never has), matching its behavior before
-    // this refactor.
-    if(window.T2TStoryboard && T2TStoryboard.signalRowHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.signalRowHTML(row, {flags:true, link:true}));
+    // note or adds an idea") + Video/Link (Aug 11 2026) + Notes (added
+    // Aug 22 2026 -- missed when 9710's own tile got Notes on Aug 15;
+    // Larry: "ALL CARDS must display pencil on front if card contains
+    // notes. RULE.") -- wrapped as one positioned unit as of Aug 15 2026
+    // so they pack together with no dead space when only some are
+    // present. This loose-idea tile has no Lock badge (never has),
+    // matching its behavior before this refactor.
+    if(window.T2TStoryboard && T2TStoryboard.signalRowHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.signalRowHTML(row, {flags:true, notes:true, link:true}));
     // Double-click is the color-options shortcut every card has (locked
     // July 27, 2026) -- this loose-idea tile never had a double-click job
     // of its own before, so this is a straight addition, not a migration.
@@ -1421,16 +1423,19 @@
     // badge as plain cards.
     var isxStackFront=t.querySelector('.isx-stack-front');
     if(isxStackFront && window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
-    // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026
-    // (Larry: "is the LOCK not just another FLAG?"). Lock used to be
-    // its own standalone top-right .isx-stack-lock icon; Signal Flags
-    // (Aug 3 2026, "widened same day to every card type ... header
-    // piles get the same on-card dots as plain cards now") used to be
-    // its own unwrapped call. Both now come from one wrapped call so
-    // they pack together with no dead space when only one is present --
-    // this is what fixed the "Blue star sitting halfway across the
-    // card" bug Larry caught on the Marketing header.
-    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.signalRowHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.signalRowHTML(row, {lock:true, flags:true}));
+    // Bottom-left signal cluster: Lock, Signal Flags, Notes -- Aug 15 2026
+    // (Lock/Flags; Larry: "is the LOCK not just another FLAG?"), Aug 22
+    // 2026 (Notes -- missed here the same way it was missed on 9710's own
+    // top-level header pill; Larry: "ALL CARDS must display pencil on
+    // front if card contains notes. RULE."). Lock used to be its own
+    // standalone top-right .isx-stack-lock icon; Signal Flags (Aug 3 2026,
+    // "widened same day to every card type ... header piles get the same
+    // on-card dots as plain cards now") used to be its own unwrapped call.
+    // All now come from one wrapped call so they pack together with no
+    // dead space when only some are present -- this is what fixed the
+    // "Blue star sitting halfway across the card" bug Larry caught on the
+    // Marketing header.
+    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.signalRowHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.signalRowHTML(row, {lock:true, flags:true, notes:true}));
     // Single click = toggle this pile open/closed (spread its real cards
     // out to view/reorganize, or gather them back into the cascade) -- a
     // plain click waits ~250ms to make sure a second one isn't coming
