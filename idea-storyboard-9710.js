@@ -1090,6 +1090,16 @@
       // drill into), so both keys collapse to the one direction that
       // actually exists from here: out to Parent. Stays selected
       // afterward so repeated presses keep climbing.
+      // Direction swapped, Aug 22 2026 (Larry, live-testing this exact
+      // shortcut: "ctrl-down moved the card UP instead" -- selecting a
+      // Header and pressing Down was drilling INTO it, which read to him
+      // as the wrong way). Down now climbs OUT to the selected card's own
+      // parent (_sboardDrillUpFrom -- what Up used to do); Up now drills
+      // IN to the selected card's children (_sboardDrillInto -- what Down
+      // used to do). The TOPIC-sentinel branch and the no-selection
+      // fallback are unchanged by this swap -- both still just climb via
+      // PARENT, since there's nothing to drill "into" from the Topic card
+      // itself or with nothing selected, in either direction.
       if(k==='arrowdown'){
         e.preventDefault();
         if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
@@ -1098,7 +1108,7 @@
           return;
         }
         var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-        if(selRow) _sboardDrillInto(selRow);
+        if(selRow) _sboardDrillUpFrom(selRow);
         else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
         else _sboardShowToast('Already at the top of this board.');
         return;
@@ -1111,7 +1121,7 @@
           return;
         }
         var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-        if(selRowUp) _sboardDrillUpFrom(selRowUp);
+        if(selRowUp) _sboardDrillInto(selRowUp);
         else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
         else _sboardShowToast('Already at the top of this board.');
         return;
@@ -2847,13 +2857,40 @@
     height=height||width;
     var rot=straight?0:(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
-    tile.className='sc-tile'+(item.content_type==='text'?' text':'');
+    tile.className='sc-tile'+(item.content_type==='text'?' text':'')+(String(_sboardSelectedHeaderId)===String(item.id)?' sb-kbd-selected':'');
     tile.setAttribute('data-idea-id', String(item.id));
+    // Also tagged data-header-id, Aug 22 2026 fix (Larry: "click ctrl-down
+    // does not seem to be working") -- every OTHER selectable card
+    // (Header/Subheader tiles, the TOPIC box) is looked up by this
+    // attribute when clearing the previous selection's highlight (see
+    // _sboardClearHeaderSelection and the click handlers below). Plain
+    // idea-card tiles never got a click listener that sets
+    // _sboardSelectedHeaderId at all, so Ctrl+Down/Up had nothing to act
+    // on for the single most common card type on the board -- selecting a
+    // Header/Subheader/TOPIC worked exactly as designed, it was only
+    // plain cards that silently did nothing. Reusing the same attribute
+    // name (rather than teaching the lookup a second attribute) keeps
+    // this a one-spot fix.
+    tile.setAttribute('data-header-id', String(item.id));
     tile.draggable=!item.locked;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
     tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
+    // Click to select this card for the Ctrl+Down/Ctrl+Up keyboard
+    // shortcuts (see wireSboardUndoKeyboard) -- same pattern as the
+    // Header/Subheader tile click handlers elsewhere in this file.
+    // Aug 22 2026 fix (see comment on the data-header-id line above).
+    tile.addEventListener('click', function(e){
+      if(_sboardSelectedHeaderId===item.id) return;
+      var prevId=_sboardSelectedHeaderId;
+      _sboardSelectedHeaderId=item.id;
+      if(prevId){
+        var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(prevId))+'"]');
+        if(prevEl) prevEl.classList.remove('sb-kbd-selected');
+      }
+      tile.classList.add('sb-kbd-selected');
+    });
     if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
       if(item.content_type==='link'){
