@@ -4383,7 +4383,17 @@
       if(topicText){ topicText.textContent=topicRow.text_content||'(untitled)'; }
       if(topicBox){ topicBox.style.background=topicRow.color||''; }
       if(topicBadge){
-        topicBadge.innerHTML=_sboardAssignedBadgeHTML(topicRow);
+        // Signal flags (lock/flags/notes/link), Aug 22 2026 -- Larry: "it
+        // isn't working for TOPIC cards and they are cards." The TOPIC box
+        // only ever rendered the assigned-person badge here; every other
+        // card front (plain, header, sub-header) gets the shared
+        // .sb-signal-row cluster via _sboardSignalRowHTML (see the Aug 15
+        // 2026 centralization above). #sc-topic-badge sits inside
+        // #sc-topic-box, which is already position:relative, so the
+        // person badge (top-right) and signal row (bottom-left) both
+        // position correctly as siblings here, same as on any other tile.
+        topicBadge.innerHTML=_sboardAssignedBadgeHTML(topicRow)
+          + _sboardSignalRowHTML(topicRow, {lock:true, flags:true, notes:true, link:true});
         if(!_sboardCardPrimaryCache.hasOwnProperty(_sboardCpKey('idea', topicRow.id))){
           _sboardEnsureCardPrimary([topicRow]).then(function(fetched){
             if(fetched) _sboardUpdateHeaderChrome();
