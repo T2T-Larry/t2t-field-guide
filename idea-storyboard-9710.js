@@ -1110,10 +1110,24 @@
       else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
       else _sboardShowToast('Already at the top of this board.');
     }
+    // Fixed Aug 23 2026, third same-day fix (Larry: "PgDn moved the view
+    // UP not down. No matter what card is highlighted, the entire view
+    // should move in the appropriate direction!"). Both no-target
+    // fallbacks below used to call _sboardGoUpOneLevel() -- a leftover
+    // from the original Aug 20/21 design where Down/Up collapsed to the
+    // same PARENT-breadcrumb climb whenever nothing (or the Topic card)
+    // was selected, since back then that climb was the only sensible
+    // universal action either key could take. Now that PageUp/PageDown
+    // are a genuine up/down pair, that fallback silently reversed
+    // PageDown's direction any time the Topic card (or nothing) was
+    // selected -- there's no single, unambiguous child to descend into
+    // from there, but going UP instead is still the wrong direction, not
+    // a neutral no-op. Both branches now just toast instead, same as
+    // climbOut()'s own "nothing to do" cases -- PageDown never moves the
+    // view the wrong way, it just asks for a card to descend into.
     function drillIn(){
       if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
-        if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
-        else _sboardShowToast('Already at the top of this board.');
+        _sboardShowToast('Click a header card, then Page Down to move into it.');
         return;
       }
       var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
@@ -1128,8 +1142,7 @@
           _sboardSpinWhile(renderSeaBoard());
         }
       }
-      else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
-      else _sboardShowToast('Already at the top of this board.');
+      else _sboardShowToast('Click a card, then Page Down to move into it.');
     }
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-sea-of-ideas-cluster');
