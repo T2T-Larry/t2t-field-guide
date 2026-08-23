@@ -1072,23 +1072,31 @@
     // checks for that case itself first and shows the "already at the
     // top" toast instead -- it can never promote a card to Topic.
     //
-    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!" -- selecting a
-    // Subber nested two tiers below the current Topic and pressing PgUp
-    // jumped it straight to becoming the Topic, skipping the middle
-    // step). Both functions now check _sboardViewPromotedId (see its
-    // declaration above) to add that middle step for a genuinely nested
-    // row: the FIRST drillIn on it only sets _sboardViewPromotedId and
-    // re-renders, which borrows it into the current Topic's column row
-    // as a plain top-level header without touching its real cluster_id
-    // (see the patch in renderSeaBoard) or changing the Topic at all. A
-    // SECOND drillIn -- now that it reads as top-level, either for real
-    // or via that borrow -- promotes it for real via _sboardDrillInto,
-    // exactly as before. climbOut is the mirror: on a borrowed row it
-    // just clears the borrow (back to nested, Topic unchanged); on a
-    // genuine top-level row it's the existing no-op toast; on a
-    // genuinely nested, not-yet-borrowed row it still does the real
-    // climb via _sboardDrillUpFrom -- unchanged from the last fix, since
-    // that's a different, already-correct action (confirmed live).
+    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!" -- a Subheader
+    // pressing PgUp jumped it straight to becoming the Topic, skipping
+    // the middle step of becoming a Header first) -- originally solved
+    // with a temporary "borrow" flag (_sboardViewPromotedId). Superseded
+    // by the fourth fix below, which found that was solving a problem
+    // _sboardDrillUpFrom doesn't actually have.
+    //
+    // Fourth fix, same day (Larry: "PgDn moved the view UP not down. No
+    // matter what card is highlighted, the entire view should move in
+    // the appropriate direction!"). Root cause: drillIn() and climbOut()
+    // were never true inverses of each other. _sboardDrillUpFrom already
+    // does a clean, real, one-tier-at-a-time promotion on its own
+    // (Subheader->Header, or Header->Topic if already top-level) -- the
+    // borrow flag was solving a bug that didn't exist once climbOut()
+    // just called it directly, and telling drillIn() to also use that
+    // same flag turned it into a Header->Topic promotion, i.e. the exact
+    // "climb" behavior, just triggered by the "descend" key. Both
+    // functions are now simple: climbOut() always promotes the selected
+    // row up one tier via _sboardDrillUpFrom; drillIn() always demotes it
+    // down one tier via the new _sboardDrillDownFrom (its mirror, see
+    // above _sboardGoUpOneLevel) -- pressing one then the other on the
+    // same untouched selection returns you to exactly where you started.
+    // The borrow flag (_sboardViewPromotedId) and its renderSeaBoard
+    // patch are no longer set by anything -- left in place as inert,
+    // rather than ripped out mid-fix-chain, but nothing calls them.
     function climbOut(){
       if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
         if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
@@ -1096,52 +1104,17 @@
         return;
       }
       var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-      if(selRow){
-        var isBorrowed=_sboardViewPromotedId && String(_sboardViewPromotedId)===String(selRow.id);
-        if(isBorrowed){
-          _sboardViewPromotedId=null;
-          _sboardSpinWhile(renderSeaBoard());
-        } else if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
-          _sboardShowToast('Already at the top of this board.');
-        } else {
-          _sboardDrillUpFrom(selRow);
-        }
-      }
+      if(selRow) _sboardDrillUpFrom(selRow);
       else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
       else _sboardShowToast('Already at the top of this board.');
     }
-    // Fixed Aug 23 2026, third same-day fix (Larry: "PgDn moved the view
-    // UP not down. No matter what card is highlighted, the entire view
-    // should move in the appropriate direction!"). Both no-target
-    // fallbacks below used to call _sboardGoUpOneLevel() -- a leftover
-    // from the original Aug 20/21 design where Down/Up collapsed to the
-    // same PARENT-breadcrumb climb whenever nothing (or the Topic card)
-    // was selected, since back then that climb was the only sensible
-    // universal action either key could take. Now that PageUp/PageDown
-    // are a genuine up/down pair, that fallback silently reversed
-    // PageDown's direction any time the Topic card (or nothing) was
-    // selected -- there's no single, unambiguous child to descend into
-    // from there, but going UP instead is still the wrong direction, not
-    // a neutral no-op. Both branches now just toast instead, same as
-    // climbOut()'s own "nothing to do" cases -- PageDown never moves the
-    // view the wrong way, it just asks for a card to descend into.
     function drillIn(){
       if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
         _sboardShowToast('Click a header card, then Page Down to move into it.');
         return;
       }
       var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-      if(selRowUp){
-        var alreadyTopLevel=String(selRowUp.cluster_id)===String(T2TShared.currentTopicId)
-          || (_sboardViewPromotedId && String(_sboardViewPromotedId)===String(selRowUp.id));
-        if(alreadyTopLevel){
-          _sboardViewPromotedId=null;
-          _sboardDrillInto(selRowUp);
-        } else {
-          _sboardViewPromotedId=selRowUp.id;
-          _sboardSpinWhile(renderSeaBoard());
-        }
-      }
+      if(selRowUp) _sboardDrillDownFrom(selRowUp);
       else _sboardShowToast('Click a card, then Page Down to move into it.');
     }
     document.addEventListener('keydown', function(e){
@@ -1182,22 +1155,12 @@
       // PageDown now calls drillIn() -- same two functions as before,
       // just on the correctly-named keys.
       //
-      // Second same-day fix (Larry: "People Too Busy was a sub-header
-      // which should shift to HEADER but instead jumped to TOPIC, too
-      // far"): the first attempt at this fix replaced climbOut() with a
-      // direct call to _sboardGoUpOneLevel() for PageUp, on the theory
-      // that a page-level key should ignore whatever card is selected --
-      // but _sboardGoUpOneLevel() only climbs the board's AMBIENT current
-      // Topic to its own parent; it has no idea a Subheader is selected
-      // at all, so it can't apply the one-tier-at-a-time "borrow" logic
-      // (_sboardViewPromotedId, see above) that keeps a climb from a
-      // nested row to exactly one level. That borrow logic lives inside
-      // climbOut() itself, and climbOut() ALREADY falls back to
-      // _sboardGoUpOneLevel() when nothing is selected (see its own body
-      // above) -- so it already behaves as "no matter what card is
-      // clicked, shift the view up one level" without needing to bypass
-      // it. Restored: PageUp calls climbOut() directly, same as
-      // Ctrl+Down used to before the Aug 22 direction swap.
+      // Two more same-day fixes to climbOut()/drillIn() themselves (an
+      // over-eager bypass of the selected card, then drillIn() not
+      // actually being climbOut()'s inverse) -- see their own history
+      // comment above wireSboardUndoKeyboard's function bodies for the
+      // full story. This pairing (PageUp=climbOut, PageDown=drillIn)
+      // hasn't changed since the swap above.
       if(k==='pageup'){ e.preventDefault(); climbOut(); return; }
       if(k==='pagedown'){ e.preventDefault(); drillIn(); return; }
       var mod=e.metaKey||e.ctrlKey;
@@ -4469,6 +4432,34 @@
     _sboardPersistLastTopic(parentId);
     _sboardSelectedHeaderId=keepSelectedId;
     _sboardSpinWhile(renderSeaBoard());
+  }
+
+  // True mirror of _sboardDrillUpFrom, added Aug 23 2026 (Larry: "PgDn
+  // moved the view UP not down. No matter what card is highlighted, the
+  // entire view should move in the appropriate direction!"). The row
+  // passed in is only ever a card currently rendering at Header tier
+  // (row.cluster_id === the current Topic) -- there's nothing lower than
+  // Subheader for this board to show, so a genuine Subheader has nowhere
+  // further down to go. Putting a Header-tier row back down to Subheader
+  // just means zooming the board's ambient Topic back out to THAT row's
+  // own parent's parent -- exactly the _sboardGoUpOneLevel() move,
+  // keeping this row selected afterward instead of letting that function
+  // clear the selection. This is the exact inverse of the "Subheader ->
+  // Header" half of _sboardDrillUpFrom: press one, then the other, on
+  // the same card, and you're back where you started.
+  function _sboardDrillDownFrom(row){
+    if(!row) return;
+    if(String(row.cluster_id)!==String(T2TShared.currentTopicId)){
+      _sboardShowToast('Already at the bottom of what this board shows.');
+      return;
+    }
+    if(!_sboardCanGoUpFromTopic()){
+      _sboardShowToast('This is already the widest view -- nowhere further down to put it.');
+      return;
+    }
+    var keepSelectedId=row.id;
+    _sboardGoUpOneLevel();
+    _sboardSelectedHeaderId=keepSelectedId;
   }
 
   // MOVE shortcuts (Tab/Shift+Tab) -- restructures the hierarchy, unlike
