@@ -920,6 +920,23 @@
   // BEFORE doing the normal row lookup. Aug 21 2026 (Larry: "make the
   // Topic card selectable and highlightable like headers are").
   var _SBOARD_TOPIC_SENTINEL = '__topic__';
+  // Aug 23 2026 (Larry: "ONE level ONLY!" -- PgUp on a card nested two
+  // tiers below the current Topic, e.g. a Subber inside a column, was
+  // jumping it straight to becoming the Topic itself in a single press,
+  // skipping the middle step of just showing as a plain top-level header
+  // of the SAME (unchanged) Topic first). Holds the id of the ONE row
+  // (if any) currently being displayed as a top-level header purely for
+  // VIEW purposes, even though its real cluster_id still points at its
+  // actual, deeper parent -- nothing in the database changes, this is
+  // read by renderSeaBoard to temporarily borrow it into the current
+  // Topic's column row for this render only. A second PgUp on it (now
+  // that it reads as top-level) promotes it for real via _sboardDrillInto.
+  // Goes stale (and gets dropped) the moment it no longer matches
+  // _sboardSelectedHeaderId -- see the check in renderSeaBoard -- so
+  // selecting something else, or a real Topic change clearing selection,
+  // automatically cleans this up without needing its own callback wired
+  // into every place selection can change.
+  var _sboardViewPromotedId = null;
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
@@ -1055,21 +1072,23 @@
     // checks for that case itself first and shows the "already at the
     // top" toast instead -- it can never promote a card to Topic.
     //
-    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!") led to a two-press
-    // "borrow" mechanism (view-promote a nested row to top-level on the
-    // first press, really drill in on the second). Larry then corrected
-    // that too, on reflection: what that mechanism actually did -- move
-    // ONE card by itself to display as a header, leaving everything else
-    // where it was -- is the job of Tab/Shift+Tab (the real MOVE gesture,
-    // above), not PgUp/PgDn. His words: "there are TWO issues: 1 VIEW and
-    // 2 MOVE... Right now I can take a sub-header and DRAG it to the
-    // header level and it moves everybody up one level. That is exactly
-    // how I want the PgUp shortcut to work... PgUp shifts the entire view
-    // up one 'page.'" So drillIn/climbOut are back to exactly mirroring
-    // that existing drag-to-TOPIC-box gesture: a real, unconditional
-    // Topic change via _sboardDrillInto/_sboardDrillUpFrom that reflows
-    // the WHOLE board, however deep the selected row was nested -- no
-    // borrow, no depth check, no in-between step.
+    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!" -- selecting a
+    // Subber nested two tiers below the current Topic and pressing PgUp
+    // jumped it straight to becoming the Topic, skipping the middle
+    // step). Both functions now check _sboardViewPromotedId (see its
+    // declaration above) to add that middle step for a genuinely nested
+    // row: the FIRST drillIn on it only sets _sboardViewPromotedId and
+    // re-renders, which borrows it into the current Topic's column row
+    // as a plain top-level header without touching its real cluster_id
+    // (see the patch in renderSeaBoard) or changing the Topic at all. A
+    // SECOND drillIn -- now that it reads as top-level, either for real
+    // or via that borrow -- promotes it for real via _sboardDrillInto,
+    // exactly as before. climbOut is the mirror: on a borrowed row it
+    // just clears the borrow (back to nested, Topic unchanged); on a
+    // genuine top-level row it's the existing no-op toast; on a
+    // genuinely nested, not-yet-borrowed row it still does the real
+    // climb via _sboardDrillUpFrom -- unchanged from the last fix, since
+    // that's a different, already-correct action (confirmed live).
     function climbOut(){
       if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
         if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
@@ -1078,7 +1097,11 @@
       }
       var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
       if(selRow){
-        if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
+        var isBorrowed=_sboardViewPromotedId && String(_sboardViewPromotedId)===String(selRow.id);
+        if(isBorrowed){
+          _sboardViewPromotedId=null;
+          _sboardSpinWhile(renderSeaBoard());
+        } else if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
           _sboardShowToast('Already at the top of this board.');
         } else {
           _sboardDrillUpFrom(selRow);
@@ -1095,7 +1118,15 @@
       }
       var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
       if(selRowUp){
-        _sboardDrillInto(selRowUp);
+        var alreadyTopLevel=String(selRowUp.cluster_id)===String(T2TShared.currentTopicId)
+          || (_sboardViewPromotedId && String(_sboardViewPromotedId)===String(selRowUp.id));
+        if(alreadyTopLevel){
+          _sboardViewPromotedId=null;
+          _sboardDrillInto(selRowUp);
+        } else {
+          _sboardViewPromotedId=selRowUp.id;
+          _sboardSpinWhile(renderSeaBoard());
+        }
       }
       else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
       else _sboardShowToast('Already at the top of this board.');
@@ -1124,17 +1155,38 @@
       // even once the logic bug above was found, fixed, and confirmed
       // deployed live). Added as a second, no-modifier way to trigger the
       // exact same climbOut/drillIn -- checked here, before the Ctrl/Cmd
-      // gate below, since these two don't need a modifier at all. This is
-      // a real diagnostic, not just a convenience: if PageDown works where
-      // Ctrl+Down didn't, something (a browser shortcut, an extension) is
-      // swallowing the Ctrl combo before this page ever sees it; if
-      // PageDown ALSO does nothing, the bug is still in this code
-      // somewhere and Next Session should keep digging there instead.
-      // Left Ctrl+Down/Up in place rather than replacing them -- costs
-      // nothing to leave both live, and whichever one actually works is
-      // the one that matters.
-      if(k==='pagedown'){ e.preventDefault(); climbOut(); return; }
-      if(k==='pageup'){ e.preventDefault(); drillIn(); return; }
+      // gate below, since these two don't need a modifier at all.
+      //
+      // Fixed Aug 23 2026 (Larry: "PgUp should shift the entire VIEW up
+      // one page... I just want to change the limited VIEW, not move
+      // stuff around individually"). The original pairing above mirrored
+      // Ctrl+Down/Ctrl+Up's mapping (Down=climbOut, Up=drillIn) onto the
+      // Page keys without checking whether that direction reads right for
+      // THIS pair -- for Page keys, "Up" universally means back toward
+      // the top/start, i.e. the shallower, parent-ward direction
+      // (climbOut), not deeper (drillIn). PageUp was doing the opposite
+      // of what its name says. Swapped: PageUp now calls climbOut(),
+      // PageDown now calls drillIn() -- same two functions as before,
+      // just on the correctly-named keys.
+      //
+      // Second same-day fix (Larry: "People Too Busy was a sub-header
+      // which should shift to HEADER but instead jumped to TOPIC, too
+      // far"): the first attempt at this fix replaced climbOut() with a
+      // direct call to _sboardGoUpOneLevel() for PageUp, on the theory
+      // that a page-level key should ignore whatever card is selected --
+      // but _sboardGoUpOneLevel() only climbs the board's AMBIENT current
+      // Topic to its own parent; it has no idea a Subheader is selected
+      // at all, so it can't apply the one-tier-at-a-time "borrow" logic
+      // (_sboardViewPromotedId, see above) that keeps a climb from a
+      // nested row to exactly one level. That borrow logic lives inside
+      // climbOut() itself, and climbOut() ALREADY falls back to
+      // _sboardGoUpOneLevel() when nothing is selected (see its own body
+      // above) -- so it already behaves as "no matter what card is
+      // clicked, shift the view up one level" without needing to bypass
+      // it. Restored: PageUp calls climbOut() directly, same as
+      // Ctrl+Down used to before the Aug 22 direction swap.
+      if(k==='pageup'){ e.preventDefault(); climbOut(); return; }
+      if(k==='pagedown'){ e.preventDefault(); drillIn(); return; }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
@@ -3646,6 +3698,39 @@
       contentHeaders.forEach(function(h){
         if(h.cluster_id){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }
       });
+      // "Borrow" a nested row into the current Topic's own column row for
+      // this render only -- Aug 23 2026, the "ONE level ONLY" PgUp fix
+      // (see _sboardViewPromotedId's declaration and climbOut/drillIn in
+      // wireSboardUndoKeyboard). Nothing here touches the row's real
+      // cluster_id or writes anything to Supabase -- it only moves the
+      // SAME row object from its real parent's subHeadersOf array into
+      // the current Topic's, so every downstream reader of subHeadersOf
+      // this render (the column row below, renderGroup's own nested-subs
+      // lookup for its real parent, the CLUSTER child-count tally) sees
+      // it as top-level consistently, without needing three separate
+      // patches. Stale as soon as it stops matching the live selection --
+      // e.g. clicking a different card, or a real Topic change clearing
+      // selection entirely -- so this cleans itself up on the very next
+      // render without a dedicated callback wired into every place
+      // selection can change.
+      if(_sboardViewPromotedId && String(_sboardViewPromotedId)!==String(_sboardSelectedHeaderId)){
+        _sboardViewPromotedId=null;
+      }
+      if(_sboardViewPromotedId){
+        var _borrowedRow=contentHeaders.find(function(h){ return String(h.id)===String(_sboardViewPromotedId); });
+        if(!_borrowedRow || String(_borrowedRow.cluster_id)===String(T2TShared.currentTopicId)){
+          // Already gone, or the real Topic already changed under it so
+          // it's genuinely top-level now anyway -- nothing left to borrow.
+          _sboardViewPromotedId=null;
+        } else {
+          var _realParentArr=subHeadersOf[_borrowedRow.cluster_id];
+          if(_realParentArr){
+            var _bi=_realParentArr.indexOf(_borrowedRow);
+            if(_bi!==-1) _realParentArr.splice(_bi,1);
+          }
+          (subHeadersOf[T2TShared.currentTopicId]=subHeadersOf[T2TShared.currentTopicId]||[]).push(_borrowedRow);
+        }
+      }
       var topLevelHeaders=contentHeaders.filter(function(h){ return !h.cluster_id; });
 
       // CLUSTER button gating — Logged July 7, 2026. A header only qualifies as
