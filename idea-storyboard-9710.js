@@ -1034,6 +1034,54 @@
     }catch(e){ console.error('Storyboard: undo/redo write failed', e); }
   }
   function wireSboardUndoKeyboard(){
+    // climbOut/drillIn hold the actual VIEW navigation -- doesn't move or
+    // rename anything, purely which level of the board you're looking at.
+    // History: Aug 20 2026 (Larry: MOVE vs VIEW shortcuts -- Tab/Shift+Tab
+    // below is the separate MOVE gesture). Aug 21 2026 (Larry: "any card,
+    // including topic") -- both pivot off whatever's currently selected
+    // (a real row, or the TOPIC card itself via _SBOARD_TOPIC_SENTINEL,
+    // checked first since it's not a real row id). With nothing selected,
+    // both fall back to the existing PARENT breadcrumb climb -- an empty
+    // selection reads as "the Parent" itself. From the TOPIC card there's
+    // nothing to drill further into, so it always just climbs.
+    // Direction swapped Aug 22 2026 (Larry, live-testing: "ctrl-down moved
+    // the card UP instead" -- Down drilling IN read as backwards to him).
+    // climbOut is now what Down triggers; drillIn is what Up triggers.
+    // Second same-day fix: climbOut used to call _sboardDrillUpFrom
+    // directly, but that function has its own fallback for a top-level
+    // Header (whose parent already IS the current Topic -- nowhere
+    // shallower to climb to) that promotes it to Topic anyway, the exact
+    // "becomes Topic" result Larry flagged as wrong for Down. climbOut now
+    // checks for that case itself first and shows the "already at the
+    // top" toast instead -- it can never promote a card to Topic.
+    function climbOut(){
+      if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+        if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
+        else _sboardShowToast('Already at the top of this board.');
+        return;
+      }
+      var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
+      if(selRow){
+        if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
+          _sboardShowToast('Already at the top of this board.');
+        } else {
+          _sboardDrillUpFrom(selRow);
+        }
+      }
+      else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
+      else _sboardShowToast('Already at the top of this board.');
+    }
+    function drillIn(){
+      if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+        if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
+        else _sboardShowToast('Already at the top of this board.');
+        return;
+      }
+      var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
+      if(selRowUp) _sboardDrillInto(selRowUp);
+      else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
+      else _sboardShowToast('Already at the top of this board.');
+    }
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-sea-of-ideas-cluster');
       if(!screen || !screen.classList.contains('active')) return;
@@ -1053,103 +1101,27 @@
         if(e.shiftKey) _sboardPromoteSelectedHeader(); else _sboardDemoteSelectedHeader();
         return;
       }
+      // PageDown/PageUp, Aug 22 2026 (Larry: "would click PgUp and PgDn
+      // work better?" -- asked after Ctrl+Down still didn't fire for him
+      // even once the logic bug above was found, fixed, and confirmed
+      // deployed live). Added as a second, no-modifier way to trigger the
+      // exact same climbOut/drillIn -- checked here, before the Ctrl/Cmd
+      // gate below, since these two don't need a modifier at all. This is
+      // a real diagnostic, not just a convenience: if PageDown works where
+      // Ctrl+Down didn't, something (a browser shortcut, an extension) is
+      // swallowing the Ctrl combo before this page ever sees it; if
+      // PageDown ALSO does nothing, the bug is still in this code
+      // somewhere and Next Session should keep digging there instead.
+      // Left Ctrl+Down/Up in place rather than replacing them -- costs
+      // nothing to leave both live, and whichever one actually works is
+      // the one that matters.
+      if(k==='pagedown'){ e.preventDefault(); climbOut(); return; }
+      if(k==='pageup'){ e.preventDefault(); drillIn(); return; }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
-      // Ctrl/Cmd+Down / Ctrl/Cmd+Up -- VIEW only: doesn't move or rename
-      // anything, purely which level you're looking at. Aug 20 2026
-      // (Larry: MOVE vs VIEW shortcuts). Reworked Aug 21 2026 (Larry:
-      // "any card, including topic") to both pivot off whatever's
-      // currently selected instead of Up always acting on the board's
-      // current Topic regardless of selection:
-      //   Down on a selected card -> that card becomes the new Topic
-      //     (same result as dragging it onto the TOPIC box).
-      //   Up on a selected card -> that card rises one level: a nested
-      //     Subheader's own parent (a Header) becomes the new Topic; a
-      //     top-level Header (whose parent already IS the Topic) becomes
-      //     the new Topic itself instead, same as Down would -- see the
-      //     Aug 21 2026 fix note in _sboardDrillUpFrom. Stays selected
-      //     afterward so repeated Ctrl+Up keeps climbing the same card's
-      //     lineage.
-      // With nothing selected, both keys fall back to the existing
-      // PARENT breadcrumb action (climb from the current Topic to its
-      // own parent) -- there's no separate "select the Parent" gesture,
-      // so an empty selection reads as "the Parent" itself.
-      // The TOPIC card is selectable too (see the topicBoxEl click
-      // handler above) via _SBOARD_TOPIC_SENTINEL -- checked first in
-      // both branches below since it's not a real row id and can't go
-      // through the normal _sboardAllRowsById lookup. Aug 21 2026
-      // (Larry: "make the Topic card selectable and highlightable like
-      // headers are"). With Topic selected, Down and Up do the SAME
-      // thing: Parent becomes the new Topic and the old Topic drops down
-      // to show as a Header under it. Fixed Aug 21 2026 (Larry: "ctrl-down
-      // from topic should move topic to header and parent to topic") --
-      // Down on Topic isn't a no-op after all. There's no other card to
-      // descend INTO from the Topic card itself (unlike a Header/Subheader,
-      // which has one specific parent to climb to or child-of-itself to
-      // drill into), so both keys collapse to the one direction that
-      // actually exists from here: out to Parent. Stays selected
-      // afterward so repeated presses keep climbing.
-      // Direction swapped, Aug 22 2026 (Larry, live-testing this exact
-      // shortcut: "ctrl-down moved the card UP instead" -- selecting a
-      // Header and pressing Down was drilling INTO it, which read to him
-      // as the wrong way). Down now climbs OUT to the selected card's own
-      // parent; Up now drills IN to the selected card's children
-      // (_sboardDrillInto -- what Down used to do). The TOPIC-sentinel
-      // branch and the no-selection fallback are unchanged by this swap
-      // -- both still just climb via PARENT, since there's nothing to
-      // drill "into" from the Topic card itself or with nothing selected,
-      // in either direction.
-      //
-      // Second bug fix, same session (Larry: "still going wrong way
-      // nothing from TOPIC card at all" -- the swap above alone didn't
-      // fix a TOP-LEVEL header, only a nested Subheader). Root cause:
-      // _sboardDrillUpFrom has its OWN internal fallback for a top-level
-      // Header (row.cluster_id === the current Topic already -- see its
-      // "Bug fix, Aug 21 2026" comment below) that calls _sboardDrillInto
-      // and promotes the row to Topic ANYWAY, because that used to be the
-      // only sensible thing for the old Ctrl+Up to do there. Calling that
-      // same function from Down (after the swap above) silently
-      // reproduced the exact "becomes Topic" result Larry flagged as
-      // backwards -- Down and Up were doing the identical thing for any
-      // top-level Header, so swapping which key called which function
-      // never changed what he actually saw. Fixed by checking for that
-      // top-level case here, before ever reaching _sboardDrillUpFrom, and
-      // treating it as a real no-op (toast) instead -- Down now only ever
-      // climbs a genuinely nested Subheader to its real parent; it never
-      // promotes a card to Topic, full stop.
-      if(k==='arrowdown'){
-        e.preventDefault();
-        if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
-          if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
-          else _sboardShowToast('Already at the top of this board.');
-          return;
-        }
-        var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-        if(selRow){
-          if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
-            _sboardShowToast('Already at the top of this board.');
-          } else {
-            _sboardDrillUpFrom(selRow);
-          }
-        }
-        else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
-        else _sboardShowToast('Already at the top of this board.');
-        return;
-      }
-      if(k==='arrowup'){
-        e.preventDefault();
-        if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
-          if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
-          else _sboardShowToast('Already at the top of this board.');
-          return;
-        }
-        var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-        if(selRowUp) _sboardDrillInto(selRowUp);
-        else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
-        else _sboardShowToast('Already at the top of this board.');
-        return;
-      }
+      if(k==='arrowdown'){ e.preventDefault(); climbOut(); return; }
+      if(k==='arrowup'){ e.preventDefault(); drillIn(); return; }
     });
   }
   // Set true the first time this tab has done a real (network) render of
