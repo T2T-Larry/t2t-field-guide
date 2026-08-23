@@ -920,6 +920,23 @@
   // BEFORE doing the normal row lookup. Aug 21 2026 (Larry: "make the
   // Topic card selectable and highlightable like headers are").
   var _SBOARD_TOPIC_SENTINEL = '__topic__';
+  // Aug 23 2026 (Larry: "ONE level ONLY!" -- PgUp on a card nested two
+  // tiers below the current Topic, e.g. a Subber inside a column, was
+  // jumping it straight to becoming the Topic itself in a single press,
+  // skipping the middle step of just showing as a plain top-level header
+  // of the SAME (unchanged) Topic first). Holds the id of the ONE row
+  // (if any) currently being displayed as a top-level header purely for
+  // VIEW purposes, even though its real cluster_id still points at its
+  // actual, deeper parent -- nothing in the database changes, this is
+  // read by renderSeaBoard to temporarily borrow it into the current
+  // Topic's column row for this render only. A second PgUp on it (now
+  // that it reads as top-level) promotes it for real via _sboardDrillInto.
+  // Goes stale (and gets dropped) the moment it no longer matches
+  // _sboardSelectedHeaderId -- see the check in renderSeaBoard -- so
+  // selecting something else, or a real Topic change clearing selection,
+  // automatically cleans this up without needing its own callback wired
+  // into every place selection can change.
+  var _sboardViewPromotedId = null;
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
@@ -1054,6 +1071,24 @@
     // "becomes Topic" result Larry flagged as wrong for Down. climbOut now
     // checks for that case itself first and shows the "already at the
     // top" toast instead -- it can never promote a card to Topic.
+    //
+    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!" -- selecting a
+    // Subber nested two tiers below the current Topic and pressing PgUp
+    // jumped it straight to becoming the Topic, skipping the middle
+    // step). Both functions now check _sboardViewPromotedId (see its
+    // declaration above) to add that middle step for a genuinely nested
+    // row: the FIRST drillIn on it only sets _sboardViewPromotedId and
+    // re-renders, which borrows it into the current Topic's column row
+    // as a plain top-level header without touching its real cluster_id
+    // (see the patch in renderSeaBoard) or changing the Topic at all. A
+    // SECOND drillIn -- now that it reads as top-level, either for real
+    // or via that borrow -- promotes it for real via _sboardDrillInto,
+    // exactly as before. climbOut is the mirror: on a borrowed row it
+    // just clears the borrow (back to nested, Topic unchanged); on a
+    // genuine top-level row it's the existing no-op toast; on a
+    // genuinely nested, not-yet-borrowed row it still does the real
+    // climb via _sboardDrillUpFrom -- unchanged from the last fix, since
+    // that's a different, already-correct action (confirmed live).
     function climbOut(){
       if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
         if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
@@ -1062,7 +1097,11 @@
       }
       var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
       if(selRow){
-        if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
+        var isBorrowed=_sboardViewPromotedId && String(_sboardViewPromotedId)===String(selRow.id);
+        if(isBorrowed){
+          _sboardViewPromotedId=null;
+          _sboardSpinWhile(renderSeaBoard());
+        } else if(String(selRow.cluster_id)===String(T2TShared.currentTopicId)){
           _sboardShowToast('Already at the top of this board.');
         } else {
           _sboardDrillUpFrom(selRow);
@@ -1078,7 +1117,17 @@
         return;
       }
       var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-      if(selRowUp) _sboardDrillInto(selRowUp);
+      if(selRowUp){
+        var alreadyTopLevel=String(selRowUp.cluster_id)===String(T2TShared.currentTopicId)
+          || (_sboardViewPromotedId && String(_sboardViewPromotedId)===String(selRowUp.id));
+        if(alreadyTopLevel){
+          _sboardViewPromotedId=null;
+          _sboardDrillInto(selRowUp);
+        } else {
+          _sboardViewPromotedId=selRowUp.id;
+          _sboardSpinWhile(renderSeaBoard());
+        }
+      }
       else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
       else _sboardShowToast('Already at the top of this board.');
     }
@@ -3628,6 +3677,39 @@
       contentHeaders.forEach(function(h){
         if(h.cluster_id){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }
       });
+      // "Borrow" a nested row into the current Topic's own column row for
+      // this render only -- Aug 23 2026, the "ONE level ONLY" PgUp fix
+      // (see _sboardViewPromotedId's declaration and climbOut/drillIn in
+      // wireSboardUndoKeyboard). Nothing here touches the row's real
+      // cluster_id or writes anything to Supabase -- it only moves the
+      // SAME row object from its real parent's subHeadersOf array into
+      // the current Topic's, so every downstream reader of subHeadersOf
+      // this render (the column row below, renderGroup's own nested-subs
+      // lookup for its real parent, the CLUSTER child-count tally) sees
+      // it as top-level consistently, without needing three separate
+      // patches. Stale as soon as it stops matching the live selection --
+      // e.g. clicking a different card, or a real Topic change clearing
+      // selection entirely -- so this cleans itself up on the very next
+      // render without a dedicated callback wired into every place
+      // selection can change.
+      if(_sboardViewPromotedId && String(_sboardViewPromotedId)!==String(_sboardSelectedHeaderId)){
+        _sboardViewPromotedId=null;
+      }
+      if(_sboardViewPromotedId){
+        var _borrowedRow=contentHeaders.find(function(h){ return String(h.id)===String(_sboardViewPromotedId); });
+        if(!_borrowedRow || String(_borrowedRow.cluster_id)===String(T2TShared.currentTopicId)){
+          // Already gone, or the real Topic already changed under it so
+          // it's genuinely top-level now anyway -- nothing left to borrow.
+          _sboardViewPromotedId=null;
+        } else {
+          var _realParentArr=subHeadersOf[_borrowedRow.cluster_id];
+          if(_realParentArr){
+            var _bi=_realParentArr.indexOf(_borrowedRow);
+            if(_bi!==-1) _realParentArr.splice(_bi,1);
+          }
+          (subHeadersOf[T2TShared.currentTopicId]=subHeadersOf[T2TShared.currentTopicId]||[]).push(_borrowedRow);
+        }
+      }
       var topLevelHeaders=contentHeaders.filter(function(h){ return !h.cluster_id; });
 
       // CLUSTER button gating — Logged July 7, 2026. A header only qualifies as
