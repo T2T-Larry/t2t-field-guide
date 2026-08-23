@@ -1072,31 +1072,29 @@
     // checks for that case itself first and shows the "already at the
     // top" toast instead -- it can never promote a card to Topic.
     //
-    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!" -- a Subheader
-    // pressing PgUp jumped it straight to becoming the Topic, skipping
-    // the middle step of becoming a Header first) -- originally solved
-    // with a temporary "borrow" flag (_sboardViewPromotedId). Superseded
-    // by the fourth fix below, which found that was solving a problem
-    // _sboardDrillUpFrom doesn't actually have.
+    // Third fix, Aug 23 2026 (Larry: "ONE level ONLY!") through fifth fix
+    // (Larry: "PgDn moved the view UP not down") -- several attempts at
+    // making drillIn() (going down) a card-selection-based mirror of
+    // climbOut() (going up). All superseded by the final shape below,
+    // which came from Larry stating the actual rule directly: "The issue
+    // is only which HEADER to PROMOTE to TOPIC going UP! If I click
+    // down, the current topic becomes a header, EXACTLY like clicking on
+    // the parent! Therefore, PgDn = click parent! PgUp requires highlight
+    // on header to promote OR header of the highlighted card!"
     //
-    // Fourth fix, same day (Larry: "PgDn moved the view UP not down. No
-    // matter what card is highlighted, the entire view should move in
-    // the appropriate direction!"). Root cause: drillIn() and climbOut()
-    // were never true inverses of each other. _sboardDrillUpFrom already
-    // does a clean, real, one-tier-at-a-time promotion on its own
-    // (Subheader->Header, or Header->Topic if already top-level) -- the
-    // borrow flag was solving a bug that didn't exist once climbOut()
-    // just called it directly, and telling drillIn() to also use that
-    // same flag turned it into a Header->Topic promotion, i.e. the exact
-    // "climb" behavior, just triggered by the "descend" key. Both
-    // functions are now simple: climbOut() always promotes the selected
-    // row up one tier via _sboardDrillUpFrom; drillIn() always demotes it
-    // down one tier via the new _sboardDrillDownFrom (its mirror, see
-    // above _sboardGoUpOneLevel) -- pressing one then the other on the
-    // same untouched selection returns you to exactly where you started.
-    // The borrow flag (_sboardViewPromotedId) and its renderSeaBoard
-    // patch are no longer set by anything -- left in place as inert,
-    // rather than ripped out mid-fix-chain, but nothing calls them.
+    // Going UP is genuinely ambiguous without a selection -- a Topic can
+    // have several Headers, so promoting one to be the new Topic needs
+    // to know WHICH one. climbOut() resolves that from whatever's
+    // selected: a selected Header promotes directly; a selected Subheader
+    // promotes its OWN Header (via _sboardDrillUpFrom, unchanged); with
+    // nothing selected there's no way to know which Header is meant, so
+    // it now asks for a click instead of guessing.
+    //
+    // Going DOWN is never actually ambiguous: the board only ever has one
+    // current Topic, and that Topic has exactly one parent -- the same
+    // single destination the PARENT breadcrumb (sc-parent-hit) already
+    // climbs to. drillIn() doesn't need to know what's selected at all;
+    // it's just that same climb, every time, full stop.
     function climbOut(){
       if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
         if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); _sboardSelectedHeaderId=_SBOARD_TOPIC_SENTINEL; }
@@ -1105,17 +1103,11 @@
       }
       var selRow=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
       if(selRow) _sboardDrillUpFrom(selRow);
-      else if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
-      else _sboardShowToast('Already at the top of this board.');
+      else _sboardShowToast('Click a card first -- Page Up promotes its header to the top.');
     }
     function drillIn(){
-      if(_sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
-        _sboardShowToast('Click a header card, then Page Down to move into it.');
-        return;
-      }
-      var selRowUp=_sboardSelectedHeaderId && _sboardAllRowsById[_sboardSelectedHeaderId];
-      if(selRowUp) _sboardDrillDownFrom(selRowUp);
-      else _sboardShowToast('Click a card, then Page Down to move into it.');
+      if(_sboardCanGoUpFromTopic()) _sboardGoUpOneLevel();
+      else _sboardShowToast('Already at the widest view on this board.');
     }
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-sea-of-ideas-cluster');
@@ -4432,34 +4424,6 @@
     _sboardPersistLastTopic(parentId);
     _sboardSelectedHeaderId=keepSelectedId;
     _sboardSpinWhile(renderSeaBoard());
-  }
-
-  // True mirror of _sboardDrillUpFrom, added Aug 23 2026 (Larry: "PgDn
-  // moved the view UP not down. No matter what card is highlighted, the
-  // entire view should move in the appropriate direction!"). The row
-  // passed in is only ever a card currently rendering at Header tier
-  // (row.cluster_id === the current Topic) -- there's nothing lower than
-  // Subheader for this board to show, so a genuine Subheader has nowhere
-  // further down to go. Putting a Header-tier row back down to Subheader
-  // just means zooming the board's ambient Topic back out to THAT row's
-  // own parent's parent -- exactly the _sboardGoUpOneLevel() move,
-  // keeping this row selected afterward instead of letting that function
-  // clear the selection. This is the exact inverse of the "Subheader ->
-  // Header" half of _sboardDrillUpFrom: press one, then the other, on
-  // the same card, and you're back where you started.
-  function _sboardDrillDownFrom(row){
-    if(!row) return;
-    if(String(row.cluster_id)!==String(T2TShared.currentTopicId)){
-      _sboardShowToast('Already at the bottom of what this board shows.');
-      return;
-    }
-    if(!_sboardCanGoUpFromTopic()){
-      _sboardShowToast('This is already the widest view -- nowhere further down to put it.');
-      return;
-    }
-    var keepSelectedId=row.id;
-    _sboardGoUpOneLevel();
-    _sboardSelectedHeaderId=keepSelectedId;
   }
 
   // MOVE shortcuts (Tab/Shift+Tab) -- restructures the hierarchy, unlike
