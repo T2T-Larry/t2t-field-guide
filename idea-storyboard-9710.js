@@ -845,10 +845,17 @@
     // its own (i.e. sitting at a project's own root) — that apex behaves
     // like a project chooser, duplicating what PROJECT already does, so
     // PARENT now stays inert there instead of escaping to it.
-    function _sboardCanGoUpFromTopic(){
-      var row=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
-      return !!(row && row.cluster_id);
-    }
+    // Aug 24 2026 fix: this helper used to be declared right here, nested
+    // one level inside injectSeaOfIdeasCluster() -- fine for the PARENT
+    // click handler right below (same nesting), but wireSboardUndoKeyboard()
+    // is a SEPARATE sibling function declared far below (not nested inside
+    // this one), so it could never see this identifier. climbOut()/drillIn()
+    // calling it threw a silent "ReferenceError: _sboardCanGoUpFromTopic is
+    // not defined" on every Page Down (and on Page Up whenever the TOPIC
+    // card itself was selected) -- exactly matching Larry's report that
+    // Down never worked while Up "mostly" did. Moved to the shared outer
+    // scope (right before wireSboardUndoKeyboard) where every nav helper
+    // it's called from can actually reach it.
     T().wire('sc-parent-hit', function(){
       if(_sboardCanGoUpFromTopic()){ _sboardGoUpOneLevel(); }
     });
@@ -1049,6 +1056,15 @@
       _sboardPatchRow(id, fields);
       renderSeaBoard(true);
     }catch(e){ console.error('Storyboard: undo/redo write failed', e); }
+  }
+  // Moved here Aug 24 2026 (see the long comment where this used to live,
+  // just above the PARENT click wiring) so climbOut()/drillIn() below can
+  // actually see it -- it used to be nested one function deeper, out of
+  // reach, which silently broke Page Down (and Page Up from a selected
+  // TOPIC card) with a ReferenceError.
+  function _sboardCanGoUpFromTopic(){
+    var row=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
+    return !!(row && row.cluster_id);
   }
   function wireSboardUndoKeyboard(){
     // climbOut/drillIn hold the actual VIEW navigation -- doesn't move or
