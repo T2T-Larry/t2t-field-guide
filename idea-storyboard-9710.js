@@ -1155,11 +1155,25 @@
       // hasn't changed since the swap above.
       if(k==='pageup'){ e.preventDefault(); climbOut(); return; }
       if(k==='pagedown'){ e.preventDefault(); drillIn(); return; }
+      // Plain Down arrow, added Aug 23 2026 (Larry: "the down arrow
+      // should work exactly like this too... it is all the same action!
+      // Only UP requires knowing directly or indirectly"). Going down is
+      // never ambiguous (see climbOut/drillIn's own comment above), so
+      // unlike Up it doesn't need a modifier to guard against an
+      // accidental press -- checked here, before the Ctrl/Cmd gate
+      // below, same tier as the Page keys above. This one line covers
+      // plain Down AND Ctrl+Down (Ctrl+Down still matches 'arrowdown'
+      // here regardless of the modifier, so it never falls through to
+      // the gated block below) -- both are just drillIn(), same as
+      // Page Down.
+      if(k==='arrowdown'){ e.preventDefault(); drillIn(); return; }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
-      if(k==='arrowdown'){ e.preventDefault(); climbOut(); return; }
-      if(k==='arrowup'){ e.preventDefault(); drillIn(); return; }
+      // Ctrl+Up only -- deliberately kept behind a modifier, since
+      // promoting a card needs a highlight to know WHICH header, and a
+      // stray plain Up shouldn't risk doing that by accident.
+      if(k==='arrowup'){ e.preventDefault(); climbOut(); return; }
     });
   }
   // Set true the first time this tab has done a real (network) render of
