@@ -2947,7 +2947,11 @@
     // name (rather than teaching the lookup a second attribute) keeps
     // this a one-spot fix.
     tile.setAttribute('data-header-id', String(item.id));
-    tile.draggable=!item.locked;
+    // Locked no longer blocks dragging, Aug 25 2026 (Larry: "allow all
+    // Idea Cards and Briefing Cards to drag") -- Lock still keeps a
+    // card's text read-only (see the sb-lock button below), but a
+    // locked card can now be picked up and moved like any other.
+    tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
     tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
@@ -3140,7 +3144,9 @@
     var wrap=document.createElement('div');
     wrap.className='sc-stack-tile'+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
     wrap.setAttribute('data-header-id', String(headerRow.id));
-    wrap.draggable=!headerRow.locked;
+    // Locked no longer blocks dragging, Aug 25 2026 -- see the matching
+    // note on _sboardMakeTile above.
+    wrap.draggable=true;
     wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
     wrap.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;cursor:pointer;transform:rotate('+rot+'deg)';
     var bg=headerRow.color||'#fff';
@@ -4006,7 +4012,10 @@
     // database directly: header and its linked Briefing card both
     // show locked, in sync).
     hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, flags:true}));
-        if(depth===0 && !headerRow.locked){
+        // Locked no longer blocks dragging, Aug 25 2026 -- see the note
+        // on _sboardMakeTile above. depth===0 stays: only the top-level
+        // pill drags to reorder among its siblings here.
+        if(depth===0){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
         }
@@ -4128,7 +4137,9 @@
           newCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
           hd.appendChild(newCornerFlip);
         }
-        if(newRow && !newRow.locked){
+        // Locked no longer blocks dragging, Aug 25 2026 -- see the note
+        // on _sboardMakeTile above.
+        if(newRow){
           hd.draggable=true;
           hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+newRow.id); });
         }
@@ -4736,7 +4747,9 @@
   });
 
   async function _sboardMoveCard(itemId, headerId){
-    if(_sboardAllRowsById[itemId] && _sboardAllRowsById[itemId].locked) return;
+    // Locked no longer blocks moving, Aug 25 2026 -- see the note on
+    // _sboardMakeTile above (this used to silently refuse to move a
+    // locked card at all).
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     var before=_sboardSnapshotRow(itemId);
@@ -4780,7 +4793,8 @@
   // the two functions it replaces.
   async function _sboardReorderOrMoveColumnItem(draggedId, targetId, parentId, insertAfter){
     if(String(draggedId)===String(targetId)) return;
-    if(_sboardAllRowsById[draggedId] && _sboardAllRowsById[draggedId].locked) return;
+    // Locked no longer blocks moving, Aug 25 2026 -- see the note on
+    // _sboardMakeTile above.
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
     var before=_sboardSnapshotRow(draggedId);
@@ -6895,7 +6909,7 @@
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
       + '<div class="sb-blue-row">'
-      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing and moving':'Lock — read-only, fixed position')+'">'+(item.locked?'🔒':'🔓')+'</button>'
+      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing':'Lock — read-only text, still drag to move')+'">'+(item.locked?'🔒':'🔓')+'</button>'
       + '<button class="sb-blue-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
