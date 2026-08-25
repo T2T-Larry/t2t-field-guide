@@ -5314,17 +5314,21 @@
     var swatches=_sboardColorPalette.map(function(c){
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
     }).join('');
-    // Label says "headers/subbers" (Aug 25 2026, Larry: couldn't find a
-    // way to recolor Subbers specifically) -- this ALREADY recolors
-    // whatever's on the current screen, Header tier or Subber tier alike
-    // (see _sboardVisibleHeaders, populated fresh by renderSeaBoard for
-    // whichever row is currently the drilled-into Topic) -- the dialog
-    // just always said "headers" even when what's showing are really a
-    // Header's own Subbers, so Larry had nothing to search for by name.
-    // No behavior change, wording only.
+    // Aug 25 2026, Larry: "Option should be to change all HEADERS ...OR...
+    // change all SUBBERS" -- these are two genuinely different sets of
+    // tiles that can both be showing on the SAME screen at once (see
+    // renderGroup: each Header's own column mixes its Subber tiles in
+    // with its plain idea cards, right there under that Header's row) --
+    // this dialog only ever reaches the top-row Header tiles
+    // (_sboardVisibleHeaders below), never the Subber tiles nested inside
+    // each column. An earlier pass here just relabeled this one dialog to
+    // say "headers/subbers," on the wrong assumption that it already
+    // reached both depending on which screen you were on -- it didn't.
+    // Reverted back to Header-only wording now that Recolor-all-SUBBERS
+    // (right below) is its own separate, real action.
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers/subbers</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — everything on this board (headers or subbers), including Purpose, MISC and NEW, gets it.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this board, including Purpose, MISC and NEW, gets it. Subbers (nested inside a header) and individually-colored cards are untouched.</div>'
       +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
       +'<button class="sc-ov-btn" id="sb-recolor-close" style="width:100%">Cancel</button>'
       +'</div>';
@@ -5342,6 +5346,55 @@
           for(var i=0;i<uniq.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',uniq[i]); _sboardPatchRow(uniq[i], {color:c}); }
         }catch(e){}
         T().setDefaultHeaderColor(c);
+        closeSbDetail();
+        renderSeaBoard(true);
+      };
+    });
+  }
+
+  // Recolor all SUBBERS — Aug 25 2026, Larry's own follow-up request once
+  // he found "Recolor all headers" didn't reach these. A Subber is stored
+  // as the exact same kind of row as a Header (content_type:'header'),
+  // just nested one level under one -- rendered inline inside that
+  // Header's own column via _sboardMakeHeaderStackTile, not in the
+  // top-row _sboardVisibleHeaders this screen's Headers use. Walks every
+  // row currently loaded (_sboardAllRowsById) and picks out any header
+  // whose cluster_id points at a Header actually showing on this screen
+  // right now (Purpose/MISC/any visible content header -- NOT the NEW
+  // bucket, which never has Subbers of its own). Leaves the Headers
+  // themselves, and any single card colored on its own via its own
+  // swatch picker, untouched -- exactly the split Larry asked for.
+  function _sboardOpenRecolorAllSubbers(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var swatches=_sboardColorPalette.map(function(c){
+      return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
+    }).join('');
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all subbers</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every Subber nested under a header on this board gets it. Headers themselves, and individually-colored cards, are untouched.</div>'
+      +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
+      +'<button class="sc-ov-btn" id="sb-recolor-subbers-close" style="width:100%">Cancel</button>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('sb-recolor-subbers-close', closeSbDetail);
+    ov.querySelectorAll('.sb-swatch').forEach(function(sw){
+      sw.onclick=async function(){
+        var c=sw.getAttribute('data-c');
+        var parentIds=[_sboardPurposeId,_sboardMiscId]
+          .concat((_sboardVisibleHeaders||[]).map(function(h){ return h.id; }))
+          .filter(Boolean);
+        var parentSet={};
+        parentIds.forEach(function(id){ parentSet[String(id)]=true; });
+        var subberIds=Object.keys(_sboardAllRowsById).filter(function(id){
+          var r=_sboardAllRowsById[id];
+          return r && r.content_type==='header' && r.cluster_id!=null && parentSet[String(r.cluster_id)];
+        });
+        var _sb=T().sb;
+        try{
+          for(var i=0;i<subberIds.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',subberIds[i]); _sboardPatchRow(subberIds[i], {color:c}); }
+        }catch(e){}
+        T().setDefaultSubberColor(c);
         closeSbDetail();
         renderSeaBoard(true);
       };
@@ -6501,13 +6554,15 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="sb-appearance-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers/subbers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor-subbers" style="width:100%">🎨 Recolor all subbers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
         +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
+    T().wire('sb-gear-recolor-subbers', function(){ closeSbDetail(); _sboardOpenRecolorAllSubbers(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
     // Aug 3 2026: Storyboard is full-screen (.isx-full), so the desk's own
     // gear/text-size picker is hidden here -- this reaches the same shared
@@ -8433,7 +8488,11 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+      // Genuinely a Subber (nested under headerRow, a real Header), not a
+      // top-level Header -- Aug 25 2026, Larry: headers and subbers should
+      // default to different colors. Uses the Subber default, not the
+      // Header one.
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultSubberColor()}).select().single();
       if(ins.error) throw ins.error;
       _sboardAddRow(ins.data);
       var newHeaderId=ins.data.id;
@@ -8532,7 +8591,10 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+      // Same reasoning as _clusterCommitStack above -- this is a Subber
+      // nested under headerRow, so it gets the Subber default color, not
+      // the Header one.
+      var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:headerRow.id,created_at:new Date().toISOString(),color:T().getDefaultSubberColor()}).select().single();
       if(ins.error) throw ins.error;
       _sboardAddRow(ins.data);
     }catch(err){}

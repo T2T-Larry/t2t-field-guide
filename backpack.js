@@ -1373,6 +1373,20 @@
     try{ if(c) localStorage.setItem('t2t_defaultHeaderColor', c); }catch(e){}
   }
 
+  // Default Subber color -- Aug 25 2026, Larry: "we usually want headers
+  // and subbers a different color." Same idea as the Header default just
+  // above (Recolor-all sets it, new ones pick it up), but its own separate
+  // memory slot -- a Subber is stored as the same kind of row as a Header
+  // (just nested one level deeper under one), so without a slot of its
+  // own, every newly-created Subber would silently inherit the HEADER
+  // default instead and immediately blend back in with its parent's row.
+  function getDefaultSubberColor(){
+    try{ return localStorage.getItem('t2t_defaultSubberColor') || null; }catch(e){ return null; }
+  }
+  function setDefaultSubberColor(c){
+    try{ if(c) localStorage.setItem('t2t_defaultSubberColor', c); }catch(e){}
+  }
+
   function goBackStack(){
     // Skip past any 's-signin' entries -- never a real "go back"
     // destination once already signed in (see the push:false fix in
@@ -1432,7 +1446,8 @@
     getPageNumsReverse:function(){ return _pageNumsReverse; },
     resumeToLastPageOr:resumeToLastPageOr,
     resetAndReturn:resetAndReturn,
-    getDefaultHeaderColor:getDefaultHeaderColor, setDefaultHeaderColor:setDefaultHeaderColor
+    getDefaultHeaderColor:getDefaultHeaderColor, setDefaultHeaderColor:setDefaultHeaderColor,
+    getDefaultSubberColor:getDefaultSubberColor, setDefaultSubberColor:setDefaultSubberColor
   };
 
   document.addEventListener('DOMContentLoaded',function(){
