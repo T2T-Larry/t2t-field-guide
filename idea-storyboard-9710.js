@@ -3538,10 +3538,28 @@
         // previously awaited one after another, each a separate Supabase
         // round trip. That sequential chain is what made opening a project
         // for the first time (Purpose/Ideas being created fresh) feel slow.
+        //
+        // Landing-zone name, Aug 25 2026 -- Larry: a plain "NEW" label
+        // gave no hint what it was actually holding, especially right
+        // after promoting a header (with its own loose content already
+        // on it) up into its own Topic -- that content lands here, and
+        // "NEW" is a poor description of something that already existed.
+        // Titling it after the Topic's own name instead, in parentheses,
+        // says exactly whose leftover content this is at a glance.
+        // Read from the existing cache (already loaded by an earlier
+        // render's whole-account fetch, since that fetch isn't scoped to
+        // any one Topic) rather than waiting on the fresh fetch further
+        // below, which hasn't run yet at this point in a first-ever
+        // render. Falls back to the classic bare "NEW" if this Topic's
+        // own row isn't cached yet (e.g. the very first render of a
+        // brand-new session before anything's been fetched at all).
+        var _sbTopicRowForNaming=T2TShared.currentTopicId ? _sboardAllRowsById[T2TShared.currentTopicId] : null;
+        var _sbNewAdditionsDesiredName=(_sbTopicRowForNaming && _sbTopicRowForNaming.text_content)
+          ? ('('+_sbTopicRowForNaming.text_content+')') : null;
         var _ensureResults=await Promise.all([
           T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(
             T2TShared.currentTopicId,
-            null
+            _sbNewAdditionsDesiredName
           ) : Promise.resolve(null),
           currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
           T2TData.ensureMiscHeader(T2TShared.currentTopicId)
@@ -3812,6 +3830,36 @@
         // _sboardReorderOrMoveSubber), the render needs to respect that
         // order instead of ignoring it.
         var subs=(subHeadersOf[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
+        // Aug 25 2026, Larry: promoting a header (with its own loose
+        // content already on it) up into its own Topic auto-creates a
+        // real NEW header there to hold that content while it's being
+        // explored -- useful while it's in use, but backing back out to
+        // this bigger view then shows that same NEW row as a genuinely
+        // empty Subber forever after (its "content" is really the
+        // Topic's own direct cards, not children of the NEW row itself,
+        // so from one level up it just looks empty). A header Larry
+        // names himself always stays put even empty -- that's a
+        // deliberate choice -- but the board's own auto-managed
+        // placeholders are just administrative scaffolding, so they're
+        // hidden here at any depth once they have nothing left inside
+        // them (_sboardChildCountById, computed above from the real,
+        // unfiltered data -- this is purely a display filter, nothing
+        // about the row itself changes, and it reappears the moment it
+        // actually holds something again). Recognized two ways: the
+        // classic literal reserved names, or -- Aug 25 2026, Larry's own
+        // suggestion -- a name wrapped in parentheses, which is what the
+        // auto-created landing-zone header is now titled by default (see
+        // the NEW-header ensure-call above: "(<the Topic's own name>)"
+        // instead of a bare "NEW"), so a traveler can tell at a glance
+        // whose loose content it's holding without needing to rename it
+        // by hand first.
+        var _sbReservedAutoNames=['NEW','New Additions','MISC','Purpose'];
+        subs=subs.filter(function(s){
+          var _sbAutoManaged=_sbReservedAutoNames.indexOf(s.text_content)!==-1
+            || /^\(.*\)$/.test(String(s.text_content||'').trim());
+          if(!_sbAutoManaged) return true;
+          return (_sboardChildCountById[s.id]||0)>0;
+        });
         var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
         // Backfill, Aug 3 2026 -- same reasoning as the top-level row:
         // makes each Subber's/idea's ORDER # a real, permanent number
