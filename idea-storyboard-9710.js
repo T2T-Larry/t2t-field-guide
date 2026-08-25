@@ -1183,13 +1183,24 @@
       // the gated block below) -- both are just drillIn(), same as
       // Page Down.
       if(k==='arrowdown'){ e.preventDefault(); drillIn(); return; }
+      // Plain Up arrow, added Aug 25 2026 (Larry: "delete the need for
+      // ctrl with up or down arrows -- shift view with a simple highlight
+      // + appropriate arrow"). Up used to require Ctrl/Cmd on the theory
+      // that promoting a card needs a highlight to know WHICH header, so a
+      // stray plain Up shouldn't risk doing that by accident -- but
+      // climbOut() already refuses to act without a selection (shows the
+      // "Click a card first" toast instead), so the modifier was never
+      // actually the thing guarding against a mistaken promote; the
+      // highlight itself is. Moved up here, same tier as plain Down, so
+      // the whole gesture is just: highlight a card, press the arrow that
+      // matches the direction you want the view to shift -- no modifier
+      // key at all. Ctrl+Up/Ctrl+Down still work too, since they also
+      // match 'arrowup'/'arrowdown' here regardless of modifier and never
+      // fall through to the gated block below.
+      if(k==='arrowup'){ e.preventDefault(); climbOut(); return; }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
-      // Ctrl+Up only -- deliberately kept behind a modifier, since
-      // promoting a card needs a highlight to know WHICH header, and a
-      // stray plain Up shouldn't risk doing that by accident.
-      if(k==='arrowup'){ e.preventDefault(); climbOut(); return; }
     });
   }
   // Set true the first time this tab has done a real (network) render of
