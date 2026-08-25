@@ -6610,7 +6610,34 @@
       if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
       return _sboardNewAdditionsId;
     }
-    if(await _sboardParentDefaultsSeeded(parentId)){ _sboardNewAdditionsId=null; return null; }
+    // Bug fix, Aug 25 2026 (Larry: "Moved up 'People Too Busy' header but
+    // saw NO subbers as previously designed" -- really its own loose
+    // cards, which is worse: they weren't hidden, the whole board came up
+    // blank). Root cause: header_defaults_seeded is a one-way flag --
+    // once true, it never resets -- so a header whose auto-created NEW
+    // bucket ever got deleted (leftover from earlier testing, a manual
+    // cleanup) can never get a fresh one again, even much later when it's
+    // promoted to a real Topic with real loose content that genuinely
+    // needs a home. Direct loose content only ever displays THROUGH this
+    // bucket (see renderLocalNewAdditions in renderSeaBoard) -- with no
+    // bucket to hold it, it isn't just unlabeled, it's invisible. Found
+    // live on Larry's own account: "People Too Busy" and "Out of the
+    // Office" both already carry this flag with zero header children,
+    // meaning both would have gone blank the moment either was ever
+    // promoted. The seeded flag should only ever skip creating an EMPTY
+    // bucket nobody needs; it should never be able to make real,
+    // already-existing content vanish. So: if this parent already has
+    // loose, unbucketed content sitting directly on it, that alone is
+    // proof a bucket is needed right now, regardless of what the flag
+    // says.
+    var seeded=await _sboardParentDefaultsSeeded(parentId);
+    if(seeded){
+      var looseCheck=(parentId===null||parentId===undefined) ? null
+        : await _sb.from('ideas').select('id').eq('cluster_id',parentId).in('content_type',['image','text','link']).limit(1);
+      if(!(looseCheck && !looseCheck.error && looseCheck.data && looseCheck.data.length)){
+        _sboardNewAdditionsId=null; return null;
+      }
+    }
     var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
     if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
     _sboardNewAdditionsId=ins.data.id;
