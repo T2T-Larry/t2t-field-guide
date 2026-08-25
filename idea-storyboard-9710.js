@@ -4091,9 +4091,18 @@
         // Plain "NEW" everywhere, matching the Briefing Board's NEW column
         // — Aug 7 2026, Larry. Used to read "[Topic] Ideas" (e.g. "Website
         // Ideas") whenever a Topic was open, on the reasoning that loose
-        // ideas here aren't necessarily freshly typed. Larry wants one
-        // consistent label across every storyboard instead.
-        var localLabel='NEW';
+        // ideas here aren't necessarily freshly typed. Larry wanted one
+        // consistent label across every storyboard instead of that.
+        //
+        // Superseded Aug 25 2026, Larry: this hardcoded label is why
+        // FG-fix-20260825a/b's landing-zone renaming never showed up on
+        // screen even though it was correctly renaming the real header
+        // row underneath (confirmed live -- the row's name in the
+        // database was right, this label just never looked at it). Now
+        // reads the real row's own name when there is one, falling back
+        // to the classic "NEW" only when there genuinely isn't a row to
+        // read from yet (e.g. mid-creation).
+        var localLabel=(newRow && newRow.text_content) ? newRow.text_content : 'NEW';
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
@@ -6622,6 +6631,13 @@
     var _effTrashId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.trashId : _sboardTrashId;
     var _effMiscId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.miscId : _sboardMiscId;
     var _effPurposeId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.purposeId : _sboardPurposeId;
+    // Aug 25 2026 -- same reasoning as the three above. Needed once the
+    // landing-zone header could be named something other than literally
+    // "NEW" (see the Move panel below): that panel already lists this
+    // header once as its own pinned "NEW" row, so the real header row
+    // has to be excluded from the general list by id now, not by a name
+    // match that no longer holds.
+    var _effNewAdditionsId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.newAdditionsId : _sboardNewAdditionsId;
     var isTrashed=String(item.cluster_id)===String(_effTrashId) && _effTrashId;
     var isMisc=String(item.cluster_id)===String(_effMiscId) && _effMiscId;
     var heartCount=item.heart_count||0;
@@ -6781,7 +6797,7 @@
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist">'
       + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
       + (_effPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_effPurposeId)?' current':'')+'" data-hid="'+_effPurposeId+'">Purpose</div>'):'')
-      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW'; })
+      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW' && !(_effNewAdditionsId && String(h.id)===String(_effNewAdditionsId)); })
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
       + '</div>'
