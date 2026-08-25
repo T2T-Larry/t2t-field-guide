@@ -3546,21 +3546,38 @@
         // "NEW" is a poor description of something that already existed.
         // Titling it after the Topic's own name instead, in parentheses,
         // says exactly whose leftover content this is at a glance.
-        // Read from the existing cache (already loaded by an earlier
-        // render's whole-account fetch, since that fetch isn't scoped to
-        // any one Topic) rather than waiting on the fresh fetch further
-        // below, which hasn't run yet at this point in a first-ever
-        // render. Falls back to the classic bare "NEW" if this Topic's
-        // own row isn't cached yet (e.g. the very first render of a
-        // brand-new session before anything's been fetched at all).
-        var _sbTopicRowForNaming=T2TShared.currentTopicId ? _sboardAllRowsById[T2TShared.currentTopicId] : null;
-        var _sbNewAdditionsDesiredName=(_sbTopicRowForNaming && _sbTopicRowForNaming.text_content)
-          ? ('('+_sbTopicRowForNaming.text_content+')') : null;
+        //
+        // First attempt (shipped, then reverted same day) read the
+        // Topic's name out of _sboardAllRowsById instead of asking
+        // Supabase directly -- looked fine reasoning through the code,
+        // but that cache is only ever refilled by the fetch FURTHER DOWN
+        // this same function, so at this exact point it still holds
+        // whatever the PREVIOUS render left there. Landing on a Topic
+        // Supabase hasn't been asked about yet in this tab (e.g. a
+        // header just created this same session, or the very first
+        // Topic opened after a fresh page load) meant an empty lookup --
+        // silently fell back to null/plain "NEW" every time, which
+        // Larry then confirmed live: the rename never happened. Fetching
+        // this one row directly (indexed by id, effectively free) has no
+        // such ordering dependency -- correct regardless of what any
+        // earlier render happened to leave cached. Kept concurrent with
+        // the other two ensure-calls below by wrapping the two-step
+        // fetch-then-ensure sequence in its own async function rather
+        // than awaiting it first and serializing everything after it.
+        var _sbFetchNewAdditionsDesiredName=async function(){
+          if(!T2TShared.currentTopicId) return null;
+          try{
+            var _sbTopicNameRes=await _sb.from('ideas').select('text_content').eq('id',T2TShared.currentTopicId).maybeSingle();
+            if(!_sbTopicNameRes.error && _sbTopicNameRes.data && _sbTopicNameRes.data.text_content){
+              return '('+_sbTopicNameRes.data.text_content+')';
+            }
+          }catch(e){}
+          return null;
+        };
         var _ensureResults=await Promise.all([
-          T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(
-            T2TShared.currentTopicId,
-            _sbNewAdditionsDesiredName
-          ) : Promise.resolve(null),
+          T2TShared.currentTopicId ? _sbFetchNewAdditionsDesiredName().then(function(_sbDesiredName){
+            return _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId, _sbDesiredName);
+          }) : Promise.resolve(null),
           currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
           T2TData.ensureMiscHeader(T2TShared.currentTopicId)
         ]);
