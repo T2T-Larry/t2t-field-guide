@@ -5352,27 +5352,66 @@
     });
   }
 
-  // Recolor all SUBBERS — Aug 25 2026, Larry's own follow-up request once
-  // he found "Recolor all headers" didn't reach these. A Subber is stored
-  // as the exact same kind of row as a Header (content_type:'header'),
-  // just nested one level under one -- rendered inline inside that
-  // Header's own column via _sboardMakeHeaderStackTile, not in the
-  // top-row _sboardVisibleHeaders this screen's Headers use. Walks every
-  // row currently loaded (_sboardAllRowsById) and picks out any header
-  // whose cluster_id points at a Header actually showing on this screen
-  // right now (Purpose/MISC/any visible content header -- NOT the NEW
-  // bucket, which never has Subbers of its own). Leaves the Headers
-  // themselves, and any single card colored on its own via its own
-  // swatch picker, untouched -- exactly the split Larry asked for.
+  // Recolor all SUBBERS — Aug 25 2026. Larry's own vocabulary, confirmed
+  // against the project's original glossary entry for "Subber" ("a
+  // storyboarding term for a vertical list of thoughts and ideas about a
+  // given header... if a header is something you want to think about or
+  // talk about, a subber holds what you wanted to say"): a SUBBER is
+  // everything nested directly under an active Header, as a visual
+  // location, regardless of what kind of row it is -- an individual
+  // story/idea card (content_type:'text') just as much as a further
+  // named cluster underneath that Header (what Larry calls a
+  // SUB-HEADER, content_type:'header' nested one level down). Two
+  // earlier passes here got this wrong by only reaching the
+  // SUB-HEADER kind and missing plain cards entirely -- which is
+  // exactly why Larry saw "nothing happened" recoloring People Too
+  // Busy: that Header's only real content is 5 loose story cards, no
+  // Sub-Header clusters at all, so the content_type:'header'-only
+  // version had nothing to touch there. Gathers every row (any
+  // content_type) whose cluster_id points at a Header actually showing
+  // on this screen right now (Purpose/MISC/any visible content header).
+  // Still excludes an auto-managed bucket (NEW/MISC/a parenthetical
+  // auto-name) while it's genuinely empty -- same hidden-until-used
+  // rule renderGroup itself follows -- since that one specific row type
+  // is never actually on screen to look recolored either way.
+  function _sboardVisibleSubberIds(){
+    var parentIds=[_sboardPurposeId,_sboardMiscId]
+      .concat((_sboardVisibleHeaders||[]).map(function(h){ return h.id; }))
+      .filter(Boolean);
+    var parentSet={};
+    parentIds.forEach(function(id){ parentSet[String(id)]=true; });
+    var _sbReservedAutoNames=['NEW','New Additions','MISC','Purpose'];
+    return Object.keys(_sboardAllRowsById).filter(function(id){
+      var r=_sboardAllRowsById[id];
+      if(!(r && r.cluster_id!=null && parentSet[String(r.cluster_id)])) return false;
+      if(r.content_type!=='header') return true; // a plain card -- on screen the moment it exists
+      var isAutoManaged=_sbReservedAutoNames.indexOf(r.text_content)!==-1
+        || /^\(.*\)$/.test(String(r.text_content||'').trim());
+      if(!isAutoManaged) return true;
+      return (_sboardChildCountById[r.id]||0)>0;
+    });
+  }
+
   function _sboardOpenRecolorAllSubbers(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    var subberIds=_sboardVisibleSubberIds();
+    if(!subberIds.length){
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:8px">No Subbers here yet</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">None of the headers on this board have anything under them right now -- no story cards, no clusters -- so there\'s nothing for this to visibly change.</div>'
+        +'<button class="sc-ov-btn" id="sb-recolor-subbers-close" style="width:100%">OK</button>'
+        +'</div>';
+      ov.classList.add('active');
+      T().wire('sb-recolor-subbers-close', closeSbDetail);
+      return;
+    }
     var swatches=_sboardColorPalette.map(function(c){
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
     }).join('');
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all subbers</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every Subber nested under a header on this board gets it. Headers themselves, and individually-colored cards, are untouched.</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — everything nested under a header on this board gets it: story cards and any of their own clusters alike. Only the Headers themselves stay as they are.</div>'
       +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
       +'<button class="sc-ov-btn" id="sb-recolor-subbers-close" style="width:100%">Cancel</button>'
       +'</div>';
@@ -5381,15 +5420,6 @@
     ov.querySelectorAll('.sb-swatch').forEach(function(sw){
       sw.onclick=async function(){
         var c=sw.getAttribute('data-c');
-        var parentIds=[_sboardPurposeId,_sboardMiscId]
-          .concat((_sboardVisibleHeaders||[]).map(function(h){ return h.id; }))
-          .filter(Boolean);
-        var parentSet={};
-        parentIds.forEach(function(id){ parentSet[String(id)]=true; });
-        var subberIds=Object.keys(_sboardAllRowsById).filter(function(id){
-          var r=_sboardAllRowsById[id];
-          return r && r.content_type==='header' && r.cluster_id!=null && parentSet[String(r.cluster_id)];
-        });
         var _sb=T().sb;
         try{
           for(var i=0;i<subberIds.length;i++){ await _sb.from('ideas').update({color:c}).eq('id',subberIds[i]); _sboardPatchRow(subberIds[i], {color:c}); }
