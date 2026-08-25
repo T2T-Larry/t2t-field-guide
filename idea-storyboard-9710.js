@@ -1198,6 +1198,30 @@
       // match 'arrowup'/'arrowdown' here regardless of modifier and never
       // fall through to the gated block below.
       if(k==='arrowup'){ e.preventDefault(); climbOut(); return; }
+      // Delete/Backspace, Aug 25 2026 (Larry: "Make Delete key act like
+      // dragging to Trash"). Trashes whatever's currently selected --
+      // same selection this whole handler already uses for Tab/Page/Arrow
+      // -- exactly the way dropping that same card on the Trash pile
+      // already does: straight to Trash, no confirm, recoverable with
+      // Ctrl/Cmd+Z like any other move (see _sboardMoveCard). Skipped
+      // while the card DETAILS panel is open -- that panel has its own
+      // Trash button (with the Moose Poop confirm, now skippable via its
+      // own "don't ask again" checkbox) and Delete here could otherwise
+      // act on a different card than the one actually showing.
+      if(k==='delete' || k==='backspace'){
+        e.preventDefault();
+        var detailOv=document.getElementById('sb-detail-overlay');
+        if(detailOv && detailOv.classList.contains('active')) return;
+        if(!_sboardSelectedHeaderId || _sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          _sboardShowToast('Click a card first, then Delete to trash it.');
+          return;
+        }
+        if(!_sboardTrashId){ _sboardShowToast('Trash isn’t ready yet — try again in a moment.'); return; }
+        var trashSelId=_sboardSelectedHeaderId;
+        _sboardSelectedHeaderId=null;
+        _sboardMoveCard(trashSelId, _sboardTrashId);
+        return;
+      }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
@@ -6922,9 +6946,15 @@
       // (Aug 19, 2026, Larry): the Moose Poop step of the Dream-phase
       // methodology family (1200/1210/1220/1230/1240 — see FG Design
       // Notes), not a generic utility despite living inline on the card.
+      // "Don't ask me again" checkbox added Aug 25 2026 (Larry: "allow
+      // checkbox to not show it again... let Delete or Trash be final") --
+      // same style/pattern as 9711's own isx-trash-skip checkbox. Checking
+      // it + Yes sets sbSkipTrashConfirm in localStorage; see sb-trash's
+      // click handler below for where that's read.
       + '<div id="sb-trash-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:12px;align-items:center;justify-content:center">'
       + '<div style="background:#fff;border-radius:10px;padding:14px 18px;text-align:center;border:0.5px solid #888780">'
       + '<p style="font-size:calc(14px * var(--fg-text-scale,1));font-weight:500;margin:0 0 10px;color:#2C2C2A">Moose poop?</p>'
+      + '<label style="display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;justify-content:center;margin-bottom:10px;cursor:pointer"><input type="checkbox" id="sb-trash-skip"> Don’t ask me again</label>'
       + '<div style="display:flex;gap:8px;justify-content:center">'
       + '<button id="sb-trash-yes" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
       + '<button id="sb-trash-no" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
@@ -7552,6 +7582,16 @@
     var trashOverlay=document.getElementById('sb-trash-overlay');
     var lastTrashClick=0;
     T().wire('sb-trash', function(){
+      // sbSkipTrashConfirm, Aug 25 2026 (Larry: "Moose Poop popup: allow
+      // checkbox to not show it again... let Delete or Trash be final") --
+      // once opted out via the checkbox below, this button goes straight
+      // to trashing, same as the existing double-click fast path and same
+      // as dragging a card onto the Trash pile already does with no
+      // confirm at all. Header-type items are unaffected either way --
+      // _sbDoTrash always redirects them to _sboardConfirmTrashHeader's
+      // own separate, deliberately non-skippable confirm (bigger blast
+      // radius: trashes the header's contents too).
+      if(localStorage.getItem('sbSkipTrashConfirm')==='1'){ _sbDoTrash(); return; }
       var now=Date.now();
       if(now-lastTrashClick<350){
         // Double click — skip the confirm, trash it now.
@@ -7562,7 +7602,12 @@
       }
       lastTrashClick=now;
     });
-    T().wire('sb-trash-yes', function(){ if(trashOverlay) trashOverlay.style.display='none'; _sbDoTrash(); });
+    T().wire('sb-trash-yes', function(){
+      var skipCb=document.getElementById('sb-trash-skip');
+      if(skipCb && skipCb.checked) localStorage.setItem('sbSkipTrashConfirm','1');
+      if(trashOverlay) trashOverlay.style.display='none';
+      _sbDoTrash();
+    });
     T().wire('sb-trash-no', function(){ if(trashOverlay) trashOverlay.style.display='none'; });
 
     // Gear → color swatches
