@@ -2678,9 +2678,36 @@
       var msg=document.getElementById('sb-hub-msg');
       if(msg) msg.textContent='Archiving a whole project isn\'t built yet -- for now you can archive individual cards inside it.';
     });
+    // Session 251 (Aug 26), Larry: "When someone says to TRASH a
+    // project, TRASH it! but give them one chance to change their
+    // mind." Real delete via the trash_project() RPC (added this same
+    // session) -- one confirm, then gone: every header/Subber/card in
+    // the project, its Briefing Board, and (recursively) any PLAN board
+    // duplicated off it. No undo, same as trashing a single header.
     T().wire('sb-hub-trash-btn', function(){
-      var msg=document.getElementById('sb-hub-msg');
-      if(msg) msg.textContent='Trashing a whole project isn\'t built yet -- for now you can trash individual cards inside it.';
+      var name=_sboardEsc(root?(root.text_content||'this project'):'this project');
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:8px">Trash &ldquo;'+name+'&rdquo;?</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">This permanently deletes the whole project -- every header, Subber, and card in it, plus its Briefing Board. This can\'t be undone.</div>'
+        +'<div id="sb-hub-trash-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
+        +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-hub-trash-go" style="flex:1;background:#b8562f;border-color:#b8562f">Trash it</button><button class="sc-ov-btn" id="sb-hub-trash-cancel" style="flex:1">Cancel</button></div>'
+        +'</div>';
+      T().wire('sb-hub-trash-cancel', closeSbDetail);
+      T().wire('sb-hub-trash-go', async function(){
+        var sb=T().sb; if(!sb) return;
+        var errBox=document.getElementById('sb-hub-trash-err');
+        try{
+          var res=await sb.rpc('trash_project', {p_project_id: rootId});
+          if(res.error) throw res.error;
+          closeSbDetail();
+          await _sboardLoadMyRoots(true);
+          var fallback=(_sboardMyRoots||[])[0];
+          if(fallback) _sboardSwitchToRootBoard(fallback.id);
+          else _sboardShowToast('Project trashed.');
+        }catch(err){
+          if(errBox) errBox.textContent=(err&&err.message)?err.message:'Could not trash this project.';
+        }
+      });
     });
   }
 
@@ -3572,6 +3599,19 @@
     // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
     // "remove card numbers from the front of the Idea Cards, leave on
     // back") -- see the matching note on the plain-card tile above.
+    // Reinstated on PLAN boards only, Aug 26 2026 (Session 251, Larry:
+    // "every card is a step in a PLAN, including headers and
+    // sub-headers" / "every card needs a number on a planning board")
+    // -- Subbers/sub-headers only got this on the plain-card tile and
+    // the top-level column pill (hd, below); this stack tile was the
+    // one path still missing it. Reads its own position from
+    // headerRow.cluster_id, the same combined order its parent column
+    // just computed in renderGroup (subs and cards share one sequence
+    // as of Aug 22 2026), so a Subber's number matches its place in
+    // that same interleaved order, not a Subbers-only count.
+    if(_sboardIsPlanBoard){
+      front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
+    }
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,
@@ -4400,6 +4440,16 @@
     // even though they were genuinely assigned. hd already has
     // position:relative set above, same as front/tile do for the other
     // two paths.
+    // Reinstated on PLAN boards only, Aug 26 2026 (Session 251, Larry:
+    // "every card needs a number on a planning board -- those are the
+    // steps!") -- top-level column headers (Purpose, CONTENT, MISC...)
+    // are their own render path (see the matching Person Assigned note
+    // just above), so they need their own badge call too, reading
+    // _sboardTopLevelOrder -- the one place that already tracks this
+    // row's real order, same source the drag-reorder math itself uses.
+    if(_sboardIsPlanBoard){
+      hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
+    }
     hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     // Bottom-left signal cluster: Lock, Signal Flags -- Aug 15 2026.
     // Signal Flags were here since Aug 3 (Larry: "every card ... Larry
