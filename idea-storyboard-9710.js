@@ -669,7 +669,20 @@
       // look (Larry, same day: "make IDEA look raised") via a light
       // highlight above + dark shadow below -- classic emboss technique,
       // no new color needed.
-      +'<div id="sc-board-kind-label" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5)">IDEA</div>'
+      // Aug 26 2026, Larry: "make IDEA a drop down choice: IDEA - PLAN -
+      // SHARE - ORG" -- same four workspaces as the door icons on a
+      // Briefing Card's back (Idea Board / Plan / Share / Organization).
+      // Now a real sc-cdrop trigger (same shared menu shell as Type/
+      // Title/View above) instead of a plain label; the emboss text
+      // itself stays exactly as it was, just wrapped in a <button> with
+      // its default chrome stripped so nothing looks different at rest.
+      // This file only reads IDEA, so the trigger's own text never
+      // changes -- picking PLAN/SHARE/ORG opens that not-yet-built
+      // Storyboard's "coming soon" toast (see _sboardWireBoardKindDropdown
+      // below) rather than navigating anywhere, same placeholder pattern
+      // already used for Plan/Organization/Share on the Briefing Card.
+      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Share, or Organization" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
+      +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
@@ -742,6 +755,7 @@
     // area?' Real upload/storage isn't built yet, so this just lets a
     // traveler know it's coming rather than doing nothing when clicked.
     T().wire('sc-logo-add-btn', function(){ _sboardShowToast('Logo & artwork upload coming soon'); });
+    _sboardWireBoardKindDropdown();
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
     // PROJECT") -- Title now covers picking a board. Renaming it is a
     // double-click, same as Topic's own corner-flip: opens that board's
@@ -2022,13 +2036,61 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu','sc-board-kind-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
     });
   }
   document.addEventListener('click', function(){ _sboardCloseAllDropdowns(null); });
+
+  // Board-kind dropdown (IDEA/PLAN/SHARE/ORG), Aug 26 2026 -- see the
+  // sc-board-kind-trigger comment above. Deliberately NOT built on
+  // _sboardRenderDropdown: that helper always appends a dashed-circle
+  // (+) "add" row, which makes sense for a user-editable list (Type,
+  // Title, View) but not for this fixed four-item menu -- there's
+  // nothing to add here. Wired once at board init since the list never
+  // changes; open/close/position logic mirrors _sboardRenderDropdown's
+  // trigger.onclick exactly, just without the addRow.
+  function _sboardWireBoardKindDropdown(){
+    var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
+    if(!trigger || !menu) return;
+    var kinds=[
+      {value:'IDEA', label:'IDEA', soon:null},
+      {value:'PLAN', label:'PLAN', soon:'Planning Storyboard coming soon'},
+      {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
+      {value:'ORG', label:'ORG', soon:'Organization Storyboard coming soon'}
+    ];
+    menu.innerHTML='';
+    kinds.forEach(function(k){
+      var row=document.createElement('div');
+      row.className='sc-cdrop-row'+(k.value==='IDEA' ? ' active' : '');
+      row.textContent=k.label;
+      row.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        if(k.soon) _sboardShowToast(k.soon); // this board (IDEA) needs no action when re-picked
+      });
+      menu.appendChild(row);
+    });
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sc-board-kind-menu':null);
+      if(willOpen){
+        var r=trigger.getBoundingClientRect();
+        menu.style.left=r.left+'px';
+        menu.style.top=(r.bottom+4)+'px';
+        menu.style.minWidth=Math.max(120,r.width)+'px';
+        menu.hidden=false;
+        var mr=menu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      } else {
+        menu.hidden=true;
+      }
+    };
+  }
 
   function _sboardRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle, onRemove, removeTitle){
     var trigger=document.getElementById(triggerId), menu=document.getElementById(menuId);
