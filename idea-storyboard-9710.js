@@ -2835,25 +2835,24 @@
   // mechanic (reparent under the reserved Trash bucket) rather than a hard
   // delete, so nothing is ever unrecoverable. Added August 1, 2026.
   //
-  // Session 247 (Aug 26): now also the target when a project's OWN header
-  // is trashed via the ordinary Header Quick Menu, not just from the
-  // PROJECT switcher — see _sboardHeaderQuickMenu. That path used to route
-  // to _sboardConfirmTrashHeader (the real, no-undo DELETE), which the DB
-  // deliberately blocks for any project root with a plain "foreign key"
-  // error and no way forward. onCancel lets a caller other than the
-  // PROJECT switcher send "Cancel" back to wherever the traveler actually
-  // came from, instead of always landing on the PROJECT list.
-  function _sboardConfirmDeleteProject(boardRow, onCancel){
+  // Session 247 (Aug 26), Larry: "Trashing a whole project isn't built yet
+  // — for now you can trash individual cards inside it." This function and
+  // the PROJECT switcher screen it lives behind (openProjectSwitcher) are
+  // real code but have no live entry point anywhere in the current UI —
+  // nothing calls openProjectSwitcher() to actually open it. Do NOT wire
+  // any new button to this function until that's actually built and
+  // tested end to end; see _sboardHeaderQuickMenu for where a first
+  // attempt at doing exactly that got walked back.
+  function _sboardConfirmDeleteProject(boardRow){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
-    var backFn = onCancel || openProjectSwitcher;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Everything in it moves to Trash too — you can pull it back out later from Trash.</div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-pdel-go" style="flex:1;background:#b8562f;border-color:#b8562f">Delete it</button><button class="sc-ov-btn" id="sb-pdel-cancel" style="flex:1">Cancel</button></div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-pdel-cancel', backFn);
+    T().wire('sb-pdel-cancel', openProjectSwitcher);
     T().wire('sb-pdel-go', async function(){
       try{
         var trashId=await T2TData.ensureTrashHeader();
@@ -4497,12 +4496,16 @@
   // top-level header (the "Top Level" tag below already meant exactly
   // that: a project root) and hit "Trash this header," which routes to
   // _sboardConfirmTrashHeader — a real, no-undo DELETE the database
-  // deliberately blocks for any project root, with a dead-end error and no
-  // way forward. A project could always be deleted safely — full hierarchy,
-  // reversible via Trash — but only by finding the separate PROJECT
-  // switcher screen first. Now this menu itself knows the difference: a
-  // project root gets "Delete project" wired straight to the working,
-  // recoverable path instead of the one that was always going to fail.
+  // deliberately blocks for any project root, surfacing a raw error with
+  // no way forward. First attempt at a fix routed project roots to
+  // _sboardConfirmDeleteProject instead, on the assumption that function's
+  // PROJECT-switcher screen was a working, reachable feature — Larry
+  // corrected that: whole-project trash isn't actually built yet, only
+  // individual cards inside a project can be trashed for now. So instead
+  // of offering a delete path that doesn't really exist, a project root
+  // simply doesn't get a delete/trash button here at all — an honest
+  // explanatory line takes its place, so the dead-end error can never be
+  // hit in the first place. Ordinary (non-project) headers are unchanged.
   function _sboardHeaderQuickMenu(headerRow){
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
@@ -4510,7 +4513,7 @@
     var isProjectRoot=!headerRow.cluster_id;
     var apexTag=isProjectRoot?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     var deleteBtnHTML=isProjectRoot
-      ?'<button class="sc-ov-btn" id="sb-hq-delete-project" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete project</button>'
+      ?'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px;text-align:left">Whole-project delete isn\'t built yet — trash the cards inside it instead.</div>'
       :'<button class="sc-ov-btn" id="sb-hq-trash" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Trash this header</button>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +apexTag
@@ -4544,9 +4547,6 @@
       _sboardDrillInto(headerRow);
     });
     T().wire('sb-hq-trash', function(){ _sboardConfirmTrashHeader(headerRow); });
-    T().wire('sb-hq-delete-project', function(){
-      _sboardConfirmDeleteProject(headerRow, function(){ _sboardHeaderQuickMenu(headerRow); });
-    });
     T().wire('sb-hq-cancel', closeSbDetail);
   }
 
