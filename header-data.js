@@ -90,9 +90,14 @@
        // user_id=u.id. RLS decides what comes back: this traveler's own
        // projects, plus any project someone has added them to. user_id is
        // selected too so the UI can tell an owned project from a shared one.
-      var res=await sb.from('ideas').select('id,text_content,user_id').eq('content_type','header').is('cluster_id',null);
+      var res=await sb.from('ideas').select('id,text_content,user_id,storyboard_kind').eq('content_type','header').is('cluster_id',null);
       if(res.error){ console.warn('topLevelBoards error:', res.error); return []; }
-      return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1; });
+      // Aug 26 2026, Larry: PLAN boards (duplicated off an IDEA project via
+      // the board-kind dropdown) are reached from inside their own IDEA
+      // project, not picked from PROJECT -- filtered out here so a
+      // traveler's project list doesn't grow a second, easy-to-confuse
+      // entry every time PLAN gets built out for one of their projects.
+      return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1 && (r.storyboard_kind||'IDEA')==='IDEA'; });
     }catch(e){ console.warn('topLevelBoards exception:', e); return []; }
   }
 

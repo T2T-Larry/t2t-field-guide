@@ -1295,6 +1295,17 @@
   // own map since some callers still read it by this name.
   var _sboardCardOrderByParent = {};
   var _sboardChildCountById = {};
+  // PLAN board support, Aug 26 2026 -- Larry: "duplicate a Project Idea
+  // Board, put the card numbers on the front of the cards, make every
+  // card without a verb pink," clarified to mean the real PLAN Storyboard
+  // this dropdown already promised ("Planning Storyboard coming soon"):
+  // picking PLAN now builds it, once, as a full copy of the current IDEA
+  // project (see _sboardOpenOrCreatePlanBoard/_sboardDuplicateProjectAsPlan
+  // below). _sboardIsPlanBoard is refreshed every render (see the
+  // isAtProjectRoot block) from whatever project the traveler is
+  // currently anywhere inside, so it stays right no matter how deep a
+  // Header/Subber they've drilled into.
+  var _sboardIsPlanBoard = false;
   // Alphabetical header view -- Larry, Aug 3 2026: "If headers or subbers
   // are sorted alphabetically the order number does NOT change, allowing
   // to resort to number order." This is a pure DISPLAY toggle, never
@@ -1660,6 +1671,85 @@
   // Ids currently lasso-selected on the starburst, this session only.
   var _clusterSelected = {};
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
+  // PLAN board: cards with no verb in their text get force-pinked at
+  // duplicate time, Aug 26 2026 (Larry). Reuses the existing rose swatch
+  // above (index 3, '#f8d9e3') rather than a new one-off color, so it
+  // still reads as a normal pick if Larry later opens that card's own
+  // color swatches.
+  var PLAN_NO_VERB_COLOR = '#f8d9e3';
+  // Short phrases ("Call the vendor", "Follow up with Kelly"), not full
+  // sentences -- this is a plain word-list heuristic, not real grammar
+  // parsing. Covers auxiliaries/modals, the common irregular verbs, and
+  // ~180 everyday task/action verbs, plus regular -s/-es/-ed/-ing
+  // inflections handled by _planStemsFor below (including the doubled-
+  // consonant case: "planning"/"planned" -> "plan"). Good enough to flag
+  // a plainly noun-only idea ("Budget", "Team photo") without false-
+  // flagging the vast majority of real task phrasing.
+  var _planVerbSet = (function(){
+    var words = ('is am are was were be been being has have had do does did '
+      +'will would can could shall should may might must '
+      +'go went gone come came make made say said get got gotten give gave given '
+      +'take took taken find found think thought bring brought buy bought catch caught '
+      +'teach taught sell sold tell told send sent spend spent build built begin began begun '
+      +'break broke broken choose chose chosen draw drew drawn drive drove driven eat ate eaten '
+      +'fall fell fallen fly flew flown forget forgot forgotten grow grew grown know knew known '
+      +'throw threw thrown wear wore worn win won write wrote written see saw seen hear heard '
+      +'keep kept leave left meet met pay paid run ran sit sat speak spoke spoken stand stood '
+      +'understand understood hold held lead led feel felt lend lent lose lost mean meant '
+      +'put let cut hit shut read set '
+      +'plan build write create design develop review test fix update launch ship publish send '
+      +'email call schedule meet discuss decide research investigate analyze draft edit revise '
+      +'finalize approve submit present prepare organize coordinate contact check verify confirm '
+      +'cancel book order purchase invoice budget hire interview train learn listen watch record '
+      +'upload download backup deploy configure install setup migrate integrate automate monitor '
+      +'track measure evaluate assess audit document outline brainstorm sketch prototype code '
+      +'program debug release market promote advertise post share distribute print mail deliver '
+      +'sort file archive delete remove add insert upgrade downgrade renew register sign apply '
+      +'request ask answer respond reply comment note gather collect compile summarize report '
+      +'pitch sell negotiate close open start finish complete stop pause resume continue wait '
+      +'maintain repair clean declutter label tag categorize rename move relocate transfer copy '
+      +'duplicate merge combine split divide separate join connect link attach detach uninstall '
+      +'enable disable activate deactivate lock unlock secure protect restore recover resolve '
+      +'solve address handle manage oversee supervise lead guide mentor coach support help assist '
+      +'empower encourage motivate celebrate recognize thank acknowledge welcome greet introduce '
+      +'onboard transition adjust adapt modify change alter tweak refine polish improve enhance '
+      +'optimize streamline simplify clarify explain define describe demonstrate show display '
+      +'highlight remind notify alert inform brief sync align collaborate delegate assign allocate '
+      +'prioritize rank reserve forecast estimate fund invest save spend benchmark compare iterate '
+      +'rewrite practice rehearse perform execute implement enforce comply follow commit promise '
+      +'choose select pick vote reject decline postpone reschedule delay visit travel drive walk '
+      +'cook wash paint film shoot mix draft').split(/\s+/);
+    var set={}; words.forEach(function(w){ if(w) set[w]=true; });
+    return set;
+  })();
+  function _planStemsFor(w){
+    var stems=[];
+    if(/ing$/.test(w)){
+      var b1=w.slice(0,-3);
+      stems.push(b1, b1+'e');
+      if(b1.length>2 && b1[b1.length-1]===b1[b1.length-2]) stems.push(b1.slice(0,-1));
+    }
+    if(/ed$/.test(w)){
+      var b2=w.slice(0,-2), b3=w.slice(0,-1);
+      stems.push(b2, b3);
+      if(b2.length>2 && b2[b2.length-1]===b2[b2.length-2]) stems.push(b2.slice(0,-1));
+    }
+    if(/ies$/.test(w)) stems.push(w.slice(0,-3)+'y');
+    else if(/es$/.test(w)) stems.push(w.slice(0,-2));
+    if(/s$/.test(w) && w.length>3) stems.push(w.slice(0,-1));
+    return stems;
+  }
+  function _planCardHasVerb(text){
+    if(!text) return false;
+    var words=String(text).toLowerCase().replace(/[^a-z\s'-]/g,' ').split(/\s+/).filter(Boolean);
+    for(var i=0;i<words.length;i++){
+      var w=words[i];
+      if(_planVerbSet[w]) return true;
+      var stems=_planStemsFor(w);
+      for(var j=0;j<stems.length;j++){ if(_planVerbSet[stems[j]]) return true; }
+    }
+    return false;
+  }
   var _sboardBoardBgPalette = [
     {n:'White', c:'#ffffff'},
     {n:'Cream', c:'#f5f1e8'},
@@ -2052,24 +2142,27 @@
   // nothing to add here. Wired once at board init since the list never
   // changes; open/close/position logic mirrors _sboardRenderDropdown's
   // trigger.onclick exactly, just without the addRow.
+  var _sboardBoardKinds=[
+    {value:'IDEA', label:'IDEA', soon:null},
+    {value:'PLAN', label:'PLAN', soon:null},
+    {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
+    {value:'ORG', label:'ORG', soon:'Organization Storyboard coming soon'}
+  ];
   function _sboardWireBoardKindDropdown(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
     if(!trigger || !menu) return;
-    var kinds=[
-      {value:'IDEA', label:'IDEA', soon:null},
-      {value:'PLAN', label:'PLAN', soon:'Planning Storyboard coming soon'},
-      {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
-      {value:'ORG', label:'ORG', soon:'Organization Storyboard coming soon'}
-    ];
     menu.innerHTML='';
-    kinds.forEach(function(k){
+    _sboardBoardKinds.forEach(function(k){
       var row=document.createElement('div');
-      row.className='sc-cdrop-row'+(k.value==='IDEA' ? ' active' : '');
+      row.className='sc-cdrop-row';
+      row.setAttribute('data-kind', k.value);
       row.textContent=k.label;
       row.addEventListener('click', function(e){
         e.stopPropagation();
         menu.hidden=true;
-        if(k.soon) _sboardShowToast(k.soon); // this board (IDEA) needs no action when re-picked
+        if(k.value==='PLAN'){ _sboardOpenOrCreatePlanBoard(); return; }
+        if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return; }
+        if(k.soon) _sboardShowToast(k.soon);
       });
       menu.appendChild(row);
     });
@@ -2079,6 +2172,7 @@
       var willOpen=menu.hidden;
       _sboardCloseAllDropdowns(willOpen?'sc-board-kind-menu':null);
       if(willOpen){
+        _sboardSyncBoardKindChrome();
         var r=trigger.getBoundingClientRect();
         menu.style.left=r.left+'px';
         menu.style.top=(r.bottom+4)+'px';
@@ -2090,6 +2184,180 @@
         menu.hidden=true;
       }
     };
+    _sboardSyncBoardKindChrome();
+  }
+
+  // Keeps the IDEA/PLAN/SHARE/ORG trigger text and the menu's checkmark
+  // honest about which board is actually on screen -- Aug 26 2026. Called
+  // once at wire-time and again on every render (see the isAtProjectRoot
+  // block below), since which project (and which of its kinds) is current
+  // can change without this dropdown ever being touched (drilling in/out,
+  // PROJECT switcher, a TOC link...).
+  function _sboardSyncBoardKindChrome(){
+    var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
+    var kindNow=_sboardIsPlanBoard?'PLAN':'IDEA';
+    if(trigger) trigger.textContent=kindNow;
+    if(menu){
+      Array.prototype.forEach.call(menu.querySelectorAll('.sc-cdrop-row[data-kind]'), function(row){
+        row.classList.toggle('active', row.getAttribute('data-kind')===kindNow);
+      });
+    }
+  }
+
+  // Picking PLAN, Aug 26 2026 (Larry: "duplicate a Project Idea Board, put
+  // the card numbers on the front of the cards and make every card
+  // without a verb pink," clarified: the PLAN board this dropdown already
+  // promised, built as a one-time duplicate of the current IDEA project).
+  // First pick builds it; every pick after that just reopens the same
+  // Plan board -- later Idea-board edits are never pulled in automatically
+  // (Larry's call), so nothing done there is ever silently overwritten.
+  async function _sboardOpenOrCreatePlanBoard(){
+    var ideaRow=_sboardCurrentProjectRow();
+    if(!ideaRow){ _sboardShowToast('Open a project first.'); return; }
+    if(ideaRow.storyboard_kind==='PLAN') return; // already there -- no-op, matches IDEA's own re-pick behavior
+    var _sb=T().sb;
+    try{
+      var existing=await _sb.from('ideas').select('id').eq('content_type','header').is('cluster_id',null)
+        .eq('storyboard_kind','PLAN').eq('source_project_id', ideaRow.id).limit(1);
+      if(existing.error) throw existing.error;
+      if(existing.data && existing.data.length){
+        var freshExisting=await _sb.from('ideas').select('*').eq('id', existing.data[0].id).maybeSingle();
+        if(freshExisting.error) throw freshExisting.error;
+        if(freshExisting.data) _sboardDrillInto(freshExisting.data);
+        return;
+      }
+      _sboardShowToast('Building your Plan board…');
+      var newRoot=await _sboardDuplicateProjectAsPlan(ideaRow);
+      _sboardDrillInto(newRoot);
+    }catch(err){
+      _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
+    }
+  }
+
+  // Picking IDEA while standing on a PLAN board jumps back to the IDEA
+  // project it was duplicated from (the only way back in, since PLAN
+  // boards are deliberately left out of the PROJECT switcher -- see
+  // topLevelBoards() in header-data.js). A no-op anywhere else, matching
+  // IDEA's original "needs no action when re-picked" behavior.
+  async function _sboardReturnToIdeaBoard(){
+    var row=_sboardCurrentProjectRow();
+    if(!row || row.storyboard_kind!=='PLAN' || !row.source_project_id) return;
+    var cached=_sboardAllRowsById[row.source_project_id];
+    if(cached){ _sboardDrillInto(cached); return; }
+    try{
+      var _sb=T().sb;
+      var fresh=await _sb.from('ideas').select('*').eq('id', row.source_project_id).maybeSingle();
+      if(fresh.data) _sboardDrillInto(fresh.data);
+      else _sboardShowToast('Could not find the original Idea board.');
+    }catch(err){ _sboardShowToast('Could not find the original Idea board.'); }
+  }
+
+  // Full recursive copy of an IDEA project into a brand-new PLAN project:
+  // every Header/Subber/idea card, in the same shape, under fresh ids.
+  // Runs off _sboardAllRowsById (already holds every row this traveler can
+  // see, account-wide -- see the paged fetch above), so no extra network
+  // round-trip is needed just to find what's in this project.
+  //
+  // Deliberate choices, all Aug 26 2026:
+  // - track_on_briefing_board is force-cleared on every duplicated row.
+  //   The DB's own ideas_sync_header_task_card trigger auto-creates a real
+  //   Briefing Board + cards for any top-row Header with that flag set --
+  //   duplicating a project with it left on would silently spawn a second,
+  //   shadow Briefing Board the moment this insert lands. The Plan
+  //   Storyboard is its own thing; it doesn't feed that system.
+  // - heart_count resets to 0 -- hearts are an ideation-favoriting signal,
+  //   not meaningful groundwork for a plan.
+  // - assigned_user_id, color, locked, and text all carry over as-is.
+  // - a card's color is overridden to PLAN_NO_VERB_COLOR only when
+  //   _planCardHasVerb() finds nothing verb-like in its text (headers are
+  //   never checked -- "Purpose"/"MEDIA" aren't task phrasing).
+  // - key_slot_1/2/3 are remapped to their new-id counterpart when the
+  //   card they point at was also duplicated (a second pass, once every
+  //   id in the project has one), otherwise dropped -- a slot pointing
+  //   outside this project has nothing sensible to remap to.
+  // - collaborators (storyboard_members) are NOT copied -- the Plan board
+  //   starts owned solely by whoever duplicated it; Larry can add people
+  //   back via the same Manage Access flow as any other project.
+  async function _sboardDuplicateProjectAsPlan(ideaRoot){
+    var _sb=T().sb;
+    var authRes=await _sb.auth.getUser();
+    var user=authRes && authRes.data && authRes.data.user;
+    if(!user) throw new Error('not signed in');
+
+    var childrenByParent={};
+    Object.keys(_sboardAllRowsById).forEach(function(id){
+      var r=_sboardAllRowsById[id];
+      if(r && r.cluster_id){ (childrenByParent[r.cluster_id]=childrenByParent[r.cluster_id]||[]).push(r); }
+    });
+    function bySortOrder(a,b){ return (a.sort_order||0)-(b.sort_order||0); }
+
+    var rootIns=await _sb.from('ideas').insert({
+      user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
+      cluster_id:null, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
+      org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
+      storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
+      track_on_briefing_board:false, created_at:new Date().toISOString()
+    }).select().single();
+    if(rootIns.error) throw rootIns.error;
+    var newRoot=rootIns.data;
+
+    var idMap={}; idMap[ideaRoot.id]=newRoot.id;
+    var oldRowById={}; oldRowById[ideaRoot.id]=ideaRoot;
+
+    var frontier=[ideaRoot.id], guard=0;
+    while(frontier.length && guard<40){
+      guard++;
+      var nextFrontier=[];
+      for(var f=0; f<frontier.length; f++){
+        var oldParentId=frontier[f];
+        var kids=(childrenByParent[oldParentId]||[]).slice().sort(bySortOrder);
+        for(var i=0;i<kids.length;i++){
+          var k=kids[i];
+          var hasVerb = k.content_type==='header' ? true : _planCardHasVerb(k.text_content);
+          var kIns=await _sb.from('ideas').insert({
+            user_id:user.id,
+            content_type:k.content_type,
+            image_url:k.image_url||null,
+            text_content:k.text_content||null,
+            cluster_id:idMap[oldParentId],
+            notes:k.notes||null,
+            heart_count:0,
+            sort_order:k.sort_order||0,
+            color: hasVerb ? (k.color||null) : PLAN_NO_VERB_COLOR,
+            locked:!!k.locked,
+            assigned_user_id:k.assigned_user_id||null,
+            link_url:k.link_url||null,
+            link_title:k.link_title||null,
+            link_thumb:k.link_thumb||null,
+            track_on_briefing_board:false,
+            storyboard_kind:'PLAN',
+            created_at:new Date().toISOString()
+          }).select().single();
+          if(kIns.error) throw kIns.error;
+          idMap[k.id]=kIns.data.id;
+          oldRowById[k.id]=k;
+          nextFrontier.push(k.id);
+        }
+      }
+      frontier=nextFrontier;
+    }
+
+    // Second pass: remap key_slot_1/2/3 for every duplicated row that had
+    // one, now that idMap is complete.
+    var remaps=Object.keys(oldRowById).filter(function(oldId){
+      var r=oldRowById[oldId];
+      return r.key_slot_1||r.key_slot_2||r.key_slot_3;
+    });
+    for(var m=0;m<remaps.length;m++){
+      var oldId=remaps[m], oldRow=oldRowById[oldId];
+      var patch={};
+      if(oldRow.key_slot_1 && idMap[oldRow.key_slot_1]) patch.key_slot_1=idMap[oldRow.key_slot_1];
+      if(oldRow.key_slot_2 && idMap[oldRow.key_slot_2]) patch.key_slot_2=idMap[oldRow.key_slot_2];
+      if(oldRow.key_slot_3 && idMap[oldRow.key_slot_3]) patch.key_slot_3=idMap[oldRow.key_slot_3];
+      if(Object.keys(patch).length){ await _sb.from('ideas').update(patch).eq('id', idMap[oldId]); }
+    }
+
+    return newRoot;
   }
 
   function _sboardRenderDropdown(triggerId, menuId, options, currentValue, onSelect, onAdd, addTitle, onRemove, removeTitle){
@@ -3145,6 +3413,13 @@
     // the face-of-the-card duplicate. _sboardOrderBadgeHTML/
     // _sboardCardOrderByParent stay in place; they still feed that back
     // view and the other order bookkeeping this file does.
+    // Reinstated on PLAN boards only, Aug 26 2026 (Larry: "put the card
+    // numbers on the front of the cards," while building the PLAN
+    // Storyboard) -- IDEA boards are untouched, still back-only per the
+    // Aug 20 decision above.
+    if(_sboardIsPlanBoard){
+      tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
+    }
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
     // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
@@ -3634,6 +3909,13 @@
         }catch(e){ /* leave null — ensure-calls below just skip Purpose this render */ }
       }
       var isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(T2TShared.currentTopicId));
+      // PLAN board, Aug 26 2026 -- reflects whichever project (IDEA or
+      // PLAN) the traveler is currently anywhere inside, not just at its
+      // root, so the front-of-card number badge (_sboardMakeTile) and the
+      // IDEA/PLAN dropdown chrome (_sboardSyncBoardKindChrome) stay right
+      // at any depth.
+      _sboardIsPlanBoard = !!(currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN');
+      _sboardSyncBoardKindChrome();
       // VIEW-by-person filter picker -- only re-fetch the roster when the
       // project actually changed (not on every render, which would mean
       // every drag/reorder re-querying members). Aug 9 2026, Larry.
@@ -3774,7 +4056,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -5137,7 +5419,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -5216,7 +5498,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -8321,7 +8603,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
