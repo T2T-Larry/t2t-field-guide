@@ -661,6 +661,7 @@
       +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
       +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
+      +'<input type="file" id="sc-logo-input" accept="image/*" style="display:none">'
       +'</div>'
       +'</div>'
       // Board-kind label -- static per board type. This file (the Idea
@@ -751,10 +752,18 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
-    // Logo/artwork (+) , Aug 16 2026 -- Larry: '(+) in the center of logo
-    // area?' Real upload/storage isn't built yet, so this just lets a
-    // traveler know it's coming rather than doing nothing when clicked.
-    T().wire('sc-logo-add-btn', function(){ _sboardShowToast('Logo & artwork upload coming soon'); });
+    // Logo/artwork upload, Aug 26 2026 -- real upload wired at last (was a
+    // "coming soon" toast since Aug 16). The (+) and an already-loaded
+    // image both open the same native file picker; see _sboardUploadLogo
+    // below for the save (goes on the current PROJECT'S ROOT row, not
+    // whatever header/sub-header happens to be on screen, so one logo
+    // covers the whole project -- IDEA and PLAN boards both read it).
+    T().wire('sc-logo-add-btn', function(){ document.getElementById('sc-logo-input').click(); });
+    T().wire('sc-logo-img', function(){ document.getElementById('sc-logo-input').click(); });
+    (function(){
+      var logoInput=document.getElementById('sc-logo-input');
+      if(logoInput) logoInput.addEventListener('change', _sboardUploadLogo);
+    })();
     _sboardWireBoardKindDropdown();
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
     // PROJECT") -- Title now covers picking a board. Renaming it is a
@@ -2303,6 +2312,12 @@
       user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
       cluster_id:null, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
       org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
+      // Logo/artwork, Aug 26 2026 -- carried over at duplicate time same as
+      // color/board_type/org_name above, so a brand-new Plan board opens
+      // already showing its project's logo instead of blank. One-time
+      // copy only, same "duplicates once, never resyncs" rule as the rest
+      // of PLAN -- swapping the logo on one board doesn't touch the other.
+      logo_url:ideaRoot.logo_url||null,
       storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
       track_on_briefing_board:false, created_at:new Date().toISOString()
     }).select().single();
@@ -4104,7 +4119,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name,logo_url')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -4821,6 +4836,42 @@
     }
   }
 
+  // Logo/artwork upload, Aug 26 2026 -- same upload pipeline as a card's
+  // own Photo swap (compress, push to the sea-of-ideas bucket, grab the
+  // public URL) but the URL lands on logo_url of the current PROJECT'S
+  // ROOT row (_sboardCurrentRootRow) instead of a card's image_url, so
+  // it reads as one logo for the whole project rather than a new card.
+  // Picking a file when a logo already exists just replaces it -- no
+  // separate remove control; upload a different image to swap it out.
+  async function _sboardUploadLogo(e){
+    var file=e.target.files && e.target.files[0];
+    e.target.value='';
+    if(!file) return;
+    var root=_sboardCurrentRootRow();
+    var statusEl=document.getElementById('sc-status');
+    if(!root){ _sboardShowToast('Open a project first.'); return; }
+    var _sb=T().sb;
+    try{
+      var user=(await _sb.auth.getUser()).data.user;
+      if(!user) throw new Error('Not signed in.');
+      var toUpload=await T2TMedia.compressImageFile(file);
+      var uploadName=toUpload.name||file.name||('logo-'+Date.now()+'.png');
+      var path=user.id+'/logo-'+Date.now()+'-'+uploadName.replace(/[^a-zA-Z0-9._-]/g,'_');
+      var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
+      if(up.error) throw up.error;
+      var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+      var url=pub.data && pub.data.publicUrl;
+      if(!url) throw new Error('No public URL returned.');
+      var upd=await _sb.from('ideas').update({logo_url:url}).eq('id',root.id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(root.id, {logo_url:url});
+      _sboardUpdateHeaderChrome();
+    }catch(err){
+      if(statusEl){ statusEl.textContent='Couldn’t save the logo: '+err.message; statusEl.classList.add('err'); }
+      else _sboardShowToast('Couldn’t save the logo: '+err.message);
+    }
+  }
+
   function _sboardTopicOptionsHTML(excludeId){
     var currentLabel=(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId]) ? _sboardHeadersById[T2TShared.currentTopicId].text_content : 'Wish Tank';
     var currentValue=T2TShared.currentTopicId||'';
@@ -5193,6 +5244,24 @@
     // board area) — no more separate hardcoded navy/purple fighting it.
     // Locked July 16, 2026.
     _sboardApplyBoardBg();
+    // Logo/artwork, Aug 26 2026 -- reflect whatever the current project's
+    // ROOT row carries (or doesn't) every time header chrome refreshes,
+    // same as every other header field above. A loaded logo hides the
+    // (+) and becomes the click target for swapping it out; no logo
+    // means the (+) shows instead, same as before upload existed.
+    (function(){
+      var logoImg=document.getElementById('sc-logo-img');
+      var logoBtn=document.getElementById('sc-logo-add-btn');
+      var logoRoot=_sboardCurrentRootRow();
+      var logoUrl=logoRoot && logoRoot.logo_url;
+      if(logoImg){
+        logoImg.src=logoUrl||'';
+        logoImg.style.display=logoUrl?'block':'none';
+        logoImg.style.cursor=logoUrl?'pointer':'';
+        logoImg.title=logoUrl?'Click to replace the logo':'';
+      }
+      if(logoBtn) logoBtn.style.display=logoUrl?'none':'';
+    })();
     // Keep Logo the same distance off Topic as Parent, Aug 18 2026 --
     // Parent/Topic content (and their widths) just changed above, so
     // re-measure and reposition Logo every time this runs.
