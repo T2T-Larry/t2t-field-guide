@@ -1952,9 +1952,17 @@
       // stray image, link, or blank test card with no parent) also
       // qualified as a "root" and showed up in Type/Title as if it were
       // a real board. Only real headers are boards.
-      var res=await _sb.from('ideas').select('id,text_content,board_type,org_name,created_at,briefing_board_id').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
+      // storyboard_kind added Aug 26 2026 -- PLAN boards (duplicated off
+      // an IDEA project via the board-kind dropdown) are reached from
+      // inside their own IDEA project, not picked from PROJECT. Session
+      // 249 added this same exclusion to topLevelBoards() in
+      // header-data.js but missed this query, which is what actually
+      // feeds the PROJECT field's own dropdown -- so a project that had
+      // been through PLAN was showing up here a second time, right next
+      // to its real self.
+      var res=await _sb.from('ideas').select('id,text_content,board_type,org_name,created_at,briefing_board_id,storyboard_kind').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
       if(res.error) throw res.error;
-      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', org_name:r.org_name||'', created_at:r.created_at, briefing_board_id:r.briefing_board_id||null}; });
+      _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).filter(function(r){ return (r.storyboard_kind||'IDEA')==='IDEA'; }).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', org_name:r.org_name||'', created_at:r.created_at, briefing_board_id:r.briefing_board_id||null}; });
       _sboardMyRootsLoadedFor=user.id;
       // Aug 16 2026 -- same source of truth the Briefing Board reads
       // (board_relations, RLS-scoped to boards this traveler owns),
