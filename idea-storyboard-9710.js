@@ -944,6 +944,19 @@
   // automatically cleans this up without needing its own callback wired
   // into every place selection can change.
   var _sboardViewPromotedId = null;
+  // Which Header/Subber (if any) is currently mid-drag, Aug 26 2026 --
+  // Larry: dragging a Subber up towards the header row showed the green
+  // "safe to release" cue, then it landed inside a NEIGHBORING column's
+  // card list instead of promoting, because that column's own header
+  // pill (the real "promote" target) is a much smaller strip than the
+  // tall card list sitting right below/beside it. dragover can't read
+  // dataTransfer's actual payload (browsers only allow that on drop), so
+  // there's no way for a column to tell mid-drag whether a Header/Subber
+  // is what's being dragged (which should get the enlarged promote
+  // target below) versus a plain card (which shouldn't) without this --
+  // set on dragstart, cleared on dragend, read by the enlarged drop zone
+  // added to renderGroup's own "block" below.
+  var _sboardDraggingHeaderId = null;
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
@@ -3171,7 +3184,8 @@
     // Locked no longer blocks dragging, Aug 25 2026 -- see the matching
     // note on _sboardMakeTile above.
     wrap.draggable=true;
-    wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
+    wrap.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); _sboardDraggingHeaderId=headerRow.id; });
+    wrap.addEventListener('dragend', function(){ _sboardDraggingHeaderId=null; });
     wrap.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;cursor:pointer;transform:rotate('+rot+'deg)';
     var bg=headerRow.color||'#fff';
     var back2=document.createElement('div');
@@ -4041,7 +4055,8 @@
         // pill drags to reorder among its siblings here.
         if(depth===0){
           hd.draggable=true;
-          hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); });
+          hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+headerRow.id); _sboardDraggingHeaderId=headerRow.id; });
+          hd.addEventListener('dragend', function(){ _sboardDraggingHeaderId=null; });
         }
         // Three drop zones, Aug 3 2026 -- left/right edges reorder this
         // Header among its top-level siblings (unchanged); the middle
@@ -4057,16 +4072,18 @@
         // valid drop, safe to let go" color (matching, e.g., a traffic
         // light) the same way red reads as "stop/danger," so it was the
         // more effective choice here over red.
-        hd.addEventListener('dragover', function(e){
+        // Named (not anonymous) so the enlarged promote zone below can call
+        // the exact same logic directly -- see the note there.
+        function hdDragOver(e){
           e.preventDefault();
           var rect=hd.getBoundingClientRect();
           var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
           if(frac<0.3){ hd.style.outline='none'; hd.style.boxShadow='inset 4px 0 0 0 #22c55e'; hd._dropSide='before'; }
           else if(frac>0.7){ hd.style.outline='none'; hd.style.boxShadow='inset -4px 0 0 0 #22c55e'; hd._dropSide='after'; }
           else { hd.style.boxShadow='none'; hd.style.outline='2px solid #22c55e'; hd._dropSide='nest'; }
-        });
-        hd.addEventListener('dragleave', function(){ hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null; });
-        hd.addEventListener('drop', function(e){
+        }
+        function hdDragLeave(){ hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null; }
+        function hdDrop(e){
           e.preventDefault();
           var side=hd._dropSide||'before';
           hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null;
@@ -4090,7 +4107,43 @@
           } else {
             _sboardMoveCard(raw, headerRow.id);
           }
-        });
+        }
+        hd.addEventListener('dragover', hdDragOver);
+        hd.addEventListener('dragleave', hdDragLeave);
+        hd.addEventListener('drop', hdDrop);
+        // Enlarged "promote to Header" target, Aug 26 2026 -- Larry:
+        // dragging a Subber up towards the header row showed the correct
+        // green "safe to release" cue, then it landed inside a
+        // NEIGHBORING column's card list instead of promoting, because hd
+        // above (the real "promote" target) is a slim strip compared to
+        // the tall card list right below/beside it -- easy to miss by a
+        // few pixels, especially crossing into an adjacent column on the
+        // way up. This adds a CAPTURE-phase listener on the whole column
+        // (fires before any card tile's own dragover/drop, so it can
+        // intercept and swallow the event with stopPropagation before a
+        // tile ever sees it) that treats a Header/Subber drag landing
+        // anywhere in the top strip of THIS column -- not just precisely
+        // on hd -- exactly like a drop on hd itself. _sboardDraggingHeaderId
+        // (set on dragstart/cleared on dragend, since dragover can't read
+        // the real payload) keeps this from ever affecting a plain idea
+        // card drag, which should keep filing under whatever it's
+        // actually dropped on, same as before.
+        var PROMOTE_ZONE_H = HEADER_H + 56;
+        function inPromoteZone(e){
+          if(!_sboardDraggingHeaderId) return false;
+          var rect=block.getBoundingClientRect();
+          return (e.clientY - rect.top) <= PROMOTE_ZONE_H;
+        }
+        block.addEventListener('dragover', function(e){
+          if(inPromoteZone(e)){ e.stopPropagation(); hdDragOver(e); }
+          else if(hd._dropSide){ hdDragLeave(); }
+        }, true);
+        block.addEventListener('dragleave', function(e){
+          if(hd._dropSide && !block.contains(e.relatedTarget)) hdDragLeave();
+        }, true);
+        block.addEventListener('drop', function(e){
+          if(inPromoteZone(e)){ e.stopPropagation(); hdDrop(e); }
+        }, true);
         block.appendChild(hd);
         if(directItems.length || subs.length || !blocksNewSubbers){
           var scroll=document.createElement('div');
@@ -4165,7 +4218,8 @@
         // on _sboardMakeTile above.
         if(newRow){
           hd.draggable=true;
-          hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+newRow.id); });
+          hd.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain','header:'+newRow.id); _sboardDraggingHeaderId=newRow.id; });
+          hd.addEventListener('dragend', function(){ _sboardDraggingHeaderId=null; });
         }
         // Same bright green as the main header drop zones above, Aug 3
         // 2026 -- keeps NEW's own reorder feedback consistent with every
