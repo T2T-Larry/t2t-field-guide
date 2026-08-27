@@ -406,6 +406,7 @@
   var BB_ADDITIONS = [
     {flag:'addChecklist', cb:'bb-d-add-checklist', body:'bb-d-checklist-body'},
     {flag:'addRoutine', cb:'bb-d-add-routine', body:'bb-d-routine-body'},
+    {flag:'addStart', cb:'bb-d-add-start', body:'bb-d-start-body'},
     {flag:'addDue', cb:'bb-d-add-due', body:'bb-d-due-body'},
     {flag:'addBudget', cb:'bb-d-add-budget', body:'bb-d-budget-body'},
     {flag:'addNotes', cb:'bb-d-add-notes', body:'bb-d-notes-body'},
@@ -907,7 +908,7 @@
       link_url: c.linkUrl||null, link_title: c.linkTitle||null, link_thumb: c.linkThumb||null,
       // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below.
       adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
-      adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
+      adds_start: !!c.addStart, adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
@@ -934,7 +935,7 @@
       // already had real content in the matching field, so nothing
       // already on a card goes invisible just because this shipped.
       addChecklist: !!row.adds_checklist, addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
-      addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
+      addStart: !!row.adds_start, addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
@@ -1774,7 +1775,10 @@
     var realNewCol = _bbIsDoCol(newCol) ? _bbDoColKey(priority) : newCol;
     var wasRealCol = realRow.col;
     var upd={col: realNewCol};
-    if(realNewCol==='doing' && _bbIsDoCol(wasRealCol) && !realRow.startDate) upd.startDate=_bbToday();
+    // Start Date addition, Aug 27 2026 -- same reasoning as the native
+    // drop handler: an auto-stamped date with its checkbox still
+    // unchecked would be invisible, so open it here too.
+    if(realNewCol==='doing' && _bbIsDoCol(wasRealCol) && !realRow.startDate){ upd.startDate=_bbToday(); upd.addStart=true; }
     if(realNewCol==='done' && wasRealCol!=='done') upd.completedDate=_bbToday();
     if(wasRealCol==='done' && realNewCol!=='done'){ upd.completedDate=''; upd.verified=false; upd.pro=false; upd.grow=false; }
     if(realNewCol==='hangups' && wasRealCol!=='hangups') upd.hangupSince=_bbToday();
@@ -1788,6 +1792,7 @@
     var sb=T().sb; if(!sb) return;
     var row={col: upd.col};
     if('startDate' in upd) row.start_date=upd.startDate?_bbToISODate(upd.startDate):null;
+    if('addStart' in upd) row.adds_start=upd.addStart;
     if('completedDate' in upd) row.completed_date=upd.completedDate?_bbToISODate(upd.completedDate):null;
     if('hangupSince' in upd) row.hangup_since=upd.hangupSince?_bbToISODate(upd.hangupSince):null;
     if('verified' in upd) row.verified=upd.verified;
@@ -1849,6 +1854,7 @@
             _bbWriteStageMirror(mc.id, upd);
             mc._realCol=upd.col;
             if('startDate' in upd) mc.startDate=upd.startDate;
+            if('addStart' in upd) mc.addStart=upd.addStart;
             if('completedDate' in upd) mc.completedDate=upd.completedDate;
             if('hangupSince' in upd) mc.hangupSince=upd.hangupSince;
             if('verified' in upd) mc.verified=upd.verified;
@@ -2992,8 +2998,13 @@
       // the text instead of standing alone. Body starts collapsed
       // (inline style="display:none" in the markup); JS only ever
       // flips that display, so there's no extra "open" class to keep
-      // in sync -- one source of truth per addition.
-      +'.bb-addition-label{display:flex;align-items:center;gap:6px;cursor:pointer}'
+      // in sync -- one source of truth per addition. Darkened to
+      // --bb-ink (was inheriting --bb-sub's lighter tone from the
+      // shared ".bb-field label" rule) and a fixed line-height matching
+      // the checkbox's own height, Aug 27 2026 (Larry: "center on the
+      // checkboxes... darken the text") -- align-items:center alone
+      // wasn't enough to true up the text against the checkbox box.
+      +'.bb-addition-label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--bb-ink);line-height:14px}'
       +'.bb-addition-label input[type=checkbox]{width:14px;height:14px;margin:0;flex-shrink:0;cursor:pointer}'
       +'.bb-addition-body{margin-top:6px}'
       +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
@@ -3117,9 +3128,10 @@
       +'.bb-close:hover{background:var(--bb-bg)}'
       +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       +'.bb-hx-back:hover{background:var(--bb-bg)}'
-      +'.bb-routine-toggle{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.bb-routine-toggle:hover{background:var(--bb-bg)}'
-      +'.bb-routine-toggle.bb-routine-on{background:var(--bb-accent);color:#fff}'
+      // .bb-routine-toggle button rules dropped, Aug 27 2026 -- the
+      // header button they styled is gone (see the overlay-head
+      // comment above); .bb-routine-active stays, it still tints the
+      // whole card when c.routine is true regardless of how it got set.
       +'.bb-overlay-card.bb-routine-active{border-top-color:#4a7a95}'
       +'.bb-date-row{display:flex;gap:6px;align-items:stretch}'
       +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
@@ -3227,13 +3239,19 @@
       detailOv.id='bb-detail-overlay'; detailOv.className='bb-overlay';
       detailOv.innerHTML=
          '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-routine-toggle" id="bb-d-routine-toggle" title="Routine card" aria-label="Toggle routine">🔄</button><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
+          // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
+          // Routine card icon from top of card") -- redundant now that
+          // Routine is its own checkbox further down: picking a
+          // frequency there already marks the card routine (c.routine),
+          // see wireRoutineControls' select handler. The card-front
+          // badge and the overlay's own routine-tinted top border stay
+          // -- only the manual header button goes.
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
-            +'<div class="bb-field"><label>Signal Flags</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div id="bb-d-doors-row" class="bb-doors-row">'
               +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
               +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">'+'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h4v-4h4v-4h4v-4h4"/></svg>'+'</button>'
@@ -3246,35 +3264,56 @@
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
             // which open when checked and stay open when active") --
-            // Checklist, Due Date, Routine, Budget, Notes, and Links are
-            // opt-in now instead of always taking up room on every card.
-            // Each is a checkbox riding its own field label; the field's
-            // real content sits in a .bb-addition-body directly under it,
-            // hidden by default and shown for exactly as long as its
-            // checkbox is checked -- see BB_ADDITIONS/openCardDetail/
-            // wireAdditionToggles below for the shared plumbing. Start
-            // Date and Reviewed by are NOT part of this -- Larry's list
-            // didn't include them, so they stay permanently visible.
+            // Checklist, Routine, Start Date, Due Date, Budget, Notes,
+            // and Links are opt-in now instead of always taking up room
+            // on every card. Each is a checkbox riding its own field
+            // label; the field's real content sits in a
+            // .bb-addition-body directly under it, hidden by default and
+            // shown for exactly as long as its checkbox is checked --
+            // see BB_ADDITIONS/openCardDetail/wireAdditionToggles below
+            // for the shared plumbing. Reviewed by is NOT part of this
+            // -- Larry's list didn't include it, so it stays permanently
+            // visible, below the divider/Signal Flags at the end of
+            // this block.
             +'<div class="bb-field bb-addition" id="bb-d-add-checklist-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-checklist">Checklist</label><div class="bb-addition-body" id="bb-d-checklist-body" style="display:none"><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div></div>'
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
             +'<div class="bb-field bb-dates-block"><label>Dates</label>'
-              +'<div class="bb-inline-field" style="margin-bottom:6px"><span class="bb-mh-eyebrow">Added</span><span id="bb-d-added">&mdash;</span></div>'
-              +'<div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="Start MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-start-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
+              +'<div class="bb-inline-field"><span class="bb-mh-eyebrow">Added</span><span id="bb-d-added">&mdash;</span></div>'
             +'</div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine">Routine</label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
               +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
               +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
             +'</div></div>'
+            // Start Date, Aug 27 2026 (Larry: "Add checkbox for START
+            // DATE which can be preset or automatic when card is moved
+            // to DOING... should be just above DUE DATE") -- the
+            // auto-stamp-on-drop-to-Doing behavior already existed
+            // (_bbStageMirrorUpdate / the native drop handler below);
+            // both spots now also open this checkbox when they stamp
+            // the date, so an auto-set Start Date is never left hidden
+            // behind an unchecked box.
+            +'<div class="bb-field bb-addition" id="bb-d-add-start-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-start">Start Date</label><div class="bb-addition-body" id="bb-d-start-body" style="display:none">'
+              +'<div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="Start MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-start-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
+            +'</div></div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-due-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-due">Due Date</label><div class="bb-addition-body" id="bb-d-due-body" style="display:none">'
               +'<div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="Due MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-due-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
             +'</div></div>'
-            +'<div class="bb-field bb-addition" id="bb-d-add-budget-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-budget">Budget &mdash; time or dollars</label><div class="bb-addition-body" id="bb-d-budget-body" style="display:none"><input id="bb-d-budget" type="text"></div></div>'
+            // Budget label simplified, Aug 27 2026 (Larry: "Drop TIME or
+            // DOLLARS from BUDGET").
+            +'<div class="bb-field bb-addition" id="bb-d-add-budget-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-budget">Budget</label><div class="bb-addition-body" id="bb-d-budget-body" style="display:none"><input id="bb-d-budget" type="text"></div></div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-notes-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-notes">Notes</label><div class="bb-addition-body" id="bb-d-notes-body" style="display:none"><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div></div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-links-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-links">Links</label><div class="bb-addition-body" id="bb-d-links-body" style="display:none"><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div></div>'
-            // Divider, Aug 27 2026 (Larry: "Add a divider line above
-            // REVIEWED BY") -- plain rule, same max-width as every other
-            // .bb-field so it lines up with the fields above and below it.
+            // Divider, Aug 27 2026 (Larry: "Add divider line above
+            // SIGNAL FLAGS so all checkboxes are in one section") --
+            // Signal Flags moved down here from up by Task (see the
+            // doors-row edit above) so the divider closes out one
+            // contiguous checkbox section instead of splitting it.
+            // Signal Flags itself stays a fixed, always-visible field
+            // (not gated by its own checkbox) -- it's the board's own
+            // categorize/filter system, glanced at more than filled in
+            // once, so hiding it by default would work against it.
             +'<hr class="bb-field-divider">'
+            +'<div class="bb-field"><label>Signal Flags</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
@@ -3837,7 +3876,10 @@
           // touch priority when dragging into Doing/Done/Hang-Ups --
           // only the 3 Do columns are priority-linked.
           if(_bbIsDoCol(c.col)) c.priority=_bbPriorityForDrop(c.col, c.priority);
-          if(c.col==='doing' && _bbIsDoCol(wasCol) && !c.startDate) c.startDate=_bbToday();
+          // Start Date addition, Aug 27 2026 -- auto-stamping it (below,
+          // pre-existing) is pointless if the checkbox that shows it
+          // stays unchecked, so open it here too.
+          if(c.col==='doing' && _bbIsDoCol(wasCol) && !c.startDate){ c.startDate=_bbToday(); c.addStart=true; }
           if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
           if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
           // Hang-Ups, July 21, 2026: stamp when a card lands here, clear
@@ -4061,7 +4103,6 @@
     document.getElementById('bb-d-routine').value=c.routineFreq||'';
     document.getElementById('bb-d-routine-custom').value=c.routineCustom||'';
     document.getElementById('bb-d-routine-custom').style.display=(c.routineFreq==='custom')?'':'none';
-    document.getElementById('bb-d-routine-toggle').classList.toggle('bb-routine-on', !!c.routine);
     var _bbDetailCardR=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCardR) _bbDetailCardR.classList.toggle('bb-routine-active', !!c.routine);
     document.getElementById('bb-d-budget').value=c.budget||'';
@@ -5888,17 +5929,12 @@
       });
     });
   }
+  // Header toggle button removed Aug 27 2026 -- c.routine is now set
+  // only as a side effect of picking a frequency below (still the same
+  // c.routine flag, still tints the card via .bb-routine-active, still
+  // shows the front-tile badge -- just no more standalone button to
+  // flip it on its own).
   function wireRoutineControls(){
-    T().wire('bb-d-routine-toggle', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      c.routine=!c.routine;
-      _bbSaveLocal(_bbCardsList());
-      document.getElementById('bb-d-routine-toggle').classList.toggle('bb-routine-on', !!c.routine);
-      var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
-      if(card) card.classList.toggle('bb-routine-active', !!c.routine);
-      renderBoard();
-    });
     var sel=document.getElementById('bb-d-routine');
     if(sel) sel.addEventListener('change', function(){
       var c=_bbFindCardAnywhere(_bbOpenCardId);
@@ -5908,7 +5944,6 @@
       if(custom) custom.style.display = (sel.value==='custom') ? '' : 'none';
       if(sel.value){
         c.routine=true;
-        document.getElementById('bb-d-routine-toggle').classList.add('bb-routine-on');
         var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
         if(card) card.classList.add('bb-routine-active');
       }
