@@ -915,6 +915,7 @@
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
+      start_overdue_flash_shown_for: _bbToISODate(c.startOverdueFlashShownFor),
       trashed_at: c.trashedAt || null
     };
   }
@@ -943,6 +944,7 @@
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
+      startOverdueFlashShownFor: _bbFromISODate(row.start_overdue_flash_shown_for),
       trashedAt: row.trashed_at || null,
       // Header-linked task cards only (Aug 11 2026) -- auto-created and kept
       // in sync by the ideas_sync_header_task_card DB trigger whenever an
@@ -2536,6 +2538,24 @@
     return _bbDaysUntil(d) < 0;
   }
 
+  // Missed Start Date pink-face, Aug 27 2026, Larry: "What if a missed
+  // START DATE turns a card pink like a missed DUE DATE and moves it to
+  // HIGH priority?" -- the HIGH-priority part already existed (July 22
+  // 2026, the startEscalatedFor bump in _bbAutoEscalateDates below), so
+  // this only adds the pink half, same "fully passed, not just arrived
+  // today" rule as _bbIsOverdue. Scoped to _bbIsDoCol (new/do-h/do-m/
+  // do-l) rather than done/hangups like the due-date version -- a
+  // missed START only means anything while the card genuinely hasn't
+  // started yet; once it's in Doing it has started, late or not, so
+  // there's nothing left to flag.
+  function _bbIsStartOverdue(c){
+    if(!c || c.archived || c.trashedAt) return false;
+    if(!_bbIsDoCol(c.col)) return false;
+    var d=_bbParseDue(c.startDate);
+    if(!d) return false;
+    return _bbDaysUntil(d) < 0;
+  }
+
   // Larry, July 20, 2026: anything WITH a priority outranks anything
   // without one (unset already sorts last, rank 7, below L's 5). On top
   // of that, a near or passed due date pulls a card's effective rank up
@@ -2640,6 +2660,17 @@
       if(_bbIsOverdue(c) && c.overdueFlashShownFor!==c.due){
         _bbOverdueFlashIds.push(c.id);
         c.overdueFlashShownFor=c.due;
+        changed=true;
+      }
+      // Missed Start Date pink-flash, Aug 27 2026 -- same one-time-per-
+      // value pattern, its own remembered stamp (startOverdueFlashShownFor)
+      // since it's keyed off startDate, not due. Pushed into the same
+      // _bbOverdueFlashIds list as the due-date flash above -- the
+      // render code just checks membership, it doesn't care which date
+      // caused it, so one card can't double-flash for having both.
+      if(_bbIsStartOverdue(c) && c.startOverdueFlashShownFor!==c.startDate){
+        if(_bbOverdueFlashIds.indexOf(c.id)===-1) _bbOverdueFlashIds.push(c.id);
+        c.startOverdueFlashShownFor=c.startDate;
         changed=true;
       }
       // July 22, 2026: c.col is now one of do-h/do-m/do-l, not a single
@@ -3766,7 +3797,9 @@
         // _bbAutoEscalateDates just discovered are newly overdue THIS
         // pass, so the alarm-flash animation plays once, not every
         // reload.
-        var cardIsOverdue=_bbIsOverdue(c);
+        // Aug 27 2026 -- a missed Start Date reads as the same pink
+        // signal as a missed Due Date; see _bbIsStartOverdue above.
+        var cardIsOverdue=_bbIsOverdue(c)||_bbIsStartOverdue(c);
         var cardJustWentOverdue=_bbOverdueFlashIds.indexOf(c.id)!==-1;
         el.className='bb-card'+(c._foreign?' bb-card-foreign':'')
           +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'');
@@ -4097,7 +4130,7 @@
     // flag buttons -- one semantic color for "this is stuck," everywhere.
     var _bbDetailCard=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
-    if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c));
+    if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
     _bbRenderColorSwatches(c);
     // Color row starts collapsed on every open -- Gear (bb-d-gear) toggles
