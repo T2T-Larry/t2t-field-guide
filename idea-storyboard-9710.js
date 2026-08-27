@@ -662,6 +662,14 @@
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
       +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
       +'<input type="file" id="sc-logo-input" accept="image/*" style="display:none">'
+      // Resize handle, Aug 27 2026 -- Larry: "a drag handle on the frame,"
+      // not presets or typed dimensions. Bottom-right corner grip, shown
+      // only once a logo is actually loaded (see _sboardUpdateHeaderChrome
+      // below) -- an empty (+) slot has nothing to resize yet. Dragging it
+      // scales the whole frame (see _sboardWireLogoResizeHandle), locked to
+      // whatever aspect ratio the frame currently has so the logo never
+      // stretches out of shape.
+      +'<div class="sc-logo-resize-handle" id="sc-logo-resize-handle" title="Drag to resize" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:4px;background:#5b9bd5;border:2px solid #0d2440;cursor:nwse-resize;display:none;z-index:3;touch-action:none"></div>'
       +'</div>'
       +'</div>'
       // Board-kind label -- static per board type. This file (the Idea
@@ -762,8 +770,20 @@
     T().wire('sc-logo-img', function(){ document.getElementById('sc-logo-input').click(); });
     (function(){
       var logoInput=document.getElementById('sc-logo-input');
-      if(logoInput) logoInput.addEventListener('change', _sboardUploadLogo);
+      // Crop step, Aug 27 2026 -- Larry: shape is a free crop of the
+      // uploaded image, settled as a separate step from resizing (see
+      // _sboardOpenLogoCropper). Picking a file no longer uploads it
+      // straight away -- it opens the crop tool first; the actual upload
+      // (_sboardUploadLogo) only runs once Larry confirms a crop.
+      if(logoInput) logoInput.addEventListener('change', function(e){
+        var file=e.target.files && e.target.files[0];
+        e.target.value='';
+        if(!file) return;
+        if(!_sboardCurrentRootRow()){ _sboardShowToast('Open a project first.'); return; }
+        _sboardOpenLogoCropper(file);
+      });
     })();
+    _sboardWireLogoResizeHandle();
     _sboardWireBoardKindDropdown();
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
     // PROJECT") -- Title now covers picking a board. Renaming it is a
@@ -2317,7 +2337,11 @@
       // already showing its project's logo instead of blank. One-time
       // copy only, same "duplicates once, never resyncs" rule as the rest
       // of PLAN -- swapping the logo on one board doesn't touch the other.
+      // logo_w/logo_h (Aug 27 2026, resize build) ride along the same way --
+      // a Plan board opens at whatever size the Idea board's logo was last
+      // dragged to, not forced back to the 46px default.
       logo_url:ideaRoot.logo_url||null,
+      logo_w:ideaRoot.logo_w||null, logo_h:ideaRoot.logo_h||null,
       storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
       track_on_briefing_board:false, created_at:new Date().toISOString()
     }).select().single();
@@ -4119,7 +4143,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name,logo_url')
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -4843,9 +4867,16 @@
   // it reads as one logo for the whole project rather than a new card.
   // Picking a file when a logo already exists just replaces it -- no
   // separate remove control; upload a different image to swap it out.
-  async function _sboardUploadLogo(e){
-    var file=e.target.files && e.target.files[0];
-    e.target.value='';
+  //
+  // Aug 27 2026 -- no longer takes the raw file-input event. The crop
+  // step (_sboardOpenLogoCropper) already ran by the time this is called,
+  // so it's handed the cropped file plus that crop's own natural pixel
+  // width/height, used only to give the frame a sensible starting size
+  // (see below). Larry's two answers this session: crop and resize are
+  // separate steps (crop happens once per upload; resize is a standing
+  // drag handle you can use anytime after), and shape is a free crop of
+  // the image, not a fixed square/circle.
+  async function _sboardUploadLogo(file, cropW, cropH){
     if(!file) return;
     var root=_sboardCurrentRootRow();
     var statusEl=document.getElementById('sc-status');
@@ -4862,14 +4893,206 @@
       var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
       var url=pub.data && pub.data.publicUrl;
       if(!url) throw new Error('No public URL returned.');
-      var upd=await _sb.from('ideas').update({logo_url:url}).eq('id',root.id);
+      // Starting frame size, Aug 27 2026 -- pin the crop's own aspect
+      // ratio to the old fixed 46px footprint (long side = 46) so a fresh
+      // logo looks about the same size as before, just correctly
+      // proportioned instead of squeezed into a square. From here the
+      // drag handle takes over -- this is only ever the opening size.
+      var longSide=46, frameW=longSide, frameH=longSide;
+      if(cropW>0 && cropH>0){
+        if(cropW>=cropH){ frameW=longSide; frameH=Math.max(12,Math.round(longSide*cropH/cropW)); }
+        else{ frameH=longSide; frameW=Math.max(12,Math.round(longSide*cropW/cropH)); }
+      }
+      var upd=await _sb.from('ideas').update({logo_url:url, logo_w:frameW, logo_h:frameH}).eq('id',root.id);
       if(upd.error) throw upd.error;
-      _sboardPatchRow(root.id, {logo_url:url});
+      _sboardPatchRow(root.id, {logo_url:url, logo_w:frameW, logo_h:frameH});
       _sboardUpdateHeaderChrome();
     }catch(err){
       if(statusEl){ statusEl.textContent='Couldn’t save the logo: '+err.message; statusEl.classList.add('err'); }
       else _sboardShowToast('Couldn’t save the logo: '+err.message);
     }
+  }
+
+  // Logo crop tool, Aug 27 2026 -- Larry: "free crop of the uploaded
+  // image... like a photo editor," explicitly not one of the fixed
+  // square/circle shape choices. Reuses the shared #sb-detail-overlay
+  // modal (same one every other Storyboard dialog uses) rather than a
+  // bespoke overlay. A free-aspect-ratio rectangle you can drag to move
+  // and drag any corner to resize -- "any shape" here means any
+  // rectangle, not a freehand outline; the existing upload pipeline
+  // (T2TMedia.compressImageFile) already flattens transparency to white,
+  // which only makes sense for a rectangular crop, not a cut-out mask.
+  function _sboardOpenLogoCropper(file){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    var objUrl=URL.createObjectURL(file);
+    ov.innerHTML='<div class="sc-overlay-card" style="width:min(420px,92%);text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:6px">Crop your logo</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Drag the box to choose what to keep. Drag a corner to reshape it -- any rectangle, not just square.</div>'
+      +'<div id="lc-stage" style="position:relative;margin:0 auto 14px;background:#0d2440;border-radius:8px;overflow:hidden"></div>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button type="button" class="sc-ov-btn save" id="lc-use" style="flex:1">Use this crop</button>'
+      +'<button type="button" class="sc-ov-btn" id="lc-cancel" style="flex:1">Cancel</button>'
+      +'</div>'
+      +'</div>';
+    ov.classList.add('active');
+
+    var onMove=null, onUp=null;
+    function cleanupListeners(){
+      if(onMove) document.removeEventListener('pointermove', onMove);
+      if(onUp) document.removeEventListener('pointerup', onUp);
+    }
+    // Wired immediately (not inside img.onload below) so Cancel always
+    // works even if the picked file is still decoding, or fails outright.
+    document.getElementById('lc-cancel').onclick=function(){
+      cleanupListeners();
+      URL.revokeObjectURL(objUrl);
+      closeSbDetail();
+    };
+
+    var img=new Image();
+    img.onload=function(){
+      var stage=document.getElementById('lc-stage');
+      if(!stage){ URL.revokeObjectURL(objUrl); return; }
+      var maxW=340, maxH=340;
+      var scale=Math.min(maxW/img.naturalWidth, maxH/img.naturalHeight);
+      if(!isFinite(scale) || scale<=0) scale=1;
+      scale=Math.min(scale, 6); // don't blow up a tiny source image absurdly
+      var dispW=Math.max(60, Math.round(img.naturalWidth*scale));
+      var dispH=Math.max(60, Math.round(img.naturalHeight*scale));
+      stage.style.width=dispW+'px';
+      stage.style.height=dispH+'px';
+      stage.innerHTML='<img id="lc-img" src="'+objUrl+'" style="position:absolute;top:0;left:0;width:'+dispW+'px;height:'+dispH+'px;display:block;pointer-events:none">'
+        +'<div id="lc-box" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move"></div>';
+      var box=document.getElementById('lc-box');
+      ['nw','ne','sw','se'].forEach(function(corner){
+        var h=document.createElement('div');
+        h.className='lc-handle'; h.setAttribute('data-corner',corner);
+        h.style.cssText='position:absolute;width:14px;height:14px;background:#5b9bd5;border:2px solid #fff;border-radius:3px;z-index:2;touch-action:none;'
+          +(corner.indexOf('n')>-1?'top:-8px;':'bottom:-8px;')
+          +(corner.indexOf('w')>-1?'left:-8px;':'right:-8px;')
+          +'cursor:'+(corner==='nw'||corner==='se'?'nwse-resize':'nesw-resize');
+        box.appendChild(h);
+      });
+
+      var bx=Math.round(dispW*0.1), by=Math.round(dispH*0.1), bw=Math.round(dispW*0.8), bh=Math.round(dispH*0.8);
+      var MIN=20;
+      function clampBox(){
+        if(bw<MIN) bw=MIN; if(bh<MIN) bh=MIN;
+        if(bw>dispW) bw=dispW; if(bh>dispH) bh=dispH;
+        if(bx<0) bx=0; if(by<0) by=0;
+        if(bx+bw>dispW) bx=dispW-bw; if(by+bh>dispH) by=dispH-bh;
+      }
+      function paint(){ box.style.left=bx+'px'; box.style.top=by+'px'; box.style.width=bw+'px'; box.style.height=bh+'px'; }
+      paint();
+
+      var mode=null, startX=0, startY=0, ob=null;
+      box.addEventListener('pointerdown', function(ev){
+        if(ev.target!==box) return; // corner handles carry their own listener below
+        mode='move'; startX=ev.clientX; startY=ev.clientY; ob={x:bx,y:by};
+        try{ box.setPointerCapture(ev.pointerId); }catch(_e){}
+      });
+      Array.prototype.forEach.call(box.querySelectorAll('.lc-handle'), function(h){
+        h.addEventListener('pointerdown', function(ev){
+          ev.stopPropagation();
+          mode='resize-'+h.getAttribute('data-corner');
+          startX=ev.clientX; startY=ev.clientY; ob={x:bx,y:by,w:bw,h:bh};
+          try{ h.setPointerCapture(ev.pointerId); }catch(_e){}
+        });
+      });
+      onMove=function(ev){
+        if(!mode) return;
+        var dx=ev.clientX-startX, dy=ev.clientY-startY;
+        if(mode==='move'){ bx=ob.x+dx; by=ob.y+dy; }
+        else{
+          var c=mode.slice(7);
+          if(c==='se'){ bw=ob.w+dx; bh=ob.h+dy; }
+          else if(c==='sw'){ bx=ob.x+dx; bw=ob.w-dx; bh=ob.h+dy; }
+          else if(c==='ne'){ by=ob.y+dy; bw=ob.w+dx; bh=ob.h-dy; }
+          else if(c==='nw'){ bx=ob.x+dx; by=ob.y+dy; bw=ob.w-dx; bh=ob.h-dy; }
+        }
+        clampBox();
+        paint();
+      };
+      onUp=function(){ mode=null; };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+
+      document.getElementById('lc-use').onclick=function(){
+        cleanupListeners();
+        var sx=Math.round(bx/scale), sy=Math.round(by/scale);
+        var sw=Math.round(bw/scale), sh=Math.round(bh/scale);
+        sw=Math.max(1,Math.min(sw, img.naturalWidth-sx));
+        sh=Math.max(1,Math.min(sh, img.naturalHeight-sy));
+        var canvas=document.createElement('canvas');
+        canvas.width=sw; canvas.height=sh;
+        var ctx=canvas.getContext('2d');
+        ctx.drawImage(img, sx,sy,sw,sh, 0,0,sw,sh);
+        canvas.toBlob(function(blob){
+          URL.revokeObjectURL(objUrl);
+          closeSbDetail();
+          if(!blob){ _sboardShowToast('Crop failed -- try again.'); return; }
+          var croppedName=(file.name||'logo').replace(/\.[^.]+$/,'')+'-cropped.png';
+          var croppedFile=new File([blob], croppedName, {type:'image/png'});
+          _sboardUploadLogo(croppedFile, sw, sh);
+        }, 'image/png');
+      };
+    };
+    img.onerror=function(){
+      URL.revokeObjectURL(objUrl);
+      _sboardShowToast('Couldn’t open that image.');
+    };
+    img.src=objUrl;
+  }
+
+  // Logo resize handle, Aug 27 2026 -- Larry: "a drag handle on the
+  // frame," separate from the crop step above. Dragging the bottom-right
+  // grip scales the whole frame up or down, locked to whatever aspect
+  // ratio it currently has (set by the crop, or the legacy 46x46 square
+  // for a logo saved before this build) so the image never stretches.
+  // Wired once at board setup; reads/writes whichever project is current
+  // at drag time via _sboardCurrentRootRow, same as the upload flow.
+  function _sboardWireLogoResizeHandle(){
+    var handle=document.getElementById('sc-logo-resize-handle');
+    var slot=document.getElementById('sc-logo-slot');
+    if(!handle||!slot) return;
+    var MIN=28, MAX=140;
+    var dragging=false, startX=0, startY=0, startW=0, startH=0, aspect=1;
+    handle.addEventListener('pointerdown', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      var rect=slot.getBoundingClientRect();
+      startX=ev.clientX; startY=ev.clientY;
+      startW=rect.width; startH=rect.height;
+      aspect=startW/(startH||1) || 1;
+      dragging=true;
+      try{ handle.setPointerCapture(ev.pointerId); }catch(_e){}
+    });
+    handle.addEventListener('pointermove', function(ev){
+      if(!dragging) return;
+      var dx=ev.clientX-startX, dy=ev.clientY-startY;
+      // Whichever axis moved more drives the resize; the other follows
+      // the locked aspect ratio, so a corner drag never distorts the logo.
+      var newW=(Math.abs(dx)>=Math.abs(dy)) ? (startW+dx) : (startH+dy)*aspect;
+      newW=Math.max(MIN, Math.min(MAX, newW));
+      var newH=newW/aspect;
+      slot.style.width=newW+'px';
+      slot.style.height=newH+'px';
+    });
+    handle.addEventListener('pointerup', async function(ev){
+      if(!dragging) return;
+      dragging=false;
+      try{ handle.releasePointerCapture(ev.pointerId); }catch(_e){}
+      var w=Math.round(parseFloat(slot.style.width)||startW);
+      var h=Math.round(parseFloat(slot.style.height)||startH);
+      var root=_sboardCurrentRootRow();
+      if(!root) return;
+      try{
+        var _sb=T().sb;
+        var upd=await _sb.from('ideas').update({logo_w:w, logo_h:h}).eq('id',root.id);
+        if(!upd.error){ _sboardPatchRow(root.id, {logo_w:w, logo_h:h}); }
+      }catch(_e){}
+      _sboardPositionLogoNearTopic();
+    });
   }
 
   function _sboardTopicOptionsHTML(excludeId){
@@ -5252,8 +5475,17 @@
     (function(){
       var logoImg=document.getElementById('sc-logo-img');
       var logoBtn=document.getElementById('sc-logo-add-btn');
+      var logoHandle=document.getElementById('sc-logo-resize-handle');
+      var logoSlot=document.getElementById('sc-logo-slot');
       var logoRoot=_sboardCurrentRootRow();
       var logoUrl=logoRoot && logoRoot.logo_url;
+      // Frame size, Aug 27 2026 -- a project's own logo_w/logo_h (set at
+      // crop time, changed by dragging the resize handle) wins; a logo
+      // saved before this build (or none yet) falls back to the original
+      // fixed 46x46 square, so nothing already live shifts on its own.
+      var logoW=(logoRoot && logoRoot.logo_w)||46;
+      var logoH=(logoRoot && logoRoot.logo_h)||46;
+      if(logoSlot){ logoSlot.style.width=logoW+'px'; logoSlot.style.height=logoH+'px'; }
       if(logoImg){
         logoImg.src=logoUrl||'';
         logoImg.style.display=logoUrl?'block':'none';
@@ -5261,6 +5493,9 @@
         logoImg.title=logoUrl?'Click to replace the logo':'';
       }
       if(logoBtn) logoBtn.style.display=logoUrl?'none':'';
+      // Only a real logo is worth resizing -- an empty (+) slot keeps the
+      // handle hidden, same reasoning as the (+) button's own visibility.
+      if(logoHandle) logoHandle.style.display=logoUrl?'block':'none';
     })();
     // Keep Logo the same distance off Topic as Parent, Aug 18 2026 --
     // Parent/Topic content (and their widths) just changed above, so
