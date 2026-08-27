@@ -395,6 +395,22 @@
   // card on another board (_bbHandleSharedTagChange) and safely undoing
   // that side effect is its own separate piece of work.
   var BB_DETAIL_FIELDS = ['task','situation','person','due','dueTime','startDate','startTime','routineFreq','routineCustom','budget','notes','reviewedBy','growNote','linkUrl','linkTitle','linkThumb'];
+  // Additions, Aug 27 2026 (Larry: "all additions = checkboxes which
+  // open when checked and stay open when active") -- Checklist, Due
+  // Date, Routine, Budget, Notes, Links each get their own checkbox
+  // gating a .bb-addition-body. Deliberately left out of
+  // BB_DETAIL_FIELDS/the bundled Edit undo above, same call already
+  // made for the routine-card toggle (c.routine) just below --
+  // checking/unchecking one saves and takes effect immediately, it
+  // isn't part of "everything this form changed on close."
+  var BB_ADDITIONS = [
+    {flag:'addChecklist', cb:'bb-d-add-checklist', body:'bb-d-checklist-body'},
+    {flag:'addRoutine', cb:'bb-d-add-routine', body:'bb-d-routine-body'},
+    {flag:'addDue', cb:'bb-d-add-due', body:'bb-d-due-body'},
+    {flag:'addBudget', cb:'bb-d-add-budget', body:'bb-d-budget-body'},
+    {flag:'addNotes', cb:'bb-d-add-notes', body:'bb-d-notes-body'},
+    {flag:'addLinks', cb:'bb-d-add-links', body:'bb-d-links-body'}
+  ];
   function _bbSnapshotCardDetail(c){
     var snap={};
     BB_DETAIL_FIELDS.forEach(function(k){ snap[k]=c[k]||''; });
@@ -889,6 +905,9 @@
       key_slot_1: keys[0]||null, key_slot_2: keys[1]||null, key_slot_3: keys[2]||null,
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
       link_url: c.linkUrl||null, link_title: c.linkTitle||null, link_thumb: c.linkThumb||null,
+      // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below.
+      adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
+      adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
@@ -910,6 +929,12 @@
       color: row.color||'',
       situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
+      // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below. The
+      // Aug 27 migration backfilled these true for any card that
+      // already had real content in the matching field, so nothing
+      // already on a card goes invisible just because this shipped.
+      addChecklist: !!row.adds_checklist, addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
+      addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
@@ -2962,6 +2987,16 @@
       +'#bb-detail-overlay .bbw{align-items:flex-start}'
       +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
       +'.bb-field label{display:block;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
+      // Addition checkboxes, Aug 27 2026 -- same label styling as every
+      // other .bb-field label, just with a checkbox riding in front of
+      // the text instead of standing alone. Body starts collapsed
+      // (inline style="display:none" in the markup); JS only ever
+      // flips that display, so there's no extra "open" class to keep
+      // in sync -- one source of truth per addition.
+      +'.bb-addition-label{display:flex;align-items:center;gap:6px;cursor:pointer}'
+      +'.bb-addition-label input[type=checkbox]{width:14px;height:14px;margin:0;flex-shrink:0;cursor:pointer}'
+      +'.bb-addition-body{margin-top:6px}'
+      +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
       +'.bb-inline-field{display:flex;align-items:baseline;justify-content:flex-start;gap:6px;white-space:nowrap}'
       +'.bb-inline-field label{display:inline;margin:0}'
       +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)}'
@@ -3209,21 +3244,37 @@
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
             +'</div>'
-            +'<div class="bb-field"><label>Checklist</label><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div>'
+            // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
+            // which open when checked and stay open when active") --
+            // Checklist, Due Date, Routine, Budget, Notes, and Links are
+            // opt-in now instead of always taking up room on every card.
+            // Each is a checkbox riding its own field label; the field's
+            // real content sits in a .bb-addition-body directly under it,
+            // hidden by default and shown for exactly as long as its
+            // checkbox is checked -- see BB_ADDITIONS/openCardDetail/
+            // wireAdditionToggles below for the shared plumbing. Start
+            // Date and Reviewed by are NOT part of this -- Larry's list
+            // didn't include them, so they stay permanently visible.
+            +'<div class="bb-field bb-addition" id="bb-d-add-checklist-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-checklist">Checklist</label><div class="bb-addition-body" id="bb-d-checklist-body" style="display:none"><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div></div>'
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
             +'<div class="bb-field bb-dates-block"><label>Dates</label>'
               +'<div class="bb-inline-field" style="margin-bottom:6px"><span class="bb-mh-eyebrow">Added</span><span id="bb-d-added">&mdash;</span></div>'
               +'<div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="Start MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-start-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
-              +'<div style="margin:6px 0 8px">'
-                +'<div class="bb-mh-eyebrow">Routine</div>'
-                +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
-                +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
-              +'</div>'
-              +'<div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="Due MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-due-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
             +'</div>'
-            +'<div class="bb-field"><label>Budget &mdash; time or dollars</label><input id="bb-d-budget" type="text"></div>'
-            +'<div class="bb-field"><label>Notes</label><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div>'
-            +'<div class="bb-field"><label>Video / Link</label><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine">Routine</label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
+              +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
+              +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
+            +'</div></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-add-due-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-due">Due Date</label><div class="bb-addition-body" id="bb-d-due-body" style="display:none">'
+              +'<div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="Due MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-due-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
+            +'</div></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-add-budget-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-budget">Budget &mdash; time or dollars</label><div class="bb-addition-body" id="bb-d-budget-body" style="display:none"><input id="bb-d-budget" type="text"></div></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-add-notes-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-notes">Notes</label><div class="bb-addition-body" id="bb-d-notes-body" style="display:none"><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-add-links-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-links">Links</label><div class="bb-addition-body" id="bb-d-links-body" style="display:none"><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div></div>'
+            // Divider, Aug 27 2026 (Larry: "Add a divider line above
+            // REVIEWED BY") -- plain rule, same max-width as every other
+            // .bb-field so it lines up with the fields above and below it.
+            +'<hr class="bb-field-divider">'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
@@ -4030,6 +4081,15 @@
     var clInput=document.getElementById('bb-d-checklist-new'); if(clInput) clInput.value='';
     _bbRenderChecklist();
     _bbLoadChecklistForCard(id);
+    // Additions, Aug 27 2026 -- each checkbox/body pair just mirrors
+    // this card's own addFlag; values were already written into their
+    // fields above, so this only ever controls whether that section is
+    // showing, never what's in it.
+    BB_ADDITIONS.forEach(function(a){
+      var open=!!c[a.flag];
+      var cb=document.getElementById(a.cb); if(cb) cb.checked=open;
+      var body=document.getElementById(a.body); if(body) body.style.display=open?'':'none';
+    });
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }
@@ -5809,6 +5869,25 @@
       _bbRenderLinkPreview(null);
     });
   }
+  // Additions, Aug 27 2026 -- checking a box opens its section and
+  // saves immediately (matching the routine-card 🔄 toggle just below,
+  // not the bundled Edit-on-close fields); unchecking just hides the
+  // section again -- whatever was already typed in there stays put, so
+  // re-checking it later brings it right back.
+  function wireAdditionToggles(){
+    BB_ADDITIONS.forEach(function(a){
+      var cb=document.getElementById(a.cb);
+      if(!cb) return;
+      cb.addEventListener('change', function(){
+        var c=_bbFindCardAnywhere(_bbOpenCardId);
+        if(!c) return;
+        c[a.flag]=cb.checked;
+        var body=document.getElementById(a.body);
+        if(body) body.style.display=cb.checked?'':'none';
+        _bbSaveLocal(_bbCardsList());
+      });
+    });
+  }
   function wireRoutineControls(){
     T().wire('bb-d-routine-toggle', function(){
       var c=_bbFindCardAnywhere(_bbOpenCardId);
@@ -6003,6 +6082,7 @@
     wireBbDetailActions();
     wireRoutineControls();
     wireLinkField();
+    wireAdditionToggles();
     wireKeyBuilder();
     wireKeyPicker();
     wireKeyLibManager();
