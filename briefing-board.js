@@ -410,7 +410,9 @@
     {flag:'addDue', cb:'bb-d-add-due', body:'bb-d-due-body'},
     {flag:'addBudget', cb:'bb-d-add-budget', body:'bb-d-budget-body'},
     {flag:'addNotes', cb:'bb-d-add-notes', body:'bb-d-notes-body'},
-    {flag:'addLinks', cb:'bb-d-add-links', body:'bb-d-links-body'}
+    {flag:'addLinks', cb:'bb-d-add-links', body:'bb-d-links-body'},
+    {flag:'addRelated', cb:'bb-d-add-related', body:'bb-d-related-body'},
+    {flag:'addFlags', cb:'bb-d-add-flags', body:'bb-d-flags-body'}
   ];
   function _bbSnapshotCardDetail(c){
     var snap={};
@@ -909,6 +911,7 @@
       // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below.
       adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
       adds_start: !!c.addStart, adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
+      adds_related: !!c.addRelated, adds_flags: !!c.addFlags,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
@@ -936,6 +939,7 @@
       // already on a card goes invisible just because this shipped.
       addChecklist: !!row.adds_checklist, addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
       addStart: !!row.adds_start, addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
+      addRelated: !!row.adds_related, addFlags: !!row.adds_flags,
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
@@ -3008,6 +3012,13 @@
       +'.bb-addition-label input[type=checkbox]{width:14px;height:14px;margin:0;flex-shrink:0;cursor:pointer}'
       +'.bb-addition-body{margin-top:6px}'
       +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
+      // Quiet Added-date, Aug 27 2026 (Larry: "What if the date added is
+      // quietly after the TASK Eyebrow?") -- rides on the Task label
+      // itself now instead of its own "Dates" block; deliberately NOT
+      // styled like the other uppercase eyebrow labels (this is the
+      // opposite -- quiet, small, cursive, same voice as every other
+      // "Added"/date stamp elsewhere on the card).
+      +'.bb-added-quiet{text-transform:none;letter-spacing:0;font-weight:400;font-family:"Caveat",cursive;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-sub);margin-left:8px}'
       +'.bb-inline-field{display:flex;align-items:baseline;justify-content:flex-start;gap:6px;white-space:nowrap}'
       +'.bb-inline-field label{display:inline;margin:0}'
       +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)}'
@@ -3251,35 +3262,34 @@
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
-            +'<div class="bb-field"><label>Task</label><textarea id="bb-d-task"></textarea></div>'
-            +'<div id="bb-d-doors-row" class="bb-doors-row">'
-              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
-              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">'+'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h4v-4h4v-4h4v-4h4"/></svg>'+'</button>'
-              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-org" type="button" title="Organization">\uD83D\uDC65</button>'
-              +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-share" type="button" title="Share">\uD83D\uDCAC</button>'
-            +'</div>'
+            // Added-date, Aug 27 2026 (Larry: "What if the date added is
+            // quietly after the TASK Eyebrow?") -- the standalone "Dates"
+            // block (below) used to hold this, but once Start Date moved
+            // into its own checkbox that block was down to one static
+            // line, not worth a whole section for. Same id (bb-d-added),
+            // same value, just riding quietly on the Task label instead.
+            +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
-            // which open when checked and stay open when active") --
-            // Checklist, Routine, Start Date, Due Date, Budget, Notes,
-            // and Links are opt-in now instead of always taking up room
-            // on every card. Each is a checkbox riding its own field
-            // label; the field's real content sits in a
+            // which open when checked and stay open when active"),
+            // extended same session to also cover Related Storyboards
+            // and Signal Flags -- Checklist, Routine, Start Date, Due
+            // Date, Budget, Notes, Links, Related Storyboards, and
+            // Signal Flags are all opt-in now instead of always taking
+            // up room on every card. Each is a checkbox riding its own
+            // field label; the field's real content sits in a
             // .bb-addition-body directly under it, hidden by default and
             // shown for exactly as long as its checkbox is checked --
             // see BB_ADDITIONS/openCardDetail/wireAdditionToggles below
-            // for the shared plumbing. Reviewed by is NOT part of this
-            // -- Larry's list didn't include it, so it stays permanently
-            // visible, below the divider/Signal Flags at the end of
-            // this block.
+            // for the shared plumbing. Only Reviewed by is NOT part of
+            // this -- Larry's list never included it, so it stays
+            // permanently visible, just below the divider that closes
+            // out this whole section.
             +'<div class="bb-field bb-addition" id="bb-d-add-checklist-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-checklist">Checklist</label><div class="bb-addition-body" id="bb-d-checklist-body" style="display:none"><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div></div>'
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
-            +'<div class="bb-field bb-dates-block"><label>Dates</label>'
-              +'<div class="bb-inline-field"><span class="bb-mh-eyebrow">Added</span><span id="bb-d-added">&mdash;</span></div>'
-            +'</div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine">Routine</label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
               +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
               +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
@@ -3303,17 +3313,39 @@
             +'<div class="bb-field bb-addition" id="bb-d-add-budget-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-budget">Budget</label><div class="bb-addition-body" id="bb-d-budget-body" style="display:none"><input id="bb-d-budget" type="text"></div></div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-notes-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-notes">Notes</label><div class="bb-addition-body" id="bb-d-notes-body" style="display:none"><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div></div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-links-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-links">Links</label><div class="bb-addition-body" id="bb-d-links-body" style="display:none"><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div></div>'
-            // Divider, Aug 27 2026 (Larry: "Add divider line above
-            // SIGNAL FLAGS so all checkboxes are in one section") --
-            // Signal Flags moved down here from up by Task (see the
-            // doors-row edit above) so the divider closes out one
-            // contiguous checkbox section instead of splitting it.
-            // Signal Flags itself stays a fixed, always-visible field
-            // (not gated by its own checkbox) -- it's the board's own
-            // categorize/filter system, glanced at more than filled in
-            // once, so hiding it by default would work against it.
+            // Related Storyboards, Aug 27 2026 (Larry: "do the same with
+            // the RELATED STORYBOARDS and move them after LINKS, since
+            // they are sort of a special case link") -- this is the old
+            // top-of-card doors-row (Idea Board / Plan / Organization /
+            // Share), relocated here and gated like every other
+            // addition. "Active" for the auto-open backfill below means
+            // already linked to an Idea Storyboard header
+            // (c.sourceHeaderId) -- Plan/Organization/Share are still
+            // Door-Soon placeholders with nothing of their own to be
+            // active yet.
+            +'<div class="bb-field bb-addition" id="bb-d-add-related-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-related">Related Storyboards</label><div class="bb-addition-body" id="bb-d-related-body" style="display:none">'
+              +'<div id="bb-d-doors-row" class="bb-doors-row">'
+                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
+                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">'+'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h4v-4h4v-4h4v-4h4"/></svg>'+'</button>'
+                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-org" type="button" title="Organization">\uD83D\uDC65</button>'
+                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-share" type="button" title="Share">\uD83D\uDCAC</button>'
+              +'</div>'
+            +'</div></div>'
+            // Signal Flags, Aug 27 2026 (Larry: "make Signal Flags like
+            // the other checkboxes which auto open if there is an
+            // active flag") -- was a fixed, always-visible field just
+            // below the old divider; now gated the same way as
+            // everything else in this section, with the same
+            // migration-backfill approach (open by default for any card
+            // that already has a flag set) rather than any new runtime
+            // logic -- "active" is decided once, at load, exactly like
+            // Notes/Budget/etc. above.
+            +'<div class="bb-field bb-addition" id="bb-d-add-flags-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-flags">Signal Flags</label><div class="bb-addition-body" id="bb-d-flags-body" style="display:none"><div class="bb-key-row" id="bb-d-key-row"></div></div></div>'
+            // Divider, Aug 27 2026 -- now sits directly above Reviewed
+            // by (the last item that isn't itself a checkbox), so the
+            // whole run of additions -- Checklist through Signal Flags
+            // -- reads as one contiguous section.
             +'<hr class="bb-field-divider">'
-            +'<div class="bb-field"><label>Signal Flags</label><div class="bb-key-row" id="bb-d-key-row"></div></div>'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
             +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
@@ -3330,9 +3362,9 @@
             +'<div id="bb-d-color-row" class="bb-doors-row bb-swatch-row" style="display:none"></div>'
             +'<div class="bb-doors-row bb-action-row">'
               +'<button class="bb-icon-btn" id="bb-d-lock" type="button">🔓</button>'
-              +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who&rsquo;s on this card">👥</button>'
+              +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who is working on this?">👥</button>'
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
-              +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Appearance">⚙️</button>'
+              +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Utilities">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-d-trash" type="button" title="Trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>'
             +'</div>'
           +'</div>'
