@@ -544,6 +544,20 @@
         +'.sb-below-content-row{display:flex;gap:6px;margin:6px 0 8px}'
         +'.sb-notes-pill{font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A;font-family:inherit}'
         +'.sb-notes-pill.active{background:#EEECE4}'
+        // Addition checkboxes, Aug 27 2026 -- Idea Card counterpart to the
+        // Briefing Card's own .bb-addition system (briefing-board.js):
+        // Notes/Links/Related Storyboards/Signal Flags each get a
+        // checkbox that opens the section when checked, hides it (without
+        // losing anything typed in it) when unchecked. Reuses
+        // .sb-hdr-eyebrow2 for the label text so it matches every other
+        // eyebrow on this card; the label override below just cancels
+        // that class's own margin/centering since it's riding next to a
+        // checkbox here instead of stacked above a field.
+        +'.sb-addition{width:100%;margin-bottom:10px;text-align:left}'
+        +'.sb-addition-label{display:flex;align-items:center;gap:6px;cursor:pointer;color:#2C2C2A;line-height:14px}'
+        +'.sb-addition-label input[type=checkbox]{width:14px;height:14px;margin:0;flex-shrink:0;cursor:pointer}'
+        +'.sb-addition-label .sb-hdr-eyebrow2{margin-bottom:0;transform:translateY(-1.5px)}'
+        +'.sb-addition-body{margin-top:6px}'
         +'.sb-swatch-row2{display:none;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}'
         +'.sb-inline-field{margin-bottom:10px;flex-shrink:0}'
         /* CLUSTER view — Logged July 7, 2026. SHAPING (#sb-detail-overlay) always
@@ -4209,7 +4223,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h')
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -5847,7 +5861,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -5926,7 +5940,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -7627,6 +7641,39 @@
     document.addEventListener('keydown', onKey);
   }
 
+  // Additions, Aug 27 2026 -- Idea Card counterpart to BB_ADDITIONS/
+  // wireAdditionToggles in briefing-board.js. Each entry names the
+  // Supabase column (flag), the checkbox id (cb), and the body it gates
+  // (body). Checking a box opens its section and saves immediately
+  // (same immediate-save convention Notes/Video-Link already use here,
+  // not the bundled save-on-close batching Briefing Board's DETAILS
+  // uses); unchecking just hides the section again -- whatever was
+  // already typed in there stays put, so re-checking it later brings it
+  // right back.
+  var IC_ADDITIONS = [
+    {flag:'adds_notes', cb:'sb-add-notes', body:'sb-notes-body'},
+    {flag:'adds_links', cb:'sb-add-links', body:'sb-links-body'},
+    {flag:'adds_related', cb:'sb-add-related', body:'sb-related-body'},
+    {flag:'adds_flags', cb:'sb-add-flags', body:'sb-flags-body'}
+  ];
+  function wireIcAdditionToggles(item, statusBox){
+    var _sb=T().sb;
+    IC_ADDITIONS.forEach(function(a){
+      var cb=document.getElementById(a.cb);
+      if(!cb) return;
+      cb.addEventListener('change', async function(){
+        var body=document.getElementById(a.body);
+        if(body) body.style.display=cb.checked?'':'none';
+        var patch={}; patch[a.flag]=cb.checked;
+        try{
+          var upd=await _sb.from('ideas').update(patch).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item[a.flag]=cb.checked;
+          _sboardPatchRow(item.id, patch);
+        }catch(err){ if(statusBox) statusBox.textContent='Needs the '+a.flag+' Supabase column.'; }
+      });
+    });
+  }
   function openSbDetail(item){
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
@@ -7853,6 +7900,18 @@
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
     }
 
+    // Additions, Aug 27 2026 (Larry: same checkbox-gated system as the
+    // Briefing Card, minus Priority/Dates/Budget which don't apply here)
+    // -- Notes, Links, Related Storyboards, and Signal Flags each open
+    // by default when the card already has real content on that field
+    // (adds_* backfilled by the Supabase migration for existing cards;
+    // the OR fallback here just covers a card whose adds_* column hasn't
+    // synced locally yet, same reasoning as BB's own migration note).
+    var hasKeys=!!(item.key_slot_1||item.key_slot_2||item.key_slot_3);
+    var addNotesOpen=(item.adds_notes!=null?!!item.adds_notes:!!(item.notes&&item.notes.trim()));
+    var addLinksOpen=(item.adds_links!=null?!!item.adds_links:!!item.link_url);
+    var addRelatedOpen=(item.adds_related!=null?!!item.adds_related:!!item.track_on_briefing_board);
+    var addFlagsOpen=(item.adds_flags!=null?!!item.adds_flags:(heartCount>0||hasKeys));
     ov.innerHTML='<div class="sc-overlay-card sb-shape-card sb-details-card" style="text-align:center;background:#F5F1E8;position:relative">'
       + '<div id="sb-details-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:grab">'
       + '<span id="sb-details-eyebrow" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">IDEA CARD</span>'
@@ -7863,46 +7922,40 @@
       + topRowHTML
       + headerListHTML
       + bodyHTML
-      // NOTES + SIGNAL FLAGS, Aug 7 2026 (Larry): Notes moved onto the same
-      // row as Signal Flags, matching the eyebrow-over-field look the
-      // PARENT/VIEW/ORDER row uses -- NOTES eyebrow over the pencil icon
-      // (icon only now; the eyebrow itself supplies the "Notes" label, so
-      // the button text is redundant), Signal Flags eyebrow over the heart
-      // + flag row, side by side. The heart isn't part of the picker (it's
-      // the one fixed, "non-choice" flag every card gets, tap to add / hold
-      // to remove, same as always); any custom flags follow, then the add
-      // control -- a plain classic (+), same dashed-circle look the
-      // board's own [+] add-a-card tiles use everywhere else. Flags row
-      // populated by _sboardRenderKeyRow right after this HTML lands
-      // (needs the real DOM node to attach click handlers to). Headers and
-      // Subbers get this same row too -- only the heart stays
-      // content-cards-only.
-      + '<div class="sb-eyebrow-row">'
-      + '<div class="sb-eyebrow-col" style="flex:0 0 auto">'
-      + '<div class="sb-hdr-eyebrow2">Notes</div>'
-      + '<button id="sb-notes" class="sb-notes-pill" title="Notes">✏️</button>'
-      + '</div>'
-      + '<div class="sb-eyebrow-col" style="flex:0 0 auto">'
-      + '<div class="sb-hdr-eyebrow2">Video/Link</div>'
-      + '<button id="sb-link-toggle" class="sb-notes-pill" title="Video/Link">🎬</button>'
-      + '</div>'
-      + '<div class="sb-eyebrow-col" style="flex:1;align-items:flex-start">'
-      + '<div class="sb-hdr-eyebrow2" style="text-align:left">Signal Flags</div>'
-      + '<div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
-      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
-      + '<span style="color:#D4537E;font-size:calc(13px * var(--fg-text-scale,1))">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
-      + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
-      + '</div>'
-      + '</div>'
-      + '</div>'
-      + '<textarea id="sb-notes-box" placeholder="Add a note…" style="display:none;width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:8px">'+(item.notes||'')+'</textarea>'
-      + '<div id="sb-link-box" style="display:'+((item.link_url)?'block':'none')+';width:100%;box-sizing:border-box;margin-bottom:8px">'
+      // Additions, Aug 27 2026 (Larry: "very similar to BRIEFING CARD but
+      // no PRIORITY and no DATES and no BUDGET... IDEA - NOTES - LINKS -
+      // RELATED STORYBOARDS - SIGNAL FLAGS, especially option for
+      // multiple HEARTS, and of course the PARENT - VIEW - and ORDER
+      // number") -- replaces the old always-visible Notes/Video-Link/
+      // Signal-Flags row with the same checkbox-gated pattern the
+      // Briefing Card just got: each is a checkbox riding its own field
+      // label, real content sits in a .sb-addition-body directly under
+      // it, hidden by default and shown for exactly as long as the box
+      // is checked. Related Storyboards is the old 📋/🧭 Briefing Board
+      // pair, relocated here from the bottom action row -- Idea Card's
+      // own version of the BB doors row, gated the same way. Multiple
+      // hearts stay exactly as they were (tap the pill to add one, hold
+      // to remove one, 💕 shows automatically at 2+ -- see
+      // _sboardHeartsHTML) -- just wrapped in Signal Flags' own checkbox
+      // now instead of always showing. See IC_ADDITIONS/
+      // wireIcAdditionToggles below for the shared plumbing.
+      + '<div class="sb-addition" id="sb-add-notes-wrap"><label class="sb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Notes</span></label><div class="sb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1))">'+(item.notes||'')+'</textarea></div></div>'
+      + '<div class="sb-addition" id="sb-add-links-wrap"><label class="sb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Links</span></label><div class="sb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div style="display:flex;gap:6px">'
       + '<input id="sb-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link…" value="'+_sboardEsc(item.link_url||'')+'" style="flex:1;box-sizing:border-box;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));background:#fff">'
       + '<button id="sb-link-clear" type="button" title="Remove" style="width:28px;height:28px;flex-shrink:0;border-radius:6px;background:#fff;border:0.5px solid #B4B2A9;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1))">✕</button>'
       + '</div>'
       + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:#2C2C2A">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(item.link_title||item.link_url||'')+'</div>'
-      + '</div>'
+      + '</div></div>'
+      + (isTopRowHeader ? ('<div class="sb-addition" id="sb-add-related-wrap"><label class="sb-addition-label" for="sb-add-related"><input type="checkbox" id="sb-add-related"'+(addRelatedOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Related Storyboards</span></label><div class="sb-addition-body" id="sb-related-body" style="display:'+(addRelatedOpen?'':'none')+'"><div class="sb-blue-row-sm">'
+        + '<button class="sb-blue-btn-sm" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌 Unassign from Briefing Board':'📋 Assign to Briefing Board')+'</button>'
+        + (item.track_on_briefing_board ? '<button class="sb-blue-btn-sm" id="sb-bb-open" title="Open Briefing Card (new tab)">🧭 Open Briefing Card</button>' : '')
+      + '</div></div></div>') : '')
+      + '<div class="sb-addition" id="sb-add-flags-wrap"><label class="sb-addition-label" for="sb-add-flags"><input type="checkbox" id="sb-add-flags"'+(addFlagsOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Signal Flags</span></label><div class="sb-addition-body" id="sb-flags-body" style="display:'+(addFlagsOpen?'':'none')+'"><div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
+      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
+      + '<span style="color:#D4537E;font-size:calc(13px * var(--fg-text-scale,1))">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
+      + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
+      + '</div></div></div>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
@@ -7912,8 +7965,6 @@
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Appearance">⚙️</button>'
       + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
-      + (isTopRowHeader ? '<button class="sb-blue-btn" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌':'📋')+'</button>' : '')
-      + (isTopRowHeader && item.track_on_briefing_board ? '<button class="sb-blue-btn" id="sb-bb-open" title="Open Briefing Card (new tab)">🧭</button>' : '')
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       // sb-trash-overlay ("Moose poop?" confirm) — renumbered 9718 → 1221
@@ -8433,7 +8484,7 @@
       heartBtn.addEventListener('touchend', cancelHold);
       heartBtn.addEventListener('click', function(){ if(!held) applyHeartDelta(1); held=false; });
     })();
-    T().wire('sb-notes', function(){ document.getElementById('sb-notes-box').style.display='block'; });
+    wireIcAdditionToggles(item, statusBox);
     _sboardRenderKeyRow(item);
     var notesBox=document.getElementById('sb-notes-box');
     if(notesBox) notesBox.addEventListener('blur', async function(e){
@@ -8464,7 +8515,6 @@
     // refresh -- the bug fixed earlier this session (idea-capture.js's
     // onSaved ordering) only covered creating a brand-new link card;
     // this is the separate "attach a link to an existing card" path.
-    T().wire('sb-link-toggle', function(){ document.getElementById('sb-link-box').style.display='block'; });
     (function(){
       var linkInput=document.getElementById('sb-link-url');
       var linkPreview=document.getElementById('sb-link-preview');
@@ -9031,7 +9081,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,storyboard_kind,source_project_id,board_type,org_name')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
