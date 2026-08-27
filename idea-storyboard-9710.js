@@ -2263,12 +2263,78 @@
         if(freshExisting.data) _sboardDrillInto(freshExisting.data);
         return;
       }
-      _sboardShowToast('Building your Plan board…');
-      var newRoot=await _sboardDuplicateProjectAsPlan(ideaRow);
-      _sboardDrillInto(newRoot);
+      // Aug 27 2026, Larry: first time building a Plan board for a project,
+      // offer a choice instead of always duplicating -- Duplicate carries
+      // over every Header/Subber/card from the Idea board (the original
+      // Aug 26 behavior, unchanged); Start Blank makes only the root row
+      // (same project identity -- color/logo/board_type/org_name/name --
+      // since Design Notes already treats those as one-per-project, shared
+      // by Idea and Plan) with no cards under it. Same "duplicates/creates
+      // once, then only reopens" rule either way -- this choice only shows
+      // when no Plan board exists yet for this project.
+      _sboardOpenPlanStartChoice(ideaRow);
     }catch(err){
       _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
     }
+  }
+
+  // Reusable first-time "how do you want to start this board" chooser.
+  // Built for PLAN today; any future board type (e.g. an untimed
+  // Path/Roadmap kind, if that gets built) can call this the same way --
+  // just pass its own kindLabel/duplicateFn/blankFn.
+  function _sboardOpenPlanStartChoice(ideaRow){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Start this Plan board</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Copy everything over from the Idea board to build on, or start from a clean slate.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">'
+      +'<button class="sc-ov-btn save" id="sb-plan-start-copy" style="width:100%">Duplicate from Idea board</button>'
+      +'<button class="sc-ov-btn" id="sb-plan-start-blank" style="width:100%">Start Blank</button>'
+      +'<button class="sc-ov-btn" id="sb-plan-start-cancel" style="width:100%">Cancel</button>'
+      +'</div></div>';
+    ov.classList.add('active');
+    T().wire('sb-plan-start-cancel', closeSbDetail);
+    T().wire('sb-plan-start-copy', async function(){
+      closeSbDetail();
+      _sboardShowToast('Building your Plan board…');
+      try{
+        var newRoot=await _sboardDuplicateProjectAsPlan(ideaRow);
+        _sboardDrillInto(newRoot);
+      }catch(err){
+        _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
+      }
+    });
+    T().wire('sb-plan-start-blank', async function(){
+      closeSbDetail();
+      _sboardShowToast('Building your Plan board…');
+      try{
+        var newRoot=await _sboardCreateBlankPlanBoard(ideaRow);
+        _sboardDrillInto(newRoot);
+      }catch(err){
+        _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
+      }
+    });
+  }
+
+  // Blank-start counterpart to _sboardDuplicateProjectAsPlan below: same
+  // root row (same project identity), but no child Headers/Subbers/cards
+  // copied over -- an empty Plan board ready to build from scratch.
+  async function _sboardCreateBlankPlanBoard(ideaRoot){
+    var _sb=T().sb;
+    var authRes=await _sb.auth.getUser();
+    var user=authRes && authRes.data && authRes.data.user;
+    if(!user) throw new Error('not signed in');
+    var rootIns=await _sb.from('ideas').insert({
+      user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
+      cluster_id:null, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
+      org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
+      logo_url:ideaRoot.logo_url||null, logo_w:ideaRoot.logo_w||null, logo_h:ideaRoot.logo_h||null,
+      storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
+      track_on_briefing_board:false, created_at:new Date().toISOString()
+    }).select().single();
+    if(rootIns.error) throw rootIns.error;
+    return rootIns.data;
   }
 
   // Picking IDEA while standing on a PLAN board jumps back to the IDEA
