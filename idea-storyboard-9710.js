@@ -3463,7 +3463,25 @@
       var reduced=base-Math.floor((len-14)/5);
       return Math.max(min, reduced);
     }
-    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
+    // Root cause of words still splitting after every earlier "fixed the
+    // floor/rounding" pass (Aug 18-21), found Aug 28 2026: this measured
+    // against the browser's generic fallback 'serif' (Times New Roman on
+    // most systems), but every tile this function sizes actually renders
+    // in 'Playfair Display' (inherited from #fg-root/.fg's own font-
+    // family, set in index.html -- no tile ever overrides it, this file's
+    // "hd" header pill even says font-family:inherit explicitly). Playfair
+    // Display's letterforms run wider than generic serif at the same
+    // point size, so the canvas measurement was quietly finding a size
+    // that "fit" in the WRONG font, then the real DOM text -- rendered in
+    // the RIGHT font -- was still too wide and fell through to
+    // word-break:break-word anyway, no matter how low the floor went.
+    // Matches the font stack Briefing Board's own caller already gets
+    // right by reading getComputedStyle(el).fontFamily (see
+    // briefing-board.js) -- this file's tiles are built and measured
+    // before they're in the DOM, so there's no live computed style to
+    // read; the site only ever uses one board font, so naming it directly
+    // is exact rather than a guess.
+    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'\'Playfair Display\',Georgia,serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
   }
 
   function _sboardHeartsHTML(count){
