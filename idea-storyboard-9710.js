@@ -306,6 +306,24 @@
         +'.cs-primary-toggle{cursor:pointer;margin-right:4px;opacity:0.32;color:#3a7ca8}'
         +'.cs-primary-toggle:hover{opacity:0.6}'
         +'.cs-primary-toggle.cs-primary-on{opacity:1}'
+        // Flat Cast list, Session 255 (Aug 28 2026) -- Larry: every card's
+        // people screen should look like the board-level Cast screen (one
+        // flat list, tm-row/tm-name/tm-rolepanel -- see _tmRenderRoster),
+        // not three grouped boxes. Role choices only show once you click
+        // the name (tm-rolepanel, reused as-is); a checkbox in front of
+        // each row drives the board-wide person filter (multi-select --
+        // see _sboardPersonFilterIds) instead of a single "Team" dropdown
+        // trigger. Contact fields are now always editable (any signed-in
+        // member, any row -- Larry: "anyone can edit anyone's contact
+        // info"), and Notes collapses behind a ✏️ pencil after the name
+        // instead of sitting open as its own row, auto-opened only when
+        // notes already has something in it.
+        +'.cs-filter-chk{margin-right:7px;cursor:pointer;accent-color:#5b9bd5}'
+        +'.cs-role-tag{font-weight:400;color:#7a6040;font-size:calc(11px * var(--fg-text-scale,1))}'
+        +'.cs-notes-pencil{cursor:pointer;margin-left:4px;opacity:0.55;font-size:calc(10px * var(--fg-text-scale,1))}'
+        +'.cs-notes-pencil:hover{opacity:1}'
+        +'.cs-notes-pencil.cs-notes-has{opacity:1}'
+        +'.cs-contact-input{border:none;border-bottom:1px dashed #cfe4f2;background:transparent;font-size:calc(11px * var(--fg-text-scale,1));color:#5b9bd5;padding:0;font-family:inherit;width:auto;max-width:150px}'
         +'@media print{body *{visibility:hidden}.sb-team-print,.sb-team-print *{visibility:visible}.sb-team-print{position:absolute;left:0;top:0;width:100%!important;box-shadow:none!important}@page{size:landscape}}'
         // Call Sheet print document, Session 228 (Aug 19) -- portrait
         // page, built and shown only for the print job (see _csPrint).
@@ -1017,10 +1035,17 @@
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
-  // VIEW-by-person filter state -- Aug 9 2026. Null = everyone (default).
-  // Resets whenever the current project changes, same as BB resetting its
-  // own VIEW filter on a board switch.
-  var _sboardPersonFilterId = null;
+  // VIEW-by-person filter state -- Aug 9 2026, upgraded to multi-select
+  // Session 255 (Larry: check one or more people, board narrows to any
+  // of their assignments in any role -- Stakeholder included). Empty
+  // array = everyone (default). Resets whenever the current project
+  // changes, same as BB resetting its own VIEW filter on a board switch.
+  // _sboardFilterMatchCardIds is the resolved Set of card ids the current
+  // checked people show up in, any role; null means "not resolved yet"
+  // (kept separate from "no filter set" so a render mid-fetch doesn't
+  // flash the unfiltered board).
+  var _sboardPersonFilterIds = [];
+  var _sboardFilterMatchCardIds = null;
   var _sboardViewFilterProjectId = null;
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
@@ -2839,13 +2864,28 @@
   // not person-filterable content). Only re-fetches the roster when the
   // project actually changes (_sboardViewFilterProjectId), not on every
   // render, to avoid re-querying on every drag/reorder.
+  // Session 255: any role counts now, not just the ★ primary doer --
+  // Larry: being recognized as a Stakeholder carries its own weight, not
+  // just the doing roles. _sboardFilterMatchCardIds is resolved by
+  // _sboardRecomputeFilterMatches (a real card_roles query, since "any
+  // role, any checked person" can't be read off the cheap primary-doer
+  // cache the old single-person filter used) -- called right before
+  // renderSeaBoard(true) wherever the checked set changes.
   function _sboardFilterByPerson(items){
-    if(!_sboardPersonFilterId) return items;
-    // Session 234: matches the same starred primary doer the corner badge
-    // shows (see _sboardCardPrimaryUid) instead of the old, now-removed
-    // Person Assigned field directly -- falls back to a card's legacy
-    // assigned_user_id only if nobody's been starred on it yet.
-    return items.filter(function(r){ return String(_sboardCardPrimaryUid(r))===String(_sboardPersonFilterId); });
+    if(!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) return items;
+    if(!_sboardFilterMatchCardIds) return items;
+    return items.filter(function(r){ return _sboardFilterMatchCardIds.has(String(r.id)); });
+  }
+
+  async function _sboardRecomputeFilterMatches(){
+    if(!_sboardPersonFilterIds || !_sboardPersonFilterIds.length){ _sboardFilterMatchCardIds=null; return; }
+    var _sb=T().sb; if(!_sb){ _sboardFilterMatchCardIds=new Set(); return; }
+    try{
+      var res=await _sb.from('card_roles').select('card_id').eq('card_type','idea').in('user_id', _sboardPersonFilterIds);
+      var set=new Set();
+      (res.data||[]).forEach(function(r){ set.add(String(r.card_id)); });
+      _sboardFilterMatchCardIds=set;
+    }catch(e){ _sboardFilterMatchCardIds=new Set(); }
   }
 
   async function _sboardViewConfirmAddMember(projectRow, email){
@@ -2862,40 +2902,55 @@
     _sboardRenderPersonFilterPicker(projectRow);
   }
 
+  // Session 255: multi-select -- Larry: check one or more people, board
+  // narrows to any of their assignments. Rows toggle in place (menu stays
+  // open) rather than picking one and closing, since picking a second
+  // person is now a normal thing to do here. Trigger label reads "Team"
+  // (nobody checked), a single name (exactly one), or "N people" (more).
   function _sboardRenderPersonFilterPicker(projectRow){
     var trigger=document.getElementById('sc-view-trigger'), menu=document.getElementById('sc-view-menu');
     if(!trigger || !menu || !projectRow) return;
     var rows=_tmAllRosterRows(projectRow);
-    var cur=_sboardPersonFilterId||'';
-    var stillPresent=!cur;
-    rows.forEach(function(m){ if(String(m.user_id)===String(cur)) stillPresent=true; });
-    if(cur && !stillPresent){ _sboardPersonFilterId=null; cur=''; }
-    var curRow = cur ? rows.filter(function(m){ return String(m.user_id)===String(cur); })[0] : null;
-    trigger.textContent = curRow ? (curRow.name||curRow.email||'') : 'Team';
+    _sboardPersonFilterIds=(_sboardPersonFilterIds||[]).filter(function(id){
+      return rows.some(function(m){ return String(m.user_id)===String(id); });
+    });
+    var cur=_sboardPersonFilterIds;
+    if(!cur.length) trigger.textContent='Team';
+    else if(cur.length===1){
+      var only=rows.filter(function(m){ return String(m.user_id)===String(cur[0]); })[0];
+      trigger.textContent=only?(only.name||only.email||''):'Team';
+    } else trigger.textContent=cur.length+' people';
+
+    function applyAndRender(){
+      _sboardRecomputeFilterMatches().then(function(){ renderSeaBoard(true); _sboardRenderPersonFilterPicker(projectRow); });
+    }
 
     menu.innerHTML='';
     var teamRow=document.createElement('div');
-    teamRow.className='sc-cdrop-row'+(!cur?' active':'');
+    teamRow.className='sc-cdrop-row'+(!cur.length?' active':'');
     teamRow.textContent='Team';
     teamRow.addEventListener('click', function(e){
       e.stopPropagation(); menu.hidden=true;
-      _sboardPersonFilterId=null; renderSeaBoard(true);
+      _sboardPersonFilterIds=[]; applyAndRender();
     });
     menu.appendChild(teamRow);
 
     rows.forEach(function(m){
+      var checked=cur.indexOf(String(m.user_id))>=0;
       var row=document.createElement('div');
-      row.className='sc-cdrop-row sc-view-row'+(String(m.user_id)===String(cur)?' active':'');
+      row.className='sc-cdrop-row sc-view-row'+(checked?' active':'');
       var nameSpan=document.createElement('span');
       nameSpan.className='sc-view-row-name';
-      nameSpan.textContent=m.name||m.email||'';
+      nameSpan.textContent=(checked?'✓ ':'')+(m.name||m.email||'');
       var roleSpan=document.createElement('span');
       roleSpan.className='sc-view-row-role';
       roleSpan.textContent=_tmRoleTitle(m);
       row.appendChild(nameSpan); row.appendChild(roleSpan);
       row.addEventListener('click', function(e){
-        e.stopPropagation(); menu.hidden=true;
-        _sboardPersonFilterId=m.user_id; renderSeaBoard(true);
+        e.stopPropagation();
+        var idx=_sboardPersonFilterIds.indexOf(String(m.user_id));
+        if(idx>=0) _sboardPersonFilterIds.splice(idx,1); else _sboardPersonFilterIds.push(String(m.user_id));
+        applyAndRender();
       });
       menu.appendChild(row);
     });
@@ -4089,7 +4144,7 @@
       if(currentProjectRowForScope){
         if(String(currentProjectRowForScope.id)!==String(_sboardViewFilterProjectId)){
           _sboardViewFilterProjectId=currentProjectRowForScope.id;
-          _sboardPersonFilterId=null;
+          _sboardPersonFilterIds=[]; _sboardFilterMatchCardIds=null;
           _tmLoadRoster(currentProjectRowForScope).then(function(){ _sboardRenderPersonFilterPicker(currentProjectRowForScope); });
         } else {
           _sboardRenderPersonFilterPicker(currentProjectRowForScope);
@@ -6635,14 +6690,28 @@
   // file (briefing-board.js, via the T2TStoryboard bridge) opened the
   // 👥 dropdown for its own card type. Session 234 (Aug 21).
   var _csCardType = 'idea';
-  var CS_ROLE_ORDER = ['stakeholder','leader','cast_member','facilitator','facilitator_qualified'];
+  // Whichever board opened the Cast popup owns its own checked-people
+  // filter array (Idea/Plan share _sboardPersonFilterIds; Briefing Board
+  // has its own) -- openCallSheet points this at the right one so the
+  // popup's checkboxes read/reflect the correct board's filter state.
+  // Session 255.
+  var _csActiveFilterIds = [];
+  // Session 255 (Aug 28 2026), Larry: three basic roles -- Stakeholder,
+  // Primary, Cast Member -- with Facilitator and Facilitator-qualified
+  // (backup) as the two Cast Member variants that matter enough to call
+  // out on their own. PRIMARY replaces the old "Leader" role AND absorbs
+  // the separate ★ primary-doer star into one idea: "the person
+  // responsible for making it happen." See _csSaveRole for how it keeps
+  // the existing is_primary/★ plumbing (corner badge, board filter
+  // fallback) in sync without rewiring those call sites.
+  var CS_ROLE_ORDER = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified'];
   var CS_ROLE_LABEL = {
-    stakeholder:'Stakeholder', leader:'Leader',
+    stakeholder:'Stakeholder', primary:'Primary',
     cast_member:'Cast Member', facilitator:'Facilitator',
-    facilitator_qualified:'Facilitator-qualified'
+    facilitator_qualified:'Facilitator-qualified (backup)'
   };
   var CS_ROLE_SYM = {
-    stakeholder:'👤', leader:'🎯',
+    stakeholder:'👤', primary:'🎯',
     cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦'
   };
 
@@ -6664,61 +6733,114 @@
     return null;
   }
 
-  function _csRenderRoleRows(role){
-    var rows=_csRowsForRole(role);
-    if(!rows.length) return '<div class="cs-empty-role">Nobody yet</div>';
-    return rows.map(function(r){
-      var m=_csMemberLookup(r.user_id);
-      var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
-      var email=m?(m.email||''):'';
-      var star=r.is_parent_connection?'<span class="cs-parent-star" title="Carried over from the parent">★</span>':'';
-      var keyToggle = role==='stakeholder'
-        ? '<span class="cs-key-toggle'+(r.is_key?' cs-key-on':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_key?'Key Stakeholder — can directly interfere with progress. Click to unmark.':'Mark as a Key Stakeholder — can directly interfere with progress')+'">🔑</span>'
-        : '';
-      // Primary doer star, Session 234 -- same toggle as the compact 👥
-      // dropdown (_sbPeopleRenderList); both read/write the same
-      // card_roles.is_primary column via _csTogglePrimary.
-      var primaryToggle='<span class="cs-primary-toggle'+(r.is_primary?' cs-primary-on':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'Primary doer — click to unstar':'Mark as the primary doer')+'">'+(r.is_primary?'★':'☆')+'</span>';
-      return '<div class="tm-row">'
-        +'<div class="tm-sym">'+CS_ROLE_SYM[role]+'</div>'
-        +'<div class="tm-body">'
-          +'<div class="tm-name">'+primaryToggle+keyToggle+star+_esc9710(name)+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
-          +(email?('<div class="tm-contact">✉ '+_esc9710(email)+'</div>'):'')
-          +'<div class="tm-notes-row"><span class="tm-notes-lbl">NOTES:</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="—" value="'+_esc9710(r.notes||'')+'"></div>'
-        +'</div>'
-      +'</div>';
-    }).join('');
-  }
-
-  function _csRenderAddRow(role){
-    return '<div class="tm-addrow" style="margin-top:4px;justify-content:flex-start">'
-        +'<div class="tm-add-tile cs-add-tile" data-role="'+role+'" title="Add to '+CS_ROLE_LABEL[role]+'">+</div>'
-      +'</div>'
-      +'<div class="cs-add-form" data-role-form="'+role+'" style="display:none;margin:4px 0 2px">'
-        +'<div class="tm-add-wrap">'
-          +'<input type="text" class="cs-add-email" data-role="'+role+'" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1));padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
-          +'<div class="tm-add-suggest cs-add-suggest" data-role-suggest="'+role+'" style="display:none"></div>'
-        +'</div>'
-      +'</div>';
-  }
-
-  function _csRenderAllRoles(){
-    CS_ROLE_ORDER.forEach(function(role){
-      var el=document.getElementById('cs-rows-'+role);
-      if(el) el.innerHTML=_csRenderRoleRows(role);
+  // Flat Cast list, Session 255 -- replaces the old three-box grouping
+  // (Stakeholders/Doers/Facilitator) with one list, same tm-row look the
+  // board-level Team/Cast screens already use. Sort: primary doer first
+  // (the one person most worth seeing at a glance), then by CS_ROLE_ORDER,
+  // then by name, so the list doesn't reshuffle on every render.
+  function _csAllRolesFlat(){
+    var rows=(_csRoles||[]).slice();
+    rows.sort(function(a,b){
+      if(!!a.is_primary!==!!b.is_primary) return a.is_primary?-1:1;
+      var ra=CS_ROLE_ORDER.indexOf(a.role), rb=CS_ROLE_ORDER.indexOf(b.role);
+      if(ra!==rb) return ra-rb;
+      var ma=_csMemberLookup(a.user_id), mb=_csMemberLookup(b.user_id);
+      var na=(ma?(ma.name||ma.email):'')||'', nb=(mb?(mb.name||mb.email):'')||'';
+      return na.localeCompare(nb);
     });
+    return rows;
   }
 
-  function _csRenderSuggestions(role, query){
-    var box=document.querySelector('.cs-add-suggest[data-role-suggest="'+role+'"]'); if(!box) return;
-    var already={}; _csRowsForRole(role).forEach(function(r){ already[r.user_id]=true; });
+  function _csRenderRow(r){
+    var m=_csMemberLookup(r.user_id);
+    var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
+    var email=m?(m.email||''):'';
+    var phone=m?(m.phone||''):'';
+    var star=r.is_parent_connection?'<span class="cs-parent-star" title="Carried over from the parent">★</span>':'';
+    // Primary doer star, Session 234 -- same toggle as the compact 👥
+    // dropdown (_sbPeopleRenderList); both read/write the same
+    // card_roles.is_primary column via _csTogglePrimary.
+    // Passive now, Session 255 -- PRIMARY is picked from the role panel
+    // like any other role (see CS_ROLE_ORDER comment); this is just the
+    // at-a-glance ★ for whoever currently holds it, not a click target.
+    var primaryMark=r.role==='primary'?'<span class="cs-primary-toggle cs-primary-on" title="Primary — the person responsible for making it happen">★</span>':'';
+    // Board-wide filter checkbox, Session 255 -- Larry: check one or more
+    // people and the whole board narrows to their assignments (any role,
+    // Stakeholder included -- being recognized as a Stakeholder carries
+    // its own communication expectation, not just the doing roles). See
+    // _sboardPersonFilterIds / _sboardFilterByPerson.
+    var checked=(_csActiveFilterIds||[]).indexOf(String(r.user_id))>=0;
+    var filterChk='<input type="checkbox" class="cs-filter-chk" data-uid="'+_esc9710(r.user_id)+'" title="Show this person’s cards across the whole board"'+(checked?' checked':'')+'>';
+    var hasNotes=!!(r.notes && String(r.notes).length);
+    var pencil='<span class="cs-notes-pencil'+(hasNotes?' cs-notes-has':'')+'" data-rowid="'+_esc9710(r.id)+'" title="Notes">✏️</span>';
+    // Role choices only show once the name is clicked, Session 255 --
+    // Larry: "role choices only show when clicking the name." Still the
+    // card's own five roles (kept as-is: "every card is its own potential
+    // PROJECT," not folded into the board's Sponsor/Leader vocabulary).
+    // One role per row -- picking a new one updates this same card_roles
+    // row rather than adding a second row for the same person.
+    var panel='<div class="tm-rolepanel" id="cs-rp-'+_esc9710(r.id)+'" style="display:none">'
+      + CS_ROLE_ORDER.map(function(role){
+          return '<label><input type="radio" name="cs-role-'+_esc9710(r.id)+'" class="cs-r-role" data-rowid="'+_esc9710(r.id)+'" value="'+role+'"'+(r.role===role?' checked':'')+'> '+CS_ROLE_SYM[role]+' '+CS_ROLE_LABEL[role]+'</label>';
+        }).join('')
+      + (r.role==='stakeholder' ? '<label><input type="checkbox" class="cs-key-chk" data-rowid="'+_esc9710(r.id)+'"'+(r.is_key?' checked':'')+'> 🔑 Key Stakeholder — can directly interfere with progress</label>' : '')
+    +'</div>';
+    // Session 255, Larry: "every Stakeholder has expectations...
+    // boundaries" -- reuses this same Notes spot rather than a separate
+    // field; it just relabels and re-prompts itself for a Stakeholder row
+    // so what gets written there is naturally framed as what they expect
+    // and what's off-limits, not a generic scratch note.
+    var isStakeholder=r.role==='stakeholder';
+    var notesLbl=isStakeholder?'EXPECTATIONS / BOUNDARIES:':'NOTES:';
+    var notesPh=isStakeholder?'What do they expect? What’s off-limits?':'—';
+    return '<div class="tm-row">'
+      +'<div class="tm-sym">'+filterChk+'</div>'
+      +'<div class="tm-body">'
+        +'<div class="tm-name">'+primaryMark+star+'<span class="cs-name-click" data-rowid="'+_esc9710(r.id)+'" style="cursor:pointer">'+_esc9710(name)+'</span> <span class="cs-role-tag">· '+CS_ROLE_LABEL[r.role]+'</span>'+pencil+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
+        +'<div class="tm-contact">✉ <input type="text" class="cs-contact-input cs-contact-email" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(email)+'" placeholder="email"> &nbsp; ☎ <input type="text" class="cs-contact-input cs-contact-phone" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(phone)+'" placeholder="phone"></div>'
+        +'<div class="tm-notes-row cs-notes-row" id="cs-nr-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">'+notesLbl+'</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="'+_esc9710(notesPh)+'" value="'+_esc9710(r.notes||'')+'"></div>'
+        +panel
+      +'</div>'
+    +'</div>';
+  }
+
+  function _csRenderFlatRoster(){
+    var wrap=document.getElementById('cs-rows-all'); if(!wrap) return;
+    var rows=_csAllRolesFlat();
+    wrap.innerHTML = rows.length ? rows.map(_csRenderRow).join('') : '<div class="cs-empty-role">Nobody yet</div>';
+  }
+
+  // Single add tile, Session 255 -- used to be one (+) per role box
+  // (you picked the role by which box you clicked); now there's one
+  // Cast, one add, and the role gets picked afterward by clicking the
+  // new person's name. New adds default to Cast Member.
+  function _csRenderAddRow(){
+    return '<div class="tm-addrow" style="margin-top:4px;justify-content:flex-start">'
+        +'<div class="tm-add-tile cs-add-tile" id="cs-add-tile" title="Add to this card’s Cast">+</div>'
+      +'</div>'
+      +'<div class="cs-add-form" id="cs-add-form" style="display:none;margin:4px 0 2px">'
+        +'<div class="tm-add-wrap">'
+          +'<input type="text" class="cs-add-email" id="cs-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1));padding:6px 8px;border:1px solid #cfe4f2;border-radius:6px">'
+          +'<div class="tm-add-suggest cs-add-suggest" id="cs-add-suggest" style="display:none"></div>'
+        +'</div>'
+      +'</div>';
+  }
+
+  // Session 255: dropped the role param -- with one row per person per
+  // card now, "already here" means anywhere on the card, not just this
+  // one role's old box. Still used unchanged by the compact 👥 dropdown
+  // (_sbPeopleAddRole callers below), which is why the signature stays
+  // query-only rather than folding cardType in too.
+  function _csRenderSuggestions(query){
+    var box=document.getElementById('cs-add-suggest')||document.getElementById('sb-people-add-suggest'); if(!box) return;
+    var already={}; (_csRoles||[]).forEach(function(r){ already[r.user_id]=true; });
     var q=String(query||'').trim().toLowerCase();
     var pool=(_tmAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
     var matches = q ? pool.filter(function(m){
       return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
     }) : pool;
     if(!matches.length){
-      box.innerHTML='<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone’s already in this role.')+'</div>';
+      box.innerHTML='<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone’s already on this card.')+'</div>';
     } else {
       box.innerHTML=matches.map(function(m){
         return '<div class="tm-add-suggest-row" data-email="'+_esc9710(m.email||'')+'">'
@@ -6730,17 +6852,12 @@
     box.style.display='block';
   }
 
-  // Split into a DOM-free _csInsertRole (the actual card_roles write) plus
-  // a thin _csConfirmAdd wrapper that only knows about the full Call
-  // Sheet screen's own DOM, Aug 19 2026 -- added so the new 👥 dropdown
-  // (below) can reuse the exact same insert without dragging the full
-  // screen's form-hiding/input-clearing logic along with it. _csRefreshUI
-  // now redraws both the full screen (if open) and the compact dropdown
-  // (if open) after any card_roles change, whichever happens to be
-  // showing -- at most one of the two is ever on screen at once, both
-  // checks are no-ops when their own DOM isn't present.
+  // _csRefreshUI redraws whichever of the flat Cast screen / compact
+  // dropdown is actually open after any card_roles change -- at most one
+  // of the two is ever on screen at once, both checks are no-ops when
+  // their own DOM isn't present.
   function _csRefreshUI(){
-    _csRenderAllRoles();
+    _csRenderFlatRoster();
     _sbPeopleRenderList();
   }
 
@@ -6759,15 +6876,65 @@
     }catch(e){ return {ok:false,msg:(e&&e.message)||'Could not add them.'}; }
   }
 
-  async function _csConfirmAdd(role, email){
+  // New adds default to Cast Member -- Session 255, replacing the old
+  // per-role add buttons. Click the name afterward to pick a different
+  // role; nothing forces Cast Member to stick.
+  async function _csConfirmAdd(email){
     var errEl=document.getElementById('cs-error');
     if(!email || !_csItem) return;
-    var res=await _csInsertRole(role, email);
+    var res=await _csInsertRole('cast_member', email);
     if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
     if(errEl) errEl.style.display='none';
-    var form=document.querySelector('.cs-add-form[data-role-form="'+role+'"]'); if(form) form.style.display='none';
-    var input=document.querySelector('.cs-add-email[data-role="'+role+'"]'); if(input) input.value='';
+    var form=document.getElementById('cs-add-form'); if(form) form.style.display='none';
+    var input=document.getElementById('cs-add-email'); if(input) input.value='';
     _csRefreshUI();
+  }
+
+  // Change a person's role in place, Session 255 -- one card_roles row
+  // per person per card now, so this updates that same row's role
+  // instead of inserting a second one. Clears is_key if they're moved
+  // off Stakeholder, since the toggle only makes sense there.
+  //
+  // PRIMARY now absorbs the ★ star (see CS_ROLE_ORDER comment above), so
+  // picking Primary here also sets is_primary=true on this row -- clearing
+  // it off anyone else on the card first, same order _csTogglePrimary
+  // already used, so the one-star-per-card constraint never trips -- and
+  // moving someone OFF Primary clears their own is_primary. This keeps
+  // the corner badge and the board's person-filter fallback (both still
+  // keyed off is_primary) correct without touching that code.
+  async function _csSaveRole(rowId, newRole){
+    if(!rowId || !_csItem) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      if(newRole==='primary'){
+        var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
+        if(clear.error) throw clear.error;
+      }
+      var patch={role:newRole, is_primary:(newRole==='primary')};
+      if(newRole!=='stakeholder') patch.is_key=false;
+      var upd=await _sb.from('card_roles').update(patch).eq('id', rowId);
+      if(upd.error) throw upd.error;
+      await _csLoadRoles(_csItem);
+      _csRefreshUI();
+    }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update their role.'; errEl.style.display='block'; } }
+  }
+
+  // Contact info, Session 255 -- Larry: anyone can edit anyone's phone or
+  // email right from the card, not just that person editing their own.
+  // Writes to members.phone/members.email (see update_member_contact),
+  // so it's a real, board-wide update to that person's directory entry,
+  // not a per-card copy -- the same value shows up everywhere they appear.
+  async function _csSaveContact(uid, phone, email){
+    if(!uid) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var res=await _sb.rpc('update_member_contact', {p_user_id:uid, p_phone:(phone===undefined?null:phone), p_email:(email===undefined?null:email)});
+      if(res.error) throw res.error;
+      await _tmFetchAllMembers();
+    }catch(e){
+      var errEl=document.getElementById('cs-error');
+      if(errEl){ errEl.textContent=(e&&e.message)||'Could not save that.'; errEl.style.display='block'; }
+    }
   }
 
   async function _csRemoveRole(rowId){
@@ -7012,18 +7179,18 @@
       _sbPeopleRemoveMode=false; _sbPeopleRenderList();
       var opening=addForm.style.display==='none';
       addForm.style.display=opening?'block':'none';
-      if(opening){ _csRenderSuggestions(_sbPeopleAddRole, ''); }
+      if(opening){ _csRenderSuggestions(''); }
     });
     if(rolePick) rolePick.addEventListener('click', function(e){
       var btn=e.target.closest('.sb-people-rolepick-btn'); if(!btn) return;
       _sbPeopleAddRole=btn.getAttribute('data-role');
       _sbPeopleRenderRolePicker();
       if(suggBox) suggBox.setAttribute('data-role-suggest', _sbPeopleAddRole);
-      _csRenderSuggestions(_sbPeopleAddRole, emailInput?emailInput.value:'');
+      _csRenderSuggestions(emailInput?emailInput.value:'');
     });
     if(emailInput){
-      emailInput.addEventListener('input', function(){ _csRenderSuggestions(_sbPeopleAddRole, emailInput.value); });
-      emailInput.addEventListener('focus', function(){ _csRenderSuggestions(_sbPeopleAddRole, emailInput.value); });
+      emailInput.addEventListener('input', function(){ _csRenderSuggestions(emailInput.value); });
+      emailInput.addEventListener('focus', function(){ _csRenderSuggestions(emailInput.value); });
       emailInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _sbPeopleConfirmAdd(emailInput.value.trim()); } });
     }
     if(suggBox) suggBox.addEventListener('click', function(e){
@@ -7052,10 +7219,15 @@
   // sb-team-print print rule (own @page override, injected and removed
   // around the print call) so neither print flow can bleed into the
   // other's page orientation.
+  // Session 255: regrouped for print to match the new three-basic-roles
+  // shape (Stakeholder / Primary / Cast Member, with Facilitator and
+  // Facilitator-qualified as the two Cast Member variants worth calling
+  // out) -- the on-screen list is flat now, but a printed call sheet
+  // still reads better grouped.
   var CS_PRINT_GROUPS = [
-    {title:'Stakeholders', sub:'Invested, not doing — who controls or is affected by this. KEY = can directly interfere with progress.', roles:['stakeholder']},
-    {title:'The Doers', sub:'Leader stays accountable even if the work gets delegated', roles:['leader','cast_member']},
-    {title:'Facilitator', sub:'Responsible for the session, not the outcome', roles:['facilitator','facilitator_qualified']}
+    {title:'Stakeholders', sub:'Invested, not doing — who controls or is affected by this. KEY = can directly interfere with progress. EXPECTATIONS/BOUNDARIES shown in place of Notes.', roles:['stakeholder']},
+    {title:'Primary', sub:'The person responsible for making it happen', roles:['primary']},
+    {title:'Cast Member', sub:'Facilitator-qualified = backup', roles:['cast_member','facilitator','facilitator_qualified']}
   ];
 
   function _csFmtToday(){
@@ -7074,12 +7246,13 @@
       var email=m?(m.email||''):'';
       var star=r.is_parent_connection?'<span class="cs-pr-star">★</span>':'';
       var keytag=r.is_key?'<span class="cs-pr-keytag">KEY</span>':'';
+      var notesPrefix=role==='stakeholder'?'Expectations/boundaries: ':'Notes: ';
       return '<tr class="cs-pr-row">'
         +'<td class="cs-pr-role">'+(i===0?_esc9710(CS_ROLE_LABEL[role]):'')+'</td>'
         +'<td class="cs-pr-name">'
           +'<div class="cs-pr-nameline">'+keytag+star+_esc9710(name)+'</div>'
           +(email?('<div class="cs-pr-email">'+_esc9710(email)+'</div>'):'')
-          +(r.notes?('<div class="cs-pr-notes">Notes: '+_esc9710(r.notes)+'</div>'):'')
+          +(r.notes?('<div class="cs-pr-notes">'+notesPrefix+_esc9710(r.notes)+'</div>'):'')
         +'</td>'
       +'</tr>';
     }).join('');
@@ -7132,46 +7305,57 @@
     });
   }
 
-  async function openCallSheet(item, backFn){
+  // Session 255: the Cast popup, reachable directly from every card's
+  // bottom-row 👥 icon (Idea, Plan, Briefing Board alike) instead of a
+  // small dropdown with a ☎️ button one step further in. Manages its own
+  // overlay div appended to <body> -- unlike the old Idea-only version,
+  // this no longer assumes #sb-detail-overlay exists, since briefing-
+  // board.js calls it through the T2TStoryboard bridge on a page that
+  // has no such element. onFilterChange lets each caller supply its own
+  // "please re-render the board now" function, since Idea/Plan and
+  // Briefing Board each have their own separate render pipeline.
+  function closeCallSheet(){
+    var ov=document.getElementById('cs-callsheet-overlay');
+    if(ov){ ov.style.display='none'; ov.classList.remove('active'); }
+  }
+
+  async function openCallSheet(item, backFn, cardType, onFilterChange, currentFilterIds){
     _csItem=item;
-    _csCardType='idea'; // this full-screen path is Idea-Card-only (see _sboardOpenPeopleDropdown)
-    var ov=document.getElementById('sb-detail-overlay'); if(!ov || !item) return;
-    ov.innerHTML='<div class="sc-overlay-card sb-shape-card" style="text-align:center;background:#F5F1E8;max-height:82vh;overflow-y:auto;position:relative">'
-      +'<div id="cs-body">'
+    _csCardType=cardType||'idea';
+    _csActiveFilterIds=currentFilterIds||_sboardPersonFilterIds||[];
+    if(!document.getElementById('cs-callsheet-overlay')){
+      var ovEl=document.createElement('div');
+      ovEl.id='cs-callsheet-overlay';
+      ovEl.style.cssText='display:none;position:fixed;inset:0;z-index:9999;background:rgba(20,20,18,0.45);align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+      // Styled fully inline (not the .sc-overlay-card class), Session
+      // 255 -- that class only exists on pages that load this file's own
+      // stylesheet; this popup needs to look right on Briefing Board
+      // pages too, reached only through the T2TStoryboard bridge.
+      ovEl.innerHTML='<div id="cs-callsheet-card" style="text-align:center;background:#F5F1E8;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,0.3);max-height:88vh;overflow-y:auto;width:min(400px,100%);position:relative;box-sizing:border-box"></div>';
+      document.body.appendChild(ovEl);
+      ovEl.addEventListener('click', function(e){ if(e.target===ovEl) closeCallSheet(); });
+    }
+    var ov=document.getElementById('cs-callsheet-overlay');
+    var cardEl=document.getElementById('cs-callsheet-card');
+    if(!ov || !cardEl || !item) return;
+    cardEl.innerHTML='<div id="cs-body">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
-        +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">📋 CALL SHEET</span>'
+        +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">🎭 CAST</span>'
         +'<div style="display:flex;align-items:center;gap:6px">'
           +'<div class="tm-print-tile" id="cs-print-tile" title="Print Call Sheet">&#128438;</div>'
           +'<button id="cs-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
         +'</div>'
       +'</div>'
       +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
-      +'<div class="cs-group">'
-        +'<div class="cs-group-title">Stakeholders</div>'
-        +'<div class="cs-group-sub">Invested, not doing — who controls or is affected by this. Tap 🔑 to mark a Key Stakeholder, someone who can directly interfere with progress.</div>'
-        +'<div id="cs-rows-stakeholder"></div>'+_csRenderAddRow('stakeholder')
-      +'</div>'
-      +'<div class="cs-group cs-doers">'
-        +'<div class="cs-group-title">The Doers</div>'
-        +'<div class="cs-group-sub">Leader stays accountable even if the work gets delegated</div>'
-        +'<div class="cs-role-label">Leader</div><div id="cs-rows-leader"></div>'+_csRenderAddRow('leader')
-        +'<div class="cs-role-label">Cast Member</div><div id="cs-rows-cast_member"></div>'+_csRenderAddRow('cast_member')
-      +'</div>'
-      +'<div class="cs-group">'
-        +'<div class="cs-group-title">Facilitator</div>'
-        +'<div class="cs-group-sub">Responsible for the session, not the outcome</div>'
-        +'<div class="cs-role-label">Facilitator</div><div id="cs-rows-facilitator"></div>'+_csRenderAddRow('facilitator')
-        +'<div class="cs-role-label">Facilitator-qualified</div><div id="cs-rows-facilitator_qualified"></div>'+_csRenderAddRow('facilitator_qualified')
-      +'</div>'
+      +'<div id="cs-rows-all"></div>'
+      + _csRenderAddRow()
       +'<div id="cs-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin:4px 0;display:none"></div>'
-      +'</div>'
-      +'<div class="sc-corner-flip" id="cs-corner-flip" title="Flip back"></div>'
     +'</div>';
+    ov.style.display='flex';
     ov.classList.add('active');
     var body=document.getElementById('cs-body');
-    function goBack(){ closeSbDetail(); (backFn||function(){})(); }
+    function goBack(){ closeCallSheet(); (backFn||function(){})(); }
     T().wire('cs-close', goBack);
-    T().wire('cs-corner-flip', goBack);
     T().wire('cs-print-tile', _csPrint);
 
     // Breadcrumb -- same ancestor walk header-data.js already uses to
@@ -7191,40 +7375,71 @@
 
     await _tmFetchAllMembers();
     await _csLoadRoles(item);
-    _csRenderAllRoles();
+    _csRenderFlatRoster();
 
     if(body){
-      body.querySelectorAll('.cs-add-tile').forEach(function(tile){
-        tile.addEventListener('click', function(){
-          var role=tile.getAttribute('data-role');
-          var form=body.querySelector('.cs-add-form[data-role-form="'+role+'"]');
-          if(!form) return;
-          var opening=form.style.display==='none';
-          body.querySelectorAll('.cs-add-form').forEach(function(f){ f.style.display='none'; });
-          if(opening){ form.style.display='block'; _csRenderSuggestions(role, ''); }
-        });
+      var addTile=document.getElementById('cs-add-tile');
+      if(addTile) addTile.addEventListener('click', function(){
+        var form=document.getElementById('cs-add-form'); if(!form) return;
+        var opening=form.style.display==='none';
+        form.style.display=opening?'block':'none';
+        if(opening) _csRenderSuggestions('');
       });
-      body.querySelectorAll('.cs-add-email').forEach(function(input){
-        var role=input.getAttribute('data-role');
-        input.addEventListener('input', function(){ _csRenderSuggestions(role, input.value); });
-        input.addEventListener('focus', function(){ _csRenderSuggestions(role, input.value); });
-        input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); } });
+      var addInput=document.getElementById('cs-add-email');
+      if(addInput){
+        addInput.addEventListener('input', function(){ _csRenderSuggestions(addInput.value); });
+        addInput.addEventListener('focus', function(){ _csRenderSuggestions(addInput.value); });
+        addInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _csConfirmAdd(addInput.value.trim()); } });
+      }
+      var addSuggest=document.getElementById('cs-add-suggest');
+      if(addSuggest) addSuggest.addEventListener('click', function(e){
+        var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
+        _csConfirmAdd(row.getAttribute('data-email'));
       });
-      body.querySelectorAll('.cs-add-suggest').forEach(function(box){
-        box.addEventListener('click', function(e){
-          var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
-          var role=box.getAttribute('data-role-suggest');
-          _csConfirmAdd(role, row.getAttribute('data-email'));
-        });
-      });
+
       body.addEventListener('click', function(e){
+        var nm=e.target.closest('.cs-name-click');
+        if(nm){
+          var panel=document.getElementById('cs-rp-'+nm.getAttribute('data-rowid'));
+          if(panel) panel.style.display=(panel.style.display==='none')?'block':'none';
+          return;
+        }
+        var pencil=e.target.closest('.cs-notes-pencil');
+        if(pencil){
+          var nrow=document.getElementById('cs-nr-'+pencil.getAttribute('data-rowid'));
+          if(nrow) nrow.style.display=(nrow.style.display==='none')?'flex':'none';
+          return;
+        }
         var x=e.target.closest('.cs-remove-x'); if(x){ _csRemoveRole(x.getAttribute('data-rowid')); return; }
-        var k=e.target.closest('.cs-key-toggle'); if(k){ _csToggleKey(k.getAttribute('data-rowid')); return; }
-        var p=e.target.closest('.cs-primary-toggle'); if(p){ _csTogglePrimary(p.getAttribute('data-rowid')); return; }
       });
+
       body.addEventListener('change', function(e){
-        if(e.target.classList.contains('cs-notes-input')){
-          _csSaveNotes(e.target.getAttribute('data-rowid'), e.target.value);
+        var t=e.target;
+        if(t.classList.contains('cs-notes-input')){ _csSaveNotes(t.getAttribute('data-rowid'), t.value); return; }
+        if(t.classList.contains('cs-r-role')){ _csSaveRole(t.getAttribute('data-rowid'), t.value); return; }
+        if(t.classList.contains('cs-key-chk')){ _csToggleKey(t.getAttribute('data-rowid')); return; }
+        if(t.classList.contains('cs-filter-chk')){
+          var uid=String(t.getAttribute('data-uid'));
+          if(onFilterChange){
+            // Briefing Board (or any other caller) owns its own filter
+            // array and render pipeline -- just hand back which person
+            // was toggled and to what state, and let it do the rest.
+            onFilterChange(uid, t.checked);
+          } else {
+            _sboardPersonFilterIds=_sboardPersonFilterIds||[];
+            var idx=_sboardPersonFilterIds.indexOf(uid);
+            if(t.checked && idx<0) _sboardPersonFilterIds.push(uid);
+            if(!t.checked && idx>=0) _sboardPersonFilterIds.splice(idx,1);
+            _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
+          }
+          return;
+        }
+        if(t.classList.contains('cs-contact-email') || t.classList.contains('cs-contact-phone')){
+          var uid2=t.getAttribute('data-uid');
+          var emailEl=document.querySelector('.cs-contact-email[data-uid="'+uid2+'"]');
+          var phoneEl=document.querySelector('.cs-contact-phone[data-uid="'+uid2+'"]');
+          _csSaveContact(uid2, phoneEl?phoneEl.value:undefined, emailEl?emailEl.value:undefined);
+          return;
         }
       });
     }
@@ -8424,9 +8639,15 @@
       }catch(err){ if(statusBox) statusBox.textContent='Lock needs the locked Supabase column: '+err.message; }
     });
 
+    // Session 255: opens the full Cast popup directly now, instead of the
+    // small dropdown-then-☎️-for-more-detail two-step -- the popup now
+    // does everything that dropdown did (add/remove/star) plus role
+    // editing, notes, contact info and print in one place. The card's own
+    // back stays open underneath; closing the popup just reveals it again
+    // (see closeCallSheet), so there's no navigation to unwind here.
     T().wire('sb-people-btn', function(e){
       e.stopPropagation();
-      _sboardOpenPeopleDropdown(document.getElementById('sb-people-btn'), item, function(){ openSbDetail(item); });
+      openCallSheet(item, null, 'idea');
     });
 
     // Briefing Board tracking, Aug 11 2026 -- deliberately its own
@@ -9642,6 +9863,11 @@
     // Briefing Cards (card_type:'briefing_card') without duplicating any
     // of this logic. See _sboardOpenPeopleDropdown's own comment.
     openPeopleDropdown: _sboardOpenPeopleDropdown,
+    // Session 255: the flat Cast popup, bridged so briefing-board.js can
+    // open the exact same screen (add/remove/role/notes/contact/print)
+    // for card_type:'briefing_card' instead of duplicating it.
+    openCallSheet: openCallSheet,
+    closeCallSheet: closeCallSheet,
     ensureCardPrimaryRaw: _sboardEnsureCardPrimaryRaw,
     cardPrimaryUidRaw: _sboardCardPrimaryUidRaw,
     ensureMemberInitials: _sboardEnsureMemberInitials,

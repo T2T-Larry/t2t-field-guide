@@ -1404,6 +1404,35 @@
   // Casting's parent/TOPIC data to exist first -- not built yet, so not
   // wired here; only the assigned-to half is live for project boards.
   var _bbSourceFilter = null; // null = no filter; else {mode:'origin'|'person', value:string}
+  // Session 255: multi-select checked-people filter, driven by the ✅
+  // checkboxes in the new Cast popup (openCallSheet, bridged from
+  // idea-storyboard-9710.js) rather than the header's single-select View
+  // dropdown above -- kept as its own array/mode so the two don't fight
+  // over the same shape. _bbFilterMatchCardIds is the resolved Set of
+  // card ids the checked people show up in, any role (a real card_roles
+  // query, same reasoning as idea-storyboard-9710.js's
+  // _sboardRecomputeFilterMatches -- "any role" can't be read off the
+  // primary-doer-only cache _bbSourceFilterCards's older uid path uses).
+  var _bbPersonFilterIds = [];
+  var _bbFilterMatchCardIds = null;
+  async function _bbRecomputeFilterMatches(){
+    if(!_bbPersonFilterIds || !_bbPersonFilterIds.length){ _bbFilterMatchCardIds=null; return; }
+    var sb=T().sb; if(!sb){ _bbFilterMatchCardIds=new Set(); return; }
+    try{
+      var res=await sb.from('card_roles').select('card_id').eq('card_type','briefing_card').in('user_id', _bbPersonFilterIds);
+      var set=new Set();
+      (res.data||[]).forEach(function(r){ set.add(String(r.card_id)); });
+      _bbFilterMatchCardIds=set;
+    }catch(e){ _bbFilterMatchCardIds=new Set(); }
+  }
+  function _bbCastFilterChange(uid, checked){
+    uid=String(uid);
+    var idx=_bbPersonFilterIds.indexOf(uid);
+    if(checked && idx<0) _bbPersonFilterIds.push(uid);
+    if(!checked && idx>=0) _bbPersonFilterIds.splice(idx,1);
+    _bbSourceFilter = _bbPersonFilterIds.length ? {mode:'person', uids:_bbPersonFilterIds.slice()} : null;
+    _bbRecomputeFilterMatches().then(function(){ renderBoard(); });
+  }
 
   // VIEW options, Aug 9 2026 -- Larry: "the only other VIEW choices are
   // the cast members," not just whoever happens to already have a card.
@@ -1647,6 +1676,15 @@
     if(_bbSourceFilter.mode==='origin'){
       if(_bbSourceFilter.value==='__native__') return cards.filter(function(c){ return !c._foreign; });
       return cards.filter(function(c){ return c._foreign && c._homeBoardId===_bbSourceFilter.value; });
+    }
+    if(_bbSourceFilter.mode==='person' && _bbSourceFilter.uids){
+      // Session 255: the Cast popup's checkboxes -- any role, any of the
+      // checked people (not just whoever's starred primary), resolved by
+      // _bbRecomputeFilterMatches before this ever runs. Falls through to
+      // the unfiltered list while a fetch is still in flight so toggling
+      // a checkbox doesn't flash an empty board.
+      if(!_bbFilterMatchCardIds) return cards;
+      return cards.filter(function(c){ return _bbFilterMatchCardIds.has(String(c.id)); });
     }
     if(_bbSourceFilter.mode==='person'){
       // Session 234 (Aug 21) -- match the 👥 primary-doer star first
@@ -3453,6 +3491,23 @@
       +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
       +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
       +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-sub);font-size:calc(12px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;cursor:pointer}'
+      // Session 255: matching styles for the flat Cast popup
+      // (openCallSheet, in idea-storyboard-9710.js, bridged here as
+      // T2TStoryboard.openCallSheet) so it looks the same whether it was
+      // opened from an Idea/Plan card or a Briefing Card. That popup's
+      // .tm-row/.tm-rolepanel markup is already covered by the rules
+      // above; these are the pieces unique to it.
+      +'.cs-filter-chk{margin-right:7px;cursor:pointer;accent-color:var(--bb-accent-strong,#4a7a95)}'
+      +'.cs-role-tag{font-weight:400;color:var(--bb-sub);font-size:calc(11px * var(--fg-text-scale,1))}'
+      +'.cs-notes-pencil{cursor:pointer;margin-left:4px;opacity:0.55;font-size:calc(10px * var(--fg-text-scale,1))}'
+      +'.cs-notes-pencil:hover,.cs-notes-pencil.cs-notes-has{opacity:1}'
+      +'.cs-contact-input{border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);padding:0;font-family:inherit;width:auto;max-width:150px}'
+      +'.cs-primary-toggle{margin-right:4px;color:#3a7ca8}'
+      +'.cs-key-toggle{cursor:pointer;margin-right:4px;opacity:0.32;filter:grayscale(1)}'
+      +'.cs-key-toggle.cs-key-on{opacity:1;filter:none}'
+      +'.cs-remove-x{margin-left:6px;color:#a3372b;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1))}'
+      +'.cs-parent-star{color:#c9a87c;margin-right:2px}'
+      +'.cs-empty-role{font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;padding:4px 0 6px}'
       +'.tm-add-wrap{position:relative;flex:1;min-width:0}'
       +'.tm-add-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 16px rgba(59,37,16,0.18);max-height:160px;overflow-y:auto;overflow-x:hidden;z-index:5;box-sizing:border-box}'
       +'.tm-add-suggest-row{padding:6px 10px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-ink);cursor:pointer;box-sizing:border-box}'
@@ -6229,15 +6284,15 @@
     // card_type:'briefing_card'. This is now the one place to put
     // someone on a Briefing Card -- see the retired Assigned to field,
     // just above _bbInitials.
+    // Session 255: opens the same flat Cast popup Idea/Plan cards use now
+    // (add/remove/role/notes/contact/print/filter in one screen) instead
+    // of the old compact dropdown -- Briefing Cards get the full screen
+    // for the first time here, not just the star/add/remove it had before.
     T().wire('bb-d-people', function(e){
       e.stopPropagation();
       var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
-      if(window.T2TStoryboard && T2TStoryboard.openPeopleDropdown){
-        T2TStoryboard.openPeopleDropdown(
-          document.getElementById('bb-d-people'), c,
-          function(){ openCardDetail(c.id); },
-          'briefing_card', document.getElementById('bb-people-menu')
-        );
+      if(window.T2TStoryboard && T2TStoryboard.openCallSheet){
+        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds);
       }
     });
 
