@@ -912,6 +912,12 @@
       adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
       adds_start: !!c.addStart, adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
       adds_related: !!c.addRelated, adds_flags: !!c.addFlags,
+      // Aug 28 2026 -- "hide badge on card front" switch, see
+      // idea-storyboard-9710.js's _csSetHideBadge. Included here (not
+      // just written by that one targeted update) so a full card save
+      // from elsewhere in this file never silently resets it back to
+      // false for lack of being in this mapping.
+      hide_primary_badge: !!c.hidePrimaryBadge,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
@@ -952,7 +958,8 @@
       // TOPIC's name, denormalized so the eyebrow still reads right if this
       // card is merged onto a different board (Personal BB read-through).
       sourceHeaderId: row.source_header_id || null,
-      topicLabel: row.topic_label || ''
+      topicLabel: row.topic_label || '',
+      hidePrimaryBadge: !!row.hide_primary_badge
     };
   }
   function _bbSafeIdList(rows){
@@ -4020,11 +4027,20 @@
         // before this pass's ensureCardPrimaryRaw fetch lands (falls
         // back same as "nobody starred" until then -- next re-render
         // fills it in), null once fetched with nobody starred, or a uid.
-        var _bbPrimaryUid = (window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
+        // Aug 28 2026 -- "hide badge on card front" switch (set from the
+        // 👥 Cast popup, see idea-storyboard-9710.js's _csSetHideBadge):
+        // a card can genuinely have nobody on its own Cast and still
+        // resolve to an inherited primary from up the Idea Header chain,
+        // which read as a contradiction to Larry ("if initials are on
+        // the front, someone has clearly been assigned"). This switch
+        // forces the badge blank on this one card without touching the
+        // resolution itself -- filtering and the Call Sheet screen still
+        // see the real answer.
+        var _bbPrimaryUid = (!c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
         var _bbPrimaryInfo = (_bbPrimaryUid && window.T2TStoryboard && T2TStoryboard.memberInfo) ? T2TStoryboard.memberInfo(_bbPrimaryUid) : null;
-        var dotHTML = _bbPrimaryInfo
+        var dotHTML = c.hidePrimaryBadge ? '' : (_bbPrimaryInfo
           ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>')
-          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '');
+          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : ''));
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
@@ -6129,7 +6145,12 @@
       e.stopPropagation();
       var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
       if(window.T2TStoryboard && T2TStoryboard.openCallSheet){
-        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds);
+        // Aug 28 2026 -- 6th arg is the new onRosterChange callback: a
+        // roster/star change inside the popup (add/remove/role/tacit
+        // assignment) needs this board's own renderBoard to redraw the
+        // card's corner badge, same as _bbCastFilterChange already does
+        // for the filter checkboxes.
+        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds, renderBoard);
       }
     });
 

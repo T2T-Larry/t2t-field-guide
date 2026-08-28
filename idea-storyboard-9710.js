@@ -1777,6 +1777,17 @@
     return uid || item.assigned_user_id || '';
   }
   function _sboardAssignedBadgeHTML(item){
+    // Aug 28 2026, Larry: "if initials are on the front, someone has
+    // clearly been assigned" -- a card can legitimately show nobody's
+    // OWN Call Sheet is empty and still display an inherited primary
+    // from up the chain (see the tacit-assignment block above), which
+    // read as a contradiction/bug to him. This per-card switch (on the
+    // assignment screen) lets him force the front blank on a specific
+    // card without touching who resolves as primary underneath -- the
+    // resolution itself, and everything that depends on it (filtering,
+    // the Call Sheet screen), is untouched; only this one badge is
+    // suppressed.
+    if(item && item.hide_primary_badge) return '';
     var uid=_sboardCardPrimaryUid(item);
     if(!uid) return '';
     var m=_sboardAssignedCache[uid];
@@ -4219,7 +4230,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h')
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -5975,7 +5986,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -6054,7 +6065,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -6746,6 +6757,17 @@
   // popup's checkboxes read/reflect the correct board's filter state.
   // Session 255.
   var _csActiveFilterIds = [];
+  // Aug 28 2026 -- "please redraw the board now" callback, set by
+  // whichever caller (compact dropdown or full Call Sheet) opened this
+  // roster, so a roster/star change is visible on the card's own
+  // corner badge the moment the popup closes rather than only after
+  // some unrelated action happens to re-render the board. Idea/Plan and
+  // Briefing Board each have their own render pipeline (renderSeaBoard
+  // vs. briefing-board.js's own renderBoard) -- this is deliberately a
+  // plain callback rather than a hardcoded function name so both work.
+  // Distinct from onFilterChange below, which is specifically for the
+  // Cast popup's own person-filter checkboxes, not for this.
+  var _csOnRosterChange = null;
   // Session 255 (Aug 28 2026), Larry: three basic roles -- Stakeholder,
   // Primary, Cast Member -- with Facilitator and Facilitator-qualified
   // (backup) as the two Cast Member variants that matter enough to call
@@ -6911,6 +6933,36 @@
     _sbPeopleRenderList();
   }
 
+  // "Hide badge on this card's front" (Aug 28 2026) -- a plain per-card
+  // switch on the assignment screen, independent of who's actually
+  // Primary/on the Cast. Written straight to the card's own table
+  // (ideas for card_type 'idea'/'plan', briefing_cards for
+  // 'briefing_card') rather than card_roles, since it describes the
+  // card, not a person on it. _sboardPatchRow keeps the Idea/Plan
+  // board's own in-memory row in sync so a render before the next full
+  // fetch doesn't show stale state; briefing-board.js's _csItem is
+  // already a live reference into its own cards array (see
+  // _bbFindCardAnywhere), so mutating it directly here is enough there.
+  async function _csSetHideBadge(hidden){
+    if(!_csItem) return;
+    var _sb=T().sb; if(!_sb) return;
+    var table = (_csCardType==='briefing_card') ? 'briefing_cards' : 'ideas';
+    try{
+      var upd=await _sb.from(table).update({hide_primary_badge:hidden}).eq('id', _csItem.id);
+      if(upd.error) return;
+      // Both spellings: idea-storyboard-9710.js reads raw snake_case
+      // Supabase fields straight off item (item.hide_primary_badge);
+      // briefing-board.js maps rows into camelCase card objects
+      // (c.hidePrimaryBadge, see _bbRowToCard) -- _csItem is a live
+      // reference into whichever board's own object, so both need
+      // setting here rather than guessing which one the caller reads.
+      _csItem.hide_primary_badge=hidden;
+      _csItem.hidePrimaryBadge=hidden;
+      if(_csCardType!=='briefing_card') _sboardPatchRow(_csItem.id, {hide_primary_badge:hidden});
+      if(_csOnRosterChange) _csOnRosterChange();
+    }catch(e){}
+  }
+
   // Tacit assignment, rule 1 (Aug 28 2026, see the block above
   // _sboardEnsureEffectivePrimaryRaw): a card with exactly one person on
   // its Call Sheet needs no manual star -- this makes it real the moment
@@ -6926,6 +6978,11 @@
       if(upd.error) return;
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
+      // Aug 28 2026 -- this can fire on its own (not just from an
+      // explicit edit -- see the two "opening the roster catches up a
+      // stale card" call sites below), so it needs its own redraw call
+      // rather than relying on whichever caller invoked it to also do one.
+      if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){}
   }
 
@@ -6942,6 +6999,7 @@
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
+      if(_csOnRosterChange) _csOnRosterChange();
       return {ok:true};
     }catch(e){ return {ok:false,msg:(e&&e.message)||'Could not add them.'}; }
   }
@@ -6988,6 +7046,7 @@
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
       _csRefreshUI();
+      if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update their role.'; errEl.style.display='block'; } }
   }
 
@@ -7019,6 +7078,7 @@
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
       _csRefreshUI();
+      if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not remove them.'; errEl.style.display='block'; } }
   }
 
@@ -7079,6 +7139,7 @@
       // star off, that's a real choice to leave the card blank, and rule
       // 1 shouldn't immediately fight it back on.
       _sboardInvalidateEffPrimary();
+      if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }
 
@@ -7205,12 +7266,20 @@
     // never been opened first this session, since _csItem stayed null.
     _csItem=item;
     _csCardType=cardType;
+    // Aug 28 2026 -- this compact dropdown is only ever opened from the
+    // Idea Board's own tiles (Briefing Board uses the full Call Sheet
+    // screen exclusively, see openCallSheet's own comment), so it always
+    // has renderSeaBoard in scope to redraw the badge with once closed.
+    _csOnRosterChange=function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); };
     _sbPeopleBackFn=backFn||function(){ openSbDetail(item); };
     _sbPeopleRemoveMode=false;
     _sbPeopleAddRole='cast_member';
 
     var isIdea=(cardType==='idea');
     menu.innerHTML='<div id="sb-people-list"></div>'
+      +'<label style="display:flex;align-items:center;gap:5px;font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;padding:4px 2px;cursor:pointer;border-top:1px solid #e4ded0">'
+        +'<input type="checkbox" id="sb-people-hide-badge-chk"'+(item.hide_primary_badge?' checked':'')+'> Hide badge on card front'
+      +'</label>'
       +'<div class="sc-cdrop-addrow">'
         +'<button type="button" class="sc-dotted-add-btn" id="sb-people-add-btn" title="Add someone">+</button>'
         +(isIdea?'<button type="button" class="sc-dotted-add-btn sb-people-call" id="sb-people-call-btn" title="Open the full Call Sheet">☎️</button>':'')
@@ -7260,6 +7329,8 @@
     var confirmBtn=document.getElementById('sb-people-add-confirm');
     var callBtn=document.getElementById('sb-people-call-btn');
     var removeBtn=document.getElementById('sb-people-remove-btn');
+    var hideBadgeChk=document.getElementById('sb-people-hide-badge-chk');
+    if(hideBadgeChk) hideBadgeChk.addEventListener('change', function(){ _csSetHideBadge(hideBadgeChk.checked); });
 
     if(addBtn) addBtn.addEventListener('click', function(){
       _sbPeopleRemoveMode=false; _sbPeopleRenderList();
@@ -7397,18 +7468,27 @@
   // overlay div appended to <body> -- unlike the old Idea-only version,
   // this no longer assumes #sb-detail-overlay exists, since briefing-
   // board.js calls it through the T2TStoryboard bridge on a page that
-  // has no such element. onFilterChange lets each caller supply its own
-  // "please re-render the board now" function, since Idea/Plan and
-  // Briefing Board each have their own separate render pipeline.
+  // has no such element. onFilterChange is specifically for the popup's
+  // own person-filter checkboxes (called as (uid, checked)); onRosterChange
+  // (Aug 28 2026) is the separate, no-args "please redraw the board now"
+  // callback for when who's-on-the-card itself changes (add/remove/role/
+  // star) -- see _csOnRosterChange's own comment above. Idea/Plan and
+  // Briefing Board each have their own render pipeline, so both are
+  // plain callbacks rather than a hardcoded function name.
   function closeCallSheet(){
     var ov=document.getElementById('cs-callsheet-overlay');
     if(ov){ ov.style.display='none'; ov.classList.remove('active'); }
   }
 
-  async function openCallSheet(item, backFn, cardType, onFilterChange, currentFilterIds){
+  async function openCallSheet(item, backFn, cardType, onFilterChange, currentFilterIds, onRosterChange){
     _csItem=item;
     _csCardType=cardType||'idea';
     _csActiveFilterIds=currentFilterIds||_sboardPersonFilterIds||[];
+    // Idea/Plan cards (cardType 'idea', the default) always have
+    // renderSeaBoard in scope here to fall back on; Briefing Board must
+    // supply its own renderBoard explicitly since this file has no idea
+    // what that page's render function is called.
+    _csOnRosterChange = onRosterChange || ((_csCardType==='idea') ? function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); } : null);
     if(!document.getElementById('cs-callsheet-overlay')){
       var ovEl=document.createElement('div');
       ovEl.id='cs-callsheet-overlay';
@@ -7424,6 +7504,9 @@
     var ov=document.getElementById('cs-callsheet-overlay');
     var cardEl=document.getElementById('cs-callsheet-card');
     if(!ov || !cardEl || !item) return;
+    // Aug 28 2026 -- read whichever spelling this card type actually
+    // carries (see _csSetHideBadge's own comment for why there are two).
+    var _csHideBadgeNow = (_csCardType==='briefing_card') ? !!item.hidePrimaryBadge : !!item.hide_primary_badge;
     cardEl.innerHTML='<div id="cs-body">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
         +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">🎭 CAST</span>'
@@ -7433,6 +7516,9 @@
         +'</div>'
       +'</div>'
       +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
+      +'<label style="display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#5b5b56;margin:2px 0 8px;cursor:pointer">'
+        +'<input type="checkbox" id="cs-hide-badge-chk"'+(_csHideBadgeNow?' checked':'')+'> Hide badge on this card’s front'
+      +'</label>'
       +'<div id="cs-rows-all"></div>'
       + _csRenderAddRow()
       +'<div id="cs-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin:4px 0;display:none"></div>'
@@ -7440,6 +7526,8 @@
     ov.style.display='flex';
     ov.classList.add('active');
     var body=document.getElementById('cs-body');
+    var hideBadgeChk=document.getElementById('cs-hide-badge-chk');
+    if(hideBadgeChk) hideBadgeChk.addEventListener('change', function(){ _csSetHideBadge(hideBadgeChk.checked); });
     function goBack(){ closeCallSheet(); (backFn||function(){})(); }
     T().wire('cs-close', goBack);
     T().wire('cs-print-tile', _csPrint);
@@ -9393,7 +9481,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
