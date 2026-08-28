@@ -7278,7 +7278,7 @@
     var isIdea=(cardType==='idea');
     menu.innerHTML='<div id="sb-people-list"></div>'
       +'<label style="display:flex;align-items:center;gap:5px;font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;padding:4px 2px;cursor:pointer;border-top:1px solid #e4ded0">'
-        +'<input type="checkbox" id="sb-people-hide-badge-chk"'+(item.hide_primary_badge?' checked':'')+'> Hide badge on card front'
+        +'<input type="checkbox" id="sb-people-hide-badge-chk"'+(item.hide_primary_badge?' checked':'')+'> Hide initials on front'
       +'</label>'
       +'<div class="sc-cdrop-addrow">'
         +'<button type="button" class="sc-dotted-add-btn" id="sb-people-add-btn" title="Add someone">+</button>'
@@ -7517,7 +7517,7 @@
       +'</div>'
       +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
       +'<label style="display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#5b5b56;margin:2px 0 8px;cursor:pointer">'
-        +'<input type="checkbox" id="cs-hide-badge-chk"'+(_csHideBadgeNow?' checked':'')+'> Hide badge on this card’s front'
+        +'<input type="checkbox" id="cs-hide-badge-chk"'+(_csHideBadgeNow?' checked':'')+'> Hide initials on front'
       +'</label>'
       +'<div id="cs-rows-all"></div>'
       + _csRenderAddRow()

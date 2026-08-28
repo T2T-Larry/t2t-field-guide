@@ -952,7 +952,14 @@
       // TOPIC's name, denormalized so the eyebrow still reads right if this
       // card is merged onto a different board (Personal BB read-through).
       sourceHeaderId: row.source_header_id || null,
-      topicLabel: row.topic_label || ''
+      topicLabel: row.topic_label || '',
+      // "Hide initials on front" (Aug 28 2026) -- see idea-storyboard-9710.js's
+      // _csSetHideBadge comment: that shared function writes hide_primary_badge
+      // straight to this card's own briefing_cards row, but this mapping was
+      // the missing link that let a Briefing Card's own tile actually read it
+      // back out. Without it the checkbox saved fine but never changed what
+      // the card's corner badge showed.
+      hidePrimaryBadge: !!row.hide_primary_badge
     };
   }
   function _bbSafeIdList(rows){
@@ -4029,9 +4036,12 @@
         // fills it in), null once fetched with nobody starred, or a uid.
         var _bbPrimaryUid = (window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
         var _bbPrimaryInfo = (_bbPrimaryUid && window.T2TStoryboard && T2TStoryboard.memberInfo) ? T2TStoryboard.memberInfo(_bbPrimaryUid) : null;
-        var dotHTML = _bbPrimaryInfo
+        // "Hide initials on front" (Aug 28 2026) -- checked first, same as
+        // the Idea Card's own badge-render function, so the per-card switch
+        // on the assignment screen actually suppresses this corner badge.
+        var dotHTML = c.hidePrimaryBadge ? '' : (_bbPrimaryInfo
           ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>')
-          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '');
+          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : ''));
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
