@@ -912,12 +912,6 @@
       adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
       adds_start: !!c.addStart, adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
       adds_related: !!c.addRelated, adds_flags: !!c.addFlags,
-      // Aug 28 2026 -- "hide badge on card front" switch, see
-      // idea-storyboard-9710.js's _csSetHideBadge. Included here (not
-      // just written by that one targeted update) so a full card save
-      // from elsewhere in this file never silently resets it back to
-      // false for lack of being in this mapping.
-      hide_primary_badge: !!c.hidePrimaryBadge,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
@@ -958,8 +952,7 @@
       // TOPIC's name, denormalized so the eyebrow still reads right if this
       // card is merged onto a different board (Personal BB read-through).
       sourceHeaderId: row.source_header_id || null,
-      topicLabel: row.topic_label || '',
-      hidePrimaryBadge: !!row.hide_primary_badge
+      topicLabel: row.topic_label || ''
     };
   }
   function _bbSafeIdList(rows){
@@ -3022,7 +3015,21 @@
       // header's center title is permanent text ("Briefing Board"), not
       // a per-project name, so there's no equivalent "gap to mirror" the
       // way Idea's Logo mirrors Parent's gap off Topic.
-      +'.bb-logo-slot{position:relative;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      // Fixed-footprint anchor, Aug 28 2026 -- Larry: resizing Logo up
+      // "increased the size of the board header area," which should
+      // never happen. bb-logo-slot itself grows/shrinks (up to 90px, see
+      // _bbWireLogoResizeHandle) and now also carries a drag offset (see
+      // _bbWireLogoDrag) -- both need it out of this fieldgrp's normal
+      // flex flow so its size never changes the column's (and therefore
+      // the header row's) own height. This anchor is what actually sits
+      // in the flex column, reserving the original 30x30 footprint
+      // permanently; the slot floats over it via position:absolute,
+      // free to grow/move without the fieldgrp ever noticing. A big
+      // logo can now overlap neighboring header fields instead of
+      // pushing them -- same tradeoff Larry already accepted for it
+      // covering the LOGO eyebrow above it.
+      +'.bb-logo-anchor{position:relative;width:30px;height:30px;flex-shrink:0}'
+      +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;border-radius:7px}'
       +'.bb-logo-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:4px;background:var(--bb-accent);border:2px solid #fff;cursor:nwse-resize;display:none;z-index:3;touch-action:none}'
       // Organization's eyebrow is itself the Type dropdown trigger now,
@@ -3428,7 +3435,7 @@
             +'<div class="bb-mh-typebox">'
               +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Logo</div><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
@@ -3963,14 +3970,7 @@
     // person-mode match.
     if(window.T2TStoryboard && T2TStoryboard.ensureCardPrimaryRaw){
       var _bbPrimaryIds=cards.map(function(c){ return c.id; }).filter(Boolean);
-      // Aug 28 2026 -- tacit assignment: a Briefing Card with nobody on
-      // its own Cast falls back to whichever primary its source Idea
-      // Header resolves to (that Header's own climb, same rule the Idea
-      // Board uses). Briefing Cards are a flat list with no nesting of
-      // their own, so source_header_id is the only "up" they have.
-      var _bbSourceHeaderById={};
-      cards.forEach(function(c){ if(c.id) _bbSourceHeaderById[c.id]=c.sourceHeaderId||null; });
-      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds, _bbSourceHeaderById).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
+      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
@@ -4027,20 +4027,11 @@
         // before this pass's ensureCardPrimaryRaw fetch lands (falls
         // back same as "nobody starred" until then -- next re-render
         // fills it in), null once fetched with nobody starred, or a uid.
-        // Aug 28 2026 -- "hide badge on card front" switch (set from the
-        // 👥 Cast popup, see idea-storyboard-9710.js's _csSetHideBadge):
-        // a card can genuinely have nobody on its own Cast and still
-        // resolve to an inherited primary from up the Idea Header chain,
-        // which read as a contradiction to Larry ("if initials are on
-        // the front, someone has clearly been assigned"). This switch
-        // forces the badge blank on this one card without touching the
-        // resolution itself -- filtering and the Call Sheet screen still
-        // see the real answer.
-        var _bbPrimaryUid = (!c.hidePrimaryBadge && window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
+        var _bbPrimaryUid = (window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
         var _bbPrimaryInfo = (_bbPrimaryUid && window.T2TStoryboard && T2TStoryboard.memberInfo) ? T2TStoryboard.memberInfo(_bbPrimaryUid) : null;
-        var dotHTML = c.hidePrimaryBadge ? '' : (_bbPrimaryInfo
+        var dotHTML = _bbPrimaryInfo
           ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>')
-          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : ''));
+          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : '');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
@@ -6145,12 +6136,7 @@
       e.stopPropagation();
       var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
       if(window.T2TStoryboard && T2TStoryboard.openCallSheet){
-        // Aug 28 2026 -- 6th arg is the new onRosterChange callback: a
-        // roster/star change inside the popup (add/remove/role/tacit
-        // assignment) needs this board's own renderBoard to redraw the
-        // card's corner badge, same as _bbCastFilterChange already does
-        // for the filter checkboxes.
-        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds, renderBoard);
+        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds);
       }
     });
 
