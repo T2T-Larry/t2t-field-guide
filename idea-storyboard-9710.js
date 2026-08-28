@@ -9475,8 +9475,21 @@
       buckets.forEach(function(b){
         var pill=document.createElement('div');
         pill.className='cl-bucket';
-        pill.textContent=b.text_content||'(untitled)';
-        pill.title=(b.text_content||'(untitled)')+' — tap to see what\'s inside · drag here to sort an idea in · drag onto another bucket to nest it';
+        var bucketName=b.text_content||'(untitled)';
+        // Shrink before splitting a word, Aug 28 2026 (Larry, standing rule
+        // -- "never split words, shrink text to fit space") -- this shelf
+        // pill was the one remaining spot showing a Header/Subber name at a
+        // fixed font-size with plain CSS word-break as its only defense.
+        // Every other card/pill on this board already shrinks first (see
+        // FGFitFontSize / _sboardFitFontSize and the Aug 18-21 history on
+        // those). word-break stays as the CSS fallback for the rare word
+        // that's too wide even at the floor size, same as everywhere else.
+        var bucketMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
+        var bucketW=_clusterWide?110:72, bucketH=_clusterWide?34:36;
+        var bucketBase=Math.round((_clusterWide?10:9.5)*bucketMult);
+        pill.style.fontSize=_sboardFitFontSize(bucketName, bucketBase, Math.max(6,Math.round(6*bucketMult)), bucketW-14, bucketH-8, 1.1)+'px';
+        pill.textContent=bucketName;
+        pill.title=bucketName+' — tap to see what\'s inside · drag here to sort an idea in · drag onto another bucket to nest it';
         // Draggable too — lets one bucket be dropped onto another to nest it,
         // same "header:"-prefixed payload convention the storyboard itself
         // already uses for header drags.
