@@ -744,13 +744,6 @@
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'
       +'</div>'
-      +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">View</div>'
-      +'<div class="sc-cdrop" id="sc-view-cdrop">'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-view-trigger" title="Filter by person assigned">Team</button>'
-      +'<div class="sc-cdrop-menu" id="sc-view-menu" hidden></div>'
-      +'</div>'
-      +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
         // Storyboard/Session toggle removed here, Aug 9 2026 (Larry): this
@@ -1046,7 +1039,6 @@
   // flash the unfiltered board).
   var _sboardPersonFilterIds = [];
   var _sboardFilterMatchCardIds = null;
-  var _sboardViewFilterProjectId = null;
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
   var _sboardCacheReady = false;
@@ -2202,7 +2194,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-view-menu','sc-board-kind-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2856,14 +2848,13 @@
   }
 
   // VIEW-by-person filter (Aug 9 2026, Larry): the board-level counterpart
-  // to Person Assigned above -- same roster source (_tmAllRosterRows), same
-  // "real Cast roster, not free text" rule the Briefing Board's own VIEW
-  // dropdown follows (Session 198). Purely a display filter: narrows which
-  // idea/text/image/link cards render, never touches sort_order or what's
-  // saved, and never hides headers/Subbers (they're navigation scaffolding,
-  // not person-filterable content). Only re-fetches the roster when the
-  // project actually changes (_sboardViewFilterProjectId), not on every
-  // render, to avoid re-querying on every drag/reorder.
+  // to Person Assigned above -- same roster source (_tmAllRosterRows).
+  // Purely a display filter: narrows which idea/text/image/link cards
+  // render, never touches sort_order or what's saved, and never hides
+  // headers/Subbers (they're navigation scaffolding, not person-filterable
+  // content). Session 255: the header's own VIEW/Team dropdown (and
+  // Briefing Board's matching one) is gone -- checking someone in the Cast
+  // popup (👥, on every card) is now the only way to set this filter.
   // Session 255: any role counts now, not just the ★ primary doer --
   // Larry: being recognized as a Stakeholder carries its own weight, not
   // just the doing roles. _sboardFilterMatchCardIds is resolved by
@@ -2886,166 +2877,6 @@
       (res.data||[]).forEach(function(r){ set.add(String(r.card_id)); });
       _sboardFilterMatchCardIds=set;
     }catch(e){ _sboardFilterMatchCardIds=new Set(); }
-  }
-
-  async function _sboardViewConfirmAddMember(projectRow, email){
-    var input=document.getElementById('sc-view-add-email');
-    var errEl=document.getElementById('sc-view-add-error');
-    var sugg=document.getElementById('sc-view-add-suggest');
-    if(!email) return;
-    var res=await _tmAddMember(projectRow, email);
-    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
-    if(errEl) errEl.style.display='none';
-    if(input) input.value='';
-    if(sugg) sugg.style.display='none';
-    await _tmLoadRoster(projectRow);
-    _sboardRenderPersonFilterPicker(projectRow);
-  }
-
-  // Session 255: multi-select -- Larry: check one or more people, board
-  // narrows to any of their assignments. Rows toggle in place (menu stays
-  // open) rather than picking one and closing, since picking a second
-  // person is now a normal thing to do here. Trigger label reads "Team"
-  // (nobody checked), a single name (exactly one), or "N people" (more).
-  function _sboardRenderPersonFilterPicker(projectRow){
-    var trigger=document.getElementById('sc-view-trigger'), menu=document.getElementById('sc-view-menu');
-    if(!trigger || !menu || !projectRow) return;
-    var rows=_tmAllRosterRows(projectRow);
-    _sboardPersonFilterIds=(_sboardPersonFilterIds||[]).filter(function(id){
-      return rows.some(function(m){ return String(m.user_id)===String(id); });
-    });
-    var cur=_sboardPersonFilterIds;
-    if(!cur.length) trigger.textContent='Team';
-    else if(cur.length===1){
-      var only=rows.filter(function(m){ return String(m.user_id)===String(cur[0]); })[0];
-      trigger.textContent=only?(only.name||only.email||''):'Team';
-    } else trigger.textContent=cur.length+' people';
-
-    function applyAndRender(){
-      _sboardRecomputeFilterMatches().then(function(){ renderSeaBoard(true); _sboardRenderPersonFilterPicker(projectRow); });
-    }
-
-    menu.innerHTML='';
-    var teamRow=document.createElement('div');
-    teamRow.className='sc-cdrop-row'+(!cur.length?' active':'');
-    teamRow.textContent='Team';
-    teamRow.addEventListener('click', function(e){
-      e.stopPropagation(); menu.hidden=true;
-      _sboardPersonFilterIds=[]; applyAndRender();
-    });
-    menu.appendChild(teamRow);
-
-    rows.forEach(function(m){
-      var checked=cur.indexOf(String(m.user_id))>=0;
-      var row=document.createElement('div');
-      row.className='sc-cdrop-row sc-view-row'+(checked?' active':'');
-      var nameSpan=document.createElement('span');
-      nameSpan.className='sc-view-row-name';
-      nameSpan.textContent=(checked?'✓ ':'')+(m.name||m.email||'');
-      var roleSpan=document.createElement('span');
-      roleSpan.className='sc-view-row-role';
-      roleSpan.textContent=_tmRoleTitle(m);
-      row.appendChild(nameSpan); row.appendChild(roleSpan);
-      row.addEventListener('click', function(e){
-        e.stopPropagation();
-        var idx=_sboardPersonFilterIds.indexOf(String(m.user_id));
-        if(idx>=0) _sboardPersonFilterIds.splice(idx,1); else _sboardPersonFilterIds.push(String(m.user_id));
-        applyAndRender();
-      });
-      menu.appendChild(row);
-    });
-
-    if(_tmRosterCanManage){
-      var addRow=document.createElement('div');
-      addRow.className='sc-cdrop-addrow';
-      var addBtn=document.createElement('button');
-      addBtn.type='button'; addBtn.className='sc-dotted-add-btn';
-      addBtn.title='Add a Cast Member'; addBtn.textContent='+';
-      addRow.appendChild(addBtn);
-      // (-) Remove a Cast Member, Aug 16 2026 (Larry): the mirror of
-      // (+), same pattern as the Briefing Board's own VIEW dropdown --
-      // pick someone off this project's roster (never the Owner) and
-      // take them off the team.
-      var removeBtn=document.createElement('button');
-      removeBtn.type='button'; removeBtn.className='sc-dotted-add-btn sc-dotted-remove-btn';
-      removeBtn.title='Remove a Cast Member'; removeBtn.textContent='−';
-      addRow.appendChild(removeBtn);
-      var addForm=document.createElement('div');
-      addForm.className='sc-view-addform'; addForm.style.display='none';
-      addForm.innerHTML='<input type="text" id="sc-view-add-email" placeholder="Type a name or email..." autocomplete="off">'
-        +'<div class="tm-add-suggest" id="sc-view-add-suggest" style="display:none"></div>'
-        +'<button type="button" class="sc-ov-btn save sc-view-add-confirm" id="sc-view-add-confirm">Add</button>'
-        +'<div id="sc-view-add-error" class="sc-view-add-error" style="display:none"></div>';
-      addForm.addEventListener('click', function(e){ e.stopPropagation(); });
-      addBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        removeForm.style.display='none';
-        var opening=addForm.style.display==='none';
-        addForm.style.display=opening?'block':'none';
-        if(opening){ _tmFetchAllMembers().then(function(){ _tmRenderMemberSuggestions(projectRow, '', 'sc-view-add-suggest'); }); }
-      });
-      var addInput=addForm.querySelector('#sc-view-add-email');
-      addInput.addEventListener('input', function(){ _tmRenderMemberSuggestions(projectRow, addInput.value, 'sc-view-add-suggest'); });
-      addInput.addEventListener('focus', function(){ _tmRenderMemberSuggestions(projectRow, addInput.value, 'sc-view-add-suggest'); });
-      addInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _sboardViewConfirmAddMember(projectRow, addInput.value.trim()); } });
-      var addSugg=addForm.querySelector('#sc-view-add-suggest');
-      addSugg.addEventListener('click', function(e){
-        var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
-        _sboardViewConfirmAddMember(projectRow, r.getAttribute('data-email'));
-      });
-      var addConfirmBtn=addForm.querySelector('#sc-view-add-confirm');
-      addConfirmBtn.addEventListener('click', function(){ _sboardViewConfirmAddMember(projectRow, addInput.value.trim()); });
-
-      var removable=rows.filter(function(m){ return !m.isOwner; });
-      var removeForm=document.createElement('div');
-      removeForm.className='sc-view-addform sc-view-removeform'; removeForm.style.display='none';
-      if(!removable.length){
-        removeForm.innerHTML='<div class="sc-view-remove-empty">No one to remove yet.</div>';
-      } else {
-        removeForm.innerHTML=removable.map(function(m){
-          return '<div class="sc-view-remove-row" data-uid="'+_esc9710(m.user_id)+'">'
-            +'<span>'+_esc9710(m.name||m.email||'')+'</span>'
-            +'<button type="button" class="sc-ov-btn save sc-view-remove-confirm" data-uid="'+_esc9710(m.user_id)+'" style="background:#a3372b;border-color:#a3372b;flex:0 0 auto;padding:3px 8px">Remove</button>'
-          +'</div>';
-        }).join('')+'<div id="sc-view-remove-error" class="sc-view-add-error" style="display:none"></div>';
-      }
-      removeForm.addEventListener('click', function(e){
-        e.stopPropagation();
-        var btn=e.target.closest('.sc-view-remove-confirm'); if(!btn) return;
-        var uid=btn.getAttribute('data-uid');
-        var row=btn.closest('.sc-view-remove-row');
-        var name=row ? row.querySelector('span').textContent : 'this person';
-        if(!window.confirm('Remove '+name+' from this Cast?')) return;
-        _sboardViewConfirmRemoveMember(projectRow, uid);
-      });
-      removeBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        addForm.style.display='none';
-        var opening=removeForm.style.display==='none';
-        removeForm.style.display=opening?'block':'none';
-      });
-      menu.appendChild(addRow);
-      menu.appendChild(addForm);
-      menu.appendChild(removeForm);
-    }
-
-    if(menu.parentElement!==document.body) document.body.appendChild(menu);
-    trigger.onclick=function(e){
-      e.stopPropagation();
-      var willOpen=menu.hidden;
-      _sboardCloseAllDropdowns(willOpen?'sc-view-menu':null);
-      if(willOpen){
-        var r=trigger.getBoundingClientRect();
-        menu.style.left=r.left+'px';
-        menu.style.top=(r.bottom+4)+'px';
-        menu.style.minWidth=Math.max(160,r.width)+'px';
-        menu.hidden=false;
-        var mr=menu.getBoundingClientRect();
-        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      } else {
-        menu.hidden=true;
-      }
-    };
   }
 
   // Project switcher — added July 12, 2026. PROJECT was previously a
@@ -4156,18 +3987,6 @@
       // at any depth.
       _sboardIsPlanBoard = !!(currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN');
       _sboardSyncBoardKindChrome();
-      // VIEW-by-person filter picker -- only re-fetch the roster when the
-      // project actually changed (not on every render, which would mean
-      // every drag/reorder re-querying members). Aug 9 2026, Larry.
-      if(currentProjectRowForScope){
-        if(String(currentProjectRowForScope.id)!==String(_sboardViewFilterProjectId)){
-          _sboardViewFilterProjectId=currentProjectRowForScope.id;
-          _sboardPersonFilterIds=[]; _sboardFilterMatchCardIds=null;
-          _tmLoadRoster(currentProjectRowForScope).then(function(){ _sboardRenderPersonFilterPicker(currentProjectRowForScope); });
-        } else {
-          _sboardRenderPersonFilterPicker(currentProjectRowForScope);
-        }
-      }
 
       // miscId/purposeId/newAdditionsId default to whatever this tab last
       // resolved them to (Aug 9 2026) -- only actually recomputed below
@@ -6663,15 +6482,6 @@
       if(del.error) return {ok:false,msg:del.error.message||'Could not remove them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not remove them.'}; }
-  }
-
-  async function _sboardViewConfirmRemoveMember(projectRow, uid){
-    var errEl=document.getElementById('sc-view-remove-error');
-    var res=await _tmRemoveMember(projectRow, uid);
-    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
-    if(errEl) errEl.style.display='none';
-    await _tmLoadRoster(projectRow);
-    _sboardRenderPersonFilterPicker(projectRow);
   }
 
   // ---- Role / Call Sheet -- Session 222 (Aug 18) design, built Session

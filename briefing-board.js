@@ -1394,25 +1394,17 @@
   // company board -- same separate-array, narrow-persist-path safety
   // net as _bbForeignCards above, just the mirror image of it.
   var _bbSharedInCards = [];
-  // Source/assignee filter, Aug 9 2026 (Session 198, same pass): a
-  // dropdown next to Name. On a personal board it filters the merged
-  // view by where a card actually came from (your own board, or which
-  // other board); on a project/departmental/company board it filters by
-  // who a card's assigned to. Purely a display filter -- narrows what
-  // renderBoard() shows, never touches what's saved. A project board's
-  // "parent project" filter Larry also asked about needs Fractal
-  // Casting's parent/TOPIC data to exist first -- not built yet, so not
-  // wired here; only the assigned-to half is live for project boards.
-  var _bbSourceFilter = null; // null = no filter; else {mode:'origin'|'person', value:string}
-  // Session 255: multi-select checked-people filter, driven by the ✅
-  // checkboxes in the new Cast popup (openCallSheet, bridged from
-  // idea-storyboard-9710.js) rather than the header's single-select View
-  // dropdown above -- kept as its own array/mode so the two don't fight
-  // over the same shape. _bbFilterMatchCardIds is the resolved Set of
-  // card ids the checked people show up in, any role (a real card_roles
+  // Person-assigned filter. Session 255: the header's own VIEW/Team
+  // dropdown (and the Idea/Plan board's matching one) is gone -- checking
+  // someone in the Cast popup (👥, on every card) is now the only way to
+  // set this. _bbSourceFilter stays as the single filter state renderBoard
+  // reads at draw time (purely a display filter -- narrows what shows,
+  // never touches what's saved); _bbFilterMatchCardIds is the resolved Set
+  // of card ids the checked people show up in, any role (a real card_roles
   // query, same reasoning as idea-storyboard-9710.js's
-  // _sboardRecomputeFilterMatches -- "any role" can't be read off the
-  // primary-doer-only cache _bbSourceFilterCards's older uid path uses).
+  // _sboardRecomputeFilterMatches -- "any role" can't be read off a
+  // primary-doer-only cache).
+  var _bbSourceFilter = null; // null = no filter; else {mode:'person', uids:[...]}
   var _bbPersonFilterIds = [];
   var _bbFilterMatchCardIds = null;
   async function _bbRecomputeFilterMatches(){
@@ -1434,17 +1426,6 @@
     _bbRecomputeFilterMatches().then(function(){ renderBoard(); });
   }
 
-  // VIEW options, Aug 9 2026 -- Larry: "the only other VIEW choices are
-  // the cast members," not just whoever happens to already have a card.
-  // Rewritten Aug 13 2026 (Larry): now sources from _bbAllRosterRows --
-  // the same Owner-or-Leader-aware roster Gear's Cast reads -- instead of
-  // a second, independent members/board_members query, so a role tag can
-  // show per person and an Owner-or-Leader can add someone right from
-  // this dropdown. person: filter values keep the exact same "II Name"
-  // label format as before, so matching against a card's saved c.person
-  // is unaffected.
-  var BB_TYPE_VIEW_LABEL = {project:'Team', departmental:'Department', company:'Team'};
-
   var BB_THEME_VARS=['--bb-bg','--bb-accent','--bb-ink','--bb-sub','--bb-head-font','--bb-body-font'];
   function _bbSyncMenuTheme(menu){
     var fgr=document.getElementById('fg-root'); if(!fgr) return;
@@ -1455,255 +1436,15 @@
     });
   }
 
-  function _bbWireViewTrigger(trigger, menu){
-    if(menu.parentElement!==document.body){ document.body.appendChild(menu); }
-    _bbSyncMenuTheme(menu);
-    trigger.onclick=function(e){
-      e.stopPropagation();
-      var willOpen=menu.hidden;
-      _bbCloseAllDropdowns(willOpen?'bb-view-menu':null);
-      if(willOpen){
-        var r=trigger.getBoundingClientRect();
-        menu.style.left=r.left+'px';
-        menu.style.top=(r.bottom+4)+'px';
-        menu.style.minWidth=Math.max(160,r.width)+'px';
-        menu.hidden=false;
-        var mr=menu.getBoundingClientRect();
-        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      } else {
-        menu.hidden=true;
-      }
-    };
-  }
-
-  async function _bbViewConfirmAddMember(email){
-    var input=document.getElementById('bb-view-add-email');
-    var errEl=document.getElementById('bb-view-add-error');
-    var sugg=document.getElementById('bb-view-add-suggest');
-    if(!email) return;
-    var res=await _bbTeamAddMember(email);
-    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
-    if(errEl) errEl.style.display='none';
-    if(input) input.value='';
-    if(sugg) sugg.style.display='none';
-    await _bbLoadRoster();
-    await _bbRenderSourcePicker();
-  }
-
-  async function _bbRenderSourcePicker(){
-    // Always visible, Aug 13 2026 (Larry: "exactly like the Idea Board...
-    // every new board will have this same setup") -- VIEW used to hide
-    // itself entirely when there was nothing to filter yet; the Idea
-    // Board's own VIEW never hides, so this no longer does either. An
-    // empty/quiet VIEW (just "Everything" or just the type label, no
-    // rows under it) is fine -- reserving the spot is what makes every
-    // board's header match.
-    var grp=document.getElementById('bb-source-fieldgrp');
-    var trigger=document.getElementById('bb-view-trigger');
-    var menu=document.getElementById('bb-view-menu');
-    var eyebrow=document.getElementById('bb-source-eyebrow');
-    if(!grp || !trigger || !menu || !eyebrow) return;
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    if(!board) return;
-    _bbSourceFilter=null;
-    menu.innerHTML='';
-    eyebrow.textContent='View';
-    if(board.board_type==='personal'){
-      var seen={}; var opts=[{value:'',label:'Everything'},{value:'origin:__native__',label:'Personal'}];
-      _bbForeignCards.forEach(function(c){
-        if(seen[c._homeBoardId]) return; seen[c._homeBoardId]=true;
-        opts.push({value:'origin:'+c._homeBoardId, label:'From '+(c._homeBoardName||'')});
-      });
-      trigger.textContent='Everything';
-      opts.forEach(function(o){
-        var row=document.createElement('div');
-        row.className='bb-cdrop-row'+(o.value===''?' active':'');
-        row.textContent=o.label;
-        row.addEventListener('click', function(e){
-          e.stopPropagation(); menu.hidden=true;
-          _bbSourceFilter = o.value ? {mode:o.value.split(':')[0], value:o.value.split(':').slice(1).join(':')} : null;
-          trigger.textContent=o.label;
-          renderBoard();
-        });
-        menu.appendChild(row);
-      });
-      // (+)/(-) pair, Aug 16 2026 (Larry): every other field's eyebrow
-      // dropdown shows the pair together even when there's nothing to
-      // add or remove yet, so VIEW shouldn't be the one exception. A
-      // personal board's View is just an origin filter, not a Cast --
-      // there's genuinely nothing to add or remove here yet, so both
-      // are shown as stubs (same posture as Project Hub's Archive/Trash
-      // buttons: visible on purpose, plain "not built yet" message).
-      var pAddRow=document.createElement('div');
-      pAddRow.className='bb-cdrop-addrow';
-      var pAddBtn=document.createElement('button');
-      pAddBtn.type='button'; pAddBtn.className='bb-dotted-add-btn'; pAddBtn.title='Add'; pAddBtn.textContent='+';
-      pAddBtn.addEventListener('click', function(e){
-        e.stopPropagation(); menu.hidden=true;
-        window.alert('There\'s nothing to add to a personal board\'s View yet -- it just filters by where a card came from.');
-      });
-      var pRemoveBtn=document.createElement('button');
-      pRemoveBtn.type='button'; pRemoveBtn.className='bb-dotted-add-btn bb-dotted-remove-btn'; pRemoveBtn.title='Remove';
-      pRemoveBtn.textContent='−';
-      pRemoveBtn.addEventListener('click', function(e){
-        e.stopPropagation(); menu.hidden=true;
-        window.alert('There\'s nothing to remove from a personal board\'s View yet -- it just filters by where a card came from.');
-      });
-      pAddRow.appendChild(pAddBtn); pAddRow.appendChild(pRemoveBtn);
-      menu.appendChild(pAddRow);
-      _bbWireViewTrigger(trigger, menu);
-      return;
-    }
-    // Falls back to "Team" for any custom/unrecognized board_type (from
-    // Type's own "+ Add a type..." flow) -- same universal default the
-    // Idea Board's VIEW always uses, never hidden for an unknown type.
-    var typeLabel=BB_TYPE_VIEW_LABEL[board.board_type] || 'Team';
-    await _bbLoadRoster();
-    var rows=_bbAllRosterRows();
-    trigger.textContent=typeLabel;
-
-    var teamRow=document.createElement('div');
-    teamRow.className='bb-cdrop-row active';
-    teamRow.textContent=typeLabel;
-    teamRow.addEventListener('click', function(e){
-      e.stopPropagation(); menu.hidden=true;
-      _bbSourceFilter=null; trigger.textContent=typeLabel; renderBoard();
-    });
-    menu.appendChild(teamRow);
-
-    rows.forEach(function(m){
-      var label=(_bbInitialsFromName(m.name)?_bbInitialsFromName(m.name)+' ':'')+(m.name||'');
-      var row=document.createElement('div');
-      row.className='bb-cdrop-row bb-view-row';
-      var nameSpan=document.createElement('span');
-      nameSpan.className='bb-view-row-name'; nameSpan.textContent=m.name||m.email||'';
-      var roleSpan=document.createElement('span');
-      roleSpan.className='bb-view-row-role'; roleSpan.textContent=_bbRoleTitle(m);
-      row.appendChild(nameSpan); row.appendChild(roleSpan);
-      row.addEventListener('click', function(e){
-        e.stopPropagation(); menu.hidden=true;
-        // uid added Session 234 (Aug 21) -- lets _bbSourceFilterCards
-        // match against the 👥 primary-doer star first, same as the
-        // corner badge; value/label stays as the legacy text fallback
-        // for any card nobody's starred yet.
-        _bbSourceFilter={mode:'person', value:label, uid:m.user_id||null};
-        trigger.textContent=m.name||m.email||'';
-        renderBoard();
-      });
-      menu.appendChild(row);
-    });
-
-    if(_bbRosterCanManage && board.board_type!=='personal'){
-      var addRow=document.createElement('div');
-      addRow.className='bb-cdrop-addrow';
-      var addBtn=document.createElement('button');
-      addBtn.type='button'; addBtn.className='bb-dotted-add-btn';
-      addBtn.title='Add a Cast Member'; addBtn.textContent='+';
-      addRow.appendChild(addBtn);
-      // (-) Remove a Cast Member, Aug 16 2026 (Larry): the mirror of
-      // (+) -- pick someone off this board's own roster (never the
-      // Owner, who isn't a board_members row and can't be removed this
-      // way) and take them off the team. Same dashed-circle-pair
-      // treatment as every other field's eyebrow dropdown.
-      var removeBtn=document.createElement('button');
-      removeBtn.type='button'; removeBtn.className='bb-dotted-add-btn bb-dotted-remove-btn';
-      removeBtn.title='Remove a Cast Member'; removeBtn.textContent='−';
-      addRow.appendChild(removeBtn);
-      var addForm=document.createElement('div');
-      addForm.className='bb-view-addform'; addForm.style.display='none';
-      addForm.innerHTML='<input type="text" id="bb-view-add-email" placeholder="Type a name or email..." autocomplete="off">'
-        +'<div class="tm-add-suggest" id="bb-view-add-suggest" style="display:none"></div>'
-        +'<button type="button" class="bb-flag-btn bb-view-add-confirm" id="bb-view-add-confirm">Add</button>'
-        +'<div id="bb-view-add-error" class="bb-view-add-error" style="display:none"></div>';
-      addForm.addEventListener('click', function(e){ e.stopPropagation(); });
-      addBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        removeForm.style.display='none';
-        var opening=addForm.style.display==='none';
-        addForm.style.display=opening?'block':'none';
-        if(opening){ _bbFetchAllMembers().then(function(){ _bbRenderMemberSuggestions('', 'bb-view-add-suggest'); }); }
-      });
-      var addInput=addForm.querySelector('#bb-view-add-email');
-      addInput.addEventListener('input', function(){ _bbRenderMemberSuggestions(addInput.value, 'bb-view-add-suggest'); });
-      addInput.addEventListener('focus', function(){ _bbRenderMemberSuggestions(addInput.value, 'bb-view-add-suggest'); });
-      addInput.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); _bbViewConfirmAddMember(addInput.value.trim()); } });
-      var addSugg=addForm.querySelector('#bb-view-add-suggest');
-      addSugg.addEventListener('click', function(e){
-        var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
-        _bbViewConfirmAddMember(r.getAttribute('data-email'));
-      });
-      var addConfirmBtn=addForm.querySelector('#bb-view-add-confirm');
-      addConfirmBtn.addEventListener('click', function(){ _bbViewConfirmAddMember(addInput.value.trim()); });
-
-      var removable=rows.filter(function(m){ return !m.isOwner; });
-      var removeForm=document.createElement('div');
-      removeForm.className='bb-view-addform bb-view-removeform'; removeForm.style.display='none';
-      if(!removable.length){
-        removeForm.innerHTML='<div class="bb-view-remove-empty">No one to remove yet.</div>';
-      } else {
-        removeForm.innerHTML=removable.map(function(m){
-          return '<div class="bb-view-remove-row" data-uid="'+_esc(m.user_id)+'">'
-            +'<span>'+_esc(m.name||m.email||'')+'</span>'
-            +'<button type="button" class="bb-flag-btn bb-view-remove-confirm" data-uid="'+_esc(m.user_id)+'" style="background:#a3372b;color:#fff;border-color:#a3372b;flex:0 0 auto;padding:3px 8px">Remove</button>'
-          +'</div>';
-        }).join('')+'<div id="bb-view-remove-error" class="bb-view-add-error" style="display:none"></div>';
-      }
-      removeForm.addEventListener('click', function(e){
-        e.stopPropagation();
-        var btn=e.target.closest('.bb-view-remove-confirm'); if(!btn) return;
-        var uid=btn.getAttribute('data-uid');
-        var row=btn.closest('.bb-view-remove-row');
-        var name=row ? row.querySelector('span').textContent : 'this person';
-        if(!window.confirm('Remove '+name+' from this Cast?')) return;
-        _bbViewConfirmRemoveMember(uid);
-      });
-      removeBtn.addEventListener('click', function(e){
-        e.stopPropagation();
-        addForm.style.display='none';
-        var opening=removeForm.style.display==='none';
-        removeForm.style.display=opening?'block':'none';
-      });
-      menu.appendChild(addRow);
-      menu.appendChild(addForm);
-      menu.appendChild(removeForm);
-    }
-
-    _bbWireViewTrigger(trigger, menu);
-  }
-
+  // Session 255: the only way left to set this is the Cast popup's
+  // checkboxes -- any role, any of the checked people (not just whoever's
+  // starred primary), resolved by _bbRecomputeFilterMatches before this
+  // ever runs. Falls through to the unfiltered list while a fetch is
+  // still in flight so toggling a checkbox doesn't flash an empty board.
   function _bbSourceFilterCards(cards){
-    if(!_bbSourceFilter) return cards;
-    if(_bbSourceFilter.mode==='origin'){
-      if(_bbSourceFilter.value==='__native__') return cards.filter(function(c){ return !c._foreign; });
-      return cards.filter(function(c){ return c._foreign && c._homeBoardId===_bbSourceFilter.value; });
-    }
-    if(_bbSourceFilter.mode==='person' && _bbSourceFilter.uids){
-      // Session 255: the Cast popup's checkboxes -- any role, any of the
-      // checked people (not just whoever's starred primary), resolved by
-      // _bbRecomputeFilterMatches before this ever runs. Falls through to
-      // the unfiltered list while a fetch is still in flight so toggling
-      // a checkbox doesn't flash an empty board.
-      if(!_bbFilterMatchCardIds) return cards;
-      return cards.filter(function(c){ return _bbFilterMatchCardIds.has(String(c.id)); });
-    }
-    if(_bbSourceFilter.mode==='person'){
-      // Session 234 (Aug 21) -- match the 👥 primary-doer star first
-      // (same source as the corner badge), same legacy person-text
-      // fallback as before for a card nobody's starred yet. A card
-      // whose primary fetch genuinely landed with "nobody starred"
-      // (cardPrimaryUidRaw returns null, not undefined) still falls
-      // through to the text match rather than being excluded outright.
-      var uid=_bbSourceFilter.uid;
-      var hasPrimaryLookup = uid && window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw;
-      return cards.filter(function(c){
-        if(hasPrimaryLookup){
-          var pUid=T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id);
-          if(pUid) return String(pUid)===String(uid);
-        }
-        return c.person===_bbSourceFilter.value;
-      });
-    }
-    return cards;
+    if(!_bbSourceFilter || !_bbSourceFilter.uids) return cards;
+    if(!_bbFilterMatchCardIds) return cards;
+    return cards.filter(function(c){ return _bbFilterMatchCardIds.has(String(c.id)); });
   }
 
   async function _bbLoadForeignCardsForPersonalBoard(board){
@@ -2027,7 +1768,6 @@
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);
     await _bbLoadSharedInCardsForProjectBoard(board);
-    await _bbRenderSourcePicker();
     renderBoard();
   }
 
@@ -2184,7 +1924,7 @@
   // instead, ending in that literal dashed-circle (+). Mirrors the Idea
   // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
   function _bbCloseAllDropdowns(exceptMenuId){
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-view-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -3582,7 +3322,6 @@
               +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Logo</div><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div>'
-              +'<div class="bb-mh-fieldgrp bb-mh-filtergrp" id="bb-source-fieldgrp"><div class="bb-mh-eyebrow" id="bb-source-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter by person assigned">Team</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'</div>'
             +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
@@ -5860,15 +5599,6 @@
       if(del.error) return {ok:false,msg:del.error.message||'Could not remove them.'};
       return {ok:true};
     }catch(e){ return {ok:false,msg:'Could not remove them.'}; }
-  }
-
-  async function _bbViewConfirmRemoveMember(uid){
-    var errEl=document.getElementById('bb-view-remove-error');
-    var res=await _bbTeamRemoveMember(uid);
-    if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
-    if(errEl) errEl.style.display='none';
-    await _bbLoadRoster();
-    await _bbRenderSourcePicker();
   }
 
   function openTeamRoster(){
