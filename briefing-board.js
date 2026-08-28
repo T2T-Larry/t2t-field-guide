@@ -2252,6 +2252,12 @@
     // own 30px header-control height.
     var w=(board && board.logo_w)||30, h=(board && board.logo_h)||30;
     slot.style.width=w+'px'; slot.style.height=h+'px';
+    // Aug 28 2026, Larry: "make LOGO draggable." The slot stays exactly
+    // where the header's normal layout puts it (so the rest of the
+    // header never reflows); a saved drag offset (logo_dx/logo_dy) just
+    // nudges it visually from there via transform. See _bbWireLogoDrag.
+    var dx=(board && board.logo_dx)||0, dy=(board && board.logo_dy)||0;
+    slot.style.transform=(dx||dy)?('translate('+dx+'px,'+dy+'px)'):'';
     if(img){
       img.src=url||'';
       img.style.display=url?'block':'none';
@@ -2259,9 +2265,12 @@
       img.title=url?'Click to replace the logo':'';
     }
     if(btn) btn.style.display=url?'none':'';
-    // Only a real logo is worth resizing -- an empty (+) slot keeps the
-    // handle hidden, same reasoning as the (+) button's own visibility.
-    if(handle) handle.style.display=url?'block':'none';
+    // Aug 28 2026: the handle no longer sits visible permanently once a
+    // logo exists (Larry: "remove resize tab after crop and resize
+    // edited") -- every render resets it to hidden, and hovering the
+    // slot (see _bbWireLogoHoverHandle) brings it back when there's
+    // actually a logo to resize.
+    if(handle) handle.style.display='none';
   }
 
   // Logo/artwork upload, Aug 28 2026 -- same upload pipeline as the Idea
@@ -2455,6 +2464,10 @@
       startW=rect.width; startH=rect.height;
       aspect=startW/(startH||1) || 1;
       dragging=true;
+      // Aug 28 2026: see _bbWireLogoHoverHandle -- keeps a mid-drag
+      // pointerleave on the slot from hiding (and dropping pointer
+      // capture on) this handle while a resize is actually in progress.
+      _bbLogoResizeActive=true;
       try{ handle.setPointerCapture(ev.pointerId); }catch(_e){}
     });
     handle.addEventListener('pointermove', function(ev){
@@ -2469,6 +2482,7 @@
     handle.addEventListener('pointerup', async function(ev){
       if(!dragging) return;
       dragging=false;
+      _bbLogoResizeActive=false;
       try{ handle.releasePointerCapture(ev.pointerId); }catch(_e){}
       var w=Math.round(parseFloat(slot.style.width)||startW);
       var h=Math.round(parseFloat(slot.style.height)||startH);
@@ -2479,14 +2493,98 @@
         var upd=await sb.from('briefing_boards').update({logo_w:w, logo_h:h}).eq('id', board.id);
         if(!upd.error){ board.logo_w=w; board.logo_h=h; }
       }catch(_e){}
+      // Larry, Aug 28 2026: "remove resize tab after crop and resize
+      // edited" -- once a resize drag finishes, the handle goes back to
+      // hidden-until-hover (see _bbWireLogoHoverHandle) instead of
+      // sitting on the corner permanently. No hover state exists for
+      // touch, so hide it immediately in that case.
+      if(ev.pointerType==='touch') handle.style.display='none';
     });
   }
 
-  // Wires the (+)/image click-to-upload and the resize handle once at
-  // board setup (see injectBriefingBoardScreens below).
+  // Aug 28 2026: shared with _bbWireLogoHoverHandle and the resize
+  // handle's own pointerup above.
+  var _bbLogoResizeActive=false;
+
+  // Logo hover-to-reveal resize handle, Aug 28 2026 -- Larry: "remove
+  // resize tab after crop and resize edited." Same behavior as the Idea
+  // Board's own hover handle: the corner resize square only appears
+  // while the pointer is over the logo, instead of sitting there
+  // permanently once a logo is loaded.
+  function _bbWireLogoHoverHandle(){
+    var slot=document.getElementById('bb-logo-slot');
+    var handle=document.getElementById('bb-logo-resize-handle');
+    if(!slot||!handle) return;
+    slot.addEventListener('pointerenter', function(){
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(board && board.logo_url) handle.style.display='block';
+    });
+    slot.addEventListener('pointerleave', function(){
+      if(_bbLogoResizeActive) return;
+      handle.style.display='none';
+    });
+  }
+
+  // Logo drag-to-move, Aug 28 2026 -- Larry: "make LOGO draggable."
+  // Dragging the loaded logo image slides its frame away from its normal
+  // header-layout spot via a CSS transform (see _bbRenderLogo), without
+  // disturbing the flex layout of the fields around it. A plain click
+  // (little to no pointer movement) still opens the file picker to swap
+  // the image, exactly like before this build. The offset is saved on
+  // this Briefing Board's own row (logo_dx/logo_dy) so it stays put next
+  // time this board opens.
+  function _bbWireLogoDrag(){
+    var img=document.getElementById('bb-logo-img');
+    var slot=document.getElementById('bb-logo-slot');
+    if(!img||!slot) return;
+    img.style.touchAction='none';
+    var CLICK_SLOP=4;
+    var dragging=false, moved=false, startX=0, startY=0, startDx=0, startDy=0;
+    img.addEventListener('pointerdown', function(ev){
+      if(img.style.display==='none') return; // no logo loaded -- nothing to drag
+      ev.preventDefault(); ev.stopPropagation();
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      startX=ev.clientX; startY=ev.clientY;
+      startDx=(board && board.logo_dx)||0; startDy=(board && board.logo_dy)||0;
+      dragging=true; moved=false;
+      try{ img.setPointerCapture(ev.pointerId); }catch(_e){}
+    });
+    img.addEventListener('pointermove', function(ev){
+      if(!dragging) return;
+      var dx=ev.clientX-startX, dy=ev.clientY-startY;
+      if(Math.abs(dx)>CLICK_SLOP || Math.abs(dy)>CLICK_SLOP) moved=true;
+      if(moved) slot.style.transform='translate('+(startDx+dx)+'px,'+(startDy+dy)+'px)';
+    });
+    img.addEventListener('pointerup', async function(ev){
+      if(!dragging) return;
+      dragging=false;
+      try{ img.releasePointerCapture(ev.pointerId); }catch(_e){}
+      if(!moved){
+        // Genuine click, no drag -- open the file picker to swap the
+        // logo, same behavior this always had.
+        document.getElementById('bb-logo-input').click();
+        return;
+      }
+      var dx=ev.clientX-startX, dy=ev.clientY-startY;
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(!board) return;
+      var newDx=Math.round(startDx+dx), newDy=Math.round(startDy+dy);
+      try{
+        var sb=T().sb;
+        var upd=await sb.from('briefing_boards').update({logo_dx:newDx, logo_dy:newDy}).eq('id', board.id);
+        if(!upd.error){ board.logo_dx=newDx; board.logo_dy=newDy; }
+      }catch(_e){}
+    });
+  }
+
+  // Wires the (+)/image click-to-upload, drag-to-move, and the resize
+  // handle once at board setup (see injectBriefingBoardScreens below).
   function wireLogoUpload(){
     T().wire('bb-logo-add-btn', function(){ document.getElementById('bb-logo-input').click(); });
-    T().wire('bb-logo-img', function(){ document.getElementById('bb-logo-input').click(); });
+    // Aug 28 2026: a plain click on the loaded logo still opens the file
+    // picker to swap it, but that click-vs-drag split now lives in
+    // _bbWireLogoDrag below (Larry: "make LOGO draggable"), so no plain
+    // click wire on bb-logo-img anymore.
     (function(){
       var logoInput=document.getElementById('bb-logo-input');
       if(logoInput) logoInput.addEventListener('change', function(e){
@@ -2499,6 +2597,8 @@
       });
     })();
     _bbWireLogoResizeHandle();
+    _bbWireLogoDrag();
+    _bbWireLogoHoverHandle();
   }
 
   function _esc(s){

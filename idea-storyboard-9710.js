@@ -792,7 +792,10 @@
     // whatever header/sub-header happens to be on screen, so one logo
     // covers the whole project -- IDEA and PLAN boards both read it).
     T().wire('sc-logo-add-btn', function(){ document.getElementById('sc-logo-input').click(); });
-    T().wire('sc-logo-img', function(){ document.getElementById('sc-logo-input').click(); });
+    // Logo drag-to-move, Aug 28 2026 -- Larry: "make LOGO draggable." A
+    // plain click on the loaded logo still opens the file picker to swap
+    // it (see _sboardWireLogoDrag below); the click-vs-drag split lives
+    // there now, so no plain click wire on sc-logo-img anymore.
     (function(){
       var logoInput=document.getElementById('sc-logo-input');
       // Crop step, Aug 27 2026 -- Larry: shape is a free crop of the
@@ -809,6 +812,8 @@
       });
     })();
     _sboardWireLogoResizeHandle();
+    _sboardWireLogoDrag();
+    _sboardWireLogoHoverHandle();
     _sboardWireBoardKindDropdown();
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
     // PROJECT") -- Title now covers picking a board. Renaming it is a
@@ -5037,6 +5042,11 @@
       startW=rect.width; startH=rect.height;
       aspect=startW/(startH||1) || 1;
       dragging=true;
+      // Aug 28 2026: hovering off the slot mid-drag (see
+      // _sboardWireLogoHoverHandle below) must not hide/disconnect this
+      // handle while a resize is actually in progress -- this flag is
+      // that handle's own "stay visible, I'm busy" signal.
+      _sboardLogoResizeActive=true;
       try{ handle.setPointerCapture(ev.pointerId); }catch(_e){}
     });
     handle.addEventListener('pointermove', function(ev){
@@ -5053,6 +5063,7 @@
     handle.addEventListener('pointerup', async function(ev){
       if(!dragging) return;
       dragging=false;
+      _sboardLogoResizeActive=false;
       try{ handle.releasePointerCapture(ev.pointerId); }catch(_e){}
       var w=Math.round(parseFloat(slot.style.width)||startW);
       var h=Math.round(parseFloat(slot.style.height)||startH);
@@ -5062,6 +5073,105 @@
         var _sb=T().sb;
         var upd=await _sb.from('ideas').update({logo_w:w, logo_h:h}).eq('id',root.id);
         if(!upd.error){ _sboardPatchRow(root.id, {logo_w:w, logo_h:h}); }
+      }catch(_e){}
+      _sboardPositionLogoNearTopic();
+      // Larry, Aug 28 2026: "remove resize tab after crop and resize
+      // edited" -- once a resize drag finishes, the handle goes back to
+      // hidden-until-hover (see _sboardWireLogoHoverHandle) instead of
+      // sitting on the corner permanently. The pointer is still over the
+      // handle right after a mouse drag, so this only actually hides it
+      // once the pointer leaves the slot -- for touch (no hover state)
+      // hide it right away since there's no hover to fall back on.
+      if(ev.pointerType==='touch') handle.style.display='none';
+    });
+  }
+
+  // Aug 28 2026: shared with _sboardWireLogoHoverHandle and the resize
+  // handle's own pointerup above -- true for as long as a resize drag is
+  // in progress, so a mid-drag pointerleave on the slot (very easy to
+  // trigger, since dragging the corner naturally pulls the pointer off
+  // the slot) doesn't hide (and thereby drop pointer capture on) the
+  // handle out from under an active drag.
+  var _sboardLogoResizeActive=false;
+
+  // Logo hover-to-reveal resize handle, Aug 28 2026 -- Larry: "remove
+  // resize tab after crop and resize edited." The corner resize handle
+  // used to sit visible on the logo's corner permanently once a logo was
+  // loaded; now it only appears while the pointer is actually over the
+  // logo, so it's out of the way once Larry's happy with the size but
+  // still reachable any time he wants to adjust it again. Wired once at
+  // board setup, same as the handle's own drag wiring above.
+  function _sboardWireLogoHoverHandle(){
+    var slot=document.getElementById('sc-logo-slot');
+    var handle=document.getElementById('sc-logo-resize-handle');
+    if(!slot||!handle) return;
+    slot.addEventListener('pointerenter', function(){
+      var root=_sboardCurrentRootRow();
+      if(root && root.logo_url) handle.style.display='block';
+    });
+    slot.addEventListener('pointerleave', function(){
+      if(_sboardLogoResizeActive) return;
+      handle.style.display='none';
+    });
+  }
+
+  // Logo drag-to-move, Aug 28 2026 -- Larry: "make LOGO draggable."
+  // Dragging the loaded logo image itself slides its whole frame anywhere
+  // around the header, independent of the measured "same gap as Parent"
+  // spot _sboardPositionLogoNearTopic would otherwise put it at. A plain
+  // click (little to no pointer movement) still opens the file picker to
+  // swap the image, exactly like before this build -- only a real drag
+  // (more than a few pixels) counts as a move. The offset from Logo's
+  // normal measured spot is saved on the project's ROOT row (logo_dx/
+  // logo_dy) so it stays put next time this board opens; a longer or
+  // shorter Topic name still shifts the measured spot underneath it, the
+  // saved offset just rides along on top of that the same way it always
+  // did before dragging existed.
+  function _sboardWireLogoDrag(){
+    var img=document.getElementById('sc-logo-img');
+    var wrap=document.getElementById('sc-logo-wrap');
+    if(!img||!wrap) return;
+    img.style.touchAction='none';
+    var CLICK_SLOP=4;
+    var dragging=false, moved=false, startX=0, startY=0, startLeft=0, startTop=0;
+    img.addEventListener('pointerdown', function(ev){
+      if(img.style.display==='none') return; // no logo loaded -- nothing to drag
+      ev.preventDefault(); ev.stopPropagation();
+      startX=ev.clientX; startY=ev.clientY;
+      startLeft=parseFloat(wrap.style.left)||0;
+      startTop=parseFloat(wrap.style.top)||0;
+      dragging=true; moved=false;
+      try{ img.setPointerCapture(ev.pointerId); }catch(_e){}
+    });
+    img.addEventListener('pointermove', function(ev){
+      if(!dragging) return;
+      var dx=ev.clientX-startX, dy=ev.clientY-startY;
+      if(Math.abs(dx)>CLICK_SLOP || Math.abs(dy)>CLICK_SLOP) moved=true;
+      if(moved){
+        wrap.style.left=(startLeft+dx)+'px';
+        wrap.style.top=(startTop+dy)+'px';
+      }
+    });
+    img.addEventListener('pointerup', async function(ev){
+      if(!dragging) return;
+      dragging=false;
+      try{ img.releasePointerCapture(ev.pointerId); }catch(_e){}
+      if(!moved){
+        // Genuine click, no drag -- open the file picker to swap the
+        // logo, same behavior this always had.
+        document.getElementById('sc-logo-input').click();
+        return;
+      }
+      var root=_sboardCurrentRootRow();
+      if(!root) return;
+      var prevDx=root.logo_dx||0, prevDy=root.logo_dy||0;
+      var movedDx=(parseFloat(wrap.style.left)||0)-startLeft;
+      var movedDy=(parseFloat(wrap.style.top)||0)-startTop;
+      var newDx=Math.round(prevDx+movedDx), newDy=Math.round(prevDy+movedDy);
+      try{
+        var _sb=T().sb;
+        var upd=await _sb.from('ideas').update({logo_dx:newDx, logo_dy:newDy}).eq('id',root.id);
+        if(!upd.error){ _sboardPatchRow(root.id, {logo_dx:newDx, logo_dy:newDy}); }
       }catch(_e){}
       _sboardPositionLogoNearTopic();
     });
@@ -5465,9 +5575,12 @@
         logoImg.title=logoUrl?'Click to replace the logo':'';
       }
       if(logoBtn) logoBtn.style.display=logoUrl?'none':'';
-      // Only a real logo is worth resizing -- an empty (+) slot keeps the
-      // handle hidden, same reasoning as the (+) button's own visibility.
-      if(logoHandle) logoHandle.style.display=logoUrl?'block':'none';
+      // Aug 28 2026: the handle no longer sits visible permanently once a
+      // logo exists (see _sboardWireLogoHoverHandle) -- every chrome
+      // refresh resets it to hidden so hover state never leaks in from a
+      // different project/board, and hovering the slot brings it back
+      // when there's actually a logo to resize.
+      if(logoHandle) logoHandle.style.display='none';
     })();
     // Keep Logo the same distance off Topic as Parent, Aug 18 2026 --
     // Parent/Topic content (and their widths) just changed above, so
@@ -5513,7 +5626,17 @@
     var slotRect=slot.getBoundingClientRect();
     var wrapRect=wrap.getBoundingClientRect();
     var delta=desiredSlotLeft-slotRect.left;
-    wrap.style.left=((wrapRect.left-areaRect.left)+delta)+'px';
+    var baseLeft=(wrapRect.left-areaRect.left)+delta;
+    // Aug 28 2026, Larry: "make LOGO draggable." Whatever offset was last
+    // saved by dragging (see _sboardWireLogoDrag) rides on top of this
+    // measured default spot, instead of replacing it -- so a longer or
+    // shorter Topic name still shifts Logo the same relative amount it
+    // always did, it just starts from wherever Larry last dragged it to.
+    var root=_sboardCurrentRootRow();
+    var dx=(root && root.logo_dx)||0;
+    var dy=(root && root.logo_dy)||0;
+    wrap.style.left=(baseLeft+dx)+'px';
+    wrap.style.top=(10+dy)+'px';
   }
   // Window resize, Aug 18 2026 -- this screen goes edge-to-edge
   // (isx-full, see screen-fit.js's own note on why it skips the global
