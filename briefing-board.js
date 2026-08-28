@@ -3956,7 +3956,14 @@
     // person-mode match.
     if(window.T2TStoryboard && T2TStoryboard.ensureCardPrimaryRaw){
       var _bbPrimaryIds=cards.map(function(c){ return c.id; }).filter(Boolean);
-      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
+      // Aug 28 2026 -- tacit assignment: a Briefing Card with nobody on
+      // its own Cast falls back to whichever primary its source Idea
+      // Header resolves to (that Header's own climb, same rule the Idea
+      // Board uses). Briefing Cards are a flat list with no nesting of
+      // their own, so source_header_id is the only "up" they have.
+      var _bbSourceHeaderById={};
+      cards.forEach(function(c){ if(c.id) _bbSourceHeaderById[c.id]=c.sourceHeaderId||null; });
+      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds, _bbSourceHeaderById).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');

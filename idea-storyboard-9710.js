@@ -1615,66 +1615,165 @@
   }
 
   // Primary doer (Session 234, Aug 21) -- who the 👥 dropdown's star is
-  // on for a given card. Replaces the old single-field Person Assigned as
-  // the source for both this badge and the board's Team filter
-  // (_sboardFilterByPerson). Cache is keyed by "cardType:cardId" -- Session
+  // on for a given card. Cache is keyed by "cardType:cardId" -- Session
   // 234's extension to Briefing Cards (via the T2TStoryboard bridge) means
   // this cache can hold entries for more than one card_roles.card_type at
   // once, and a compound key keeps them from ever colliding even though
-  // idea/briefing_card ids come from separate uuid columns already. A
-  // cached value of null means "fetched, nobody's starred" (as opposed to
-  // undefined/absent, "haven't asked yet"), so a card only falls back to
-  // its legacy single-field value while genuinely unstarred -- not just
-  // before the fetch lands.
+  // idea/briefing_card ids come from separate uuid columns already.
+  // Aug 28 2026: the old is_primary-only fetch/lookup pair that used to
+  // live here (_sboardEnsureCardPrimaryRaw/_sboardCardPrimaryUidRaw) was
+  // replaced outright by the tacit-assignment resolver just below, which
+  // does everything the old pair did plus the two new rules -- nothing
+  // else called them by name, so they're gone rather than kept as a
+  // second, now-redundant path. _sboardCardPrimaryCache/_sboardCpKey stay:
+  // _csTogglePrimary below still uses them to drop a single card's stale
+  // entry after a manual star/unstar.
   var _sboardCardPrimaryCache = {};
-  var _sboardCardPrimaryFetchInFlight = {};
   function _sboardCpKey(cardType, cardId){ return (cardType||'idea')+':'+cardId; }
-  // Raw, card_type-generic fetch -- exposed on the T2TStoryboard bridge as
-  // ensureCardPrimaryRaw so briefing-board.js can warm its own cards'
-  // primaries the same way the Idea Board does for its own.
-  async function _sboardEnsureCardPrimaryRaw(cardType, ids){
-    cardType = cardType||'idea';
-    var missing=[], seen={};
-    (ids||[]).forEach(function(id){
-      var key=_sboardCpKey(cardType, id);
-      if(!id || _sboardCardPrimaryCache.hasOwnProperty(key) || _sboardCardPrimaryFetchInFlight[key] || seen[key]) return;
-      seen[key]=true; missing.push(id);
-    });
-    if(!missing.length) return false;
-    missing.forEach(function(id){ _sboardCardPrimaryFetchInFlight[_sboardCpKey(cardType,id)]=true; });
+
+  // --- Tacit assignment (Aug 28 2026) -----------------------------------
+  // Larry's Session 235 idea, greenlit and built this session: "not
+  // assigning a specific person is a tacit assignment to the person at
+  // the next higher level." Two rules layer on top of the explicit ★
+  // above, and an explicit ★ always wins over both:
+  //   1. A card whose Call Sheet has exactly one person on it (any role,
+  //      nobody starred) needs no manual tap -- see _csAutoPrimaryIfSolo
+  //      further down, which actually writes is_primary=true the moment
+  //      a card's roster narrows to one, same as if that star got tapped
+  //      by hand. That covers the "one person -> PRIMARY" half.
+  //   2. A card with NOBODY on its own Call Sheet inherits whichever
+  //      primary its nearest ancestor resolves to -- walking up an Idea
+  //      Header's own parent chain (ideas.cluster_id) as many levels as
+  //      it takes, all the way to the top ("FIELD GUIDE > CONTENT >
+  //      DREAM PHASE", Larry's own example) if that's what it takes to
+  //      find someone. This half is display-only: it never writes a
+  //      card_roles row onto the empty card (that person isn't actually
+  //      on that card's own Cast) -- it only feeds the corner badge and
+  //      the board's Team/person filter, the same two things the ★
+  //      already fed. A level with two-or-more people and nobody starred
+  //      is left alone (ambiguous -- needs a human pick) and the climb
+  //      stops there rather than reaching past it.
+  // Briefing Cards don't nest under their own Headers the way Idea/Plan
+  // cards do (they're a flat list -- see briefing-board.js), so rule 2
+  // instead climbs the Idea Header a Briefing Card was spun off from
+  // (its source_header_id), when it has one.
+  var _sboardEffPrimaryCache = {};
+  var _sboardEffPrimaryInFlight = {};
+  function _sboardEffKey(cardType, cardId){ return (cardType||'idea')+':'+cardId; }
+  // Any card_roles roster change anywhere (add/remove/role-edit/star)
+  // can change what a *different*, already-cached card ought to inherit
+  // -- e.g. starring someone on a Header should immediately cascade to
+  // every child card that was climbing up to it. Rather than track that
+  // dependency graph, the whole effective-primary cache is cheap to
+  // rebuild (one batched query per screen's worth of visible cards), so
+  // every mutation just clears it outright and lets the next render
+  // re-warm it.
+  function _sboardInvalidateEffPrimary(){ _sboardEffPrimaryCache={}; _sboardEffPrimaryInFlight={}; }
+
+  // One query, every requested card_id's full Cast (not just the starred
+  // row) -- reduced to {starred: uid|null, people: [uid,...]} per card so
+  // the "exactly one" / "nobody" / "ambiguous" cases below can tell apart
+  // without a second round trip for the common cases.
+  async function _sboardFetchRoleSummaries(cardType, ids){
+    var out={};
+    (ids||[]).forEach(function(id){ out[id]={starred:null, people:[]}; });
     var _sb=T().sb;
-    if(!_sb){ missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[_sboardCpKey(cardType,id)]; }); return false; }
+    if(!_sb || !ids || !ids.length) return out;
     try{
-      var res=await _sb.from('card_roles').select('card_id,user_id').eq('card_type',cardType).eq('is_primary',true).in('card_id', missing);
-      var found={};
+      var res=await _sb.from('card_roles').select('card_id,user_id,is_primary').eq('card_type',cardType).in('card_id', ids);
       if(!res.error && res.data){
-        res.data.forEach(function(row){ found[row.card_id]=row.user_id; _sboardCardPrimaryCache[_sboardCpKey(cardType,row.card_id)]=row.user_id; });
+        res.data.forEach(function(r){
+          var bucket=out[r.card_id]; if(!bucket) return;
+          if(r.is_primary) bucket.starred=r.user_id;
+          if(bucket.people.indexOf(r.user_id)===-1) bucket.people.push(r.user_id);
+        });
       }
-      missing.forEach(function(id){ if(!(id in found)) _sboardCardPrimaryCache[_sboardCpKey(cardType,id)]=null; });
-      var uids=Object.keys(found).map(function(id){ return found[id]; });
-      if(uids.length) await _sboardEnsureMemberInitials(uids);
-    }catch(e){
-      missing.forEach(function(id){ var key=_sboardCpKey(cardType,id); if(!_sboardCardPrimaryCache.hasOwnProperty(key)) _sboardCardPrimaryCache[key]=null; });
+    }catch(e){}
+    return out;
+  }
+
+  // Walks a single Idea row's own cluster_id chain, one level per await,
+  // until a level resolves (starred, or exactly one person) or there's
+  // nowhere higher left to go. Every id visited along the way gets the
+  // same final answer cached (they all share it by definition), so a
+  // second card climbing through the same empty Sub-header/Header later
+  // this session is an instant cache hit rather than a re-climb. Capped
+  // at 25 levels as a sanity guard -- no real board nests anywhere close
+  // to that deep.
+  async function _sboardClimbForPrimary(startCardId){
+    var _sb=T().sb;
+    var cardId=startCardId, visited=[], guard=0, resolved=null;
+    while(cardId && guard<25){
+      guard++;
+      var key=_sboardEffKey('idea', cardId);
+      if(_sboardEffPrimaryCache.hasOwnProperty(key)){ resolved=_sboardEffPrimaryCache[key]; break; }
+      visited.push(cardId);
+      var summaries=await _sboardFetchRoleSummaries('idea', [cardId]);
+      var s=summaries[cardId]||{starred:null,people:[]};
+      if(s.starred){ resolved=s.starred; break; }
+      if(s.people.length===1){ resolved=s.people[0]; break; }
+      if(s.people.length>1){ resolved=null; break; } // ambiguous here -- stop, don't reach past it
+      if(!_sb){ resolved=null; break; }
+      var row=await _sb.from('ideas').select('cluster_id').eq('id',cardId).maybeSingle();
+      var parentId=(!row.error && row.data)?row.data.cluster_id:null;
+      if(!parentId){ resolved=null; break; } // top of the chain -- truly nobody anywhere above
+      cardId=parentId;
     }
-    missing.forEach(function(id){ delete _sboardCardPrimaryFetchInFlight[_sboardCpKey(cardType,id)]; });
+    visited.forEach(function(id){ _sboardEffPrimaryCache[_sboardEffKey('idea',id)]=resolved; });
+    return resolved;
+  }
+
+  // Batched entry point -- same shape as the plain is_primary-only fetch
+  // above, now layered with both tacit-assignment rules.
+  // sourceHeaderIdByCardId is Briefing Board's own map of
+  // {cardId: sourceHeaderId}; ignored (and unnecessary) for cardType
+  // 'idea', which climbs its own rows directly.
+  async function _sboardEnsureEffectivePrimaryRaw(cardType, ids, sourceHeaderIdByCardId){
+    cardType=cardType||'idea';
+    var need=[];
+    (ids||[]).forEach(function(id){
+      var key=_sboardEffKey(cardType,id);
+      if(id && !_sboardEffPrimaryCache.hasOwnProperty(key) && !_sboardEffPrimaryInFlight[key]) need.push(id);
+    });
+    if(!need.length) return false;
+    need.forEach(function(id){ _sboardEffPrimaryInFlight[_sboardEffKey(cardType,id)]=true; });
+    var summaries=await _sboardFetchRoleSummaries(cardType, need);
+    var climbNeeded=[], toWarm=[];
+    need.forEach(function(id){
+      var s=summaries[id]||{starred:null,people:[]};
+      var key=_sboardEffKey(cardType,id);
+      if(s.starred){ _sboardEffPrimaryCache[key]=s.starred; toWarm.push(s.starred); }
+      else if(s.people.length===1){ _sboardEffPrimaryCache[key]=s.people[0]; toWarm.push(s.people[0]); }
+      else if(s.people.length>1){ _sboardEffPrimaryCache[key]=null; }
+      else { climbNeeded.push(id); }
+    });
+    for(var i=0;i<climbNeeded.length;i++){
+      var id=climbNeeded[i];
+      var startId = (cardType==='idea') ? id : ((sourceHeaderIdByCardId && sourceHeaderIdByCardId[id]) || null);
+      var val = startId ? await _sboardClimbForPrimary(startId) : null;
+      _sboardEffPrimaryCache[_sboardEffKey(cardType,id)]=val;
+      if(val) toWarm.push(val);
+    }
+    if(toWarm.length) await _sboardEnsureMemberInitials(toWarm);
+    need.forEach(function(id){ delete _sboardEffPrimaryInFlight[_sboardEffKey(cardType,id)]; });
     return true;
   }
-  // Raw lookup -- undefined means "not fetched yet" (caller's choice what
-  // to show meanwhile), null means "fetched, nobody starred" (caller
-  // applies its own legacy fallback), a uuid string means "this person".
-  function _sboardCardPrimaryUidRaw(cardType, cardId){
-    var key=_sboardCpKey(cardType, cardId);
-    return _sboardCardPrimaryCache.hasOwnProperty(key) ? _sboardCardPrimaryCache[key] : undefined;
+  function _sboardEffectivePrimaryUidRaw(cardType, cardId){
+    var key=_sboardEffKey(cardType||'idea', cardId);
+    return _sboardEffPrimaryCache.hasOwnProperty(key) ? _sboardEffPrimaryCache[key] : undefined;
   }
+
   // Idea Board's own convenience wrappers -- unchanged signatures, every
-  // existing call site in this file/session.js keeps working as-is.
+  // existing call site in this file/session.js keeps working as-is. Now
+  // routed through the tacit-assignment resolver above instead of the
+  // plain is_primary-only cache.
   async function _sboardEnsureCardPrimary(rows){
     var ids=(rows||[]).map(function(r){ return r&&r.id; }).filter(Boolean);
-    return _sboardEnsureCardPrimaryRaw('idea', ids);
+    return _sboardEnsureEffectivePrimaryRaw('idea', ids);
   }
   function _sboardCardPrimaryUid(item){
     if(!item) return '';
-    var uid=_sboardCardPrimaryUidRaw('idea', item.id);
+    var uid=_sboardEffectivePrimaryUidRaw('idea', item.id);
     return uid || item.assigned_user_id || '';
   }
   function _sboardAssignedBadgeHTML(item){
@@ -5508,7 +5607,7 @@
         // position correctly as siblings here, same as on any other tile.
         topicBadge.innerHTML=_sboardAssignedBadgeHTML(topicRow)
           + _sboardSignalRowHTML(topicRow, {lock:true, flags:true, notes:true, link:true});
-        if(!_sboardCardPrimaryCache.hasOwnProperty(_sboardCpKey('idea', topicRow.id))){
+        if(!_sboardEffPrimaryCache.hasOwnProperty(_sboardEffKey('idea', topicRow.id))){
           _sboardEnsureCardPrimary([topicRow]).then(function(fetched){
             if(fetched) _sboardUpdateHeaderChrome();
           });
@@ -6812,6 +6911,24 @@
     _sbPeopleRenderList();
   }
 
+  // Tacit assignment, rule 1 (Aug 28 2026, see the block above
+  // _sboardEnsureEffectivePrimaryRaw): a card with exactly one person on
+  // its Call Sheet needs no manual star -- this makes it real the moment
+  // that becomes true, rather than leaving it as a display-only guess.
+  // Called after every roster change (add/remove/role-edit); a no-op
+  // whenever the card has zero, 2+, or an already-starred sole person.
+  async function _csAutoPrimaryIfSolo(){
+    if(!_csItem) return;
+    if(!_csRoles || _csRoles.length!==1 || _csRoles[0].is_primary) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var upd=await _sb.from('card_roles').update({is_primary:true}).eq('id', _csRoles[0].id);
+      if(upd.error) return;
+      await _csLoadRoles(_csItem);
+      _sboardInvalidateEffPrimary();
+    }catch(e){}
+  }
+
   async function _csInsertRole(role, email){
     if(!email || !_csItem) return {ok:false,msg:'Type a name or email.'};
     var match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.email||'').toLowerCase()===String(email).toLowerCase(); })[0];
@@ -6823,6 +6940,8 @@
       var ins=await _sb.from('card_roles').insert({card_type:_csCardType||'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
       if(ins.error) throw ins.error;
       await _csLoadRoles(_csItem);
+      _sboardInvalidateEffPrimary();
+      await _csAutoPrimaryIfSolo();
       return {ok:true};
     }catch(e){ return {ok:false,msg:(e&&e.message)||'Could not add them.'}; }
   }
@@ -6866,6 +6985,8 @@
       var upd=await _sb.from('card_roles').update(patch).eq('id', rowId);
       if(upd.error) throw upd.error;
       await _csLoadRoles(_csItem);
+      _sboardInvalidateEffPrimary();
+      await _csAutoPrimaryIfSolo();
       _csRefreshUI();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update their role.'; errEl.style.display='block'; } }
   }
@@ -6895,6 +7016,8 @@
       var del=await _sb.from('card_roles').delete().eq('id', rowId);
       if(del.error) throw del.error;
       await _csLoadRoles(_csItem);
+      _sboardInvalidateEffPrimary();
+      await _csAutoPrimaryIfSolo();
       _csRefreshUI();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not remove them.'; errEl.style.display='block'; } }
   }
@@ -6948,6 +7071,14 @@
       // (see _sboardCardPrimaryCache) that predates this change -- drop it
       // so the next render re-fetches instead of showing a stale star.
       delete _sboardCardPrimaryCache[_sboardCpKey(_csCardType, _csItem.id)];
+      // Aug 28 2026 -- a manual star/unstar can change what OTHER cards
+      // ought to inherit too (tacit assignment climbs up to whichever
+      // ancestor is starred), so the whole effective-primary cache needs
+      // dropping here, not just this one card's. Deliberately does NOT
+      // call _csAutoPrimaryIfSolo -- if Larry taps a lone assignee's own
+      // star off, that's a real choice to leave the card blank, and rule
+      // 1 shouldn't immediately fight it back on.
+      _sboardInvalidateEffPrimary();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }
 
@@ -7114,6 +7245,10 @@
 
     await _tmFetchAllMembers();
     await _csLoadRoles(item);
+    // Aug 28 2026 -- catches a card that's sat at exactly one assignee
+    // since before this rule existed (or since the last edit): opening
+    // the dropdown is enough to make the star real, not just an edit.
+    await _csAutoPrimaryIfSolo();
     _sbPeopleRenderList();
     _sbPeopleRenderRolePicker();
 
@@ -7326,6 +7461,11 @@
 
     await _tmFetchAllMembers();
     await _csLoadRoles(item);
+    // Aug 28 2026 -- catches a card that's sat at exactly one assignee
+    // since before this rule existed (or since the last edit): opening
+    // the full Call Sheet is enough to make the star real, not just an
+    // edit made from inside it.
+    await _csAutoPrimaryIfSolo();
     _csRenderFlatRoster();
 
     if(body){
@@ -9832,8 +9972,15 @@
     // for card_type:'briefing_card' instead of duplicating it.
     openCallSheet: openCallSheet,
     closeCallSheet: closeCallSheet,
-    ensureCardPrimaryRaw: _sboardEnsureCardPrimaryRaw,
-    cardPrimaryUidRaw: _sboardCardPrimaryUidRaw,
+    // Aug 28 2026 -- both re-routed through the tacit-assignment resolver
+    // (_sboardEnsureEffectivePrimaryRaw/_sboardEffectivePrimaryUidRaw) so
+    // Briefing Board picks up the solo-assignee and climb-to-Header rules
+    // automatically. Property names kept exactly as before -- nothing in
+    // briefing-board.js needs to change its call shape except optionally
+    // passing a sourceHeaderIdByCardId map as ensureCardPrimaryRaw's new
+    // (optional) third argument.
+    ensureCardPrimaryRaw: _sboardEnsureEffectivePrimaryRaw,
+    cardPrimaryUidRaw: _sboardEffectivePrimaryUidRaw,
     ensureMemberInitials: _sboardEnsureMemberInitials,
     memberInfo: function(uid){ return _sboardAssignedCache[uid]||null; },
     closeBoard: _sboardCloseBoard
