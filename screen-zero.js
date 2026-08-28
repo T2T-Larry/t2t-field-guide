@@ -1169,7 +1169,7 @@
     var gear = document.createElement('button');
     gear.id = 'sz-gear';
     gear.type = 'button';
-    gear.title = 'Click for text size, double-click to reset tool stack/gear/menu positions';
+    gear.title = 'Utility';
     gear.textContent = '⚙️';
     // Larry, July 31 2026 (bug report): "gear jumps back to a fixed
     // position... tools jumped back into the drawer on their own...
