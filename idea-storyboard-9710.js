@@ -7225,6 +7225,11 @@
   async function _csSaveRole(rowId, newRole){
     if(!rowId || !_csItem) return;
     var _sb=T().sb; if(!_sb) return;
+    // Captured before any of the writes below -- this row's user_id
+    // doesn't change here (only its role/is_primary do), and the
+    // Stakeholder cascade at the bottom needs it once newRole is
+    // 'primary'. Same style _csTogglePrimary already uses.
+    var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
     try{
       if(newRole==='primary'){
         // Aug 29 2026, Larry: "PRIMARY is by definition a STAKEHOLDER
@@ -7241,6 +7246,18 @@
       if(newRole!=='stakeholder') patch.is_key=false;
       var upd=await _sb.from('card_roles').update(patch).eq('id', rowId);
       if(upd.error) throw upd.error;
+      if(newRole==='primary' && row){
+        // Stakeholder cascade (Aug 28 2026, see _csApplyAncestorStakeholders)
+        // -- missing here until Aug 29 2026 (Session 259 follow-up, Larry:
+        // "BOOK was assigned to Rachel... I should automatically be a
+        // Stakeholder on Rachel's card"). Picking Primary from this same
+        // role panel is exactly as much "specifically assigned to another
+        // person" as the compact-dropdown star (_csTogglePrimary) or the
+        // solo-tacit case (_csAutoPrimaryIfSolo) -- both of those already
+        // called this; this panel just never had. Only on the pick-Primary
+        // branch, using the row's own user_id captured above.
+        await _csApplyAncestorStakeholders(_csCardType||'idea', _csItem.id, row.user_id);
+      }
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
