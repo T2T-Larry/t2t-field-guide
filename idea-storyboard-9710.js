@@ -1686,15 +1686,34 @@
     (ids||[]).forEach(function(id){ out[id]={starred:null, people:[]}; });
     var _sb=T().sb;
     if(!_sb || !ids || !ids.length) return out;
+    // Aug 29 2026 fix: this used to be one .in('card_id', ids) call built
+    // from every idea in the whole account -- fine at small scale, but
+    // once a traveler's library grows into the thousands (bookmarks, MISC
+    // piles, etc., not just the board actually on screen) the id list
+    // makes a request URL far past what Supabase's API gateway accepts.
+    // That request was failing outright, and because both the try/catch
+    // here and the .error check above swallow it silently, every card in
+    // the batch fell back to the empty-summary default -- which is what
+    // was emptying corner-badge initials board-wide: not a data problem,
+    // a request-too-large problem. Chunking keeps each request's id list
+    // small enough to always succeed; running the chunks in parallel
+    // keeps this just as fast as the single call was meant to be.
+    var CHUNK=200;
+    var chunks=[];
+    for(var i=0;i<ids.length;i+=CHUNK){ chunks.push(ids.slice(i,i+CHUNK)); }
     try{
-      var res=await _sb.from('card_roles').select('card_id,user_id,is_primary').eq('card_type',cardType).in('card_id', ids);
-      if(!res.error && res.data){
-        res.data.forEach(function(r){
-          var bucket=out[r.card_id]; if(!bucket) return;
-          if(r.is_primary) bucket.starred=r.user_id;
-          if(bucket.people.indexOf(r.user_id)===-1) bucket.people.push(r.user_id);
-        });
-      }
+      var results=await Promise.all(chunks.map(function(chunk){
+        return _sb.from('card_roles').select('card_id,user_id,is_primary').eq('card_type',cardType).in('card_id', chunk);
+      }));
+      results.forEach(function(res){
+        if(!res.error && res.data){
+          res.data.forEach(function(r){
+            var bucket=out[r.card_id]; if(!bucket) return;
+            if(r.is_primary) bucket.starred=r.user_id;
+            if(bucket.people.indexOf(r.user_id)===-1) bucket.people.push(r.user_id);
+          });
+        }
+      });
     }catch(e){}
     return out;
   }
@@ -1754,12 +1773,25 @@
       else if(s.people.length>1){ _sboardEffPrimaryCache[key]=null; }
       else { climbNeeded.push(id); }
     });
-    for(var i=0;i<climbNeeded.length;i++){
-      var id=climbNeeded[i];
-      var startId = (cardType==='idea') ? id : ((sourceHeaderIdByCardId && sourceHeaderIdByCardId[id]) || null);
-      var val = startId ? await _sboardClimbForPrimary(startId) : null;
-      _sboardEffPrimaryCache[_sboardEffKey(cardType,id)]=val;
-      if(val) toWarm.push(val);
+    // Aug 29 2026 fix: these used to climb one card at a time (await
+    // inside a plain for-loop) -- harmless for a handful of cards, but
+    // once hundreds/thousands of cards need the tacit-assignment climb at
+    // once (see _sboardFetchRoleSummaries above), doing them one at a
+    // time meant several minutes of sequential network round trips before
+    // the last card's badge ever appeared. Every climb here is a read
+    // with no side effects, so running them together is safe -- and
+    // siblings sharing an ancestor still short-circuit off each other via
+    // _sboardEffPrimaryCache as soon as the first one resolves it.
+    if(climbNeeded.length){
+      var climbResults=await Promise.all(climbNeeded.map(function(id){
+        var startId = (cardType==='idea') ? id : ((sourceHeaderIdByCardId && sourceHeaderIdByCardId[id]) || null);
+        return startId ? _sboardClimbForPrimary(startId) : null;
+      }));
+      climbNeeded.forEach(function(id, idx){
+        var val=climbResults[idx];
+        _sboardEffPrimaryCache[_sboardEffKey(cardType,id)]=val;
+        if(val) toWarm.push(val);
+      });
     }
     if(toWarm.length) await _sboardEnsureMemberInitials(toWarm);
     need.forEach(function(id){ delete _sboardEffPrimaryInFlight[_sboardEffKey(cardType,id)]; });
