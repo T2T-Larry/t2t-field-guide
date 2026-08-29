@@ -1677,6 +1677,39 @@
   // re-warm it.
   function _sboardInvalidateEffPrimary(){ _sboardEffPrimaryCache={}; _sboardEffPrimaryInFlight={}; }
 
+  // Aug 29 2026 -- small fixed-size worker pool so a large batch of async
+  // jobs (the ancestor climbs below, when a board's worth of empty cards
+  // all need one at once) runs several at a time instead of either fully
+  // sequential (slow) or fully unbounded parallel (opens as many
+  // concurrent requests as there are jobs -- fine for a few dozen, but
+  // thousands of them at once blows past what the browser allows and
+  // throws "Failed to fetch" for the overflow). Returns results in the
+  // same order as items, same shape as Promise.all(items.map(worker)).
+  function _sboardRunLimited(items, limit, worker){
+    return new Promise(function(resolve){
+      var results=new Array(items.length);
+      var next=0, running=0, done=0;
+      if(!items.length){ resolve(results); return; }
+      function launch(){
+        while(running<limit && next<items.length){
+          (function(i){
+            running++;
+            Promise.resolve(worker(items[i], i)).then(function(val){
+              results[i]=val;
+            }).catch(function(){
+              results[i]=null;
+            }).then(function(){
+              running--; done++;
+              if(done===items.length){ resolve(results); } else { launch(); }
+            });
+          })(next);
+          next++;
+        }
+      }
+      launch();
+    });
+  }
+
   // One query, every requested card_id's full Cast (not just the starred
   // row) -- reduced to {starred: uid|null, people: [uid,...]} per card so
   // the "exactly one" / "nobody" / "ambiguous" cases below can tell apart
@@ -1779,14 +1812,25 @@
     // once (see _sboardFetchRoleSummaries above), doing them one at a
     // time meant several minutes of sequential network round trips before
     // the last card's badge ever appeared. Every climb here is a read
-    // with no side effects, so running them together is safe -- and
-    // siblings sharing an ancestor still short-circuit off each other via
-    // _sboardEffPrimaryCache as soon as the first one resolves it.
+    // with no side effects, so running a bounded number together at once
+    // is safe -- and siblings sharing an ancestor still short-circuit off
+    // each other via _sboardEffPrimaryCache as soon as the first one
+    // resolves it.
+    //
+    // Same day, caught minutes later: firing ALL of them at once
+    // (Promise.all over the full list, unbounded) is what actually
+    // shipped first -- fine for a normal board, but with a few thousand
+    // cards needing a climb simultaneously it opens a few thousand
+    // concurrent requests at once, which blows past what the browser
+    // allows and throws "TypeError: Failed to fetch" for the overflow
+    // (and can leave the board stuck on Loading). A small fixed pool
+    // (_sboardRunLimited) gets the same speed for a normal-size climb
+    // batch while capping how many requests are ever in flight together.
     if(climbNeeded.length){
-      var climbResults=await Promise.all(climbNeeded.map(function(id){
+      var climbResults=await _sboardRunLimited(climbNeeded, 20, function(id){
         var startId = (cardType==='idea') ? id : ((sourceHeaderIdByCardId && sourceHeaderIdByCardId[id]) || null);
-        return startId ? _sboardClimbForPrimary(startId) : null;
-      }));
+        return startId ? _sboardClimbForPrimary(startId) : Promise.resolve(null);
+      });
       climbNeeded.forEach(function(id, idx){
         var val=climbResults[idx];
         _sboardEffPrimaryCache[_sboardEffKey(cardType,id)]=val;
