@@ -6978,11 +6978,70 @@
       if(upd.error) return;
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
+      // Stakeholder cascade (Aug 28 2026, see _csApplyAncestorStakeholders
+      // below) -- this card just landed its own explicit Primary, which is
+      // exactly the "specifically assigned to another person" moment Larry
+      // described, so whatever the ancestor chain would otherwise have
+      // resolved for this spot now owes a Stakeholder credit here.
+      await _csApplyAncestorStakeholders(_csCardType||'idea', _csItem.id, _csRoles[0].user_id);
       // Aug 28 2026 -- this can fire on its own (not just from an
       // explicit edit -- see the two "opening the roster catches up a
       // stale card" call sites below), so it needs its own redraw call
       // rather than relying on whichever caller invoked it to also do one.
       if(_csOnRosterChange) _csOnRosterChange();
+    }catch(e){}
+  }
+
+  // Stakeholder cascade (Aug 28 2026, Larry): "The PRIMARY person is
+  // responsible for that card AND all child cards UNLESS specifically
+  // assigned to another person. If another person is assigned, the
+  // PRIMARY person from the level above is automatically a STAKEHOLDER
+  // as they are responsible for the larger hierarchy." Fires the moment a
+  // card lands its own explicit Primary (solo tacit-assignment above, or
+  // a manual star in _csTogglePrimary) -- walks every ancestor level all
+  // the way to the top of the chain, and for each level whose own
+  // effective primary (reusing the same climb-if-empty resolver
+  // everything else here uses) differs from this card's own primary,
+  // writes a REAL card_roles row (role:'stakeholder') for that person on
+  // THIS card -- not just a display computation, so it shows up on the
+  // Call Sheet, can be removed by hand if Larry disagrees on a specific
+  // card, and doesn't silently change again if the ancestor's own primary
+  // is reassigned later. Briefing Cards have no cluster_id chain of their
+  // own -- same as the empty-badge climb, starts at the card's own
+  // source_header_id (the Idea Header it was spun off from) and climbs
+  // the normal Idea chain from there.
+  async function _csApplyAncestorStakeholders(cardType, cardId, ownPrimaryUid){
+    if(!cardId || !ownPrimaryUid) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var rolesRes=await _sb.from('card_roles').select('user_id').eq('card_type',cardType).eq('card_id',cardId);
+      var have={}; (rolesRes.data||[]).forEach(function(r){ have[r.user_id]=true; });
+      have[ownPrimaryUid]=true;
+
+      var startId=null;
+      if(cardType==='briefing_card'){
+        var bc=await _sb.from('briefing_cards').select('source_header_id').eq('id',cardId).maybeSingle();
+        startId=(!bc.error && bc.data) ? bc.data.source_header_id : null;
+      } else {
+        var idea=await _sb.from('ideas').select('cluster_id').eq('id',cardId).maybeSingle();
+        startId=(!idea.error && idea.data) ? idea.data.cluster_id : null;
+      }
+
+      var toAdd=[], curId=startId, guard=0;
+      while(curId && guard<25){
+        guard++;
+        await _sboardEnsureEffectivePrimaryRaw('idea', [curId]);
+        var levelPrimary=_sboardEffectivePrimaryUidRaw('idea', curId);
+        if(levelPrimary && !have[levelPrimary] && toAdd.indexOf(levelPrimary)===-1) toAdd.push(levelPrimary);
+        var next=await _sb.from('ideas').select('cluster_id').eq('id',curId).maybeSingle();
+        curId=(!next.error && next.data) ? next.data.cluster_id : null;
+      }
+      if(!toAdd.length) return;
+      for(var i=0;i<toAdd.length;i++){
+        try{ await _sb.from('card_roles').insert({card_type:cardType, card_id:cardId, role:'stakeholder', user_id:toAdd[i]}); }catch(e){}
+      }
+      await _sboardEnsureMemberInitials(toAdd);
+      if(_csItem && String(cardId)===String(_csItem.id)) await _csLoadRoles(_csItem);
     }catch(e){}
   }
 
@@ -7124,6 +7183,14 @@
         if(clear.error) throw clear.error;
         var on=await _sb.from('card_roles').update({is_primary:true}).eq('id', rowId);
         if(on.error) throw on.error;
+        // Stakeholder cascade (Aug 28 2026, see _csApplyAncestorStakeholders)
+        // -- a manual star is "specifically assigned to another person"
+        // exactly like the solo-tacit case, so it owes the same credit up
+        // the ancestor chain. Only on the star-ON branch; un-starring
+        // (row.is_primary branch above) doesn't undo any Stakeholder rows
+        // it already earned -- those were real, deliberate credits, not a
+        // display guess that should vanish the moment the star does.
+        await _csApplyAncestorStakeholders(_csCardType||'idea', _csItem.id, row.user_id);
       }
       await _csLoadRoles(_csItem);
       _csRefreshUI();
