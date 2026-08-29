@@ -5247,6 +5247,22 @@
     img.addEventListener('pointerdown', function(ev){
       if(img.style.display==='none') return; // no logo loaded -- nothing to drag
       ev.preventDefault(); ev.stopPropagation();
+      // Aug 29 2026 fix -- Larry: "Once a LOGO is resized or moved, it
+      // should ALWAYS appear that way until moved again." Found a real
+      // bug behind that: this drag measures its own start point off
+      // whatever wrap.style.left/top happens to already be on screen at
+      // the moment the pointer goes down. If that inline style hasn't
+      // been freshly recomputed yet (right after a project/topic switch,
+      // a window resize, or any other moment _sboardPositionLogoNearTopic
+      // hasn't re-settled it since Topic's box last changed), the drag
+      // starts from a stale or flat-out wrong number, and the offset it
+      // then saves can be wildly off -- confirmed live: a normal small
+      // drag saved a logo_dx of -470 instead of the ~60px it should have
+      // been, throwing Logo halfway off the screen on next load. Forcing
+      // one fresh, synchronous reposition right here -- immediately
+      // before startLeft/startTop are captured -- guarantees the drag
+      // always starts measuring from the true, currently-correct spot.
+      _sboardPositionLogoNearTopic();
       startX=ev.clientX; startY=ev.clientY;
       startLeft=parseFloat(wrap.style.left)||0;
       startTop=parseFloat(wrap.style.top)||0;
