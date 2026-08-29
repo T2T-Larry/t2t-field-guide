@@ -7022,6 +7022,76 @@
     }catch(e){}
   }
 
+  // Tacit assignment, rule 2 made real (Aug 29 2026, Larry): "MEDIA
+  // rightfully has my initials on the card but the CAST card says Nobody
+  // yet. I should be automatically added as PRIMARY. If another person is
+  // assigned, I would automatically become a STAKEHOLDER." Rule 2 as
+  // originally built (see the block above _sboardEnsureEffectivePrimaryRaw)
+  // was deliberately display-only -- it fed the corner badge and board
+  // filter but never touched card_roles, so a truly empty card's own Cast
+  // still read "Nobody yet" even though the badge already showed the
+  // climbed-to person. This is the missing half: the moment a card is
+  // found genuinely empty (Call Sheet opened, or a roster edit leaves it
+  // at zero -- same two call-site shapes _csAutoPrimaryIfSolo already
+  // uses), resolve the exact same climb the badge already trusts and write
+  // it as a REAL role:'primary'+is_primary:true row, not just a display
+  // guess. Written with both fields set together (unlike the older
+  // solo-case above, which only ever toggled is_primary) so this row is
+  // indistinguishable from a deliberate human pick -- including showing
+  // the ★ Primary tag in the full Call Sheet, and properly handing off to
+  // Stakeholder rather than being silently ignored the moment someone else
+  // IS explicitly assigned (see _csPriorPrimaryToStakeholder, used from both
+  // _csSaveRole and _csTogglePrimary below).
+  async function _csAutoPrimaryIfEmpty(){
+    if(!_csItem) return;
+    if(_csRoles && _csRoles.length) return; // only the true-empty case
+    var cardType=_csCardType||'idea';
+    var sourceMap=null;
+    var _sb=T().sb; if(!_sb) return;
+    if(cardType==='briefing_card'){
+      var bc=await _sb.from('briefing_cards').select('source_header_id').eq('id',_csItem.id).maybeSingle();
+      sourceMap={}; sourceMap[_csItem.id]=(!bc.error && bc.data) ? bc.data.source_header_id : null;
+    }
+    await _sboardEnsureEffectivePrimaryRaw(cardType, [_csItem.id], sourceMap);
+    var uid=_sboardEffectivePrimaryUidRaw(cardType, _csItem.id);
+    if(!uid) return; // truly nobody anywhere above either -- stays "Nobody yet"
+    try{
+      var meRes=await _sb.auth.getUser();
+      var me=meRes && meRes.data ? meRes.data.user : null;
+      var ins=await _sb.from('card_roles').insert({card_type:cardType, card_id:_csItem.id, role:'primary', is_primary:true, user_id:uid, added_by: me?me.id:null});
+      if(ins.error) return;
+      await _csLoadRoles(_csItem);
+      _sboardInvalidateEffPrimary();
+      if(_csOnRosterChange) _csOnRosterChange();
+    }catch(e){}
+  }
+
+  // Flip side of the cascade below, Aug 29 2026 (Larry, same request as
+  // _csAutoPrimaryIfEmpty above): displacing a card's own PRIMARY -- by
+  // picking a new one from the role panel, or starring someone else in the
+  // compact dropdown -- must hand off whoever held it to Stakeholder, not
+  // just clear their is_primary flag and leave their role field still
+  // reading "Primary" (which used to leave a stale ★ Primary tag showing
+  // in the Cast list for someone who wasn't primary anymore, and quietly
+  // blocked _csApplyAncestorStakeholders from ever crediting them, since
+  // it only inserts a Stakeholder row for someone with NO existing row on
+  // this card). Larry, Aug 29: "PRIMARY is by definition a STAKEHOLDER" --
+  // not a demotion, there's a real sense in which PRIMARY reports to the
+  // Stakeholders to do the role well, so this is PRIMARY handing the card
+  // back to that reporting relationship, not losing standing on it. The
+  // one-is_primary-per-card DB constraint guarantees at most one row can
+  // match role:'primary' here.
+  async function _csPriorPrimaryToStakeholder(cardType, cardId, keepRowId){
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var prior=await _sb.from('card_roles').select('id').eq('card_type',cardType).eq('card_id',cardId).eq('role','primary').neq('id',keepRowId);
+      var rows=(!prior.error && prior.data) ? prior.data : [];
+      for(var i=0;i<rows.length;i++){
+        await _sb.from('card_roles').update({role:'stakeholder', is_primary:false, is_key:false}).eq('id', rows[i].id);
+      }
+    }catch(e){}
+  }
+
   // Stakeholder cascade (Aug 28 2026, Larry): "The PRIMARY person is
   // responsible for that card AND all child cards UNLESS specifically
   // assigned to another person. If another person is assigned, the
@@ -7088,6 +7158,7 @@
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
+      await _csAutoPrimaryIfEmpty();
       if(_csOnRosterChange) _csOnRosterChange();
       return {ok:true};
     }catch(e){ return {ok:false,msg:(e&&e.message)||'Could not add them.'}; }
@@ -7124,6 +7195,13 @@
     var _sb=T().sb; if(!_sb) return;
     try{
       if(newRole==='primary'){
+        // Aug 29 2026, Larry: "PRIMARY is by definition a STAKEHOLDER
+        // (responsible for making whatever it is happen)" -- so whoever
+        // held Primary before this pick doesn't just lose the star, they
+        // fall back to being a Stakeholder on this same card, not a role
+        // left dangling as "Primary" with is_primary quietly false. See
+        // _csPriorPrimaryToStakeholder.
+        await _csPriorPrimaryToStakeholder(_csCardType||'idea', _csItem.id, rowId);
         var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
         if(clear.error) throw clear.error;
       }
@@ -7134,6 +7212,7 @@
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
+      await _csAutoPrimaryIfEmpty();
       _csRefreshUI();
       if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update their role.'; errEl.style.display='block'; } }
@@ -7166,6 +7245,10 @@
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
+      // A removal is exactly how a card can newly land at zero people --
+      // Aug 29 2026, Larry: an empty card owes its own real Primary row
+      // just as much right after a removal as it does on first open.
+      await _csAutoPrimaryIfEmpty();
       _csRefreshUI();
       if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not remove them.'; errEl.style.display='block'; } }
@@ -7209,6 +7292,11 @@
         var off=await _sb.from('card_roles').update({is_primary:false}).eq('id', rowId);
         if(off.error) throw off.error;
       } else {
+        // Aug 29 2026, Larry: "PRIMARY is by definition a STAKEHOLDER" --
+        // same hand-off as _csSaveRole's role-panel pick, so starring
+        // someone from the compact dropdown doesn't leave the person they
+        // replaced stuck showing "Primary" with is_primary already false.
+        await _csPriorPrimaryToStakeholder(_csCardType||'idea', _csItem.id, rowId);
         var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
         if(clear.error) throw clear.error;
         var on=await _sb.from('card_roles').update({is_primary:true}).eq('id', rowId);
@@ -7415,6 +7503,11 @@
     // since before this rule existed (or since the last edit): opening
     // the dropdown is enough to make the star real, not just an edit.
     await _csAutoPrimaryIfSolo();
+    // Aug 29 2026, Larry -- same backfill for a card that's sat completely
+    // empty: opening the dropdown resolves the climb and writes it as a
+    // real Primary row, so the Cast stops saying "Nobody yet" the moment
+    // anyone looks, not just after the next edit.
+    await _csAutoPrimaryIfEmpty();
     _sbPeopleRenderList();
     _sbPeopleRenderRolePicker();
 
@@ -7651,6 +7744,12 @@
     // the full Call Sheet is enough to make the star real, not just an
     // edit made from inside it.
     await _csAutoPrimaryIfSolo();
+    // Aug 29 2026, Larry: "MEDIA rightfully has my initials on the card
+    // but the CAST card says Nobody yet. I should be automatically added
+    // as PRIMARY." Same backfill, for the fully-empty case -- opening the
+    // full Call Sheet is what Larry actually hit this on, so this is the
+    // call site that matters most.
+    await _csAutoPrimaryIfEmpty();
     _csRenderFlatRoster();
 
     if(body){
