@@ -1871,6 +1871,15 @@
     // the Call Sheet screen), is untouched; only this one badge is
     // suppressed.
     if(item && item.hide_primary_badge) return '';
+    // Aug 29 2026, Larry: a board-wide master switch (Utility -> Preferences
+    // -> Initials) -- "if I am the only person on the project, there is no
+    // need to have initials on any cards." Lives on the project's own root
+    // row (ideas.hide_all_initials, same pattern as logo_url/hide_primary_badge)
+    // so it's scoped to the current project, not every project account-wide.
+    // Checked here rather than only at fetch time so it takes effect the
+    // moment it's flipped, without needing a fresh page load.
+    var _sbProjRow=_sboardCurrentProjectRow();
+    if(_sbProjRow && _sbProjRow.hide_all_initials) return '';
     var uid=_sboardCardPrimaryUid(item);
     if(!uid) return '';
     var m=_sboardAssignedCache[uid];
@@ -4313,7 +4322,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge')
+          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,hide_all_initials')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -6092,7 +6101,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge,hide_all_initials')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -6171,7 +6180,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge,hide_all_initials')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .order('created_at',{ascending:true}).limit(200);
       if(res.error) throw new Error(res.error.message);
@@ -7069,6 +7078,30 @@
     }catch(e){}
   }
 
+  // Board-wide master switch for corner-badge initials, Aug 29 2026,
+  // Larry: "we have it set to hide on individual cards... I would also
+  // like a board toggle in the Utility button on the page to turn
+  // initials on or off all the cards at one time. If I am the only
+  // person on the project, there is no need to have initials on any
+  // cards." Lives on the project's own root row (ideas.hide_all_initials,
+  // same pattern as logo_url) so it's scoped to the current project, not
+  // every project account-wide. OFF hides every card's initials on this
+  // project regardless of each card's own per-card setting (see
+  // _sboardAssignedBadgeHTML's own check, which reads this first); ON
+  // (the default) leaves every card free to decide for itself, same as
+  // before this switch existed. Reached from Utility -> Preferences.
+  async function _sboardSetHideAllInitials(hidden){
+    var projectRow=_sboardCurrentProjectRow();
+    if(!projectRow) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var upd=await _sb.from('ideas').update({hide_all_initials:hidden}).eq('id', projectRow.id);
+      if(upd.error) return;
+      _sboardPatchRow(projectRow.id, {hide_all_initials:hidden});
+      if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+    }catch(e){}
+  }
+
   // Tacit assignment, rule 1 (Aug 28 2026, see the block above
   // _sboardEnsureEffectivePrimaryRaw): a card with exactly one person on
   // its Call Sheet needs no manual star -- this makes it real the moment
@@ -7555,9 +7588,13 @@
 
     var isIdea=(cardType==='idea');
     menu.innerHTML='<div id="sb-people-list"></div>'
-      +'<label style="display:flex;align-items:center;gap:5px;font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;padding:4px 2px;cursor:pointer;border-top:1px solid #e4ded0">'
-        +'<input type="checkbox" id="sb-people-hide-badge-chk"'+(item.hide_primary_badge?' checked':'')+'> Hide initials on front'
-      +'</label>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;padding:4px 2px;border-top:1px solid #e4ded0">'
+        +'<span>Initials on front</span>'
+        +'<div class="sb-gear-tabs" id="sb-people-hide-badge-toggle" style="margin-bottom:0;width:auto;min-width:88px">'
+          +'<button type="button" class="sb-gear-tab'+(item.hide_primary_badge?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+(item.hide_primary_badge?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
+        +'</div>'
+      +'</div>'
       +'<div class="sc-cdrop-addrow">'
         +'<button type="button" class="sc-dotted-add-btn" id="sb-people-add-btn" title="Add someone">+</button>'
         +(isIdea?'<button type="button" class="sc-dotted-add-btn sb-people-call" id="sb-people-call-btn" title="Open the full Call Sheet">☎️</button>':'')
@@ -7612,8 +7649,17 @@
     var confirmBtn=document.getElementById('sb-people-add-confirm');
     var callBtn=document.getElementById('sb-people-call-btn');
     var removeBtn=document.getElementById('sb-people-remove-btn');
-    var hideBadgeChk=document.getElementById('sb-people-hide-badge-chk');
-    if(hideBadgeChk) hideBadgeChk.addEventListener('change', function(){ _csSetHideBadge(hideBadgeChk.checked); });
+    // Aug 29 2026, Larry: "that should be a toggle: ON or OFF" -- replaced
+    // the old "Hide initials on front" checkbox with an explicit ON/OFF
+    // pair (ON = initials show, matching hide_primary_badge=false) so the
+    // state reads directly rather than through a double negative.
+    var hideBadgeToggle=document.getElementById('sb-people-hide-badge-toggle');
+    if(hideBadgeToggle) hideBadgeToggle.addEventListener('click', function(e){
+      var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
+      var hide=(btn.getAttribute('data-hide')==='1');
+      hideBadgeToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      _csSetHideBadge(hide);
+    });
 
     if(addBtn) addBtn.addEventListener('click', function(){
       _sbPeopleRemoveMode=false; _sbPeopleRenderList();
@@ -7799,9 +7845,13 @@
         +'</div>'
       +'</div>'
       +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
-      +'<label style="display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:#5b5b56;margin:2px 0 8px;cursor:pointer">'
-        +'<input type="checkbox" id="cs-hide-badge-chk"'+(_csHideBadgeNow?' checked':'')+'> Hide initials on front'
-      +'</label>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(11px * var(--fg-text-scale,1));color:#5b5b56;margin:2px 0 8px">'
+        +'<span>Initials on front</span>'
+        +'<div class="sb-gear-tabs" id="cs-hide-badge-toggle" style="margin-bottom:0;width:auto;min-width:88px">'
+          +'<button type="button" class="sb-gear-tab'+(_csHideBadgeNow?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+(_csHideBadgeNow?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
+        +'</div>'
+      +'</div>'
       +'<div id="cs-rows-all"></div>'
       + _csRenderAddRow()
       +'<div id="cs-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin:4px 0;display:none"></div>'
@@ -7809,8 +7859,16 @@
     ov.style.display='flex';
     ov.classList.add('active');
     var body=document.getElementById('cs-body');
-    var hideBadgeChk=document.getElementById('cs-hide-badge-chk');
-    if(hideBadgeChk) hideBadgeChk.addEventListener('change', function(){ _csSetHideBadge(hideBadgeChk.checked); });
+    // Aug 29 2026, Larry: "that should be a toggle: ON or OFF" -- same
+    // ON/OFF pair as the compact People dropdown, replacing the old
+    // "Hide initials on front" checkbox here too.
+    var hideBadgeToggle=document.getElementById('cs-hide-badge-toggle');
+    if(hideBadgeToggle) hideBadgeToggle.addEventListener('click', function(e){
+      var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
+      var hide=(btn.getAttribute('data-hide')==='1');
+      hideBadgeToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      _csSetHideBadge(hide);
+    });
     function goBack(){ closeCallSheet(); (backFn||function(){})(); }
     T().wire('cs-close', goBack);
     T().wire('cs-print-tile', _csPrint);
@@ -8154,6 +8212,12 @@
   function _sboardOpenPreferencesMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    // Aug 29 2026, Larry: board-wide "turn initials on or off all the
+    // cards at one time... if I am the only person on the project, there
+    // is no need to have initials on any cards." Scoped to whichever
+    // project is currently open -- see _sboardSetHideAllInitials.
+    var _sbPrefsProjRow=_sboardCurrentProjectRow();
+    var _sbAllInitialsHidden=!!(_sbPrefsProjRow && _sbPrefsProjRow.hide_all_initials);
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
@@ -8161,11 +8225,25 @@
         +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
       +'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
+        +'<span>&#128373; Initials on cards<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:400">This whole project, all cards at once</span></span>'
+        +'<div class="sb-gear-tabs" id="sb-prefs-initials-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
+          +'<button type="button" class="sb-gear-tab'+(_sbAllInitialsHidden?'':' active')+'" data-hide="0" style="padding:5px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+(_sbAllInitialsHidden?' active':'')+'" data-hide="1" style="padding:5px 8px">OFF</button>'
+        +'</div>'
+      +'</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
     T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
     T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
+    var initialsToggle=document.getElementById('sb-prefs-initials-toggle');
+    if(initialsToggle) initialsToggle.addEventListener('click', function(e){
+      var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
+      var hide=(btn.getAttribute('data-hide')==='1');
+      initialsToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      _sboardSetHideAllInitials(hide);
+    });
     T().wire('sb-preferences-close', _sboardOpenGearMenu);
   }
 
@@ -9770,7 +9848,7 @@
     try{
       var user=(await _sb.auth.getUser()).data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,hide_primary_badge,hide_all_initials')
         .eq('cluster_id',headerRow.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw new Error(res.error.message);
