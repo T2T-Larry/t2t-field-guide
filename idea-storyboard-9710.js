@@ -683,12 +683,19 @@
       // Logo could end up sitting closer to (or farther from) Topic than
       // Parent does. Given an id here so _sboardPositionLogoNearTopic
       // (below) can measure Parent's actual gap off Topic's left edge
-      // and mirror that same gap on Topic's right edge for Logo, instead
-      // of a fixed percentage. left:57% stays only as the pre-JS fallback
-      // position for the first paint; the position function overwrites
+      // and mirror that same gap for Logo, instead of a fixed percentage.
+      //
+      // Aug 29 2026, Larry: "all storyboards need their LOGO in the same
+      // place... exactly like on the BB" -- on the Briefing Board, Logo
+      // sits on the LEFT, right after PROJECT, ahead of everything else.
+      // Flipped the mirrored gap from Topic's right side (Aug 18) to
+      // Parent's left side, so Logo now reads on the left here too,
+      // closest to Parent -- see _sboardPositionLogoNearTopic. left:2%
+      // stays only as the pre-JS fallback position for the very first
+      // paint, on the LEFT now to match; the position function overwrites
       // it (and drops the translateX centering, since positioning is now
       // done by measuring Logo's own frame, not by centering the wrapper).
-      +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:57%;display:flex;flex-direction:column;align-items:center">'
+      +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:2%;display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Logo</div>'
       +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
@@ -5748,8 +5755,15 @@
     if(!topicRect.width || !areaRect.width) return;
     var gap=topicRect.left-parentRect.right;
     if(!(gap>=0)) gap=14; // sane fallback -- matches the grid's own column-gap
-    var desiredSlotLeft=topicRect.right+gap;
     var slotRect=slot.getBoundingClientRect();
+    // Aug 29 2026, Larry: move Logo to the LEFT side of the header, next
+    // to Parent, to match where it sits on the Briefing Board (right
+    // after PROJECT, ahead of everything else) -- reverses the Aug 16/18
+    // placement (which put Logo the same distance off Topic's RIGHT as
+    // Parent sits off its LEFT). Same mirroring approach, just flipped to
+    // the other side: Logo's frame now sits that same measured gap off
+    // Parent's LEFT edge instead of Topic's right edge.
+    var desiredSlotLeft=parentRect.left-gap-slotRect.width;
     var wrapRect=wrap.getBoundingClientRect();
     var delta=desiredSlotLeft-slotRect.left;
     var baseLeft=(wrapRect.left-areaRect.left)+delta;
