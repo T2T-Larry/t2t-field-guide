@@ -7598,12 +7598,9 @@
   }
 
   async function _csBuildPrintDoc(){
-    var crumbText='';
-    try{
-      var chain=(window.T2TData && window.T2TData.ancestorChain && _csItem) ? await window.T2TData.ancestorChain(_csItem.id) : [];
-      crumbText=(chain||[]).map(function(c){ return c.text||'(untitled)'; }).join(' / ');
-    }catch(e){}
-    if(!crumbText) crumbText=(_csItem&&_csItem.text_content)||'';
+    // See _csCrumbText's own comment (Aug 30 2026 fix) for why this can't
+    // just be item.id/item.text_content for a Briefing Card.
+    var crumbText=await _csCrumbText(_csItem, _csCardType);
     var doc=document.getElementById('cs-print-doc');
     if(!doc){ doc=document.createElement('div'); doc.id='cs-print-doc'; doc.className='cs-print-doc'; document.body.appendChild(doc); }
     var today=_csFmtToday();
@@ -7652,6 +7649,35 @@
   function closeCallSheet(){
     var ov=document.getElementById('cs-callsheet-overlay');
     if(ov){ ov.style.display='none'; ov.classList.remove('active'); }
+  }
+
+  // Breadcrumb text for both the Cast popup and its printed Call Sheet --
+  // pulled out to one place so the two stay in sync. Aug 30 2026 fix
+  // (Larry, on a card with a full paragraph of real typed text): this used
+  // to always call ancestorChain(item.id) and fall back to
+  // item.text_content. Both assumptions are Idea-card-only -- a Briefing
+  // Card's id is a briefing_cards.id, not an ideas.id, so ancestorChain
+  // (which queries the ideas table) always came back empty for one; and a
+  // Briefing Card object has no text_content field at all (that's an
+  // Idea-row-only column -- a Briefing Card's own text lives in
+  // item.task). Together that meant every single Briefing Card showed
+  // "(untitled)" here regardless of what was actually typed on it.
+  // item.topicLabel (already denormalized onto the row by the Aug 11
+  // header-linked-task-card sync) stands in for the ancestor chain when
+  // there is one.
+  async function _csCrumbText(item, cardType){
+    if(!item) return '';
+    if(cardType==='briefing_card'){
+      var parts=[];
+      if(item.topicLabel) parts.push(item.topicLabel);
+      parts.push(item.task||'(untitled)');
+      return parts.join(' / ');
+    }
+    try{
+      var chain=(window.T2TData && window.T2TData.ancestorChain) ? await window.T2TData.ancestorChain(item.id) : [];
+      var text=(chain||[]).map(function(c){ return c.text||'(untitled)'; }).join(' / ');
+      return text||(item.text_content||'(untitled)');
+    }catch(e){ return item.text_content||''; }
   }
 
   async function openCallSheet(item, backFn, cardType, onFilterChange, currentFilterIds, onRosterChange){
@@ -7720,16 +7746,13 @@
 
     // Breadcrumb -- same ancestor walk header-data.js already uses to
     // resume a session at depth (ancestorChain), reused here purely for
-    // display: Organization/Project/.../this card's own name.
+    // display: Organization/Project/.../this card's own name. See
+    // _csCrumbText above for the Aug 30 2026 Briefing Card fix.
     (function(){
       var crumbEl=document.getElementById('cs-crumb');
       if(!crumbEl) return;
       (async function(){
-        try{
-          var chain=(window.T2TData && window.T2TData.ancestorChain) ? await window.T2TData.ancestorChain(item.id) : [];
-          var text=(chain||[]).map(function(c){ return c.text||'(untitled)'; }).join(' / ');
-          crumbEl.textContent=text||(item.text_content||'(untitled)');
-        }catch(e){ crumbEl.textContent=item.text_content||''; }
+        crumbEl.textContent=await _csCrumbText(item, cardType);
       })();
     })();
 
