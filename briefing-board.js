@@ -2338,8 +2338,12 @@
   // own try/catch), so nothing here was ever really live; the 👥 people
   // dropdown (wireBbDetailActions, T2TStoryboard.openPeopleDropdown)
   // is the one place to put someone on a card now, same as the Idea
-  // Card. _bbInitials just below is kept -- it's still the legacy-
-  // fallback initials source for any card nobody's starred yet.
+  // Card. _bbInitials just below used to be kept on as the legacy-
+  // fallback initials source for any card nobody's starred yet in Cast
+  // -- Aug 30 2026, that fallback turned out to be the whole bug (see
+  // the corner-badge comment in renderBoard above), so it's no longer
+  // called from anywhere. Left in place, unused, rather than deleted --
+  // harmless either way, and removing it isn't part of this fix.
 
   function _bbInitials(person){
     if(!person) return '';
@@ -3778,20 +3782,35 @@
         el.setAttribute('data-id', c.id);
         if(c.color) el.style.background=c.color;
         // Corner badge, Session 234 (Aug 21) -- 👥's ★ primary doer is
-        // now the first source (same as the Idea Card's own badge),
-        // falling back to the legacy person text field for any card
-        // nobody's starred yet. cardPrimaryUidRaw returns undefined
-        // before this pass's ensureCardPrimaryRaw fetch lands (falls
-        // back same as "nobody starred" until then -- next re-render
-        // fills it in), null once fetched with nobody starred, or a uid.
+        // the one and only source (same as the Idea Card's own badge).
+        // cardPrimaryUidRaw returns undefined before this pass's
+        // ensureCardPrimaryRaw fetch lands (reads as "nothing yet" until
+        // then -- next re-render fills it in), null once fetched with
+        // nobody starred, or a uid.
+        //
+        // Aug 30 2026 fix (Larry: "I opened a BB card with my initials on
+        // it. When I looked at the Cast card, it says Nobody yet?") --
+        // this used to fall back to the legacy `person` free-text field
+        // (pre-Cast, retired as a picker back in Session 234) whenever
+        // Cast itself was empty. Since essentially no Briefing Card had
+        // ever been given a real Cast entry, that fallback was firing on
+        // ~50 cards board-wide: the corner showed initials pulled from
+        // the old text field, while Cast -- the only place initials can
+        // actually be added or removed -- had nothing on it and
+        // correctly said "Nobody yet." Removing someone in Cast could
+        // never make the badge disappear, because the badge was never
+        // reading Cast in the first place. Fixed at the data level (every
+        // affected card's legacy `person` value was matched to a real
+        // member and written as a genuine Cast Primary row, one time, so
+        // nothing visibly changed for Larry) and here at the display
+        // level: the badge now reads Cast only, so it can never again
+        // show someone Cast itself doesn't know about.
         var _bbPrimaryUid = (window.T2TStoryboard && T2TStoryboard.cardPrimaryUidRaw) ? T2TStoryboard.cardPrimaryUidRaw('briefing_card', c.id) : undefined;
         var _bbPrimaryInfo = (_bbPrimaryUid && window.T2TStoryboard && T2TStoryboard.memberInfo) ? T2TStoryboard.memberInfo(_bbPrimaryUid) : null;
         // "Hide initials on front" (Aug 28 2026) -- checked first, same as
         // the Idea Card's own badge-render function, so the per-card switch
         // on the assignment screen actually suppresses this corner badge.
-        var dotHTML = c.hidePrimaryBadge ? '' : (_bbPrimaryInfo
-          ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>')
-          : (c.person ? ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(c.person)+'">'+_esc(_bbInitials(c.person))+'</span>') : ''));
+        var dotHTML = (c.hidePrimaryBadge || !_bbPrimaryInfo) ? '' : ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
