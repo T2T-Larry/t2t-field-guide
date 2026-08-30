@@ -2452,30 +2452,53 @@
   // root itself if it has no approved parent; otherwise the parent's
   // own root row, resolved through briefing_board_id since that's
   // what board_relations actually links on, not the ideas id.
-  function _sboardOrgContextRoot(rootId){
+  // Aug 30 2026 fix -- Larry: "now I switched from personal to company
+  // and it stayed on personal." rootId can be a PLAN board's own id,
+  // which never appears in _sboardMyRoots (Plan boards are deliberately
+  // excluded from that IDEA-only list -- see the Aug 26 comment inside
+  // _sboardLoadMyRoots above). Type, Title and Org Name are one shared
+  // identity per project, IDEA and PLAN alike (Design Notes), so when
+  // the row itself isn't in the list, fall back to its
+  // source_project_id and look THAT up instead of silently returning
+  // null -- otherwise every picker reading off this function quietly
+  // defaults to Personal (or whichever root happened to load first)
+  // the instant you're standing on a Plan board, even though the Plan
+  // board's own row already carries the real board_type/org_name
+  // directly. Split out of _sboardOrgContextRoot (below) the same day
+  // -- that function's extra climb to the organizational PARENT is
+  // right for gathering a family list, but wrong for "what board is
+  // actually on screen" -- see that function's own comment.
+  function _sboardSelfRoot(rootId){
     var roots=_sboardMyRoots||[];
     var root=roots.filter(function(r){ return String(r.id)===String(rootId); })[0];
     if(!root){
-      // Aug 30 2026 fix -- Larry: "now I switched from personal to
-      // company and it stayed on personal." rootId can be a PLAN
-      // board's own id, which never appears in _sboardMyRoots (Plan
-      // boards are deliberately excluded from that IDEA-only list --
-      // see the Aug 26 comment inside _sboardLoadMyRoots above). Type,
-      // Title and Org Name are one shared identity per project, IDEA
-      // and PLAN alike (Design Notes), so when the row itself isn't in
-      // the list, fall back to its source_project_id and look THAT up
-      // instead of silently returning null -- otherwise every picker
-      // reading off this function quietly defaults to Personal (or
-      // whichever root happened to load first) the instant you're
-      // standing on a Plan board, even though the Plan board's own
-      // row already carries the real board_type/org_name directly.
       var planRow=_sboardAllRowsById[rootId];
       if(planRow && planRow.storyboard_kind==='PLAN' && planRow.source_project_id){
         root=roots.filter(function(r){ return String(r.id)===String(planRow.source_project_id); })[0];
       }
     }
+    return root||null;
+  }
+
+  function _sboardOrgContextRoot(rootId){
+    var root=_sboardSelfRoot(rootId);
     if(!root) return null;
     if(!root.briefing_board_id) return root;
+    var roots=_sboardMyRoots||[];
+    // Aug 30 2026 fix -- Larry: "I changed T2T project to Field Guide
+    // project and nothing happened." This function climbs from a board
+    // to its organizational PARENT (Field Guide -> T2T, say), which is
+    // exactly what _sboardRenderTitlePicker needs to gather the whole
+    // adopted family into one list (its original Aug 16 purpose -- see
+    // that function). But every OTHER caller was using this same climb
+    // to decide what Type/Title/Org Name should show as the CURRENT
+    // value -- so opening an adopted child's Plan board (which is what
+    // today's earlier fix made reachable for the first time) displayed
+    // its parent's name/type instead of its own, and clicking the
+    // child you were already standing on looked like a dead click.
+    // Callers that want "what's actually on screen" now call
+    // _sboardSelfRoot directly instead; this function is reserved for
+    // the one caller that genuinely wants the parent.
     var parentRel=_sboardRelationsCache.filter(function(r){ return r.child_board_id===root.briefing_board_id; })[0];
     if(!parentRel) return root;
     var parentRoot=roots.filter(function(r){ return r.briefing_board_id===parentRel.parent_board_id; })[0];
@@ -2485,7 +2508,11 @@
   function _sboardActiveBoardType(){
     if(_sboardPendingTypeOverride) return _sboardPendingTypeOverride;
     var curRoot=_sboardCurrentRootRow();
-    var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
+    // Aug 30 2026 fix -- self, not the organizational parent (see
+    // _sboardOrgContextRoot's own comment): Type has to describe the
+    // board actually on screen, or an adopted child whose Type differs
+    // from its parent's would show the wrong one.
+    var match=curRoot?_sboardSelfRoot(curRoot.id):null;
     return (match && match.board_type) || 'personal';
   }
 
@@ -2992,7 +3019,10 @@
       return;
     }
     var curRoot=_sboardCurrentRootRow();
-    var match=curRoot?_sboardOrgContextRoot(curRoot.id):null;
+    // Aug 30 2026 fix -- self, not the organizational parent (see
+    // _sboardOrgContextRoot's own comment): an adopted child's own Org
+    // Name field, not its parent's.
+    var match=curRoot?_sboardSelfRoot(curRoot.id):null;
     if(!match) return;
     var current=(match.org_name||'').trim();
     var opts=_sboardOrgNameOptions(match.board_type||'personal');
@@ -3011,7 +3041,7 @@
   }
   async function _sboardSaveOrgName(value, rootOverride){
     var curRoot=_sboardCurrentRootRow();
-    var match=rootOverride || (curRoot?_sboardOrgContextRoot(curRoot.id):null);
+    var match=rootOverride || (curRoot?_sboardSelfRoot(curRoot.id):null);
     if(!match) return;
     var trimmed=(value||'').trim();
     if((match.org_name||'')===trimmed) return;
@@ -3095,13 +3125,18 @@
     var curRoot=_sboardCurrentRootRow();
     // Aug 30 2026 fix -- same root cause as _sboardOrgContextRoot above:
     // curRoot.id can be a PLAN board's own id, which never appears in
-    // `roots` (IDEA-only). Resolve to the shared identity root up front
-    // (already handles the PLAN -> source_project_id hop) and match/
-    // select against ITS id everywhere below, not curRoot.id directly --
-    // otherwise this dropdown can never find itself in its own options
-    // list while standing on a Plan board, and silently shows whichever
-    // board loaded first instead (Larry: "it stayed on personal").
-    var identityRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
+    // `roots` (IDEA-only). selfRoot resolves the shared identity (the
+    // PLAN -> source_project_id hop) WITHOUT the extra climb to an
+    // organizational parent -- that's what gets matched/selected below,
+    // since the board actually open has to be the one that shows as
+    // current, or clicking the very board you're standing on (its
+    // parent's label showing instead) looks like a dead click (Larry:
+    // "I changed T2T project to Field Guide project and nothing
+    // happened" -- he was already on Field Guide, its parent T2T was
+    // just showing in the label). orgRoot keeps the parent climb --
+    // still needed just below to pull in the rest of the family.
+    var selfRoot=curRoot?_sboardSelfRoot(curRoot.id):null;
+    var orgRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
     // Adopted children ride along too, Aug 16 2026 -- Larry: PROJECT must
     // be identical no matter which screen a board is opened from. Same
@@ -3111,7 +3146,7 @@
     // Skipped while browsing an empty Type (_sboardPendingTypeOverride) --
     // there's no real context root yet.
     if(!_sboardPendingTypeOverride){
-      var children=_sboardChildBoardsOf(identityRoot&&identityRoot.briefing_board_id);
+      var children=_sboardChildBoardsOf(orgRoot&&orgRoot.briefing_board_id);
       children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
     }
     var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
@@ -3120,8 +3155,8 @@
     // all work yet"). Only offered when a real, currently-open root is
     // actually showing in this list -- not while browsing an empty
     // Type.
-    var canRemoveRoot=!_sboardPendingTypeOverride && identityRoot && filtered.some(function(r){ return r.id===identityRoot.id; });
-    _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, identityRoot?identityRoot.id:null, function(id){
+    var canRemoveRoot=!_sboardPendingTypeOverride && selfRoot && filtered.some(function(r){ return r.id===selfRoot.id; });
+    _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, selfRoot?selfRoot.id:null, function(id){
       _sboardSwitchToRootBoardPreservingKind(id);
     }, async function(){
       var typeLabel=_sboardTypeLabel(_sboardActiveBoardType());
@@ -3130,7 +3165,7 @@
       var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
       if(newId) _sboardSwitchToRootBoard(newId);
     }, 'Add a board', canRemoveRoot ? function(){
-      openSbProjectHub(identityRoot.id);
+      openSbProjectHub(selfRoot.id);
     } : null, 'Remove this project');
   }
 
