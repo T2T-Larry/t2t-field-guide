@@ -3777,7 +3777,8 @@
         // reload.
         // Aug 27 2026 -- a missed Start Date reads as the same pink
         // signal as a missed Due Date; see _bbIsStartOverdue above.
-        var cardIsOverdue=_bbIsOverdue(c)||_bbIsStartOverdue(c);
+        var _bbStartIsOverdue=_bbIsStartOverdue(c);
+        var cardIsOverdue=_bbIsOverdue(c)||_bbStartIsOverdue;
         var cardJustWentOverdue=_bbOverdueFlashIds.indexOf(c.id)!==-1;
         el.className='bb-card'+(c._foreign?' bb-card-foreign':'')
           +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'');
@@ -3835,7 +3836,16 @@
         // to the board" (c.assigned) is still recorded for later, just
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
-        var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
+        // Aug 30 2026, Larry: "When date passes intended START DATE, Add
+        // START DUE: (date) to front of pink card" -- once the Start
+        // Date has actually passed (the same _bbIsStartOverdue check
+        // that turns the card pink, above), this badge relabels itself
+        // "START DUE: {date}" instead of the bare date, so a glance at
+        // a pink card says which date it missed -- matching the
+        // "DUE: {date}" convention the bottom-row Due Date badge
+        // already uses. Before the date passes, it's still just the
+        // bare date, same as always.
+        var startBadge = c.startDate ? '<span class="bb-date">'+(_bbStartIsOverdue?('START DUE: '+_esc(c.startDate)):_esc(c.startDate))+'</span>' : '';
         // Signal Flags row, bottom-left corner -- Notes badge joined
         // this group Aug 11 2026 (Larry: move it down "with other
         // signal flags") instead of sitting up top with the rest of
