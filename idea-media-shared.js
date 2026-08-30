@@ -299,9 +299,6 @@
     compressImageFile: _compressImageFile
   };
 
-
-})();
-
 /* ============================================================
    T2TLogo — shared Logo/artwork controller, Aug 30 2026.
 
@@ -353,8 +350,17 @@
    fix was patching can't happen once the offset is a transform layered
    on top of a base position, instead of drag math re-deriving the base
    position itself from whatever the DOM happened to already say.
+
+   Lives in the SAME closure as the rest of this file (not a second,
+   separate IIFE) specifically so its calls to T() below resolve to
+   this file's own T() helper (line ~29) -- every file in this codebase
+   defines its own private copy of that one-liner rather than sharing
+   it, so code appended as a second IIFE has no T() in scope at all.
+   (Caught live, Aug 30 2026: a second-IIFE first draft of this exact
+   module threw "T is not defined" the moment wireUpload ran, which
+   silently skipped every wire step after it -- resize, drag, and the
+   on-logo eyebrow's hover-peek all failed to attach, on both boards.)
    ============================================================ */
-(function(){
 
   var PEEK_CLASS='t2t-logo-eyebrow-peek';
 
