@@ -3199,10 +3199,13 @@
             // different at rest.
             +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
-              +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
-              +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
-              +'<button class="bb-icon-btn" id="bb-hx-btn" title="History">HX</button>'
-              +'<button class="bb-icon-btn" id="bb-relations-btn" title="Relationships">🔗</button>'
+              // Aug 30 2026, Larry: "move everything but Utility and X into
+              // the Utility button" -- Reload, Jump-to-menu, History and
+              // Relationships used to ride along here as their own icons
+              // (see wireBriefingBoard below for the July 22 reasoning on
+              // Reload specifically); all four now live one tap inside
+              // Utility instead (_bbRenderSettingsScreen, 'home' screen),
+              // so this row goes back to just the two.
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
@@ -4392,23 +4395,37 @@
       body.innerHTML=
          '<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-people" style="width:100%">&#128101; People</button></div>'
         +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-appearance" style="width:100%">&#127912; Appearance</button></div>'
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-preferences" style="width:100%">&#128295; Preferences</button></div>';
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-preferences" style="width:100%">&#128295; Preferences</button></div>'
+        // Aug 30 2026, Larry: Reload and Jump to Menu used to be their
+        // own icons next to Utility/Close in the header row -- moved in
+        // here so the header stays down to just Utility and X. History
+        // moves in too, right next to its own Archive/Log destinations
+        // it already used to launch (see openHX). Relationships was
+        // ALSO its own header icon, but it already had a home under
+        // People below, so that duplicate icon is just gone, not
+        // re-added here.
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-reload" style="width:100%">&#128260; Reload</button></div>'
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-menu" style="width:100%">&#128269; Jump to Menu</button></div>'
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-history" style="width:100%">&#128337; History</button></div>';
       T().wire('bb-settings-go-people', function(){ _bbRenderSettingsScreen('people'); });
       T().wire('bb-settings-go-appearance', function(){ _bbRenderSettingsScreen('appearance'); });
       T().wire('bb-settings-go-preferences', function(){ _bbRenderSettingsScreen('preferences'); });
+      T().wire('bb-settings-go-reload', function(){ closeSettings(); T().resetAndReturn(); });
+      T().wire('bb-settings-go-menu', function(){ closeSettings(); T().goMG(); });
+      T().wire('bb-settings-go-history', function(){ closeSettings(); openHX(); });
     } else if(screen==='people'){
       if(titleEl) titleEl.textContent='People';
       body.innerHTML=
-         '<div class="bb-field" id="bb-team-roster-field">'
-          +'<button class="bb-flag-btn" id="bb-open-team-roster" style="width:100%">&#127917; Cast</button>'
-        +'</div>'
-        +'<div class="bb-field" id="bb-sharing-field">'
+         '<div class="bb-field" id="bb-sharing-field">'
           +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#127915; Guests</button>'
         +'</div>'
         +'<div class="bb-field" id="bb-relations-field">'
           +'<button class="bb-flag-btn" id="bb-open-relations" style="width:100%">&#128279; Relationships</button>'
         +'</div>';
-      T().wire('bb-open-team-roster', function(){ closeSettings(); openTeamRoster(); });
+      // Aug 30 2026, Larry: "Delete Cast from Utility button" -- CAST is
+      // now its own destination on the board-kind dropdown up top (same
+      // roster either way, openTeamRoster/_tmAddMember), so the nested
+      // People -> Cast entry that used to duplicate it is gone.
       T().wire('bb-open-sharing', function(){ closeSettings(); openSharingManager(); });
       T().wire('bb-open-relations', function(){ closeSettings(); openRelationsManager(); });
       _bbLoadSharing();
@@ -5251,7 +5268,9 @@
   }
   function wireRelationsManager(){
     T().wire('bb-relations-close', closeRelationsManager);
-    T().wire('bb-relations-btn', openRelationsManager);
+    // bb-relations-btn (the standalone header icon) is gone, Aug 30 2026
+    // -- Relationships is reached through Utility -> People now instead
+    // (bb-open-relations, wired in _bbRenderSettingsScreen).
   }
 
   // Project Hub, Aug 16 2026 -- backs the PROJECT field's (-) button.
@@ -5738,7 +5757,8 @@
       var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
       T().returnToMG();
     });
-    T().wire('bb-hx-btn', openHX);
+    // bb-hx-btn (the standalone header icon) is gone, Aug 30 2026 --
+    // History now opens from Utility instead (bb-settings-go-history).
     T().wire('bb-hx-close', closeHX);
     T().wire('bb-hx-archive-btn', function(){ closeHX(); openArchive(); });
     T().wire('bb-hx-briefinglog-btn', function(){ closeHX(); openBriefingLog(); });
@@ -6169,14 +6189,15 @@
   }
 
   function wireBriefingBoard(){
-    T().wire('b-bb-mg', T().goMG);
     // July 22, 2026, Larry: the Briefing Board is "one of the most
     // important places" for the reload-and-return shortcut -- burying
     // it one tap deep inside the \U0001F50D Jump-to-menu overlay (where it
-    // first landed) wasn't good enough. Same T().resetAndReturn() as the
-    // backpack menu's \U0001F504, just surfaced directly in this board's
-    // own icon row alongside HX/gear/close.
-    T().wire('bb-reset', T().resetAndReturn);
+    // first landed) wasn't good enough, so it got surfaced directly in
+    // this board's own icon row alongside HX/gear/close instead.
+    // Aug 30 2026, Larry reversed that: "move everything but Utility and
+    // X into the Utility button" -- b-bb-mg and bb-reset (the standalone
+    // header icons) are gone; Jump to Menu and Reload now live inside
+    // Utility instead (bb-settings-go-menu / bb-settings-go-reload).
 
     T().wire('bb-add-close', closeAddCard);
     // Aug 7 2026 -- Larry: "I hit ENTER on a Briefing Card entry but it
