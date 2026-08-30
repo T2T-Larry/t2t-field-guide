@@ -2455,6 +2455,25 @@
   function _sboardOrgContextRoot(rootId){
     var roots=_sboardMyRoots||[];
     var root=roots.filter(function(r){ return String(r.id)===String(rootId); })[0];
+    if(!root){
+      // Aug 30 2026 fix -- Larry: "now I switched from personal to
+      // company and it stayed on personal." rootId can be a PLAN
+      // board's own id, which never appears in _sboardMyRoots (Plan
+      // boards are deliberately excluded from that IDEA-only list --
+      // see the Aug 26 comment inside _sboardLoadMyRoots above). Type,
+      // Title and Org Name are one shared identity per project, IDEA
+      // and PLAN alike (Design Notes), so when the row itself isn't in
+      // the list, fall back to its source_project_id and look THAT up
+      // instead of silently returning null -- otherwise every picker
+      // reading off this function quietly defaults to Personal (or
+      // whichever root happened to load first) the instant you're
+      // standing on a Plan board, even though the Plan board's own
+      // row already carries the real board_type/org_name directly.
+      var planRow=_sboardAllRowsById[rootId];
+      if(planRow && planRow.storyboard_kind==='PLAN' && planRow.source_project_id){
+        root=roots.filter(function(r){ return String(r.id)===String(planRow.source_project_id); })[0];
+      }
+    }
     if(!root) return null;
     if(!root.briefing_board_id) return root;
     var parentRel=_sboardRelationsCache.filter(function(r){ return r.child_board_id===root.briefing_board_id; })[0];
@@ -3074,6 +3093,15 @@
     }
     var activeType=_sboardActiveBoardType();
     var curRoot=_sboardCurrentRootRow();
+    // Aug 30 2026 fix -- same root cause as _sboardOrgContextRoot above:
+    // curRoot.id can be a PLAN board's own id, which never appears in
+    // `roots` (IDEA-only). Resolve to the shared identity root up front
+    // (already handles the PLAN -> source_project_id hop) and match/
+    // select against ITS id everywhere below, not curRoot.id directly --
+    // otherwise this dropdown can never find itself in its own options
+    // list while standing on a Plan board, and silently shows whichever
+    // board loaded first instead (Larry: "it stayed on personal").
+    var identityRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
     var filtered=roots.filter(function(r){ return (r.board_type||'personal')===activeType; });
     // Adopted children ride along too, Aug 16 2026 -- Larry: PROJECT must
     // be identical no matter which screen a board is opened from. Same
@@ -3083,8 +3111,7 @@
     // Skipped while browsing an empty Type (_sboardPendingTypeOverride) --
     // there's no real context root yet.
     if(!_sboardPendingTypeOverride){
-      var contextRoot=curRoot?_sboardOrgContextRoot(curRoot.id):null;
-      var children=_sboardChildBoardsOf(contextRoot&&contextRoot.briefing_board_id);
+      var children=_sboardChildBoardsOf(identityRoot&&identityRoot.briefing_board_id);
       children.forEach(function(c){ if(!filtered.some(function(r){ return r.id===c.id; })) filtered=filtered.concat([c]); });
     }
     var opts=filtered.map(function(r){ return {value:r.id, label:r.text_content||'(untitled)'}; });
@@ -3093,8 +3120,8 @@
     // all work yet"). Only offered when a real, currently-open root is
     // actually showing in this list -- not while browsing an empty
     // Type.
-    var canRemoveRoot=!_sboardPendingTypeOverride && curRoot && filtered.some(function(r){ return r.id===curRoot.id; });
-    _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
+    var canRemoveRoot=!_sboardPendingTypeOverride && identityRoot && filtered.some(function(r){ return r.id===identityRoot.id; });
+    _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, identityRoot?identityRoot.id:null, function(id){
       _sboardSwitchToRootBoardPreservingKind(id);
     }, async function(){
       var typeLabel=_sboardTypeLabel(_sboardActiveBoardType());
@@ -3103,7 +3130,7 @@
       var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
       if(newId) _sboardSwitchToRootBoard(newId);
     }, 'Add a board', canRemoveRoot ? function(){
-      openSbProjectHub(curRoot.id);
+      openSbProjectHub(identityRoot.id);
     } : null, 'Remove this project');
   }
 
