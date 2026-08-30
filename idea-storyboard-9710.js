@@ -725,11 +725,11 @@
       // itself stays exactly as it was, just wrapped in a <button> with
       // its default chrome stripped so nothing looks different at rest.
       // This file only reads IDEA, so the trigger's own text never
-      // changes -- picking PLAN/SHARE/ORG opens that not-yet-built
-      // Storyboard's "coming soon" toast (see _sboardWireBoardKindDropdown
-      // below) rather than navigating anywhere, same placeholder pattern
-      // already used for Plan/Organization/Share on the Briefing Card.
-      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Share, or Organization" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
+      // changes. Aug 30 2026, Larry: replaced with IDEA - PLAN - BRIEFING
+      // BOARD - SHARE - CAST -- BRIEFING BOARD and CAST are real,
+      // already-built destinations (see _sboardWireBoardKindDropdown),
+      // SHARE is still the only placeholder left.
+      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
       +'<div style="display:flex;flex-direction:column;align-items:center">'
@@ -2409,19 +2409,28 @@
   }
   document.addEventListener('click', function(){ _sboardCloseAllDropdowns(null); });
 
-  // Board-kind dropdown (IDEA/PLAN/SHARE/ORG), Aug 26 2026 -- see the
-  // sc-board-kind-trigger comment above. Deliberately NOT built on
-  // _sboardRenderDropdown: that helper always appends a dashed-circle
-  // (+) "add" row, which makes sense for a user-editable list (Type,
-  // Title, View) but not for this fixed four-item menu -- there's
-  // nothing to add here. Wired once at board init since the list never
-  // changes; open/close/position logic mirrors _sboardRenderDropdown's
-  // trigger.onclick exactly, just without the addRow.
+  // Board-kind dropdown (IDEA/PLAN/BRIEFING BOARD/SHARE/CAST), Aug 30
+  // 2026 -- Larry: one dropdown should reach every board, not just
+  // Idea/Plan. BRIEFING BOARD reuses the exact nav call the Screen 0000
+  // wheel's own "Briefing Board" tile already uses (screen-zero.js);
+  // CAST reuses the same whole-project Cast/team roster popup already
+  // reachable from the Utility gear (_sboardOpenTeam) -- Idea/Plan and
+  // their linked Briefing Board share one roster (see _tmAddMember), so
+  // this opens the same people, not a second list. SHARE stays a stub
+  // until that board exists. ORG retired -- wasn't on Larry's list.
+  // Deliberately NOT built on _sboardRenderDropdown: that helper always
+  // appends a dashed-circle (+) "add" row, which makes sense for a
+  // user-editable list (Type, Title, View) but not for this fixed menu
+  // -- there's nothing to add here. Wired once at board init since the
+  // list never changes; open/close/position logic mirrors
+  // _sboardRenderDropdown's trigger.onclick exactly, just without the
+  // addRow.
   var _sboardBoardKinds=[
     {value:'IDEA', label:'IDEA', soon:null},
     {value:'PLAN', label:'PLAN', soon:null},
+    {value:'BRIEFING BOARD', label:'BRIEFING BOARD', soon:null},
     {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
-    {value:'ORG', label:'ORG', soon:'Organization Storyboard coming soon'}
+    {value:'CAST', label:'CAST', soon:null}
   ];
   function _sboardWireBoardKindDropdown(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
@@ -2437,6 +2446,16 @@
         menu.hidden=true;
         if(k.value==='PLAN'){ _sboardOpenOrCreatePlanBoard(); return; }
         if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return; }
+        if(k.value==='BRIEFING BOARD'){
+          if(window.T2T && window.T2T.nav) window.T2T.nav('s-briefing-board');
+          return;
+        }
+        if(k.value==='CAST'){
+          var castRow=_sboardCurrentProjectRow();
+          if(!castRow){ _sboardShowToast('Open a project first.'); return; }
+          _sboardOpenTeam(castRow, closeSbDetail);
+          return;
+        }
         if(k.soon) _sboardShowToast(k.soon);
       });
       menu.appendChild(row);
