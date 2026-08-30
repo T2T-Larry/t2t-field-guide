@@ -2358,6 +2358,46 @@
     _sboardSpinWhile(renderSeaBoard());
   }
 
+  // Aug 30 2026 fix -- Larry: "when I changed to Company on the PLAN
+  // board, the entire board changed to IDEA." Type and Title both pick
+  // their target from _sboardMyRoots, which only ever holds IDEA-kind
+  // roots (Plan boards are deliberately left out of that list -- see
+  // the Aug 26 comment inside _sboardLoadMyRoots above), so jumping
+  // straight to the matched root via _sboardSwitchToRootBoard always
+  // landed on that project's IDEA board, even when you started on a
+  // Plan board and only meant to browse to a different project. This
+  // wrapper checks _sboardIsPlanBoard first: off a Plan board it
+  // behaves exactly as before, but from a Plan board it routes the
+  // jump to the matched project's own Plan board when one already
+  // exists, or offers the same Duplicate/Start Blank choice used by
+  // the IDEA/PLAN dropdown when it doesn't -- so switching Type or
+  // Title never silently drops you back into IDEA.
+  async function _sboardSwitchToRootBoardPreservingKind(rootId){
+    if(!_sboardIsPlanBoard){ _sboardSwitchToRootBoard(rootId); return; }
+    _sboardPendingTypeOverride=null;
+    var _sb=T().sb;
+    try{
+      var existing=await _sb.from('ideas').select('id').eq('content_type','header').is('cluster_id',null)
+        .eq('storyboard_kind','PLAN').eq('source_project_id', rootId).limit(1);
+      if(existing.error) throw existing.error;
+      if(existing.data && existing.data.length){
+        var freshPlan=await _sb.from('ideas').select('*').eq('id', existing.data[0].id).maybeSingle();
+        if(freshPlan.error) throw freshPlan.error;
+        if(freshPlan.data){ _sboardDrillInto(freshPlan.data); return; }
+      }
+      var freshIdea=_sboardAllRowsById[rootId];
+      if(!freshIdea){
+        var ir=await _sb.from('ideas').select('*').eq('id', rootId).maybeSingle();
+        if(ir.error) throw ir.error;
+        freshIdea=ir.data;
+      }
+      if(!freshIdea){ _sboardShowToast('Could not open that project.'); return; }
+      _sboardOpenPlanStartChoice(freshIdea);
+    }catch(err){
+      _sboardShowToast('Could not open that Plan board — '+(err&&err.message?err.message:'try again'));
+    }
+  }
+
   async function _sboardCreateRootBoard(name, boardType){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
@@ -2979,7 +3019,7 @@
       var matching=rts.filter(function(r){ return (r.board_type||'personal')===newType; });
       if(matching.length){
         _sboardPendingTypeOverride=null;
-        _sboardSwitchToRootBoard(matching[0].id);
+        await _sboardSwitchToRootBoardPreservingKind(matching[0].id);
       } else {
         // Aug 16 2026 -- same fix as the Briefing Board, same day: an
         // empty Type browses the same as a full one, dropdown and all.
@@ -3055,7 +3095,7 @@
     // Type.
     var canRemoveRoot=!_sboardPendingTypeOverride && curRoot && filtered.some(function(r){ return r.id===curRoot.id; });
     _sboardRenderDropdown('sc-title-trigger','sc-title-menu', opts, curRoot?curRoot.id:null, function(id){
-      _sboardSwitchToRootBoard(id);
+      _sboardSwitchToRootBoardPreservingKind(id);
     }, async function(){
       var typeLabel=_sboardTypeLabel(_sboardActiveBoardType());
       var name=window.prompt('Name for the new '+typeLabel+' board:');
