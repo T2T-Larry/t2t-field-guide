@@ -2250,9 +2250,18 @@
     var img=document.getElementById('bb-logo-img');
     var btn=document.getElementById('bb-logo-add-btn');
     var handle=document.getElementById('bb-logo-resize-handle');
+    var topEyebrow=document.getElementById('bb-logo-eyebrow');
     if(!slot) return;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     var url=board && board.logo_url;
+    // Aug 30 2026: once a logo exists, the traveling on-logo label (see
+    // .bb-logo-eyebrow-onlogo above) is the one that's actually next to
+    // the artwork -- this original above-the-anchor "Logo" text stays in
+    // the layout (keeps Logo lined up with Type/Project/Team) but goes
+    // invisible rather than showing a second, stationary "Logo" that
+    // never moves. visibility (not display) so it still reserves the row
+    // height.
+    if(topEyebrow) topEyebrow.style.visibility=url?'hidden':'visible';
     // Frame size -- a board's own logo_w/logo_h (set at crop time,
     // changed by dragging the resize handle) wins; no logo yet falls
     // back to the slot's default 30x30 square, matching .bb-hdr-select's
@@ -2531,7 +2540,10 @@
   function _bbWireLogoHoverHandle(){
     var slot=document.getElementById('bb-logo-slot');
     var handle=document.getElementById('bb-logo-resize-handle');
-    var eyebrow=document.getElementById('bb-logo-eyebrow');
+    // Aug 30 2026: peeks the on-logo copy (travels with the logo), not
+    // the original stationary one above the anchor -- see the
+    // .bb-logo-eyebrow-onlogo rule and _bbRenderLogo above.
+    var eyebrow=document.getElementById('bb-logo-eyebrow-onlogo');
     if(!slot||!handle) return;
     slot.addEventListener('pointerenter', function(){
       var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
@@ -3056,22 +3068,39 @@
       +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;border-radius:7px}'
       +'.bb-logo-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:4px;background:var(--bb-accent);border:2px solid #fff;cursor:nwse-resize;display:none;z-index:3;touch-action:none}'
-      // LOGO eyebrow peek-on-hover, Aug 30 2026 -- Larry: an oversized,
-      // dragged logo is allowed to sit on top of its own "Logo" label at
-      // rest (see the fixed-footprint-anchor note above -- accepted
-      // tradeoff, unlike Type/Project/Team's own eyebrows which always
-      // stay visible since they carry real text, not a self-explanatory
-      // picture). But the label should still be reachable on demand, the
-      // same way the resize handle is hidden until hovered rather than
-      // gone for good. Wired in _bbWireLogoHoverHandle, same
-      // pointerenter/pointerleave pair (and same _bbLogoResizeActive/
-      // _bbLogoDragActive guards) that already show/hide the resize
-      // handle -- both now toggle together. Only the label itself gets a
-      // numeric z-index (bb-logo-anchor is position:relative with
-      // z-index:auto, so any sibling with a real z-index number paints
-      // above it); the white chip behind the text is there so it reads
-      // clearly over whatever artwork it is currently sitting on.
-      +'.bb-logo-eyebrow-peek{position:relative;z-index:4;background:#fff;border-radius:4px;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.3)}'
+      // LOGO eyebrow, on-logo + peek-on-hover, Aug 30 2026 (corrected
+      // same day) -- first pass left the "Logo" label sitting at its
+      // original spot above the empty slot while only the artwork itself
+      // moved on drag/resize, so the hover-peek lit up far from wherever
+      // the logo had actually been dragged to. Larry: "move the eyebrow
+      // onto the logo (behind it) so wherever the logo goes, the label
+      // goes with it." Fix: a second copy of the label now lives INSIDE
+      // bb-logo-slot itself (bb-logo-eyebrow-onlogo, added right after
+      // bb-logo-img in the markup above) instead of as a sibling of the
+      // anchor -- being a child of the slot, it rides along for free on
+      // both the drag transform and the resize width/height (see
+      // _bbRenderLogo/_bbWireLogoDrag/_bbWireLogoResizeHandle, none of
+      // which needed to change), centered on the slot at all times via
+      // top/left 50% + its own translate. Original bb-mh-eyebrow above
+      // the anchor still exists and still lines Logo up with Type/
+      // Project/Team at rest, but now only actually shows while the slot
+      // is empty (no logo uploaded yet, see _bbRenderLogo) -- once real
+      // artwork exists, the traveling on-logo copy is the only one that
+      // matters, since it's the one guaranteed to be wherever the logo
+      // currently sits.
+      +'.bb-logo-eyebrow-onlogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap;pointer-events:none}'
+      // Negative z-index (above) is what keeps it tucked behind the
+      // image at rest -- non-positioned content (the plain <img>) always
+      // paints above a negative-z-index layer. Hovering the slot (see
+      // _bbWireLogoHoverHandle) adds this class, which only changes the
+      // z-index to a positive number so it jumps above the image, plus a
+      // white chip so the text reads clearly over whatever artwork it's
+      // currently sitting on. Deliberately does NOT touch `position`
+      // (already absolute from the base rule) -- overriding it here
+      // would pull the label back into bb-logo-slot's own flex layout
+      // for as long as the hover lasted, which visibly nudges the
+      // centered image every time.
+      +'.bb-logo-eyebrow-onlogo.bb-logo-eyebrow-peek{z-index:4;background:#fff;border-radius:4px;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.3)}'
       // Organization's eyebrow is itself the Type dropdown trigger now,
       // Aug 15 2026 (Larry: "I want that word to actually be a dropdown
       // choice") -- it's a <button> sharing .bb-mh-eyebrow's exact look,
@@ -3475,7 +3504,7 @@
             +'<div class="bb-mh-typebox">'
               +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
             +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
             // 2026 -- Larry: "the top center of the Briefing Board could
