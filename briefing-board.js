@@ -2241,401 +2241,75 @@
   }
 
   // Logo/artwork, Aug 28 2026 -- reflect whichever board is currently
-  // open (_bbCurrentBoardId) every time the header re-renders, same
-  // pattern as _bbRenderOrgName/_bbRenderBoardPicker just above. A
-  // loaded logo hides the (+) and becomes the click target for
-  // swapping it out; no logo means the (+) shows instead.
-  function _bbRenderLogo(){
-    var slot=document.getElementById('bb-logo-slot');
-    var img=document.getElementById('bb-logo-img');
-    var btn=document.getElementById('bb-logo-add-btn');
-    var handle=document.getElementById('bb-logo-resize-handle');
-    var topEyebrow=document.getElementById('bb-logo-eyebrow');
-    if(!slot) return;
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    var url=board && board.logo_url;
-    // Aug 30 2026: once a logo exists, the traveling on-logo label (see
-    // .bb-logo-eyebrow-onlogo above) is the one that's actually next to
-    // the artwork -- this original above-the-anchor "Logo" text stays in
-    // the layout (keeps Logo lined up with Type/Project/Team) but goes
-    // invisible rather than showing a second, stationary "Logo" that
-    // never moves. visibility (not display) so it still reserves the row
-    // height.
-    if(topEyebrow) topEyebrow.style.visibility=url?'hidden':'visible';
-    // Frame size -- a board's own logo_w/logo_h (set at crop time,
-    // changed by dragging the resize handle) wins; no logo yet falls
-    // back to the slot's default 30x30 square, matching .bb-hdr-select's
-    // own 30px header-control height.
-    var w=(board && board.logo_w)||30, h=(board && board.logo_h)||30;
-    slot.style.width=w+'px'; slot.style.height=h+'px';
-    // Aug 28 2026, Larry: "make LOGO draggable." The slot stays exactly
-    // where the header's normal layout puts it (so the rest of the
-    // header never reflows); a saved drag offset (logo_dx/logo_dy) just
-    // nudges it visually from there via transform. See _bbWireLogoDrag.
-    var dx=(board && board.logo_dx)||0, dy=(board && board.logo_dy)||0;
-    slot.style.transform=(dx||dy)?('translate('+dx+'px,'+dy+'px)'):'';
-    if(img){
-      img.src=url||'';
-      img.style.display=url?'block':'none';
-      img.style.cursor=url?'pointer':'';
-      img.title=url?'Click to replace the logo':'';
-    }
-    if(btn) btn.style.display=url?'none':'';
-    // Aug 28 2026: the handle no longer sits visible permanently once a
-    // logo exists (Larry: "remove resize tab after crop and resize
-    // edited") -- every render resets it to hidden, and hovering the
-    // slot (see _bbWireLogoHoverHandle) brings it back when there's
-    // actually a logo to resize.
-    if(handle) handle.style.display='none';
-  }
-
-  // Logo/artwork upload, Aug 28 2026 -- same upload pipeline as the Idea
-  // Board's own Logo (compress, push to the shared sea-of-ideas bucket,
-  // grab the public URL) but the URL lands on logo_url of the currently
-  // open Briefing Board row instead of a project's ideas root row -- one
-  // logo per Briefing Board. Picking a file when a logo already exists
-  // just replaces it -- no separate remove control; upload a different
-  // image to swap it out. Takes the already-cropped file plus that
-  // crop's own natural pixel width/height (crop and resize are separate
-  // steps, same as the Idea Board) so the frame opens at a sensible
-  // starting size before the drag handle takes over.
-  async function _bbUploadLogo(file, cropW, cropH){
-    if(!file) return;
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    if(!board){ _bbShowToast('Open a board first.'); return; }
-    var sb=T().sb;
-    try{
-      var user=(await sb.auth.getUser()).data.user;
-      if(!user) throw new Error('Not signed in.');
-      var toUpload=await window.T2TMedia.compressImageFile(file);
-      var uploadName=toUpload.name||file.name||('bb-logo-'+Date.now()+'.png');
-      var path=user.id+'/bb-logo-'+Date.now()+'-'+uploadName.replace(/[^a-zA-Z0-9._-]/g,'_');
-      var up=await sb.storage.from('sea-of-ideas').upload(path, toUpload);
-      if(up.error) throw up.error;
-      var pub=sb.storage.from('sea-of-ideas').getPublicUrl(path);
-      var url=pub.data && pub.data.publicUrl;
-      if(!url) throw new Error('No public URL returned.');
-      var longSide=30, frameW=longSide, frameH=longSide;
-      if(cropW>0 && cropH>0){
-        if(cropW>=cropH){ frameW=longSide; frameH=Math.max(10,Math.round(longSide*cropH/cropW)); }
-        else{ frameH=longSide; frameW=Math.max(10,Math.round(longSide*cropW/cropH)); }
-      }
-      var upd=await sb.from('briefing_boards').update({logo_url:url, logo_w:frameW, logo_h:frameH}).eq('id', board.id);
+  // open (_bbCurrentBoardId) every time the header re-renders. A loaded
+  // logo hides the (+) and becomes the click target for swapping it
+  // out; no logo means the (+) shows instead.
+  //
+  // Aug 30 2026 -- all of the actual logo behavior (upload, crop,
+  // resize handle, drag, hover-peek eyebrow) moved to the shared
+  // window.T2TLogo controller in idea-media-shared.js, now also used
+  // by the Idea/Plan Storyboard (see idea-storyboard-9710.js's own
+  // _sboardLogoCfg). This board's only remaining job is describing
+  // itself to that controller: which row holds this board's logo
+  // fields (briefing_boards, keyed by _bbCurrentBoardId -- one logo per
+  // Briefing Board, independent of any linked Idea project's own logo),
+  // this board's own element ids, size bounds, and its own light-themed
+  // crop-overlay chrome (bb-logo-crop-overlay). The Briefing Board has
+  // no positionAnchor hook -- its anchor already sits in the header's
+  // normal flex layout (see .bb-logo-anchor above) and needs no
+  // per-render repositioning the way Idea/Plan's does.
+  var _bbLogoCfg={
+    slotId:'bb-logo-slot', imgId:'bb-logo-img', addBtnId:'bb-logo-add-btn',
+    inputId:'bb-logo-input', resizeHandleId:'bb-logo-resize-handle',
+    eyebrowTopId:'bb-logo-eyebrow', eyebrowOnLogoId:'bb-logo-eyebrow-onlogo',
+    minSize:20, maxSize:90, defaultSize:30, minFrameFromCrop:10,
+    uploadPrefix:'bb-logo', subjectLabel:'board',
+    showToast:_bbShowToast,
+    getRow:function(){ return _bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0]; },
+    saveLogo:async function(patch){
+      var board=_bbLogoCfg.getRow();
+      if(!board) return;
+      var sb=T().sb;
+      var upd=await sb.from('briefing_boards').update(patch).eq('id', board.id);
       if(upd.error) throw upd.error;
-      board.logo_url=url; board.logo_w=frameW; board.logo_h=frameH;
-      _bbRenderLogo();
-    }catch(err){
-      _bbShowToast('Couldn’t save the logo: '+err.message);
-    }
-  }
-
-  // Logo crop tool, Aug 28 2026 -- same free-crop-of-the-uploaded-image
-  // behavior as the Idea Board's own crop tool (idea-storyboard-9710.js),
-  // just running in this board's own bb-logo-crop-overlay shell instead
-  // of that board's shared detail overlay. A free-aspect-ratio rectangle
-  // you can drag to move and drag any corner to resize.
-  function _bbOpenLogoCropper(file){
-    var ov=document.getElementById('bb-logo-crop-overlay');
-    if(!ov) return;
-    var card=ov.querySelector('.bb-overlay-card');
-    if(!card) return;
-    var objUrl=URL.createObjectURL(file);
-    card.innerHTML=
-       '<div class="bb-overlay-head"><span class="bb-overlay-title">Crop your logo</span><button class="bb-close" id="bb-lc-cancel-x" aria-label="Close">✕</button></div>'
-      +'<div class="bbw" style="text-align:center">'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#a3907a;font-style:italic;margin-bottom:10px">Drag the box to choose what to keep. Drag a corner to reshape it -- any rectangle, not just square.</div>'
-      +'<div id="bb-lc-stage" style="position:relative;margin:0 auto 14px;background:#3B2510;border-radius:8px;overflow:hidden"></div>'
-      +'<div style="display:flex;gap:6px">'
-      +'<button type="button" class="jb" id="bb-lc-use" style="flex:1">Use this crop</button>'
-      +'<button type="button" class="bb-flag-btn" id="bb-lc-cancel" style="flex:1">Cancel</button>'
-      +'</div>'
-      +'</div>';
-    ov.classList.add('active');
-    _bbResetCardPosition(card);
-
-    var onMove=null, onUp=null;
-    function cleanupListeners(){
-      if(onMove) document.removeEventListener('pointermove', onMove);
-      if(onUp) document.removeEventListener('pointerup', onUp);
-    }
-    function cancelCrop(){
-      cleanupListeners();
-      URL.revokeObjectURL(objUrl);
-      ov.classList.remove('active');
-    }
-    var cancelBtn=document.getElementById('bb-lc-cancel'); if(cancelBtn) cancelBtn.onclick=cancelCrop;
-    var cancelX=document.getElementById('bb-lc-cancel-x'); if(cancelX) cancelX.onclick=cancelCrop;
-    ov.onclick=function(e){ if(e.target===ov) cancelCrop(); };
-
-    var img=new Image();
-    img.onload=function(){
-      var stage=document.getElementById('bb-lc-stage');
-      if(!stage){ URL.revokeObjectURL(objUrl); return; }
-      var maxW=320, maxH=320;
-      var scale=Math.min(maxW/img.naturalWidth, maxH/img.naturalHeight);
-      if(!isFinite(scale) || scale<=0) scale=1;
-      scale=Math.min(scale, 6);
-      var dispW=Math.max(60, Math.round(img.naturalWidth*scale));
-      var dispH=Math.max(60, Math.round(img.naturalHeight*scale));
-      stage.style.width=dispW+'px';
-      stage.style.height=dispH+'px';
-      stage.innerHTML='<img id="bb-lc-img" src="'+objUrl+'" style="position:absolute;top:0;left:0;width:'+dispW+'px;height:'+dispH+'px;display:block;pointer-events:none">'
-        +'<div id="bb-lc-box" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move"></div>';
-      var box=document.getElementById('bb-lc-box');
-      ['nw','ne','sw','se'].forEach(function(corner){
-        var h=document.createElement('div');
-        h.className='bb-lc-handle'; h.setAttribute('data-corner',corner);
-        h.style.cssText='position:absolute;width:14px;height:14px;background:#C9A87C;border:2px solid #fff;border-radius:3px;z-index:2;touch-action:none;'
-          +(corner.indexOf('n')>-1?'top:-8px;':'bottom:-8px;')
-          +(corner.indexOf('w')>-1?'left:-8px;':'right:-8px;')
-          +'cursor:'+(corner==='nw'||corner==='se'?'nwse-resize':'nesw-resize');
-        box.appendChild(h);
-      });
-
-      var bx=Math.round(dispW*0.1), by=Math.round(dispH*0.1), bw=Math.round(dispW*0.8), bh=Math.round(dispH*0.8);
-      var MIN=20;
-      function clampBox(){
-        if(bw<MIN) bw=MIN; if(bh<MIN) bh=MIN;
-        if(bw>dispW) bw=dispW; if(bh>dispH) bh=dispH;
-        if(bx<0) bx=0; if(by<0) by=0;
-        if(bx+bw>dispW) bx=dispW-bw; if(by+bh>dispH) by=dispH-bh;
+      Object.keys(patch).forEach(function(k){ board[k]=patch[k]; });
+    },
+    crop:{
+      stageMaxW:320, stageMaxH:320, handleColor:'#C9A87C', handleBorderColor:'#fff',
+      mount:function(doClose){
+        var ov=document.getElementById('bb-logo-crop-overlay');
+        var card=ov.querySelector('.bb-overlay-card');
+        if(!card) return null;
+        card.innerHTML=
+           '<div class="bb-overlay-head"><span class="bb-overlay-title">Crop your logo</span><button class="bb-close" id="bb-lc-cancel-x" aria-label="Close">✕</button></div>'
+          +'<div class="bbw" style="text-align:center">'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#a3907a;font-style:italic;margin-bottom:10px">Drag the box to choose what to keep. Drag a corner to reshape it -- any rectangle, not just square.</div>'
+          +'<div id="bb-lc-stage" style="position:relative;margin:0 auto 14px;background:#3B2510;border-radius:8px;overflow:hidden"></div>'
+          +'<div style="display:flex;gap:6px">'
+          +'<button type="button" class="jb" id="bb-lc-use" style="flex:1">Use this crop</button>'
+          +'<button type="button" class="bb-flag-btn" id="bb-lc-cancel" style="flex:1">Cancel</button>'
+          +'</div>'
+          +'</div>';
+        ov.classList.add('active');
+        _bbResetCardPosition(card);
+        var cancelBtn=document.getElementById('bb-lc-cancel'); if(cancelBtn) cancelBtn.onclick=doClose;
+        var cancelX=document.getElementById('bb-lc-cancel-x'); if(cancelX) cancelX.onclick=doClose;
+        ov.onclick=function(e){ if(e.target===ov) doClose(); };
+        return { stage:document.getElementById('bb-lc-stage'), useBtn:document.getElementById('bb-lc-use') };
+      },
+      close:function(){
+        var ov=document.getElementById('bb-logo-crop-overlay');
+        if(ov) ov.classList.remove('active');
       }
-      function paint(){ box.style.left=bx+'px'; box.style.top=by+'px'; box.style.width=bw+'px'; box.style.height=bh+'px'; }
-      paint();
+    }
+  };
 
-      var mode=null, startX=0, startY=0, ob=null;
-      box.addEventListener('pointerdown', function(ev){
-        if(ev.target!==box) return;
-        mode='move'; startX=ev.clientX; startY=ev.clientY; ob={x:bx,y:by};
-        try{ box.setPointerCapture(ev.pointerId); }catch(_e){}
-      });
-      Array.prototype.forEach.call(box.querySelectorAll('.bb-lc-handle'), function(h){
-        h.addEventListener('pointerdown', function(ev){
-          ev.stopPropagation();
-          mode='resize-'+h.getAttribute('data-corner');
-          startX=ev.clientX; startY=ev.clientY; ob={x:bx,y:by,w:bw,h:bh};
-          try{ h.setPointerCapture(ev.pointerId); }catch(_e){}
-        });
-      });
-      onMove=function(ev){
-        if(!mode) return;
-        var dx=ev.clientX-startX, dy=ev.clientY-startY;
-        if(mode==='move'){ bx=ob.x+dx; by=ob.y+dy; }
-        else{
-          var c=mode.slice(7);
-          if(c==='se'){ bw=ob.w+dx; bh=ob.h+dy; }
-          else if(c==='sw'){ bx=ob.x+dx; bw=ob.w-dx; bh=ob.h+dy; }
-          else if(c==='ne'){ by=ob.y+dy; bw=ob.w+dx; bh=ob.h-dy; }
-          else if(c==='nw'){ bx=ob.x+dx; by=ob.y+dy; bw=ob.w-dx; bh=ob.h-dy; }
-        }
-        clampBox();
-        paint();
-      };
-      onUp=function(){ mode=null; };
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-
-      document.getElementById('bb-lc-use').onclick=function(){
-        cleanupListeners();
-        var sx=Math.round(bx/scale), sy=Math.round(by/scale);
-        var sw=Math.round(bw/scale), sh=Math.round(bh/scale);
-        sw=Math.max(1,Math.min(sw, img.naturalWidth-sx));
-        sh=Math.max(1,Math.min(sh, img.naturalHeight-sy));
-        var canvas=document.createElement('canvas');
-        canvas.width=sw; canvas.height=sh;
-        var ctx=canvas.getContext('2d');
-        ctx.drawImage(img, sx,sy,sw,sh, 0,0,sw,sh);
-        canvas.toBlob(function(blob){
-          URL.revokeObjectURL(objUrl);
-          ov.classList.remove('active');
-          if(!blob){ _bbShowToast('Crop failed -- try again.'); return; }
-          var croppedName=(file.name||'logo').replace(/\.[^.]+$/,'')+'-cropped.png';
-          var croppedFile=new File([blob], croppedName, {type:'image/png'});
-          _bbUploadLogo(croppedFile, sw, sh);
-        }, 'image/png');
-      };
-    };
-    img.onerror=function(){
-      URL.revokeObjectURL(objUrl);
-      _bbShowToast('Couldn’t open that image.');
-    };
-    img.src=objUrl;
-  }
-
-  // Logo resize handle, Aug 28 2026 -- same drag-to-scale behavior as
-  // the Idea Board's own handle, locked to whatever aspect ratio the
-  // frame currently has (set by the crop) so the logo never stretches.
-  // Wired once at board setup; reads/writes whichever board is current
-  // at drag time, same as the upload flow above.
-  function _bbWireLogoResizeHandle(){
-    var handle=document.getElementById('bb-logo-resize-handle');
-    var slot=document.getElementById('bb-logo-slot');
-    if(!handle||!slot) return;
-    var MIN=20, MAX=90;
-    var dragging=false, startX=0, startY=0, startW=0, startH=0, aspect=1;
-    handle.addEventListener('pointerdown', function(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      var rect=slot.getBoundingClientRect();
-      startX=ev.clientX; startY=ev.clientY;
-      startW=rect.width; startH=rect.height;
-      aspect=startW/(startH||1) || 1;
-      dragging=true;
-      // Aug 28 2026: see _bbWireLogoHoverHandle -- keeps a mid-drag
-      // pointerleave on the slot from hiding (and dropping pointer
-      // capture on) this handle while a resize is actually in progress.
-      _bbLogoResizeActive=true;
-      try{ handle.setPointerCapture(ev.pointerId); }catch(_e){}
-    });
-    handle.addEventListener('pointermove', function(ev){
-      if(!dragging) return;
-      var dx=ev.clientX-startX, dy=ev.clientY-startY;
-      var newW=(Math.abs(dx)>=Math.abs(dy)) ? (startW+dx) : (startH+dy)*aspect;
-      newW=Math.max(MIN, Math.min(MAX, newW));
-      var newH=newW/aspect;
-      slot.style.width=newW+'px';
-      slot.style.height=newH+'px';
-    });
-    handle.addEventListener('pointerup', async function(ev){
-      if(!dragging) return;
-      dragging=false;
-      _bbLogoResizeActive=false;
-      try{ handle.releasePointerCapture(ev.pointerId); }catch(_e){}
-      var w=Math.round(parseFloat(slot.style.width)||startW);
-      var h=Math.round(parseFloat(slot.style.height)||startH);
-      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      if(!board) return;
-      try{
-        var sb=T().sb;
-        var upd=await sb.from('briefing_boards').update({logo_w:w, logo_h:h}).eq('id', board.id);
-        if(!upd.error){ board.logo_w=w; board.logo_h=h; }
-      }catch(_e){}
-      // Larry, Aug 28 2026: "remove resize tab after crop and resize
-      // edited" -- once a resize drag finishes, the handle goes back to
-      // hidden-until-hover (see _bbWireLogoHoverHandle) instead of
-      // sitting on the corner permanently. No hover state exists for
-      // touch, so hide it immediately in that case.
-      if(ev.pointerType==='touch') handle.style.display='none';
-    });
-  }
-
-  // Aug 28 2026: shared with _bbWireLogoHoverHandle and the resize
-  // handle's own pointerup above.
-  var _bbLogoResizeActive=false;
-
-  // Aug 30 2026: same idea as _bbLogoResizeActive above, but for a
-  // logo-move drag in progress (see _bbWireLogoDrag) -- keeps the LOGO
-  // eyebrow peek (and the resize handle) from hiding mid-drag if the
-  // pointer momentarily leaves bb-logo-slot's own bounds while it's
-  // being dragged across the header.
-  var _bbLogoDragActive=false;
-
-  // Logo hover-to-reveal resize handle, Aug 28 2026 -- Larry: "remove
-  // resize tab after crop and resize edited." Same behavior as the Idea
-  // Board's own hover handle: the corner resize square only appears
-  // while the pointer is over the logo, instead of sitting there
-  // permanently once a logo is loaded.
-  // Aug 30 2026: also peeks the LOGO eyebrow label out from under the
-  // logo on the same hover -- see the .bb-logo-eyebrow-peek rule above
-  // for why the label is allowed to be covered at rest at all.
-  function _bbWireLogoHoverHandle(){
-    var slot=document.getElementById('bb-logo-slot');
-    var handle=document.getElementById('bb-logo-resize-handle');
-    // Aug 30 2026: peeks the on-logo copy (travels with the logo), not
-    // the original stationary one above the anchor -- see the
-    // .bb-logo-eyebrow-onlogo rule and _bbRenderLogo above.
-    var eyebrow=document.getElementById('bb-logo-eyebrow-onlogo');
-    if(!slot||!handle) return;
-    slot.addEventListener('pointerenter', function(){
-      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      if(board && board.logo_url){
-        handle.style.display='block';
-        if(eyebrow) eyebrow.classList.add('bb-logo-eyebrow-peek');
-      }
-    });
-    slot.addEventListener('pointerleave', function(){
-      if(_bbLogoResizeActive || _bbLogoDragActive) return;
-      handle.style.display='none';
-      if(eyebrow) eyebrow.classList.remove('bb-logo-eyebrow-peek');
-    });
-  }
-
-  // Logo drag-to-move, Aug 28 2026 -- Larry: "make LOGO draggable."
-  // Dragging the loaded logo image slides its frame away from its normal
-  // header-layout spot via a CSS transform (see _bbRenderLogo), without
-  // disturbing the flex layout of the fields around it. A plain click
-  // (little to no pointer movement) still opens the file picker to swap
-  // the image, exactly like before this build. The offset is saved on
-  // this Briefing Board's own row (logo_dx/logo_dy) so it stays put next
-  // time this board opens.
-  function _bbWireLogoDrag(){
-    var img=document.getElementById('bb-logo-img');
-    var slot=document.getElementById('bb-logo-slot');
-    if(!img||!slot) return;
-    img.style.touchAction='none';
-    var CLICK_SLOP=4;
-    var dragging=false, moved=false, startX=0, startY=0, startDx=0, startDy=0;
-    img.addEventListener('pointerdown', function(ev){
-      if(img.style.display==='none') return; // no logo loaded -- nothing to drag
-      ev.preventDefault(); ev.stopPropagation();
-      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      startX=ev.clientX; startY=ev.clientY;
-      startDx=(board && board.logo_dx)||0; startDy=(board && board.logo_dy)||0;
-      dragging=true; moved=false;
-      _bbLogoDragActive=true;
-      try{ img.setPointerCapture(ev.pointerId); }catch(_e){}
-    });
-    img.addEventListener('pointermove', function(ev){
-      if(!dragging) return;
-      var dx=ev.clientX-startX, dy=ev.clientY-startY;
-      if(Math.abs(dx)>CLICK_SLOP || Math.abs(dy)>CLICK_SLOP) moved=true;
-      if(moved) slot.style.transform='translate('+(startDx+dx)+'px,'+(startDy+dy)+'px)';
-    });
-    img.addEventListener('pointerup', async function(ev){
-      if(!dragging) return;
-      dragging=false;
-      _bbLogoDragActive=false;
-      try{ img.releasePointerCapture(ev.pointerId); }catch(_e){}
-      if(!moved){
-        // Genuine click, no drag -- open the file picker to swap the
-        // logo, same behavior this always had.
-        document.getElementById('bb-logo-input').click();
-        return;
-      }
-      var dx=ev.clientX-startX, dy=ev.clientY-startY;
-      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      if(!board) return;
-      var newDx=Math.round(startDx+dx), newDy=Math.round(startDy+dy);
-      try{
-        var sb=T().sb;
-        var upd=await sb.from('briefing_boards').update({logo_dx:newDx, logo_dy:newDy}).eq('id', board.id);
-        if(!upd.error){ board.logo_dx=newDx; board.logo_dy=newDy; }
-      }catch(_e){}
-    });
-  }
+  function _bbRenderLogo(){ T2TLogo.render(_bbLogoCfg); }
 
   // Wires the (+)/image click-to-upload, drag-to-move, and the resize
   // handle once at board setup (see injectBriefingBoardScreens below).
-  function wireLogoUpload(){
-    T().wire('bb-logo-add-btn', function(){ document.getElementById('bb-logo-input').click(); });
-    // Aug 28 2026: a plain click on the loaded logo still opens the file
-    // picker to swap it, but that click-vs-drag split now lives in
-    // _bbWireLogoDrag below (Larry: "make LOGO draggable"), so no plain
-    // click wire on bb-logo-img anymore.
-    (function(){
-      var logoInput=document.getElementById('bb-logo-input');
-      if(logoInput) logoInput.addEventListener('change', function(e){
-        var file=e.target.files && e.target.files[0];
-        e.target.value='';
-        if(!file) return;
-        var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-        if(!board){ _bbShowToast('Open a board first.'); return; }
-        _bbOpenLogoCropper(file);
-      });
-    })();
-    _bbWireLogoResizeHandle();
-    _bbWireLogoDrag();
-    _bbWireLogoHoverHandle();
-  }
+  function wireLogoUpload(){ T2TLogo.wire(_bbLogoCfg); }
+
 
   function _esc(s){
     return String(s==null?'':s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
@@ -3053,54 +2727,57 @@
       // way Idea's Logo mirrors Parent's gap off Topic.
       // Fixed-footprint anchor, Aug 28 2026 -- Larry: resizing Logo up
       // "increased the size of the board header area," which should
-      // never happen. bb-logo-slot itself grows/shrinks (up to 90px, see
-      // _bbWireLogoResizeHandle) and now also carries a drag offset (see
-      // _bbWireLogoDrag) -- both need it out of this fieldgrp's normal
-      // flex flow so its size never changes the column's (and therefore
-      // the header row's) own height. This anchor is what actually sits
-      // in the flex column, reserving the original 30x30 footprint
-      // permanently; the slot floats over it via position:absolute,
-      // free to grow/move without the fieldgrp ever noticing. A big
-      // logo can now overlap neighboring header fields instead of
-      // pushing them -- same tradeoff Larry already accepted for it
-      // covering the LOGO eyebrow above it.
+      // never happen. bb-logo-slot itself grows/shrinks (up to 90px) and
+      // now also carries a drag offset -- both handled by the shared
+      // window.T2TLogo controller (idea-media-shared.js, Aug 30 2026;
+      // also used by the Idea/Plan Storyboard) -- both need it out of
+      // this fieldgrp's normal flex flow so its size never changes the
+      // column's (and therefore the header row's) own height. This
+      // anchor is what actually sits in the flex column, reserving the
+      // original 30x30 footprint permanently; the slot floats over it
+      // via position:absolute, free to grow/move without the fieldgrp
+      // ever noticing. A big logo can now overlap neighboring header
+      // fields instead of pushing them -- same tradeoff Larry already
+      // accepted for it covering the LOGO eyebrow above it.
       +'.bb-logo-anchor{position:relative;width:30px;height:30px;flex-shrink:0}'
       +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;border-radius:7px}'
       +'.bb-logo-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:4px;background:var(--bb-accent);border:2px solid #fff;cursor:nwse-resize;display:none;z-index:3;touch-action:none}'
       // LOGO eyebrow, on-logo + peek-on-hover, Aug 30 2026 (corrected
-      // same day) -- first pass left the "Logo" label sitting at its
-      // original spot above the empty slot while only the artwork itself
-      // moved on drag/resize, so the hover-peek lit up far from wherever
-      // the logo had actually been dragged to. Larry: "move the eyebrow
-      // onto the logo (behind it) so wherever the logo goes, the label
-      // goes with it." Fix: a second copy of the label now lives INSIDE
-      // bb-logo-slot itself (bb-logo-eyebrow-onlogo, added right after
-      // bb-logo-img in the markup above) instead of as a sibling of the
-      // anchor -- being a child of the slot, it rides along for free on
-      // both the drag transform and the resize width/height (see
-      // _bbRenderLogo/_bbWireLogoDrag/_bbWireLogoResizeHandle, none of
-      // which needed to change), centered on the slot at all times via
-      // top/left 50% + its own translate. Original bb-mh-eyebrow above
-      // the anchor still exists and still lines Logo up with Type/
-      // Project/Team at rest, but now only actually shows while the slot
-      // is empty (no logo uploaded yet, see _bbRenderLogo) -- once real
-      // artwork exists, the traveling on-logo copy is the only one that
-      // matters, since it's the one guaranteed to be wherever the logo
-      // currently sits.
+      // same day, then generalized into the shared T2TLogo controller
+      // later the same day) -- first pass left the "Logo" label sitting
+      // at its original spot above the empty slot while only the
+      // artwork itself moved on drag/resize, so the hover-peek lit up
+      // far from wherever the logo had actually been dragged to. Larry:
+      // "move the eyebrow onto the logo (behind it) so wherever the logo
+      // goes, the label goes with it." Fix: a second copy of the label
+      // now lives INSIDE bb-logo-slot itself (bb-logo-eyebrow-onlogo,
+      // added right after bb-logo-img in the markup above) instead of as
+      // a sibling of the anchor -- being a child of the slot, it rides
+      // along for free on both the drag transform and the resize width/
+      // height (see T2TLogo.render/wire in idea-media-shared.js, none of
+      // which needed board-specific logic to make this work), centered
+      // on the slot at all times via top/left 50% + its own translate.
+      // Original bb-mh-eyebrow above the anchor still exists and still
+      // lines Logo up with Type/Project/Team at rest, but now only
+      // actually shows while the slot is empty (no logo uploaded yet,
+      // see T2TLogo.render) -- once real artwork exists, the traveling
+      // on-logo copy is the only one that matters, since it's the one
+      // guaranteed to be wherever the logo currently sits.
       +'.bb-logo-eyebrow-onlogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap;pointer-events:none}'
       // Negative z-index (above) is what keeps it tucked behind the
       // image at rest -- non-positioned content (the plain <img>) always
       // paints above a negative-z-index layer. Hovering the slot (see
-      // _bbWireLogoHoverHandle) adds this class, which only changes the
-      // z-index to a positive number so it jumps above the image, plus a
-      // white chip so the text reads clearly over whatever artwork it's
-      // currently sitting on. Deliberately does NOT touch `position`
-      // (already absolute from the base rule) -- overriding it here
-      // would pull the label back into bb-logo-slot's own flex layout
-      // for as long as the hover lasted, which visibly nudges the
-      // centered image every time.
-      +'.bb-logo-eyebrow-onlogo.bb-logo-eyebrow-peek{z-index:4;background:#fff;border-radius:4px;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.3)}'
+      // T2TLogo's shared wireHoverPeek) adds the t2t-logo-eyebrow-peek
+      // class (shared by every board using T2TLogo, not just this one),
+      // which only changes the z-index to a positive number so it jumps
+      // above the image, plus a white chip so the text reads clearly
+      // over whatever artwork it's currently sitting on. Deliberately
+      // does NOT touch `position` (already absolute from the base rule)
+      // -- overriding it here would pull the label back into
+      // bb-logo-slot's own flex layout for as long as the hover lasted,
+      // which visibly nudges the centered image every time.
+      +'.bb-logo-eyebrow-onlogo.t2t-logo-eyebrow-peek{z-index:4;background:#fff;border-radius:4px;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.3)}'
       // Organization's eyebrow is itself the Type dropdown trigger now,
       // Aug 15 2026 (Larry: "I want that word to actually be a dropdown
       // choice") -- it's a <button> sharing .bb-mh-eyebrow's exact look,
@@ -3998,10 +3675,11 @@
       _bbMakeDraggable(kkOv.querySelector('.bb-overlay-card'), kkOv.querySelector('.bb-overlay-head'));
     }
     // Logo crop tool overlay, Aug 28 2026 -- shell only; its card is
-    // filled in fresh by _bbOpenLogoCropper every time it opens (same
-    // "shared overlay, replace the innerHTML" approach the Idea Board's
-    // own crop tool uses on sb-detail-overlay), so nothing static needs
-    // to live here beyond the empty card shell.
+    // filled in fresh by _bbLogoCfg.crop.mount (shared T2TLogo
+    // controller, idea-media-shared.js) every time it opens, same
+    // "shared overlay, replace the innerHTML" approach the Idea/Plan
+    // Storyboard's own crop tool uses on sb-detail-overlay, so nothing
+    // static needs to live here beyond the empty card shell.
     if(!document.getElementById('bb-logo-crop-overlay')){
       var lcOv=document.createElement('div');
       lcOv.id='bb-logo-crop-overlay'; lcOv.className='bb-overlay';

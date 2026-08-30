@@ -148,6 +148,63 @@
   }
 
   /* ── SEA OF IDEAS: CLUSTER (9221) ── */
+  // Logo/artwork upload, Aug 26 2026 -- real upload wired at last (was a
+  // "coming soon" toast since Aug 16). The (+) and an already-loaded
+  // image both open the same native file picker; save goes on the
+  // current PROJECT'S ROOT row, not whatever header/sub-header happens
+  // to be on screen, so one logo covers the whole project -- IDEA and
+  // PLAN boards both read it.
+  //
+  // Aug 30 2026 -- upload/crop/resize/drag/hover-peek all now live in
+  // the shared window.T2TLogo controller (idea-media-shared.js), also
+  // used by the Briefing Board (Larry: "Add BB logo code to all other
+  // boards"). _sboardLogoCfg is this board's own description of
+  // itself for that controller -- which row holds the logo fields and
+  // how to read/save it, this board's element ids, size bounds, this
+  // board's own dark-themed crop-overlay chrome (reusing the shared
+  // sb-detail-overlay/closeSbDetail every other Storyboard dialog
+  // uses), and positionAnchor (_sboardPositionLogoNearTopic, above) --
+  // the one piece that has no BB equivalent, since BB's anchor is
+  // already fixed in its header's normal flex layout.
+  var _sboardLogoCfg={
+    slotId:'sc-logo-slot', imgId:'sc-logo-img', addBtnId:'sc-logo-add-btn',
+    inputId:'sc-logo-input', resizeHandleId:'sc-logo-resize-handle',
+    eyebrowTopId:'sc-logo-eyebrow', eyebrowOnLogoId:'sc-logo-eyebrow-onlogo',
+    minSize:28, maxSize:140, defaultSize:46, minFrameFromCrop:12,
+    uploadPrefix:'logo', subjectLabel:'project',
+    showToast:_sboardShowToast,
+    positionAnchor:_sboardPositionLogoNearTopic,
+    getRow:function(){ return _sboardCurrentRootRow(); },
+    saveLogo:async function(patch){
+      var root=_sboardCurrentRootRow();
+      if(!root) return;
+      var _sb=T().sb;
+      var upd=await _sb.from('ideas').update(patch).eq('id', root.id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(root.id, patch);
+    },
+    crop:{
+      stageMaxW:340, stageMaxH:340, handleColor:'#5b9bd5', handleBorderColor:'#0d2440',
+      mount:function(doClose){
+        var ov=document.getElementById('sb-detail-overlay');
+        if(!ov) return null;
+        ov.innerHTML='<div class="sc-overlay-card" style="width:min(420px,92%);text-align:center">'
+          +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:6px">Crop your logo</div>'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Drag the box to choose what to keep. Drag a corner to reshape it -- any rectangle, not just square.</div>'
+          +'<div id="lc-stage" style="position:relative;margin:0 auto 14px;background:#0d2440;border-radius:8px;overflow:hidden"></div>'
+          +'<div style="display:flex;gap:6px">'
+          +'<button type="button" class="sc-ov-btn save" id="lc-use" style="flex:1">Use this crop</button>'
+          +'<button type="button" class="sc-ov-btn" id="lc-cancel" style="flex:1">Cancel</button>'
+          +'</div>'
+          +'</div>';
+        ov.classList.add('active');
+        var cancelBtn=document.getElementById('lc-cancel'); if(cancelBtn) cancelBtn.onclick=doClose;
+        return { stage:document.getElementById('lc-stage'), useBtn:document.getElementById('lc-use') };
+      },
+      close:function(){ closeSbDetail(); }
+    }
+  };
+
   function injectSeaOfIdeasCluster(){
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('s-sea-of-ideas-cluster')) return;
@@ -368,6 +425,18 @@
         +'#fg-root.isx-full #s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
         +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
+        // On-logo LOGO eyebrow, Aug 30 2026 -- same shared T2TLogo
+        // treatment as the Briefing Board's own bb-logo-eyebrow-onlogo
+        // (see that file's own comment for the full reasoning): tucked
+        // behind the artwork at rest via a negative z-index (a plain,
+        // non-positioned <img> always paints above a negative-z-index
+        // layer), centered on sc-logo-slot at all times since it's a
+        // child of the slot itself. t2t-logo-eyebrow-peek is the shared
+        // class T2TLogo's hover wiring toggles on every board -- a dark
+        // navy text color here (rather than this theme's usual light
+        // #a9cce3) since the chip it sits on while peeking is white.
+        +'.sc-logo-eyebrow-onlogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1a3a5c;white-space:nowrap;pointer-events:none}'
+        +'.sc-logo-eyebrow-onlogo.t2t-logo-eyebrow-peek{z-index:4;background:#fff;border-radius:4px;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.35)}'
         +'.sc-hdr-side{min-width:72px;min-height:46px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end}'
         +'#sc-parent-hit{cursor:pointer}'
         +'#sc-parent-hit.inert{cursor:default}'
@@ -696,18 +765,28 @@
       // it (and drops the translateX centering, since positioning is now
       // done by measuring Logo's own frame, not by centering the wrapper).
       +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:2%;display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Logo</div>'
+      +'<div class="sc-hdr-eyebrow" id="sc-logo-eyebrow">Logo</div>'
       +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
+      // On-logo LOGO eyebrow, Aug 30 2026 -- shared window.T2TLogo
+      // controller (idea-media-shared.js), first built for the Briefing
+      // Board then brought here: lives inside sc-logo-slot itself so it
+      // rides along automatically on both the drag transform and the
+      // resize width/height, tucked behind the artwork by default
+      // (negative z-index -- see the .sc-logo-eyebrow-onlogo rule below)
+      // and peeking above it, on a small chip, while the slot is
+      // hovered. The plain sc-logo-eyebrow above only shows now while
+      // the slot is empty -- see T2TLogo.render.
+      +'<div class="sc-logo-eyebrow-onlogo" id="sc-logo-eyebrow-onlogo">Logo</div>'
       +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
       +'<input type="file" id="sc-logo-input" accept="image/*" style="display:none">'
       // Resize handle, Aug 27 2026 -- Larry: "a drag handle on the frame,"
       // not presets or typed dimensions. Bottom-right corner grip, shown
-      // only once a logo is actually loaded (see _sboardUpdateHeaderChrome
-      // below) -- an empty (+) slot has nothing to resize yet. Dragging it
-      // scales the whole frame (see _sboardWireLogoResizeHandle), locked to
-      // whatever aspect ratio the frame currently has so the logo never
-      // stretches out of shape.
+      // only once a logo is actually loaded (see T2TLogo.render below)
+      // -- an empty (+) slot has nothing to resize yet. Dragging it
+      // scales the whole frame (shared T2TLogo controller, Aug 30 2026),
+      // locked to whatever aspect ratio the frame currently has so the
+      // logo never stretches out of shape.
       +'<div class="sc-logo-resize-handle" id="sc-logo-resize-handle" title="Drag to resize" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:4px;background:#5b9bd5;border:2px solid #0d2440;cursor:nwse-resize;display:none;z-index:3;touch-action:none"></div>'
       +'</div>'
       +'</div>'
@@ -792,35 +871,7 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
-    // Logo/artwork upload, Aug 26 2026 -- real upload wired at last (was a
-    // "coming soon" toast since Aug 16). The (+) and an already-loaded
-    // image both open the same native file picker; see _sboardUploadLogo
-    // below for the save (goes on the current PROJECT'S ROOT row, not
-    // whatever header/sub-header happens to be on screen, so one logo
-    // covers the whole project -- IDEA and PLAN boards both read it).
-    T().wire('sc-logo-add-btn', function(){ document.getElementById('sc-logo-input').click(); });
-    // Logo drag-to-move, Aug 28 2026 -- Larry: "make LOGO draggable." A
-    // plain click on the loaded logo still opens the file picker to swap
-    // it (see _sboardWireLogoDrag below); the click-vs-drag split lives
-    // there now, so no plain click wire on sc-logo-img anymore.
-    (function(){
-      var logoInput=document.getElementById('sc-logo-input');
-      // Crop step, Aug 27 2026 -- Larry: shape is a free crop of the
-      // uploaded image, settled as a separate step from resizing (see
-      // _sboardOpenLogoCropper). Picking a file no longer uploads it
-      // straight away -- it opens the crop tool first; the actual upload
-      // (_sboardUploadLogo) only runs once Larry confirms a crop.
-      if(logoInput) logoInput.addEventListener('change', function(e){
-        var file=e.target.files && e.target.files[0];
-        e.target.value='';
-        if(!file) return;
-        if(!_sboardCurrentRootRow()){ _sboardShowToast('Open a project first.'); return; }
-        _sboardOpenLogoCropper(file);
-      });
-    })();
-    _sboardWireLogoResizeHandle();
-    _sboardWireLogoDrag();
-    _sboardWireLogoHoverHandle();
+    T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
     // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
     // PROJECT") -- Title now covers picking a board. Renaming it is a
@@ -5087,361 +5138,11 @@
     }
   }
 
-  // Logo/artwork upload, Aug 26 2026 -- same upload pipeline as a card's
-  // own Photo swap (compress, push to the sea-of-ideas bucket, grab the
-  // public URL) but the URL lands on logo_url of the current PROJECT'S
-  // ROOT row (_sboardCurrentRootRow) instead of a card's image_url, so
-  // it reads as one logo for the whole project rather than a new card.
-  // Picking a file when a logo already exists just replaces it -- no
-  // separate remove control; upload a different image to swap it out.
-  //
-  // Aug 27 2026 -- no longer takes the raw file-input event. The crop
-  // step (_sboardOpenLogoCropper) already ran by the time this is called,
-  // so it's handed the cropped file plus that crop's own natural pixel
-  // width/height, used only to give the frame a sensible starting size
-  // (see below). Larry's two answers this session: crop and resize are
-  // separate steps (crop happens once per upload; resize is a standing
-  // drag handle you can use anytime after), and shape is a free crop of
-  // the image, not a fixed square/circle.
-  async function _sboardUploadLogo(file, cropW, cropH){
-    if(!file) return;
-    var root=_sboardCurrentRootRow();
-    var statusEl=document.getElementById('sc-status');
-    if(!root){ _sboardShowToast('Open a project first.'); return; }
-    var _sb=T().sb;
-    try{
-      var user=(await _sb.auth.getUser()).data.user;
-      if(!user) throw new Error('Not signed in.');
-      var toUpload=await T2TMedia.compressImageFile(file);
-      var uploadName=toUpload.name||file.name||('logo-'+Date.now()+'.png');
-      var path=user.id+'/logo-'+Date.now()+'-'+uploadName.replace(/[^a-zA-Z0-9._-]/g,'_');
-      var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
-      if(up.error) throw up.error;
-      var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
-      var url=pub.data && pub.data.publicUrl;
-      if(!url) throw new Error('No public URL returned.');
-      // Starting frame size, Aug 27 2026 -- pin the crop's own aspect
-      // ratio to the old fixed 46px footprint (long side = 46) so a fresh
-      // logo looks about the same size as before, just correctly
-      // proportioned instead of squeezed into a square. From here the
-      // drag handle takes over -- this is only ever the opening size.
-      var longSide=46, frameW=longSide, frameH=longSide;
-      if(cropW>0 && cropH>0){
-        if(cropW>=cropH){ frameW=longSide; frameH=Math.max(12,Math.round(longSide*cropH/cropW)); }
-        else{ frameH=longSide; frameW=Math.max(12,Math.round(longSide*cropW/cropH)); }
-      }
-      var upd=await _sb.from('ideas').update({logo_url:url, logo_w:frameW, logo_h:frameH}).eq('id',root.id);
-      if(upd.error) throw upd.error;
-      _sboardPatchRow(root.id, {logo_url:url, logo_w:frameW, logo_h:frameH});
-      _sboardUpdateHeaderChrome();
-    }catch(err){
-      if(statusEl){ statusEl.textContent='Couldn’t save the logo: '+err.message; statusEl.classList.add('err'); }
-      else _sboardShowToast('Couldn’t save the logo: '+err.message);
-    }
-  }
-
-  // Logo crop tool, Aug 27 2026 -- Larry: "free crop of the uploaded
-  // image... like a photo editor," explicitly not one of the fixed
-  // square/circle shape choices. Reuses the shared #sb-detail-overlay
-  // modal (same one every other Storyboard dialog uses) rather than a
-  // bespoke overlay. A free-aspect-ratio rectangle you can drag to move
-  // and drag any corner to resize -- "any shape" here means any
-  // rectangle, not a freehand outline; the existing upload pipeline
-  // (T2TMedia.compressImageFile) already flattens transparency to white,
-  // which only makes sense for a rectangular crop, not a cut-out mask.
-  function _sboardOpenLogoCropper(file){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    var objUrl=URL.createObjectURL(file);
-    ov.innerHTML='<div class="sc-overlay-card" style="width:min(420px,92%);text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:6px">Crop your logo</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Drag the box to choose what to keep. Drag a corner to reshape it -- any rectangle, not just square.</div>'
-      +'<div id="lc-stage" style="position:relative;margin:0 auto 14px;background:#0d2440;border-radius:8px;overflow:hidden"></div>'
-      +'<div style="display:flex;gap:6px">'
-      +'<button type="button" class="sc-ov-btn save" id="lc-use" style="flex:1">Use this crop</button>'
-      +'<button type="button" class="sc-ov-btn" id="lc-cancel" style="flex:1">Cancel</button>'
-      +'</div>'
-      +'</div>';
-    ov.classList.add('active');
-
-    var onMove=null, onUp=null;
-    function cleanupListeners(){
-      if(onMove) document.removeEventListener('pointermove', onMove);
-      if(onUp) document.removeEventListener('pointerup', onUp);
-    }
-    // Wired immediately (not inside img.onload below) so Cancel always
-    // works even if the picked file is still decoding, or fails outright.
-    document.getElementById('lc-cancel').onclick=function(){
-      cleanupListeners();
-      URL.revokeObjectURL(objUrl);
-      closeSbDetail();
-    };
-
-    var img=new Image();
-    img.onload=function(){
-      var stage=document.getElementById('lc-stage');
-      if(!stage){ URL.revokeObjectURL(objUrl); return; }
-      var maxW=340, maxH=340;
-      var scale=Math.min(maxW/img.naturalWidth, maxH/img.naturalHeight);
-      if(!isFinite(scale) || scale<=0) scale=1;
-      scale=Math.min(scale, 6); // don't blow up a tiny source image absurdly
-      var dispW=Math.max(60, Math.round(img.naturalWidth*scale));
-      var dispH=Math.max(60, Math.round(img.naturalHeight*scale));
-      stage.style.width=dispW+'px';
-      stage.style.height=dispH+'px';
-      stage.innerHTML='<img id="lc-img" src="'+objUrl+'" style="position:absolute;top:0;left:0;width:'+dispW+'px;height:'+dispH+'px;display:block;pointer-events:none">'
-        +'<div id="lc-box" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move"></div>';
-      var box=document.getElementById('lc-box');
-      ['nw','ne','sw','se'].forEach(function(corner){
-        var h=document.createElement('div');
-        h.className='lc-handle'; h.setAttribute('data-corner',corner);
-        h.style.cssText='position:absolute;width:14px;height:14px;background:#5b9bd5;border:2px solid #fff;border-radius:3px;z-index:2;touch-action:none;'
-          +(corner.indexOf('n')>-1?'top:-8px;':'bottom:-8px;')
-          +(corner.indexOf('w')>-1?'left:-8px;':'right:-8px;')
-          +'cursor:'+(corner==='nw'||corner==='se'?'nwse-resize':'nesw-resize');
-        box.appendChild(h);
-      });
-
-      var bx=Math.round(dispW*0.1), by=Math.round(dispH*0.1), bw=Math.round(dispW*0.8), bh=Math.round(dispH*0.8);
-      var MIN=20;
-      function clampBox(){
-        if(bw<MIN) bw=MIN; if(bh<MIN) bh=MIN;
-        if(bw>dispW) bw=dispW; if(bh>dispH) bh=dispH;
-        if(bx<0) bx=0; if(by<0) by=0;
-        if(bx+bw>dispW) bx=dispW-bw; if(by+bh>dispH) by=dispH-bh;
-      }
-      function paint(){ box.style.left=bx+'px'; box.style.top=by+'px'; box.style.width=bw+'px'; box.style.height=bh+'px'; }
-      paint();
-
-      var mode=null, startX=0, startY=0, ob=null;
-      box.addEventListener('pointerdown', function(ev){
-        if(ev.target!==box) return; // corner handles carry their own listener below
-        mode='move'; startX=ev.clientX; startY=ev.clientY; ob={x:bx,y:by};
-        try{ box.setPointerCapture(ev.pointerId); }catch(_e){}
-      });
-      Array.prototype.forEach.call(box.querySelectorAll('.lc-handle'), function(h){
-        h.addEventListener('pointerdown', function(ev){
-          ev.stopPropagation();
-          mode='resize-'+h.getAttribute('data-corner');
-          startX=ev.clientX; startY=ev.clientY; ob={x:bx,y:by,w:bw,h:bh};
-          try{ h.setPointerCapture(ev.pointerId); }catch(_e){}
-        });
-      });
-      onMove=function(ev){
-        if(!mode) return;
-        var dx=ev.clientX-startX, dy=ev.clientY-startY;
-        if(mode==='move'){ bx=ob.x+dx; by=ob.y+dy; }
-        else{
-          var c=mode.slice(7);
-          if(c==='se'){ bw=ob.w+dx; bh=ob.h+dy; }
-          else if(c==='sw'){ bx=ob.x+dx; bw=ob.w-dx; bh=ob.h+dy; }
-          else if(c==='ne'){ by=ob.y+dy; bw=ob.w+dx; bh=ob.h-dy; }
-          else if(c==='nw'){ bx=ob.x+dx; by=ob.y+dy; bw=ob.w-dx; bh=ob.h-dy; }
-        }
-        clampBox();
-        paint();
-      };
-      onUp=function(){ mode=null; };
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-
-      document.getElementById('lc-use').onclick=function(){
-        cleanupListeners();
-        var sx=Math.round(bx/scale), sy=Math.round(by/scale);
-        var sw=Math.round(bw/scale), sh=Math.round(bh/scale);
-        sw=Math.max(1,Math.min(sw, img.naturalWidth-sx));
-        sh=Math.max(1,Math.min(sh, img.naturalHeight-sy));
-        var canvas=document.createElement('canvas');
-        canvas.width=sw; canvas.height=sh;
-        var ctx=canvas.getContext('2d');
-        ctx.drawImage(img, sx,sy,sw,sh, 0,0,sw,sh);
-        canvas.toBlob(function(blob){
-          URL.revokeObjectURL(objUrl);
-          closeSbDetail();
-          if(!blob){ _sboardShowToast('Crop failed -- try again.'); return; }
-          var croppedName=(file.name||'logo').replace(/\.[^.]+$/,'')+'-cropped.png';
-          var croppedFile=new File([blob], croppedName, {type:'image/png'});
-          _sboardUploadLogo(croppedFile, sw, sh);
-        }, 'image/png');
-      };
-    };
-    img.onerror=function(){
-      URL.revokeObjectURL(objUrl);
-      _sboardShowToast('Couldn’t open that image.');
-    };
-    img.src=objUrl;
-  }
-
-  // Logo resize handle, Aug 27 2026 -- Larry: "a drag handle on the
-  // frame," separate from the crop step above. Dragging the bottom-right
-  // grip scales the whole frame up or down, locked to whatever aspect
-  // ratio it currently has (set by the crop, or the legacy 46x46 square
-  // for a logo saved before this build) so the image never stretches.
-  // Wired once at board setup; reads/writes whichever project is current
-  // at drag time via _sboardCurrentRootRow, same as the upload flow.
-  function _sboardWireLogoResizeHandle(){
-    var handle=document.getElementById('sc-logo-resize-handle');
-    var slot=document.getElementById('sc-logo-slot');
-    if(!handle||!slot) return;
-    var MIN=28, MAX=140;
-    var dragging=false, startX=0, startY=0, startW=0, startH=0, aspect=1;
-    handle.addEventListener('pointerdown', function(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      var rect=slot.getBoundingClientRect();
-      startX=ev.clientX; startY=ev.clientY;
-      startW=rect.width; startH=rect.height;
-      aspect=startW/(startH||1) || 1;
-      dragging=true;
-      // Aug 28 2026: hovering off the slot mid-drag (see
-      // _sboardWireLogoHoverHandle below) must not hide/disconnect this
-      // handle while a resize is actually in progress -- this flag is
-      // that handle's own "stay visible, I'm busy" signal.
-      _sboardLogoResizeActive=true;
-      try{ handle.setPointerCapture(ev.pointerId); }catch(_e){}
-    });
-    handle.addEventListener('pointermove', function(ev){
-      if(!dragging) return;
-      var dx=ev.clientX-startX, dy=ev.clientY-startY;
-      // Whichever axis moved more drives the resize; the other follows
-      // the locked aspect ratio, so a corner drag never distorts the logo.
-      var newW=(Math.abs(dx)>=Math.abs(dy)) ? (startW+dx) : (startH+dy)*aspect;
-      newW=Math.max(MIN, Math.min(MAX, newW));
-      var newH=newW/aspect;
-      slot.style.width=newW+'px';
-      slot.style.height=newH+'px';
-    });
-    handle.addEventListener('pointerup', async function(ev){
-      if(!dragging) return;
-      dragging=false;
-      _sboardLogoResizeActive=false;
-      try{ handle.releasePointerCapture(ev.pointerId); }catch(_e){}
-      var w=Math.round(parseFloat(slot.style.width)||startW);
-      var h=Math.round(parseFloat(slot.style.height)||startH);
-      var root=_sboardCurrentRootRow();
-      if(!root) return;
-      try{
-        var _sb=T().sb;
-        var upd=await _sb.from('ideas').update({logo_w:w, logo_h:h}).eq('id',root.id);
-        if(!upd.error){ _sboardPatchRow(root.id, {logo_w:w, logo_h:h}); }
-      }catch(_e){}
-      _sboardPositionLogoNearTopic();
-      // Larry, Aug 28 2026: "remove resize tab after crop and resize
-      // edited" -- once a resize drag finishes, the handle goes back to
-      // hidden-until-hover (see _sboardWireLogoHoverHandle) instead of
-      // sitting on the corner permanently. The pointer is still over the
-      // handle right after a mouse drag, so this only actually hides it
-      // once the pointer leaves the slot -- for touch (no hover state)
-      // hide it right away since there's no hover to fall back on.
-      if(ev.pointerType==='touch') handle.style.display='none';
-    });
-  }
-
-  // Aug 28 2026: shared with _sboardWireLogoHoverHandle and the resize
-  // handle's own pointerup above -- true for as long as a resize drag is
-  // in progress, so a mid-drag pointerleave on the slot (very easy to
-  // trigger, since dragging the corner naturally pulls the pointer off
-  // the slot) doesn't hide (and thereby drop pointer capture on) the
-  // handle out from under an active drag.
-  var _sboardLogoResizeActive=false;
-
-  // Logo hover-to-reveal resize handle, Aug 28 2026 -- Larry: "remove
-  // resize tab after crop and resize edited." The corner resize handle
-  // used to sit visible on the logo's corner permanently once a logo was
-  // loaded; now it only appears while the pointer is actually over the
-  // logo, so it's out of the way once Larry's happy with the size but
-  // still reachable any time he wants to adjust it again. Wired once at
-  // board setup, same as the handle's own drag wiring above.
-  function _sboardWireLogoHoverHandle(){
-    var slot=document.getElementById('sc-logo-slot');
-    var handle=document.getElementById('sc-logo-resize-handle');
-    if(!slot||!handle) return;
-    slot.addEventListener('pointerenter', function(){
-      var root=_sboardCurrentRootRow();
-      if(root && root.logo_url) handle.style.display='block';
-    });
-    slot.addEventListener('pointerleave', function(){
-      if(_sboardLogoResizeActive) return;
-      handle.style.display='none';
-    });
-  }
-
-  // Logo drag-to-move, Aug 28 2026 -- Larry: "make LOGO draggable."
-  // Dragging the loaded logo image itself slides its whole frame anywhere
-  // around the header, independent of the measured "same gap as Parent"
-  // spot _sboardPositionLogoNearTopic would otherwise put it at. A plain
-  // click (little to no pointer movement) still opens the file picker to
-  // swap the image, exactly like before this build -- only a real drag
-  // (more than a few pixels) counts as a move. The offset from Logo's
-  // normal measured spot is saved on the project's ROOT row (logo_dx/
-  // logo_dy) so it stays put next time this board opens; a longer or
-  // shorter Topic name still shifts the measured spot underneath it, the
-  // saved offset just rides along on top of that the same way it always
-  // did before dragging existed.
-  function _sboardWireLogoDrag(){
-    var img=document.getElementById('sc-logo-img');
-    var wrap=document.getElementById('sc-logo-wrap');
-    if(!img||!wrap) return;
-    img.style.touchAction='none';
-    var CLICK_SLOP=4;
-    var dragging=false, moved=false, startX=0, startY=0, startLeft=0, startTop=0;
-    img.addEventListener('pointerdown', function(ev){
-      if(img.style.display==='none') return; // no logo loaded -- nothing to drag
-      ev.preventDefault(); ev.stopPropagation();
-      // Aug 29 2026 fix -- Larry: "Once a LOGO is resized or moved, it
-      // should ALWAYS appear that way until moved again." Found a real
-      // bug behind that: this drag measures its own start point off
-      // whatever wrap.style.left/top happens to already be on screen at
-      // the moment the pointer goes down. If that inline style hasn't
-      // been freshly recomputed yet (right after a project/topic switch,
-      // a window resize, or any other moment _sboardPositionLogoNearTopic
-      // hasn't re-settled it since Topic's box last changed), the drag
-      // starts from a stale or flat-out wrong number, and the offset it
-      // then saves can be wildly off -- confirmed live: a normal small
-      // drag saved a logo_dx of -470 instead of the ~60px it should have
-      // been, throwing Logo halfway off the screen on next load. Forcing
-      // one fresh, synchronous reposition right here -- immediately
-      // before startLeft/startTop are captured -- guarantees the drag
-      // always starts measuring from the true, currently-correct spot.
-      _sboardPositionLogoNearTopic();
-      startX=ev.clientX; startY=ev.clientY;
-      startLeft=parseFloat(wrap.style.left)||0;
-      startTop=parseFloat(wrap.style.top)||0;
-      dragging=true; moved=false;
-      try{ img.setPointerCapture(ev.pointerId); }catch(_e){}
-    });
-    img.addEventListener('pointermove', function(ev){
-      if(!dragging) return;
-      var dx=ev.clientX-startX, dy=ev.clientY-startY;
-      if(Math.abs(dx)>CLICK_SLOP || Math.abs(dy)>CLICK_SLOP) moved=true;
-      if(moved){
-        wrap.style.left=(startLeft+dx)+'px';
-        wrap.style.top=(startTop+dy)+'px';
-      }
-    });
-    img.addEventListener('pointerup', async function(ev){
-      if(!dragging) return;
-      dragging=false;
-      try{ img.releasePointerCapture(ev.pointerId); }catch(_e){}
-      if(!moved){
-        // Genuine click, no drag -- open the file picker to swap the
-        // logo, same behavior this always had.
-        document.getElementById('sc-logo-input').click();
-        return;
-      }
-      var root=_sboardCurrentRootRow();
-      if(!root) return;
-      var prevDx=root.logo_dx||0, prevDy=root.logo_dy||0;
-      var movedDx=(parseFloat(wrap.style.left)||0)-startLeft;
-      var movedDy=(parseFloat(wrap.style.top)||0)-startTop;
-      var newDx=Math.round(prevDx+movedDx), newDy=Math.round(prevDy+movedDy);
-      try{
-        var _sb=T().sb;
-        var upd=await _sb.from('ideas').update({logo_dx:newDx, logo_dy:newDy}).eq('id',root.id);
-        if(!upd.error){ _sboardPatchRow(root.id, {logo_dx:newDx, logo_dy:newDy}); }
-      }catch(_e){}
-      _sboardPositionLogoNearTopic();
-    });
-  }
+  // Logo/artwork upload, crop, resize, drag, and hover-peek -- see the
+  // shared window.T2TLogo controller in idea-media-shared.js and this
+  // board's own _sboardLogoCfg (near injectSeaOfIdeasCluster, above).
+  // Only positioning (_sboardPositionLogoNearTopic, below -- the one piece
+  // that's specific to this board's header layout) stays here.
 
   function _sboardTopicOptionsHTML(excludeId){
     var currentLabel=(T2TShared.currentTopicId && _sboardHeadersById[T2TShared.currentTopicId]) ? _sboardHeadersById[T2TShared.currentTopicId].text_content : 'Wish Tank';
@@ -5820,38 +5521,16 @@
     // same as every other header field above. A loaded logo hides the
     // (+) and becomes the click target for swapping it out; no logo
     // means the (+) shows instead, same as before upload existed.
-    (function(){
-      var logoImg=document.getElementById('sc-logo-img');
-      var logoBtn=document.getElementById('sc-logo-add-btn');
-      var logoHandle=document.getElementById('sc-logo-resize-handle');
-      var logoSlot=document.getElementById('sc-logo-slot');
-      var logoRoot=_sboardCurrentRootRow();
-      var logoUrl=logoRoot && logoRoot.logo_url;
-      // Frame size, Aug 27 2026 -- a project's own logo_w/logo_h (set at
-      // crop time, changed by dragging the resize handle) wins; a logo
-      // saved before this build (or none yet) falls back to the original
-      // fixed 46x46 square, so nothing already live shifts on its own.
-      var logoW=(logoRoot && logoRoot.logo_w)||46;
-      var logoH=(logoRoot && logoRoot.logo_h)||46;
-      if(logoSlot){ logoSlot.style.width=logoW+'px'; logoSlot.style.height=logoH+'px'; }
-      if(logoImg){
-        logoImg.src=logoUrl||'';
-        logoImg.style.display=logoUrl?'block':'none';
-        logoImg.style.cursor=logoUrl?'pointer':'';
-        logoImg.title=logoUrl?'Click to replace the logo':'';
-      }
-      if(logoBtn) logoBtn.style.display=logoUrl?'none':'';
-      // Aug 28 2026: the handle no longer sits visible permanently once a
-      // logo exists (see _sboardWireLogoHoverHandle) -- every chrome
-      // refresh resets it to hidden so hover state never leaks in from a
-      // different project/board, and hovering the slot brings it back
-      // when there's actually a logo to resize.
-      if(logoHandle) logoHandle.style.display='none';
-    })();
-    // Keep Logo the same distance off Topic as Parent, Aug 18 2026 --
-    // Parent/Topic content (and their widths) just changed above, so
-    // re-measure and reposition Logo every time this runs.
-    _sboardPositionLogoNearTopic();
+    //
+    // Aug 30 2026 -- the actual logo behavior (frame size, img/(+)/
+    // handle visibility, the on-logo eyebrow, and -- via cfg.
+    // positionAnchor -- the gap-off-Parent reposition that used to be a
+    // separate call right after this block) all moved to the shared
+    // window.T2TLogo controller (idea-media-shared.js), also used by
+    // the Briefing Board. _sboardLogoCfg (near injectSeaOfIdeasCluster,
+    // above) is this board's own description of itself for that
+    // controller.
+    T2TLogo.render(_sboardLogoCfg);
   }
 
   // Aug 18 2026, Larry: "allow Logo to keep same relative distance from
@@ -5873,6 +5552,20 @@
   // the wrap's own left edge and the frame's left edge aren't the same
   // point, and only the frame's position is what "distance from Topic"
   // actually means here.
+  // Aug 30 2026 -- dx/dy moved off wrap.style.left/top and onto
+  // sc-logo-slot's own CSS transform (shared T2TLogo controller,
+  // idea-media-shared.js -- same split the Briefing Board's Logo
+  // already used). Measuring slotRect below has to see the frame's true
+  // UNoffset position or the gap-off-Parent math drifts by whatever
+  // transform is currently sitting on it, so this clears the transform
+  // before measuring and puts the correct one back before returning --
+  // makes this function fully self-contained (safe to call on its own,
+  // not just from a render that's about to reapply the transform right
+  // after) and removes the old staleness trap entirely: T2TLogo's own
+  // drag handler no longer needs to force a fresh reposition before
+  // reading a start point, since the offset is never derived from
+  // wrap's own possibly-stale position anymore, only ever from the row's
+  // own saved logo_dx/logo_dy.
   function _sboardPositionLogoNearTopic(){
     var wrap=document.getElementById('sc-logo-wrap');
     var slot=document.getElementById('sc-logo-slot');
@@ -5880,12 +5573,17 @@
     var parentHit=document.getElementById('sc-parent-hit');
     var areaEl=document.getElementById('sc-header-area');
     if(!wrap||!slot||!topicBox||!parentHit||!areaEl) return;
+    var root=_sboardCurrentRootRow();
+    var dx=(root && root.logo_dx)||0;
+    var dy=(root && root.logo_dy)||0;
+    var savedTransform=slot.style.transform;
+    slot.style.transform='';
     var topicRect=topicBox.getBoundingClientRect();
     var parentRect=parentHit.getBoundingClientRect();
     var areaRect=areaEl.getBoundingClientRect();
     // Guard against a not-yet-laid-out screen (zero-width rects) --
     // nothing to measure yet, leave the left:57% fallback in place.
-    if(!topicRect.width || !areaRect.width) return;
+    if(!topicRect.width || !areaRect.width){ slot.style.transform=savedTransform; return; }
     var gap=topicRect.left-parentRect.right;
     if(!(gap>=0)) gap=14; // sane fallback -- matches the grid's own column-gap
     var slotRect=slot.getBoundingClientRect();
@@ -5900,16 +5598,13 @@
     var wrapRect=wrap.getBoundingClientRect();
     var delta=desiredSlotLeft-slotRect.left;
     var baseLeft=(wrapRect.left-areaRect.left)+delta;
-    // Aug 28 2026, Larry: "make LOGO draggable." Whatever offset was last
-    // saved by dragging (see _sboardWireLogoDrag) rides on top of this
-    // measured default spot, instead of replacing it -- so a longer or
-    // shorter Topic name still shifts Logo the same relative amount it
-    // always did, it just starts from wherever Larry last dragged it to.
-    var root=_sboardCurrentRootRow();
-    var dx=(root && root.logo_dx)||0;
-    var dy=(root && root.logo_dy)||0;
-    wrap.style.left=(baseLeft+dx)+'px';
-    wrap.style.top=(10+dy)+'px';
+    // Base position only now -- no +dx/+dy here (see this function's own
+    // header comment above). wrap never moves again once this settles;
+    // the saved offset rides on top purely as slot's own transform,
+    // reapplied right below.
+    wrap.style.left=baseLeft+'px';
+    wrap.style.top='10px';
+    slot.style.transform=(dx||dy)?('translate('+dx+'px,'+dy+'px)'):'';
   }
   // Window resize, Aug 18 2026 -- this screen goes edge-to-edge
   // (isx-full, see screen-fit.js's own note on why it skips the global
