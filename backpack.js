@@ -453,6 +453,21 @@
     // the Desktop chrome exists for this traveler, so the nav rail,
     // right drawer, and TV frame all stay hidden while it's showing.
     // Larry, July 28 2026.
+    //
+    // Aug 30 2026 fix (Larry: "green bar across the screen before
+    // opening the last location, on refresh") -- every phase HTML file
+    // now starts with <body class="t2t-bare-screen"> baked into the
+    // markup itself, so the desk (and the TV frame's green bezel in
+    // particular) stays invisible from the very first paint. Nothing
+    // has called nav() yet at that point -- the session-resume check in
+    // index.html's own script is still an async round trip away -- so
+    // without this, tv-frame.js's init() was free to build and show an
+    // empty bezel around #fg-root's default (contentless) box the
+    // instant DOMContentLoaded fired. This toggle call is what turns
+    // bare-screen back off, the moment nav() lands on ANY real screen
+    // (resumed last page or a fresh sign-in) -- so the line below no
+    // longer only serves sign-in, it's also what ends the boot-time
+    // blank/gray desk on every other screen too.
     document.body.classList.toggle('t2t-bare-screen', id === 's-signin');
     // 0010 predates the desk entirely -- render centered regardless of
     // wherever the widget was last dragged to on a real (signed-in)
