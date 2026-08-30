@@ -2612,6 +2612,35 @@
     }catch(err){ _sboardShowToast('Could not find the original Idea board.'); }
   }
 
+  // Cross-file jump, Aug 30 2026 -- bridged as window.T2TStoryboard.
+  // jumpToProjectKind so briefing-board.js's own top-center board-kind
+  // dropdown can land on a specific project's Idea or Plan board from a
+  // completely different screen. Does its own fetch-then-navigate
+  // instead of trusting the caller to already have the row or to have
+  // switched screens first: fetches the one project row fresh (it's a
+  // project root, so _sboardProjectRowFor below resolves to itself with
+  // no ancestor climb -- no need to wait on the full account-wide cache
+  // _sboardCurrentProjectRow() usually depends on), switches to the
+  // Storyboard screen, then either drills straight in (IDEA) or hands
+  // off to the existing Plan-board opener (PLAN) -- same "duplicate or
+  // start blank" first-time choice that opener already gives when
+  // there's no Plan board yet. Returns true/false so the caller can
+  // toast on failure; never throws.
+  async function _sboardJumpToProjectKind(projectId, kind){
+    if(!projectId) return false;
+    var _sb=T().sb;
+    try{
+      var res=await _sb.from('ideas').select('*').eq('id', projectId).maybeSingle();
+      if(res.error || !res.data) return false;
+      var row=res.data;
+      if(window.T2T && window.T2T.nav) window.T2T.nav('s-sea-of-ideas-cluster');
+      _sboardAllRowsById[row.id]=row;
+      _sboardDrillInto(row);
+      if(kind==='PLAN') await _sboardOpenOrCreatePlanBoard();
+      return true;
+    }catch(err){ return false; }
+  }
+
   // Full recursive copy of an IDEA project into a brand-new PLAN project:
   // every Header/Subber/idea card, in the same shape, under fresh ids.
   // Runs off _sboardAllRowsById (already holds every row this traveler can
@@ -10457,7 +10486,11 @@
     cardPrimaryUidRaw: _sboardEffectivePrimaryUidRaw,
     ensureMemberInitials: _sboardEnsureMemberInitials,
     memberInfo: function(uid){ return _sboardAssignedCache[uid]||null; },
-    closeBoard: _sboardCloseBoard
+    closeBoard: _sboardCloseBoard,
+    // Aug 30 2026 -- lets briefing-board.js's own top-center board-kind
+    // dropdown jump straight to a specific project's Idea or Plan board.
+    // See _sboardJumpToProjectKind above.
+    jumpToProjectKind: _sboardJumpToProjectKind
   };
 
   document.addEventListener('DOMContentLoaded', function(){

@@ -1931,7 +1931,7 @@
   // instead, ending in that literal dashed-circle (+). Mirrors the Idea
   // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
   function _bbCloseAllDropdowns(exceptMenuId){
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -3444,7 +3444,17 @@
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
             +'</div>'
-            +'<div class="bb-mh-group-center"><span class="bb-mh">Briefing Board</span><div class="bb-mt">A control and communication tool.</div></div>'
+            // Top-center label is a real board-kind dropdown now, Aug 30
+            // 2026 -- Larry: "the top center of the Briefing Board could
+            // be the dropdown to return to one of the other boards."
+            // Mirrors the Idea board's own IDEA/PLAN/BRIEFING BOARD/
+            // SHARE/CAST trigger (idea-storyboard-9710.js,
+            // _sboardWireBoardKindDropdown) so the loop closes both ways
+            // -- see _bbWireBoardKindDropdown below for the click
+            // handling. bb-mh's own type styling stays as-is; only the
+            // button chrome is stripped inline so nothing looks
+            // different at rest.
+            +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
               +'<button class="bb-icon-btn" id="bb-reset" title="Reload and return here (Alt+C)">🔄</button>'
               +'<button class="bb-icon-btn" id="b-bb-mg" title="Jump to menu">🔍</button>'
@@ -5880,6 +5890,77 @@
     }
   }
 
+  // Board-kind dropdown mirrored onto the Briefing Board's own top-center
+  // label, Aug 30 2026 -- Larry: "the top center of the Briefing Board
+  // could be the dropdown to return to one of the other boards." Closes
+  // the loop the Idea board's own dropdown started (see
+  // idea-storyboard-9710.js's _sboardWireBoardKindDropdown -- same fixed-
+  // menu approach, deliberately not built on _bbRenderDropdown since
+  // there's nothing to add here). IDEA/PLAN jump to whichever Idea
+  // project this specific Briefing Board is linked to
+  // (briefing_boards.storyboard_project_id -- null for a personal/org
+  // board that was never tied to one, in which case those two just toast
+  // instead of erroring). CAST opens this file's own Team roster popup,
+  // the exact same one Utility -> Cast already opens -- one roster, not
+  // a second entry point to a different one. SHARE is still a stub, same
+  // wording as the Idea board's. BRIEFING BOARD is a no-op re-pick,
+  // matching IDEA's own behavior when re-picked on its own board. Wired
+  // once (wireTopicBar) since the menu itself never changes -- every
+  // handler reads _bbBoards/_bbCurrentBoardId fresh at click time, not
+  // at wire time, so it's always accurate even after switching boards.
+  var _bbBoardKinds=[
+    {value:'IDEA', label:'IDEA'},
+    {value:'PLAN', label:'PLAN'},
+    {value:'BRIEFING BOARD', label:'BRIEFING BOARD'},
+    {value:'SHARE', label:'SHARE'},
+    {value:'CAST', label:'CAST'}
+  ];
+  function _bbWireBoardKindDropdown(){
+    var trigger=document.getElementById('bb-boardkind-trigger'), menu=document.getElementById('bb-boardkind-menu');
+    if(!trigger || !menu) return;
+    menu.innerHTML='';
+    _bbBoardKinds.forEach(function(k){
+      var row=document.createElement('div');
+      row.className='bb-cdrop-row'+(k.value==='BRIEFING BOARD' ? ' active' : '');
+      row.textContent=k.label;
+      row.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        if(k.value==='BRIEFING BOARD') return;
+        if(k.value==='CAST'){ openTeamRoster(); return; }
+        if(k.value==='SHARE'){ _bbShowToast('Share Storyboard coming soon'); return; }
+        if(k.value==='IDEA' || k.value==='PLAN'){
+          var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+          var projectId=board && board.storyboard_project_id;
+          if(!projectId){ _bbShowToast('This board isn’t linked to a project.'); return; }
+          if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
+            window.T2TStoryboard.jumpToProjectKind(projectId, k.value);
+          }
+          return;
+        }
+      });
+      menu.appendChild(row);
+    });
+    if(menu.parentElement!==document.body) document.body.appendChild(menu);
+    _bbSyncMenuTheme(menu);
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-boardkind-menu':null);
+      if(willOpen){
+        var r=trigger.getBoundingClientRect();
+        menu.style.left=r.left+'px';
+        menu.style.top=(r.bottom+4)+'px';
+        menu.style.minWidth=Math.max(120,r.width)+'px';
+        menu.hidden=false;
+        var mr=menu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      } else {
+        menu.hidden=true;
+      }
+    };
+  }
+
   function wireTopicBar(){
     // Type/Title dropdowns wire themselves fresh on every render now
     // (Aug 13 2026 -- see _bbRenderDropdown), no separate wire step.
@@ -6415,6 +6496,7 @@
     wireRecentMoves();
     T().wire('bb-moves', openRecentMoves);
     wireTopicBar();
+    _bbWireBoardKindDropdown();
     wireBbUndoKeyboard();
     wireLogoUpload();
   }
