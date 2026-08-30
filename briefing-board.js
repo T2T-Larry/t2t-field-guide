@@ -2931,6 +2931,7 @@
       +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
+      +'.bb-start-due{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#a3372b;margin:-3px 0 3px}'
       +'.bb-done-date{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#3F6B3A;text-align:right;margin-top:1px}'
       +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:7px;pointer-events:none}'
       // pointer-events:auto here, Aug 4 2026 -- the container above stays
@@ -3836,16 +3837,19 @@
         // to the board" (c.assigned) is still recorded for later, just
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
+        var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
         // Aug 30 2026, Larry: "When date passes intended START DATE, Add
-        // START DUE: (date) to front of pink card" -- once the Start
-        // Date has actually passed (the same _bbIsStartOverdue check
-        // that turns the card pink, above), this badge relabels itself
-        // "START DUE: {date}" instead of the bare date, so a glance at
-        // a pink card says which date it missed -- matching the
-        // "DUE: {date}" convention the bottom-row Due Date badge
-        // already uses. Before the date passes, it's still just the
-        // bare date, same as always.
-        var startBadge = c.startDate ? '<span class="bb-date">'+(_bbStartIsOverdue?('START DUE: '+_esc(c.startDate)):_esc(c.startDate))+'</span>' : '';
+        // START DUE: (date) to front of pink card" -- then, seeing the
+        // first pass land it as a relabel of the top-row date badge
+        // (next to priority/routine): "No. the START DUE date should
+        // appear under the task and above the DUE date, if any." So
+        // this is its own line instead, matching where bb-done-date
+        // already sits relative to bb-task/bb-bottom, and only shows up
+        // once the Start Date has actually passed (the same
+        // _bbIsStartOverdue check that turns the card pink) -- the
+        // top-row badge above goes back to always just the bare date,
+        // exactly as it was before this feature existed.
+        var startDueLine = _bbStartIsOverdue ? ('<div class="bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '';
         // Signal Flags row, bottom-left corner -- Notes badge joined
         // this group Aug 11 2026 (Larry: move it down "with other
         // signal flags") instead of sitting up top with the rest of
@@ -3885,6 +3889,7 @@
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
+          +startDueLine
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
           +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '')
