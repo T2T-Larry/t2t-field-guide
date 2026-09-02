@@ -811,22 +811,48 @@
       +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
       +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
-      +'<div style="display:flex;flex-direction:column;align-items:center">'
-      +'<button type="button" class="sc-hdr-eyebrow sc-cdrop-trigger" id="sc-type-trigger" title="Click to change category (Client, Department, Partner...)"></button>'
-      +'<div class="sc-cdrop-menu" id="sc-type-menu" hidden></div>'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button>'
-      +'<div class="sc-cdrop-menu" id="sc-org-name-menu" hidden></div>'
+      // Organization (Type/Org Name) removed from the chrome, Sept 2 2026
+      // -- Larry: "Delete organization choice. What if we replaced it
+      // with the member name embossed? PROJECT between name and logo?"
+      // Matches the Sept 2026 design lock already recorded in Current
+      // Status ("Organization Type field is retired -- permissions and
+      // 'is this mine or supporting' are now fully covered by HEADER
+      // position + CAST, no separate classification needed"). Same
+      // raised/embossed text-shadow treatment as the IDEA/PLAN board-kind
+      // label just above (see that button's own style two blocks up) --
+      // a signature reading, not a clickable field, so it's a plain div,
+      // not a sc-cdrop-trigger. _sboardRenderMemberName (below) fills in
+      // the actual text once the member's profile has loaded.
+      //
+      // The old sc-type-trigger/sc-org-name-trigger buttons and their
+      // menus are gone from here, but _sboardRenderTypePicker/
+      // _sboardRenderOrgName and the org_name/board_type data underneath
+      // them are deliberately left in place, not deleted -- this is a
+      // chrome-only change. Retiring that plumbing (and the database
+      // columns themselves) for real is the already-planned follow-up
+      // task, not part of today's slide. One thing THIS change did
+      // require, though: PROJECT used to only list boards matching
+      // whatever Organization Type was active -- with the picker that
+      // chose the Type now gone, that filter would have silently hidden
+      // any project not on the default Type (real example found in
+      // production: Larry's own Field Guide and T2T boards are both
+      // board_type "company" -- see the fix in _sboardRenderTitlePicker).
+      +'<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:34px">'
+      +'<div id="sc-member-name" style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(15px * var(--fg-text-scale,1));letter-spacing:1px;color:#a9cce3;text-shadow:-1px -1px 0 rgba(255,255,255,.15),1px 1px 2px rgba(0,0,0,.5);white-space:nowrap"></div>'
       +'</div>'
-      // Title, Aug 13 2026 -- Larry: PROJECT field dropped entirely,
-      // Title now covers what it used to (picking which board is open),
-      // scoped to Type instead of listing every board at once. Aug 13
-      // 2026: no separate manage/pencil button -- double-click Title the
-      // same way you'd double-click Topic to open its DETAILS card and
-      // rename it right there (see the dblclick wiring below).
+      // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
+      // one-time click wiring in injectSeaOfIdeasCluster) that opens the
+      // real global-shortcut popup, openProjectSwitcher, on click. This
+      // markup predates that -- the "sc-cdrop"/"sc-cdrop-trigger" classes
+      // and the empty sc-title-menu just below are leftover from when
+      // this button was an inline dropdown (the retired Title picker,
+      // see _sboardRenderTitlePicker); harmless to leave since nothing
+      // renders into sc-title-menu anymore. title text set at wiring
+      // time, not here, since it depends on the new click behavior.
       +'<div style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div class="sc-cdrop" id="sc-title-cdrop">'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger" title="Double-click to rename; click to switch boards"></button>'
+      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger"></button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'
       +'</div>'
@@ -873,23 +899,43 @@
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
-    // PROJECT field dropped, Aug 13 2026 (Larry: "completely drop
-    // PROJECT") -- Title now covers picking a board. Renaming it is a
-    // double-click, same as Topic's own corner-flip: opens that board's
-    // own DETAILS card (openSbDetail), same editable-title field every
-    // header/subber card already has. No separate pencil/manage button.
+    // PROJECT, Sept 2 2026 -- Larry: "Top Project for each member = IDEA
+    // STORYBOARDS. The HEADERS for that board are the PROJECTS plus
+    // COLLABORATOR and STAKEHOLDER." Every member has exactly one true
+    // top-level project now (see the retirement note on
+    // _sboardRenderTitlePicker above), so PROJECT stops being a picker
+    // that switches between several roots and becomes a fixed label
+    // reading "Idea Storyboards" (set once here, and again defensively
+    // in _sboardRenderMemberName on every chrome refresh) that opens
+    // openProjectSwitcher -- the real global-shortcut popup (self-
+    // originated Headers, Primary-promoted entries, Primary Stakeholder
+    // fast-access, and the COLLABORATOR/STAKEHOLDER buckets) -- on
+    // click. That popup has been fully built and code-verified since
+    // last session but never had a live entry point anywhere in the UI
+    // until now; this is that entry point. Double-click-to-rename
+    // dropped along with it -- renaming "Idea Storyboards" itself isn't
+    // a real action, and any real project is renamed the normal way,
+    // by double-clicking its own Header tile once you've drilled in.
     (function(){
       var titleTrigger=document.getElementById('sc-title-trigger');
-      if(titleTrigger) titleTrigger.addEventListener('dblclick', function(e){
-        e.stopPropagation();
-        var rootRow=_sboardCurrentRootRow();
-        if(rootRow) openSbDetail(rootRow);
-      });
-      // Organization's Name click-to-edit is wired fresh on every render
-      // in _sboardRenderOrgName() itself (sc-org-name-trigger.onclick),
-      // same pattern as the Type dropdown -- nothing to wire once here.
+      if(titleTrigger){
+        titleTrigger.textContent='Idea Storyboards';
+        titleTrigger.title='Jump to any project, or to your Collaborator/Stakeholder shortcuts';
+        titleTrigger.addEventListener('click', function(e){
+          e.stopPropagation();
+          openProjectSwitcher();
+        });
+      }
+      // Member name (replaces the old Organization Type/Name fields,
+      // same session) -- see _sboardRenderMemberName below. The
+      // member's profile may still be loading the first time this
+      // screen paints, so this listens for the same event the
+      // nameplate (screen-zero.js) already relies on for exactly that
+      // race, in addition to the direct call _sboardUpdateHeaderChrome
+      // makes on every render.
+      window.addEventListener('t2t:member-loaded', function(){ _sboardRenderMemberName(); });
     })();
-    Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
+    Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -3143,6 +3189,26 @@
   }
 
   function _sboardRenderTitlePicker(){
+    // Retired from the visible chrome, Sept 2 2026 -- Larry: "Top Project
+    // for each member = IDEA STORYBOARDS. The HEADERS for that board are
+    // the PROJECTS plus COLLABORATOR and STAKEHOLDER." PROJECT no longer
+    // switches between several separate top-level roots (that's what
+    // this whole picker was for) -- every member has exactly one root
+    // now (their Idea Storyboards board, see ensureIdeaStoryboardsRoot in
+    // header-data.js), and what used to be separate "projects" are just
+    // Headers reached by drilling in, same as any other Header. The
+    // sc-title-trigger button in the chrome is now a fixed "Idea
+    // Storyboards" label that opens openProjectSwitcher (the real global
+    // shortcut popup) on click -- see the one-time wiring in
+    // injectSeaOfIdeasCluster and _sboardRenderMemberName's sibling call
+    // in _sboardUpdateHeaderChrome. Left as a real no-op rather than
+    // deleted -- several other flows in this file still call this
+    // defensively (after creating/hiding a board, etc.); those calls are
+    // harmless now. Full removal of this function, and of the Type/Org
+    // Name plumbing it was paired with, is the already-planned org_name/
+    // board_type retirement task, not part of today's change.
+    return;
+    // eslint-disable-next-line no-unreachable
     var roots=_sboardMyRoots;
     if(!roots){
       _sboardLoadMyRoots().then(function(){ _sboardRenderTitlePicker(); });
@@ -3633,12 +3699,13 @@
   //
   // Session 247 (Aug 26), Larry: "Trashing a whole project isn't built yet
   // — for now you can trash individual cards inside it." This function and
-  // the PROJECT switcher screen it lives behind (openProjectSwitcher) are
-  // real code but have no live entry point anywhere in the current UI —
-  // nothing calls openProjectSwitcher() to actually open it. Do NOT wire
-  // any new button to this function until that's actually built and
-  // tested end to end; see _sboardHeaderQuickMenu for where a first
-  // attempt at doing exactly that got walked back.
+  // the PROJECT switcher screen it lives behind (openProjectSwitcher) sat
+  // as real code with no live entry point anywhere in the UI for several
+  // sessions. Sept 2 2026: now wired live -- the chrome's PROJECT field
+  // (sc-title-trigger) opens openProjectSwitcher on click (see the
+  // one-time wiring in injectSeaOfIdeasCluster). Whole-project delete/
+  // rename/archive (this function, _sboardProjectRenamePrompt,
+  // _sboardProjectQuickMenu) are reachable from there now too.
   function _sboardConfirmDeleteProject(boardRow){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
@@ -5736,6 +5803,23 @@
     }catch(err){ fail('Couldn’t promote that header: '+err.message); }
   }
 
+  // Member name, Sept 2 2026 -- fills in the embossed #sc-member-name
+  // label that replaced the Organization Type/Name fields in the chrome
+  // (see the header markup and the one-time PROJECT wiring above). Reads
+  // the same window.T2T.getMember() the app-wide nameplate (screen-zero.js
+  // buildNameplate) already uses, so this shows exactly the same name in
+  // exactly the same case -- no separate lookup, no risk of drifting out
+  // of sync with what the nameplate says. A no-op (leaves whatever text
+  // was already there) until the member profile has actually loaded --
+  // called again off the t2t:member-loaded event for that race, same
+  // pattern the nameplate itself uses.
+  function _sboardRenderMemberName(){
+    var el=document.getElementById('sc-member-name');
+    if(!el) return;
+    var m=(window.T2T && window.T2T.getMember) ? window.T2T.getMember() : null;
+    if(m && m.display_name) el.textContent=m.display_name.toUpperCase();
+  }
+
   function _sboardUpdateHeaderChrome(){
     var topicBox=document.getElementById('sc-topic-box');
     var topicText=document.getElementById('sc-topic-text');
@@ -5771,12 +5855,12 @@
           });
         }
       }
-      // PROJECT field dropped, Aug 13 2026 -- Title now shows/switches
-      // the current board; TYPE/TITLE both re-render on every Topic
-      // change so they stay in sync with whatever's actually on screen.
-      _sboardRenderTypePicker();
-      _sboardRenderOrgName();
-      _sboardRenderTitlePicker();
+      // Member name, Sept 2 2026 -- replaces the old Type/Title re-render
+      // pair here (Organization removed from the chrome; PROJECT is now
+      // a fixed label wired once, not re-rendered per Topic -- see the
+      // retirement notes on _sboardRenderTitlePicker and the one-time
+      // PROJECT wiring in injectSeaOfIdeasCluster).
+      _sboardRenderMemberName();
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       // PARENT is inert once there's nothing above the current Topic (i.e.
