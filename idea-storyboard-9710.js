@@ -1043,6 +1043,17 @@
   var _sboardPurposeId = null;
   var _sboardNewAdditionsId = null;
   var _sboardActiveId = null;
+  // Idea Storyboards role-based shortcuts (Sept 2 2026) -- resolved once
+  // per real render (see renderSeaBoard) and read again on a cache-only
+  // patch render of the SAME Topic so the strip doesn't flicker away
+  // during a live update. _sboardIdeaStoryboardsRootId mirrors the
+  // _sboardPurposeId/_sboardMiscId caching pattern just above; the other
+  // three only apply when the current Topic is one of the three screens
+  // these shortcuts belong on (see _sboardComputeRoleShortcuts).
+  var _sboardIdeaStoryboardsRootId = null;
+  var _sboardRoleShortcuts = [];
+  var _sboardRoleShortcutsKind = null;
+  var _sboardRoleShortcutsTopicId = null;
   // Which header/Subber tile is "selected" for the Tab/Shift+Tab (nest/
   // un-nest) and Ctrl+Down/Ctrl+Up (drill in/out) keyboard shortcuts --
   // set by clicking a header or Subber tile (see renderGroup and
@@ -2187,9 +2198,21 @@
   // _sboardTopAncestor already walks for headerRows, but off the full
   // _sboardAllRowsById map so it works for any row (idea or header), not
   // just header rows. Added July 12, 2026.
+  // Sept 2, 2026 -- Idea Storyboards: stop climbing at the nearest
+  // SELF-SCOPED row (topic_scope_id===its own id) rather than climbing
+  // all the way to true root (cluster_id null). Every real project root
+  // is already self-scoped (set at creation -- _sboardCreateRootBoard
+  // and friends), including every existing one checked against the live
+  // database before this change, so this returns exactly what it always
+  // did for anything that predates Idea Storyboards. What changes is
+  // real projects no longer sit at the database's true top level (they
+  // nest under a member's own Idea Storyboards root, which is a
+  // container, not itself self-scoped) -- climbing to true root would
+  // now overshoot past the actual project and return Idea Storyboards
+  // itself for everything, which is what this guards against.
   function _sboardProjectRowFor(row){
     var cur=row, guard=0;
-    while(cur && cur.cluster_id && guard<25){
+    while(cur && !(cur.topic_scope_id && String(cur.topic_scope_id)===String(cur.id)) && cur.cluster_id && guard<25){
       var parent=_sboardAllRowsById[cur.cluster_id];
       if(!parent) break;
       cur=parent; guard++;
@@ -2264,22 +2287,21 @@
     if(!user) return _sboardMyRoots||[];
     if(!force && _sboardMyRoots && _sboardMyRootsLoadedFor===user.id) return _sboardMyRoots;
     try{
-      // content_type='header' added Aug 13 2026 (Larry: "the Mike Vance
-      // video as boards... they are not boards") -- this query only
-      // checked cluster_id IS NULL, so any orphaned non-header row (a
-      // stray image, link, or blank test card with no parent) also
-      // qualified as a "root" and showed up in Type/Title as if it were
-      // a real board. Only real headers are boards.
-      // storyboard_kind added Aug 26 2026 -- PLAN boards (duplicated off
-      // an IDEA project via the board-kind dropdown) are reached from
-      // inside their own IDEA project, not picked from PROJECT. Session
-      // 249 added this same exclusion to topLevelBoards() in
-      // header-data.js but missed this query, which is what actually
-      // feeds the PROJECT field's own dropdown -- so a project that had
-      // been through PLAN was showing up here a second time, right next
-      // to its real self.
-      var res=await _sb.from('ideas').select('id,text_content,board_type,org_name,created_at,briefing_board_id,storyboard_kind').eq('user_id',user.id).eq('content_type','header').is('cluster_id',null).order('created_at',{ascending:true});
-      if(res.error) throw res.error;
+      // Sept 2, 2026 -- consolidation: this used to run its own copy of
+      // the "what are my top-level projects" query, independent of
+      // topLevelBoards() in header-data.js. A comment left here on Aug
+      // 26 documents exactly the risk of that: a fix (excluding PLAN
+      // boards from the picker) landed in topLevelBoards() and was
+      // missed here, so a project that had been through PLAN briefly
+      // showed up twice. Now there's one query, not two, so a fix in one
+      // place reaches every picker that reads project lists -- content_
+      // type='header' (Aug 13 fix) and the PLAN exclusion (Aug 26 fix)
+      // both already live inside topLevelBoards() and are inherited for
+      // free. This picker stays owner-only (unlike PROJECT's popup,
+      // which also shows projects shared with the traveler) by filtering
+      // to rows this user actually owns.
+      var all=await T2TData.topLevelBoards();
+      var res={data:all.filter(function(r){ return r.user_id===user.id; })};
       _sboardMyRoots=(res.data||[]).filter(_sboardIsRealBoard).filter(function(r){ return (r.storyboard_kind||'IDEA')==='IDEA'; }).map(function(r){ return {id:r.id, text_content:r.text_content, board_type:r.board_type||'personal', org_name:r.org_name||'', created_at:r.created_at, briefing_board_id:r.briefing_board_id||null}; });
       _sboardMyRootsLoadedFor=user.id;
       // Aug 16 2026 -- same source of truth the Briefing Board reads
@@ -2406,7 +2428,12 @@
       return null;
     }
     try{
-      var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', text_content:name, cluster_id:null, board_type:boardType||'personal', created_at:new Date().toISOString(), color:T().getDefaultHeaderColor?T().getDefaultHeaderColor():null}).select().single();
+      // Sept 2, 2026 -- Idea Storyboards: a new project lands as a child
+      // of this member's own Idea Storyboards root, not at the database's
+      // true top level -- ensureIdeaStoryboardsRoot creates that root
+      // (self-healing, one-time) the first time any member needs it.
+      var ideaStoryboardsRootId=await T2TData.ensureIdeaStoryboardsRoot();
+      var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', text_content:name, cluster_id:ideaStoryboardsRootId||null, board_type:boardType||'personal', created_at:new Date().toISOString(), color:T().getDefaultHeaderColor?T().getDefaultHeaderColor():null}).select().single();
       if(ins.error || !ins.data){
         console.error('Idea Board: could not create board', ins.error);
         window.alert('Could not add the board "'+name+'". Error: '+(ins.error&&ins.error.message?ins.error.message:'unknown error')+'. Nothing was saved -- please try again or refresh the page.');
@@ -3296,12 +3323,42 @@
   // PROJECT, current project marked with a checkmark, X-only dismiss (no
   // Cancel button), and a clearly separate "+ NEW PROJECT" section. Two
   // parts on one screen: pick an existing project, or start a new one.
+  // Sept 2, 2026 -- IDEA STORYBOARDS placement architecture (Sessions
+  // 264-265 design lock): PROJECT becomes the global shortcut into all
+  // of it. The flat list now mixes this traveler's own top-level
+  // Headers (self-originated, from topLevelBoards -- unchanged) with
+  // Headers they've been promoted into as Primary (T2TData.
+  // promotedPrimaryEntries -- carries an ownership eyebrow, since it
+  // isn't their own project) and any project where they're Primary
+  // Stakeholder (one-click fast access, per the design lock -- plain
+  // Stakeholder and Cast Member placements still require opening the
+  // STAKEHOLDER/COLLABORATOR group below). Both group rows are always
+  // shown, same as any other reserved header (Purpose, MISC) always
+  // being present, so they're a predictable, discoverable part of the
+  // list rather than appearing only once something lands in them.
   async function openProjectSwitcher(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     var _sb=T().sb;
     var boards=await T2TData.topLevelBoards();
-    boards=boards.slice().sort(function(a,b){
+    var promoted=[]; var collab=[]; var stake=[];
+    try{ promoted=await T2TData.promotedPrimaryEntries(); }catch(e){ console.warn('promotedPrimaryEntries failed:', e); }
+    try{ collab=await T2TData.collaboratorEntries(); }catch(e){ console.warn('collaboratorEntries failed:', e); }
+    try{ stake=await T2TData.stakeholderEntries(); }catch(e){ console.warn('stakeholderEntries failed:', e); }
+    var primaryStakeItems=stake.filter(function(s){ return s.isPrimaryStakeholder; });
+
+    // One normalized shape for every row this popup can show: id,
+    // text_content, user_id (so the existing owner-only quick-menu
+    // logic keeps working unchanged), and an optional small label
+    // (the ownership eyebrow, or a Primary Stakeholder tag).
+    var allTop=boards.map(function(b){
+      return {id:b.id, text_content:b.text_content, user_id:b.user_id, label:null};
+    }).concat(promoted.map(function(p){
+      return {id:p.id, text_content:p.text, user_id:p.ownerUserId, label:(p.ownerName||p.ownerInitials||'shared with you')};
+    })).concat(primaryStakeItems.map(function(s){
+      return {id:s.id, text_content:s.text, user_id:s.ownerUserId, label:'★ Primary Stakeholder — '+(s.ownerName||s.ownerInitials||'shared')};
+    }));
+    allTop=allTop.slice().sort(function(a,b){
       return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
     });
     var currentProjectId=null;
@@ -3309,19 +3366,24 @@
       var pr=_sboardProjectRowFor(_sboardAllRowsById[T2TShared.currentTopicId]);
       currentProjectId=pr?pr.id:null;
     }
-    var rows=boards.map(function(b){
+    var rows=allTop.map(function(b){
       var isCur=String(b.id)===String(currentProjectId);
       var cur=isCur?' current':'';
       var mark=isCur?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'';
-      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'">'+mark+(b.text_content||'(untitled)')+'</div>';
+      var eyebrow=b.label?('<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;line-height:1.2">'+b.label.replace(/</g,'&lt;')+'</div>'):'';
+      return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'"><div>'+mark+(b.text_content||'(untitled)')+'</div>'+eyebrow+'</div>';
     }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+    var groupRows=''
+      +'<div class="sb-hdr-vitem" data-group="collaborator">COLLABORATOR<span style="float:right;color:#a89a80">'+collab.length+'</span></div>'
+      +'<div class="sb-hdr-vitem" data-group="stakeholder">STAKEHOLDER<span style="float:right;color:#a89a80">'+stake.length+'</span></div>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="position:relative;margin-bottom:10px">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;letter-spacing:1px">PROJECT</div>'
       +'<button class="sc-ov-btn" id="sb-proj-close-x" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1">✕</button>'
       +'</div>'
-      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-      +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;text-align:left;margin-bottom:10px">Double-click a project to rename, archive, or delete it.</div>'
+      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:6px">'+rows+'</div>'
+      +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;margin-bottom:10px">'+groupRows+'</div>'
+      +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;text-align:left;margin-bottom:10px">Double-click a project you own to rename, archive, or delete it.</div>'
       +'<div style="border-top:1px solid #e0dcd0;margin:0 0 10px"></div>'
       +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;color:#7a6040;margin-bottom:4px;text-align:left">+ NEW PROJECT</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
@@ -3357,7 +3419,7 @@
         row._sbProjClickTimer=setTimeout(function(){
           row._sbProjClickTimer=null;
           var pid=row.getAttribute('data-pid');
-          var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
+          var boardRow=allTop.find(function(b){ return String(b.id)===String(pid); });
           closeSbDetail();
           if(boardRow) _sboardDrillInto(boardRow);
         }, 300);
@@ -3366,8 +3428,22 @@
         e.stopPropagation();
         if(row._sbProjClickTimer){ clearTimeout(row._sbProjClickTimer); row._sbProjClickTimer=null; }
         var pid=row.getAttribute('data-pid');
-        var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
+        var boardRow=allTop.find(function(b){ return String(b.id)===String(pid); });
         if(boardRow) _sboardProjectQuickMenu(boardRow);
+      });
+    });
+    Array.prototype.forEach.call(ov.querySelectorAll('.sb-hdr-vitem[data-group]'), function(row){
+      row.addEventListener('click', async function(){
+        var which=row.getAttribute('data-group');
+        closeSbDetail();
+        try{
+          var rootId=await T2TData.ensureIdeaStoryboardsRoot();
+          if(!rootId) return;
+          var groupId=(which==='collaborator')
+            ? await T2TData.ensureCollaboratorHeader(rootId)
+            : await T2TData.ensureStakeholderHeader(rootId);
+          if(groupId) _sboardDrillInto({id:groupId});
+        }catch(err){ _sboardShowToast('Could not open '+which+' — try again.'); }
       });
     });
     T().wire('sb-proj-close-x', closeSbDetail);
@@ -3379,7 +3455,11 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        // Sept 2, 2026 -- Idea Storyboards: new projects land as children
+        // of this member's own Idea Storyboards root (see the matching
+        // comment in _sboardCreateRootBoard above).
+        var ideaStoryboardsRootId=await T2TData.ensureIdeaStoryboardsRoot();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:ideaStoryboardsRootId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         closeSbDetail();
         _sboardDrillInto(ins.data);
@@ -3767,6 +3847,37 @@
     }
     if(hWrap) hWrap.addEventListener('dragover', edgeScrollX);
     if(vWrap) vWrap.addEventListener('dragover', edgeScrollY);
+  }
+
+  /* _sboardMakeRoleShortcutTile -- Idea Storyboards role shortcuts (Sept
+     2 2026). A CAST assignment on someone else's project (Primary,
+     Stakeholder, or plain Cast Member) is what promotes that project
+     onto the traveler's own board -- see _sboardRoleShortcuts, resolved
+     in renderSeaBoard just above. Deliberately its own small, read-only
+     tile rather than being spliced into renderGroup's real Header/
+     Subheader machinery: these tiles point at another traveler's actual
+     project (readable now via the card_roles RLS grant added the same
+     session), and reusing the full drag/reorder/trash/move-under
+     plumbing built for a traveler's OWN rows would risk letting one
+     traveler edit or reorder another's board by a stray drag. Clicking
+     one just calls the same _sboardDrillInto real navigation every
+     other Header uses -- from that point on it's the live foreign
+     project, rendered through the normal path, nothing virtual left. */
+  function _sboardMakeRoleShortcutTile(entry, width, height){
+    var tile=document.createElement('button');
+    tile.type='button';
+    tile.className='sc-pill named';
+    tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-weight:400;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(entry.color?';background:'+entry.color:';background:#f4ede0')+';border:1px dashed #b89968';
+    var ownerLine=entry.ownerName?('👤 '+entry.ownerName):(entry.ownerInitials?('👤 '+entry.ownerInitials):'👤 —');
+    var star=entry.isPrimaryStakeholder?'★ ':'';
+    tile.innerHTML='<div style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a6040;margin-bottom:3px">'+star+ownerLine+'</div>'
+      +'<div style="font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c">'+(entry.text||'(untitled)')+'</div>';
+    tile.title=entry.isDelegatedTopic?'Delegated TOPIC — owned by '+(entry.ownerName||'another traveler'):'Owned by '+(entry.ownerName||'another traveler');
+    tile.addEventListener('click', function(e){
+      e.stopPropagation();
+      _sboardDrillInto({id:entry.id});
+    });
+    return tile;
   }
 
   function _sboardMakeTile(item, width, straight, groupParentId, height){
@@ -4454,9 +4565,17 @@
             return _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId, _sbDesiredName);
           }) : Promise.resolve(null),
           currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
-          T2TData.ensureMiscHeader(T2TShared.currentTopicId)
+          T2TData.ensureMiscHeader(T2TShared.currentTopicId),
+          // Idea Storyboards role shortcuts, Sept 2 2026 -- resolved
+          // concurrently with the other independent ensure-calls above,
+          // same reasoning as the July 12 2026 note on this Promise.all.
+          // Only ever a cheap select (this member's own Idea Storyboards
+          // root already exists after their first-ever visit) except the
+          // one-time create+migrate on a brand new account.
+          (window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? T2TData.ensureIdeaStoryboardsRoot() : Promise.resolve(null)
         ]);
         newAdditionsId=_ensureResults[0];
+        _sboardIdeaStoryboardsRootId=_ensureResults[3]||null;
         _sboardNewAdditionsId=newAdditionsId;
         // Purpose — one per PROJECT, reachable from anywhere inside that
         // project (not just its exact root), never shared across projects
@@ -4564,6 +4683,39 @@
       _sboardTrashId = trashRow ? trashRow.id : null;
       _sboardMiscId = miscRow ? miscRow.id : null;
       _sboardPurposeId = purposeRow ? purposeRow.id : null;
+
+      // Idea Storyboards role shortcuts, Sept 2 2026 -- the three screens
+      // a CAST assignment on someone else's project actually surfaces on:
+      // this member's own Idea Storyboards root (Primary promotions, with
+      // the ownership eyebrow), and their COLLABORATOR/STAKEHOLDER
+      // buckets. Recomputed on a real fetch, or if a cache-only patch
+      // somehow lands on a different Topic than the shortcuts were last
+      // resolved for (shouldn't normally happen -- drilling in/out always
+      // goes through _sboardSpinWhile(renderSeaBoard()), a real fetch --
+      // but costs nothing to guard). Left untouched on a same-Topic
+      // cache-only patch so a live update elsewhere on the board doesn't
+      // make this strip flicker away and back.
+      if(!fromCache || String(T2TShared.currentTopicId)!==String(_sboardRoleShortcutsTopicId)){
+        _sboardRoleShortcuts=[]; _sboardRoleShortcutsKind=null;
+        _sboardRoleShortcutsTopicId=T2TShared.currentTopicId;
+        if(T2TShared.currentTopicId && _sboardIdeaStoryboardsRootId && window.T2TData){
+          if(String(T2TShared.currentTopicId)===String(_sboardIdeaStoryboardsRootId)){
+            _sboardRoleShortcutsKind='promoted';
+            try{ _sboardRoleShortcuts=await T2TData.promotedPrimaryEntries()||[]; }catch(e){ console.warn('promotedPrimaryEntries failed:', e); }
+          } else {
+            var _curTopicRowForShortcuts=_sboardAllRowsById[T2TShared.currentTopicId];
+            if(_curTopicRowForShortcuts && String(_curTopicRowForShortcuts.cluster_id)===String(_sboardIdeaStoryboardsRootId)){
+              if(_curTopicRowForShortcuts.text_content==='COLLABORATOR'){
+                _sboardRoleShortcutsKind='collaborator';
+                try{ _sboardRoleShortcuts=await T2TData.collaboratorEntries()||[]; }catch(e){ console.warn('collaboratorEntries failed:', e); }
+              } else if(_curTopicRowForShortcuts.text_content==='STAKEHOLDER'){
+                _sboardRoleShortcutsKind='stakeholder';
+                try{ _sboardRoleShortcuts=await T2TData.stakeholderEntries()||[]; }catch(e){ console.warn('stakeholderEntries failed:', e); }
+              }
+            }
+          }
+        }
+      }
 
       var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
       var reservedNames=['Trash','MISC','Purpose','NEW','New Additions'];
@@ -5196,6 +5348,37 @@
       groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));
 
       wrap.appendChild(groupsWrap);
+
+      // Idea Storyboards role shortcuts strip, Sept 2 2026 -- see
+      // _sboardMakeRoleShortcutTile above and _sboardRoleShortcuts,
+      // resolved earlier in this same render. Appended as its own row
+      // below the real board content (not mixed into groupsWrap) so it
+      // never competes with that row's drag-to-reorder/nest zones. Only
+      // shows up on the three screens it applies to, and only once
+      // there's actually something to show -- an empty COLLABORATOR/
+      // STAKEHOLDER bucket, or a board with no Primary promotions yet,
+      // renders exactly as it did before this feature existed.
+      if(_sboardRoleShortcuts && _sboardRoleShortcuts.length && String(T2TShared.currentTopicId)===String(_sboardRoleShortcutsTopicId)){
+        var shortcutsWrap=document.createElement('div');
+        shortcutsWrap.id='sc-role-shortcuts-wrap';
+        shortcutsWrap.style.cssText='margin-top:10px;padding-top:10px;border-top:1px dashed #cfc0a0';
+        var shortcutsLabel=document.createElement('div');
+        var _shortcutsTitle=_sboardRoleShortcutsKind==='promoted' ? 'ALSO YOURS — PRIMARY ON'
+          : _sboardRoleShortcutsKind==='collaborator' ? 'COLLABORATOR — CAST MEMBER ON'
+          : _sboardRoleShortcutsKind==='stakeholder' ? 'STAKEHOLDER — ASSIGNED ON'
+          : '';
+        shortcutsLabel.style.cssText='font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#7a6040;margin-bottom:6px';
+        shortcutsLabel.textContent=_shortcutsTitle;
+        shortcutsWrap.appendChild(shortcutsLabel);
+        var shortcutsRow=document.createElement('div');
+        shortcutsRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px';
+        _sboardRoleShortcuts.forEach(function(entry){
+          shortcutsRow.appendChild(_sboardMakeRoleShortcutTile(entry, HEADER_W, HEADER_H));
+        });
+        shortcutsWrap.appendChild(shortcutsRow);
+        wrap.appendChild(shortcutsWrap);
+      }
+
       _sboardUpdateHeaderChrome();
     }catch(err){
       if(statusEl){ statusEl.textContent=err.message; statusEl.classList.add('err'); }
@@ -7099,7 +7282,7 @@
     }catch(e){}
   }
 
-  async function _csInsertRole(role, email){
+  async function _csInsertRole(role, email, isBoardMember){
     if(!email || !_csItem) return {ok:false,msg:'Type a name or email.'};
     var match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.email||'').toLowerCase()===String(email).toLowerCase(); })[0];
     if(!match) return {ok:false,msg:'No T2T member found with that email.'};
@@ -7107,8 +7290,21 @@
     try{
       var meRes=await _sb.auth.getUser();
       var me=meRes && meRes.data ? meRes.data.user : null;
-      var ins=await _sb.from('card_roles').insert({card_type:_csCardType||'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
-      if(ins.error) throw ins.error;
+      // Board of Directors capture, Sept 2 2026 (Idea Storyboards, design
+      // lock second amendment): a Stakeholder starts flagged Primary
+      // Stakeholder automatically when added as a Board of Directors
+      // member (opt-out from there); an ordinary Stakeholder starts
+      // unflagged (opt-in later, self-only -- see setPrimaryStakeholder).
+      // Routed through T2TData.addStakeholderToCast, which sets that
+      // starting state atomically with the row itself, instead of the
+      // bare insert every other role still uses here.
+      if(role==='stakeholder'){
+        var sres=await T2TData.addStakeholderToCast(_csItem.id, match.user_id, !!isBoardMember);
+        if(!sres.ok) return sres;
+      } else {
+        var ins=await _sb.from('card_roles').insert({card_type:_csCardType||'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
+        if(ins.error) throw ins.error;
+      }
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
@@ -7320,6 +7516,12 @@
   // change happens to come from the other one.
   var _sbPeopleRemoveMode = false;
   var _sbPeopleAddRole = 'cast_member';
+  // Board of Directors capture, Sept 2 2026 -- only meaningful while
+  // _sbPeopleAddRole==='stakeholder' (see the checkbox this backs,
+  // wired in _sboardOpenPeopleDropdown below); reset false whenever the
+  // add form opens or the role picker moves off Stakeholder, so a stale
+  // checked state from a previous add can never silently carry over.
+  var _sbPeopleAddIsBoardMember = false;
   var _sbPeopleBackFn = null;
   // Session 230 (Aug 20) bug: the menu below is part of THIS card's own
   // overlay markup (rebuilt fresh every open, see id="sb-people-menu"
@@ -7381,11 +7583,13 @@
   async function _sbPeopleConfirmAdd(email){
     var errEl=document.getElementById('sb-people-error');
     if(!email) return;
-    var res=await _csInsertRole(_sbPeopleAddRole, email);
+    var res=await _csInsertRole(_sbPeopleAddRole, email, _sbPeopleAddIsBoardMember);
     if(!res.ok){ if(errEl){ errEl.textContent=res.msg; errEl.style.display='block'; } return; }
     if(errEl) errEl.style.display='none';
     var form=document.getElementById('sb-people-addform'); if(form) form.style.display='none';
     var input=document.getElementById('sb-people-add-email'); if(input) input.value='';
+    _sbPeopleAddIsBoardMember=false;
+    var boardCb=document.getElementById('sb-people-board-cb'); if(boardCb) boardCb.checked=false;
     _csRefreshUI();
   }
 
@@ -7430,6 +7634,7 @@
     _sbPeopleBackFn=backFn||function(){ openSbDetail(item); };
     _sbPeopleRemoveMode=false;
     _sbPeopleAddRole='cast_member';
+    _sbPeopleAddIsBoardMember=false;
 
     var isIdea=(cardType==='idea');
     menu.innerHTML='<div id="sb-people-list"></div>'
@@ -7447,6 +7652,18 @@
       +'</div>'
       +'<div class="sc-view-addform" id="sb-people-addform" style="display:none">'
         +'<div class="sb-people-rolepick" id="sb-people-rolepick"></div>'
+        // Board of Directors, Sept 2 2026 -- only shown while adding as
+        // Stakeholder (see the rolePick handler below, which toggles
+        // this and _sbPeopleAddIsBoardMember together). Board members
+        // default to the Primary Stakeholder rank automatically (opt-
+        // out from there); this checkbox is that one starting decision,
+        // captured at add time, not a permanent designation anyone but
+        // the Stakeholder themselves can change afterward.
+        +'<div id="sb-people-board-toggle" style="display:none;margin:2px 0 6px">'
+          +'<label style="font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;display:flex;align-items:center;gap:6px;cursor:pointer">'
+            +'<input type="checkbox" id="sb-people-board-cb"> Board of Directors'
+          +'</label>'
+        +'</div>'
         +'<div class="tm-add-wrap">'
           +'<input type="text" id="sb-people-add-email" placeholder="Type a name or email..." autocomplete="off">'
           +'<div class="tm-add-suggest cs-add-suggest" data-role-suggest="cast_member" id="sb-people-add-suggest" style="display:none"></div>'
@@ -7491,6 +7708,8 @@
     var emailInput=document.getElementById('sb-people-add-email');
     var suggBox=document.getElementById('sb-people-add-suggest');
     var rolePick=document.getElementById('sb-people-rolepick');
+    var boardToggle=document.getElementById('sb-people-board-toggle');
+    var boardCb=document.getElementById('sb-people-board-cb');
     var confirmBtn=document.getElementById('sb-people-add-confirm');
     var callBtn=document.getElementById('sb-people-call-btn');
     var removeBtn=document.getElementById('sb-people-remove-btn');
@@ -7518,7 +7737,15 @@
       _sbPeopleRenderRolePicker();
       if(suggBox) suggBox.setAttribute('data-role-suggest', _sbPeopleAddRole);
       _csRenderSuggestions(emailInput?emailInput.value:'');
+      // Board of Directors checkbox only makes sense while adding as
+      // Stakeholder -- hide (and clear) it the moment the picker moves
+      // to any other role, so a stale checked state can't silently
+      // carry into a Primary/Cast Member add.
+      var isStake=(_sbPeopleAddRole==='stakeholder');
+      if(boardToggle) boardToggle.style.display=isStake?'block':'none';
+      if(!isStake){ _sbPeopleAddIsBoardMember=false; if(boardCb) boardCb.checked=false; }
     });
+    if(boardCb) boardCb.addEventListener('change', function(){ _sbPeopleAddIsBoardMember=!!boardCb.checked; });
     if(emailInput){
       emailInput.addEventListener('input', function(){ _csRenderSuggestions(emailInput.value); });
       emailInput.addEventListener('focus', function(){ _csRenderSuggestions(emailInput.value); });
