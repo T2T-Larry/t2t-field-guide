@@ -21,8 +21,14 @@
   }
 
   /* Reserved structural headers — never selectable as a PROJECT/TOPIC
-     destination, only ever landing buckets for content. */
-  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash','Archived'];
+     destination, only ever landing buckets for content.
+     COLLABORATOR added Sept 2, 2026 (Session 264/265 design lock,
+     IDEA STORYBOARDS): same reserved-header pattern as Purpose, always
+     present on a traveler's own top-level Idea Storyboard, holding
+     shortcut buttons into everything they were brought INTO rather
+     than originated. See ensureCollaboratorHeader/collaboratorEntries
+     below. */
+  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash','Archived','COLLABORATOR'];
 
   /* ── generic tree helpers ── */
 
@@ -215,6 +221,74 @@
     return ins.data.id;
   }
 
+  /* COLLABORATOR — Sept 2, 2026 design lock (IDEA STORYBOARDS /
+     Session 264-265), NOT YET WIRED INTO ANY SCREEN as of this write.
+     Mirrors ensurePurposeHeader exactly: one shared reserved header per
+     parent, created on first use, never respawned once a parent's
+     defaults are seeded and the traveler has removed it. Only call
+     this from the traveler's own top-level Idea Storyboard root — a
+     COLLABORATOR header is a personal filing bucket for shortcuts, it
+     has no meaning on someone else's project. */
+  async function ensureCollaboratorHeader(parentId){
+    var sb=_sb(); var u=await _currentUser();
+    if(!u) throw new Error('Not signed in.');
+    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','COLLABORATOR');
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var existing=await q.limit(1);
+    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+    if(await _parentDefaultsSeeded(parentId)) return null;
+    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'COLLABORATOR',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('COLLABORATOR setup failed: '+ins.error.message);
+    _markParentDefaultsSeeded(parentId);
+    return ins.data.id;
+  }
+
+  /* collaboratorEntries — the actual list of "brought into" projects
+     for COLLABORATOR's shortcut buttons. storyboard_members is the
+     existing roster/permission layer for exactly this: a traveler
+     ends up with a row there either as a plain Cast Member someone
+     added them as, or as a delegated TOPIC's owner (mirrored here
+     automatically by the delegate_topic() database function) — either
+     way, "is this mine" is decided by the referenced project's own
+     user_id, never by who added the row. Two-step manual join
+     (fetch storyboard_members, then the referenced ideas rows) rather
+     than a PostgREST embed, matching how every other multi-table read
+     in this file is written.
+     Placement rule (per the design lock): whose root project it is,
+     not Primary-vs-not — so this only excludes rows the traveler
+     themself owns, it does not try to distinguish Primary from
+     Stakeholder from plain Cast Member. Still returns [] for everyone
+     today (storyboard_members has no rows in production yet) until a
+     real second Cast member exists to test against — verified against
+     the live database Sept 2, 2026 before writing this. */
+  async function collaboratorEntries(){
+    try{
+      var sb=_sb(); var u=await _currentUser(); if(!u) return [];
+      var mem=await sb.from('storyboard_members').select('project_id,role').eq('user_id',u.id);
+      if(mem.error){ console.warn('collaboratorEntries storyboard_members error:', mem.error); return []; }
+      var rows=mem.data||[];
+      if(!rows.length) return [];
+      var ids=rows.map(function(r){ return r.project_id; });
+      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_owner_user_id,color').in('id',ids);
+      if(proj.error){ console.warn('collaboratorEntries ideas error:', proj.error); return []; }
+      var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
+      var roleByProject={}; rows.forEach(function(r){ roleByProject[r.project_id]=r.role; });
+      return ids
+        .map(function(id){ return byId[id]; })
+        .filter(function(p){ return p && p.user_id!==u.id; })
+        .map(function(p){
+          return {
+            id:p.id,
+            text:p.text_content,
+            ownerUserId:p.user_id,
+            isDelegatedTopic:!!p.topic_owner_user_id,
+            color:p.color,
+            role:roleByProject[p.id]||null
+          };
+        });
+    }catch(e){ console.warn('collaboratorEntries exception:', e); return []; }
+  }
+
   async function ensureNewAdditionsHeader(parentId){
     var sb=_sb(); var u=await _currentUser();
     if(!u) throw new Error('Not signed in.');
@@ -344,6 +418,8 @@
     ensureArchivedHeader: ensureArchivedHeader,
     ensureMiscHeader: ensureMiscHeader,
     ensurePurposeHeader: ensurePurposeHeader,
+    ensureCollaboratorHeader: ensureCollaboratorHeader,
+    collaboratorEntries: collaboratorEntries,
     ensureNewAdditionsHeader: ensureNewAdditionsHeader,
     ensureTrashHeader: ensureTrashHeader,
     ensureWishTank: ensureWishTank,
