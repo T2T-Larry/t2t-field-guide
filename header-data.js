@@ -28,7 +28,7 @@
      shortcut buttons into everything they were brought INTO rather
      than originated. See ensureCollaboratorHeader/collaboratorEntries
      below. */
-  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash','Archived','COLLABORATOR'];
+  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards'];
 
   /* ── generic tree helpers ── */
 
@@ -90,13 +90,26 @@
   async function topLevelBoards(){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
+      // Sept 2, 2026 -- IDEA STORYBOARDS placement architecture: real
+      // projects no longer sit at the database's true top level (cluster_id
+      // null) -- they nest one level down, under this member's own "Idea
+      // Storyboards" root (see ensureIdeaStoryboardsRoot below). "This
+      // traveler's own top-level Headers" now means that root's direct
+      // children, not true root itself. Promoted/Stakeholder placements on
+      // someone ELSE's project are a separate list (promotedPrimaryEntries/
+      // stakeholderEntries below) -- this stays scoped to the signed-in
+      // member's own root, same as it was scoped to their own projects
+      // before this change (RLS-sharing note below still applies to
+      // whatever comes back for that one root).
+      var rootId=await ensureIdeaStoryboardsRoot();
+      if(!rootId) return [];
       // Aug 4 2026, Larry: Storyboard sharing -- a member can now be
        // added to someone else's PROJECT tree (see storyboard_members /
        // is_storyboard_member in the DB), so this no longer filters to
        // user_id=u.id. RLS decides what comes back: this traveler's own
        // projects, plus any project someone has added them to. user_id is
        // selected too so the UI can tell an owned project from a shared one.
-      var res=await sb.from('ideas').select('id,text_content,user_id,storyboard_kind').eq('content_type','header').is('cluster_id',null);
+      var res=await sb.from('ideas').select('id,text_content,user_id,storyboard_kind').eq('content_type','header').eq('cluster_id',rootId);
       if(res.error){ console.warn('topLevelBoards error:', res.error); return []; }
       // Aug 26 2026, Larry: PLAN boards (duplicated off an IDEA project via
       // the board-kind dropdown) are reached from inside their own IDEA
@@ -105,6 +118,160 @@
       // entry every time PLAN gets built out for one of their projects.
       return (res.data||[]).filter(function(r){ return RESERVED_HEADERS.indexOf(r.text_content)===-1 && (r.storyboard_kind||'IDEA')==='IDEA'; });
     }catch(e){ console.warn('topLevelBoards exception:', e); return []; }
+  }
+
+  /* ── IDEA STORYBOARDS placement architecture — Sept 2, 2026 (Sessions
+     264-266 design lock). Every member has exactly one true top-level
+     project now: their own "Idea Storyboards" root. Real projects
+     (self-originated) nest one level under it; Primary/★ promotions and
+     Stakeholder placements on someone ELSE's project surface as separate
+     shortcut lists (promotedPrimaryEntries/stakeholderEntries) rather than
+     living in the tree itself, since they point at another traveler's
+     rows. ── */
+
+  /* ensureIdeaStoryboardsRoot — self-healing, safe to call every render.
+     Finds (or creates, on a member's very first visit) this traveler's own
+     "Idea Storyboards" root, a plain reserved header sitting at the
+     database's true top level (cluster_id null) — the ONE row still
+     allowed to live there. Then sweeps every OTHER true-root header this
+     member owns under it, excluding the structural reserved buckets
+     (never real projects) and PLAN-kind satellites (reached from inside
+     their own IDEA project, never their own PROJECT-list entry). The sweep
+     re-runs on every call but is a cheap no-op once nothing still
+     qualifies — its own WHERE clause requires cluster_id null, which a
+     migrated row no longer has. */
+  async function ensureIdeaStoryboardsRoot(){
+    try{
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) return null;
+      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Idea Storyboards').is('cluster_id',null).limit(1);
+      if(existing.error){ console.warn('ensureIdeaStoryboardsRoot select error:', existing.error); return null; }
+      var rootId;
+      if(existing.data && existing.data.length){
+        rootId=existing.data[0].id;
+      } else {
+        var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Idea Storyboards',cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        if(ins.error || !ins.data){ console.warn('ensureIdeaStoryboardsRoot insert error:', ins.error); return null; }
+        rootId=ins.data.id;
+      }
+      var candidates=await sb.from('ideas').select('id,text_content,storyboard_kind')
+        .eq('user_id',u.id).eq('content_type','header').is('cluster_id',null).neq('id',rootId);
+      if(!candidates.error && candidates.data && candidates.data.length){
+        var EXCLUDE={'Trash':1,'Archived':1,'MISC':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1};
+        var toMove=candidates.data.filter(function(r){
+          return !EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA';
+        }).map(function(r){ return r.id; });
+        if(toMove.length){
+          var mig=await sb.from('ideas').update({cluster_id:rootId}).in('id',toMove);
+          if(mig.error) console.warn('ensureIdeaStoryboardsRoot migration error:', mig.error);
+        }
+      }
+      return rootId;
+    }catch(e){ console.warn('ensureIdeaStoryboardsRoot exception:', e); return null; }
+  }
+
+  /* STAKEHOLDER — mirrors ensureCollaboratorHeader exactly (same reserved-
+     bucket mechanic: one shared header per parent, created on first use,
+     never respawned once removed). Only call this from the traveler's own
+     Idea Storyboards root — like COLLABORATOR, it's a personal filing
+     bucket for shortcuts and has no meaning on someone else's project. */
+  async function ensureStakeholderHeader(parentId){
+    var sb=_sb(); var u=await _currentUser();
+    if(!u) throw new Error('Not signed in.');
+    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','STAKEHOLDER');
+    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+    var existing=await q.limit(1);
+    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+    if(await _parentDefaultsSeeded(parentId)) return null;
+    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'STAKEHOLDER',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error('STAKEHOLDER setup failed: '+ins.error.message);
+    _markParentDefaultsSeeded(parentId);
+    return ins.data.id;
+  }
+
+  /* promotedPrimaryEntries — the PROJECT-list shortcut for every project
+     ROOT (not any nested card) where this traveler has been made Primary
+     via the 👥 Call Sheet (card_roles.is_primary), on a project someone
+     else owns. Two-step manual join, same pattern as collaboratorEntries:
+     read this traveler's own card_roles rows, then the referenced ideas
+     rows. Scoped to self-scoped rows only (topic_scope_id===id) so a
+     Primary assignment on an ordinary nested card doesn't masquerade as a
+     whole-project promotion. */
+  async function promotedPrimaryEntries(){
+    try{
+      var sb=_sb(); var u=await _currentUser(); if(!u) return [];
+      var roles=await sb.from('card_roles').select('card_id').eq('card_type','idea').eq('user_id',u.id).eq('is_primary',true);
+      if(roles.error){ console.warn('promotedPrimaryEntries card_roles error:', roles.error); return []; }
+      var ids=(roles.data||[]).map(function(r){ return r.card_id; });
+      if(!ids.length) return [];
+      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_scope_id,color').in('id',ids);
+      if(proj.error){ console.warn('promotedPrimaryEntries ideas error:', proj.error); return []; }
+      return (proj.data||[])
+        .filter(function(p){ return p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
+        .map(function(p){ return {id:p.id, text:p.text_content, ownerUserId:p.user_id, color:p.color}; });
+    }catch(e){ console.warn('promotedPrimaryEntries exception:', e); return []; }
+  }
+
+  /* stakeholderEntries — same shape as promotedPrimaryEntries, but for a
+     card_roles row of role='stakeholder' rather than is_primary. Carries
+     isPrimaryStakeholder (card_roles.is_primary_stakeholder) through so
+     the STAKEHOLDER group and the PROJECT popup's fast-access list (Primary
+     Stakeholder only) can both read off the same fetch. */
+  async function stakeholderEntries(){
+    try{
+      var sb=_sb(); var u=await _currentUser(); if(!u) return [];
+      var roles=await sb.from('card_roles').select('card_id,is_primary_stakeholder').eq('card_type','idea').eq('user_id',u.id).eq('role','stakeholder');
+      if(roles.error){ console.warn('stakeholderEntries card_roles error:', roles.error); return []; }
+      var rows=roles.data||[];
+      if(!rows.length) return [];
+      var ids=rows.map(function(r){ return r.card_id; });
+      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_scope_id,color').in('id',ids);
+      if(proj.error){ console.warn('stakeholderEntries ideas error:', proj.error); return []; }
+      var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
+      var primaryByCard={}; rows.forEach(function(r){ primaryByCard[r.card_id]=!!r.is_primary_stakeholder; });
+      return ids
+        .map(function(id){ return byId[id]; })
+        .filter(function(p){ return p && p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
+        .map(function(p){
+          return {id:p.id, text:p.text_content, ownerUserId:p.user_id, color:p.color, isPrimaryStakeholder:!!primaryByCard[p.id]};
+        });
+    }catch(e){ console.warn('stakeholderEntries exception:', e); return []; }
+  }
+
+  /* addStakeholderToCast — the one path that adds a Stakeholder to a
+     project's Cast (see _csInsertRole in idea-storyboard-9710.js), so the
+     Board-of-Directors starting state can be set atomically with the row
+     itself instead of an insert-then-update. Board-of-Directors members
+     default to Primary Stakeholder (opt-out from there, see
+     setPrimaryStakeholder); an ordinary Stakeholder starts unflagged
+     (opt-in later, self-only). */
+  async function addStakeholderToCast(cardId, userId, isBoardMember){
+    try{
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) return {ok:false, msg:'Not signed in.'};
+      var ins=await sb.from('card_roles').insert({
+        card_type:'idea', card_id:cardId, role:'stakeholder', user_id:userId,
+        is_board_member:!!isBoardMember, is_primary_stakeholder:!!isBoardMember,
+        added_by:u.id
+      }).select().single();
+      if(ins.error) return {ok:false, msg:ins.error.message};
+      return {ok:true, row:ins.data};
+    }catch(e){ return {ok:false, msg:(e&&e.message)||'Could not add them as a Stakeholder.'}; }
+  }
+
+  /* setPrimaryStakeholder — self-designation only: a plain Stakeholder can
+     flag (or unflag) themselves as Primary Stakeholder on a project.
+     Board-of-Directors members start flagged already (addStakeholderToCast
+     above); this is the opt-in/opt-out path for everyone else. */
+  async function setPrimaryStakeholder(cardId, flag){
+    try{
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) return {ok:false, msg:'Not signed in.'};
+      var upd=await sb.from('card_roles').update({is_primary_stakeholder:!!flag})
+        .eq('card_type','idea').eq('card_id',cardId).eq('user_id',u.id).eq('role','stakeholder');
+      if(upd.error) return {ok:false, msg:upd.error.message};
+      return {ok:true};
+    }catch(e){ return {ok:false, msg:(e&&e.message)||'Could not update.'}; }
   }
 
   /* ── ensure-named-header helpers (find existing under parent, else create) ── */
@@ -336,25 +503,33 @@
     return ins.data.id;
   }
 
+  /* Sept 2, 2026 -- resolves through the Idea Storyboards root now, not
+     true root. ensureIdeaStoryboardsRoot's own sweep already pulls a
+     pre-existing "Wish Tank" (an ordinary IDEA-kind header, same as any
+     other real project) under the new root the first time it runs, so this
+     no longer needs its own separate migration -- looking for Wish Tank as
+     a CHILD of the root, instead of at cluster_id null, finds that same
+     migrated row. Without resolving through the root first, this would
+     have silently spawned a second, duplicate Wish Tank the first time an
+     existing one got swept in as a child out from under the old lookup. */
   async function ensureWishTank(){
     try{
       var sb=_sb(); var u=await _currentUser();
       if(!u) return {id:null, error:'Not signed in'};
-      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').is('cluster_id',null).limit(1);
+      var rootId=await ensureIdeaStoryboardsRoot();
+      if(!rootId) return {id:null, error:'Could not resolve the Idea Storyboards root'};
+      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').eq('cluster_id',rootId).limit(1);
       if(existing.error) return {id:null, error:'Select failed: '+existing.error.message};
       if(existing.data && existing.data.length) return {id:existing.data[0].id, error:null};
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Wish Tank',cluster_id:null,created_at:new Date().toISOString()}).select().single();
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Wish Tank',cluster_id:rootId,created_at:new Date().toISOString()}).select().single();
       if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
       var wishTankId=ins.data.id;
-      /* One-time migration, only reached on first-ever creation for this member: every
-         pre-existing root-level row gets pulled into the new Wish Tank. Reserved Trash
-         header is left alone. Runs exactly once per member. */
-      try{
-        var mig=await sb.from('ideas').update({cluster_id:wishTankId})
-          .eq('user_id',u.id).is('cluster_id',null)
-          .neq('id',wishTankId).neq('text_content','Trash');
-        if(mig.error) console.warn('Wish Tank migration error:', mig.error);
-      }catch(migErr){ console.warn('Wish Tank migration exception:', migErr); }
+      // Self-scoped like every other real project root (see
+      // _sboardCreateRootBoard's own matching update in
+      // idea-storyboard-9710.js) -- otherwise _sboardProjectRowFor would
+      // climb straight past a freshly-created Wish Tank into Idea
+      // Storyboards itself, now that Wish Tank sits one level deeper.
+      try{ await sb.from('ideas').update({project_id:wishTankId, topic_scope_id:wishTankId}).eq('id',wishTankId); }catch(e){}
       return {id:wishTankId, error:null};
     }catch(e){ return {id:null, error:'Exception: '+(e&&e.message?e.message:String(e))}; }
   }
@@ -420,6 +595,12 @@
     ensurePurposeHeader: ensurePurposeHeader,
     ensureCollaboratorHeader: ensureCollaboratorHeader,
     collaboratorEntries: collaboratorEntries,
+    ensureStakeholderHeader: ensureStakeholderHeader,
+    stakeholderEntries: stakeholderEntries,
+    promotedPrimaryEntries: promotedPrimaryEntries,
+    addStakeholderToCast: addStakeholderToCast,
+    setPrimaryStakeholder: setPrimaryStakeholder,
+    ensureIdeaStoryboardsRoot: ensureIdeaStoryboardsRoot,
     ensureNewAdditionsHeader: ensureNewAdditionsHeader,
     ensureTrashHeader: ensureTrashHeader,
     ensureWishTank: ensureWishTank,

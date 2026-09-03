@@ -810,7 +810,7 @@
       // SHARE is still the only placeholder left.
       +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
-      +'<div style="position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start;z-index:3">'
+      +'<div style="position:absolute;top:10px;left:16px;z-index:3">'
       // Organization (Type/Org Name) removed from the chrome, Sept 2 2026
       // -- Larry: "Delete organization choice. What if we replaced it
       // with the member name embossed? PROJECT between name and logo?"
@@ -852,7 +852,8 @@
       // (matching how every other eyebrow on this header already reads)
       // rather than a full-size name -- a brass nameplate is small and
       // dignified, not shouted.
-      +'<div id="sc-member-name" style="align-self:flex-start;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#d4af37;text-shadow:-1px -1px 0 rgba(255,255,255,.35),1px 1px 1px rgba(0,0,0,.6);white-space:nowrap"></div>'
+      +'<div id="sc-member-name" style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#d4af37;text-shadow:-1px -1px 0 rgba(255,255,255,.35),1px 1px 1px rgba(0,0,0,.6);white-space:nowrap"></div>'
+      +'</div>'
       // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
       // one-time click wiring in injectSeaOfIdeasCluster) that opens the
       // real global-shortcut popup, openProjectSwitcher, on click. This
@@ -862,12 +863,26 @@
       // see _sboardRenderTitlePicker); harmless to leave since nothing
       // renders into sc-title-menu anymore. title text set at wiring
       // time, not here, since it depends on the new click behavior.
-      +'<div style="display:flex;flex-direction:column;align-items:center">'
+      //
+      // Sept 3 2026, Larry: "PROJECT is too close to my name -- it should
+      // be half the distance between name and LOGO." A fixed 14px flex
+      // gap off the name (the original Sept 2 layout) put it right on top
+      // of the brass nameplate no matter how much open header there was
+      // to its right. Pulled out of that flex row into its own
+      // independently-positioned block (id'd sc-project-wrap) so
+      // _sboardPositionProjectMidwayToLogo (near _sboardPositionLogoNearTopic,
+      // below) can measure Name's actual right edge and Logo's actual
+      // left edge every render and place PROJECT's own center on the
+      // midpoint between them -- same "measure the real boxes, don't
+      // guess a percentage" approach already proven on Logo's own
+      // gap-off-Parent positioning. left:30% stays only as the pre-JS
+      // fallback for the very first paint; the position function
+      // overwrites it.
+      +'<div id="sc-project-wrap" style="position:absolute;top:10px;left:30%;display:flex;flex-direction:column;align-items:center;z-index:3">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       +'<div class="sc-cdrop" id="sc-title-cdrop">'
       +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger"></button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
-      +'</div>'
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
@@ -958,7 +973,12 @@
       // nameplate (screen-zero.js) already relies on for exactly that
       // race, in addition to the direct call _sboardUpdateHeaderChrome
       // makes on every render.
-      window.addEventListener('t2t:member-loaded', function(){ _sboardRenderMemberName(); });
+      // Sept 3 2026 -- also re-run PROJECT's midway-to-Logo placement
+      // here, not just _sboardRenderMemberName: the name text going from
+      // empty to the traveler's real name changes sc-member-name's own
+      // rendered width, which is exactly what PROJECT's midpoint is
+      // measured off of.
+      window.addEventListener('t2t:member-loaded', function(){ _sboardRenderMemberName(); _sboardPositionProjectMidwayToLogo(); });
     })();
     Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
@@ -5953,6 +5973,12 @@
     // above) is this board's own description of itself for that
     // controller.
     T2TLogo.render(_sboardLogoCfg);
+    // PROJECT, Sept 3 2026 -- run after T2TLogo.render above, not before:
+    // that call is what actually moves sc-logo-wrap into its real
+    // position for this render (via positionAnchor), so PROJECT's own
+    // midpoint math needs to read Logo's box AFTER it, not the stale
+    // position left over from the previous render.
+    _sboardPositionProjectMidwayToLogo();
   }
 
   // Aug 18 2026, Larry: "allow Logo to keep same relative distance from
@@ -6028,6 +6054,36 @@
     wrap.style.top='10px';
     slot.style.transform=(dx||dy)?('translate('+dx+'px,'+dy+'px)'):'';
   }
+  // PROJECT, Sept 3 2026, Larry: "PROJECT is too close to my name -- it
+  // should be half the distance between name and LOGO." Same measure-the-
+  // real-boxes approach as _sboardPositionLogoNearTopic just above (a
+  // fixed pixel/percent guess drifts the moment either neighbor's own
+  // width changes -- a longer member name, or Logo's own gap-off-Parent
+  // shifting on a resize): reads sc-member-name's actual right edge and
+  // sc-logo-wrap's actual left edge, and sets sc-project-wrap's own
+  // horizontal center to the midpoint between them. Must run AFTER Logo
+  // has already been positioned for this render (see the call right after
+  // T2TLogo.render in _sboardUpdateHeaderChrome, above) -- reading Logo's
+  // box any earlier would measure last render's stale position.
+  function _sboardPositionProjectMidwayToLogo(){
+    var wrap=document.getElementById('sc-project-wrap');
+    var nameEl=document.getElementById('sc-member-name');
+    var logoWrap=document.getElementById('sc-logo-wrap');
+    var areaEl=document.getElementById('sc-header-area');
+    if(!wrap||!nameEl||!logoWrap||!areaEl) return;
+    var nameRect=nameEl.getBoundingClientRect();
+    var logoRect=logoWrap.getBoundingClientRect();
+    var areaRect=areaEl.getBoundingClientRect();
+    // Guard against a not-yet-laid-out screen or an empty nameplate (the
+    // member profile hasn't loaded yet -- see _sboardRenderMemberName)  --
+    // nothing real to measure yet, leave the left:30% fallback in place.
+    if(!nameRect.width || !logoRect.width || !areaRect.width) return;
+    var wrapRect=wrap.getBoundingClientRect();
+    var midpoint=nameRect.right+(logoRect.left-nameRect.right)/2;
+    var desiredLeft=midpoint-(wrapRect.width/2);
+    wrap.style.left=(desiredLeft-areaRect.left)+'px';
+    wrap.style.top='10px';
+  }
   // Window resize, Aug 18 2026 -- this screen goes edge-to-edge
   // (isx-full, see screen-fit.js's own note on why it skips the global
   // auto-fit transform), so an actual browser-window resize changes
@@ -6039,7 +6095,10 @@
   window.addEventListener('resize', function(){
     try{
       var scr=document.getElementById('s-sea-of-ideas-cluster');
-      if(scr && scr.classList.contains('active')) _sboardPositionLogoNearTopic();
+      if(scr && scr.classList.contains('active')){
+        _sboardPositionLogoNearTopic();
+        _sboardPositionProjectMidwayToLogo();
+      }
     }catch(e){}
   });
 
