@@ -837,9 +837,22 @@
       // any project not on the default Type (real example found in
       // production: Larry's own Field Guide and T2T boards are both
       // board_type "company" -- see the fix in _sboardRenderTitlePicker).
-      +'<div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:34px">'
-      +'<div id="sc-member-name" style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(15px * var(--fg-text-scale,1));letter-spacing:1px;color:#a9cce3;text-shadow:-1px -1px 0 rgba(255,255,255,.15),1px 1px 2px rgba(0,0,0,.5);white-space:nowrap"></div>'
-      +'</div>'
+      // Sept 2 2026, same-day refinement -- Larry: "What if the name is
+      // up at the eyebrow level? in brass? something to make this look
+      // classy and official?" Moved from sitting low (level with the
+      // Project button) to the top of the row instead -- the parent row
+      // just above is already "align-items:flex-start", same alignment
+      // that puts Parent/Topic/Project's own eyebrows at that exact
+      // height, so a plain div here (no wrapping column needed) lands
+      // there too, no extra positioning math required. Brass reads as a
+      // color + the classic emboss two-tone text-shadow (light highlight
+      // upper-left, dark shadow lower-right) already proven on the IDEA/
+      // PLAN label just above -- same technique, swapped from ice-blue to
+      // a metallic gold, on a plain small-caps letter-spaced treatment
+      // (matching how every other eyebrow on this header already reads)
+      // rather than a full-size name -- a brass nameplate is small and
+      // dignified, not shouted.
+      +'<div id="sc-member-name" style="align-self:flex-start;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#d4af37;text-shadow:-1px -1px 0 rgba(255,255,255,.35),1px 1px 1px rgba(0,0,0,.6);white-space:nowrap"></div>'
       // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
       // one-time click wiring in injectSeaOfIdeasCluster) that opens the
       // real global-shortcut popup, openProjectSwitcher, on click. This
@@ -906,22 +919,34 @@
     // _sboardRenderTitlePicker above), so PROJECT stops being a picker
     // that switches between several roots and becomes a fixed label
     // reading "Idea Storyboards" (set once here, and again defensively
-    // in _sboardRenderMemberName on every chrome refresh) that opens
-    // openProjectSwitcher -- the real global-shortcut popup (self-
-    // originated Headers, Primary-promoted entries, Primary Stakeholder
-    // fast-access, and the COLLABORATOR/STAKEHOLDER buckets) -- on
-    // click. That popup has been fully built and code-verified since
-    // last session but never had a live entry point anywhere in the UI
-    // until now; this is that entry point. Double-click-to-rename
-    // dropped along with it -- renaming "Idea Storyboards" itself isn't
-    // a real action, and any real project is renamed the normal way,
-    // by double-clicking its own Header tile once you've drilled in.
+    // in _sboardRenderMemberName on every chrome refresh).
+    //
+    // First cut of this (same day) opened openProjectSwitcher's popup on
+    // click -- wrong per Larry's very next message: "I clicked on Idea
+    // Storyboards which should take me to the master Idea Storyboard,"
+    // i.e. a real click should DRILL IN, landing on the actual board
+    // where Mouse Criteria/Field Guide/etc. show as ordinary Header
+    // tiles (same screen every other Header already opens onto -- no
+    // separate "master" screen to build), not surface a small popup
+    // instead of it. Fixed: click ensures the root exists (this is also
+    // what actually RUNS the one-time migration for a member who's never
+    // opened it before -- confirmed live for Larry's own account:
+    // no "Idea Storyboards" row existed yet, Mouse Criteria was still
+    // sitting at true root) and drills straight into it.
+    // openProjectSwitcher's popup is real, tested code and still useful
+    // as a fast jump without scrolling the board -- kept reachable on
+    // double-click rather than deleted.
     (function(){
       var titleTrigger=document.getElementById('sc-title-trigger');
       if(titleTrigger){
         titleTrigger.textContent='Idea Storyboards';
-        titleTrigger.title='Jump to any project, or to your Collaborator/Stakeholder shortcuts';
-        titleTrigger.addEventListener('click', function(e){
+        titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
+        titleTrigger.addEventListener('click', async function(e){
+          e.stopPropagation();
+          var rootId=await T2TData.ensureIdeaStoryboardsRoot();
+          if(rootId) _sboardDrillInto({id:rootId});
+        });
+        titleTrigger.addEventListener('dblclick', function(e){
           e.stopPropagation();
           openProjectSwitcher();
         });
@@ -4627,22 +4652,50 @@
           }catch(e){}
           return null;
         };
+        // Idea Storyboards root resolved FIRST and on its own, Sept 2
+        // 2026 -- deliberately NOT folded into the NEW/Purpose/MISC
+        // Promise.all just below, for two reasons. (1) COLLABORATOR/
+        // STAKEHOLDER (right after this) need to know the root id before
+        // they can even ask, so they can't start concurrently with it
+        // anyway. (2) A real bug this avoids: NEW/Purpose/MISC share one
+        // per-parent header_defaults_seeded flag with COLLABORATOR/
+        // STAKEHOLDER (see ensureCollaboratorHeader's own comment in
+        // header-data.js) -- if MISC's ensure-call for this same brand-
+        // new root won that race and flipped the flag first, COLLABORATOR/
+        // STAKEHOLDER's OWN "not seeded yet" check would then read it as
+        // already-seeded and silently skip creating them, forever (the
+        // flag never unflips). Ensuring COLLABORATOR/STAKEHOLDER to
+        // completion before NEW/Purpose/MISC even start avoids that race
+        // outright instead of hoping to win it. Only costs real latency
+        // on the rare first-ever visit to a brand new root (creating it);
+        // every later render is one cheap indexed select before the rest
+        // proceeds as before.
+        var rootId=(window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? await T2TData.ensureIdeaStoryboardsRoot() : null;
+        _sboardIdeaStoryboardsRootId=rootId;
+        // COLLABORATOR/STAKEHOLDER, Sept 2 2026 -- Larry: "The HEADERS
+        // for that board are the PROJECTS plus COLLABORATOR and
+        // STAKEHOLDER" -- same always-present-landing-bucket treatment
+        // as MISC/Purpose below (ensured on demand, never respawned once
+        // removed -- see _parentDefaultsSeeded), but scoped to fire only
+        // while actually standing on the Idea Storyboards root itself,
+        // never on an ordinary project board -- a COLLABORATOR/
+        // STAKEHOLDER bucket only means something there.
+        if(rootId && String(T2TShared.currentTopicId)===String(rootId)){
+          try{
+            await Promise.all([
+              T2TData.ensureCollaboratorHeader(rootId),
+              T2TData.ensureStakeholderHeader(rootId)
+            ]);
+          }catch(e){ console.warn('Idea Storyboards COLLABORATOR/STAKEHOLDER ensure failed:', e); }
+        }
         var _ensureResults=await Promise.all([
           T2TShared.currentTopicId ? _sbFetchNewAdditionsDesiredName().then(function(_sbDesiredName){
             return _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId, _sbDesiredName);
           }) : Promise.resolve(null),
           currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
-          T2TData.ensureMiscHeader(T2TShared.currentTopicId),
-          // Idea Storyboards role shortcuts, Sept 2 2026 -- resolved
-          // concurrently with the other independent ensure-calls above,
-          // same reasoning as the July 12 2026 note on this Promise.all.
-          // Only ever a cheap select (this member's own Idea Storyboards
-          // root already exists after their first-ever visit) except the
-          // one-time create+migrate on a brand new account.
-          (window.T2TData && T2TData.ensureIdeaStoryboardsRoot) ? T2TData.ensureIdeaStoryboardsRoot() : Promise.resolve(null)
+          T2TData.ensureMiscHeader(T2TShared.currentTopicId)
         ]);
         newAdditionsId=_ensureResults[0];
-        _sboardIdeaStoryboardsRootId=_ensureResults[3]||null;
         _sboardNewAdditionsId=newAdditionsId;
         // Purpose — one per PROJECT, reachable from anywhere inside that
         // project (not just its exact root), never shared across projects
