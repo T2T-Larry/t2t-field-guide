@@ -858,7 +858,28 @@
       // (matching how every other eyebrow on this header already reads)
       // rather than a full-size name -- a brass nameplate is small and
       // dignified, not shouted.
-      +'<div id="sc-member-name" style="font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#d4af37;text-shadow:-1px -1px 0 rgba(255,255,255,.35),1px 1px 1px rgba(0,0,0,.6);white-space:nowrap"></div>'
+      //
+      // Sept 3 2026, Larry: "I like that name tag [the desk's draggable
+      // nameplate]. Can we replace the name on the Idea Board with that
+      // tag? It looks so professional." Swapped the flat embossed-text
+      // treatment above for the actual badge shape screen-zero.js's
+      // buildNameplate() uses on the desk -- same gold gradient box,
+      // border, and raised inset shadow, same two-line "Thoughts to
+      // Things" header over the name -- just sized to hug its own
+      // content instead of the desk badge's fixed 180px (it has to sit
+      // inline in this header row, not float free), and re-derived here
+      // rather than sharing a class with screen-zero.js's version since
+      // this file doesn't otherwise depend on that one's CSS injection
+      // running first. #sc-member-name stays the id
+      // _sboardPositionProjectMidwayToLogo measures for PROJECT's
+      // midpoint-to-Logo placement -- it now measures the whole badge's
+      // right edge instead of bare text's, which is the correct edge to
+      // measure either way. _sboardRenderMemberName (below) now fills
+      // in the inner #sc-member-name-text line, not this wrapper.
+      +'<div id="sc-member-name" style="display:inline-flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);border:1px solid #6b4a2c;border-radius:6px;padding:3px 10px 4px;box-shadow:2px 3px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5);white-space:nowrap">'
+      +'<div style="color:#4a3418;font-size:calc(8px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)">Thoughts to Things</div>'
+      +'<div id="sc-member-name-text" style="color:#4a3418;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(12px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)"></div>'
+      +'</div>'
       +'</div>'
       // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
       // one-time click wiring in injectSeaOfIdeasCluster) that opens the
@@ -5987,7 +6008,11 @@
   // called again off the t2t:member-loaded event for that race, same
   // pattern the nameplate itself uses.
   function _sboardRenderMemberName(){
-    var el=document.getElementById('sc-member-name');
+    // Sept 3 2026: the wrapper (#sc-member-name) became the badge box
+    // itself (gold gradient, border, "Thoughts to Things" header line) --
+    // the name text now lands in the inner #sc-member-name-text line, not
+    // the wrapper, so it doesn't clobber the header line's own markup.
+    var el=document.getElementById('sc-member-name-text');
     if(!el) return;
     var m=(window.T2T && window.T2T.getMember) ? window.T2T.getMember() : null;
     if(m && m.display_name) el.textContent=m.display_name.toUpperCase();
