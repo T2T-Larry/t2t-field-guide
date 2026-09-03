@@ -61,6 +61,7 @@
 <script src="session.js?v=20260902a"></script>
 <script src="focus.js?v=20260711b"></script>
 <script src="backpack.js?v=20260825g"></script>
+<script src="stories.js?v=20260903a"></script>
 <script src="briefing-board.js?v=20260902a"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -195,32 +196,17 @@
   </div>
 </div>
 
-<!-- WHAT IS T2T -->
+<!-- WHAT IS T2T -- words now live in Supabase (public.stories, slug
+     'what-is-t2t'); stories.js fills this shell on nav(), see the
+     registerScreenActivate call above. -->
 <div class="sc card" id="s-what-is-t2t">
-  <div class="reader-wrap">
-    <div class="reader-body" style="gap:18px">
-      <div class="reader-eyebrow">T2T</div>
-      <div class="reader-line bold" style="font-size:28px">What is T2T?</div>
-      <div style="width:60px;height:0.5px;background:#C9A87C;margin:0 auto"></div>
-      <div class="reader-line small" style="line-height:1.9">T2T — Thoughts to Things — is a system for transforming imagination into reality.<br>Not a philosophy. Not something you have to believe in before it works.<br>A system. It works the first time you try it.</div>
-    </div>
-  </div>
+  <div class="reader-wrap"><div class="reader-body" style="gap:18px"></div></div>
   <div class="bar2"><button class="tb" id="b-what-is-t2t-back">⬅️</button><button class="tb" id="b-what-is-t2t-mg">☰</button></div>
 </div>
 
-<!-- T2T GOALS -->
+<!-- T2T GOALS -- Supabase slug 't2t-goals'; see stories.js. -->
 <div class="sc card" id="s-t2t-goals">
-  <div class="reader-wrap">
-    <div class="reader-body" style="gap:16px">
-      <div class="reader-eyebrow">T2T</div>
-      <div class="reader-line bold" style="font-size:28px">T2T Goals</div>
-      <div class="reader-line italic" style="font-size:14px;color:#888">May you find…</div>
-      <div style="width:60px;height:0.5px;background:#C9A87C;margin:0 auto"></div>
-      <div class="reader-line" style="font-size:17px">A clear <span style="color:#185FA5">Vision</span> of what you really want.</div>
-      <div class="reader-line" style="font-size:17px">The Pursuit of <span style="color:#993556">Excellence</span> in everything you do.</div>
-      <div class="reader-line" style="font-size:17px">A <span style="color:#3B6D11">Beautiful Journey</span> for everyone involved.</div>
-    </div>
-  </div>
+  <div class="reader-wrap"><div class="reader-body" style="gap:16px"></div></div>
   <div class="bar2"><button class="tb" id="b-t2t-goals-back">⬅️</button><button class="tb" id="b-t2t-goals-mg">☰</button></div>
 </div>
 
@@ -634,36 +620,16 @@
 
 <!-- SECRET SAUCE -->
 <div class="sc card" id="s-secret-sauce">
-  <div class="reader-wrap">
-    <div class="reader-body" style="gap:10px">
-      <div class="reader-eyebrow">T2T</div>
-      <div class="reader-line bold" style="font-size:26px">Bill's Secret Sauce</div>
-      <div style="width:60px;height:0.5px;background:#C9A87C;margin:8px auto"></div>
-      <div class="reader-line small" style="line-height:1.9;text-align:left">
-        Add:<br>
-        1 spark of Curiosity<br>
-        1 spark of Imagination<br>
-        1 spark of Desire<br>
-        Mix thoroughly into a pot of Passion<br>
-        Blend in equal parts of Possibility and Potential<br>
-        Add a dash of Courage<br>
-        Stir continuously with a Stick-to-it-ness<br>
-        Season with a pinch of ground pie-in-the-sky.
-      </div>
-    </div>
-  </div>
+  <div class="reader-wrap"><div class="reader-body" style="gap:10px"></div></div>
   <div class="bar2"><button class="tb" id="b-secret-sauce-back">⬅️</button><button class="tb" id="b-secret-sauce-mg">☰</button></div>
 </div>
 
-<!-- AUTHORS -->
-<div class="sc" id="s-authors">
-  <div class="card"><div class="sw">
-    <div class="se">Meet the authors</div><div class="mg-band"></div>
-    <div class="sh">A revolution that started with a conversation.</div>
-    <div class="sb">Larry's grandfather invented OASIS — the green foam inside every flower arrangement you've ever seen. Something small. Something nobody thinks about. Something that just works. Larry grew up inside a family business built on a thought that became a thing.</div>
-    <div class="sb">He hired Bill as an accountant. That still makes him laugh. Bill turned out to be more creative than almost anyone he's ever met. Bill went on to work directly for Disney.</div>
-    <div class="sp"></div>
-  </div></div>
+<!-- AUTHORS -- folded into the shared reading look Sept 3 2026 (was its
+     own .sw/.se/.sh/.sb boxed layout with a teal mg-band; Larry: "no
+     problem with the trivia" -- confirmed OK to match the other three).
+     Supabase slug 'meet-the-authors'; see stories.js. -->
+<div class="sc card" id="s-authors">
+  <div class="reader-wrap"><div class="reader-body" style="gap:18px"></div></div>
   <div class="bar2"><button class="tb" id="b-aut-back">⬅️</button><button class="tb" id="b-aut-mg">☰</button></div>
 </div>
 
@@ -767,6 +733,16 @@
   T.registerPageNum('s-authors',       '0100.3');
   T.registerPageNum('s-secret-sauce',  '0100.4');
   T.registerPageNum('s-thoughts-2',    '0211'); T.registerPageNum('s-thoughts-3', '0212');
+
+  /* ── STORY-FORMAT SCREENS (Sept 3 2026) ── these four now pull their
+     words from Supabase (public.stories) instead of hand-typed HTML --
+     see stories.js. Registering here means nav() calls the fetch every
+     time the screen is shown, same pattern as renderTrivia/renderGemsView
+     just above it in backpack.js. */
+  T.registerScreenActivate('s-what-is-t2t', function(){ return T2TStories.renderStory('s-what-is-t2t','what-is-t2t'); });
+  T.registerScreenActivate('s-t2t-goals',   function(){ return T2TStories.renderStory('s-t2t-goals','t2t-goals'); });
+  T.registerScreenActivate('s-secret-sauce',function(){ return T2TStories.renderStory('s-secret-sauce','secret-sauce'); });
+  T.registerScreenActivate('s-authors',     function(){ return T2TStories.renderStory('s-authors','meet-the-authors'); });
   T.registerPageNum('s-want',          '0300'); T.registerPageNum('s-know',       '0400');
   T.registerPageNum('s-dream-intro',   '0490');
 
