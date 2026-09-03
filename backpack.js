@@ -1472,8 +1472,37 @@
     var bpTarget = sessionStorage.getItem('bp_target');
     if (bpTarget) {
       sessionStorage.removeItem('bp_target');
+      // Sept 3 2026 bug fix (Larry: a Phase screen's own Back button
+      // silently bounced right back to the same screen instead of going
+      // anywhere) -- index.html's own session-resume flow (see its
+      // onAuthStateChange handler) ALSO decides where to land, based on
+      // the last-remembered screen number, and it was winning this race
+      // every time: this explicit "go here" request would fire first,
+      // then get silently overridden a moment later once the slower
+      // session check finished. Flagging that a specific destination was
+      // already requested this page load lets that other logic know to
+      // stand down instead of second-guessing an explicit Back click.
+      window.__t2tBpTargetHandled = true;
       navToPageNum(bpTarget);
     }
+    // Sept 3 2026 bug fix (Larry: nametag stuck on "Traveler", and the
+    // Idea Board's own name badge blank, the whole time inside a Phase
+    // file): index.html's own script is the ONLY place that fetches the
+    // signed-in member's profile (display name) after sign-in -- every
+    // Phase file (dream/believe/dare/journey.html, reached by a real
+    // page load, not an in-page transition) starts with a completely
+    // fresh copy of this script and never re-fetches it, so the name
+    // badge stayed empty for as long as a traveler stayed inside a
+    // Phase. This re-fetches it here too, on every page, so the badge
+    // fills in correctly no matter which file you're standing on. Safe
+    // to also run on index.html itself -- just re-confirms the same
+    // already-loaded profile a moment sooner.
+    try{
+      _sb.auth.getSession().then(function(res){
+        var session = res && res.data && res.data.session;
+        if (session && session.user) { loadMemberProfile(session.user.id); }
+      });
+    }catch(e){ console.error('T2T: fallback member-profile load failed', e); }
   });
 
 })();

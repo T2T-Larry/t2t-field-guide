@@ -60,7 +60,7 @@
 <script src="idea-storyboard-9710.js?v=20260903e"></script>
 <script src="session.js?v=20260902a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260825g"></script>
+<script src="backpack.js?v=20260903h"></script>
 <script src="stories.js?v=20260903a"></script>
 <script src="briefing-board.js?v=20260902a"></script>
 <script src="tmap.js?v=20260729b"></script>
@@ -852,10 +852,19 @@
         // (bpCurrentScreenNum, sign-in included) if one was recorded,
         // and only falls back to the old sign-in-safe behavior when
         // there's nothing to return to.
-        var curNum = null;
-        try{ curNum = localStorage.getItem('bpCurrentScreenNum'); }catch(e){}
-        if(curNum){ T.navToPageNum(curNum); }
-        else{ T.resumeToLastPageOr('s-cover'); }
+        // Sept 3 2026 bug fix (Larry: a Phase screen's own Back button
+        // silently bounced right back to the same screen): backpack.js's
+        // own DOMContentLoaded handler already sent us to an explicit
+        // destination this page load (see its bp_target handling) --
+        // don't let this slower, "guess where you probably meant to end
+        // up" check second-guess and override an explicit Back click
+        // that already landed correctly a moment earlier.
+        if(!window.__t2tBpTargetHandled){
+          var curNum = null;
+          try{ curNum = localStorage.getItem('bpCurrentScreenNum'); }catch(e){}
+          if(curNum){ T.navToPageNum(curNum); }
+          else{ T.resumeToLastPageOr('s-cover'); }
+        }
         // Larry, July 31 2026: sign-in should always LAND on the
         // blank, closed desk -- drawers collapsed, Field Guide the
         // only thing showing -- never straight into whatever screen

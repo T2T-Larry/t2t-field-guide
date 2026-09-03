@@ -46,7 +46,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="header-data.js?v=20260903a"></script>
 <script src="text-fit.js?v=20260821a"></script>
-<script src="backpack.js?v=20260825g"></script>
+<script src="backpack.js?v=20260903h"></script>
 <script src="briefing-board.js?v=20260902a"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
@@ -1652,7 +1652,12 @@ document.addEventListener('DOMContentLoaded', function(){
   T.registerGems('s-dream', [
     {text:'You are about to discover what you really want — maybe for the first time.', attr:'T2T Field Guide'}
   ]);
-  T.wire('b-dream-back', function(){ sessionStorage.setItem('bp_target','0990'); T.goPhase('index.html'); });
+  // Sept 3 2026 bug fix (Larry: "I am on Dream Phase Title page and
+  // cannot go back"): this pointed at page 0990, which was renumbered to
+  // 0410 back on July 14 2026 (see index.html's own registerPageNum call,
+  // "renumbered from 0990 to match Concepts DB") -- nothing has been
+  // registered under 0990 since, so navToPageNum found nowhere to go.
+  T.wire('b-dream-back', function(){ sessionStorage.setItem('bp_target','0410'); T.goPhase('index.html'); });
   T.wire('b-dream-mg',   T.goMG);
   T.wire('b-dream-fwd',  function(){ T.nav('s-create-hub'); });
   T.wire('b-dream-create', function(){ T.nav('s-create-hub'); });
