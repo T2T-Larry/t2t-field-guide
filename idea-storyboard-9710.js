@@ -526,6 +526,12 @@
         +'.sc-org-name-cdrop{margin-top:3px}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
+        // PROJECT's own dropdown arrow, Sept 3 2026 -- split out of
+        // sc-title-trigger into its own real button (see the header
+        // markup and _sboardWireProjectHeaderDropdown) so it can carry a
+        // job separate from the label it used to be fused to.
+        +'.sc-project-caret{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:6px;width:18px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(9px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+        +'.sc-project-caret:hover{opacity:1}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
         // Larry: "the + in a dotted line circle just like every other
         // add. Consistent symbol." Same shape/border/color as the
@@ -880,8 +886,27 @@
       // overwrites it.
       +'<div id="sc-project-wrap" style="position:absolute;top:10px;left:30%;display:flex;flex-direction:column;align-items:center;z-index:3">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
-      +'<div class="sc-cdrop" id="sc-title-cdrop">'
-      +'<button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-title-trigger"></button>'
+      // Sept 3 2026, Larry: "the dropdown arrow to the right of Idea
+      // Storyboards should show me the Headers (other PROJECTS) as
+      // choices, in the order they appear under the Idea Storyboards
+      // TOPIC -- right now it acts like the Parent field." sc-title-trigger
+      // was one single button carrying both the "Idea Storyboards" label
+      // AND the decorative sc-cdrop-trigger ▾ (see that class's :after
+      // rule below) -- so pressing the arrow did the exact same thing as
+      // pressing the label: drill straight in, no choices shown, same as
+      // sc-parent-hit's own plain click-to-navigate. Split the two apart:
+      // sc-title-trigger keeps its plain "click drills in, double-click
+      // opens the full PROJECT popup" behavior (Larry's own Sept 2 fix,
+      // above), unchanged; the ▾ is now its own real button
+      // (sc-project-caret) with its own job -- see
+      // _sboardWireProjectHeaderDropdown, near _sboardWireBoardKindDropdown
+      // below -- popping sc-title-menu (the same menu element the old,
+      // retired Title picker used to own) open with just this member's
+      // real Headers under Idea Storyboards, in their actual on-board
+      // order, nothing else mixed in.
+      +'<div class="sc-cdrop" id="sc-title-cdrop" style="display:flex;align-items:center;gap:2px">'
+      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger"></button>'
+      +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'
       +'</div>'
@@ -927,6 +952,7 @@
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
+    _sboardWireProjectHeaderDropdown();
     // PROJECT, Sept 2 2026 -- Larry: "Top Project for each member = IDEA
     // STORYBOARDS. The HEADERS for that board are the PROJECTS plus
     // COLLABORATOR and STAKEHOLDER." Every member has exactly one true
@@ -2751,6 +2777,80 @@
         row.classList.toggle('active', row.getAttribute('data-kind')===kindNow);
       });
     }
+  }
+
+  // PROJECT's ▾ arrow, Sept 3 2026 -- Larry: pressing the arrow to the
+  // right of Idea Storyboards should show the Headers (other PROJECTS) as
+  // choices, in the order they appear under the Idea Storyboards TOPIC,
+  // not just act like Parent and drill straight in with no choices. Built
+  // the same way as _sboardWireBoardKindDropdown right above (open/close/
+  // position mirrors _sboardRenderDropdown's trigger.onclick, no addRow --
+  // there's nothing to create here, that's still what double-clicking the
+  // label itself opens via openProjectSwitcher) with one real difference:
+  // the row list can't be built once at wire-time like board-kind's fixed
+  // five options -- projects get renamed, reordered, added and removed
+  // all the time -- so this rebuilds sc-title-menu's rows fresh, from
+  // whatever's actually cached in _sboardAllRowsById, every time the
+  // arrow is pressed, not just once at board init.
+  //
+  // "In the order they appear under the Idea Storyboards TOPIC" means the
+  // exact same list, same order, as childHeadersSorted -- the real
+  // on-board tile order (_sboardBySortOrder off each Header's own
+  // sort_order) -- would show if you were standing at Idea Storyboards
+  // itself right now (see the mergedRow block in renderSeaBoard). Reading
+  // it straight off the whole-account cache instead of requiring you to
+  // actually be standing there is what makes the arrow useful anywhere in
+  // the app, not just from the Idea Storyboards board itself. COLLABORATOR/
+  // STAKEHOLDER/NEW/MISC/Purpose are real Headers under that same root too,
+  // but they're reserved buckets, not "other PROJECTS" -- excluded here as
+  // with everywhere else.
+  function _sboardProjectHeaderChoices(){
+    var rootId=_sboardIdeaStoryboardsRootId;
+    if(!rootId) return [];
+    var RESERVED={'NEW':1,'New Additions':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+    return Object.keys(_sboardAllRowsById)
+      .map(function(k){ return _sboardAllRowsById[k]; })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(rootId) && !RESERVED[r.text_content]; })
+      .sort(_sboardBySortOrder);
+  }
+  function _sboardWireProjectHeaderDropdown(){
+    var trigger=document.getElementById('sc-project-caret'), menu=document.getElementById('sc-title-menu');
+    if(!trigger || !menu) return;
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sc-title-menu':null);
+      if(!willOpen){ menu.hidden=true; return; }
+      var choices=_sboardProjectHeaderChoices();
+      menu.innerHTML='';
+      if(!choices.length){
+        var empty=document.createElement('div');
+        empty.className='sc-cdrop-row';
+        empty.style.cssText='cursor:default;opacity:.6';
+        empty.textContent='No other projects yet.';
+        menu.appendChild(empty);
+      } else {
+        choices.forEach(function(h){
+          var row=document.createElement('div');
+          row.className='sc-cdrop-row';
+          row.textContent=h.text_content||'(untitled)';
+          row.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            menu.hidden=true;
+            _sboardDrillInto(h);
+          });
+          menu.appendChild(row);
+        });
+      }
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    };
   }
 
   // Picking PLAN, Aug 26 2026 (Larry: "duplicate a Project Idea Board, put
