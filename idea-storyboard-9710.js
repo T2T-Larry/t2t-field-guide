@@ -876,9 +876,15 @@
       // right edge instead of bare text's, which is the correct edge to
       // measure either way. _sboardRenderMemberName (below) now fills
       // in the inner #sc-member-name-text line, not this wrapper.
-      +'<div id="sc-member-name" style="display:inline-flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);border:1px solid #6b4a2c;border-radius:6px;padding:3px 10px 4px;box-shadow:2px 3px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5);white-space:nowrap">'
-      +'<div style="color:#4a3418;font-size:calc(8px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)">Thoughts to Things</div>'
-      +'<div id="sc-member-name-text" style="color:#4a3418;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(12px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)"></div>'
+      //
+      // Sept 3 2026, Larry: "size up the name tag" -- badge grown roughly
+      // a third larger all round (header 8->11px, name 12->17px, more
+      // padding, a touch more corner radius) rather than just the text,
+      // so it still reads as one solid badge instead of a bigger label
+      // floating in a small box.
+      +'<div id="sc-member-name" style="display:inline-flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);border:1px solid #6b4a2c;border-radius:8px;padding:5px 14px 6px;box-shadow:2px 4px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5);white-space:nowrap">'
+      +'<div style="color:#4a3418;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)">Thoughts to Things</div>'
+      +'<div id="sc-member-name-text" style="color:#4a3418;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(17px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)"></div>'
       +'</div>'
       +'</div>'
       // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
@@ -4817,11 +4823,25 @@
         // for that board are the PROJECTS plus COLLABORATOR and
         // STAKEHOLDER" -- same always-present-landing-bucket treatment
         // as MISC/Purpose below (ensured on demand, never respawned once
-        // removed -- see _parentDefaultsSeeded), but scoped to fire only
-        // while actually standing on the Idea Storyboards root itself,
-        // never on an ordinary project board -- a COLLABORATOR/
-        // STAKEHOLDER bucket only means something there.
-        if(rootId && String(T2TShared.currentTopicId)===String(rootId)){
+        // removed -- see _parentDefaultsSeeded). Originally gated to fire
+        // only while actually standing on the Idea Storyboards root
+        // itself -- removed Sept 3 2026, Larry: "Missing Collaborator and
+        // Stakeholder headers." Root cause: the everyday "Idea Board"
+        // tool button never actually lands you on the root -- it resumes
+        // whichever project you were last working in (_ideaOpenBoardResume,
+        // idea-media-shared.js), and PROJECT is now a fixed label that
+        // opens a popup rather than something you navigate to -- so for
+        // any traveler who already has a real project (i.e. everyone past
+        // their very first visit), currentTopicId===rootId almost never
+        // came true and these two headers never got their one-time
+        // creation call. Both ensure-functions already do their own
+        // cheap indexed existence check before creating anything (see
+        // header-data.js), so calling them on every board render
+        // regardless of which topic is on screen costs one indexed
+        // select per render, not a repeat insert -- same reasoning
+        // already applied to NEW/Purpose/MISC just below, which never
+        // had this restriction.
+        if(rootId){
           try{
             await Promise.all([
               T2TData.ensureCollaboratorHeader(rootId),
