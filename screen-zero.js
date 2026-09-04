@@ -127,16 +127,34 @@
       +   'display:flex;flex-direction:column;align-items:center;'
       +   'padding:16px 10px 14px;box-sizing:border-box;font-family:"Playfair Display",Georgia,serif;'
       +   'transition:width .18s ease, padding .18s ease, background .18s ease, box-shadow .18s ease}'
-      // Collapsed hides the whole tray -- background, border, shadow, and
-      // every child (nameplate/tools/gear) -- leaving only the toggle nub
-      // sitting right on the screen edge. Larry, July 26: "why not just
-      // have the toggle visible on the edge of the screen?"
+      // Collapsed hides the drawer's own card -- background, border,
+      // shadow -- leaving only the toggle nub sitting right on the screen
+      // edge. Larry, July 26: "why not just have the toggle visible on
+      // the edge of the screen?"
       + '#sz-navbar.sz-collapsed{width:0;padding:0;border:none;box-shadow:none;background:transparent}'
       // Larry, July 26 (later note): the nameplate moved OUT of the
       // drawer entirely -- it's a persistent label, not drawer content,
       // so it no longer hides with the drawer's collapse state at all.
-      + '#sz-navbar.sz-collapsed #sz-navmid,'
-      +   '#sz-navbar.sz-collapsed #sz-menu,#sz-navbar.sz-collapsed #sz-gear{display:none}'
+      //
+      // Sept 4 2026 fix -- Larry: "I closed the Field Guide and found the
+      // Tools in the left drawer... Tools appear to be outside the
+      // drawer, but disappear when drawer is closed." Root cause: #sz-
+      // navmid used to be blanket-hidden on collapse, and the real tool
+      // tray (mode 1 -- Field Guide, Idea Board, all nine) lives inside
+      // it, so collapsing this ONE drawer's toggle wiped out every tool
+      // button everywhere on screen, even ones long since dragged out to
+      // ride the RIGHT drawer or sit free on the desk -- they're still
+      // DOM descendants of this drawer's mid panel underneath, just
+      // repositioned with their own fixed coordinates. That directly
+      // contradicted the already-settled rule that the tool tray never
+      // hides (see TOOL_ITEMS_DEFAULT above). #sz-navmid itself is no
+      // longer in this hide list. The junk-drawer/surprise slots (modes
+      // 2/3) still disappear on their own -- .sz-mode-panel{display:none
+      // !important} below already hides whichever mode isn't active,
+      // collapse or not -- and the real tool stack's own position:fixed
+      // layout keeps it rendering correctly regardless of this panel's
+      // collapsed width.
+      + '#sz-navbar.sz-collapsed #sz-menu,#sz-navbar.sz-collapsed #sz-gear{display:none}'
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'right:-28px;width:28px;height:60px;'
       +   'border-radius:0 30px 30px 0;border:2px solid #999;border-left:none;'
