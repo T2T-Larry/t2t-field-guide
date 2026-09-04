@@ -338,7 +338,43 @@
     // 2026: plain nav() left currentTopicId null, landing on 1010's
     // confusing blank-project fallback -- now resumes the last real
     // topic instead, same as 9711 already does.
-    { id: 'idea',           label: 'Idea',            action: wireToggleNav('s-sea-of-ideas-cluster', function(){ if (window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume(); else if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); }, function(){ if (window.T2TStoryboard && window.T2TStoryboard.closeBoard) window.T2TStoryboard.closeBoard(); else if (window.T2T) window.T2T.goBack(); }) },
+    // Sept 4 2026 (later same day) -- Larry hit a real stuck-screen bug:
+    // clicking Idea cleared the desk (nav() had already landed and added
+    // isx-full) but the board's own async resume chain (openBoardResume,
+    // a chain of Supabase awaits before it ever calls nav) apparently
+    // stalled or threw without ever finishing -- no spinner, no board
+    // content, and no way back short of a hard browser reload. Whatever
+    // the root network-timing cause turns out to be, a promise
+    // rejection here was going uncaught (openBoardResume/jumpToProjectKind
+    // are async functions called and never awaited or watched), so any
+    // failure was completely silent. Wrapping every one of these calls
+    // so a rejection surfaces as a real toast instead of a silent stuck
+    // screen -- doesn't fix a slow/stuck network call by itself, but it
+    // guarantees the traveler gets told something instead of just
+    // staring at an empty board with the drawers gone. Larry, right
+    // after: "we need to jump to the idea board instantly with the
+    // spinning clock if needed for now" -- openBoardResume itself
+    // (idea-media-shared.js) now shows the spinner as its very first
+    // synchronous step, so the click gives instant feedback even before
+    // this promise settles either way; this handler also hides it
+    // immediately on a genuine failure instead of leaving it to the 5-
+    // second safety-net timeout.
+    { id: 'idea',           label: 'Idea',            action: wireToggleNav('s-sea-of-ideas-cluster', function(){
+        if (window.T2TMedia && window.T2TMedia.openBoardResume) {
+          try {
+            var p = window.T2TMedia.openBoardResume();
+            if (p && typeof p.catch === 'function') p.catch(function(err){
+              console.error('Idea Storyboard failed to open:', err);
+              if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+              showZeroToast('The Storyboard had trouble opening -- please try again.');
+            });
+          } catch(err) {
+            console.error('Idea Storyboard failed to open:', err);
+            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+            showZeroToast('The Storyboard had trouble opening -- please try again.');
+          }
+        } else if (window.T2T) { window.T2T.nav('s-sea-of-ideas-cluster'); }
+      }, function(){ if (window.T2TStoryboard && window.T2TStoryboard.closeBoard) window.T2TStoryboard.closeBoard(); else if (window.T2T) window.T2T.goBack(); }) },
     // Sept 4 2026 -- opens (or starts) the Plan board for whichever
     // project this traveler had open last (same "last active project"
     // memory the Idea button's own resume already reads), via the
@@ -347,7 +383,28 @@
     { id: 'plan',           label: 'Plan',            action: function(){
         var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
         if (!pid) { showZeroToast('Start an Idea Storyboard first, then Plan can build off it.'); return; }
-        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(pid, 'PLAN');
+        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) {
+          try {
+            var p = window.T2TStoryboard.jumpToProjectKind(pid, 'PLAN');
+            if (p && typeof p.then === 'function') p.then(function(ok){
+              // jumpToProjectKind resolves false (never throws) on a
+              // failed fetch -- catch() alone would miss this, since
+              // the promise still resolves successfully.
+              if (ok === false) {
+                if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+                showZeroToast('Plan had trouble opening -- please try again.');
+              }
+            }, function(err){
+              console.error('Plan failed to open:', err);
+              if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+              showZeroToast('Plan had trouble opening -- please try again.');
+            });
+          } catch(err) {
+            console.error('Plan failed to open:', err);
+            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+            showZeroToast('Plan had trouble opening -- please try again.');
+          }
+        }
       } },
     // Sept 4 2026 -- same "last active project" resolve as Plan, then
     // opens that project's Cast (team roster) popup -- the CAST branch
@@ -355,7 +412,25 @@
     { id: 'cast',           label: 'Cast',            action: function(){
         var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
         if (!pid) { showZeroToast('Start an Idea Storyboard first, then Cast can build off it.'); return; }
-        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(pid, 'CAST');
+        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) {
+          try {
+            var p = window.T2TStoryboard.jumpToProjectKind(pid, 'CAST');
+            if (p && typeof p.then === 'function') p.then(function(ok){
+              if (ok === false) {
+                if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+                showZeroToast('Cast had trouble opening -- please try again.');
+              }
+            }, function(err){
+              console.error('Cast failed to open:', err);
+              if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+              showZeroToast('Cast had trouble opening -- please try again.');
+            });
+          } catch(err) {
+            console.error('Cast failed to open:', err);
+            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+            showZeroToast('Cast had trouble opening -- please try again.');
+          }
+        }
       } },
     // Matches the in-board board-kind dropdown's own "coming soon" SHARE
     // row -- not a new gap, same placeholder everywhere SHARE shows up.

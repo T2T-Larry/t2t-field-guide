@@ -172,6 +172,30 @@
   // _isxInit's Resume last Input topic block) — this mirrors that same
   // logic for 1010, so the desk button lands somewhere real instead.
   async function _ideaOpenBoardResume(push){
+    // Sept 4 2026 (later session), Larry: "When Idea board is clicked, we
+    // need to jump to the idea board instantly with the spinning clock
+    // if needed for now." Root cause of the stuck-screen bug he hit:
+    // this whole function is a chain of awaited Supabase calls
+    // (ensureWishTank, then getLastInputTopic) BEFORE it ever reaches
+    // _ideaOpenBoard/nav() -- and nav() is the only thing that shows the
+    // travel spinner. So a click sat there with literally nothing
+    // visible happening (no spinner, no screen change, drawers still
+    // open) for as long as that chain took -- looked exactly like a
+    // dead click, and if the chain stalled, it stayed that way with no
+    // feedback at all. Showing the spinner as the very first thing this
+    // function does (synchronous, before any await) means every entry
+    // point through here -- this desk button, the sign-in resume path,
+    // any future caller -- gives instant visual feedback the moment the
+    // click happens, not just once the real board is finally ready.
+    // Kept as showTravelSpinner (not a full instant nav()) rather than
+    // navigating to the board before its topic is resolved, since a
+    // bare nav() with no boardId is the exact Aug 1 2026 bug this
+    // function exists to prevent (renders the blank "What do you want?"
+    // fallback instead of the traveler's real board). The spinner
+    // itself already has a 5-second safety-net auto-hide (backpack.js,
+    // locked July 16 2026), so even a fully stalled chain below can't
+    // leave it spinning forever.
+    if (window.T2T && window.T2T.showTravelSpinner) window.T2T.showTravelSpinner();
     // Deep-link override, Aug 11 2026 -- a Briefing Card's "Open on Idea
     // Storyboard" button (new-tab version) sets this before opening the
     // tab; if present, it wins over the normal last-topic resume below.

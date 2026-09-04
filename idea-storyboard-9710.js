@@ -3014,6 +3014,15 @@
   // can toast on failure; never throws.
   async function _sboardJumpToProjectKind(projectId, kind){
     if(!projectId) return false;
+    // Sept 4 2026 (later session), Larry: "going to the Idea Board, all
+    // boards is critical!" -- same instant-feedback fix as
+    // _ideaOpenBoardResume (idea-media-shared.js): this function fetches
+    // the project row over the network BEFORE it ever calls nav(), so a
+    // click on Plan or Cast (STORYBOARDS tray) sat there with nothing
+    // visible happening for however long that fetch took, same silent-
+    // stall risk Larry hit on Idea. Spinner now shows the instant the
+    // click happens, not just once the fetch resolves.
+    if (window.T2T && window.T2T.showTravelSpinner) window.T2T.showTravelSpinner();
     var _sb=T().sb;
     try{
       var res=await _sb.from('ideas').select('*').eq('id', projectId).maybeSingle();
