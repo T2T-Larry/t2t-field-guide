@@ -125,8 +125,22 @@ body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-c
    :not(.t2t-bare-screen) matters here: closing the desk persists
    across a sign-out, and #fg-root IS the Sign In form itself on 0010
    -- without this guard, a traveler who closed the desk and later
-   signed out would find the Sign In screen hidden with no way back in. */
-body.t2t-desk-closed:not(.t2t-bare-screen) #fg-root{display:none!important}
+   signed out would find the Sign In screen hidden with no way back in.
+   Sept 4 2026 (bug found live): same trap, different door. If the
+   desk happened to be closed (t2t_deskClosed persisted -- see Desktop
+   Screen) at the moment a full-screen board (Idea/Plan/Cast/Briefing/
+   Gems, all .isx-full on #fg-root) opens, THIS rule hid #fg-root out
+   from under the board the instant it opened -- and since #fg-root's
+   own isx-full CSS rule (below) simultaneously hides #sz-navbar/
+   #sz-drawer-r/#bm-rail too, a traveler landed on a totally blank
+   desk with zero visible controls: no board, no drawers, no way back
+   in short of clearing localStorage by hand. Reproduced live exactly
+   this way (Larry: "Click Idea board fix did not hold. All menus
+   disappeared. hard reset just shows desktop no forward options at
+   all"). Same fix shape as the Sign In guard above -- a board that's
+   already full-screen has its own Return (X) button, so "the Field
+   Guide is closed" should never also apply while one is open. */
+body.t2t-desk-closed:not(.t2t-bare-screen):not(:has(#fg-root.isx-full)) #fg-root{display:none!important}
 /* Sept 4 2026 (later session), Larry: "When open, the STORYBOARDS and
    LIBRARY menus should be behind the Field Guide screen." Root cause:
    #tv-frame/#tv-vignette/#fg-root carry NO baseline z-index of their
