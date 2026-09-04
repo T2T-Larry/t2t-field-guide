@@ -83,8 +83,8 @@
       // ride the RIGHT drawer or sit free on the desk -- they're still
       // DOM descendants of this drawer's mid panel underneath, just
       // repositioned with their own fixed coordinates. That directly
-      // contradicted the already-settled rule that the tool tray never
-      // hides (see TOOL_ITEMS_DEFAULT above). #sz-navmid itself is no
+      // contradicted the already-settled rule that the tool trays never
+      // hide (see STORYBOARD_ITEMS/LIBRARY_ITEMS above). #sz-navmid itself is no
       // longer in this hide list. The junk-drawer/surprise slots (modes
       // 2/3) still disappear on their own -- .sz-mode-panel{display:none
       // !important} below already hides whichever mode isn't active,
@@ -107,8 +107,14 @@
       +   'border-radius:30px 0 0 30px;border-left:2px solid #999;border-right:none}'
       + '#sz-navmid{position:relative;flex:1;width:100%;display:flex;flex-direction:column;align-items:center;'
       +   'justify-content:center;gap:16px;overflow-y:auto;padding:10px 0}'
-      + '#sz-tools{display:flex;flex-direction:column;align-items:center}'
-      + '#sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab;'
+      // Sept 4 2026: mode 1 now wraps two trays (STORYBOARDS, LIBRARY)
+      // stacked vertically instead of one flat tray -- only sets the
+      // properties that matter while hidden-vs-shown is decided
+      // elsewhere (.sz-mode-panel/.sz-mode-active below), so there's no
+      // display-property fight to resolve with !important here.
+      + '#sz-navmid-tools{flex-direction:column;align-items:center;gap:18px}'
+      + '.sz-tools-group{display:flex;flex-direction:column;align-items:center}'
+      + '.sz-tool-stack{display:flex;flex-direction:column;gap:8px;align-items:center;cursor:grab;'
       +   'z-index:9999}'
       + '#sz-phases{display:flex;flex-direction:column;align-items:center}'
       + '#sz-phase-stack{display:flex;flex-direction:column;gap:8px;align-items:center;'
@@ -170,9 +176,10 @@
       // new right drawer (0004/0005/0006) show one of three "mode"
       // panels depending on how many quick taps the toggle got. Using
       // !important here on purpose (matches the .sc/.bar2 convention
-      // elsewhere in this codebase) since #sz-tools already carries its
-      // own ID-level `display:flex`, which would otherwise always beat
-      // a plain class rule regardless of which mode is active.
+      // elsewhere in this codebase) since a mode panel's own children
+      // (e.g. .sz-tools-group) carry their own `display:flex`, which
+      // would otherwise always beat a plain class rule regardless of
+      // which mode is active.
       + '.sz-mode-panel{display:none!important}'
       + '.sz-mode-panel.sz-mode-active{display:flex!important}'
       + '.sz-mode-placeholder{flex-direction:column;align-items:center;justify-content:center;'
@@ -316,7 +323,47 @@
     };
   }
 
-  var TOOL_ITEMS_DEFAULT = [
+  // Sept 4 2026, Larry: the old single nine-button Tools tray splits into
+  // two trays, matching the STORYBOARDS/LIBRARY shape locked Sept 3
+  // (Session 268) -- STORYBOARDS holds the five real board buttons,
+  // LIBRARY holds Field Guide plus the still-coming-later reference
+  // items. Synapse is deleted outright (already decided Sept 3: "dropped
+  // outright, no placeholder anywhere"); Planning and Organization drop
+  // too -- Planning's job is now just the real Plan button, and
+  // Organization was already folded into Plan's own category, never a
+  // separate button of its own.
+  var STORYBOARD_ITEMS = [
+    // Larry, July 29 2026: was pointing at the archived 9220 legacy grid
+    // -- routes to the current 1010 Idea Storyboard now. Larry, August 1
+    // 2026: plain nav() left currentTopicId null, landing on 1010's
+    // confusing blank-project fallback -- now resumes the last real
+    // topic instead, same as 9711 already does.
+    { id: 'idea',           label: 'Idea',            action: wireToggleNav('s-sea-of-ideas-cluster', function(){ if (window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume(); else if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); }, function(){ if (window.T2TStoryboard && window.T2TStoryboard.closeBoard) window.T2TStoryboard.closeBoard(); else if (window.T2T) window.T2T.goBack(); }) },
+    // Sept 4 2026 -- opens (or starts) the Plan board for whichever
+    // project this traveler had open last (same "last active project"
+    // memory the Idea button's own resume already reads), via the
+    // existing jumpToProjectKind bridge briefing-board.js's board-kind
+    // dropdown already uses for this same job.
+    { id: 'plan',           label: 'Plan',            action: function(){
+        var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
+        if (!pid) { showZeroToast('Start an Idea Storyboard first, then Plan can build off it.'); return; }
+        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(pid, 'PLAN');
+      } },
+    // Sept 4 2026 -- same "last active project" resolve as Plan, then
+    // opens that project's Cast (team roster) popup -- the CAST branch
+    // added to jumpToProjectKind alongside this.
+    { id: 'cast',           label: 'Cast',            action: function(){
+        var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
+        if (!pid) { showZeroToast('Start an Idea Storyboard first, then Cast can build off it.'); return; }
+        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(pid, 'CAST');
+      } },
+    // Matches the in-board board-kind dropdown's own "coming soon" SHARE
+    // row -- not a new gap, same placeholder everywhere SHARE shows up.
+    { id: 'share',          label: 'Share',           action: function(){ showZeroToast('Share — coming soon.'); } },
+    { id: 'briefing-board', label: 'Briefing Board',  action: wireToggleNav('s-briefing-board', function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); }) }
+  ];
+
+  var LIBRARY_ITEMS = [
     // Larry, July 31 2026: "Closing the Field Guide ONLY makes
     // SHORTCUTS and PHASES disappear... Field Guide Button" is the
     // thing a traveler clicks to bring them back -- and since the
@@ -324,23 +371,25 @@
     // separate floating toggle needed. Second tap now closes the
     // Field Guide (same as the TV frame's own X) instead of opening
     // the old 9000 backpack menu.
+    //
+    // Sept 4 2026: moved out of the old flat Tools tray into LIBRARY,
+    // matching the Sept 3 lock ("Field Guide demoted to an optional
+    // reference badge, not a required gate").
     { id: 'field-guide',    label: 'Field Guide',     action: function(){
         if (window.SZDesk.isClosed()) { window.SZDesk.reopen(); return; }
         window.SZDesk.close();
       } },
-    { id: 'idea-board',     label: 'Idea Board',      action: wireToggleNav('s-sea-of-ideas-cluster', function(){ if (window.T2TMedia && window.T2TMedia.openBoardResume) window.T2TMedia.openBoardResume(); else if (window.T2T) window.T2T.nav('s-sea-of-ideas-cluster'); }, function(){ if (window.T2TStoryboard && window.T2TStoryboard.closeBoard) window.T2TStoryboard.closeBoard(); else if (window.T2T) window.T2T.goBack(); }) },
-    { id: 'briefing-board', label: 'Briefing Board',  action: wireToggleNav('s-briefing-board', function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); }) },
-    { id: 'planning',       label: 'Planning',        action: function(){ showZeroToast('Planning — coming later.'); } },
-    { id: 'organization',   label: 'Organization',    action: function(){ showZeroToast('Organization — coming later.'); } },
     { id: 'storytelling',   label: 'Storytelling',    action: function(){ showZeroToast('Storytelling — coming later.'); } },
-    { id: 'synapse',        label: 'Synapse',         action: function(){ showZeroToast('Synapse — coming later.'); } },
-    { id: 'library',        label: 'Library',         action: function(){ showZeroToast('Library — coming later.'); } },
     { id: 'excellence',     label: 'Excellence',      action: function(){ showZeroToast('Excellence — coming later.'); } }
   ];
 
-  var TOOL_ORDER_KEY = 't2t_toolOrder';
-  var TOOL_STACK_KEY = 't2t_toolStackPos';
-  var _toolStackRec = null;
+  // Sept 4 2026: generalized to cfg-driven so this same machinery
+  // serves two independent trays (STORYBOARDS, LIBRARY) instead of one
+  // fixed nine-item stack -- each tray gets its own order/position
+  // storage keys (cfg.orderKey/cfg.stackKey) and its own label/rename
+  // storage (keyed by cfg.trayId), so dragging or renaming one tray's
+  // buttons never touches the other's.
+  var _toolStackRecs = []; // [{ rec, items, orderKey, stackKey }, ...] -- one per tray
   var _toolButtonRecs = [];
 
   var GEAR_POS_KEY = 't2t_gearPos';
@@ -370,31 +419,31 @@
     return rec;
   }
 
-  function loadToolOrder(){
+  function loadToolOrder(items, orderKey){
     try {
-      var saved = JSON.parse(localStorage.getItem(TOOL_ORDER_KEY));
-      if (Array.isArray(saved) && saved.length === TOOL_ITEMS_DEFAULT.length) {
+      var saved = JSON.parse(localStorage.getItem(orderKey));
+      if (Array.isArray(saved) && saved.length === items.length) {
         var byId = {};
-        TOOL_ITEMS_DEFAULT.forEach(function(it){ byId[it.id] = it; });
+        items.forEach(function(it){ byId[it.id] = it; });
         var ordered = saved.map(function(id){ return byId[id]; }).filter(Boolean);
-        if (ordered.length === TOOL_ITEMS_DEFAULT.length) return ordered;
+        if (ordered.length === items.length) return ordered;
       }
     } catch(e){}
-    return TOOL_ITEMS_DEFAULT.slice();
+    return items.slice();
   }
 
-  function saveToolOrderFromDom(stackEl){
+  function saveToolOrderFromDom(stackEl, items, orderKey){
     var ids = [];
     stackEl.querySelectorAll(':scope > .sz-tool-btn').forEach(function(btn){
       if (btn.dataset.toolId) ids.push(btn.dataset.toolId);
     });
-    if (ids.length === TOOL_ITEMS_DEFAULT.length) {
-      try { localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(ids)); } catch(e){}
+    if (ids.length === items.length) {
+      try { localStorage.setItem(orderKey, JSON.stringify(ids)); } catch(e){}
     }
   }
 
-  function resetToolOrder(){
-    try { localStorage.removeItem(TOOL_ORDER_KEY); } catch(e){}
+  function resetToolOrder(orderKey){
+    try { localStorage.removeItem(orderKey); } catch(e){}
   }
 
   function resetToolStack(){
@@ -407,22 +456,22 @@
       rec.el.style.right = ''; rec.el.style.bottom = ''; rec.el.style.margin = '';
       rec.el.style.display = '';
     });
-    resetToolOrder();
-    if (_toolStackRec) {
-      var stackEl = _toolStackRec.el;
-      var order = TOOL_ITEMS_DEFAULT.map(function(it){ return it.id; });
+    _toolStackRecs.forEach(function(entry){
+      resetToolOrder(entry.orderKey);
+      var stackEl = entry.rec.el;
+      var order = entry.items.map(function(it){ return it.id; });
       order.forEach(function(id){
         var btn = stackEl.querySelector('[data-tool-id="' + id + '"]');
         if (btn) stackEl.appendChild(btn);
       });
-      setRidingSlot(TOOL_STACK_KEY, null);
-      try { localStorage.removeItem(TOOL_STACK_KEY); } catch(e){}
-      restoreHomeParent(_toolStackRec);
+      setRidingSlot(entry.stackKey, null);
+      try { localStorage.removeItem(entry.stackKey); } catch(e){}
+      restoreHomeParent(entry.rec);
       stackEl.style.position = '';
       stackEl.style.left = ''; stackEl.style.top = '';
       stackEl.style.right = ''; stackEl.style.bottom = ''; stackEl.style.margin = '';
       stackEl.style.display = '';
-    }
+    });
     showZeroToast('Tool stack reset.');
   }
 
@@ -453,8 +502,8 @@
     };
   }
 
-  function wireToolButtonDrag(btn, leftBar, stackEl){
-    var storeKey = 't2t_toolBtnPos_' + btn.dataset.toolId;
+  function wireToolButtonDrag(btn, leftBar, stackEl, cfg){
+    var storeKey = 't2t_toolBtnPos_' + cfg.trayId + '_' + btn.dataset.toolId;
     var rec = registerClaimable(btn, storeKey, 16);
     _toolButtonRecs.push(rec);
     window.SZDragCore.makeDraggable(btn, storeKey, null, 40, 40, {
@@ -476,7 +525,7 @@
           btn.style.left = ''; btn.style.top = '';
           btn.style.right = ''; btn.style.bottom = ''; btn.style.margin = '';
           btn.style.display = '';
-          saveToolOrderFromDom(stackEl);
+          saveToolOrderFromDom(stackEl, cfg.items, cfg.orderKey);
           return;
         }
         var mode = barEl.dataset.mode || '1';
@@ -487,10 +536,10 @@
     });
   }
 
-  function wireToolStackDrag(stack, leftBar){
-    var rec = registerClaimable(stack, TOOL_STACK_KEY, 16);
-    _toolStackRec = rec;
-    window.SZDragCore.makeDraggable(stack, TOOL_STACK_KEY, '.sz-tool-btn', 40, 40, {
+  function wireToolStackDrag(stack, leftBar, cfg){
+    var rec = registerClaimable(stack, cfg.stackKey, 16);
+    _toolStackRecs.push({ rec: rec, items: cfg.items, orderKey: cfg.orderKey, stackKey: cfg.stackKey });
+    window.SZDragCore.makeDraggable(stack, cfg.stackKey, '.sz-tool-btn', 40, 40, {
       skipDefaultPos: true,
       reattachTargets: [
         { el: leftBar, side: 'left' },
@@ -501,7 +550,7 @@
       },
       onReattach: function(side, barEl){
         var mode = barEl.dataset.mode || '1';
-        setRidingSlot(TOOL_STACK_KEY, slotKey(side, mode));
+        setRidingSlot(cfg.stackKey, slotKey(side, mode));
         captureRidingOffset(rec, barEl, mode === '2' ? trayGroupOffset(side) : null);
         refreshRidersForSlot(side, mode, barEl);
       }
@@ -517,34 +566,43 @@
     try { localStorage.setItem(prefix + id, label); } catch(e){}
   }
 
-  function buildTools(leftBar){
+  // Sept 4 2026: takes a cfg object -- { trayId, defaultLabel, items,
+  // orderKey, stackKey } -- so this one function builds either tray
+  // (STORYBOARDS or LIBRARY) instead of one hardcoded "Tools" stack.
+  // Rename storage is keyed by trayId too (TRAY_LABEL_PREFIX+trayId for
+  // the grip, TOOL_LABEL_PREFIX+trayId+'_'+item.id per button) so
+  // renaming a button in one tray never collides with an identically-
+  // named button in the other.
+  function buildTools(leftBar, cfg){
     var wrap = document.createElement('div');
-    wrap.id = 'sz-tools';
+    wrap.id = 'sz-tools-' + cfg.trayId;
+    wrap.className = 'sz-tools-group';
 
     var stack = document.createElement('div');
-    stack.id = 'sz-tool-stack';
-    stack.className = 'sz-drawer-drag-exclude';
+    stack.id = 'sz-tool-stack-' + cfg.trayId;
+    stack.className = 'sz-tool-stack sz-drawer-drag-exclude';
 
     var grip = document.createElement('div');
     grip.className = 'sz-tool-stack-grip';
     grip.title = 'Drag to move the whole tool stack -- double-click to rename it';
-    grip.textContent = '⋮⋮ ' + loadCustomLabel(TRAY_LABEL_PREFIX, 'tools', 'Tools');
+    grip.textContent = '⋮⋮ ' + loadCustomLabel(TRAY_LABEL_PREFIX, cfg.trayId, cfg.defaultLabel);
     grip.addEventListener('dblclick', function(){
-      var current = loadCustomLabel(TRAY_LABEL_PREFIX, 'tools', 'Tools');
+      var current = loadCustomLabel(TRAY_LABEL_PREFIX, cfg.trayId, cfg.defaultLabel);
       openRenameCard('Rename this tray', current, function(newName){
-        saveCustomLabel(TRAY_LABEL_PREFIX, 'tools', newName);
+        saveCustomLabel(TRAY_LABEL_PREFIX, cfg.trayId, newName);
         grip.textContent = '⋮⋮ ' + newName;
       });
     });
     stack.appendChild(grip);
 
-    loadToolOrder().forEach(function(item){
+    loadToolOrder(cfg.items, cfg.orderKey).forEach(function(item){
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'sz-tool-btn';
       btn.dataset.toolId = item.id;
+      var labelKey = cfg.trayId + '_' + item.id;
       var faceSpan = document.createElement('span');
-      faceSpan.textContent = loadCustomLabel(TOOL_LABEL_PREFIX, item.id, item.label);
+      faceSpan.textContent = loadCustomLabel(TOOL_LABEL_PREFIX, labelKey, item.label);
       var face = document.createElement('div');
       face.className = 'sz-tool-face';
       face.appendChild(faceSpan);
@@ -552,9 +610,9 @@
       btn.title = 'Double-click to rename';
       makeTapCounter(btn, function(n){
         if (n >= 2) {
-          var current = loadCustomLabel(TOOL_LABEL_PREFIX, item.id, item.label);
+          var current = loadCustomLabel(TOOL_LABEL_PREFIX, labelKey, item.label);
           openRenameCard('Rename this button', current, function(newLabel){
-            saveCustomLabel(TOOL_LABEL_PREFIX, item.id, newLabel);
+            saveCustomLabel(TOOL_LABEL_PREFIX, labelKey, newLabel);
             faceSpan.textContent = newLabel;
           });
         } else {
@@ -562,11 +620,11 @@
         }
       });
       stack.appendChild(btn);
-      wireToolButtonDrag(btn, leftBar, stack);
+      wireToolButtonDrag(btn, leftBar, stack, cfg);
     });
 
     wrap.appendChild(stack);
-    wireToolStackDrag(stack, leftBar);
+    wireToolStackDrag(stack, leftBar, cfg);
 
     return wrap;
   }
@@ -1212,7 +1270,19 @@
 
     var mid = document.createElement('div');
     mid.id = 'sz-navmid';
-    var mode1 = buildTools(bar);
+    // Sept 4 2026: mode 1 now holds two trays stacked together --
+    // STORYBOARDS (the five real board buttons) above LIBRARY (Field
+    // Guide + the still-coming-later reference items) -- instead of one
+    // flat nine-button Tools stack. Each tray drags, reorders, renames,
+    // and docks independently (see buildTools' cfg above); this wrapper
+    // is just what mode-switching (single/double/triple tap) shows or
+    // hides as a unit.
+    var mode1 = document.createElement('div');
+    mode1.id = 'sz-navmid-tools';
+    var storyboardsTray = buildTools(bar, { trayId: 'storyboards', defaultLabel: 'STORYBOARDS', items: STORYBOARD_ITEMS, orderKey: 't2t_toolOrder_storyboards', stackKey: 't2t_toolStackPos_storyboards' });
+    var libraryTray = buildTools(bar, { trayId: 'library', defaultLabel: 'LIBRARY', items: LIBRARY_ITEMS, orderKey: 't2t_toolOrder_library', stackKey: 't2t_toolStackPos_library' });
+    mode1.appendChild(storyboardsTray);
+    mode1.appendChild(libraryTray);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = window.SZSurpriseTray.buildCustomTraySlot('left');
     var surprise = window.SZSurpriseTray.buildSurprisePanel(bar, 'left');

@@ -293,6 +293,12 @@
     openBoard: _ideaOpenBoard,
     openBoardResume: _ideaOpenBoardResume,
     rememberProject: _ideaRememberProject,
+    // Sept 4 2026 -- exposed so the STORYBOARDS tray's Plan and Cast
+    // buttons (drawer-system.js) can resolve "whichever project this
+    // traveler had open last" the same way the Idea button's own
+    // resume already does, without duplicating the device-local
+    // "last active project" lookup.
+    recallProject: _ideaRecallProject,
     openIdeaSession: _sboardOpenIdeaSession,
     resolveOEmbed: _linkResolveOEmbed,
     getDefaultHeaderId: _ideaGetDefaultHeaderId,

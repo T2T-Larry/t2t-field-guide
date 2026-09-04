@@ -3003,11 +3003,15 @@
   // project root, so _sboardProjectRowFor below resolves to itself with
   // no ancestor climb -- no need to wait on the full account-wide cache
   // _sboardCurrentProjectRow() usually depends on), switches to the
-  // Storyboard screen, then either drills straight in (IDEA) or hands
-  // off to the existing Plan-board opener (PLAN) -- same "duplicate or
+  // Storyboard screen, then either drills straight in (IDEA), hands off
+  // to the existing Plan-board opener (PLAN) -- same "duplicate or
   // start blank" first-time choice that opener already gives when
-  // there's no Plan board yet. Returns true/false so the caller can
-  // toast on failure; never throws.
+  // there's no Plan board yet -- or opens the project's Cast (team
+  // roster) popup on top of it (CAST, added Sept 4 2026 for the
+  // STORYBOARDS tray's own Cast button -- same popup every card's
+  // 👥 icon already opens, just aimed at the project root itself
+  // instead of one particular card). Returns true/false so the caller
+  // can toast on failure; never throws.
   async function _sboardJumpToProjectKind(projectId, kind){
     if(!projectId) return false;
     var _sb=T().sb;
@@ -3018,6 +3022,7 @@
       if(window.T2T && window.T2T.nav) window.T2T.nav('s-sea-of-ideas-cluster');
       _sboardAllRowsById[row.id]=row;
       _sboardDrillInto(row);
+      if(kind==='CAST') await openCallSheet(row, null, 'idea', null, null, null);
       if(kind==='PLAN') await _sboardOpenOrCreatePlanBoard();
       return true;
     }catch(err){ return false; }

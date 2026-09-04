@@ -67,7 +67,11 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
    The grip is covered by class (like .sz-tool-btn above) since a
    custom tray's grip is a new one of these every time a traveler
    builds one, with no fixed id to list in advance. */
-body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen #sz-tool-stack,body.t2t-bare-screen #sz-phases,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen .sz-tool-stack-grip{display:none!important}
+/* Sept 4 2026: #sz-tool-stack -> .sz-tool-stack -- the old single Tools
+   tray split into two trays (STORYBOARDS/LIBRARY), each with its own
+   id, so this safety net now covers both by class, same treatment
+   .sz-tool-btn/.sz-tool-stack-grip already got. */
+body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen .sz-tool-stack,body.t2t-bare-screen #sz-phases,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen .sz-tool-stack-grip{display:none!important}
 /* Larry, August 1 2026: "elements of the desktop have creeped into the
    storyboard: shortcuts, and the 2 drawers." The Storyboard (1010) and
    Session (9711) both go full-screen via #fg-root.isx-full, but that

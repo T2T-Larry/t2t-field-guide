@@ -311,10 +311,10 @@
      are permanent desk furniture in Larry's model, not part of "the
      Field Guide" -- they never hide, open or closed.
 
-     Reopening: since the tool tray itself never hides, the real Field
-     Guide tool button (Drawer System's TOOL_ITEMS_DEFAULT) IS the
-     reopen handle -- it calls window.SZDesk.isClosed/.reopen/.close
-     below.
+     Reopening: since the tool trays themselves never hide, the real
+     Field Guide tool button (Drawer System's LIBRARY_ITEMS, moved
+     there Sept 4 2026 from the old flat Tools tray) IS the reopen
+     handle -- it calls window.SZDesk.isClosed/.reopen/.close below.
 
      NOT persisted across a reload, unlike every other desk preference
      -- an in-memory flag means "closed" only ever lasts for as long as
