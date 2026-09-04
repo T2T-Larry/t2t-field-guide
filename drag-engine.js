@@ -382,6 +382,27 @@
         }
       }
 
+      // Larry, Sept 4 2026 (bug report): "I tried to put the Notebook
+      // into one of the drawers but it did not stay in there...
+      // closed the drawer after putting it in there but it remained
+      // on the desktop when drawer was closed." Root cause: a drop
+      // that misses both drawers' (padded, active-panel-sized) hit
+      // rects falls through to here and saves an independent desk
+      // position -- but nothing ever cleared a PREVIOUS drawer-slot
+      // claim from an earlier successful drop, so the object ended up
+      // in two contradictory states at once (an independent saved
+      // position AND a stale riding-slot claim underneath it).
+      // updateNotebookVisibility/refreshRidersForSlot then disagreed
+      // about which state was authoritative and neither one ever
+      // touched the object's display again -- it silently stopped
+      // responding to either drawer's open/closed state at all.
+      // window.SZDrag isn't guaranteed loaded (this file loads first
+      // among the six desk files), but by the time a real drag-drop
+      // can happen the whole desk has already booted, so the guard
+      // here is just defensive, not a real ordering concern.
+      if (window.SZDrag && window.SZDrag.setRidingSlot) {
+        window.SZDrag.setRidingSlot(storeKey, null);
+      }
       try { localStorage.setItem(storeKey, JSON.stringify({ left: rect.left, top: rect.top })); }
       catch(e){}
       // opts.onIndependent -- for objects natively nested inside a
