@@ -316,12 +316,22 @@
      there Sept 4 2026 from the old flat Tools tray) IS the reopen
      handle -- it calls window.SZDesk.isClosed/.reopen/.close below.
 
-     NOT persisted across a reload, unlike every other desk preference
-     -- an in-memory flag means "closed" only ever lasts for as long as
-     the current page stays loaded, exactly matching "disappear and
-     reappear when it is opened," and every fresh load always starts
-     fully open. ---------- */
+     Sept 4 2026 (later session), Larry: "The desktop screen opens the
+     Field Guide by default. Only the Field Guide button or having the
+     Field Guide be the last location viewed should open the Field
+     Guide." Reverses the July 31 note directly above (which is now
+     stale) -- closed/open IS persisted again, the same way every other
+     desk preference is (t2t-navbar-collapsed etc.), so a reload
+     reflects whatever a traveler actually left showing: if they'd
+     closed the Field Guide, a reload keeps it closed instead of
+     silently popping back open; if it was open (the default for a
+     brand-new traveler with nothing saved yet), a reload keeps it
+     open. Nothing changes about the CLICK behavior itself -- the
+     Field Guide button still opens/closes it instantly either way,
+     same as before. ---------- */
+  var DESK_CLOSED_KEY = 't2t_deskClosed';
   var _deskClosed = false;
+  try { _deskClosed = localStorage.getItem(DESK_CLOSED_KEY) === '1'; } catch(e){}
 
   function isDeskClosed(){
     return _deskClosed;
@@ -330,11 +340,13 @@
   function closeDesk(){
     _deskClosed = true;
     document.body.classList.add('t2t-desk-closed');
+    try { localStorage.setItem(DESK_CLOSED_KEY, '1'); } catch(e){}
   }
 
   function reopenDesk(){
     _deskClosed = false;
     document.body.classList.remove('t2t-desk-closed');
+    try { localStorage.setItem(DESK_CLOSED_KEY, '0'); } catch(e){}
     // Larry, July 31 2026 (bug report): the bring-to-front fix only
     // covers actually DRAGGING something -- opening the Field Guide
     // back up via this button is a state toggle, not a drag, so the
@@ -433,10 +445,14 @@
     buildDeskWatermark();
     window.SZDrawerSystem.buildNavBar();
     window.SZDrawerSystem.buildRightDrawer();
-    // No standalone reopen toggle to build anymore -- the real Field
-    // Guide tool button (in Drawer System's tray) IS the reopen handle.
-    // No longer re-applies a saved closed state here either -- see the
-    // in-memory _deskClosed note above, every fresh load starts open.
+    // The real Field Guide tool button (in Drawer System's tray) is
+    // the reopen/close handle for mid-session clicks. Here at boot,
+    // re-apply whatever was saved last (see the persisted
+    // DESK_CLOSED_KEY note above closeDesk/reopenDesk) so a reload
+    // shows the Field Guide only if it was genuinely last left open --
+    // _deskClosed already reflects the saved value; this just puts the
+    // body class in sync with it before the traveler sees anything.
+    if (_deskClosed) document.body.classList.add('t2t-desk-closed');
     makeWidgetDraggable();
     window.SZDeskStyle.applyBgColor(window.SZDeskStyle.getSavedBgKey());
     window.SZDeskStyle.wireBgColorGesture();

@@ -127,6 +127,28 @@ body.t2t-desk-closed #tv-frame,body.t2t-desk-closed #tv-vignette,body.t2t-desk-c
    -- without this guard, a traveler who closed the desk and later
    signed out would find the Sign In screen hidden with no way back in. */
 body.t2t-desk-closed:not(.t2t-bare-screen) #fg-root{display:none!important}
+/* Sept 4 2026 (later session), Larry: "When open, the STORYBOARDS and
+   LIBRARY menus should be behind the Field Guide screen." Root cause:
+   #tv-frame/#tv-vignette/#fg-root carry NO baseline z-index of their
+   own in CSS -- they only ever get one dynamically, via T2TFront.bump
+   in Desktop Screen's reopenDesk()/tv-frame.js's own drag handler.
+   Meanwhile #sz-navbar/#sz-drawer-r and every .sz-tool-btn (the
+   STORYBOARDS/LIBRARY trays themselves, Drawer System) carry a real
+   CSS z-index of 9998/9999 from first paint. On a fresh load -- before
+   reopenDesk() has ever fired even once -- the trio sits at the
+   browser's implicit z-index:auto, which loses to any positioned
+   sibling with an explicit z-index, so the trays won permanently until
+   the traveler happened to close-then-reopen the Field Guide once.
+   !important here beats that regardless of how high the shared
+   T2TFront counter ever climbs from later dragging (tool buttons, the
+   drawers themselves, or the widget) -- Field Guide, once open, can no
+   longer end up buried under either tray. Scoped to when the desk
+   ISN'T closed only as documentation; harmless either way since this
+   trio is already display:none while closed (rules above). Order
+   among the three (frame behind, root/widget content in the middle,
+   vignette drop-shadow in front) falls out of DOM order, unchanged
+   from before, since all three now share one z-index value. */
+body:not(.t2t-desk-closed) #tv-frame,body:not(.t2t-desk-closed) #tv-vignette,body:not(.t2t-desk-closed) #fg-root{z-index:20000!important}
 /* 0010 has no other screens stacked above/below it and a fixed-height card -- center it in the viewport instead of the site-wide flex-start (which exists so taller/variable-height screens don't jump). Larry, July 28 2026. */
 body.t2t-bare-screen .fg{align-self:center!important}
 /* Sign In never reflects member preferences (Larry, July 28 2026) --
