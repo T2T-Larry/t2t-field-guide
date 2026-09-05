@@ -294,7 +294,10 @@
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:calc(19px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:14px 0}'
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:calc(23px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        // Sept 5 2026, Larry: "increase text size of Idea Board TOPIC
+        // field to stand out" (paired with deleting the Topic eyebrow
+        // above it, see the header markup) -- 23px -> 30px.
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:calc(30px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -811,7 +814,9 @@
       +'<div id="sc-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
       +'</div>'
       +'<div style="text-align:center">'
-      +'<div class="sc-hdr-eyebrow">Topic</div>'
+      // Topic eyebrow deleted, Sept 5 2026, Larry -- Topic's own box is
+      // sized up (see the #sc-topic-box font-size bump below) to stand
+      // out on its own, without a small label crowding it from above.
       +'<div id="sc-topic-box" data-header-id="__topic__"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
       +'</div>'
       +'</div>'
@@ -982,7 +987,11 @@
       // real Headers under Idea Storyboards, in their actual on-board
       // order, nothing else mixed in.
       +'<div class="sc-cdrop" id="sc-title-cdrop" style="display:flex;align-items:center;gap:2px">'
-      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(9px * var(--fg-text-scale,1));height:24px;max-width:calc(90px * var(--fg-text-scale,1))"></button>'
+      // Sept 5 2026, Larry: "increase the text size on the PROJECT field
+      // on all boards" -- 9px/24px (the Sept 5 "read as subordinate to
+      // traveler name" sizing) bumped to 14px/30px, and widened to fit.
+      // See bb-board-trigger in briefing-board.js for the same bump.
+      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button>'
       +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'

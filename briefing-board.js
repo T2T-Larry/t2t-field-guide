@@ -2739,7 +2739,18 @@
       // "Accounting," "T2T," "Field Guide"). The center now carries the
       // permanent "Briefing Board" title, same text/size it always had,
       // just relocated.
-      +'.bb-mh-typebox{display:flex;gap:14px;justify-self:start;align-items:flex-start}'
+      // Sept 5 2026, Larry: "move Parent closer to BB topic just like on
+      // Idea Board" -- on the Idea Board, Parent sits in the header
+      // grid's own left column with justify-self:end, so it hugs Topic's
+      // edge, while traveler-name/PROJECT float separately at the far
+      // left corner. Mirrored here with plain flex: this row now
+      // stretches across the whole left grid column (justify-self:stretch)
+      // and space-between pushes its two fieldgrps to opposite ends --
+      // traveler-name/PROJECT (first child) stays pinned at the far left
+      // corner, Parent (second child, moved up from the row below) lands
+      // at this column's right edge, right up against bb-mh-group-center
+      // (BB's own stand-in for Topic).
+      +'.bb-mh-typebox{display:flex;justify-self:stretch;justify-content:space-between;align-items:flex-start;gap:14px}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       // Traveler name, Sept 5 2026 -- Larry: "every board now and in the
@@ -3253,7 +3264,10 @@
               // _bbRenderDropdown call, to open the same board-switch menu
               // the label itself already opens. _bbRenderTravelerName
               // (below) fills in the traveler-name text.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              // Sept 5 2026, Larry: "increase the text size on the PROJECT
+              // field on all boards" -- matches sc-title-trigger's own
+              // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
+              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent, Sept 5 2026 -- Larry: "every board now and in the
               // future" should have the same PARENT field the Idea/Plan
               // header does. The data isn't new -- a board's one approved
