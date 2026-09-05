@@ -2689,7 +2689,13 @@
     style.textContent=
        '#fg-root{--bb-bg:#FDF6E8;--bb-accent:#C9A87C;--bb-ink:#3B2510;--bb-sub:#7A5C3A;--bb-head-font:"Playfair Display",serif;--bb-body-font:Georgia,serif}'
       +'#s-briefing-board{position:relative}'
-      +'#fg-root.isx-full #s-briefing-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:column}'
+      // Sept 5 2026 -- the full-screen sizing this used to duplicate
+      // (fill the shell, no radius/shadow/margin) now lives in ONE
+      // shared rule in style.css (#fg-root.isx-full .sc.active), so
+      // every full-screen board gets it automatically instead of each
+      // carrying its own copy. Dropped here -- and column layout was
+      // already .sc.active's own default (see style.css), so nothing
+      // Briefing-Board-specific needed to replace it.
       /* Header, July 20 2026 -- Topic folded into the SAME row as the
          title (a rounded pill, still always plain white so it stands
          out against whichever theme background is active) instead of

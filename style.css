@@ -450,21 +450,62 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 .ic-image-btn{width:42px;height:42px;background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:10px;cursor:pointer;font-size:calc(17px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center}
 .ic-placeholder{background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--brand-blue-gray);text-align:center;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1))}
 
-  /* ── IDEA SESSION (9210) — Logged July 8, 2026 ──
-     This screen breaks out of the normal 680×520 Field Guide card frame
-     entirely — real full-screen on the traveler's monitor, not just a
-     wider container. .isx-full is toggled on #fg-root only while this
-     screen is open; the ⛶ button goes a layer further with the real
-     browser Fullscreen API on top of that. */
-  /* Sept 5 2026 -- Skeleton unification follow-up: this rule dropped the
-     rounded corners and drop-shadow for full-screen boards but left the
-     base .fg card's 2px solid #999 border standing, so every full-screen
-     board (Idea Board included) still showed a thin frame with a sliver
-     of white space around it. Larry: "this should leave no white space."
-     Added border:none so full-screen boards truly fill edge-to-edge. */
+  /* ── THE SKELETON -- one shared shell every full-screen board uses --
+     Logged July 8, 2026 (Idea Session), consolidated Sept 5, 2026.
+
+     Any board that should take over the traveler's whole screen (not
+     just a wider card) works the same way: get added to backpack.js's
+     _fullScreenScreens list, which makes nav() put 'isx-full' on
+     #fg-root the moment that board becomes the active screen and take
+     it off the moment you leave. Everything about how a full-screen
+     board actually LOOKS lives in these two rules, and only these two
+     -- no board file should carry its own copy of "fill the screen, no
+     border, no corners, no shadow" any more:
+
+       1. #fg-root.isx-full -- the outer shell: real viewport takeover
+          (position:fixed, edge to edge), stripped of the normal
+          680px-card look (no border, corners, shadow, or margin).
+       2. #fg-root.isx-full .sc.active -- whichever board screen is
+          showing: fills that shell completely (height:100%, no min/max
+          cap fighting it).
+
+     A board only adds its OWN css on top of this for things that are
+     genuinely its own -- Gems' side-by-side layout vs. Briefing
+     Board's stacked one, say -- never for the shared "fill the screen"
+     part.
+
+     History, kept short:
+     - Sept 5 2026 -- Skeleton unification (Larry: every board should
+       stretch to fit, not fight its way out of a fixed-size card).
+     - Same day -- the unification pass dropped the old card's rounded
+       corners and shadow but missed its 2px border, leaving a thin
+       frame of white space around every full-screen board. Larry:
+       "this should leave no white space." Fixed by adding border:none
+       here.
+     - Same day -- found each board (Briefing Board, Gems, Idea Board,
+       Idea Session) had been carrying its OWN near-identical copy of
+       "fill the screen, no border/corners/shadow" in its own file --
+       classic drift risk, and the actual reason Idea Board and
+       Briefing Board could ever look different from each other despite
+       "the same Skeleton": they weren't literally sharing one rule,
+       each was hand-copying it. Pulled every copy into the two shared
+       rules below; boards keep only their own genuinely-own layout
+       choices (see idea-storyboard-9710.js, briefing-board.js,
+       gems.js for what that trim looked like).
+     - Same day -- 100vh is a known phone-browser trap: it sizes to the
+       tallest the address bar could ever get out of the way, not the
+       screen actually visible right now, so a plain 100vh box can end
+       up shorter than the real screen as the bar shows/hides on
+       scroll. Added 100dvh (the unit built for this) as a progressive
+       upgrade -- @supports keeps 100vh as the fallback for anything
+       that doesn't know 100dvh yet. */
   #fg-root.isx-full{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;
     max-width:none!important;max-height:none!important;border:none!important;border-radius:0!important;margin:0!important;box-shadow:none!important}
-  #s-idea-session.active{flex-direction:column!important;height:100%}
+  @supports (height: 100dvh){
+    #fg-root.isx-full{height:100dvh!important}
+  }
+  #fg-root.isx-full .sc.active{height:100%!important;min-height:0!important;max-height:none!important}
+  #s-idea-session.active{flex-direction:column!important}
 
   /* 9711 lock, July 13, 2026 (superseded July 17, 2026): the Blue Sky
      header bg tried here was reverted — 9711's header bar now matches

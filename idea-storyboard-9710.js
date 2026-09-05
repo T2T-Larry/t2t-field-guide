@@ -413,28 +413,30 @@
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
         +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:calc(10px * var(--fg-text-scale,1))}'
-        +'#fg-root.sb-wide{max-width:1200px!important}'
-        +'#fg-root.sb-wide #s-sea-of-ideas-cluster{min-height:calc(100vh - 24px)!important;max-height:calc(100vh - 24px)!important}'
-        +'#fg-root.sb-wide #sc-board-wrap{display:flex}'
-        // Storyboard fullscreen — Logged July 8, 2026. Same real-viewport
-        // takeover as the CREATE Idea Session's .isx-full (position:fixed,
-        // 100vw/100vh), applied whenever the Storyboard is the active screen.
-        // Deliberately NOT reusing sb-wide's max-width:1200px cap for this —
-        // sb-wide stays reserved for CLUSTER's own separate wide toggle.
+        // Sept 5 2026 -- found the real source of Larry's "still see a
+        // border around the Skeleton, on my desktop monitor, and BB
+        // doesn't have it" report, and it wasn't the Skeleton rule
+        // itself -- it was this file separately reusing the OLD
+        // 'sb-wide' class (a leftover from before full-screen boards
+        // existed, meant only for CLUSTER's own "give me more room"
+        // toggle below) on the Storyboard's own screen too. Whenever
+        // both 'sb-wide' and 'isx-full' landed on #fg-root together,
+        // sb-wide's max-width:1200px cap and 24px height inset fought
+        // isx-full's own width:100vw/height:100vh and (being the
+        // later-loaded stylesheet) won -- a border-shaped gap on any
+        // monitor wider than 1200px. Briefing Board never touched
+        // 'sb-wide' at all, which is why it never showed the gap even
+        // though both boards share the exact same Skeleton rule.
         //
-        // Sept 5 2026 -- Skeleton unification (Larry: every board should
-        // stretch to fit like Briefing Board's own screen, not start as a
-        // fixed-size "card" that this rule then had to fight its way out
-        // of). #s-sea-of-ideas-cluster no longer carries the "card" class
-        // at all (see its markup above) -- there's no fixed height/rounded
-        // corners/shadow left to override, so this shrinks from "cancel
-        // the card" down to just "fill the screen," and applies always
-        // rather than only while .isx-full happens to be set (harmless
-        // while the screen is hidden -- display:none ignores height).
-        // The real-viewport takeover itself (position:fixed, 100vw/100vh
-        // on #fg-root) is untouched -- Larry, same session: boards should
-        // still fill the whole browser window, no side or top space.
-        +'#s-sea-of-ideas-cluster{height:100%;min-height:0}'
+        // Renamed CLUSTER's toggle to its own 'cl-widescreen' class so
+        // it can never again collide with a board's own full-screen
+        // state, board skeleton or otherwise -- not just guarded
+        // against it, structurally unable to. The Storyboard's own
+        // full-screen look is entirely the shared Skeleton rule in
+        // style.css now (#fg-root.isx-full .sc.active); it doesn't add
+        // or need any width/height rule of its own for that any more.
+        +'#fg-root.cl-widescreen:not(.isx-full){max-width:1200px!important}'
+        +'#fg-root.cl-widescreen:not(.isx-full) #s-sea-of-ideas-cluster{min-height:calc(100vh - 24px)!important;max-height:calc(100vh - 24px)!important}'
         +'#s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
         +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
@@ -739,7 +741,22 @@
     // of starting life as a fixed-size, rounded-corner card that later gets
     // forced full-screen). See the matching CSS note above (near the old
     // #fg-root.isx-full override) for what replaced it.
-    div.innerHTML='<div class="sc" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
+    // Sept 5 2026 -- THE actual border/white-space bug, finally run to
+    // ground (both the automatic border-removal fix and the sb-wide
+    // rename above were real cleanups, but neither one was this).
+    // '.sw' is a shared class (style.css: white background, 28px/32px
+    // padding) used by plain card-style screens across the site --
+    // this screen's own inline style already trimmed that down to
+    // 16px/20px, but never all the way to 0. Every full-screen board
+    // (Idea, Plan, and Share all render through this exact same
+    // function -- they're the same screen, just showing different
+    // cards) inherited that leftover padding: a white ring around the
+    // navy board, on every side, exactly the size of the padding.
+    // Briefing Board was never built with a '.sw' wrapper at all,
+    // which is the real reason it never showed this. Dropped the
+    // padding to 0 -- header and board now paint flush to every edge
+    // of the full-screen shell, no ring left to show.
+    div.innerHTML='<div class="sc" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:0;align-items:stretch;text-align:center;position:relative">'
       // Sept 5 2026 -- header band flattened to match Briefing Board's own
       // header, same session: no more separate rounded-corner box floating
       // inside the screen (border-radius:10px removed) -- just a plain
@@ -1225,7 +1242,13 @@
   }
 
   /* ── Board (storyboard) state + rendering ── */
-  var _sboardDesktop = false;
+  // _sboardDesktop was a never-finished "is this a desktop-sized
+  // screen" flag -- declared false and never once set to anything
+  // else, anywhere. Removed Sept 5 2026 as part of tracing the
+  // sb-wide/isx-full border bug (see the Skeleton comment above):
+  // dead code that's still readable as if it does something is worse
+  // than no code at all. If a genuine desktop-vs-mobile board layout
+  // decision comes up again, wire it fresh rather than reviving this.
   var _sboardTrashId = null;
   var _sboardMiscId = null;
   var _sboardPurposeId = null;
@@ -4206,7 +4229,7 @@
     var boardWrap=document.getElementById('sc-board-wrap');
     if(!boardWrap) return;
     var fgr=document.getElementById('fg-root');
-    if(fgr){ fgr.classList.add('isx-full'); fgr.classList.toggle('sb-wide', _sboardDesktop); }
+    if(fgr) fgr.classList.add('isx-full');
     return renderSeaBoard();
   }
 
@@ -4272,7 +4295,7 @@
   }
 
   function _sboardMakeTile(item, width, straight, groupParentId, height){
-    width=width||(_sboardDesktop?76:70);
+    width=width||70;
     height=height||width;
     var rot=straight?0:(Math.random()*8-4).toFixed(1);
     var tile=document.createElement('div');
@@ -4488,7 +4511,7 @@
   }
 
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
-    width=width||(_sboardDesktop?76:70);
+    width=width||70;
     height=height||width;
     var _stMult=(window.FGTextSize && window.FGTextSize.getMult) ? window.FGTextSize.getMult() : 1;
     var rot=straight?0:(Math.random()*6-3).toFixed(1);
@@ -7171,7 +7194,7 @@
   // T2TStoryboard.closeBoard, assigned further down in this same outer
   // scope, can actually reference it.
   function _sboardCloseBoard(){
-    var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('sb-wide'); fgr.classList.remove('isx-full'); }
+    var fgr=document.getElementById('fg-root'); if(fgr){ fgr.classList.remove('cl-widescreen'); fgr.classList.remove('isx-full'); }
     if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
     T2TShared.currentTopicId=null; T2TShared.filter=null;
     // Return override, added July 21, 2026 for the Briefing Board's
@@ -8815,27 +8838,13 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="sb-appearance-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.04em;color:#7a6040;text-align:left;margin:2px 0 -2px 4px">COLORS</div>'
-        +'<button class="sc-ov-btn" id="sb-gear-recolor-board" style="width:100%">🎨 Board</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Headers</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-recolor-subbers" style="width:100%">🎨 Subbers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor-subbers" style="width:100%">🎨 Recolor all subbers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
         +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    // "COLORS: Board / Headers / Subbers" -- Larry, Sept 5 2026: the
-    // Storyboard-background picker already existed (openBoardBgPicker,
-    // reached only by double-clicking the empty board/header band) but
-    // had no button anywhere in this menu, so it was easy to miss. This
-    // just surfaces that existing picker as the third color choice,
-    // grouped with the two existing recolor-all actions under one
-    // COLORS label. No new color-storage mechanism: Board still writes
-    // to t2t_seaOfIdeas_boardBg (_sboardSetBoardBg), Headers/Subbers
-    // still write per-card to the ideas table, exactly as before.
-    // Per-card colors (the swatch row on an individual card's DETAILS
-    // back) are untouched by any of the three.
-    T().wire('sb-gear-recolor-board', function(){ closeSbDetail(); openBoardBgPicker(); });
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
     T().wire('sb-gear-recolor-subbers', function(){ closeSbDetail(); _sboardOpenRecolorAllSubbers(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
@@ -10446,16 +10455,21 @@
       +'</div>';
     ov.classList.add('active');
     T().wire('cl-close', closeClusterView);
-    // Full-screen toggle — same underlying mechanism as the storyboard's own
-    // ⛶ button (fg-root.sb-wide), so CLUSTER can use the exact same expanded
-    // real estate the storyboard already gets, plus its own larger card/tile
-    // sizing on top of that.
+    // Full-screen toggle -- CLUSTER's own "give me more room" button.
+    // Used to reuse the storyboard's own class name (sb-wide) on the
+    // theory that CLUSTER just wanted the same treatment the storyboard
+    // got; renamed to its own 'cl-widescreen' Sept 5 2026 after that
+    // sharing turned out to be the actual cause of a real bug (see the
+    // Skeleton comment further up this file) -- the storyboard's own
+    // full-screen state is the shared Skeleton rule alone now, and
+    // CLUSTER's expand button has no business touching it, even by
+    // borrowing its name.
     T().wire('cl-full', function(){
       _clusterWide=!_clusterWide;
       var btn=document.getElementById('cl-full');
       if(btn){ btn.innerHTML=_clusterWide?'↩':'⛶'; btn.title=_clusterWide?'Back to normal size':'Full screen'; }
       var fgr=document.getElementById('fg-root');
-      if(fgr) fgr.classList.toggle('sb-wide', _clusterWide);
+      if(fgr) fgr.classList.toggle('cl-widescreen', _clusterWide);
       var card=ov.querySelector('.cl-card');
       if(card) card.classList.toggle('cl-wide', _clusterWide);
       renderClusterView(headerRow);
@@ -10466,11 +10480,12 @@
   function closeClusterView(){
     var ov=document.getElementById('sb-cluster-overlay');
     if(ov){ ov.classList.remove('active'); ov.innerHTML=''; }
-    // Restore fg-root's width to whatever the storyboard's OWN desktop toggle
-    // says it should be — CLUSTER's fullscreen toggle borrows that same class
-    // while open, but shouldn't leave it stuck on (or off) once you leave.
+    // Turn CLUSTER's own widescreen back off on the way out -- it's
+    // solely CLUSTER's own state now (no storyboard desktop toggle to
+    // restore to; see the removed _sboardDesktop, Sept 5 2026), so
+    // leaving always means off.
     var fgr=document.getElementById('fg-root');
-    if(fgr) fgr.classList.toggle('sb-wide', _sboardDesktop);
+    if(fgr) fgr.classList.remove('cl-widescreen');
     var fn=_clusterReturnFn;
     _clusterOpenHeaderId=null; _clusterReturnFn=null; _clusterWide=false;
     if(fn) fn();

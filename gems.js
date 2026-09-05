@@ -211,7 +211,13 @@
       var style = document.createElement('style');
       style.id = 'gems-board-style';
       style.textContent =
-        '#fg-root.isx-full #s-gems-board.active{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important;display:flex!important;flex-direction:row}' +
+        // Sept 5 2026 -- the full-screen sizing this used to duplicate
+        // (fill the shell, no radius/shadow/margin) now lives in ONE
+        // shared rule in style.css (#fg-root.isx-full .sc.active), so
+        // every full-screen board gets it automatically. Kept only the
+        // one thing that's genuinely Gems' own -- side-by-side (row)
+        // layout, where every other board defaults to stacked (column).
+        '#s-gems-board.active{flex-direction:row!important}' +
         '#gb-toolbar{width:150px;flex-shrink:0;background:#4C1D95;display:flex;flex-direction:column;padding:14px 12px;gap:10px;overflow-y:auto;color:#F5F3FF}' +
         '#gb-toolbar .gb-tb-label{font-size:calc(9.5px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;text-align:center;opacity:.75;margin-bottom:4px}' +
         '#gb-toolbar button{background:#EFE7FB;color:#4C1D95;border:1.5px solid #111;border-radius:8px;padding:8px 6px;font-size:calc(13px * var(--fg-text-scale,1));cursor:pointer}';
