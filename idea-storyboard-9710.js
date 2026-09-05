@@ -425,6 +425,15 @@
         +'#fg-root.isx-full #s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
         +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
+        // Traveler name, Sept 5 2026 -- Larry: retire the gold nameplate
+        // (kept in the DOM, hidden, not deleted -- see the sc-member-name
+        // block further down) in favor of the same plain ice-blue eyebrow
+        // treatment every other header field already uses (Parent/Topic/
+        // Logo), sized twice as large (18px vs the standard 9px) since
+        // this is the traveler's own name, not just a field label -- and
+        // stacked directly above PROJECT so PROJECT reads as subordinate
+        // to it ("it looks like my projects are below this").
+        +'.sc-traveler-eyebrow{font-size:calc(18px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:5px;font-weight:700;white-space:nowrap}'
         // On-logo LOGO eyebrow, Aug 30 2026 -- same shared T2TLogo
         // treatment as the Briefing Board's own bb-logo-eyebrow-onlogo
         // (see that file's own comment for the full reasoning): tucked
@@ -721,8 +730,25 @@
       // against Topic, which is what "left of Topic" actually meant.
       +'<div style="display:flex;flex-direction:column;align-items:center;justify-self:end">'
       +'<div class="sc-hdr-eyebrow">Parent</div>'
+      // Parent's own fast-jump arrow, Sept 5 2026 -- Larry: "matching
+      // arrow and vertical dropdown list, just like PROJECT dropdown."
+      // PROJECT's caret jumps sideways to any other project from wherever
+      // you're standing; this one jumps upward instead -- straight to any
+      // level currently above you, not just the one directly above,
+      // without backing out one step at a time. Same shell (sc-cdrop +
+      // sc-project-caret + sc-cdrop-menu) and the same rebuild-on-every-
+      // open approach as PROJECT's own dropdown (see
+      // _sboardWireParentAncestorDropdown, near
+      // _sboardWireProjectHeaderDropdown, below) since the list of levels
+      // above changes as you move around, unlike PROJECT's fixed set of
+      // projects. Plain click on sc-parent-hit itself is untouched --
+      // still steps up exactly one level, same as always.
+      +'<div class="sc-cdrop" id="sc-parent-cdrop" style="display:flex;align-items:center;gap:2px">'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Wish Tank</div>'
+      +'</div>'
+      +'<button type="button" class="sc-project-caret" id="sc-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
+      +'<div class="sc-cdrop-menu" id="sc-parent-menu" hidden></div>'
       +'</div>'
       +'<div id="sc-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
       +'</div>'
@@ -761,16 +787,25 @@
       // and mirror that same gap for Logo, instead of a fixed percentage.
       //
       // Aug 29 2026, Larry: "all storyboards need their LOGO in the same
-      // place... exactly like on the BB" -- on the Briefing Board, Logo
-      // sits on the LEFT, right after PROJECT, ahead of everything else.
-      // Flipped the mirrored gap from Topic's right side (Aug 18) to
-      // Parent's left side, so Logo now reads on the left here too,
-      // closest to Parent -- see _sboardPositionLogoNearTopic. left:2%
-      // stays only as the pre-JS fallback position for the very first
-      // paint, on the LEFT now to match; the position function overwrites
-      // it (and drops the translateX centering, since positioning is now
-      // done by measuring Logo's own frame, not by centering the wrapper).
-      +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:2%;display:flex;flex-direction:column;align-items:center">'
+      // place... exactly like on the BB" -- moved Logo from Topic's right
+      // side (Aug 18) to sit on the left, closest to Parent, matching the
+      // Briefing Board's own layout.
+      //
+      // Sept 5 2026, Larry: moved back to the right of TOPIC (Idea Board
+      // only -- Briefing Board's own layout is untouched). Two reasons:
+      // this side of the header had gotten crowded once the traveler name
+      // and PROJECT both landed near Parent too (see the Sept 3-5 history
+      // on sc-member-name/sc-project-wrap below), and Larry's own read of
+      // Logo is that it marks whose hierarchy this is -- "everything here
+      // belongs to this client or partner, no matter what level of
+      // depth" -- which reads more naturally sitting beside Topic (what
+      // this level is about) than crowded in with the traveler-identity
+      // cluster on the left. Same mirrored-gap approach as before, just
+      // flipped back to Topic's right edge instead of Parent's left edge
+      // -- see _sboardPositionLogoNearTopic. left:2% below is only the
+      // pre-JS fallback for the very first paint; the position function
+      // overwrites it every render.
+      +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:66%;display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow" id="sc-logo-eyebrow">Logo</div>'
       +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
@@ -816,77 +851,21 @@
       // SHARE is still the only placeholder left.
       +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
-      +'<div style="position:absolute;top:10px;left:16px;z-index:3">'
-      // Organization (Type/Org Name) removed from the chrome, Sept 2 2026
-      // -- Larry: "Delete organization choice. What if we replaced it
-      // with the member name embossed? PROJECT between name and logo?"
-      // Matches the Sept 2026 design lock already recorded in Current
-      // Status ("Organization Type field is retired -- permissions and
-      // 'is this mine or supporting' are now fully covered by HEADER
-      // position + CAST, no separate classification needed"). Same
-      // raised/embossed text-shadow treatment as the IDEA/PLAN board-kind
-      // label just above (see that button's own style two blocks up) --
-      // a signature reading, not a clickable field, so it's a plain div,
-      // not a sc-cdrop-trigger. _sboardRenderMemberName (below) fills in
-      // the actual text once the member's profile has loaded.
-      //
-      // The old sc-type-trigger/sc-org-name-trigger buttons and their
-      // menus are gone from here, but _sboardRenderTypePicker/
-      // _sboardRenderOrgName and the org_name/board_type data underneath
-      // them are deliberately left in place, not deleted -- this is a
-      // chrome-only change. Retiring that plumbing (and the database
-      // columns themselves) for real is the already-planned follow-up
-      // task, not part of today's slide. One thing THIS change did
-      // require, though: PROJECT used to only list boards matching
-      // whatever Organization Type was active -- with the picker that
-      // chose the Type now gone, that filter would have silently hidden
-      // any project not on the default Type (real example found in
-      // production: Larry's own Field Guide and T2T boards are both
-      // board_type "company" -- see the fix in _sboardRenderTitlePicker).
-      // Sept 2 2026, same-day refinement -- Larry: "What if the name is
-      // up at the eyebrow level? in brass? something to make this look
-      // classy and official?" Moved from sitting low (level with the
-      // Project button) to the top of the row instead -- the parent row
-      // just above is already "align-items:flex-start", same alignment
-      // that puts Parent/Topic/Project's own eyebrows at that exact
-      // height, so a plain div here (no wrapping column needed) lands
-      // there too, no extra positioning math required. Brass reads as a
-      // color + the classic emboss two-tone text-shadow (light highlight
-      // upper-left, dark shadow lower-right) already proven on the IDEA/
-      // PLAN label just above -- same technique, swapped from ice-blue to
-      // a metallic gold, on a plain small-caps letter-spaced treatment
-      // (matching how every other eyebrow on this header already reads)
-      // rather than a full-size name -- a brass nameplate is small and
-      // dignified, not shouted.
-      //
-      // Sept 3 2026, Larry: "I like that name tag [the desk's draggable
-      // nameplate]. Can we replace the name on the Idea Board with that
-      // tag? It looks so professional." Swapped the flat embossed-text
-      // treatment above for the actual badge shape screen-zero.js's
-      // buildNameplate() uses on the desk -- same gold gradient box,
-      // border, and raised inset shadow, same two-line "Thoughts to
-      // Things" header over the name -- just sized to hug its own
-      // content instead of the desk badge's fixed 180px (it has to sit
-      // inline in this header row, not float free), and re-derived here
-      // rather than sharing a class with screen-zero.js's version since
-      // this file doesn't otherwise depend on that one's CSS injection
-      // running first. #sc-member-name stays the id
-      // _sboardPositionProjectMidwayToLogo measures for PROJECT's
-      // midpoint-to-Logo placement -- it now measures the whole badge's
-      // right edge instead of bare text's, which is the correct edge to
-      // measure either way. _sboardRenderMemberName (below) now fills
-      // in the inner #sc-member-name-text line, not this wrapper.
-      //
-      // Sept 3 2026, Larry: "size up the name tag" -- badge grown roughly
-      // a third larger all round (header 8->11px, name 12->17px, more
-      // padding, a touch more corner radius) rather than just the text,
-      // so it still reads as one solid badge instead of a bigger label
-      // floating in a small box.
-      +'<div id="sc-member-name" style="display:inline-flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);border:1px solid #6b4a2c;border-radius:8px;padding:5px 14px 6px;box-shadow:2px 4px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5);white-space:nowrap">'
-      +'<div style="color:#4a3418;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)">Thoughts to Things</div>'
-      +'<div id="sc-member-name-text" style="color:#4a3418;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(17px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)"></div>'
-      +'</div>'
-      +'</div>'
+      +'<div style="position:absolute;top:10px;left:16px;z-index:3;display:flex;flex-direction:column;align-items:center">'
+      // Traveler name, Sept 5 2026 -- Larry: "delete the nametag -- don't
+      // totally delete it yet, I don't know why, I just like it. Can it
+      // go somewhere on the website that is retrievable but not in active
+      // use? Put the traveler name in the ice blue above a smaller
+      // PROJECT (so it looks like my projects are below this)." Replaces
+      // the gold nameplate (kept below, hidden not deleted) with the same
+      // plain ice-blue eyebrow every other header field already uses
+      // (Parent/Topic/Logo), via the new .sc-traveler-eyebrow class (see
+      // the CSS rules above, near .sc-hdr-eyebrow) -- twice the standard
+      // size since it's the traveler's own name, not a field label -- and
+      // first in this wrapper's flex column so PROJECT (moved into this
+      // same column, just below) reads as sitting underneath it.
+      // _sboardRenderMemberName (below) fills in the text.
+      +'<div class="sc-traveler-eyebrow" id="sc-traveler-name"></div>'
       // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
       // one-time click wiring in injectSeaOfIdeasCluster) that opens the
       // real global-shortcut popup, openProjectSwitcher, on click. This
@@ -898,20 +877,28 @@
       // time, not here, since it depends on the new click behavior.
       //
       // Sept 3 2026, Larry: "PROJECT is too close to my name -- it should
-      // be half the distance between name and LOGO." A fixed 14px flex
-      // gap off the name (the original Sept 2 layout) put it right on top
-      // of the brass nameplate no matter how much open header there was
-      // to its right. Pulled out of that flex row into its own
-      // independently-positioned block (id'd sc-project-wrap) so
-      // _sboardPositionProjectMidwayToLogo (near _sboardPositionLogoNearTopic,
-      // below) can measure Name's actual right edge and Logo's actual
-      // left edge every render and place PROJECT's own center on the
-      // midpoint between them -- same "measure the real boxes, don't
-      // guess a percentage" approach already proven on Logo's own
-      // gap-off-Parent positioning. left:30% stays only as the pre-JS
-      // fallback for the very first paint; the position function
-      // overwrites it.
-      +'<div id="sc-project-wrap" style="position:absolute;top:10px;left:30%;display:flex;flex-direction:column;align-items:center;z-index:3">'
+      // be half the distance between name and LOGO." Pulled out of the
+      // flex row it started in into its own independently-positioned
+      // block (id'd sc-project-wrap) so _sboardPositionProjectMidwayToLogo
+      // could measure Name's actual right edge and Logo's actual left
+      // edge every render and place PROJECT's own center on the midpoint
+      // between them.
+      //
+      // Sept 5 2026, Larry: moved into the same flex column as the new
+      // traveler-name eyebrow just above, directly underneath it, instead
+      // of being independently positioned by measuring Name and Logo's
+      // boxes every render -- nesting it under Name in one column
+      // sidesteps the crowding problem the midpoint math was trying to
+      // manage, since there's nothing left on that side for it to
+      // collide with. _sboardPositionProjectMidwayToLogo is no longer
+      // called (see _sboardUpdateHeaderChrome and the two other call
+      // sites below) but left in place, not deleted, in case this layout
+      // changes again later. Sized down a step from its Sept 3 treatment
+      // (11px selector text to 9px, 30px control height to 24px) so it
+      // reads as visually smaller than -- and subordinate to -- the
+      // traveler name above it, matching Larry's "it looks like my
+      // projects are below this."
+      +'<div id="sc-project-wrap" style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow">Project</div>'
       // Sept 3 2026, Larry: "the dropdown arrow to the right of Idea
       // Storyboards should show me the Headers (other PROJECTS) as
@@ -932,9 +919,24 @@
       // real Headers under Idea Storyboards, in their actual on-board
       // order, nothing else mixed in.
       +'<div class="sc-cdrop" id="sc-title-cdrop" style="display:flex;align-items:center;gap:2px">'
-      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger"></button>'
-      +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project">▾</button>'
+      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(9px * var(--fg-text-scale,1));height:24px;max-width:calc(90px * var(--fg-text-scale,1))"></button>'
+      +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
+      +'</div>'
+      +'</div>'
+      // Sept 5 2026, Larry: "delete the nametag -- don't totally delete it
+      // yet, I don't know why, I just like it. Can it go somewhere on the
+      // website that is retrievable but not in active use?" Retired in
+      // place, not removed: wrapped in a plain display:none box so every
+      // id, style, and the render wiring below (_sboardRenderMemberName)
+      // stay exactly as they were -- delete this wrapper's display:none
+      // (or the wrapper itself) to bring the gold nameplate straight
+      // back, nothing else to rebuild.
+      +'<div style="display:none">'
+      +'<div id="sc-member-name" style="display:inline-flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,#e8c878,#b8923e 55%,#8a6a26 100%);border:1px solid #6b4a2c;border-radius:8px;padding:5px 14px 6px;box-shadow:2px 4px 10px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,248,220,.5);white-space:nowrap">'
+      +'<div style="color:#4a3418;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)">Thoughts to Things</div>'
+      +'<div id="sc-member-name-text" style="color:#4a3418;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(17px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)"></div>'
+      +'</div>'
       +'</div>'
       +'</div>'
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:center">'
@@ -980,6 +982,7 @@
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
     _sboardWireProjectHeaderDropdown();
+    _sboardWireParentAncestorDropdown(); // Sept 5 2026 -- PARENT's own fast-jump arrow, see _sboardWireParentAncestorDropdown's own comment.
     // PROJECT, Sept 2 2026 -- Larry: "Top Project for each member = IDEA
     // STORYBOARDS. The HEADERS for that board are the PROJECTS plus
     // COLLABORATOR and STAKEHOLDER." Every member has exactly one true
@@ -1026,12 +1029,12 @@
       // nameplate (screen-zero.js) already relies on for exactly that
       // race, in addition to the direct call _sboardUpdateHeaderChrome
       // makes on every render.
-      // Sept 3 2026 -- also re-run PROJECT's midway-to-Logo placement
-      // here, not just _sboardRenderMemberName: the name text going from
-      // empty to the traveler's real name changes sc-member-name's own
-      // rendered width, which is exactly what PROJECT's midpoint is
-      // measured off of.
-      window.addEventListener('t2t:member-loaded', function(){ _sboardRenderMemberName(); _sboardPositionProjectMidwayToLogo(); });
+      // Sept 5 2026 -- no longer also re-running PROJECT's midway-to-Logo
+      // placement here: PROJECT now nests under the traveler name in a
+      // fixed column instead of being positioned off Name/Logo's boxes
+      // (see the Sept 5 note on sc-project-wrap in the header markup
+      // above), so there's nothing left for this listener to reposition.
+      window.addEventListener('t2t:member-loaded', function(){ _sboardRenderMemberName(); });
     })();
     Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
@@ -2709,7 +2712,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2855,6 +2858,77 @@
         empty.className='sc-cdrop-row';
         empty.style.cssText='cursor:default;opacity:.6';
         empty.textContent='No other projects yet.';
+        menu.appendChild(empty);
+      } else {
+        choices.forEach(function(h){
+          var row=document.createElement('div');
+          row.className='sc-cdrop-row';
+          row.textContent=h.text_content||'(untitled)';
+          row.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            menu.hidden=true;
+            _sboardDrillInto(h);
+          });
+          menu.appendChild(row);
+        });
+      }
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    };
+  }
+
+  // PARENT's fast-jump arrow, Sept 5 2026 -- Larry: "matching arrow and
+  // vertical dropdown list, just like PROJECT dropdown." Walks cluster_id
+  // up from the current Topic through the in-memory whole-account cache
+  // (_sboardAllRowsById -- same cache _sboardProjectHeaderChoices just
+  // above reads off of, and the same one _sboardGoUpOneLevel/
+  // _sboardCanGoUpFromTopic already climb one link at a time), collecting
+  // every ancestor along the way, nearest first. Stops naturally at the
+  // current project's own root (a root row's cluster_id is null, same
+  // boundary _sboardCanGoUpFromTopic already checks) rather than
+  // climbing on into other projects -- PROJECT's own dropdown already
+  // owns that job, and letting PARENT climb past the project root was
+  // exactly the behavior the July 16 2026 fix removed (see the comment
+  // on the plain PARENT click wiring, above) because it duplicated
+  // PROJECT. The root row itself IS included as the furthest entry,
+  // though -- it's still one real, single click away today, so it
+  // belongs in "every level above," same reach as clicking Parent
+  // repeatedly would eventually get you.
+  function _sboardParentAncestorChoices(){
+    var list=[];
+    var row=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
+    var curId=row?(row.cluster_id||null):null;
+    var guard=0;
+    while(curId && guard<50){
+      guard++;
+      var ancestor=_sboardAllRowsById[curId];
+      if(!ancestor) break;
+      list.push(ancestor);
+      curId=ancestor.cluster_id||null;
+    }
+    return list;
+  }
+  function _sboardWireParentAncestorDropdown(){
+    var trigger=document.getElementById('sc-parent-caret'), menu=document.getElementById('sc-parent-menu');
+    if(!trigger || !menu) return;
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sc-parent-menu':null);
+      if(!willOpen){ menu.hidden=true; return; }
+      var choices=_sboardParentAncestorChoices();
+      menu.innerHTML='';
+      if(!choices.length){
+        var empty=document.createElement('div');
+        empty.className='sc-cdrop-row';
+        empty.style.cssText='cursor:default;opacity:.6';
+        empty.textContent='Nothing above this.';
         menu.appendChild(empty);
       } else {
         choices.forEach(function(h){
@@ -6046,10 +6120,17 @@
     // itself (gold gradient, border, "Thoughts to Things" header line) --
     // the name text now lands in the inner #sc-member-name-text line, not
     // the wrapper, so it doesn't clobber the header line's own markup.
-    var el=document.getElementById('sc-member-name-text');
-    if(!el) return;
+    // Sept 5 2026: the gold badge itself is retired (hidden, not deleted
+    // -- see the header markup above), but #sc-member-name-text still
+    // gets filled in here so the badge shows the right name immediately
+    // if it's ever switched back on. The traveler's name now actually
+    // shows via the plain ice-blue #sc-traveler-name eyebrow instead --
+    // filled in alongside it, same source, same case.
     var m=(window.T2T && window.T2T.getMember) ? window.T2T.getMember() : null;
-    if(m && m.display_name) el.textContent=m.display_name.toUpperCase();
+    var el=document.getElementById('sc-member-name-text');
+    if(el && m && m.display_name) el.textContent=m.display_name.toUpperCase();
+    var travelerEl=document.getElementById('sc-traveler-name');
+    if(travelerEl && m && m.display_name) travelerEl.textContent=m.display_name.toUpperCase();
   }
 
   function _sboardUpdateHeaderChrome(){
@@ -6132,12 +6213,12 @@
     // above) is this board's own description of itself for that
     // controller.
     T2TLogo.render(_sboardLogoCfg);
-    // PROJECT, Sept 3 2026 -- run after T2TLogo.render above, not before:
-    // that call is what actually moves sc-logo-wrap into its real
-    // position for this render (via positionAnchor), so PROJECT's own
-    // midpoint math needs to read Logo's box AFTER it, not the stale
-    // position left over from the previous render.
-    _sboardPositionProjectMidwayToLogo();
+    // PROJECT, Sept 3 2026 -- used to re-run _sboardPositionProjectMidwayToLogo
+    // here, after T2TLogo.render, so PROJECT's midpoint math read Logo's
+    // just-updated box rather than a stale one. Sept 5 2026: no longer
+    // needed -- PROJECT nests under the traveler name in a fixed column
+    // now instead of being positioned off Name/Logo's boxes (see the
+    // Sept 5 note on sc-project-wrap in the header markup above).
   }
 
   // Aug 18 2026, Larry: "allow Logo to keep same relative distance from
@@ -6198,10 +6279,14 @@
     // to Parent, to match where it sits on the Briefing Board (right
     // after PROJECT, ahead of everything else) -- reverses the Aug 16/18
     // placement (which put Logo the same distance off Topic's RIGHT as
-    // Parent sits off its LEFT). Same mirroring approach, just flipped to
-    // the other side: Logo's frame now sits that same measured gap off
-    // Parent's LEFT edge instead of Topic's right edge.
-    var desiredSlotLeft=parentRect.left-gap-slotRect.width;
+    // Parent sits off its LEFT).
+    //
+    // Sept 5 2026, Larry: back to the right side of TOPIC (Idea Board
+    // only -- see the Sept 5 note on sc-logo-wrap in the header markup
+    // above for why). Same mirrored-gap approach, just flipped back:
+    // Logo's frame now sits that same measured gap off Topic's RIGHT
+    // edge instead of Parent's left edge.
+    var desiredSlotLeft=topicRect.right+gap;
     var wrapRect=wrap.getBoundingClientRect();
     var delta=desiredSlotLeft-slotRect.left;
     var baseLeft=(wrapRect.left-areaRect.left)+delta;
@@ -6256,7 +6341,10 @@
       var scr=document.getElementById('s-sea-of-ideas-cluster');
       if(scr && scr.classList.contains('active')){
         _sboardPositionLogoNearTopic();
-        _sboardPositionProjectMidwayToLogo();
+        // _sboardPositionProjectMidwayToLogo no longer called here, Sept
+        // 5 2026 -- PROJECT nests under the traveler name in a fixed
+        // column now, not positioned off Logo's box (see the Sept 5 note
+        // on sc-project-wrap in the header markup, near injectSeaOfIdeasCluster).
       }
     }catch(e){}
   });
