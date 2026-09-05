@@ -10231,24 +10231,80 @@
         btn.addEventListener('mouseleave', kCancelHold);
         btn.addEventListener('touchend', kCancelHold);
         btn.addEventListener('touchmove', kMoveCheck);
-        btn.addEventListener('click', function(){ if(!kHeld) _sboardOpenKeyPicker(item, slotIdx); kHeld=false; });
+        btn.addEventListener('click', function(){ if(!kHeld) _sboardOpenKeyPickerFor(item, slotIdx); kHeld=false; });
       } else {
         btn.addEventListener('click', function(){
-          _sboardOpenKeyPicker(item, slotIdx);
+          _sboardOpenKeyPickerFor(item, slotIdx);
         });
       }
     });
   }
 
-  // Shows the whole shared library every time a slot is tapped, same as
-  // the Briefing Board ("so you know what's already possible") --
-  // greying out any key already sitting in one of this card's OTHER
-  // slots, since the same key showing twice on one card would just be
-  // confusing.
-  function _sboardOpenKeyPicker(item, slotIndex){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    var keys=_sboardItemKeys(item);
+  // Session 271 (Sept 5 2026) -- thin per-item wrapper around the now
+  // cross-board _sboardOpenKeyPicker bridge (see its own comment below):
+  // hands it this item's own keys array plus a callback that persists a
+  // change straight through the existing _sboardAssignKeyToSlot, exactly
+  // the same "hand back what changed, caller does the rest" shape
+  // T2TStoryboard.openCallSheet already uses for onFilterChange.
+  function _sboardOpenKeyPickerFor(item, slotIndex){
+    _sboardOpenKeyPicker(_sboardItemKeys(item), slotIndex, function(keyIdOrNull){
+      _sboardAssignKeyToSlot(item, slotIndex, keyIdOrNull);
+    });
+  }
+
+  // Session 271 (Sept 5 2026) -- shared floating overlay for the three
+  // Signal Flags UI flows (picker, builder, library manager) now that
+  // Briefing Board reaches these through the T2TStoryboard bridge instead
+  // of keeping its own copies. Built the same way T2TStoryboard.openCallSheet
+  // builds cs-callsheet-overlay: its own div, created once, appended to
+  // document.body, sized/positioned/backgrounded fully inline so it looks
+  // right on a page that never loaded this file's own stylesheet -- the
+  // inner content still reuses this file's .sc-overlay-card/.sc-ov-btn/
+  // .sb-key-* classes (same reasoning as openCallSheet's cs-crumb: a page
+  // missing them just shows plainer text, nothing breaks). Unlike the old
+  // sb-detail-overlay-based version, this floats ON TOP of whatever card
+  // detail is already open rather than replacing it, so "Cancel"/"Close"
+  // is just hiding this overlay again -- the screen underneath was never
+  // torn down.
+  function _sfEnsureOverlay(){
+    var ov=document.getElementById('sf-keyflow-overlay');
+    if(!ov){
+      ov=document.createElement('div');
+      ov.id='sf-keyflow-overlay';
+      ov.style.cssText='display:none;position:fixed;inset:0;z-index:9999;background:rgba(20,20,18,0.45);align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+      ov.innerHTML='<div id="sf-keyflow-card" class="sc-overlay-card" style="text-align:center;width:min(320px,92vw);max-height:88vh;overflow-y:auto;box-sizing:border-box;background:#fff;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,0.3)"></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener('click', function(e){ if(e.target===ov) _sfCloseOverlay(); });
+    }
+    return ov;
+  }
+  function _sfShowOverlay(){
+    var ov=_sfEnsureOverlay();
+    ov.style.display='flex';
+    ov.classList.add('active');
+    return document.getElementById('sf-keyflow-card');
+  }
+  function _sfCloseOverlay(){
+    var ov=document.getElementById('sf-keyflow-overlay');
+    if(ov){ ov.style.display='none'; ov.classList.remove('active'); }
+  }
+
+  // Cross-board bridge (window.T2TStoryboard.openKeyPicker) -- shows the
+  // whole shared library every time a slot is tapped, same as the
+  // Briefing Board ("so you know what's already possible") -- greying
+  // out any key already sitting in one of this card's OTHER slots, since
+  // the same key showing twice on one card would just be confusing.
+  // keysArray -- the calling card/item's own current key ids (Briefing
+  // Board's c.keys, or an Idea item's _sboardItemKeys(item)); this
+  // function never touches the caller's row/table directly. onSetSlot --
+  // called with the new key id (or null on Remove) once the traveler
+  // picks something; the caller owns persisting it and refreshing its
+  // own card, exactly like openCallSheet's onFilterChange hands back
+  // what changed rather than this function assuming a card shape.
+  async function _sboardOpenKeyPicker(keysArray, slotIndex, onSetSlot){
+    await _sboardEnsureKeyLibraryLoaded();
+    var ov=_sfShowOverlay();
+    var keys=keysArray||[];
     var hasKey=!!keys[slotIndex];
     var listHTML;
     if(!_sboardKeyLib.length){
@@ -10271,29 +10327,29 @@
           +'</div>';
       }).join('');
     }
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+    ov.innerHTML='<div style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Choose a Signal Flag</div>'
       +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
       +'<button class="sc-ov-btn save" id="sb-key-build-new" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Build a new signal flag</button>'
       +(hasKey?'<button class="sc-ov-btn" id="sb-key-remove" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8">Remove this signal flag</button>':'')
       +'<button class="sc-ov-btn" id="sb-key-cancel" style="width:100%">Cancel</button>'
       +'</div>';
-    ov.classList.add('active');
     ov.querySelectorAll('.sb-key-pick-select').forEach(function(btn){
       btn.addEventListener('click', function(){
         if(btn.hasAttribute('disabled')) return;
-        _sboardAssignKeyToSlot(item, slotIndex, btn.getAttribute('data-key-id'));
+        _sfCloseOverlay();
+        onSetSlot(btn.getAttribute('data-key-id'));
       });
     });
     ov.querySelectorAll('.sb-key-pick-edit').forEach(function(btn){
       btn.addEventListener('click', function(){
         var key=_sboardKeyById(btn.getAttribute('data-key-id'));
-        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyPicker(item, slotIndex); renderSeaBoard(true); }, key);
+        if(key) _sboardOpenKeyBuilder(key, function(){ _sboardOpenKeyPicker(keys, slotIndex, onSetSlot); });
       });
     });
-    T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(function(newKey){ _sboardAssignKeyToSlot(item, slotIndex, newKey.id); }); });
-    T().wire('sb-key-remove', function(){ _sboardAssignKeyToSlot(item, slotIndex, null); });
-    T().wire('sb-key-cancel', function(){ openSbDetail(item); });
+    T().wire('sb-key-build-new', function(){ _sboardOpenKeyBuilder(null, function(newKey){ _sfCloseOverlay(); onSetSlot(newKey.id); }); });
+    T().wire('sb-key-remove', function(){ _sfCloseOverlay(); onSetSlot(null); });
+    T().wire('sb-key-cancel', _sfCloseOverlay);
   }
 
   async function _sboardAssignKeyToSlot(item, slotIndex, keyIdOrNull){
@@ -10325,20 +10381,22 @@
     if(affectedKeyId) await _sboardSyncKeyLinks(affectedKeyId);
   }
 
-  // Reached either from a card's Choose-a-Signal-Flag ("+ Build a new signal flag") or
-  // straight from the gear menu's library manager -- onSaved(newKeyRow)
-  // decides what happens next in either case (assign it to the slot that
-  // opened the picker, or just refresh the library list).
-  // existingKey -- optional (Aug 3 2026, pencil-to-edit from the Signal Flags
-  // manager). Pre-fills shape/color/meaning from a real row and
+  // Cross-board bridge (window.T2TStoryboard.openKeyBuilder) -- reached
+  // either from a card's Choose-a-Signal-Flag ("+ Build a new signal
+  // flag") or straight from the library manager -- onSaved(newKeyRow)
+  // decides what happens next in either case (assign it to the slot
+  // that opened the picker, or just refresh the library list). This
+  // function only ever closes itself on Cancel; it never assumes what
+  // screen -- BB or Idea -- is sitting underneath.
+  // existingKey -- optional (Aug 3 2026, pencil-to-edit from the Signal
+  // Flags manager). Pre-fills shape/color/meaning from a real row and
   // switches the Save button into update mode instead of insert.
-  function _sboardOpenKeyBuilder(onSaved, existingKey){
+  function _sboardOpenKeyBuilder(existingKey, onSaved){
     _sboardKeyDraft = existingKey
       ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
       : {shape:_sboardKeyShapes[0], color:_sboardKeyColors[0]};
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+    var ov=_sfShowOverlay();
+    ov.innerHTML='<div style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(existingKey?'Edit Signal Flag':'Add a Signal Flag')+'</div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:6px">Shape</div>'
       +'<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
@@ -10351,7 +10409,6 @@
       +'<input type="text" id="sb-key-meaning" placeholder="What does this mean?" value="'+(existingKey?_sboardEsc(existingKey.meaning||''):'')+'" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-key-save" style="flex:1">'+(existingKey?'Save changes':'Save')+'</button><button class="sc-ov-btn" id="sb-key-cancel2" style="flex:1">Cancel</button></div>'
       +'</div>';
-    ov.classList.add('active');
     function highlightShape(){ ov.querySelectorAll('.sb-key-shape-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-shape')===_sboardKeyDraft.shape); }); }
     function highlightColor(){ ov.querySelectorAll('.sb-key-swatch-btn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-color')===_sboardKeyDraft.color); }); }
     highlightShape(); highlightColor();
@@ -10361,7 +10418,7 @@
     ov.querySelectorAll('.sb-key-swatch-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ _sboardKeyDraft.color=btn.getAttribute('data-color'); highlightColor(); });
     });
-    T().wire('sb-key-cancel2', closeSbDetail);
+    T().wire('sb-key-cancel2', _sfCloseOverlay);
     T().wire('sb-key-save', async function(){
       var meaningEl=document.getElementById('sb-key-meaning');
       var meaning=meaningEl?meaningEl.value.trim():'';
@@ -10370,21 +10427,24 @@
         var savedKey = _sboardKeyDraft.editingId
           ? await _sboardUpdateKey(_sboardKeyDraft.editingId, _sboardKeyDraft.shape, _sboardKeyDraft.color, meaning)
           : await _sboardCreateKey(_sboardKeyDraft.shape, _sboardKeyDraft.color, meaning);
-        if(onSaved) onSaved(savedKey); else closeSbDetail();
+        if(onSaved) onSaved(savedKey); else _sfCloseOverlay();
       }catch(err){
         if(meaningEl) meaningEl.style.borderColor='#b8562f';
       }
     });
   }
 
-  // Gear menu entry, Aug 3 2026 -- Larry: "This option could be in every
-  // gear?" View the whole shared library, delete signal flags nobody needs
-  // anymore (un-tags any card that had it -- the database does that
-  // automatically, see the key_slot_1/2/3 foreign keys), or add a new
-  // one straight from here without needing a card open first.
-  function _sboardOpenKeyLibraryManager(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
+  // Cross-board bridge (window.T2TStoryboard.openKeyLibraryManager,
+  // already wired into both boards' gear menus) -- View the whole shared
+  // library, delete signal flags nobody needs anymore (un-tags any card
+  // that had it -- the database does that automatically, see the
+  // key_slot_1/2/3 foreign keys), or add a new one straight from here
+  // without needing a card open first. Fully self-contained: the library
+  // is shared/global, not tied to either board, so this takes no
+  // arguments at all.
+  async function _sboardOpenKeyLibraryManager(){
+    await _sboardEnsureKeyLibraryLoaded();
+    var ov=_sfShowOverlay();
     var listHTML;
     if(!_sboardKeyLib.length){
       listHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#888;margin-bottom:10px">No signal flags yet. Build one below — then tap any card\'s Signal Flags row to use it.</div>';
@@ -10398,18 +10458,17 @@
           +'</div>';
       }).join('');
     }
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+    ov.innerHTML='<div style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:4px">Signal Flags</div>'
       +'<div style="font-size:calc(10px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;margin-bottom:10px">One shared set, usable on any card, any board. Hover a flag on a card to see what it means.</div>'
       +'<div style="max-height:220px;overflow-y:auto;margin-bottom:8px">'+listHTML+'</div>'
       +'<button class="sc-ov-btn save" id="sb-keylib-add" style="width:100%;margin-bottom:6px"'+(_sboardKeyLib.length>=MAX_KEY_LIBRARY?' disabled':'')+'>+ Add a signal flag</button>'
       +'<button class="sc-ov-btn" id="sb-keylib-close" style="width:100%">Close</button>'
       +'</div>';
-    ov.classList.add('active');
     ov.querySelectorAll('.sb-key-lib-edit').forEach(function(btn){
       btn.addEventListener('click', function(){
         var key=_sboardKeyById(btn.getAttribute('data-key-id'));
-        if(key) _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }, key);
+        if(key) _sboardOpenKeyBuilder(key, function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); });
       });
     });
     ov.querySelectorAll('.sb-key-lib-del').forEach(function(btn){
@@ -10419,8 +10478,8 @@
         renderSeaBoard(true);
       });
     });
-    T().wire('sb-keylib-add', function(){ _sboardOpenKeyBuilder(function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }); });
-    T().wire('sb-keylib-close', closeSbDetail);
+    T().wire('sb-keylib-add', function(){ _sboardOpenKeyBuilder(null, function(){ _sboardOpenKeyLibraryManager(); renderSeaBoard(true); }); });
+    T().wire('sb-keylib-close', _sfCloseOverlay);
   }
 
   // Drag helper for IDEA CARD (1011), Aug 19 2026 -- same behavior as
@@ -11140,6 +11199,8 @@
     openDetailToColor: openSbDetailToColor,
     drillInto: _sboardDrillInto,
     openKeyLibraryManager: _sboardOpenKeyLibraryManager,
+    openKeyPicker: _sboardOpenKeyPicker,
+    openKeyBuilder: _sboardOpenKeyBuilder,
     keyDotsHTML: _sboardKeyDotsHTML,
     assignedBadgeHTML: _sboardAssignedBadgeHTML,
     linkBadgeHTML: _sboardLinkBadgeHTML,

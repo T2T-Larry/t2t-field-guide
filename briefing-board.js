@@ -462,110 +462,14 @@
   function _bbSnapshotCard(c){
     return {col:c.col, priority:c.priority, sortOrder:c.sortOrder};
   }
-  // Fire-and-forget: logs a move to Supabase if col/priority/sortOrder
-  // actually changed. Never blocks the UI and never throws -- a failed
-  // log write shouldn't stop the move itself from saving.
-  async function _bbLogCardMove(c, before){
-    if(!_bbCurrentBoardId) return;
-    if(before.col===c.col && before.priority===c.priority && before.sortOrder===c.sortOrder) return;
-    (function(){
-      var cardId=c.id, beforeSnap=before, afterSnap=_bbSnapshotCard(c);
-      _bbPushAction({
-        label:'Move',
-        undo: function(){ _bbApplyCardSnapshot(cardId, beforeSnap); },
-        redo: function(){ _bbApplyCardSnapshot(cardId, afterSnap); }
-      });
-    })();
-    var sb=T().sb; if(!sb) return;
-    try{
-      await sb.from('briefing_card_moves').insert({
-        board_id: _bbCurrentBoardId,
-        card_id: c.id,
-        task: c.task||'',
-        from_col: before.col||null, from_priority: before.priority||null, from_sort_order: (typeof before.sortOrder==='number')?before.sortOrder:null,
-        to_col: c.col||null, to_priority: c.priority||null, to_sort_order: (typeof c.sortOrder==='number')?c.sortOrder:null
-      });
-    }catch(e){ console.error('Briefing Board: move log failed', e); }
-  }
-  function _bbMoveAgo(iso){
-    var d=new Date(iso); if(isNaN(d.getTime())) return '';
-    var mins=Math.floor((Date.now()-d.getTime())/60000);
-    if(mins<1) return 'just now';
-    if(mins<60) return mins+' min ago';
-    var hrs=Math.floor(mins/60);
-    if(hrs<24) return hrs+(hrs===1?' hour ago':' hours ago');
-    var days=Math.floor(hrs/24);
-    return days+(days===1?' day ago':' days ago');
-  }
-  function openRecentMoves(){
-    _bbRenderRecentMoves();
-    var ov=document.getElementById('bb-moves-overlay');
-    if(ov) ov.classList.add('active');
-  }
-  function closeRecentMoves(){
-    var ov=document.getElementById('bb-moves-overlay'); if(ov) ov.classList.remove('active');
-  }
-  var _bbMovesCache = [];
-  async function _bbRenderRecentMoves(){
-    var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
-    wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Loading...</div>';
-    var sb=T().sb;
-    if(!sb || !_bbCurrentBoardId){ wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>'; return; }
-    try{
-      var res=await sb.from('briefing_card_moves').select('*').eq('board_id', _bbCurrentBoardId).is('undone_at', null).order('moved_at',{ascending:false}).limit(20);
-      if(res.error) throw res.error;
-      _bbMovesCache = res.data||[];
-    }catch(e){ console.error('Briefing Board: load moves failed', e); _bbMovesCache=[]; }
-    if(!_bbMovesCache.length){
-      wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
-      return;
-    }
-    wrap.innerHTML=_bbMovesCache.map(function(m){
-      return '<div class="bb-mv-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
-        +'<div style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:2px">'+_esc(m.task||'(untitled)')+'</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#6b5a42;margin-bottom:2px">'+_esc(_bbMoveDesc(m.from_col,m.from_priority))+' \u2192 '+_esc(_bbMoveDesc(m.to_col,m.to_priority))+'</div>'
-        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">'+_bbMoveAgo(m.moved_at)+'</div>'
-        +'<button class="bb-icon-btn" data-mv-undo="'+_esc(m.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px">Undo -- put it back</button>'
-      +'</div>';
-    }).join('');
-  }
-  async function _bbUndoMove(moveId){
-    var m=_bbMovesCache.filter(function(x){ return x.id===moveId; })[0];
-    if(!m) return;
-    var c=_bbCardsList().filter(function(x){ return x.id===m.card_id; })[0];
-    if(!c){ window.alert('That card is no longer on this board (it may have been trashed).'); return; }
-    var before=_bbSnapshotCard(c);
-    c.col=m.from_col; c.priority=m.from_priority; c.sortOrder=(typeof m.from_sort_order==='number')?m.from_sort_order:c.sortOrder;
-    if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
-    _bbStampDateEscalationHandled(c);
-    _bbSaveLocal(_bbCardsList());
-    var sb=T().sb;
-    if(sb){
-      try{ await sb.from('briefing_card_moves').update({undone_at:new Date().toISOString()}).eq('id', moveId); }catch(e){ console.error('Briefing Board: mark move undone failed', e); }
-    }
-    // Log the undo itself as a fresh move, so it too can be reverted.
-    _bbLogCardMove(c, before);
-    await _bbRenderRecentMoves();
-    renderBoard();
-  }
-  function wireRecentMoves(){
-    T().wire('bb-moves-close', closeRecentMoves);
-    var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
-    wrap.addEventListener('click', function(e){
-      var undoId=e.target.getAttribute && e.target.getAttribute('data-mv-undo');
-      if(undoId) _bbUndoMove(undoId);
-    });
-  }
-  // Rows older than this get cleaned up automatically -- mirrors the
-  // Trash retention window (BB_TRASH_RETENTION_DAYS below).
-  var BB_MOVE_LOG_RETENTION_DAYS = 30;
-  async function _bbPurgeOldMoves(boardId){
-    var sb=T().sb; if(!sb || !boardId) return;
-    try{
-      var cutoff=new Date(Date.now() - BB_MOVE_LOG_RETENTION_DAYS*86400000).toISOString();
-      await sb.from('briefing_card_moves').delete().eq('board_id', boardId).lt('moved_at', cutoff);
-    }catch(e){ console.error('Briefing Board: move log auto-purge failed', e); }
-  }
+  // Recent Moves (undo-a-move panel) + the move-logging/purge writers
+  // that feed it moved to briefing-board-archive.js, Sept 5 2026 --
+  // exposed as window.BBArchive.{openRecentMoves,closeRecentMoves,
+  // wireRecentMoves,logCardMove,purgeOld}. logCardMove is called from
+  // this file's own drag-drop and priority-button code right after a
+  // move is saved -- see the window.BBArchive.logCardMove(...) calls
+  // further down.
+
 
   var THEMES = [
     {key:'gold',   label:'Gold',   bg:'#FDF6E8', accent:'#C9A87C', ink:'#3B2510', sub:'#7A5C3A'},
@@ -1277,88 +1181,11 @@
       if(toDeleteIds.length) await sb.from('briefing_card_links').delete().in('id', toDeleteIds);
     }catch(e){ console.error('Briefing Board: could not sync key-driven links', e); }
   }
-  // Browsable Archive, added July 21, 2026 (evening) -- Touch Point 9380,
-  // held in reserve since the original Signal Flags work. Verified-
-  // complete cards never left storage, just the board's 4 columns --
-  // this is a read of the same in-memory card list already loaded for
-  // the current board (archived cards ride along in _bbCards, only
-  // filtered out at render time), so it needs no separate fetch.
-  function openArchive(){
-    var ov=document.getElementById('bb-archive-overlay'); if(ov) ov.classList.add('active');
-    _bbRenderArchiveList();
-  }
-  function closeArchive(){
-    var ov=document.getElementById('bb-archive-overlay'); if(ov) ov.classList.remove('active');
-  }
-  function _bbRenderArchiveList(){
-    var list=document.getElementById('bb-archive-list'); if(!list) return;
-    var items=_bbCardsList().filter(function(c){ return c.archived; });
-    if(!items.length){
-      list.innerHTML='<div class="bb-key-pick-empty-msg">Nothing archived yet.</div>';
-      return;
-    }
-    list.innerHTML=items.map(function(c){
-      return '<div class="bb-archive-row">'
-        +'<div><div class="bb-archive-task">'+_esc(c.task)+'</div><div class="bb-archive-meta">Completed '+_esc(c.completedDate||'—')+'</div></div>'
-        +'<button class="bb-flag-btn bb-archive-unarchive" data-id="'+_esc(c.id)+'">Unarchive</button>'
-        +'</div>';
-    }).join('');
-    list.querySelectorAll('.bb-archive-unarchive').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var id=btn.getAttribute('data-id');
-        var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
-        if(c){ c.archived=false; _bbSaveLocal(_bbCardsList()); }
-        _bbRenderArchiveList();
-        renderBoard();
-      });
-    });
-  }
+  // Archive (completed cards), History (HX), and the Briefing Log all
+  // moved to briefing-board-archive.js, Sept 5 2026 -- exposed as
+  // window.BBArchive.{openArchive,closeArchive,openHX,closeHX,
+  // openBriefingLog,closeBriefingLog}.
 
-  // History (HX) -- a landing page over both Archive and the Briefing
-  // Log, added July 21, 2026. Two different kinds of history: Archive
-  // is completed board cards, Briefing Log is who's been briefed and
-  // when. Kept as one entry point instead of two separate icons.
-  function openHX(){
-    var ov=document.getElementById('bb-hx-overlay'); if(ov) ov.classList.add('active');
-  }
-  function closeHX(){
-    var ov=document.getElementById('bb-hx-overlay'); if(ov) ov.classList.remove('active');
-  }
-
-  // Briefing Log -- read-only history of who's been briefed, when, and
-  // by what medium. Deliberately NOT scoped to just the current board:
-  // a person's briefing history can span every board, so this always
-  // pulls the full log regardless of which board HX was opened from.
-  // Absence of any row for a name means that person has never been
-  // briefed -- there's no placeholder row to fall out of date.
-  function openBriefingLog(){
-    var ov=document.getElementById('bb-briefinglog-overlay'); if(ov) ov.classList.add('active');
-    _bbRenderBriefingLogList();
-  }
-  function closeBriefingLog(){
-    var ov=document.getElementById('bb-briefinglog-overlay'); if(ov) ov.classList.remove('active');
-  }
-  async function _bbRenderBriefingLogList(){
-    var list=document.getElementById('bb-briefinglog-list'); if(!list) return;
-    list.innerHTML='<div class="bb-key-pick-empty-msg">Loading\u2026</div>';
-    var sb=T().sb; if(!sb){ list.innerHTML='<div class="bb-key-pick-empty-msg">Sign in to see the Briefing Log.</div>'; return; }
-    try{
-      var res=await sb.from('briefing_log').select('*').order('briefing_date',{ascending:false});
-      if(res.error){ list.innerHTML='<div class="bb-key-pick-empty-msg">Couldn\'t load the Briefing Log.</div>'; return; }
-      var rows=res.data||[];
-      if(!rows.length){ list.innerHTML='<div class="bb-key-pick-empty-msg">No briefings logged yet.</div>'; return; }
-      list.innerHTML=rows.map(function(r){
-        var board=_bbBoards.filter(function(b){ return b.id===r.board_id; })[0];
-        var boardLabel=board?board.name:'\u2014';
-        return '<div class="bb-archive-row">'
-          +'<div><div class="bb-archive-task">'+_esc(r.receiver)+' &mdash; '+_esc(r.briefing_date||'\u2014')+'</div>'
-          +'<div class="bb-archive-meta">From '+_esc(r.giver||'\u2014')+' &middot; '+_esc(r.medium||'\u2014')+' &middot; '+_esc(boardLabel)+'</div></div>'
-          +'</div>';
-      }).join('');
-    }catch(e){
-      list.innerHTML='<div class="bb-key-pick-empty-msg">Couldn\'t load the Briefing Log.</div>';
-    }
-  }
 
   async function _bbCurrentUserId(){
     var sb=T().sb; if(!sb) return null;
@@ -1720,8 +1547,7 @@
     // showing the board, and cards already fetched into cardRows this
     // load are unaffected either way (a card purged mid-session just
     // won't come back next reload).
-    _bbPurgeOldTrash(boardId);
-    _bbPurgeOldMoves(boardId);
+    window.BBArchive.purgeOld(boardId);
 
     // One-time migration, July 21, 2026 (evening): the first time Field
     // Guide BB is opened empty after named multi-board storage shipped,
@@ -2693,1162 +2519,21 @@
     document.addEventListener('touchend', onUp);
   }
 
-  function injectBriefingBoardStyles(){
-    if(document.getElementById('bb-style')) return;
-    var style=document.createElement('style');
-    style.id='bb-style';
-    style.textContent=
-       '#fg-root{--bb-bg:#FDF6E8;--bb-accent:#C9A87C;--bb-ink:#3B2510;--bb-sub:#7A5C3A;--bb-head-font:"Playfair Display",serif;--bb-body-font:Georgia,serif}'
-      +'#s-briefing-board{position:relative}'
-      // Sept 5 2026 -- the full-screen sizing this used to duplicate
-      // (fill the shell, no radius/shadow/margin) now lives in ONE
-      // shared rule in style.css (#fg-root.isx-full .sc.active), so
-      // every full-screen board gets it automatically instead of each
-      // carrying its own copy. Dropped here -- and column layout was
-      // already .sc.active's own default (see style.css), so nothing
-      // Briefing-Board-specific needed to replace it.
-      /* Header, July 20 2026 -- Topic folded into the SAME row as the
-         title (a rounded pill, still always plain white so it stands
-         out against whichever theme background is active) instead of
-         its own bar above it, per Larry: don't spend a whole extra row
-         of vertical board space on it. Gear + X ride along on the
-         right of that same row. */
-      // Header tightened, July 22 2026 -- Larry: "tighten up the screen
-      // header ... more room for the body." Title + description now
-      // stack together in the left column instead of the description
-      // running the full width below the row, so they center as one
-      // block against the topic's height. Top/bottom padding matched
-      // (10px each) so the divider sits as close under the topic as
-      // the topic sits under the top edge -- no more dead space.
-      // Sept 5 2026 -- Larry: "the header band on the BB should look
-      // exactly like the header band on the Idea Board." Padding/
-      // min-height/border-weight matched to sc-header-area's own values
-      // (idea-storyboard-9710.js) -- colors stay BB's own (var(--bb-bg)/
-      // var(--bb-accent)), only the sizing changed, per Larry's call to
-      // keep BB's palette and just match the layout.
-      +'.bb-mhead{background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);padding:10px 16px 4px;min-height:70px;box-sizing:border-box;flex-shrink:0}'
-      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;height:100%}'
-      // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
-      // Board [title], A control and communication tool, in the center.
-      // Far left: eyebrow TYPE with drop down list followed by a Field
-      // filled in with the name." Swaps the board switcher from the
-      // center (where it lived as one big pill since July 22) out to the
-      // far left, split into two small eyebrow-labeled dropdowns -- TYPE
-      // (Personal/Departmental/Company/Project, briefing_boards.board_type)
-      // then NAME (that type's boards, briefing_boards.name -- "Larry,"
-      // "Accounting," "T2T," "Field Guide"). The center now carries the
-      // permanent "Briefing Board" title, same text/size it always had,
-      // just relocated.
-      // Sept 5 2026, Larry: "move Parent closer to BB topic just like on
-      // Idea Board" -- on the Idea Board, Parent sits in the header
-      // grid's own left column with justify-self:end, so it hugs Topic's
-      // edge, while traveler-name/PROJECT float separately at the far
-      // left corner. Mirrored here with plain flex: this row now
-      // stretches across the whole left grid column (justify-self:stretch)
-      // and space-between pushes its two fieldgrps to opposite ends --
-      // traveler-name/PROJECT (first child) stays pinned at the far left
-      // corner, Parent (second child, moved up from the row below) lands
-      // at this column's right edge, right up against bb-mh-group-center
-      // (BB's own stand-in for Topic).
-      +'.bb-mh-typebox{display:flex;justify-self:stretch;justify-content:space-between;align-items:flex-start;gap:14px}'
-      +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
-      +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
-      // Traveler name, Sept 5 2026 -- Larry: "every board now and in the
-      // future" should carry the same PROJECT and PARENT fields the
-      // Idea/Plan header does, starting here. Mirrors the plain eyebrow
-      // treatment the Idea board's own traveler name settled on today
-      // (.sc-traveler-eyebrow, idea-storyboard-9710.js) -- same idea,
-      // just built on this board's own theme variable (var(--bb-sub))
-      // instead of a fixed color, since Briefing Board themes can change
-      // (see BB_THEME_VARS) and this needs to follow whichever one's
-      // active, the same way every other label on this header already
-      // does. Sized up from the standard 9px eyebrow the same way (15px)
-      // since it's the traveler's own name, not a field label.
-      +'.bb-traveler-eyebrow{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap}'
-      // Logo/artwork, Aug 28 2026 -- Larry: give the Briefing Board the
-      // same Logo option the Idea Board already has. Mirrors that
-      // board's own upload -> crop -> resize-handle pipeline
-      // (idea-storyboard-9710.js, Aug 26-27 2026 builds) but scoped to
-      // THIS Briefing Board's own row (logo_url/logo_w/logo_h on
-      // briefing_boards) rather than a shared project root -- one logo
-      // per Briefing Board, the same "one per project" idea just
-      // applied to this board type's own identity (its Project field)
-      // instead of the Idea/Plan pair's shared root. Sits as a normal
-      // flex field group next to Type/Project/View rather than
-      // absolutely positioned near a dynamic-width Topic label -- this
-      // header's center title is permanent text ("Briefing Board"), not
-      // a per-project name, so there's no equivalent "gap to mirror" the
-      // way Idea's Logo mirrors Parent's gap off Topic.
-      // Fixed-footprint anchor, Aug 28 2026 -- Larry: resizing Logo up
-      // "increased the size of the board header area," which should
-      // never happen. bb-logo-slot itself grows/shrinks (up to 90px) and
-      // now also carries a drag offset -- both handled by the shared
-      // window.T2TLogo controller (idea-media-shared.js, Aug 30 2026;
-      // also used by the Idea/Plan Storyboard) -- both need it out of
-      // this fieldgrp's normal flex flow so its size never changes the
-      // column's (and therefore the header row's) own height. This
-      // anchor is what actually sits in the flex column, reserving the
-      // original 30x30 footprint permanently; the slot floats over it
-      // via position:absolute, free to grow/move without the fieldgrp
-      // ever noticing. A big logo can now overlap neighboring header
-      // fields instead of pushing them -- same tradeoff Larry already
-      // accepted for it covering the LOGO eyebrow above it.
-      +'.bb-logo-anchor{position:relative;width:30px;height:30px;flex-shrink:0}'
-      +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
-      +'.bb-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;border-radius:7px}'
-      +'.bb-logo-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:4px;background:var(--bb-accent);border:2px solid #fff;cursor:nwse-resize;display:none;z-index:3;touch-action:none}'
-      // LOGO eyebrow, on-logo + peek-on-hover, Aug 30 2026 (corrected
-      // same day, then generalized into the shared T2TLogo controller
-      // later the same day) -- first pass left the "Logo" label sitting
-      // at its original spot above the empty slot while only the
-      // artwork itself moved on drag/resize, so the hover-peek lit up
-      // far from wherever the logo had actually been dragged to. Larry:
-      // "move the eyebrow onto the logo (behind it) so wherever the logo
-      // goes, the label goes with it." Fix: a second copy of the label
-      // now lives INSIDE bb-logo-slot itself (bb-logo-eyebrow-onlogo,
-      // added right after bb-logo-img in the markup above) instead of as
-      // a sibling of the anchor -- being a child of the slot, it rides
-      // along for free on both the drag transform and the resize width/
-      // height (see T2TLogo.render/wire in idea-media-shared.js, none of
-      // which needed board-specific logic to make this work), centered
-      // on the slot at all times via top/left 50% + its own translate.
-      // Original bb-mh-eyebrow above the anchor still exists and still
-      // lines Logo up with Type/Project/Team at rest, but now only
-      // actually shows while the slot is empty (no logo uploaded yet,
-      // see T2TLogo.render) -- once real artwork exists, the traveling
-      // on-logo copy is the only one that matters, since it's the one
-      // guaranteed to be wherever the logo currently sits.
-      +'.bb-logo-eyebrow-onlogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:-1;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap;pointer-events:none}'
-      // Negative z-index (above) is what keeps it tucked behind the
-      // image at rest -- non-positioned content (the plain <img>) always
-      // paints above a negative-z-index layer. Hovering the slot (see
-      // T2TLogo's shared wireHoverPeek) adds the t2t-logo-eyebrow-peek
-      // class (shared by every board using T2TLogo, not just this one),
-      // which only changes the z-index to a positive number so it jumps
-      // above the image, plus a white chip so the text reads clearly
-      // over whatever artwork it's currently sitting on. Deliberately
-      // does NOT touch `position` (already absolute from the base rule)
-      // -- overriding it here would pull the label back into
-      // bb-logo-slot's own flex layout for as long as the hover lasted,
-      // which visibly nudges the centered image every time.
-      +'.bb-logo-eyebrow-onlogo.t2t-logo-eyebrow-peek{z-index:4;background:#fff;border-radius:4px;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,.3)}'
-      // Organization's eyebrow is itself the Type dropdown trigger now,
-      // Aug 15 2026 (Larry: "I want that word to actually be a dropdown
-      // choice") -- it's a <button> sharing .bb-mh-eyebrow's exact look,
-      // reset to have no box/border so it stays visually identical to
-      // Project's and Team's plain eyebrows, just clickable. Its own
-      // text becomes whatever category is chosen (e.g. "DEPARTMENT"),
-      // not a fixed word -- the one eyebrow that's genuinely dynamic.
-      +'button.bb-mh-eyebrow{background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;width:auto}'
-      +'button.bb-mh-eyebrow:hover{opacity:.65}'
-      // One shared trigger-box class for Type/Title/View, Aug 13 2026
-      // (Larry: "make the Briefing Board exactly like the Idea Board for
-      // TYPE, TITLE and VIEW... every new board will have this same
-      // setup") -- mirrors the Idea Board's single .sc-hdr-select box
-      // model (height/padding/radius/opacity/hover) exactly; color and
-      // font stay Briefing's own established theme (Gear > Colors),
-      // which was never the part that had drifted.
-      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.bb-hdr-select:hover{opacity:1}'
-      // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
-      // gone; double-click the Title trigger to rename, same interaction
-      // as the Idea Board's Title (see wireTopicBar's dblclick wiring).
-      // Dotted-circle (+) beside Type/Title, Aug 13 2026 -- Larry: same
-      // consistent symbol everywhere, matching .tm-add-tile's existing
-      // dashed-circle look (Cast/team add) instead of the old text
-      // "(+) Add a type/board..." row that used to live inside the
-      // dropdown itself.
-      +'.bb-dotted-add-btn{width:22px;height:22px;flex-shrink:0;border-radius:50%;background:transparent;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);display:flex;align-items:center;justify-content:center;font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;font-family:inherit;line-height:1;cursor:pointer;padding:0;opacity:.75;transition:opacity .15s,background .15s,border-color .15s,color .15s}'
-      +'.bb-dotted-add-btn:hover{opacity:1;background:var(--bb-bg);border-color:var(--bb-ink);color:var(--bb-ink)}'
-      +'.bb-dotted-remove-btn{border-color:#a3372b;color:#a3372b}'
-      +'.bb-dotted-remove-btn:hover{background:#FFF4F2;border-color:#a3372b;color:#a3372b}'
-      // Custom Type/Title dropdowns, Aug 13 2026 -- Larry: "the (+)
-      // should be at the bottom of each dropdown list, not to the
-      // side." Same reasoning as the Idea Board's own sc-cdrop: a
-      // native <select> can't render a real dashed circle as one of
-      // its own options, so Type/Title are a trigger button + a real
-      // styled menu, ending in the same dashed-circle (+) as .tm-add-tile.
-      +'.bb-cdrop{position:relative}'
-      // Parent's fast-jump arrow, Sept 5 2026 -- same shell as the Idea
-      // board's own sc-project-caret (idea-storyboard-9710.js), just
-      // built on this board's light theme (white fill, accent border)
-      // instead of that board's dark rgba() overlay, so it reads as one
-      // of this header's own controls rather than a pasted-in dark chip.
-      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:18px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(9px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
-      +'.bb-parent-caret:hover{opacity:1}'
-      // Centered, Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-trigger.
-      +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;width:100%}'
-      +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(9px * var(--fg-text-scale,1));opacity:.6;flex-shrink:0}'
-      // position:fixed + moved to <body> on open (see _bbRenderDropdown),
-      // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
-      // inside the header band, the menu was trapped in that band's own
-      // stacking context no matter its own z-index, so board content
-      // underneath painted over it. Living as a direct child of <body>
-      // with a real viewport position escapes that.
-      +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
-      +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
-      +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
-      +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
-      +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
-      // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): same
-      // change as the Idea Board's own sc-view-row/-addform -- the
-      // person-filter list now shows each Cast member's role and lets
-      // an Owner or Leader add someone right from the board face.
-      +'.bb-view-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}'
-      +'.bb-view-row-name{overflow:hidden;text-overflow:ellipsis}'
-      +'.bb-view-row-role{font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);flex-shrink:0;text-transform:uppercase;letter-spacing:.03em;margin-left:10px}'
-      +'.bb-view-addform{padding:8px 6px 4px;border-top:1px solid var(--bb-bg);margin-top:2px}'
-      +'.bb-view-addform input{width:100%;box-sizing:border-box;font-size:calc(11px * var(--fg-text-scale,1));padding:5px 7px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;color:var(--bb-ink);font-family:var(--bb-body-font);margin-bottom:5px}'
-      +'.bb-view-addform .tm-add-suggest{position:static;box-shadow:none;margin-bottom:5px}'
-      +'.bb-view-removeform{padding:6px}'
-      +'.bb-view-remove-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.bb-view-remove-row:not(:last-child){border-bottom:1px solid var(--bb-bg)}'
-      +'.bb-view-remove-empty{font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);padding:4px 2px}'
-      +'.bb-view-add-confirm{width:100%;box-sizing:border-box;margin-bottom:4px}'
-      +'.bb-view-add-error{font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b;margin-top:2px}'
-      // Center title, Aug 3 2026 -- Larry: "Make Briefing Board larger.
-      // Push tagline lower." Was 20px (sized for when it sat next to the
-      // big board-name pill); now the header's one permanent, static
-      // element, sized to lead. Gap between title and tagline widened
-      // 2px -> 10px so the tagline reads as its own line, not crowded
-      // against the title's descenders.
-      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
-      // Sept 5 2026 -- Larry: match the Idea Board's header band. Bumped
-      // to the same 42px this board-kind label uses there (idea-storyboard-
-      // 9710.js sc-board-kind-trigger) and given the same raised/embossed
-      // look (light highlight above, soft shadow below) instead of flat
-      // text -- built with BB's own ink color, not Idea Board's blue.
-      +'.bb-mh{color:var(--bb-ink);font-size:calc(42px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25)}'
-      // Logo now rides along in the same right-side group as Utility/Close
-      // (see the markup below) so it sits between the center title and
-      // those two icons, mirroring how Logo sits between Topic and IDEA
-      // on the Idea Board -- align-items:center added so its taller
-      // eyebrow+frame stack lines up with the shorter icon buttons.
-      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:center}'
-      +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
-      // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
-      // (+) should be surrounded by a dotted line for consistency") --
-      // same modifier pattern as .bb-key-add over .bb-key-btn: keep the
-      // icon button's box, swap corners for a dashed circle.
-      +'.bb-icon-btn-add{border-radius:50%;border-style:dashed}'
-      +'.bb-icon-btn:hover{background:var(--bb-bg)}'
-      +'.bb-doors-row{display:flex;gap:6px;margin-bottom:10px}'
-      +'.bb-door-btn{flex:0 0 auto}'
-      +'.bb-icon-loading{opacity:.5;pointer-events:none}'
-      // Bottom action row, Session 234 (Aug 21) -- Lock/People/Gear/Trash,
-      // reuses .bb-doors-row's own layout so it matches the doors row
-      // directly above it. Lock's "on" state borrows the same red already
-      // used for Hang-Ups/locked elsewhere in this file.
-      +'.bb-icon-btn.bb-lock-active{background:#a3372b;border-color:#a3372b;color:#fff}'
-      // Divider + even spread, Aug 21 2026 (Larry): a line above the
-      // bottom action row to set it apart from the rest of the card,
-      // and the 4 icons spread across the full width instead of
-      // clustered at the left -- same treatment applied to the Idea
-      // Card's own .sb-blue-row (idea-storyboard-9710.js) for
-      // consistency between the two card types. width:100% is required
-      // here (unlike the Idea Card) because #bb-detail-overlay .bbw is
-      // a flex column with align-items:flex-start -- every direct child
-      // shrinks to its own content width there instead of filling the
-      // card, so without an explicit width justify-content:space-between
-      // has no extra space to distribute and the icons just sit bunched
-      // at the left. (.bb-field already sets width:100% for the same
-      // reason -- this row just never had to before now.)
-      +'.bb-action-row{width:100%;box-sizing:border-box;border-top:1.5px solid var(--bb-accent);padding-top:10px;justify-content:space-between}'
-      // Match the Idea Card's bottom row exactly, Aug 21 2026 (Larry:
-      // "make them both look like the IDEA CARD, same width of buttons
-      // and same icon for trash") -- .bb-icon-btn everywhere else on the
-      // Briefing Card stays a fixed 30x30 square (top toolbar, checklist
-      // add, date pickers, etc.), but inside this specific bottom row the
-      // 4 buttons now stretch and share the row evenly, same as
-      // .sb-blue-btn on the Idea Card (idea-storyboard-9710.js).
-      +'.bb-action-row .bb-icon-btn{width:auto;height:auto;flex:1 1 auto;min-width:36px;padding:6px 10px;border-radius:8px;border-width:0.5px}'
-      +'.bb-swatch-row{flex-wrap:wrap}'
-      +'.bb-swatch{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bb-accent);cursor:pointer;padding:0}'
-      +'.bb-swatch.bb-swatch-active{box-shadow:0 0 0 2px var(--bb-ink)}'
-      +'.bb-dates-block .bb-date-row{margin-bottom:4px}'
-      +'.bb-routine-select{width:140px}'
-      +'.bb-mt{color:var(--bb-sub);font-size:calc(13px * var(--fg-text-scale,1));font-style:italic}'
-      // Center the board's columns as a group (Larry, July 22 2026)
-      // instead of always hugging the left edge -- still scrolls
-      // normally once there are enough columns to overflow.
-      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex;justify-content:center}'
-      +'#bb-cols{display:flex;gap:14px;height:100%}'
-      +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
-      +'.bb-col-head{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
-      +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
-      // July 22, 2026, Larry: color the 3 Do column headers red/green/
-      // yellow (H/M/L, in that order) so priority reads at a glance
-      // across the board, not just on each card's own badge.
-      // July 23, 2026 (later): NEW dropped its own tone -- Larry wants
-      // it to read the same as DOING/DONE (both use the base
-      // .bb-col-head styling below, var(--bb-ink)/var(--bb-bg)), so no
-      // override here at all.
-      +'.bb-col[data-col="do-h"] .bb-col-head{background:#c0272a;color:#fff}'
-      +'.bb-col[data-col="do-m"] .bb-col-head{background:#3F8F3F;color:#fff}'
-      +'.bb-col[data-col="do-l"] .bb-col-head{background:#e0c22e;color:#3B2510}'
-      +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
-      +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
-      +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
-      +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
-      +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
-      +'.bb-pri-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;padding:1px 4px;border-radius:3px;color:#fff;line-height:1.4}'
-      +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
-      +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
-      +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px;word-break:break-word}'
-      +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
-      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
-      +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
-      +'.bb-start-due{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#a3372b;margin:-3px 0 3px}'
-      +'.bb-done-date{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#3F6B3A;text-align:right;margin-top:1px}'
-      +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:7px;pointer-events:none}'
-      // pointer-events:auto here, Aug 4 2026 -- the container above stays
-      // click-through (so it never steals a card drag), but the wrap
-      // around each dot+count needs real pointer events or its title
-      // tooltip (the meaning, on hover) never fires -- a child inherits
-      // "none" from its parent unless it opts back in like this.
-      +'.bb-key-badge-wrap{display:inline-flex;align-items:center;gap:2px;pointer-events:auto;cursor:default}'
-      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3);flex-shrink:0}'
-      // .bb-key-link-count removed Aug 15 2026 (Larry: "delete number
-      // of like flags from front of every type of card") -- the count
-      // is still computed and available via each flag's hover tooltip,
-      // just no longer rendered as a visible number on the card face.
-      +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
-      +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
-      +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
-      +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
-      /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
-         bottom-right" convention as 9711's isx-trash-fixed. Anchored to
-         #s-briefing-board itself (not #bb-board-wrap, which scrolls
-         horizontally on narrow screens) so it never drifts off with the
-         columns. */
-      +'.bb-trash{position:absolute;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:#FFFDF7;border:2px solid var(--bb-ink);box-shadow:0 2px 6px rgba(59,37,16,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
-      +'.bb-trash.bb-trash-dropready{outline:2px solid #a3372b;outline-offset:2px}'
-      +'.bbw{display:flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box}'
-      +'#bb-detail-overlay .bbw{align-items:flex-start}'
-      +'.bb-field{width:100%;max-width:280px;margin-bottom:12px;text-align:left}'
-      +'.bb-field label{display:block;font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:3px}'
-      // Addition checkboxes, Aug 27 2026 -- same label styling as every
-      // other .bb-field label, just with a checkbox riding in front of
-      // the text instead of standing alone. Body starts collapsed
-      // (inline style="display:none" in the markup); JS only ever
-      // flips that display, so there's no extra "open" class to keep
-      // in sync -- one source of truth per addition. Darkened to
-      // --bb-ink (was inheriting --bb-sub's lighter tone from the
-      // shared ".bb-field label" rule) and a fixed line-height matching
-      // the checkbox's own height, Aug 27 2026 (Larry: "center on the
-      // checkboxes... darken the text") -- align-items:center alone
-      // wasn't enough to true up the text against the checkbox box.
-      +'.bb-addition-label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--bb-ink);line-height:14px}'
-      +'.bb-addition-label input[type=checkbox]{width:14px;height:14px;margin:0;flex-shrink:0;cursor:pointer}'
-      // Larry, Aug 27 2026: all the addition checkboxes' text labels
-      // (Checklist/Routine/Start Date/Due Date/Budget/Notes/Links/Related
-      // Storyboards/Signal Flags) read a touch low against their checkbox
-      // -- nudge just the text up so it optically centers on the box.
-      +'.bb-addition-eyebrow{transform:translateY(-1.5px)}'
-      +'.bb-addition-body{margin-top:6px}'
-      +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
-      // Quiet Added-date, Aug 27 2026 (Larry: "What if the date added is
-      // quietly after the TASK Eyebrow?") -- rides on the Task label
-      // itself now instead of its own "Dates" block; deliberately NOT
-      // styled like the other uppercase eyebrow labels (this is the
-      // opposite -- quiet, small, cursive, same voice as every other
-      // "Added"/date stamp elsewhere on the card).
-      +'.bb-added-quiet{text-transform:none;letter-spacing:0;font-weight:400;font-family:"Caveat",cursive;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-sub);margin-left:8px}'
-      +'.bb-inline-field{display:flex;align-items:baseline;justify-content:flex-start;gap:6px;white-space:nowrap}'
-      +'.bb-inline-field label{display:inline;margin:0}'
-      +'.bb-inline-field span{font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)}'
-      +'.bb-field input,.bb-field textarea,.bb-field select{width:100%;font-family:var(--bb-body-font);font-size:calc(14px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:7px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
-      +'.bb-field textarea{min-height:60px;font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));resize:vertical}'
-      +'#bb-d-task{font-family:var(--bb-body-font);font-style:normal;font-size:calc(14px * var(--fg-text-scale,1));color:#000}'
-      +'#bb-d-notes{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(14px * var(--fg-text-scale,1))!important;min-height:44px;overflow:hidden;resize:none;transition:height .1s}'
-      +'#bb-new-task{font-family:var(--bb-body-font)!important;font-style:normal;font-size:calc(15px * var(--fg-text-scale,1))!important}'
-      +'.bb-flags,.bb-priorities,.bb-swatches{display:flex;gap:4px}'
-      +'.bb-flag-btn,.bb-pri-btn,.bb-font-btn,.bb-shape-btn{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 2px;border-radius:4px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font);display:flex;align-items:center;justify-content:center}'
-      +'.bb-shape-btn.bb-shape-active{background:var(--bb-bg);border-color:var(--bb-ink)}'
-      +'.bb-flag-btn.bb-flag-active{background:#a3372b;color:#fff;border-color:#a3372b}'
-      +'#bb-d-verify.bb-flag-active{background:#3F6B3A;border-color:#3F6B3A}'
-      +'#bb-d-pro.bb-flag-active{background:#c9a230;border-color:#c9a230}'
-      +'#bb-d-grow.bb-flag-active{background:#4a7a95;border-color:#4a7a95}'
-      +'.bb-font-btn.bb-flag-active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
-      +'.bb-theme-swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15)}'
-      +'.bb-theme-swatch.bb-swatch-active{border-color:#3B2510}'
-      +'.bb-settings-tabs{display:flex;gap:4px;width:100%;max-width:280px;margin:0 auto 10px}'
-      +'.bb-settings-tab{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:7px 3px;border-radius:6px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;color:var(--bb-sub);font-family:var(--bb-body-font)}'
-      +'.bb-settings-tab.active{background:var(--bb-ink);color:#fff;border-color:var(--bb-ink)}'
-      +'.bb-settings-pane{display:flex;flex-direction:column;align-items:center;width:100%}'
-      +'.bb-key-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-start}'
-      +'.bb-key-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}'
-      +'.bb-key-add{font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub);border-style:dashed}'
-      +'.bb-key-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}'
-      +'.bb-key-swatch.bb-swatch-active{border-color:#3B2510}'
-      +'.bb-key-pick-row-wrap{display:flex;align-items:center;gap:6px;margin-bottom:6px}'
-      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:left}'
-      +'.bb-key-pick-meaning{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-      +'.bb-key-pick-edit{background:none;border:none;cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:#4a7a95;flex-shrink:0;padding:0 4px}'
-      +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
-      +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
-      +'.bb-key-pick-empty-msg{font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
-      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.bb-checklist-row .bb-checklist-check{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0}'
-      +'.bb-checklist-text{flex:1}'
-      +'.bb-checklist-text.bb-checklist-done{text-decoration:line-through;color:var(--bb-sub)}'
-      +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:0 4px}'
-      +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
-      +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
-      +'.bb-links-empty{font-size:calc(12px * var(--fg-text-scale,1));font-style:italic;color:var(--bb-sub);padding:2px 0}'
-      // Signal Flags manager (9397), Aug 3 2026 -- same row shape as
-      // Linked Items/Checklist just above, pencil then trash per row.
-      +'.bb-keylib-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink);border-bottom:1px solid rgba(201,168,124,.35)}'
-      +'.bb-keylib-row:last-child{border-bottom:none}'
-      +'.bb-keylib-swatch{display:inline-block;width:16px;height:16px;flex-shrink:0}'
-      +'.bb-keylib-meaning{flex:1}'
-      +'.bb-keylib-edit,.bb-keylib-del{background:none;border:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));padding:0 4px}'
-      +'.bb-keylib-edit{color:#4a7a95}'
-      +'.bb-keylib-del{color:#a3372b}'
-      +'.bb-archive-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--bb-accent)}'
-      +'.bb-archive-task{font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.bb-archive-meta{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub)}'
-      +'.bb-card-foreign{border-style:dashed;opacity:0.92}'
-      /* Overdue pink-face, Aug 15 2026, Larry: "pink faced card" for
-         anything whose due date has passed (see _bbIsOverdue -- Done
-         and Hang-Ups are excluded, they already have their own
-         meaning). Steady pink border+background applies every render;
-         bb-overdue-flash is added only on the render where a card is
-         first discovered overdue, playing a brief alarm-flash before
-         settling into the steady state above. animation has no
-         fill-mode, so it always relaxes back to the plain .bb-overdue
-         look once the 3 pulses finish -- no forced timeout needed. */
-      +'.bb-card.bb-overdue{border-color:#c2255c;background:#FDE7EF}'
-      +'.bb-card.bb-overdue .bb-task{color:#8a1a44}'
-      +'@keyframes bb-overdue-alarm{0%,100%{background:#FDE7EF;box-shadow:none}50%{background:#f48fb1;box-shadow:0 0 10px rgba(194,37,92,0.7)}}'
-      +'.bb-card.bb-overdue-flash{animation:bb-overdue-alarm 0.5s ease-in-out 3}'
-      +'@media (prefers-reduced-motion: reduce){.bb-card.bb-overdue-flash{animation:none}}'
-      +'.bb-foreign-row{margin:1px 0 3px}'
-      +'.bb-foreign-badge{display:inline-block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:1px 6px;border-radius:8px;background:rgba(59,37,16,.08);color:var(--bb-sub)}'
-      /* Overlay chrome for Add a Card (9360) / the Briefing Card (9370) /
-         Board Settings, July 20, 2026 -- same "fixed, dimmed backdrop,
-         click-outside-closes" pattern as idea-storyboard-9710.js's
-         .sb-overlay. Lives at #fg-root level (see
-         injectBriefingBoardScreens), not inside #s-briefing-board, for
-         the same reason 9710's overlays live at fg-root: a display:none
-         ancestor (the board when it's not the active screen) would hide
-         a position:fixed child too. Card is pinned to 340px -- just past
-         the 280px field frame -- and tall rather than wide, scrolling
-         internally if content runs long. */
-      +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
-      +'.bb-overlay.active{display:flex}'
-      +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
-      +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
-      +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
-      +'.bb-overlay-title{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
-      +'.bb-overlay-card.bb-hangup-active .bb-overlay-title{color:#a3372b}'
-      +'.bb-overlay-card.bb-overdue-active{border-top-color:#c2255c;background:#FDE7EF}'
-      +'.bb-overlay-card.bb-overdue-active .bb-overlay-title{color:#c2255c}'
-      +'.bb-close{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.tm-groupname{font-family:var(--bb-head-font);font-size:calc(16px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);text-align:center;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;width:90%;padding:2px 0;display:block;margin:0 auto 2px}'
-      +'.tm-cap{text-align:center;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);margin-bottom:10px}'
-      +'.tm-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(59,37,16,0.12)}'
-      +'.tm-sym{width:22px;text-align:center;font-size:calc(15px * var(--fg-text-scale,1));padding-top:1px;flex-shrink:0}'
-      +'.tm-sym.tm-clickable{cursor:pointer}'
-      +'.tm-body{flex:1;min-width:0}'
-      +'.tm-name{font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:var(--bb-ink)}'
-      +'.tm-role{font-weight:400;color:var(--bb-sub);font-size:calc(11px * var(--fg-text-scale,1))}'
-      +'.tm-contact{font-size:calc(11px * var(--fg-text-scale,1));color:#5b9bd5;line-height:1.25;margin-top:1px}'
-      +'.tm-notes-row{display:flex;align-items:baseline;gap:5px;line-height:1.25;margin-top:1px}'
-      +'.tm-notes-lbl{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;color:var(--bb-sub);flex-shrink:0}'
-      +'.tm-notes-input{flex:1;border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);padding:0;font-family:var(--bb-body-font)}'
-      +'.tm-rolepanel{margin:6px 0 0 32px;background:#fff;border:1px solid var(--bb-accent);border-radius:8px;padding:8px 10px}'
-      +'.tm-rolepanel label{display:flex;align-items:center;gap:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);margin-bottom:5px;cursor:pointer}'
-      +'.tm-rolepanel label:last-child{margin-bottom:0}'
-      +'.tm-addrow{display:flex;align-items:center;justify-content:space-between;margin-top:10px}'
-      +'.tm-add-tile{width:26px;height:26px;border-radius:50%;border:1.5px dashed var(--bb-accent);color:var(--bb-sub);font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer}'
-      +'.tm-print-tile{width:26px;height:26px;border-radius:50%;border:1px solid var(--bb-accent);background:#fff;color:var(--bb-sub);font-size:calc(12px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;cursor:pointer}'
-      // Session 255: matching styles for the flat Cast popup
-      // (openCallSheet, in idea-storyboard-9710.js, bridged here as
-      // T2TStoryboard.openCallSheet) so it looks the same whether it was
-      // opened from an Idea/Plan card or a Briefing Card. That popup's
-      // .tm-row/.tm-rolepanel markup is already covered by the rules
-      // above; these are the pieces unique to it.
-      +'.cs-filter-chk{margin-right:7px;cursor:pointer;accent-color:var(--bb-accent-strong,#4a7a95)}'
-      +'.cs-role-tag{font-weight:400;color:var(--bb-sub);font-size:calc(11px * var(--fg-text-scale,1))}'
-      +'.cs-notes-pencil{cursor:pointer;margin-left:4px;opacity:0.55;font-size:calc(10px * var(--fg-text-scale,1))}'
-      +'.cs-notes-pencil:hover,.cs-notes-pencil.cs-notes-has{opacity:1}'
-      +'.cs-contact-input{border:none;border-bottom:1px dashed var(--bb-accent);background:transparent;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);padding:0;font-family:inherit;width:auto;max-width:150px}'
-      +'.cs-primary-toggle{margin-right:4px;color:#3a7ca8}'
-      +'.cs-key-toggle{cursor:pointer;margin-right:4px;opacity:0.32;filter:grayscale(1)}'
-      +'.cs-key-toggle.cs-key-on{opacity:1;filter:none}'
-      +'.cs-remove-x{margin-left:6px;color:#a3372b;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1))}'
-      +'.cs-parent-star{color:#c9a87c;margin-right:2px}'
-      +'.cs-empty-role{font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;padding:4px 0 6px}'
-      +'.tm-add-wrap{position:relative;flex:1;min-width:0}'
-      +'.tm-add-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 16px rgba(59,37,16,0.18);max-height:160px;overflow-y:auto;overflow-x:hidden;z-index:5;box-sizing:border-box}'
-      +'.tm-add-suggest-row{padding:6px 10px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-ink);cursor:pointer;box-sizing:border-box}'
-      +'.tm-add-suggest-row:hover{background:var(--bb-bg)}'
-      +'.tm-add-suggest-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.tm-add-suggest-email{color:var(--bb-sub);font-size:calc(11px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.tm-add-suggest-empty{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic}'
-      +'@media print{body *{visibility:hidden}.bb-team-print,.bb-team-print *{visibility:visible}.bb-team-print{position:absolute;left:0;top:0;width:100%!important;max-height:none!important;box-shadow:none!important}@page{size:landscape}}'
-      +'.bb-close:hover{background:var(--bb-bg)}'
-      +'.bb-hx-back{width:26px;height:26px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid var(--bb-accent);cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.bb-hx-back:hover{background:var(--bb-bg)}'
-      // .bb-routine-toggle button rules dropped, Aug 27 2026 -- the
-      // header button they styled is gone (see the overlay-head
-      // comment above); .bb-routine-active stays, it still tints the
-      // whole card when c.routine is true regardless of how it got set.
-      +'.bb-overlay-card.bb-routine-active{border-top-color:#4a7a95}'
-      +'.bb-date-row{display:flex;gap:6px;align-items:stretch}'
-      +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
-      +'.bb-date-row input.bb-date-time{width:60px;flex:none;min-width:0}'
-      +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
-      +'.bb-datepicker-pop{position:fixed;z-index:10001;width:220px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-family:var(--bb-body-font)}'
-      +'.bb-dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}'
-      +'.bb-dp-label{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink)}'
-      +'.bb-dp-nav{background:none;border:none;font-size:calc(16px * var(--fg-text-scale,1));line-height:1;cursor:pointer;color:var(--bb-ink);padding:0 6px}'
-      +'.bb-dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}'
-      +'.bb-dp-dow{font-size:calc(9px * var(--fg-text-scale,1));text-align:center;color:var(--bb-sub);font-weight:700;padding:2px 0}'
-      +'.bb-dp-day{background:none;border:none;font-size:calc(12px * var(--fg-text-scale,1));padding:5px 0;text-align:center;cursor:pointer;border-radius:4px;color:var(--bb-ink)}'
-      +'.bb-dp-day:hover{background:var(--bb-bg)}'
-      +'.bb-dp-day.bb-dp-blank{cursor:default}'
-      +'.bb-dp-day.bb-dp-blank:hover{background:none}'
-      +'.bb-dp-day.bb-dp-today{border:1.5px solid var(--bb-accent);font-weight:700}'
-      +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
-      +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
-      +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
-      +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
-      // pointer-events:auto here, Aug 11 2026 -- same fix as
-      // .bb-key-badge-wrap: the wrapping .bb-key-badges container it
-      // now lives inside stays click-through (never steals a card
-      // drag), but this badge needs its own pointer events back or its
-      // "Has notes" hover tooltip goes silent.
-      +'.bb-notes-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
-      // Video/Link flag, Aug 11 2026 (Larry: "make link usable, move
-      // link flag to lower left corner") -- joins Notes in the
-      // bottom-left signal-flags row instead of the top badge row, and
-      // is a real link now (was a plain inert marker): opens the
-      // attached URL in a new tab. draggable=false on the element
-      // itself (see markup below) keeps a native link-drag from
-      // hijacking the card's own drag-to-move gesture.
-      +'.bb-link-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:pointer;text-decoration:none;color:inherit}'
-      +'.bb-link-row{display:flex;gap:6px}'
-      +'.bb-link-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
-      +'.bb-link-preview{margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:center;font-style:italic}'
-      +'.bb-link-preview img{max-width:100%;max-height:100px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain}'
-      +'.bb-team-row{display:flex;gap:6px;align-items:center;padding:4px 0}'
-      +'.bb-team-row input.bb-team-name{flex:1.6;min-width:0}'
-      +'.bb-team-row input.bb-team-initials{width:50px;flex:none;text-transform:uppercase}'
-      +'.bb-hx-landing-btn{margin-bottom:12px}';
-    document.head.appendChild(style);
-  }
+  // injectBriefingBoardStyles() moved to briefing-board-styles.js,
+  // Sept 5 2026 (file-growth scoping pass) -- pure CSS, no board state,
+  // exposed as window._bbInjectStyles(). Loaded before this file.
 
-  function injectBriefingBoardScreens(){
-    var fg=document.getElementById('fg-root'); if(!fg) return;
-    if(document.getElementById('s-briefing-board')) return;
-    injectBriefingBoardStyles();
-
-    var div=document.createElement('div');
-    div.innerHTML=
-       '<div class="sc" id="s-briefing-board">'
-        +'<div class="bb-mhead">'
-          +'<div class="bb-mhead-top">'
-            +'<div class="bb-mh-typebox">'
-              // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
-              // of this row (was third) to sit at the header's far left
-              // corner, matching where the Idea Board keeps its own
-              // traveler-name/PROJECT column. "Project" eyebrow label
-              // dropped -- Idea Board dropped its own the same day so the
-              // board-switcher itself reads as the only thing in this
-              // column, directly under the traveler's name. bb-project-caret
-              // added so this field gets the Idea Board's exact two-piece
-              // shape (label button, then its own arrow) -- wired in
-              // _bbRenderBoardPicker, right after that function's existing
-              // _bbRenderDropdown call, to open the same board-switch menu
-              // the label itself already opens. _bbRenderTravelerName
-              // (below) fills in the traveler-name text.
-              // Sept 5 2026, Larry: "increase the text size on the PROJECT
-              // field on all boards" -- matches sc-title-trigger's own
-              // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              // Parent, Sept 5 2026 -- Larry: "every board now and in the
-              // future" should have the same PARENT field the Idea/Plan
-              // header does. The data isn't new -- a board's one approved
-              // parent has been readable since Aug 16 (see _bbRenderRelations
-              // and the Links popup below) -- this just puts it in the
-              // header itself instead of behind a popup, plus the same
-              // fast-jump-to-any-level-above arrow the Idea board's own
-              // Parent got today. bb-parent-hit is a real button (not a
-              // plain div) since a single click already means something
-              // here -- step up to the immediate parent -- same as
-              // Idea/Plan's plain Parent click. _bbRenderParentField
-              // (below) fills in the name and wires that click each time
-              // the board switches; _bbWireParentAncestorDropdown wires
-              // the caret once, at startup.
-              +'<div class="bb-mh-fieldgrp">'
-                +'<div class="bb-mh-eyebrow">Parent</div>'
-                +'<div class="bb-cdrop" id="bb-parent-cdrop" style="display:flex;align-items:center;gap:2px">'
-                  +'<button type="button" class="bb-parent-caret" id="bb-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
-                  +'<button type="button" class="bb-hdr-select" id="bb-parent-hit" style="cursor:default"></button>'
-                  +'<div class="bb-cdrop-menu" id="bb-parent-menu" hidden></div>'
-                +'</div>'
-              +'</div>'
-              // TYPE and ORG NAME (Client/Department/Partner categorization)
-              // retired from the visible chrome, Sept 5 2026 -- Larry: BB's
-              // header should look exactly like the Idea Board's, which has
-              // no equivalent field. Left as real, working code -- just no
-              // longer rendered here -- rather than deleted: _bbRenderOrgName,
-              // _bbRenderTypePicker and friends still run fine with no
-              // bb-type-trigger/bb-org-name-trigger in the DOM (_bbRenderDropdown
-              // no-ops when its trigger/menu ids don't resolve), so this is
-              // reversible by putting the fieldgrp back, nothing to rebuild.
-            +'</div>'
-            // Top-center label is a real board-kind dropdown now, Aug 30
-            // 2026 -- Larry: "the top center of the Briefing Board could
-            // be the dropdown to return to one of the other boards."
-            // Mirrors the Idea board's own IDEA/PLAN/BRIEFING BOARD/
-            // SHARE/CAST trigger (idea-storyboard-9710.js,
-            // _sboardWireBoardKindDropdown) so the loop closes both ways
-            // -- see _bbWireBoardKindDropdown below for the click
-            // handling. bb-mh's own type styling stays as-is; only the
-            // button chrome is stripped inline so nothing looks
-            // different at rest.
-            +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt">A control and communication tool.</div></div>'
-            +'<div class="bb-mhead-actions">'
-              // Aug 30 2026, Larry: "move everything but Utility and X into
-              // the Utility button" -- Reload, Jump-to-menu, History and
-              // Relationships used to ride along here as their own icons
-              // (see wireBriefingBoard below for the July 22 reasoning on
-              // Reload specifically); all four now live one tap inside
-              // Utility instead (_bbRenderSettingsScreen, 'home' screen),
-              // so this row goes back to just the two.
-              //
-              // Logo, Sept 5 2026 -- moved here from the left-side typebox
-              // row so it sits between the center title and Utility/Close,
-              // matching where Logo sits on the Idea Board (between Topic
-              // and the big IDEA label, itself just left of gear/close).
-              // Purely a DOM-order move -- bb-logo-anchor already uses
-              // plain flex layout (see the shared T2TLogo config comment
-              // near injectBriefingBoardStyles), no position math tied to
-              // where its wrapper sits in the row.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
-              +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
-              +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
-            +'</div>'
-          +'</div>'
-        +'</div>'
-        +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
-        +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
-        +'<div class="bb-trash" id="bb-moves" title="Recent Moves" style="right:68px">'+MOVES_SVG+'</div>'
-      +'</div>';
-    while(div.firstChild) fg.appendChild(div.firstChild);
-
-    // Add a Card (9360), the Briefing Card (9370), the Trash confirm, and
-    // Board Settings -- all overlays, living as direct children of
-    // #fg-root so they render regardless of whether #s-briefing-board
-    // happens to be the active .sc screen.
-    if(!document.getElementById('bb-add-overlay')){
-      var addOv=document.createElement('div');
-      addOv.id='bb-add-overlay'; addOv.className='bb-overlay';
-      addOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Card</span><button class="bb-close" id="bb-add-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
-            +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
-            +'<div id="bb-add-status" style="font-size:calc(11px * var(--fg-text-scale,1));color:#5a7a3a;min-height:14px;margin-top:4px;text-align:center"></div>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(addOv);
-      // Aug 7 2026 -- Larry: ENTER pinning the card was right, but it was
-      // also closing this screen, and it should only close with the X.
-      // Aug 9 2026 -- Larry: clicking outside the card should close it too,
-      // same as the X -- restored that behavior, matching every other
-      // overlay on the board.
-      addOv.addEventListener('click', function(e){ if(e.target===addOv) closeAddCard(); });
-      _bbMakeDraggable(addOv.querySelector('.bb-overlay-card'), addOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-detail-overlay')){
-      var detailOv=document.createElement('div');
-      detailOv.id='bb-detail-overlay'; detailOv.className='bb-overlay';
-      detailOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
-          // Routine card icon from top of card") -- redundant now that
-          // Routine is its own checkbox further down: picking a
-          // frequency there already marks the card routine (c.routine),
-          // see wireRoutineControls' select handler. The card-front
-          // badge and the overlay's own routine-tinted top border stay
-          // -- only the manual header button goes.
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
-              +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
-            +'</div></div>'
-            // Added-date, Aug 27 2026 (Larry: "What if the date added is
-            // quietly after the TASK Eyebrow?") -- the standalone "Dates"
-            // block (below) used to hold this, but once Start Date moved
-            // into its own checkbox that block was down to one static
-            // line, not worth a whole section for. Same id (bb-d-added),
-            // same value, just riding quietly on the Task label instead.
-            +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
-            +'<div id="bb-d-hangup-wrap" style="display:none">'
-              +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
-              +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
-            +'</div>'
-            // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
-            // which open when checked and stay open when active"),
-            // extended same session to also cover Related Storyboards
-            // and Signal Flags -- Checklist, Routine, Start Date, Due
-            // Date, Budget, Notes, Links, Related Storyboards, and
-            // Signal Flags are all opt-in now instead of always taking
-            // up room on every card. Each is a checkbox riding its own
-            // field label; the field's real content sits in a
-            // .bb-addition-body directly under it, hidden by default and
-            // shown for exactly as long as its checkbox is checked --
-            // see BB_ADDITIONS/openCardDetail/wireAdditionToggles below
-            // for the shared plumbing. Only Reviewed by is NOT part of
-            // this -- Larry's list never included it, so it stays
-            // permanently visible, just below the divider that closes
-            // out this whole section.
-            +'<div class="bb-field bb-addition" id="bb-d-add-checklist-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-checklist"><span class="bb-addition-eyebrow">Checklist</span></label><div class="bb-addition-body" id="bb-d-checklist-body" style="display:none"><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div></div>'
-            +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
-            +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine"><span class="bb-addition-eyebrow">Routine</span></label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
-              +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
-              +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
-            +'</div></div>'
-            // Start Date, Aug 27 2026 (Larry: "Add checkbox for START
-            // DATE which can be preset or automatic when card is moved
-            // to DOING... should be just above DUE DATE") -- the
-            // auto-stamp-on-drop-to-Doing behavior already existed
-            // (_bbStageMirrorUpdate / the native drop handler below);
-            // both spots now also open this checkbox when they stamp
-            // the date, so an auto-set Start Date is never left hidden
-            // behind an unchecked box.
-            +'<div class="bb-field bb-addition" id="bb-d-add-start-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-start"><span class="bb-addition-eyebrow">Start Date</span></label><div class="bb-addition-body" id="bb-d-start-body" style="display:none">'
-              +'<div class="bb-date-row"><input id="bb-d-start" type="text" placeholder="Start MM/DD/YYYY"><input id="bb-d-start-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-start-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
-            +'</div></div>'
-            +'<div class="bb-field bb-addition" id="bb-d-add-due-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-due"><span class="bb-addition-eyebrow">Due Date</span></label><div class="bb-addition-body" id="bb-d-due-body" style="display:none">'
-              +'<div class="bb-date-row"><input id="bb-d-due" type="text" placeholder="Due MM/DD/YYYY"><input id="bb-d-due-time" type="text" class="bb-date-time" placeholder="Time"><button class="bb-icon-btn" id="bb-d-due-cal" type="button" title="Pick a date">\uD83D\uDCC5</button></div>'
-            +'</div></div>'
-            // Budget label simplified, Aug 27 2026 (Larry: "Drop TIME or
-            // DOLLARS from BUDGET").
-            +'<div class="bb-field bb-addition" id="bb-d-add-budget-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-budget"><span class="bb-addition-eyebrow">Budget</span></label><div class="bb-addition-body" id="bb-d-budget-body" style="display:none"><input id="bb-d-budget" type="text"></div></div>'
-            +'<div class="bb-field bb-addition" id="bb-d-add-notes-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-notes"><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="bb-d-notes-body" style="display:none"><textarea id="bb-d-notes" placeholder="Notes, comments, questions..."></textarea></div></div>'
-            +'<div class="bb-field bb-addition" id="bb-d-add-links-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-links"><span class="bb-addition-eyebrow">Links</span></label><div class="bb-addition-body" id="bb-d-links-body" style="display:none"><div class="bb-link-row"><input id="bb-d-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link\u2026"><button class="bb-icon-btn" id="bb-d-link-clear" type="button" title="Remove">\u2715</button></div><div id="bb-d-link-preview" class="bb-link-preview" style="display:none"></div></div></div>'
-            // Related Storyboards, Aug 27 2026 (Larry: "do the same with
-            // the RELATED STORYBOARDS and move them after LINKS, since
-            // they are sort of a special case link") -- this is the old
-            // top-of-card doors-row (Idea Board / Plan / Organization /
-            // Share), relocated here and gated like every other
-            // addition. "Active" for the auto-open backfill below means
-            // already linked to an Idea Storyboard header
-            // (c.sourceHeaderId) -- Plan/Organization/Share are still
-            // Door-Soon placeholders with nothing of their own to be
-            // active yet.
-            +'<div class="bb-field bb-addition" id="bb-d-add-related-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-related"><span class="bb-addition-eyebrow">Related Storyboards</span></label><div class="bb-addition-body" id="bb-d-related-body" style="display:none">'
-              +'<div id="bb-d-doors-row" class="bb-doors-row">'
-                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
-                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">'+'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h4v-4h4v-4h4v-4h4"/></svg>'+'</button>'
-                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-org" type="button" title="Organization">\uD83D\uDC65</button>'
-                +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-share" type="button" title="Share">\uD83D\uDCAC</button>'
-              +'</div>'
-            +'</div></div>'
-            // Signal Flags, Aug 27 2026 (Larry: "make Signal Flags like
-            // the other checkboxes which auto open if there is an
-            // active flag") -- was a fixed, always-visible field just
-            // below the old divider; now gated the same way as
-            // everything else in this section, with the same
-            // migration-backfill approach (open by default for any card
-            // that already has a flag set) rather than any new runtime
-            // logic -- "active" is decided once, at load, exactly like
-            // Notes/Budget/etc. above.
-            +'<div class="bb-field bb-addition" id="bb-d-add-flags-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-flags"><span class="bb-addition-eyebrow">Signal Flags</span></label><div class="bb-addition-body" id="bb-d-flags-body" style="display:none"><div class="bb-key-row" id="bb-d-key-row"></div></div></div>'
-            // Divider, Aug 27 2026 -- now sits directly above Reviewed
-            // by (the last item that isn't itself a checkbox), so the
-            // whole run of additions -- Checklist through Signal Flags
-            // -- reads as one contiguous section.
-            +'<hr class="bb-field-divider">'
-            +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
-            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
-            +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
-            // Bottom action row, Session 234 (Aug 21, Larry: "add the same
-            // bottom row as on the IDEA CARD to the BB Cards? lock - twin
-            // heads - gear - trash"). Lock moved down here (was the big
-            // top button, Larry: "too in your face"). Assigned-to is gone
-            // -- retired the same way Person Assigned was on the Idea
-            // Card, in favor of the 👥 star (see wireBbDetailActions).
-            // Color swatch row is new for Briefing Cards (no prior
-            // per-card color existed) -- built for Gear-button parity
-            // with the Idea Card. Trash reuses the existing drag-to-trash
-            // "Moose poop?" confirm as a direct button here too.
-            +'<div id="bb-d-color-row" class="bb-doors-row bb-swatch-row" style="display:none"></div>'
-            +'<div class="bb-doors-row bb-action-row">'
-              +'<button class="bb-icon-btn" id="bb-d-lock" type="button">🔓</button>'
-              +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who is working on this?">👥</button>'
-              +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
-              +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Utility">⚙️</button>'
-              +'<button class="bb-icon-btn" id="bb-d-trash" type="button" title="Trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>'
-            +'</div>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(detailOv);
-      detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
-      _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.bb-overlay-head'));
-    }
-    // Door-Soon placeholder, Aug 12 2026 -- Plan/Organization/Share
-    // doors on the Briefing Card back all point here until their real
-    // Storyboards (PSB/OSB/CSB) exist. One shared overlay, title text
-    // swapped per door by openDoorSoon(label).
-    if(!document.getElementById('bb-door-soon-overlay')){
-      var doorSoonOv=document.createElement('div');
-      doorSoonOv.id='bb-door-soon-overlay'; doorSoonOv.className='bb-overlay';
-      doorSoonOv.innerHTML=
-         '<div class="bb-overlay-card" style="width:280px;text-align:center">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title" id="bb-door-soon-title">Coming Soon</span><button class="bb-close" id="bb-door-soon-close" aria-label="Close">\u2715</button></div>'
-          +'<div style="font-size:calc(13px * var(--fg-text-scale,1));color:#7A5C3A">This workspace isn\u2019t built yet &mdash; coming soon.</div>'
-        +'</div>';
-      fg.appendChild(doorSoonOv);
-      doorSoonOv.addEventListener('click', function(e){ if(e.target===doorSoonOv) closeDoorSoon(); });
-    }
-    if(!document.getElementById('bb-trash-overlay')){
-      var trashOv=document.createElement('div');
-      trashOv.id='bb-trash-overlay'; trashOv.className='bb-overlay';
-      trashOv.innerHTML=
-         // Anchored just above the trash can (bottom:16/right:16, 44px
-         // tall) instead of the shared .bb-overlay center, Aug 7 2026
-         // per Larry -- position:fixed here overrides the overlay's
-         // flex centering since the card is explicitly positioned,
-         // no change needed to the shared .bb-overlay/.bb-overlay-card
-         // rules every other overlay still relies on.
-         '<div class="bb-overlay-card" style="width:280px;text-align:center;position:fixed;right:16px;bottom:76px;margin:0">'
-          +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(18px * var(--fg-text-scale,1));font-weight:700;color:#3B2510;margin-bottom:6px">Moose poop?</div>'
-          // Aug 7 2026 -- Larry: "We need a safety net for potential
-          // errors." Trash used to delete the row from Supabase
-          // outright, no undo -- now it's a real recoverable trash
-          // (trashed_at column), kept 30 days before it's auto-purged,
-          // with a Recently Deleted list (open by clicking the trash
-          // can itself, not dragging to it) to restore from in the
-          // meantime. Wording updated to match -- this is no longer a
-          // "for good" action.
-          +'<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:14px">Off the board &mdash; kept for 30 days in case you change your mind.</div>'
-          +'<div style="display:flex;gap:8px">'
-            +'<button class="bb-flag-btn" id="bb-trash-yes" style="background:#a3372b;color:#fff;border-color:#a3372b">Yes</button>'
-            +'<button class="bb-flag-btn" id="bb-trash-no">Keep it</button>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(trashOv);
-      trashOv.addEventListener('click', function(e){ if(e.target===trashOv) closeTrashConfirm(); });
-    }
-    // Recently Deleted (9365), Aug 7 2026 -- the other half of the
-    // safety net alongside trashed_at/doTrashCard below. Opened by a
-    // plain click on the trash can (drag-and-drop still goes through
-    // the Moose poop? confirm above) -- lists every card on this board
-    // with trashed_at set and not yet purged, newest first, each with
-    // Restore and a separate, harder-to-hit Delete Forever.
-    if(!document.getElementById('bb-recently-deleted-overlay')){
-      var rdOv=document.createElement('div');
-      rdOv.id='bb-recently-deleted-overlay'; rdOv.className='bb-overlay';
-      rdOv.innerHTML=
-         '<div class="bb-overlay-card" style="width:320px">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recently Deleted</span><button class="bb-close" id="bb-rd-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Kept for 30 days, then removed for good.</div>'
-          +'<div id="bb-rd-list" style="max-height:320px;overflow-y:auto"></div>'
-        +'</div>';
-      fg.appendChild(rdOv);
-      rdOv.addEventListener('click', function(e){ if(e.target===rdOv) closeRecentlyDeleted(); });
-      _bbMakeDraggable(rdOv.querySelector('.bb-overlay-card'), rdOv.querySelector('.bb-overlay-head'));
-    }
-    // Recent Moves (9366), Aug 7 2026 -- Larry: a card he moved didn't
-    // land where he put it and couldn't be put back, separate from
-    // Trash entirely ("Never put the card into the trash... We need a
-    // safety net for potential errors"). Opened by a plain click on
-    // this icon -- lists the last 20 manual moves on this board
-    // (drag-drop or the H/M/L buttons), newest first, each with an
-    // Undo that puts the card straight back to its prior column,
-    // priority, and position.
-    if(!document.getElementById('bb-moves-overlay')){
-      var mvOv=document.createElement('div');
-      mvOv.id='bb-moves-overlay'; mvOv.className='bb-overlay';
-      mvOv.innerHTML=
-         '<div class="bb-overlay-card" style="width:320px">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recent Moves</span><button class="bb-close" id="bb-moves-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Every move you made, with a way back.</div>'
-          +'<div id="bb-moves-list" style="max-height:320px;overflow-y:auto"></div>'
-        +'</div>';
-      fg.appendChild(mvOv);
-      mvOv.addEventListener('click', function(e){ if(e.target===mvOv) closeRecentMoves(); });
-      _bbMakeDraggable(mvOv.querySelector('.bb-overlay-card'), mvOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-settings-overlay')){
-      var setOv=document.createElement('div');
-      setOv.id='bb-settings-overlay'; setOv.className='bb-overlay';
-      setOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title" id="bb-settings-title">Settings</span><button class="bb-close" id="bb-settings-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw" id="bb-settings-body"></div>'
-        +'</div>';
-      fg.appendChild(setOv);
-      setOv.addEventListener('click', function(e){ if(e.target===setOv) closeSettings(); });
-    }
-    // Team Roster (Settings > Team), Aug 8 2026 -- Larry's locked design:
-    // reads like it would print, not a data-entry grid. Email/phone always
-    // visible (the real use case is calling someone to cover a session or
-    // checking who's free at a new time), Notes gets its own always-on
-    // field per person, role symbol doubles as the role-picker trigger.
-    if(!document.getElementById('bb-team-overlay')){
-      var tmOv=document.createElement('div');
-      tmOv.id='bb-team-overlay'; tmOv.className='bb-overlay';
-      tmOv.innerHTML=
-         '<div class="bb-overlay-card bb-team-print" style="width:400px">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Cast</span><button class="bb-close" id="bb-team-close" aria-label="Close">&#10005;</button></div>'
-          +'<input type="text" class="tm-groupname" id="bb-team-groupname" placeholder="Name this cast...">'
-          +'<div id="bb-team-list-view"></div>'
-          +'<div class="tm-addrow">'
-            +'<div class="tm-add-tile" id="bb-team-add" title="Add a cast member">+</div>'
-            +'<div class="tm-print-tile" id="bb-team-print" title="Print roster">&#128438;</div>'
-          +'</div>'
-          +'<div id="bb-team-add-row" style="display:none;margin-top:10px;gap:6px">'
-            +'<div class="tm-add-wrap">'
-              +'<input type="text" id="bb-team-add-email" placeholder="Type a name or email..." autocomplete="off" style="width:100%;box-sizing:border-box;font-size:calc(12px * var(--fg-text-scale,1));padding:6px 8px;border:1px solid var(--bb-accent);border-radius:6px">'
-              +'<div class="tm-add-suggest" id="bb-team-add-suggest" style="display:none"></div>'
-            +'</div>'
-            +'<button class="bb-flag-btn" id="bb-team-add-confirm" style="flex-shrink:0">Add</button>'
-          +'</div>'
-          +'<div id="bb-team-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin-top:6px;display:none"></div>'
-        +'</div>';
-      fg.appendChild(tmOv);
-      tmOv.addEventListener('click', function(e){ if(e.target===tmOv) closeTeamRoster(); });
-      _bbMakeDraggable(tmOv.querySelector('.bb-overlay-card'), tmOv.querySelector('.bb-overlay-head'));
-    }
-    // Key Library manager (9397), Aug 3 2026 -- Larry: "we need to be
-    // able to edit or trash any custom key." Didn't exist for the
-    // Briefing Board at all before (only the per-card slot picker,
-    // which can only assign/unassign, never edit or delete the key
-    // itself). Now that keys are the shared, traveler-wide custom_keys
-    // library, this is deliberately the twin of the Storyboard's own
-    // _sboardOpenKeyLibraryManager -- same pencil+trash-per-row shape,
-    // reachable from either board's gear menu, editing the same rows.
-    if(!document.getElementById('bb-keylibmanager-overlay')){
-      var klOv=document.createElement('div');
-      klOv.id='bb-keylibmanager-overlay'; klOv.className='bb-overlay';
-      klOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Signal Flags</span><button class="bb-close" id="bb-keylibmanager-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a signal flag link to each other automatically.</div>'
-            +'<div id="bb-keylib-list"></div>'
-            +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a Flag</button>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(klOv);
-      klOv.addEventListener('click', function(e){ if(e.target===klOv) closeKeyLibManager(); });
-      _bbMakeDraggable(klOv.querySelector('.bb-overlay-card'), klOv.querySelector('.bb-overlay-head'));
-    }
-    // Board Sharing (Aug 4 2026) -- lets the owner of a project/departmental/
-    // company Briefing Board add other signed-in members so they can see
-    // and edit it too. Same overlay shape as the Signal Flags manager.
-    if(!document.getElementById('bb-sharing-overlay')){
-      var shOv=document.createElement('div');
-      shOv.id='bb-sharing-overlay'; shOv.className='bb-overlay';
-      shOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Guests</span><button class="bb-close" id="bb-sharing-close" aria-label="Close">\u2715</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-links-empty" style="margin-bottom:8px">Guests can look at this board but not change anything.</div>'
-            +'<div id="bb-sharing-list"></div>'
-            +'<div id="bb-sharing-add-row" style="margin-top:8px">'
-              +'<div style="display:flex;gap:6px;margin-bottom:6px">'
-                +'<input id="bb-sharing-add-email" type="email" placeholder="Their email address" style="flex:1">'
-                +'<button class="bb-icon-btn bb-icon-btn-add" id="bb-sharing-add-btn" title="Add">+</button>'
-              +'</div>'
-            +'</div>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(shOv);
-      shOv.addEventListener('click', function(e){ if(e.target===shOv) closeSharingManager(); });
-      _bbMakeDraggable(shOv.querySelector('.bb-overlay-card'), shOv.querySelector('.bb-overlay-head'));
-    }
-    // Relationships (Aug 16 2026) -- Larry: members need a real way to
-    // form/accept a parent-child adoption as it happens, not just have
-    // Claude write it into the database. Same overlay shape as Guests.
-    // Shows this board's parent + children, any pending requests
-    // touching any board you own (incoming ones need your Approve/
-    // Decline; outgoing ones show as waiting), and a form to start a
-    // new request -- either to one of your own boards, or to another
-    // member's by email (find_member_boards_by_email), going through
-    // request_board_adoption/respond_board_adoption so the same
-    // mutual-consent rule holds no matter who's using it.
-    if(!document.getElementById('bb-relations-overlay')){
-      var relOv=document.createElement('div');
-      relOv.id='bb-relations-overlay'; relOv.className='bb-overlay';
-      relOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Relationships</span><button class="bb-close" id="bb-relations-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw"><div id="bb-relations-body">Loading...</div></div>'
-        +'</div>';
-      fg.appendChild(relOv);
-      relOv.addEventListener('click', function(e){ if(e.target===relOv) closeRelationsManager(); });
-      _bbMakeDraggable(relOv.querySelector('.bb-overlay-card'), relOv.querySelector('.bb-overlay-head'));
-    }
-    // Project Hub (Aug 16 2026) -- Larry: the PROJECT field's (-) needs
-    // to do something real for a project with actual content in it, not
-    // just delete it outright. Three choices, shown together even
-    // though only Move is wired up yet -- Larry's call: "3 choices even
-    // if they do not all work yet." Move detaches this project from its
-    // current parent (if any) via detach_board_relation, then opens the
-    // existing Relationships overlay so a new parent can be requested
-    // right away. Archive/Trash are stubs for now -- board-level
-    // archive/trash don't exist yet, only the card-level versions do.
-    if(!document.getElementById('bb-project-hub-overlay')){
-      var phOv=document.createElement('div');
-      phOv.id='bb-project-hub-overlay'; phOv.className='bb-overlay';
-      phOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Remove Project</span><button class="bb-close" id="bb-hub-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-links-empty" id="bb-hub-board-label" style="margin-bottom:10px"></div>'
-            +'<button class="jb bb-hx-landing-btn" id="bb-hub-move-btn" style="width:100%">🔀 Move to another parent</button>'
-            +'<button class="jb bb-hx-landing-btn" id="bb-hub-archive-btn" style="width:100%">📁 Archive this project</button>'
-            +'<button class="jb bb-hx-landing-btn" id="bb-hub-trash-btn" style="width:100%">🗑️ Trash this project</button>'
-            +'<div id="bb-hub-msg" class="bb-links-empty" style="margin-top:6px"></div>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(phOv);
-      phOv.addEventListener('click', function(e){ if(e.target===phOv) closeProjectHub(); });
-      _bbMakeDraggable(phOv.querySelector('.bb-overlay-card'), phOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-hx-overlay')){
-      var hxOv=document.createElement('div');
-      hxOv.id='bb-hx-overlay'; hxOv.className='bb-overlay';
-      hxOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">History</span><button class="bb-close" id="bb-hx-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw">'
-            +'<button class="jb bb-hx-landing-btn" id="bb-hx-archive-btn" style="width:100%">📁 Archive</button>'
-            +'<button class="jb bb-hx-landing-btn" id="bb-hx-briefinglog-btn" style="width:100%">📣 Briefing Log</button>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(hxOv);
-      hxOv.addEventListener('click', function(e){ if(e.target===hxOv) closeHX(); });
-      _bbMakeDraggable(hxOv.querySelector('.bb-overlay-card'), hxOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-archive-overlay')){
-      var archOv=document.createElement('div');
-      archOv.id='bb-archive-overlay'; archOv.className='bb-overlay';
-      archOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><button class="bb-hx-back" id="bb-archive-back" title="Back to History">←</button><span class="bb-overlay-title">Archive</span><button class="bb-close" id="bb-archive-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw"><div id="bb-archive-list" style="width:100%"></div></div>'
-        +'</div>';
-      fg.appendChild(archOv);
-      archOv.addEventListener('click', function(e){ if(e.target===archOv) closeArchive(); });
-      _bbMakeDraggable(archOv.querySelector('.bb-overlay-card'), archOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-briefinglog-overlay')){
-      var blOv=document.createElement('div');
-      blOv.id='bb-briefinglog-overlay'; blOv.className='bb-overlay';
-      blOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><button class="bb-hx-back" id="bb-briefinglog-back" title="Back to History">←</button><span class="bb-overlay-title">Briefing Log</span><button class="bb-close" id="bb-briefinglog-close" aria-label="Close">✕</button></div>'
-          +'<div class="bbw"><div id="bb-briefinglog-list" style="width:100%"></div></div>'
-        +'</div>';
-      fg.appendChild(blOv);
-      blOv.addEventListener('click', function(e){ if(e.target===blOv) closeBriefingLog(); });
-      _bbMakeDraggable(blOv.querySelector('.bb-overlay-card'), blOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-keybuilder-overlay')){
-      var kbOv=document.createElement('div');
-      kbOv.id='bb-keybuilder-overlay'; kbOv.className='bb-overlay';
-      kbOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Signal Flag</span><button class="bb-close" id="bb-keybuilder-close" aria-label="Close">\u2715</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-field"><label>Shape</label><div class="bb-flags">'
-              +SIGNAL_SHAPES.map(function(s){ return '<button class="bb-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:inline-block;width:18px;height:18px;'+_bbShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
-            +'</div></div>'
-            +'<div class="bb-field"><label>Color</label><div class="bb-swatches">'
-              +KEY_COLORS.map(function(col){ return '<button class="bb-key-swatch" data-color="'+col+'" style="background:'+col+'"></button>'; }).join('')
-            +'</div></div>'
-            +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this signal flag mean?"></div>'
-            +'<button class="bb-flag-btn" id="bb-keybuilder-save" style="width:100%">Save</button>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(kbOv);
-      kbOv.addEventListener('click', function(e){ if(e.target===kbOv) closeKeyBuilder(); });
-      _bbMakeDraggable(kbOv.querySelector('.bb-overlay-card'), kbOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-keypicker-overlay')){
-      var kpOv=document.createElement('div');
-      kpOv.id='bb-keypicker-overlay'; kpOv.className='bb-overlay';
-      kpOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Choose a Signal Flag</span><button class="bb-close" id="bb-keypicker-close" aria-label="Close">\u2715</button></div>'
-          +'<div class="bbw">'
-            +'<div class="bb-field" id="bb-keypicker-list"></div>'
-            +'<button class="bb-flag-btn" id="bb-keypicker-remove" style="width:100%;margin-bottom:8px">Remove this signal flag</button>'
-            +'<button class="bb-flag-btn" id="bb-keypicker-new" style="width:100%">Build a new signal flag</button>'
-          +'</div>'
-        +'</div>';
-      fg.appendChild(kpOv);
-      kpOv.addEventListener('click', function(e){ if(e.target===kpOv) closeKeyPicker(); });
-      _bbMakeDraggable(kpOv.querySelector('.bb-overlay-card'), kpOv.querySelector('.bb-overlay-head'));
-    }
-    if(!document.getElementById('bb-keypeek-overlay')){
-      var kkOv=document.createElement('div');
-      kkOv.id='bb-keypeek-overlay'; kkOv.className='bb-overlay';
-      kkOv.innerHTML=
-         '<div class="bb-overlay-card">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title" id="bb-keypeek-title">Signal Flag</span><button class="bb-close" id="bb-keypeek-close" aria-label="Close">\u2715</button></div>'
-          +'<div class="bbw"><div id="bb-keypeek-body" style="font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#a3907a;text-align:center;padding:16px 0">Loading\u2026</div></div>'
-        +'</div>';
-      fg.appendChild(kkOv);
-      kkOv.addEventListener('click', function(e){ if(e.target===kkOv) closeKeyPeek(); });
-      T().wire('bb-keypeek-close', closeKeyPeek);
-      _bbMakeDraggable(kkOv.querySelector('.bb-overlay-card'), kkOv.querySelector('.bb-overlay-head'));
-    }
-    // Logo crop tool overlay, Aug 28 2026 -- shell only; its card is
-    // filled in fresh by _bbLogoCfg.crop.mount (shared T2TLogo
-    // controller, idea-media-shared.js) every time it opens, same
-    // "shared overlay, replace the innerHTML" approach the Idea/Plan
-    // Storyboard's own crop tool uses on sb-detail-overlay, so nothing
-    // static needs to live here beyond the empty card shell.
-    if(!document.getElementById('bb-logo-crop-overlay')){
-      var lcOv=document.createElement('div');
-      lcOv.id='bb-logo-crop-overlay'; lcOv.className='bb-overlay';
-      lcOv.innerHTML='<div class="bb-overlay-card" style="width:380px;max-width:92vw"></div>';
-      fg.appendChild(lcOv);
-    }
-    T().registerPageNum('s-briefing-board', '4010'); /* Larry, Aug 8 2026: renumbered off 9350 into the Journey phase sequence, mirroring ISB's July 29 move from 9710 to 1010 -- see Journey's 4810 Tools Crib link in Design Notes */
-    T().registerUtilScreen('s-briefing-board');
-    T().registerCtx('s-briefing-board', 'Briefing Board');
-
-    // Appearance (theme/font) restores immediately -- a personal
-    // preference shared across all of a traveler's boards, independent
-    // of which board is active or whether Supabase is reachable.
-    _bbApplyTheme(_bbCurrentTheme());
-    _bbApplyFont(_bbCurrentFont());
-
-    T().registerScreenActivate('s-briefing-board', function(){
-      var fgr=document.getElementById('fg-root');
-      if(fgr) fgr.classList.add('isx-full');
-      if(!_bbInitStarted){
-        _bbInitStarted=true;
-        _bbInitBoardsAndData();
-      } else {
-        renderBoard();
-      }
-    });
-
-    wireBriefingBoard();
-  }
+  // injectBriefingBoardScreens() moved to briefing-board-screens.js,
+  // Sept 5 2026, same pass -- pure HTML markup, exposed as
+  // window._bbInjectScreens(). Loaded before this file; called from
+  // the DOMContentLoaded handler at the bottom of this file, and it
+  // in turn calls window._bbInjectStyles() and, once done building the
+  // board's DOM, window._bbWireBriefingBoard() (this file's own
+  // wireBriefingBoard, exposed just below its definition).
 
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
-    // Board-name eyebrow fallback, Sept 5 2026 -- the currently-open
-    // board's own name, used below so a plain hand-typed card (no
-    // header link, no topic_label) still gets a board-name eyebrow
-    // like header-derived cards already have.
-    var _bbHomeBoardRow=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    var _bbHomeBoardName=_bbHomeBoardRow ? (_bbHomeBoardRow.name||'') : '';
     var _keyLib=_bbLoadKeyLibrary();
     _bbAutoEscalateDates();
     var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
@@ -4010,21 +2695,9 @@
         // hand-edited to drop its usual "Develop " prefix) -- the eyebrow
         // only earns its place on the card when it's telling you something
         // the task line doesn't already say.
-        //
-        // Extended Sept 5 2026 (Larry: "what if every BB card listed its
-        // BB with an eyebrow above the task") -- a plain hand-typed native
-        // card has no topic_label, so it used to show nothing here at
-        // all. Now it falls back to naming the board it's actually
-        // sitting on. Foreign/merged cards are deliberately left out of
-        // this fallback (corrected same day -- a foreign card with no
-        // topic_label was showing its home board name here AND in the
-        // dashed-border badge just below, same text twice on one card)
-        // -- foreignBadge already names a foreign card's home board, so
-        // this line only needs the fallback for cards that actually live
-        // here.
-        var topicEyebrowText = (c.topicLabel||'').trim() || (c._foreign ? '' : _bbHomeBoardName);
+        var topicEyebrowText = (c.topicLabel||'').trim();
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
-          ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
+          ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
@@ -4167,7 +2840,7 @@
           if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
           _bbStampDateEscalationHandled(c);
           _bbSaveLocal(_bbCardsList());
-          _bbLogCardMove(c, _bbMoveBefore);
+          window.BBArchive.logCardMove(c, _bbMoveBefore);
         }
         renderBoard();
       });
@@ -4461,78 +3134,14 @@
     renderBoard();
   }
 
-  function openRecentlyDeleted(){
-    _bbRenderRecentlyDeleted();
-    var ov=document.getElementById('bb-recently-deleted-overlay');
-    if(ov) ov.classList.add('active');
-  }
-  function closeRecentlyDeleted(){
-    var ov=document.getElementById('bb-recently-deleted-overlay'); if(ov) ov.classList.remove('active');
-  }
-  function _bbDaysAgo(iso){
-    var d=new Date(iso); if(isNaN(d.getTime())) return '';
-    var days=Math.floor((Date.now()-d.getTime())/86400000);
-    if(days<=0) return 'today';
-    if(days===1) return '1 day ago';
-    return days+' days ago';
-  }
-  function _bbRenderRecentlyDeleted(){
-    var wrap=document.getElementById('bb-rd-list'); if(!wrap) return;
-    var trashed=_bbCardsList().filter(function(c){ return c.trashedAt; })
-      .sort(function(a,b){ return new Date(b.trashedAt)-new Date(a.trashedAt); });
-    if(!trashed.length){
-      wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
-      return;
-    }
-    wrap.innerHTML=trashed.map(function(c){
-      return '<div class="bb-rd-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
-        +'<div style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:2px">'+_esc(c.task||'(untitled)')+'</div>'
-        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Trashed '+_bbDaysAgo(c.trashedAt)+'</div>'
-        +'<div style="display:flex;gap:6px">'
-          +'<button class="bb-icon-btn" data-rd-restore="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px">Restore</button>'
-          +'<button class="bb-icon-btn" data-rd-purge="'+_esc(c.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px;color:#a3372b">Delete Forever</button>'
-        +'</div>'
-      +'</div>';
-    }).join('');
-  }
-  function _bbRestoreTrashedCard(id){
-    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
-    if(!c) return;
-    c.trashedAt=null;
-    _bbSaveLocal(_bbCardsList());
-    _bbRenderRecentlyDeleted();
-    renderBoard();
-  }
-  function _bbPurgeTrashedCardForever(id){
-    _bbCards=_bbCardsList().filter(function(x){ return x.id!==id; });
-    _bbSaveLocal(_bbCards, [id]);
-    _bbRenderRecentlyDeleted();
-  }
-  function wireRecentlyDeleted(){
-    T().wire('bb-rd-close', closeRecentlyDeleted);
-    var wrap=document.getElementById('bb-rd-list'); if(!wrap) return;
-    wrap.addEventListener('click', function(e){
-      var restoreId=e.target.getAttribute && e.target.getAttribute('data-rd-restore');
-      var purgeId=e.target.getAttribute && e.target.getAttribute('data-rd-purge');
-      if(restoreId) _bbRestoreTrashedCard(restoreId);
-      if(purgeId){
-        if(window.confirm('Delete this for good? There\'s no getting it back after this.')) _bbPurgeTrashedCardForever(purgeId);
-      }
-    });
-  }
-  // Aug 7 2026 -- cards sitting in trashed_at longer than this get
-  // permanently removed the next time the board loads (see the purge
-  // call in the board-load function). A targeted delete scoped to
-  // trashed_at only -- never touches the risky whole-board prune in
-  // _bbSyncCardsToSupabase.
-  var BB_TRASH_RETENTION_DAYS = 30;
-  async function _bbPurgeOldTrash(boardId){
-    var sb=T().sb; if(!sb || !boardId) return;
-    try{
-      var cutoff=new Date(Date.now() - BB_TRASH_RETENTION_DAYS*86400000).toISOString();
-      await sb.from('briefing_cards').delete().eq('board_id', boardId).not('trashed_at','is',null).lt('trashed_at', cutoff);
-    }catch(e){ console.error('Briefing Board: trash auto-purge failed', e); }
-  }
+  // Recently Deleted (the Trash browser -- restore/delete forever) and
+  // its retention purge moved to briefing-board-archive.js, Sept 5 2026
+  // -- exposed as window.BBArchive.{openRecentlyDeleted,
+  // closeRecentlyDeleted,wireRecentlyDeleted,purgeOld}. doTrashCard and
+  // the Trash confirm dialog just above stay here -- that's the action
+  // of sending a card TO trash, a normal card-lifecycle move, not part
+  // of browsing history.
+
 
   // Settings screen stack, Aug 8 2026 -- Larry: Settings should be a
   // simple drill-down (Settings home -> People -> Cast/Guests), not a
@@ -4567,7 +3176,7 @@
       T().wire('bb-settings-go-preferences', function(){ _bbRenderSettingsScreen('preferences'); });
       T().wire('bb-settings-go-reload', function(){ closeSettings(); T().resetAndReturn(); });
       T().wire('bb-settings-go-menu', function(){ closeSettings(); T().goMG(); });
-      T().wire('bb-settings-go-history', function(){ closeSettings(); openHX(); });
+      T().wire('bb-settings-go-history', function(){ closeSettings(); window.BBArchive.openHX(); });
     } else if(screen==='people'){
       if(titleEl) titleEl.textContent='People';
       body.innerHTML=
@@ -4624,7 +3233,7 @@
       var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
       if(sw) sw.addEventListener('change', function(){ _bbSetStartWarnDays(sw.value); sw.value=_bbStartWarnDays(); renderBoard(); });
       if(dw) dw.addEventListener('change', function(){ _bbSetDueWarnDays(dw.value); dw.value=_bbDueWarnDays(); renderBoard(); });
-      T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
+      T().wire('bb-open-keylib', function(){ closeSettings(); if(window.T2TStoryboard && T2TStoryboard.openKeyLibraryManager) T2TStoryboard.openKeyLibraryManager(); });
     }
   }
   function _bbOpenSettingsAt(screen){
@@ -4671,8 +3280,43 @@
   // Before this, all 3 circles (empty ones dashed "+") showed at once
   // per Larry's July 21 (afternoon) call -- replaced today per his ask
   // to keep only one + visible.
-  var _bbKeyDraft = {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
-  var _bbOpenSlotIndex = null;
+  // Session 271 (Sept 5 2026) -- picker/builder/library-manager UI moved
+  // to the T2TStoryboard bridge (idea-storyboard-9710.js), same as CAST's
+  // openCallSheet: this function hands the bridge this card's own keys
+  // array and a callback that persists whatever the traveler picks,
+  // instead of BB keeping its own copy of the picker's UI.
+  function _bbOpenKeyPickerBridge(c, slotIndex){
+    if(!(window.T2TStoryboard && T2TStoryboard.openKeyPicker)) return;
+    T2TStoryboard.openKeyPicker((c.keys||[]).slice(), slotIndex, function(keyIdOrNull){
+      _bbSetKeySlot(c, slotIndex, keyIdOrNull);
+    });
+  }
+
+  // Replaces the old assignKeyToSlot/removeKeyFromSlot pair -- keyIdOrNull
+  // null means Remove, matching the Idea Storyboard's own
+  // _sboardAssignKeyToSlot(item, slotIndex, keyIdOrNull) shape.
+  async function _bbSetKeySlot(c, slotIndex, keyIdOrNull){
+    c.keys = c.keys || [];
+    var removedKeyId = c.keys[slotIndex];
+    if(keyIdOrNull===null){
+      // Splice, don't null out -- keeps the array gap-free so the next
+      // render shows the remaining keys packed left plus one "+".
+      c.keys.splice(slotIndex, 1);
+    } else {
+      c.keys[slotIndex] = keyIdOrNull;
+    }
+    _bbSaveLocal(_bbCardsList());
+    _bbRenderKeyRow(c);
+    renderBoard();
+    await _bbPersistCardKeysNow(c);
+    // Auto-link, Aug 3 2026 -- reconcile once the key's own database row
+    // is confirmed current, so _bbSyncKeyLinks sees this card among the
+    // key's holders.
+    var affectedKeyId = (keyIdOrNull===null) ? removedKeyId : keyIdOrNull;
+    if(affectedKeyId) await _bbSyncKeyLinks(affectedKeyId);
+    await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+    renderBoard();
+  }
 
   function _bbRenderKeyRow(c){
     var row=document.getElementById('bb-d-key-row'); if(!row) return;
@@ -4730,25 +3374,11 @@
         btn.addEventListener('mouseleave', kCancelHold);
         btn.addEventListener('touchend', kCancelHold);
         btn.addEventListener('touchmove', kMoveCheck);
-        btn.addEventListener('click', function(){ if(!kHeld) openKeyPicker(slotIdx); kHeld=false; });
+        btn.addEventListener('click', function(){ if(!kHeld) _bbOpenKeyPickerBridge(c, slotIdx); kHeld=false; });
       } else {
-        btn.addEventListener('click', function(){ openKeyPicker(slotIdx); });
+        btn.addEventListener('click', function(){ _bbOpenKeyPickerBridge(c, slotIdx); });
       }
     });
-  }
-
-  function openKeyPicker(slotIndex){
-    _bbOpenSlotIndex = slotIndex;
-    _bbRenderKeyPickerList();
-    var c=_bbFindCardAnywhere(_bbOpenCardId);
-    var hasKey = !!(c && c.keys && c.keys[slotIndex]);
-    var removeBtn=document.getElementById('bb-keypicker-remove');
-    if(removeBtn) removeBtn.style.display = hasKey ? '' : 'none';
-    var ov=document.getElementById('bb-keypicker-overlay');
-    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
-  }
-  function closeKeyPicker(){
-    var ov=document.getElementById('bb-keypicker-overlay'); if(ov) ov.classList.remove('active');
   }
 
   // Signal Flag peek, Aug 15 2026 (Larry: "click to travel from one to
@@ -4907,220 +3537,17 @@
   function closeKeyPeek(){
     var ov=document.getElementById('bb-keypeek-overlay'); if(ov) ov.classList.remove('active');
   }
-  // Shows the whole library every time a slot is tapped -- Larry's "so
-  // you know what is already possible" ask -- greying out any entry
-  // already sitting in one of this card's OTHER two slots, since one
-  // card showing the same key twice would just be confusing.
-  function _bbRenderKeyPickerList(){
-    var list=document.getElementById('bb-keypicker-list'); if(!list) return;
-    var lib=_bbLoadKeyLibrary();
-    var c=_bbFindCardAnywhere(_bbOpenCardId);
-    var keys=(c && c.keys) || [];
-    if(!lib.length){
-      list.innerHTML='<div class="bb-key-pick-empty-msg">No signal flags yet &mdash; build your first one below.</div>';
-    } else {
-      list.innerHTML = lib.map(function(k){
-        var usedElsewhere = keys.indexOf(k.id)>=0 && keys[_bbOpenSlotIndex]!==k.id;
-        return '<div class="bb-key-pick-row-wrap">'
-          +'<button class="bb-key-pick-row'+(usedElsewhere?' bb-key-pick-disabled':'')+'" data-key-id="'+k.id+'">'
-          +'<span class="bb-key-pick-swatch" style="display:inline-block;'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span class="bb-key-pick-meaning">'+_esc(k.meaning||'')+'</span>'
-          +'</button>'
-          // Pencil-to-edit, Aug 4 2026 -- Larry: "I must have a way to
-          // edit or change the meaning of any one of them" from
-          // wherever he actually runs into a signal flag, not just Board
-          // Settings' library manager. Same edit form (openKeyBuilder
-          // with existingKey), reached straight from the card's own
-          // Choose-a-Signal-Flag picker too.
-          +'<button class="bb-key-pick-edit" data-key-id="'+k.id+'" title="Edit this signal flag">&#9998;</button>'
-          +'</div>';
-      }).join('');
-      list.querySelectorAll('.bb-key-pick-row').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          if(btn.classList.contains('bb-key-pick-disabled')) return;
-          assignKeyToSlot(btn.getAttribute('data-key-id'));
-        });
-      });
-      list.querySelectorAll('.bb-key-pick-edit').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var k=lib.filter(function(x){ return String(x.id)===btn.getAttribute('data-key-id'); })[0];
-          if(k){ var slot=_bbOpenSlotIndex; closeKeyPicker(); openKeyBuilder(k, function(){ openKeyPicker(slot); }); }
-        });
-      });
-    }
-    var newBtn=document.getElementById('bb-keypicker-new');
-    if(newBtn) newBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
-  }
-  async function assignKeyToSlot(keyId){
-    var c=_bbFindCardAnywhere(_bbOpenCardId);
-    if(!c) return;
-    c.keys = c.keys || [];
-    c.keys[_bbOpenSlotIndex] = keyId;
-    _bbSaveLocal(_bbCardsList());
-    closeKeyPicker();
-    _bbRenderKeyRow(c);
-    renderBoard();
-    // Auto-link, Aug 3 2026 -- reconcile once the key's own database
-    // row is confirmed current, so _bbSyncKeyLinks sees this card among
-    // the key's holders.
-    await _bbPersistCardKeysNow(c);
-    await _bbSyncKeyLinks(keyId);
-    await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
-    renderBoard();
-  }
-  async function removeKeyFromSlot(){
-    var c=_bbFindCardAnywhere(_bbOpenCardId);
-    if(!c || !c.keys) return;
-    var removedKeyId=c.keys[_bbOpenSlotIndex];
-    // Splice, don't null out -- keeps the array gap-free so the next
-    // render shows the remaining keys packed left plus one "+", instead
-    // of a hole where the removed key used to sit.
-    c.keys.splice(_bbOpenSlotIndex, 1);
-    _bbSaveLocal(_bbCardsList());
-    closeKeyPicker();
-    _bbRenderKeyRow(c);
-    renderBoard();
-    await _bbPersistCardKeysNow(c);
-    if(removedKeyId) await _bbSyncKeyLinks(removedKeyId);
-    await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
-    renderBoard();
-  }
-
-  // existingKey -- optional (Aug 3 2026, pencil-to-edit on the Signal Flags
-  // manager). Pre-fills the draft from a real key row and
-  // switches saveNewKey (below) into update mode instead of insert.
-  // onSaved(savedKeyRow) -- what to do once it's actually saved: assign
-  // it to the card slot that opened this (bb-keypicker-new's case,
-  // below), or just refresh whatever list is showing it (Signal Flags
-  // manager, Task 8). Always explicit now -- no implicit "guess from
-  // whatever card/slot happens to still be open" fallback, since that
-  // got fragile once this overlay had more than one way in.
-  var _bbKeyBuilderOnSaved = null;
-  function openKeyBuilder(existingKey, onSaved){
-    _bbKeyDraft = existingKey
-      ? {shape:existingKey.shape, color:existingKey.color, editingId:existingKey.id}
-      : {shape:SIGNAL_SHAPES[0], color:KEY_COLORS[0]};
-    _bbKeyBuilderOnSaved = onSaved || null;
-    var m=document.getElementById('bb-keybuilder-meaning'); if(m) m.value=existingKey?(existingKey.meaning||''):'';
-    var t=document.querySelector('#bb-keybuilder-overlay .bb-overlay-title'); if(t) t.textContent=existingKey?'Edit Signal Flag':'Add a Signal Flag';
-    var s=document.getElementById('bb-keybuilder-save'); if(s) s.textContent=existingKey?'Save changes':'Save';
-    _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
-    _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
-    var ov=document.getElementById('bb-keybuilder-overlay');
-    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
-  }
-  function closeKeyBuilder(){
-    var ov=document.getElementById('bb-keybuilder-overlay'); if(ov) ov.classList.remove('active');
-  }
-  function _bbHighlightKeyBuilderShape(shape){
-    document.querySelectorAll('#bb-keybuilder-overlay .bb-shape-btn').forEach(function(btn){
-      btn.classList.toggle('bb-shape-active', btn.getAttribute('data-shape')===shape);
-    });
-  }
-  function _bbHighlightKeyBuilderColor(color){
-    document.querySelectorAll('#bb-keybuilder-overlay .bb-key-swatch').forEach(function(btn){
-      btn.classList.toggle('bb-swatch-active', btn.getAttribute('data-color')===color);
-    });
-  }
-  // Handles both create (fresh _bbKeyDraft) and edit (_bbKeyDraft.editingId
-  // set) -- Aug 3 2026, "we need to be able to edit or trash any custom
-  // key." Calls back via _bbKeyBuilderOnSaved rather than hardcoding
-  // what happens next, since this overlay now opens from more than one
-  // place (a card's Choose-a-Signal-Flag, and the Signal Flags manager).
-  async function saveNewKey(){
-    var meaningEl=document.getElementById('bb-keybuilder-meaning');
-    var meaning=meaningEl?meaningEl.value.trim():'';
-    if(!meaning){ if(meaningEl) meaningEl.focus(); return; }
-    if(!_bbKeyDraft.editingId && _bbKeyLibCache.length>=MAX_KEY_LIBRARY) return;
-    var savedKey;
-    try{
-      if(_bbKeyDraft.editingId){
-        savedKey=await _bbUpdateKey(_bbKeyDraft.editingId, _bbKeyDraft.shape, _bbKeyDraft.color, meaning);
-      } else {
-        savedKey=await _bbCreateKey(_bbKeyDraft.shape, _bbKeyDraft.color, meaning);
-      }
-    }catch(e){
-      console.error('Briefing Board: could not save signal flag', e);
-      window.alert('Could not save that signal flag. Error: '+(e&&e.message?e.message:String(e))+'. Please try again.');
-      return;
-    }
-    closeKeyBuilder();
-    if(_bbKeyBuilderOnSaved) _bbKeyBuilderOnSaved(savedKey);
-  }
-  function wireKeyBuilder(){
-    document.querySelectorAll('#bb-keybuilder-overlay .bb-shape-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        _bbKeyDraft.shape=btn.getAttribute('data-shape');
-        _bbHighlightKeyBuilderShape(_bbKeyDraft.shape);
-      });
-    });
-    document.querySelectorAll('#bb-keybuilder-overlay .bb-key-swatch').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        _bbKeyDraft.color=btn.getAttribute('data-color');
-        _bbHighlightKeyBuilderColor(_bbKeyDraft.color);
-      });
-    });
-    T().wire('bb-keybuilder-save', saveNewKey);
-    T().wire('bb-keybuilder-close', closeKeyBuilder);
-  }
-  function wireKeyPicker(){
-    T().wire('bb-keypicker-close', closeKeyPicker);
-    T().wire('bb-keypicker-remove', removeKeyFromSlot);
-    T().wire('bb-keypicker-new', function(){
-      closeKeyPicker();
-      openKeyBuilder(null, function(newKey){ assignKeyToSlot(newKey.id); });
-    });
-  }
-
-  // ---- Signal Flags manager (9397) ----
-
-  function _bbRenderKeyLibManager(){
-    var list=document.getElementById('bb-keylib-list'); if(!list) return;
-    var lib=_bbLoadKeyLibrary();
-    if(!lib.length){
-      list.innerHTML='<div class="bb-links-empty">No signal flags yet. Build one below.</div>';
-    } else {
-      list.innerHTML=lib.map(function(k){
-        return '<div class="bb-keylib-row">'
-          +'<span class="bb-keylib-swatch" style="'+_bbShapeCSS(k.shape,k.color)+'"></span>'
-          +'<span class="bb-keylib-meaning">'+_esc(k.meaning||'')+'</span>'
-          +'<button class="bb-keylib-edit" data-key-id="'+_esc(k.id)+'" title="Edit this signal flag">&#9998;</button>'
-          +'<button class="bb-keylib-del" data-key-id="'+_esc(k.id)+'" title="Delete this signal flag">&#128465;&#65039;</button>'
-          +'</div>';
-      }).join('');
-      list.querySelectorAll('.bb-keylib-edit').forEach(function(btn){
-        btn.addEventListener('click', function(){
-          var key=lib.filter(function(k){ return String(k.id)===btn.getAttribute('data-key-id'); })[0];
-          if(key){ closeKeyLibManager(); openKeyBuilder(key, function(){ openKeyLibManager(); }); }
-        });
-      });
-      list.querySelectorAll('.bb-keylib-del').forEach(function(btn){
-        btn.addEventListener('click', async function(){
-          var id=btn.getAttribute('data-key-id');
-          if(!window.confirm('Delete this signal flag? It will be removed from every card and Storyboard item currently using it, and any links that exist only because of it.')) return;
-          try{ await _bbDeleteKey(id); }
-          catch(e){ console.error('Briefing Board: could not delete signal flag', e); window.alert('Could not delete that signal flag. Please try again.'); return; }
-          _bbRenderKeyLibManager();
-          renderBoard();
-        });
-      });
-    }
-    var addBtn=document.getElementById('bb-keylib-add');
-    if(addBtn) addBtn.style.display = lib.length>=MAX_KEY_LIBRARY ? 'none' : '';
-  }
-
-  function openKeyLibManager(){
-    _bbRenderKeyLibManager();
-    var ov=document.getElementById('bb-keylibmanager-overlay');
-    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
-  }
-  function closeKeyLibManager(){
-    var ov=document.getElementById('bb-keylibmanager-overlay'); if(ov) ov.classList.remove('active');
-  }
-  function wireKeyLibManager(){
-    T().wire('bb-keylibmanager-close', closeKeyLibManager);
-    T().wire('bb-keylib-add', function(){ closeKeyLibManager(); openKeyBuilder(null, function(){ openKeyLibManager(); }); });
-  }
+  // Session 271 (Sept 5 2026) -- the picker list, the key builder, and
+  // the Signal Flags library manager (formerly _bbRenderKeyPickerList,
+  // assignKeyToSlot, removeKeyFromSlot, openKeyBuilder/closeKeyBuilder,
+  // _bbHighlightKeyBuilderShape/Color, saveNewKey, wireKeyBuilder,
+  // wireKeyPicker, _bbRenderKeyLibManager, openKeyLibManager,
+  // closeKeyLibManager, wireKeyLibManager, plus their three static
+  // overlay divs) all moved to the T2TStoryboard bridge -- see
+  // _bbOpenKeyPickerBridge/_bbSetKeySlot above and the settings menu's
+  // bb-open-keylib wiring below. Only the peek feature (openKeyPeek,
+  // just above) and this card's own key row stayed BB-side, since they
+  // render into BB-specific DOM/gestures rather than shared UI.
 
   // ---- Board Sharing manager (Aug 4 2026) ----
   // Larry: Project/Departmental/Company boards should support more than
@@ -5902,7 +4329,7 @@
           if(_bbIsDoCol(c.col)){ c.col=_bbDoColKey(c.priority); _bbResortDoColumnByPriority(c.col); }
           _bbStampDateEscalationHandled(c);
           _bbSaveLocal(_bbCardsList());
-          _bbLogCardMove(c, _bbMoveBefore);
+          window.BBArchive.logCardMove(c, _bbMoveBefore);
           _bbHighlightPriority(c.priority);
           renderBoard();
         });
@@ -6031,13 +4458,13 @@
     });
     // bb-hx-btn (the standalone header icon) is gone, Aug 30 2026 --
     // History now opens from Utility instead (bb-settings-go-history).
-    T().wire('bb-hx-close', closeHX);
-    T().wire('bb-hx-archive-btn', function(){ closeHX(); openArchive(); });
-    T().wire('bb-hx-briefinglog-btn', function(){ closeHX(); openBriefingLog(); });
-    T().wire('bb-archive-close', closeArchive);
-    T().wire('bb-archive-back', function(){ closeArchive(); openHX(); });
-    T().wire('bb-briefinglog-close', closeBriefingLog);
-    T().wire('bb-briefinglog-back', function(){ closeBriefingLog(); openHX(); });
+    T().wire('bb-hx-close', window.BBArchive.closeHX);
+    T().wire('bb-hx-archive-btn', function(){ window.BBArchive.closeHX(); window.BBArchive.openArchive(); });
+    T().wire('bb-hx-briefinglog-btn', function(){ window.BBArchive.closeHX(); window.BBArchive.openBriefingLog(); });
+    T().wire('bb-archive-close', window.BBArchive.closeArchive);
+    T().wire('bb-archive-back', function(){ window.BBArchive.closeArchive(); window.BBArchive.openHX(); });
+    T().wire('bb-briefinglog-close', window.BBArchive.closeBriefingLog);
+    T().wire('bb-briefinglog-back', function(){ window.BBArchive.closeBriefingLog(); window.BBArchive.openHX(); });
     T().wire('bb-gear', openSettings);
     // Double-click the board's own background (not a card) opens the same
     // Board Settings the gear does -- Color Theme is the first field in that
@@ -6542,9 +4969,6 @@
     wireRoutineControls();
     wireLinkField();
     wireAdditionToggles();
-    wireKeyBuilder();
-    wireKeyPicker();
-    wireKeyLibManager();
     wireSharingManager();
     wireRelationsManager();
     wireProjectHub();
@@ -6555,17 +4979,38 @@
     T().wire('bb-trash-yes', doTrashCard);
     T().wire('bb-trash-no', closeTrashConfirm);
     wireTrashIcon();
-    wireRecentlyDeleted();
-    wireRecentMoves();
-    T().wire('bb-moves', openRecentMoves);
+    window.BBArchive.wireRecentlyDeleted();
+    window.BBArchive.wireRecentMoves();
+    T().wire('bb-moves', window.BBArchive.openRecentMoves);
     wireTopicBar();
     _bbWireBoardKindDropdown();
     wireBbUndoKeyboard();
     wireLogoUpload();
   }
+  // Exposed for briefing-board-screens.js, which calls this once at the
+  // end of building the board's DOM -- see the injectBriefingBoardScreens
+  // stub/comment near the top of this file for the full picture.
+  window._bbWireBriefingBoard = wireBriefingBoard;
+
+  // Small, explicit interface into this file's own data/undo/render
+  // machinery for briefing-board-archive.js (Sept 5 2026 split) to call
+  // back through, instead of reaching into this file's private variables
+  // directly -- same "params in" shape the rest of this codebase already
+  // uses for its own cross-file bridges (see T2TStoryboard.openCallSheet
+  // etc., called from further up in this file).
+  window.BBCore = {
+    cardsList: _bbCardsList,
+    saveLocal: _bbSaveLocal,
+    renderBoard: renderBoard,
+    boards: function(){ return _bbBoards; },
+    pushAction: _bbPushAction,
+    applyCardSnapshot: _bbApplyCardSnapshot,
+    resortDoColumn: _bbResortDoColumnByPriority,
+    currentBoardId: function(){ return _bbCurrentBoardId; }
+  };
 
   document.addEventListener('DOMContentLoaded', function(){
-    injectBriefingBoardScreens();
+    window._bbInjectScreens();
     if (T().onRealtimeChange) {
       T().onRealtimeChange('briefing_cards', _bbApplyRemoteCard);
       T().onRealtimeChange('briefing_checklist_items', _bbApplyRemoteChecklist);
