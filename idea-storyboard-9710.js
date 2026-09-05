@@ -433,7 +433,15 @@
         // this is the traveler's own name, not just a field label -- and
         // stacked directly above PROJECT so PROJECT reads as subordinate
         // to it ("it looks like my projects are below this").
-        +'.sc-traveler-eyebrow{font-size:calc(18px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:5px;font-weight:700;white-space:nowrap}'
+        //
+        // Same day, follow-up -- Larry: "shrink traveler name slightly...
+        // it is squeezed against the bottom of the header bar." The name
+        // plus PROJECT stacked underneath it was tall enough to crowd the
+        // header band's own bottom edge. Stepped down from 18px to 15px
+        // (still noticeably bigger than the standard 9px eyebrow, just
+        // not double) and tightened the gap above PROJECT (5px to 3px)
+        // to buy back a little vertical room.
+        +'.sc-traveler-eyebrow{font-size:calc(15px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px;font-weight:700;white-space:nowrap}'
         // On-logo LOGO eyebrow, Aug 30 2026 -- same shared T2TLogo
         // treatment as the Briefing Board's own bb-logo-eyebrow-onlogo
         // (see that file's own comment for the full reasoning): tucked
@@ -743,11 +751,19 @@
       // above changes as you move around, unlike PROJECT's fixed set of
       // projects. Plain click on sc-parent-hit itself is untouched --
       // still steps up exactly one level, same as always.
+      //
+      // Same day, follow-up -- Larry: "what if the PARENT arrow is on the
+      // left side of Parent, symbolizing they come before the current
+      // parent." Swapped order inside sc-parent-cdrop (was hit-then-
+      // caret, matching PROJECT's label-then-caret order; now caret-
+      // then-hit) -- purely a markup reorder inside the same flex row, no
+      // wiring change, since _sboardWireParentAncestorDropdown looks the
+      // caret up by id either way.
       +'<div class="sc-cdrop" id="sc-parent-cdrop" style="display:flex;align-items:center;gap:2px">'
+      +'<button type="button" class="sc-project-caret" id="sc-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
       +'<div id="sc-parent-hit" class="sc-hdr-frame" style="display:flex;align-items:center;justify-content:center">'
       +'<div id="sc-parent-label" class="sc-hdr-frame-label">Wish Tank</div>'
       +'</div>'
-      +'<button type="button" class="sc-project-caret" id="sc-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-parent-menu" hidden></div>'
       +'</div>'
       +'<div id="sc-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
@@ -2889,17 +2905,24 @@
   // (_sboardAllRowsById -- same cache _sboardProjectHeaderChoices just
   // above reads off of, and the same one _sboardGoUpOneLevel/
   // _sboardCanGoUpFromTopic already climb one link at a time), collecting
-  // every ancestor along the way, nearest first. Stops naturally at the
-  // current project's own root (a root row's cluster_id is null, same
-  // boundary _sboardCanGoUpFromTopic already checks) rather than
-  // climbing on into other projects -- PROJECT's own dropdown already
-  // owns that job, and letting PARENT climb past the project root was
-  // exactly the behavior the July 16 2026 fix removed (see the comment
-  // on the plain PARENT click wiring, above) because it duplicated
-  // PROJECT. The root row itself IS included as the furthest entry,
-  // though -- it's still one real, single click away today, so it
-  // belongs in "every level above," same reach as clicking Parent
-  // repeatedly would eventually get you.
+  // every ancestor along the way. Stops naturally at the current
+  // project's own root (a root row's cluster_id is null, same boundary
+  // _sboardCanGoUpFromTopic already checks) rather than climbing on into
+  // other projects -- PROJECT's own dropdown already owns that job, and
+  // letting PARENT climb past the project root was exactly the behavior
+  // the July 16 2026 fix removed (see the comment on the plain PARENT
+  // click wiring, above) because it duplicated PROJECT. The root row
+  // itself IS included as the furthest entry, though -- it's still one
+  // real, single click away today, so it belongs in "every level above,"
+  // same reach as clicking Parent repeatedly would eventually get you.
+  //
+  // Same day, follow-up -- Larry: "the top parent on the list should be
+  // the highest level." Walking cluster_id naturally collects nearest-
+  // ancestor-first (immediate parent, then its parent, and so on up to
+  // the root last) -- reversed before returning so the list itself reads
+  // top-to-bottom as highest-to-nearest, matching how the arrow now sits
+  // on the LEFT of Parent (see the header markup above): the levels that
+  // come before the current parent, read in that order.
   function _sboardParentAncestorChoices(){
     var list=[];
     var row=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
@@ -2912,7 +2935,7 @@
       list.push(ancestor);
       curId=ancestor.cluster_id||null;
     }
-    return list;
+    return list.reverse();
   }
   function _sboardWireParentAncestorDropdown(){
     var trigger=document.getElementById('sc-parent-caret'), menu=document.getElementById('sc-parent-menu');
