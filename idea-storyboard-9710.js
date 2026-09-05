@@ -421,8 +421,21 @@
         // 100vw/100vh), applied whenever the Storyboard is the active screen.
         // Deliberately NOT reusing sb-wide's max-width:1200px cap for this —
         // sb-wide stays reserved for CLUSTER's own separate wide toggle.
-        +'#fg-root.isx-full #s-sea-of-ideas-cluster{height:100%!important;min-height:0!important;max-height:none!important;border-radius:0!important;box-shadow:none!important;margin:0!important}'
-        +'#fg-root.isx-full #s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
+        //
+        // Sept 5 2026 -- Skeleton unification (Larry: every board should
+        // stretch to fit like Briefing Board's own screen, not start as a
+        // fixed-size "card" that this rule then had to fight its way out
+        // of). #s-sea-of-ideas-cluster no longer carries the "card" class
+        // at all (see its markup above) -- there's no fixed height/rounded
+        // corners/shadow left to override, so this shrinks from "cancel
+        // the card" down to just "fill the screen," and applies always
+        // rather than only while .isx-full happens to be set (harmless
+        // while the screen is hidden -- display:none ignores height).
+        // The real-viewport takeover itself (position:fixed, 100vw/100vh
+        // on #fg-root) is untouched -- Larry, same session: boards should
+        // still fill the whole browser window, no side or top space.
+        +'#s-sea-of-ideas-cluster{height:100%;min-height:0}'
+        +'#s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
         +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
         // Traveler name, Sept 5 2026 -- Larry: retire the gold nameplate
@@ -721,8 +734,20 @@
       document.head.appendChild(style);
     }
     var div=document.createElement('div');
-    div.innerHTML='<div class="sc card" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
-      +'<div id="sc-header-area" style="background:#1a3a5c;border-radius:10px;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:70px">'
+    // Sept 5 2026 -- dropped the "card" class (Larry: Skeleton unification,
+    // every board stretches to fit like Briefing Board's own screen instead
+    // of starting life as a fixed-size, rounded-corner card that later gets
+    // forced full-screen). See the matching CSS note above (near the old
+    // #fg-root.isx-full override) for what replaced it.
+    div.innerHTML='<div class="sc" id="s-sea-of-ideas-cluster"><div class="sw" style="padding:16px 20px;align-items:stretch;text-align:center;position:relative">'
+      // Sept 5 2026 -- header band flattened to match Briefing Board's own
+      // header, same session: no more separate rounded-corner box floating
+      // inside the screen (border-radius:10px removed) -- just a plain
+      // divider line under it instead, same idea as Briefing Board's own
+      // border-bottom under .bb-mhead. Kept as a neutral, low-contrast line
+      // rather than a second board color, since a board's identity is meant
+      // to be one solid color now, not a color pair.
+      +'<div id="sc-header-area" style="background:#1a3a5c;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:70px;border-bottom:1px solid rgba(255,255,255,.15)">'
       // Header row, Aug 16 2026 -- Larry: "Center TOPIC horizontally. Move
       // parent to left of topic. Add field to right of topic for logo or
       // artwork. To right of logo say IDEA in light blue letters." 3-column
@@ -2610,14 +2635,23 @@
       // PROJECT/adoption always resolve from one shared record no
       // matter which screen created the board. Best-effort, matching
       // the Briefing Board's own mirror in _bbCreateBoard.
+      // Sept 5 2026 -- now also toasts on failure instead of only logging
+      // a console warning, matching the Briefing Board's own mirror fix
+      // today. This best-effort mirror can still fail (the boardType
+      // fallback above should prevent the specific not-null gap that
+      // caused it for three real projects, but nothing here guarantees
+      // no other failure mode exists) -- when it does, Larry should see
+      // it happened rather than getting a project with no Briefing Board
+      // and no sign anything went wrong.
       try{
         var bbIns=await _sb.from('briefing_boards').insert({user_id:user.id, board_type:boardType||'personal', name:name}).select().single();
         if(!bbIns.error && bbIns.data){
           await _sb.from('ideas').update({briefing_board_id:bbIns.data.id}).eq('id',ins.data.id);
         } else {
           console.warn('Idea Board: could not mirror new board onto the Briefing Board', bbIns.error);
+          _sboardShowToast('Project saved, but its Briefing Board could not be created -- tell Claude so it can add one.');
         }
-      }catch(e){ console.warn('Idea Board: could not mirror new board onto the Briefing Board', e); }
+      }catch(e){ console.warn('Idea Board: could not mirror new board onto the Briefing Board', e); _sboardShowToast('Project saved, but its Briefing Board could not be created -- tell Claude so it can add one.'); }
       await _sboardLoadMyRoots(true);
       return ins.data.id;
     }catch(e){
@@ -3802,16 +3836,23 @@
       var name=(nameInput&&nameInput.value||'').trim();
       if(!name){ if(errEl) errEl.textContent='Name it first.'; return; }
       try{
-        var user=(await _sb.auth.getUser()).data.user;
-        if(!user) throw new Error('Not signed in.');
-        // Sept 2, 2026 -- Idea Storyboards: new projects land as children
-        // of this member's own Idea Storyboards root (see the matching
-        // comment in _sboardCreateRootBoard above).
-        var ideaStoryboardsRootId=await T2TData.ensureIdeaStoryboardsRoot();
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:ideaStoryboardsRootId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
-        if(ins.error) throw ins.error;
+        // Sept 5 2026 -- routed through the same _sboardCreateRootBoard
+        // every other "new project" entry point already uses (Add-a-board
+        // in the PROJECT dropdown, the empty-Type prompt), instead of this
+        // box's own separate insert. That old insert skipped two things
+        // the shared path handles: giving the project a real board_type
+        // (was landing as null here) and creating its paired Briefing
+        // Board at all -- the mirror insert in _sboardCreateRootBoard
+        // requires a board_type (not-null column), so a project with no
+        // type silently never got a Briefing Board, with nothing telling
+        // Larry it happened. Found when three projects made through this
+        // exact box (Art Class, Everything = Energy, Laptop Considerations)
+        // turned out to have no Briefing Board behind them -- backfilled
+        // separately; this is what stops it happening again.
+        var newId=await _sboardCreateRootBoard(name, _sboardActiveBoardType());
+        if(!newId) return;
         closeSbDetail();
-        _sboardDrillInto(ins.data);
+        _sboardDrillInto({id:newId});
       }catch(err){ if(errEl) errEl.textContent=err.message; }
     });
   }
