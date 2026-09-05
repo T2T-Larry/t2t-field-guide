@@ -3074,6 +3074,21 @@
       // look (light highlight above, soft shadow below) instead of flat
       // text -- built with BB's own ink color, not Idea Board's blue.
       +'.bb-mh{color:var(--bb-ink);font-size:calc(42px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25)}'
+      // TOPIC, Sept 5 2026 -- Larry: "concept is perfect. Raise size of
+      // TOPIC to match or exceed Briefing Board" -- then "delete TOPIC
+      // eyebrow" (the plain small label, gone from the markup above).
+      // 44px so it reads at least as large as the "Briefing Board" title
+      // (.bb-mh, 42px) beside it -- own class rather than reusing
+      // bb-hdr-select (built for the small 11px PROJECT/PARENT chips,
+      // far too small a box for this) or bb-mh (no border/background,
+      // and this still needs to look pressable since its caret opens a
+      // real dropdown). Kept a bordered chip rather than switching to
+      // flat text like the title, since Idea Board's own TOPIC box
+      // (#sc-topic-box, idea-storyboard-9710.js) is a bordered box too --
+      // this is that same idea sized for BB's header.
+      +'.bb-topic-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:2px 16px;box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc(44px * var(--fg-text-scale,1));line-height:1.15;cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:34px;align-self:stretch;cursor:pointer;font-size:calc(18px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      +'.bb-topic-caret:hover{opacity:.75}'
       // Logo now rides along in the same right-side group as Utility/Close
       // (see the markup below) so it sits between the center title and
       // those two icons, mirroring how Logo sits between Topic and IDEA
@@ -3481,10 +3496,9 @@
             // _bbMasterRollupDepth (a Preferences field, not a fixed
             // number) for how far down "everything" currently reaches.
             +'<div class="bb-mh-fieldgrp bb-mh-group-topic">'
-              +'<div class="bb-mh-eyebrow" id="bb-topic-eyebrow">Topic</div>'
-              +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:2px">'
-                +'<button type="button" class="bb-hdr-select" id="bb-topic-hit" style="cursor:default"></button>'
-                +'<button type="button" class="bb-parent-caret" id="bb-topic-caret" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
+              +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:6px">'
+                +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:default"></button>'
+                +'<button type="button" class="bb-topic-caret" id="bb-topic-caret" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
                 +'<div class="bb-cdrop-menu" id="bb-topic-menu" hidden></div>'
               +'</div>'
             +'</div>'
