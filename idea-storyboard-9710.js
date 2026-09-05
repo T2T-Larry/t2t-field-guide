@@ -8815,13 +8815,27 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="sb-appearance-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
-        +'<button class="sc-ov-btn" id="sb-gear-recolor-subbers" style="width:100%">🎨 Recolor all subbers</button>'
+        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.04em;color:#7a6040;text-align:left;margin:2px 0 -2px 4px">COLORS</div>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor-board" style="width:100%">🎨 Board</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor" style="width:100%">🎨 Headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-recolor-subbers" style="width:100%">🎨 Subbers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fullscreen" style="width:100%">'+fsIcon+' '+fsLabel+'</button>'
         +'<button class="sc-ov-btn" id="sb-gear-textsize" style="width:100%">🔠 Text size</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
+    // "COLORS: Board / Headers / Subbers" -- Larry, Sept 5 2026: the
+    // Storyboard-background picker already existed (openBoardBgPicker,
+    // reached only by double-clicking the empty board/header band) but
+    // had no button anywhere in this menu, so it was easy to miss. This
+    // just surfaces that existing picker as the third color choice,
+    // grouped with the two existing recolor-all actions under one
+    // COLORS label. No new color-storage mechanism: Board still writes
+    // to t2t_seaOfIdeas_boardBg (_sboardSetBoardBg), Headers/Subbers
+    // still write per-card to the ideas table, exactly as before.
+    // Per-card colors (the swatch row on an individual card's DETAILS
+    // back) are untouched by any of the three.
+    T().wire('sb-gear-recolor-board', function(){ closeSbDetail(); openBoardBgPicker(); });
     T().wire('sb-gear-recolor', function(){ closeSbDetail(); _sboardOpenRecolorAll(); });
     T().wire('sb-gear-recolor-subbers', function(){ closeSbDetail(); _sboardOpenRecolorAllSubbers(); });
     T().wire('sb-gear-fullscreen', function(){ closeSbDetail(); T2TSession.toggleFullscreen(); });
