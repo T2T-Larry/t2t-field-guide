@@ -1073,12 +1073,27 @@
     (function(){
       var titleTrigger=document.getElementById('sc-title-trigger');
       if(titleTrigger){
+        // Sept 5 2026 -- safe pre-load default only; _sboardRenderProjectLabel
+        // (called from _sboardUpdateHeaderChrome on every refresh, same as
+        // Parent/Topic) overwrites this the moment the current project is
+        // known, per Larry: PROJECT should show whichever project is
+        // actually on screen (Field Guide, etc.), not a fixed label.
         titleTrigger.textContent='Idea Storyboards';
         titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
         titleTrigger.addEventListener('click', async function(e){
           e.stopPropagation();
-          var rootId=await T2TData.ensureIdeaStoryboardsRoot();
-          if(rootId) _sboardDrillInto({id:rootId});
+          // Land wherever the label is currently pointing (Larry: the
+          // click has to land where the label says it will) -- only
+          // falls back to the Idea Storyboards root itself when nothing
+          // more specific is resolved, or that root is genuinely current.
+          var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
+          var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
+          if(projRow && _sboardIdeaStoryboardsRootId && String(projRow.id)!==String(_sboardIdeaStoryboardsRootId)){
+            _sboardDrillInto(projRow);
+          } else {
+            var rootId=await T2TData.ensureIdeaStoryboardsRoot();
+            if(rootId) _sboardDrillInto({id:rootId});
+          }
         });
         titleTrigger.addEventListener('dblclick', function(e){
           e.stopPropagation();
@@ -2931,6 +2946,22 @@
       if(!willOpen){ menu.hidden=true; return; }
       var choices=_sboardProjectHeaderChoices();
       menu.innerHTML='';
+      // Idea Storyboards, Sept 5 2026 -- Larry: PROJECT should show
+      // whichever project is actually on screen, with Idea Storyboards
+      // itself reachable only as a conscious choice, never a default.
+      // Pinned as its own row at the top of this same dropdown, visually
+      // separated (bottom rule + bold) from the real projects below it.
+      var rootRow=document.createElement('div');
+      rootRow.className='sc-cdrop-row';
+      rootRow.style.cssText='font-weight:700;border-bottom:1px solid rgba(0,0,0,.15);margin-bottom:2px;padding-bottom:6px';
+      rootRow.textContent='Idea Storyboards';
+      rootRow.addEventListener('click', async function(ev){
+        ev.stopPropagation();
+        menu.hidden=true;
+        var rootId=await T2TData.ensureIdeaStoryboardsRoot();
+        if(rootId) _sboardDrillInto({id:rootId});
+      });
+      menu.appendChild(rootRow);
       if(!choices.length){
         var empty=document.createElement('div');
         empty.className='sc-cdrop-row';
@@ -6225,6 +6256,36 @@
     if(travelerEl && m && m.display_name) travelerEl.textContent=m.display_name.toUpperCase();
   }
 
+  // PROJECT label, Sept 5 2026 -- Larry: "Field Guide is a project but the
+  // project list shows Idea Storyboard which should only appear if NO
+  // Project is identified." Called from _sboardUpdateHeaderChrome on
+  // every chrome refresh (topicRow is whatever the current Topic resolves
+  // to, or null while sitting above any topic at all) -- same pattern
+  // already used for Parent/Topic -- rather than the name being set once
+  // at boot in injectSeaOfIdeasCluster and never touched again.
+  // _sboardProjectRowFor climbs from topicRow to its nearest self-scoped
+  // ancestor, which is either the real project's own root (Field Guide,
+  // say) or the Idea Storyboards root itself if nothing more specific has
+  // been drilled into -- "Idea Storyboards" is reserved for genuinely
+  // standing at that root, never shown as a default while inside a real
+  // project. At the very top of a project's own root card, this will
+  // read the same as TOPIC (both are describing that same card from two
+  // different angles) -- PARENT still correctly shows Idea Storyboards
+  // one level up, so the three fields don't all collapse into one.
+  function _sboardRenderProjectLabel(topicRow){
+    var titleTrigger=document.getElementById('sc-title-trigger');
+    if(!titleTrigger) return;
+    var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
+    var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
+    if(atRoot){
+      titleTrigger.textContent='Idea Storyboards';
+      titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
+    } else {
+      titleTrigger.textContent=projRow.text_content||'(untitled)';
+      titleTrigger.title='Click to open '+(projRow.text_content||'this project')+'; double-click for the fast-jump list';
+    }
+  }
+
   function _sboardUpdateHeaderChrome(){
     var topicBox=document.getElementById('sc-topic-box');
     var topicText=document.getElementById('sc-topic-text');
@@ -6261,11 +6322,14 @@
         }
       }
       // Member name, Sept 2 2026 -- replaces the old Type/Title re-render
-      // pair here (Organization removed from the chrome; PROJECT is now
-      // a fixed label wired once, not re-rendered per Topic -- see the
-      // retirement notes on _sboardRenderTitlePicker and the one-time
-      // PROJECT wiring in injectSeaOfIdeasCluster).
+      // pair here (Organization removed from the chrome).
       _sboardRenderMemberName();
+      // PROJECT, Sept 5 2026 -- re-rendered every chrome refresh (same as
+      // Parent/Topic) instead of the fixed label wired once at boot --
+      // Larry: PROJECT should show whichever project is actually on
+      // screen (Field Guide, etc.), not a fixed "Idea Storyboards" label.
+      // See _sboardRenderProjectLabel, defined just below this function.
+      _sboardRenderProjectLabel(topicRow);
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
       // PARENT is inert once there's nothing above the current Topic (i.e.
@@ -6283,6 +6347,7 @@
       if(topicText){ topicText.textContent=_sboardGetRootPrompt(); }
       if(topicBadge){ topicBadge.innerHTML=''; }
       if(topicBox){ topicBox.style.background=''; }
+      _sboardRenderProjectLabel(null);
       if(parentLabel) parentLabel.textContent='\u2014';
       if(parentHit){ parentHit.classList.add('inert'); }
     }
