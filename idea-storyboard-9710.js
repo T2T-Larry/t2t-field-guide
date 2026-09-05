@@ -2920,6 +2920,36 @@
           menu.appendChild(row);
         });
       }
+      // (+) Add a project, Sept 5 2026 (follow-up) -- Larry: "should have
+      // (+) ... choices at the bottom to add ... a project" -- no matching
+      // (-) here (his own follow-up call): a project is already removable
+      // by trashing it from its own Topic level (the gear-menu "Trash this
+      // project" flow -- see _sboardConfirmTrashHeader/openSbProjectHub),
+      // so PROJECT's dropdown doesn't need a second way to do the same
+      // thing. Same dashed-circle button/markup as every other (+) row in
+      // this file (Type's own addRow via _sboardRenderDropdown, etc.) for
+      // a consistent look, just built by hand here since this menu isn't
+      // driven by _sboardRenderDropdown. _sboardCreateRootBoard already
+      // lands a new project as a child of Idea Storyboards and self-scopes
+      // it correctly (see that function's own comment) -- same call the
+      // retired Title picker used to make.
+      var addRow=document.createElement('div');
+      addRow.className='sc-cdrop-addrow';
+      var addBtn=document.createElement('button');
+      addBtn.type='button';
+      addBtn.className='sc-dotted-add-btn';
+      addBtn.title='Add a new project';
+      addBtn.textContent='+';
+      addBtn.addEventListener('click', async function(ev){
+        ev.stopPropagation();
+        menu.hidden=true;
+        var name=window.prompt('Name for the new project:');
+        if(!name || !name.trim()) return;
+        var newId=await _sboardCreateRootBoard(name.trim(), 'personal');
+        if(newId) _sboardSwitchToRootBoard(newId);
+      });
+      addRow.appendChild(addBtn);
+      menu.appendChild(addRow);
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';
