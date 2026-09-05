@@ -1762,6 +1762,8 @@
           _bbRenderLogo();
           _bbRenderTravelerName();
           _bbRenderParentField();
+          await _bbRenderTopicField();
+          await _bbLoadMasterRollupCards();
           await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
           return;
@@ -1776,45 +1778,77 @@
     _bbRenderLogo();
     _bbRenderTravelerName();
     _bbRenderParentField();
+    await _bbRenderTopicField();
+    await _bbLoadMasterRollupCards();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);
     await _bbLoadSharedInCardsForProjectBoard(board);
     renderBoard();
   }
 
-  // Project -> board resolver, Sept 5 2026 -- backs both the project
-  // deep-link above (first visit to Briefing Board this session) and
-  // window.T2TBriefingBoard.jumpToProject below (Briefing Board already
-  // open, switching projects without a full reload). Mirrors
+  // Root-header set, Sept 5 2026 -- see the call site in
+  // _bbInitBoardsAndData above. {headerId: true} for a confirmed project
+  // root, {headerId: false} for a confirmed nested layer; an id simply
+  // absent means "not checked yet" and PROJECT's own filter treats that
+  // as include-by-default, so a slow/failed lookup never hides a real
+  // project.
+  var _bbRootHeaderIdSet = {};
+  async function _bbRefreshRootHeaderIdSet(){
+    var linkedIds=_bbBoards.filter(function(b){ return b.storyboard_project_id; }).map(function(b){ return b.storyboard_project_id; });
+    if(!linkedIds.length) return;
+    try{
+      var sb=T().sb;
+      var res=await sb.from('ideas').select('id,cluster_id').in('id',linkedIds);
+      if(res.error) return;
+      (res.data||[]).forEach(function(r){ _bbRootHeaderIdSet[r.id]=!r.cluster_id; });
+    }catch(e){ console.warn('Briefing Board: could not check which boards are project roots', e); }
+  }
+
+  // Header -> board resolver, Sept 5 2026 -- backs the deep-link above
+  // (first visit to Briefing Board this session), window.T2TBriefingBoard.
+  // jumpToTopic below (Briefing Board already open), and TOPIC's own
+  // descend-to-a-child-layer dropdown (_bbRenderTopicField). Started life
+  // scoped to project roots only ("PROJECTS on a BB are exactly the same
+  // as on the Idea Board"); widened same day once Larry asked for TOPIC
+  // itself to work "exactly the same" too ("if DREAM PHASE is the TOPIC
+  // on the Idea Board, then DREAM PHASE is the BB") -- any Header row
+  // works here now, root project or a layer nested arbitrarily deep
+  // inside one, since a Briefing Board's link (storyboard_project_id) was
+  // never actually restricted to roots, only ever used that way. Mirrors
   // _bbCreateBoard's own "+Add a board" insert -- same two tables, same
   // two-way link (storyboard_project_id on the board, briefing_board_id
-  // on the project's ideas row) -- but starting from an existing project
+  // on the Header's ideas row) -- but starting from an existing Header
   // instead of a brand-new name, so nothing here ever creates a new
-  // project, only the board that stands in for it here.
-  async function _bbResolveOrCreateBoardForProject(projectId){
-    if(!projectId) return null;
-    var existing=_bbBoards.filter(function(b){ return b.storyboard_project_id===projectId; })[0];
+  // Header, only the board that stands in for it here.
+  async function _bbResolveOrCreateBoardForHeader(headerId){
+    if(!headerId) return null;
+    var existing=_bbBoards.filter(function(b){ return b.storyboard_project_id===headerId; })[0];
     if(existing) return existing;
     var sb=T().sb, uid=await _bbCurrentUserId();
     if(!uid || !sb) return null;
     try{
-      var projRes=await sb.from('ideas').select('id,text_content,board_type,briefing_board_id').eq('id',projectId).maybeSingle();
-      if(projRes.error || !projRes.data) return null;
-      var proj=projRes.data;
-      // The project may already point at a board this traveler's own
+      var hdrRes=await sb.from('ideas').select('id,cluster_id,text_content,board_type,briefing_board_id').eq('id',headerId).maybeSingle();
+      if(hdrRes.error || !hdrRes.data) return null;
+      var hdr=hdrRes.data;
+      // Sept 5 2026 -- known the moment we've fetched this Header at all,
+      // whether or not it ends up needing a new board: keeps
+      // _bbRootHeaderIdSet (PROJECT's own root-vs-layer filter, above)
+      // current without a second round-trip.
+      _bbRootHeaderIdSet[headerId] = !hdr.cluster_id;
+      // This Header may already point at a board this traveler's own
       // _bbBoards fetch didn't happen to include (shouldn't normally
       // happen -- RLS scopes both the same way -- but cheap to check
       // before creating a second one).
-      if(proj.briefing_board_id){
-        var already=_bbBoards.filter(function(b){ return b.id===proj.briefing_board_id; })[0];
+      if(hdr.briefing_board_id){
+        var already=_bbBoards.filter(function(b){ return b.id===hdr.briefing_board_id; })[0];
         if(already) return already;
       }
-      var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:proj.board_type||'personal', name:proj.text_content||'Untitled Project', storyboard_project_id:projectId}).select().single();
-      if(ins.error || !ins.data){ console.error('Briefing Board: could not create linked board for project', ins.error); return null; }
+      var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:hdr.board_type||'personal', name:hdr.text_content||'Untitled', storyboard_project_id:headerId}).select().single();
+      if(ins.error || !ins.data){ console.error('Briefing Board: could not create linked board for this layer', ins.error); return null; }
       _bbBoards.push(ins.data);
-      try{ await sb.from('ideas').update({briefing_board_id:ins.data.id}).eq('id',projectId); }catch(e){ console.warn('Briefing Board: could not link board back onto the project', e); }
+      try{ await sb.from('ideas').update({briefing_board_id:ins.data.id}).eq('id',headerId); }catch(e){ console.warn('Briefing Board: could not link board back onto its layer', e); }
       return ins.data;
-    }catch(e){ console.error('Briefing Board: could not resolve/create board for project', e); return null; }
+    }catch(e){ console.error('Briefing Board: could not resolve/create board for this layer', e); return null; }
   }
 
   async function _bbInitBoardsAndData(){
@@ -1846,6 +1880,15 @@
         var relRes=await sb.from('board_relations').select('*').eq('status','approved');
         _bbRelationsCache=relRes.error?[]:(relRes.data||[]);
       }catch(e){ _bbRelationsCache=[]; console.error('Briefing Board: could not load board relations', e); }
+      // Root-header lookup, Sept 5 2026 -- now that TOPIC
+      // (_bbResolveOrCreateBoardForHeader) can link a board to ANY
+      // Header, not just a project root, PROJECT's own list
+      // (_bbRenderBoardPicker) needs a way to tell the two apart --
+      // "DREAM PHASE" (a descended-into layer) must never show up as if
+      // it were its own top-level project. Populated once here; kept
+      // current afterward by _bbResolveOrCreateBoardForHeader itself
+      // whenever it links a board to a new Header.
+      await _bbRefreshRootHeaderIdSet();
     }catch(e){
       console.error('Briefing Board: could not load boards, staying local', e);
       _bbCurrentBoardId=null; _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard();
@@ -1858,21 +1901,24 @@
       }catch(e){}
     }
     if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
-    // Project deep-link, Sept 5 2026 -- Larry: "if an Idea Board changes
-    // a PROJECT or a level, jumping to the BB should instantly go to the
-    // same project." Set by the Idea/Plan board's own IDEA/PLAN/BRIEFING
-    // BOARD/SHARE/CAST dropdown (idea-storyboard-9710.js,
-    // _sboardWireBoardKindDropdown) via window.T2TBriefingBoard.jumpToProject
-    // below, right before nav()'ing here the first time this session --
-    // same "set a flag, then nav" shape as the two card-level deep-links
-    // just below. Checked first since a project-level jump is the more
-    // fundamental of the two; _bbResolveOrCreateBoardForProject creates
-    // the linked board on the spot if this project never had one.
+    // TOPIC deep-link, Sept 5 2026 -- Larry: "if an Idea Board changes a
+    // PROJECT or a level, jumping to the BB should instantly go to the
+    // same project and level" -- then, same day: "what if TOPIC is
+    // exactly the same [as the Idea Board's]? If DREAM PHASE is the
+    // TOPIC on the Idea Board, then DREAM PHASE is the BB." Set by the
+    // Idea/Plan board's own IDEA/PLAN/BRIEFING BOARD/SHARE/CAST dropdown
+    // (idea-storyboard-9710.js, _sboardWireBoardKindDropdown) via
+    // window.T2TBriefingBoard.jumpToTopic below, right before nav()'ing
+    // here the first time this session -- same "set a flag, then nav"
+    // shape as the two card-level deep-links just below. Checked first
+    // since a TOPIC-level jump is the more fundamental of the two;
+    // _bbResolveOrCreateBoardForHeader creates the linked board on the
+    // spot if this exact layer never had one.
     try{
-      var _bbDeepLinkProjectId=sessionStorage.getItem('fg_open_board_for_project_id');
-      if(_bbDeepLinkProjectId){
-        sessionStorage.removeItem('fg_open_board_for_project_id');
-        var _bbDeepLinkBoard=await _bbResolveOrCreateBoardForProject(_bbDeepLinkProjectId);
+      var _bbDeepLinkTopicId=sessionStorage.getItem('fg_open_board_for_topic_id');
+      if(_bbDeepLinkTopicId){
+        sessionStorage.removeItem('fg_open_board_for_topic_id');
+        var _bbDeepLinkBoard=await _bbResolveOrCreateBoardForHeader(_bbDeepLinkTopicId);
         if(_bbDeepLinkBoard){ await _bbSwitchToBoard(_bbDeepLinkBoard.id); return; }
       }
     }catch(e){ console.warn('Briefing Board project deep-link failed:', e); }
@@ -2229,7 +2275,16 @@
     // unaffected -- still its own separate picker, still used to file a
     // board into a category -- this only changes which boards PROJECT
     // is willing to show.
-    var filtered=_bbBoards.slice();
+    // Root-only, Sept 5 2026 -- once TOPIC could link a board to ANY
+    // Header (see _bbResolveOrCreateBoardForHeader), _bbBoards stopped
+    // being "every board is a project" -- a descended-into layer like
+    // Dream Phase gets one too now, and it must never appear in PROJECT
+    // as if it were a project of its own. _bbRootHeaderIdSet[id]===false
+    // is the only thing that excludes a board here: no linked Header at
+    // all (a personal/org board, never tied to an Idea project) still
+    // shows, same as always, and an id this traveler's set hasn't
+    // resolved yet defaults to shown rather than silently disappearing.
+    var filtered=_bbBoards.filter(function(b){ return !b.storyboard_project_id || _bbRootHeaderIdSet[b.storyboard_project_id]!==false; });
     // Adopted children ride along too, Aug 16 2026 -- Larry: opening
     // T2T should list Field Guide and Professional History as its
     // projects, not just other boards that happen to share T2T's own
@@ -2307,8 +2362,8 @@
           await sb.from('ideas').update({project_id:rootIns.data.id, topic_scope_id:rootIns.data.id}).eq('id',rootIns.data.id);
           // Sept 5 2026 -- close the link the other direction too
           // (storyboard_project_id on the board itself), the same field
-          // _bbResolveOrCreateBoardForProject and the Idea Board's own
-          // jumpToProjectKind/jumpToProject both read. Without this, a
+          // _bbResolveOrCreateBoardForHeader and the Idea Board's own
+          // jumpToProjectKind/jumpToTopic both read. Without this, a
           // board created here could show up in PROJECT but couldn't
           // jump back to its Idea board (the "This board isn't linked to
           // a project" toast in _bbWireBoardKindDropdown).
@@ -2713,6 +2768,18 @@
   function _bbSetDueWarnDays(n){
     try{ localStorage.setItem('bbDueWarnDays', String(Math.max(0, parseInt(n,10)||0))); }catch(e){}
   }
+  // Master Briefing Board depth, Sept 5 2026 -- Larry: "traveler choice
+  // for number of levels to include in MASTER view." Same shape as the
+  // two functions just above (localStorage, "set it and forget it").
+  // Default of 3 matches BB_MASTER_ROLLUP_DEPTH's original placeholder
+  // value, now retired in favor of this.
+  function _bbMasterRollupDepth(){
+    try{ var v=parseInt(localStorage.getItem('bbMasterRollupDepth'),10); return isNaN(v)?3:Math.max(0,v); }
+    catch(e){ return 3; }
+  }
+  function _bbSetMasterRollupDepth(n){
+    try{ localStorage.setItem('bbMasterRollupDepth', String(Math.max(0, parseInt(n,10)||0))); }catch(e){}
+  }
   function _bbHighlightAppearance(){
     var curTheme=_bbCurrentTheme(), curFont=_bbCurrentFont();
     document.querySelectorAll('.bb-theme-swatch').forEach(function(el){
@@ -2803,18 +2870,19 @@
       +'.bb-mhead{background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);padding:10px 16px 4px;min-height:70px;box-sizing:border-box;flex-shrink:0}'
       // Sept 5 2026, Larry: "what if the Briefing Board title moves to
       // the right, like where IDEA lives, leaving us a spot for the
-      // title of the Briefing Board's TOPIC/child dropdown list?"
-      // Dropped the third (dead-center) grid track -- bb-mh-group-center
-      // (the big "Briefing Board" title) now sits in its own track
-      // immediately left of bb-mhead-actions, off-center to the right,
-      // same relative reading as the Idea Board's own big IDEA title
-      // sitting well right of its own left-corner PROJECT/PARENT column.
-      // The true dead-center space this frees up is reserved for the
-      // new TOPIC field (current project layer, with a dropdown to
-      // descend into a child layer) -- not yet built, pending Larry's
-      // call on how far card visibility should follow a descend (just
-      // that layer, or its child layers too).
-      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto auto;align-items:start;gap:10px;height:100%}'
+      // title of the Briefing Board's TOPIC/child dropdown list?" Grew
+      // from 3 tracks to 4: left (bb-mh-typebox: PROJECT/PARENT) stays
+      // 1fr, then TOPIC (new, see bb-mh-group-topic below) and the big
+      // "Briefing Board" title (bb-mh-group-center) each get their own
+      // auto-sized track back to back, then actions closes on a second
+      // 1fr so it still pins flush to the true right edge exactly like
+      // before -- only reason a trailing 1fr track works for that is
+      // bb-mhead-actions' own justify-self:end. Net visual read: TOPIC
+      // sits close to true center, "Briefing Board" sits right of it
+      // (same relative position the Idea Board's own big IDEA title
+      // holds, well right of its left-corner PROJECT/PARENT column),
+      // actions stay cornered top-right same as always.
+      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto auto 1fr;align-items:start;gap:10px;height:100%}'
       // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
       // Board [title], A control and communication tool, in the center.
       // Far left: eyebrow TYPE with drop down list followed by a Field
@@ -3387,6 +3455,39 @@
               // no-ops when its trigger/menu ids don't resolve), so this is
               // reversible by putting the fieldgrp back, nothing to rebuild.
             +'</div>'
+            // TOPIC, Sept 5 2026 -- Larry: "Need TOPIC just like Idea
+            // Board. What if it is exactly the same? If Field Guide is
+            // open on the Idea Board, then the BB is set to the Field
+            // Guide BB. If DREAM PHASE is the TOPIC on the Idea Board,
+            // then DREAM PHASE is the BB." Its own grid track, between
+            // the left PROJECT/PARENT column and the big "Briefing
+            // Board" title -- the dead-center spot that title's own move
+            // to the right (see bb-mhead-top above) freed up. Shows
+            // whichever Header this exact board is linked to
+            // (storyboard_project_id) -- the project root itself when
+            // nothing's been descended into, same as PROJECT reads in
+            // that case, or a nested layer's own name once TOPIC's own
+            // ▾ has been used to go deeper. Same label-then-arrow shape
+            // as PROJECT/PARENT (bb-hdr-select + bb-parent-caret);
+            // _bbRenderTopicField below fills in the name and wires the
+            // arrow to list this layer's own children, each one a real,
+            // separate Briefing Board of its own (created on first visit
+            // via _bbResolveOrCreateBoardForHeader) -- so cards on a
+            // descended-into layer are that layer's alone, never mixed
+            // with its parent's. The one root layer of a project reads
+            // as its MASTER BRIEFING BOARD instead (Larry, same day:
+            // "the top level of the BB = MASTER BRIEFING BOARD which
+            // includes everything at all levels") -- see
+            // _bbMasterRollupDepth (a Preferences field, not a fixed
+            // number) for how far down "everything" currently reaches.
+            +'<div class="bb-mh-fieldgrp bb-mh-group-topic">'
+              +'<div class="bb-mh-eyebrow" id="bb-topic-eyebrow">Topic</div>'
+              +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:2px">'
+                +'<button type="button" class="bb-hdr-select" id="bb-topic-hit" style="cursor:default"></button>'
+                +'<button type="button" class="bb-parent-caret" id="bb-topic-caret" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
+                +'<div class="bb-cdrop-menu" id="bb-topic-menu" hidden></div>'
+              +'</div>'
+            +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
             // 2026 -- Larry: "the top center of the Briefing Board could
             // be the dropdown to return to one of the other boards."
@@ -3397,7 +3498,7 @@
             // handling. bb-mh's own type styling stays as-is; only the
             // button chrome is stripped inline so nothing looks
             // different at rest.
-            +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt">A control and communication tool.</div></div>'
+            +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt" id="bb-mh-subtitle">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
@@ -3941,6 +4042,13 @@
     var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
     if(_bbForeignCards && _bbForeignCards.length) cards = cards.concat(_bbForeignCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
     if(_bbSharedInCards && _bbSharedInCards.length) cards = cards.concat(_bbSharedInCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
+    // Master Briefing Board rollup, Sept 5 2026 -- only ever populated
+    // (_bbLoadMasterRollupCards, called from _bbSwitchToBoard right
+    // after _bbRenderTopicField) when this board's own TOPIC is a
+    // project root; empty everywhere else, so a descended-into layer's
+    // board stays exactly what Larry asked for -- "the only cards
+    // visible at any layer are those pertaining to that layer."
+    if(_bbRollupCards && _bbRollupCards.length) cards = cards.concat(_bbRollupCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
     cards = _bbSourceFilterCards(cards);
     // Primary-doer warm-up, Session 234 (Aug 21) -- same fire-and-forget
     // fetch-then-conditional-re-render pattern session.js already uses
@@ -4704,13 +4812,31 @@
         +'<div class="bb-field"><label>Due Date warning (days before, auto-sets HH)</label>'
           +'<input type="number" min="0" step="1" id="bb-due-warn-days" style="width:80px">'
         +'</div>'
+        // Master Briefing Board depth, Sept 5 2026 -- Larry, after
+        // floating "might we want to limit the Master view to a number
+        // of levels?": "traveler choice for number of levels to include
+        // in MASTER view." Same "a traveler choice, not a fixed rule"
+        // shape as the two warning-days fields just above (localStorage,
+        // not sessionStorage -- set-it-and-forget-it, not a per-visit
+        // pick). 0 means "just this layer, no rollup at all"; there's no
+        // upper bound field for "every level, uncapped" yet -- worth
+        // adding if a plain high number turns out to be an awkward way
+        // to ask for that.
+        +'<div class="bb-field"><label>Master Briefing Board depth (layers rolled up into the top level)</label>'
+          +'<input type="number" min="0" step="1" id="bb-master-rollup-depth" style="width:80px">'
+        +'</div>'
         +'<div class="bb-field"><label>Signal Flags</label>'
           +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128681; Manage Signal Flags</button>'
         +'</div>';
       var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
       var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
+      var mrd=document.getElementById('bb-master-rollup-depth'); if(mrd) mrd.value=_bbMasterRollupDepth();
       if(sw) sw.addEventListener('change', function(){ _bbSetStartWarnDays(sw.value); sw.value=_bbStartWarnDays(); renderBoard(); });
       if(dw) dw.addEventListener('change', function(){ _bbSetDueWarnDays(dw.value); dw.value=_bbDueWarnDays(); renderBoard(); });
+      if(mrd) mrd.addEventListener('change', function(){
+        _bbSetMasterRollupDepth(mrd.value); mrd.value=_bbMasterRollupDepth();
+        if(_bbCurrentTopicIsRoot) _bbLoadMasterRollupCards().then(function(){ _bbSyncMasterSubtitle(true); renderBoard(); });
+      });
       T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
     }
   }
@@ -5453,6 +5579,195 @@
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
     };
+  }
+
+  // TOPIC, Sept 5 2026 -- Larry: "Need TOPIC just like Idea Board...
+  // what if it is exactly the same?" Unlike PARENT (org-hierarchy
+  // adoption, board_relations table), TOPIC tracks the same tree PROJECT
+  // does -- the ideas table's own cluster_id chain -- just centered on
+  // whichever Header THIS board is linked to (storyboard_project_id)
+  // rather than that Header's project root. _bbCurrentTopicHeaderId/
+  // _bbCurrentTopicIsRoot are read by the caret's dropdown and by
+  // renderBoard's Master rollup (_bbMasterRollupCardsIfAny) below.
+  var _bbCurrentTopicHeaderId = null;
+  var _bbCurrentTopicIsRoot = false;
+  async function _bbRenderTopicField(){
+    var hit=document.getElementById('bb-topic-hit');
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!hit || !board){ return; }
+    var headerId=board.storyboard_project_id;
+    _bbCurrentTopicHeaderId=headerId;
+    _bbCurrentTopicIsRoot=false;
+    if(!headerId){
+      // A personal/org board that was never tied to an Idea project --
+      // TOPIC has nothing to show or descend from. Matches PROJECT's own
+      // "isn't linked to a project" toast elsewhere for the same case.
+      hit.textContent='(not linked)';
+      hit.style.cursor='default';
+      _bbSyncMasterSubtitle(false);
+      return;
+    }
+    try{
+      var sb=T().sb;
+      var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
+      if(res.error || !res.data){ hit.textContent=board.name||'(untitled)'; return; }
+      _bbCurrentTopicIsRoot = !res.data.cluster_id;
+      hit.textContent = res.data.text_content || board.name || '(untitled)';
+      _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
+    }catch(e){
+      console.warn('Briefing Board: could not load TOPIC field', e);
+      hit.textContent=board.name||'(untitled)';
+    }
+  }
+  // Rollup cache, Sept 5 2026 -- same "load into a module-level array,
+  // let renderBoard() read it synchronously" shape as _bbForeignCards/
+  // _bbSharedInCards below. Loaded in _bbSwitchToBoard right after
+  // _bbRenderTopicField (so _bbCurrentTopicIsRoot is already current)
+  // and right before that function's own renderBoard() call -- never
+  // triggers a render on its own.
+  var _bbRollupCards = [];
+  async function _bbLoadMasterRollupCards(){
+    try{ _bbRollupCards = await _bbMasterRollupCardsIfAny(); }
+    catch(e){ _bbRollupCards = []; }
+  }
+  // Master Briefing Board label, Sept 5 2026 -- Larry: "the top level of
+  // the BB = MASTER BRIEFING BOARD which includes everything at all
+  // levels." Reuses the subtitle under the big "Briefing Board" title
+  // (bb-mh-subtitle) rather than TOPIC's own eyebrow, so TOPIC's label
+  // stays the plain, permanent "Topic" the Idea Board itself uses, and
+  // the Master distinction lives next to the title it's actually
+  // describing.
+  function _bbSyncMasterSubtitle(isMaster){
+    var sub=document.getElementById('bb-mh-subtitle');
+    if(!sub) return;
+    sub.textContent = isMaster
+      ? 'Master Briefing Board — every layer below, up to '+_bbMasterRollupDepth()+' deep.'
+      : 'A control and communication tool.';
+  }
+  // Children of the current TOPIC, Sept 5 2026 -- same reserved-name
+  // exclusion and sort order as the Idea Board's own
+  // _sboardProjectHeaderChoices, just scoped to one Header's own
+  // children (cluster_id = headerId) instead of the whole account's
+  // top-level project roots. Queried live rather than off a cache --
+  // briefing-board.js doesn't keep the Idea Board's account-wide
+  // _sboardAllRowsById around, and this is only needed the moment the
+  // caret is actually pressed.
+  var BB_RESERVED_HEADER_NAMES = {'NEW':1,'New Additions':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  async function _bbTopicChildChoices(headerId){
+    if(!headerId) return [];
+    var sb=T().sb;
+    try{
+      var res=await sb.from('ideas').select('id,text_content,sort_order').eq('cluster_id',headerId).eq('content_type','header').order('sort_order',{ascending:true});
+      if(res.error) return [];
+      return (res.data||[]).filter(function(r){ return !BB_RESERVED_HEADER_NAMES[r.text_content]; });
+    }catch(e){ return []; }
+  }
+  function _bbWireTopicDropdown(){
+    var trigger=document.getElementById('bb-topic-caret'), menu=document.getElementById('bb-topic-menu');
+    if(!trigger || !menu) return;
+    trigger.onclick=async function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-topic-menu':null);
+      if(!willOpen){ menu.hidden=true; return; }
+      menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      _bbSyncMenuTheme(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.hidden=false;
+      var choices=await _bbTopicChildChoices(_bbCurrentTopicHeaderId);
+      if(menu.hidden) return; // closed again while this was in flight
+      menu.innerHTML='';
+      if(!choices.length){
+        var empty=document.createElement('div');
+        empty.className='bb-cdrop-row';
+        empty.style.cssText='cursor:default;opacity:.6';
+        empty.textContent='No layers beneath this one yet.';
+        menu.appendChild(empty);
+      } else {
+        choices.forEach(function(c){
+          var row=document.createElement('div');
+          row.className='bb-cdrop-row';
+          row.textContent=c.text_content||'(untitled)';
+          row.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            menu.hidden=true;
+            if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(c.id);
+          });
+          menu.appendChild(row);
+        });
+      }
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    };
+  }
+  // Master rollup, Sept 5 2026 -- Larry: "the top level of the BB =
+  // MASTER BRIEFING BOARD which includes everything at all levels. Ah,
+  // but might we want to limit the Master view to a number of levels?"
+  // then: "traveler choice for number of levels to include in MASTER
+  // view." Landed as a real Preferences field (_bbMasterRollupDepth,
+  // above) rather than a fixed cap -- an uncapped rollup on a project
+  // with many nested layers could still pull in an unbounded number of
+  // boards' worth of cards on every render, so 0 is the floor, but how
+  // deep "everything" reaches is the traveler's own call, not a hardcoded
+  // number. Walks the ideas tree breadth-first from the root TOPIC, one
+  // level of cluster_id at a time, collecting every descendant Header id
+  // up to that depth; only Headers that already have their own linked
+  // Briefing Board (storyboard_project_id, cached in _bbBoards) actually
+  // contribute cards -- this never creates boards on a traveler's
+  // behalf, only reads ones that already exist. Cards pulled in this way
+  // are marked _foreign/_homeBoardName (renderBoard's existing dashed-
+  // border badge), same as any other card that visibly lives elsewhere.
+  async function _bbMasterRollupCardsIfAny(){
+    if(!_bbCurrentTopicIsRoot || !_bbCurrentTopicHeaderId) return [];
+    var sb=T().sb;
+    var maxDepth=_bbMasterRollupDepth();
+    var frontier=[_bbCurrentTopicHeaderId], seen={}, descendantIds=[];
+    seen[_bbCurrentTopicHeaderId]=true;
+    for(var depth=0; depth<maxDepth && frontier.length; depth++){
+      var next=[];
+      try{
+        var res=await sb.from('ideas').select('id,cluster_id,text_content').in('cluster_id',frontier).eq('content_type','header');
+        if(!res.error){
+          (res.data||[]).forEach(function(row){
+            if(seen[row.id] || BB_RESERVED_HEADER_NAMES[row.text_content]) return;
+            seen[row.id]=true; next.push(row.id); descendantIds.push(row.id);
+          });
+        }
+      }catch(e){ break; }
+      frontier=next;
+    }
+    if(!descendantIds.length) return [];
+    var rollupBoards=_bbBoards.filter(function(b){ return b.storyboard_project_id && descendantIds.indexOf(b.storyboard_project_id)!==-1; });
+    if(!rollupBoards.length) return [];
+    var out=[];
+    for(var i=0;i<rollupBoards.length;i++){
+      var rb=rollupBoards[i];
+      try{
+        var cRes=await sb.from('briefing_cards').select('*').eq('board_id',rb.id).eq('archived',false).is('trashed_at',null);
+        if(!cRes.error && cRes.data){
+          out=out.concat(cRes.data.map(function(row){
+            var c=_bbRowToCard(row);
+            // Reuses the same dashed-border "foreign card" badge/eyebrow
+            // handling _bbLoadForeignCardsForPersonalBoard and
+            // _bbLoadSharedInCardsForProjectBoard already built (a card
+            // that visibly lives elsewhere but is allowed to show here) --
+            // Master's rollup is the same situation, just gathered by
+            // walking descendant layers instead of an explicit share.
+            // Moving a rolled-up card between columns still writes
+            // through to its own board (board_id never changes here),
+            // same as any other foreign card.
+            c._foreign=true;
+            c._homeBoardName=rb.name||'(untitled)';
+            return c;
+          }));
+        }
+      }catch(e){}
+    }
+    return out;
   }
 
   // Traveler name, Sept 5 2026 -- same shared member profile the Idea
@@ -6566,6 +6881,7 @@
     // on screen. An immediate call handles the opposite race -- the
     // member already loaded before this wiring ran.
     _bbWireParentAncestorDropdown();
+    _bbWireTopicDropdown();
     _bbRenderTravelerName();
     window.addEventListener('t2t:member-loaded', function(){ _bbRenderTravelerName(); });
 
@@ -6665,27 +6981,32 @@
   // (Aug 30 2026), which already lets Briefing Board's board-kind
   // dropdown land on a specific project's Idea or Plan board. That
   // direction existed; IDEA -> BRIEFING BOARD never carried the current
-  // project along, it just nav()'d here and left whatever board was
+  // position along, it just nav()'d here and left whatever board was
   // already open in place. This closes the loop: idea-storyboard-9710.js
-  // calls this with whichever project the traveler is actually standing
-  // in (any depth -- see _sboardCurrentProjectRow) right before choosing
-  // BRIEFING BOARD from that same dropdown.
+  // calls this with the traveler's exact current TOPIC (any depth -- see
+  // T2TShared.currentTopicId) right before choosing BRIEFING BOARD from
+  // that same dropdown, and TOPIC's own descend dropdown here
+  // (_bbRenderTopicField) calls it again every time a child layer is
+  // chosen -- same function either way, since "jump to a project" and
+  // "descend into a layer" are the same move once TOPIC and PROJECT both
+  // just mean "some Header in the tree."
   window.T2TBriefingBoard = {
-    jumpToProject: async function(projectId){
-      if(!projectId) return false;
+    jumpToTopic: async function(headerId){
+      if(!headerId) return false;
       if (window.T2T && window.T2T.showTravelSpinner) window.T2T.showTravelSpinner();
       // Briefing Board hasn't booted yet this session (first visit) --
-      // _bbInitBoardsAndData hasn't run, so _bbBoards/_bbResolveOrCreate
-      // BoardForProject aren't safe to touch yet. Same "set a flag, then
-      // nav" shape as the Idea Storyboard's own card-level deep-links;
-      // the flag is read at the top of _bbInitBoardsAndData, above.
+      // _bbInitBoardsAndData hasn't run, so _bbBoards/
+      // _bbResolveOrCreateBoardForHeader aren't safe to touch yet. Same
+      // "set a flag, then nav" shape as the Idea Storyboard's own
+      // card-level deep-links; the flag is read at the top of
+      // _bbInitBoardsAndData, above.
       if(!_bbInitStarted){
-        try{ sessionStorage.setItem('fg_open_board_for_project_id', projectId); }catch(e){}
+        try{ sessionStorage.setItem('fg_open_board_for_topic_id', headerId); }catch(e){}
         if(window.T2T && window.T2T.nav) window.T2T.nav('s-briefing-board');
         return true;
       }
       try{
-        var board=await _bbResolveOrCreateBoardForProject(projectId);
+        var board=await _bbResolveOrCreateBoardForHeader(headerId);
         if(!board) return false;
         if(window.T2T && window.T2T.nav) window.T2T.nav('s-briefing-board');
         await _bbSwitchToBoard(board.id);

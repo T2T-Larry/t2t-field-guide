@@ -2862,15 +2862,21 @@
         if(k.value==='BRIEFING BOARD'){
           // Sept 5 2026, Larry: "if an Idea Board changes a PROJECT or a
           // level, jumping to the BB should instantly go to the same
-          // project." Resolve wherever the traveler actually is right
-          // now (any depth -- same climb CAST already uses just below)
-          // and hand it to briefing-board.js's own jump, which lands on
-          // (or creates) that exact project's Briefing Board instead of
-          // just nav()'ing here and leaving whatever board was already
-          // open in place.
-          var bbProjectRow=_sboardCurrentProjectRow();
-          if(bbProjectRow && window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToProject){
-            window.T2TBriefingBoard.jumpToProject(bbProjectRow.id);
+          // project and level" -- then, same day: "what if TOPIC is
+          // exactly the same [as the Idea Board's]? If DREAM PHASE is the
+          // TOPIC on the Idea Board, then DREAM PHASE is the BB." So this
+          // hands off the traveler's exact current TOPIC (whatever
+          // T2TShared.currentTopicId is right now, at any depth -- the
+          // project root itself counts, same as everywhere else that
+          // treats "standing at the root" as just TOPIC's own value being
+          // the root row), not the project it climbs up to -- briefing-
+          // board.js's jumpToTopic lands on (or creates) that exact
+          // layer's own Briefing Board instead of just nav()'ing here and
+          // leaving whatever board was already open in place.
+          var bbTopicId=T2TShared.currentTopicId;
+          if(!bbTopicId){ _sboardShowToast('Open a project first.'); return; }
+          if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic){
+            window.T2TBriefingBoard.jumpToTopic(bbTopicId);
           } else if(window.T2T && window.T2T.nav){
             window.T2T.nav('s-briefing-board');
           }
