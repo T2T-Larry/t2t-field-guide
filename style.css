@@ -456,8 +456,14 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      wider container. .isx-full is toggled on #fg-root only while this
      screen is open; the ⛶ button goes a layer further with the real
      browser Fullscreen API on top of that. */
+  /* Sept 5 2026 -- Skeleton unification follow-up: this rule dropped the
+     rounded corners and drop-shadow for full-screen boards but left the
+     base .fg card's 2px solid #999 border standing, so every full-screen
+     board (Idea Board included) still showed a thin frame with a sliver
+     of white space around it. Larry: "this should leave no white space."
+     Added border:none so full-screen boards truly fill edge-to-edge. */
   #fg-root.isx-full{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;
-    max-width:none!important;max-height:none!important;border-radius:0!important;margin:0!important;box-shadow:none!important}
+    max-width:none!important;max-height:none!important;border:none!important;border-radius:0!important;margin:0!important;box-shadow:none!important}
   #s-idea-session.active{flex-direction:column!important;height:100%}
 
   /* 9711 lock, July 13, 2026 (superseded July 17, 2026): the Blue Sky
