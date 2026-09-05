@@ -2201,6 +2201,17 @@
     }, 'Add a board', canRemoveBoard ? function(){
       openProjectHub(currentBoardForRemove.id);
     } : null, 'Remove this project');
+    // bb-project-caret, Sept 5 2026 -- the label-then-arrow shape Larry
+    // wanted to match the Idea Board's own PROJECT field exactly. No new
+    // behavior: forwards straight to the label button's own click, which
+    // _bbRenderDropdown just wired above to open this same menu. Rewired
+    // every render, same as the label itself.
+    var projCaret=document.getElementById('bb-project-caret');
+    if(projCaret) projCaret.onclick=function(e){
+      e.stopPropagation();
+      var t=document.getElementById('bb-board-trigger');
+      if(t) t.click();
+    };
   }
 
   // Shared by both Title's own (+) and Type's "no boards of this type
@@ -2709,8 +2720,14 @@
       // block against the topic's height. Top/bottom padding matched
       // (10px each) so the divider sits as close under the topic as
       // the topic sits under the top edge -- no more dead space.
-      +'.bb-mhead{background:var(--bb-bg);border-bottom:3px solid var(--bb-accent);padding:10px 20px;flex-shrink:0}'
-      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}'
+      // Sept 5 2026 -- Larry: "the header band on the BB should look
+      // exactly like the header band on the Idea Board." Padding/
+      // min-height/border-weight matched to sc-header-area's own values
+      // (idea-storyboard-9710.js) -- colors stay BB's own (var(--bb-bg)/
+      // var(--bb-accent)), only the sizing changed, per Larry's call to
+      // keep BB's palette and just match the layout.
+      +'.bb-mhead{background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);padding:10px 16px 4px;min-height:70px;box-sizing:border-box;flex-shrink:0}'
+      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;height:100%}'
       // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
       // Board [title], A control and communication tool, in the center.
       // Far left: eyebrow TYPE with drop down list followed by a Field
@@ -2885,8 +2902,18 @@
       // 2px -> 10px so the tagline reads as its own line, not crowded
       // against the title's descenders.
       +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
-      +'.bb-mh{color:var(--bb-ink);font-size:calc(38px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font)}'
-      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end}'
+      // Sept 5 2026 -- Larry: match the Idea Board's header band. Bumped
+      // to the same 42px this board-kind label uses there (idea-storyboard-
+      // 9710.js sc-board-kind-trigger) and given the same raised/embossed
+      // look (light highlight above, soft shadow below) instead of flat
+      // text -- built with BB's own ink color, not Idea Board's blue.
+      +'.bb-mh{color:var(--bb-ink);font-size:calc(42px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25)}'
+      // Logo now rides along in the same right-side group as Utility/Close
+      // (see the markup below) so it sits between the center title and
+      // those two icons, mirroring how Logo sits between Topic and IDEA
+      // on the Idea Board -- align-items:center added so its taller
+      // eyebrow+frame stack lines up with the shorter icon buttons.
+      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:center}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --
@@ -3213,6 +3240,20 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
+              // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
+              // of this row (was third) to sit at the header's far left
+              // corner, matching where the Idea Board keeps its own
+              // traveler-name/PROJECT column. "Project" eyebrow label
+              // dropped -- Idea Board dropped its own the same day so the
+              // board-switcher itself reads as the only thing in this
+              // column, directly under the traveler's name. bb-project-caret
+              // added so this field gets the Idea Board's exact two-piece
+              // shape (label button, then its own arrow) -- wired in
+              // _bbRenderBoardPicker, right after that function's existing
+              // _bbRenderDropdown call, to open the same board-switch menu
+              // the label itself already opens. _bbRenderTravelerName
+              // (below) fills in the traveler-name text.
+              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent, Sept 5 2026 -- Larry: "every board now and in the
               // future" should have the same PARENT field the Idea/Plan
               // header does. The data isn't new -- a board's one approved
@@ -3235,13 +3276,15 @@
                   +'<div class="bb-cdrop-menu" id="bb-parent-menu" hidden></div>'
                 +'</div>'
               +'</div>'
-              +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div>'
-              // Traveler name, Sept 5 2026 -- stacked above Project, same
-              // "so Project reads as subordinate to it" reasoning Larry
-              // gave for the Idea board's own version today. _bbRenderTravelerName
-              // (below) fills in the text.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
+              // TYPE and ORG NAME (Client/Department/Partner categorization)
+              // retired from the visible chrome, Sept 5 2026 -- Larry: BB's
+              // header should look exactly like the Idea Board's, which has
+              // no equivalent field. Left as real, working code -- just no
+              // longer rendered here -- rather than deleted: _bbRenderOrgName,
+              // _bbRenderTypePicker and friends still run fine with no
+              // bb-type-trigger/bb-org-name-trigger in the DOM (_bbRenderDropdown
+              // no-ops when its trigger/menu ids don't resolve), so this is
+              // reversible by putting the fieldgrp back, nothing to rebuild.
             +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
             // 2026 -- Larry: "the top center of the Briefing Board could
@@ -3262,6 +3305,16 @@
               // Reload specifically); all four now live one tap inside
               // Utility instead (_bbRenderSettingsScreen, 'home' screen),
               // so this row goes back to just the two.
+              //
+              // Logo, Sept 5 2026 -- moved here from the left-side typebox
+              // row so it sits between the center title and Utility/Close,
+              // matching where Logo sits on the Idea Board (between Topic
+              // and the big IDEA label, itself just left of gear/close).
+              // Purely a DOM-order move -- bb-logo-anchor already uses
+              // plain flex layout (see the shared T2TLogo config comment
+              // near injectBriefingBoardStyles), no position math tied to
+              // where its wrapper sits in the row.
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'
