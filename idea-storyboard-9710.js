@@ -957,7 +957,12 @@
       // traveler name above it, matching Larry's "it looks like my
       // projects are below this."
       +'<div id="sc-project-wrap" style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow">Project</div>'
+      // Sept 5 2026, Larry: "what if we delete PROJECT eyebrow so that
+      // projects list is the field below the Traveler name?" Removed the
+      // "Project" label div that sat above the project selector -- the
+      // selector itself (sc-title-cdrop, just below) is now the first and
+      // only thing in this column, reading directly underneath the
+      // traveler name above with nothing labeling it in between.
       // Sept 3 2026, Larry: "the dropdown arrow to the right of Idea
       // Storyboards should show me the Headers (other PROJECTS) as
       // choices, in the order they appear under the Idea Storyboards
