@@ -3843,6 +3843,12 @@
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     wrap.innerHTML='';
+    // Board-name eyebrow fallback, Sept 5 2026 -- the currently-open
+    // board's own name, used below so a plain hand-typed card (no
+    // header link, no topic_label) still gets a board-name eyebrow
+    // like header-derived cards already have.
+    var _bbHomeBoardRow=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var _bbHomeBoardName=_bbHomeBoardRow ? (_bbHomeBoardRow.name||'') : '';
     var _keyLib=_bbLoadKeyLibrary();
     _bbAutoEscalateDates();
     var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
@@ -4004,9 +4010,20 @@
         // hand-edited to drop its usual "Develop " prefix) -- the eyebrow
         // only earns its place on the card when it's telling you something
         // the task line doesn't already say.
-        var topicEyebrowText = (c.topicLabel||'').trim();
+        //
+        // Extended Sept 5 2026 (Larry: "what if every BB card listed its
+        // BB with an eyebrow above the task") -- a plain hand-typed card
+        // has no topic_label, so it used to show nothing here at all.
+        // Now it falls back to naming the board it's actually sitting on,
+        // so every card carries this line, not just header-derived ones.
+        // A foreign/merged card falls back to the board it really lives
+        // on (_homeBoardName) rather than the board it's being read
+        // through here -- the separate dashed-border badge just below
+        // already covers "this card behaves differently here," this line
+        // is purely "here's whose board this is."
+        var topicEyebrowText = (c.topicLabel||'').trim() || (c._foreign ? (c._homeBoardName||'').trim() : _bbHomeBoardName);
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
-          ? ('<div class="bb-card-eyebrow">'+_esc(c.topicLabel)+'</div>') : '';
+          ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
