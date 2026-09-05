@@ -4012,16 +4012,17 @@
         // the task line doesn't already say.
         //
         // Extended Sept 5 2026 (Larry: "what if every BB card listed its
-        // BB with an eyebrow above the task") -- a plain hand-typed card
-        // has no topic_label, so it used to show nothing here at all.
-        // Now it falls back to naming the board it's actually sitting on,
-        // so every card carries this line, not just header-derived ones.
-        // A foreign/merged card falls back to the board it really lives
-        // on (_homeBoardName) rather than the board it's being read
-        // through here -- the separate dashed-border badge just below
-        // already covers "this card behaves differently here," this line
-        // is purely "here's whose board this is."
-        var topicEyebrowText = (c.topicLabel||'').trim() || (c._foreign ? (c._homeBoardName||'').trim() : _bbHomeBoardName);
+        // BB with an eyebrow above the task") -- a plain hand-typed native
+        // card has no topic_label, so it used to show nothing here at
+        // all. Now it falls back to naming the board it's actually
+        // sitting on. Foreign/merged cards are deliberately left out of
+        // this fallback (corrected same day -- a foreign card with no
+        // topic_label was showing its home board name here AND in the
+        // dashed-border badge just below, same text twice on one card)
+        // -- foreignBadge already names a foreign card's home board, so
+        // this line only needs the fallback for cards that actually live
+        // here.
+        var topicEyebrowText = (c.topicLabel||'').trim() || (c._foreign ? '' : _bbHomeBoardName);
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
