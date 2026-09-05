@@ -1760,6 +1760,8 @@
           _bbRenderOrgName();
           _bbRenderBoardPicker();
           _bbRenderLogo();
+          _bbRenderTravelerName();
+          _bbRenderParentField();
           await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
           return;
@@ -1772,6 +1774,8 @@
     _bbRenderOrgName();
     _bbRenderBoardPicker();
     _bbRenderLogo();
+    _bbRenderTravelerName();
+    _bbRenderParentField();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);
     await _bbLoadSharedInCardsForProjectBoard(board);
@@ -1931,7 +1935,7 @@
   // instead, ending in that literal dashed-circle (+). Mirrors the Idea
   // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
   function _bbCloseAllDropdowns(exceptMenuId){
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-parent-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2715,6 +2719,18 @@
       +'.bb-mh-typebox{display:flex;gap:14px;justify-self:start;align-items:flex-start}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      // Traveler name, Sept 5 2026 -- Larry: "every board now and in the
+      // future" should carry the same PROJECT and PARENT fields the
+      // Idea/Plan header does, starting here. Mirrors the plain eyebrow
+      // treatment the Idea board's own traveler name settled on today
+      // (.sc-traveler-eyebrow, idea-storyboard-9710.js) -- same idea,
+      // just built on this board's own theme variable (var(--bb-sub))
+      // instead of a fixed color, since Briefing Board themes can change
+      // (see BB_THEME_VARS) and this needs to follow whichever one's
+      // active, the same way every other label on this header already
+      // does. Sized up from the standard 9px eyebrow the same way (15px)
+      // since it's the traveler's own name, not a field label.
+      +'.bb-traveler-eyebrow{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap}'
       // Logo/artwork, Aug 28 2026 -- Larry: give the Briefing Board the
       // same Logo option the Idea Board already has. Mirrors that
       // board's own upload -> crop -> resize-handle pipeline
@@ -2819,6 +2835,13 @@
       // its own options, so Type/Title are a trigger button + a real
       // styled menu, ending in the same dashed-circle (+) as .tm-add-tile.
       +'.bb-cdrop{position:relative}'
+      // Parent's fast-jump arrow, Sept 5 2026 -- same shell as the Idea
+      // board's own sc-project-caret (idea-storyboard-9710.js), just
+      // built on this board's light theme (white fill, accent border)
+      // instead of that board's dark rgba() overlay, so it reads as one
+      // of this header's own controls rather than a pasted-in dark chip.
+      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:18px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(9px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      +'.bb-parent-caret:hover{opacity:1}'
       // Centered, Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-trigger.
       +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;width:100%}'
       +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(9px * var(--fg-text-scale,1));opacity:.6;flex-shrink:0}'
@@ -3184,8 +3207,34 @@
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
             +'<div class="bb-mh-typebox">'
+              // Parent, Sept 5 2026 -- Larry: "every board now and in the
+              // future" should have the same PARENT field the Idea/Plan
+              // header does. The data isn't new -- a board's one approved
+              // parent has been readable since Aug 16 (see _bbRenderRelations
+              // and the Links popup below) -- this just puts it in the
+              // header itself instead of behind a popup, plus the same
+              // fast-jump-to-any-level-above arrow the Idea board's own
+              // Parent got today. bb-parent-hit is a real button (not a
+              // plain div) since a single click already means something
+              // here -- step up to the immediate parent -- same as
+              // Idea/Plan's plain Parent click. _bbRenderParentField
+              // (below) fills in the name and wires that click each time
+              // the board switches; _bbWireParentAncestorDropdown wires
+              // the caret once, at startup.
+              +'<div class="bb-mh-fieldgrp">'
+                +'<div class="bb-mh-eyebrow">Parent</div>'
+                +'<div class="bb-cdrop" id="bb-parent-cdrop" style="display:flex;align-items:center;gap:2px">'
+                  +'<button type="button" class="bb-parent-caret" id="bb-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
+                  +'<button type="button" class="bb-hdr-select" id="bb-parent-hit" style="cursor:default"></button>'
+                  +'<div class="bb-cdrop-menu" id="bb-parent-menu" hidden></div>'
+                +'</div>'
+              +'</div>'
               +'<div class="bb-mh-fieldgrp"><button type="button" class="bb-mh-eyebrow bb-cdrop-trigger" id="bb-type-trigger" title="Click to change category (Client, Department, Partner...)"></button><div class="bb-cdrop-menu" id="bb-type-menu" hidden></div><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-org-name-trigger" title="Click to set a name, e.g. Accounting or Denver Broncos"></button><div class="bb-cdrop-menu" id="bb-org-name-menu" hidden></div></div>'
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              // Traveler name, Sept 5 2026 -- stacked above Project, same
+              // "so Project reads as subordinate to it" reasoning Larry
+              // gave for the Idea board's own version today. _bbRenderTravelerName
+              // (below) fills in the text.
+              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
             +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
@@ -5123,6 +5172,121 @@
     return (name||'(untitled)')+' — '+_bbTypeLabel(type||'personal');
   }
 
+  // Persistent Parent header field, Sept 5 2026 -- see the header markup
+  // above for the "why now" (Larry: every board, present and future,
+  // should carry the same PROJECT and PARENT fields). Reads the exact
+  // same list_my_board_relations RPC the Links popup (_bbRenderRelations,
+  // above) already uses -- that RPC returns the parent's name even when
+  // this traveler doesn't otherwise have access to that board's row
+  // (RLS still lets a child see its own approved parent's name), which
+  // is exactly the case a cross-owner adoption (e.g. a department board
+  // adopted by a company board someone else owns) needs.
+  //
+  // One real open question this surfaced rather than guessed at: today,
+  // a parent board this traveler isn't a member of can't actually be
+  // opened -- _bbBoards only ever holds boards they own or are a member
+  // of, and RLS wouldn't return that board's cards either. Whether
+  // adopting a parent should also grant the child's owner a peek into
+  // it is a real access-control decision, not a UI one -- left for
+  // Larry, not decided here. Until then, that case shows the parent's
+  // name (so "where does this sit" is always visible, per today's
+  // design lock) but explains why clicking it doesn't go anywhere yet,
+  // rather than failing silently or pretending it isn't there.
+  function _bbCanOpenBoard(boardId){
+    return _bbBoards.some(function(b){ return b.id===boardId; });
+  }
+  function _bbOpenAncestorBoard(boardId){
+    if(_bbCanOpenBoard(boardId)) _bbSwitchToBoard(boardId);
+    else _bbShowToast("This board isn't shared with you yet — its owner needs to add you before you can open it.");
+  }
+  async function _bbRenderParentField(){
+    var hit=document.getElementById('bb-parent-hit');
+    if(!hit || !_bbCurrentBoardId) return;
+    var rel=await _bbLoadRelationsFull();
+    var parentRow=rel.filter(function(r){ return r.status==='approved' && r.child_board_id===_bbCurrentBoardId; })[0];
+    if(!parentRow){
+      hit.textContent='No parent yet';
+      hit.style.cursor='default';
+      hit.onclick=null;
+      return;
+    }
+    hit.textContent=parentRow.parent_board_name||'(untitled)';
+    hit.style.cursor=_bbCanOpenBoard(parentRow.parent_board_id)?'pointer':'default';
+    hit.onclick=function(){ _bbOpenAncestorBoard(parentRow.parent_board_id); };
+  }
+  // PARENT's fast-jump arrow -- same "walk the chain, collect every
+  // ancestor, reverse so the highest level reads first" approach as the
+  // Idea board's own _sboardParentAncestorChoices, just walking
+  // parent_board_id via the RPC's rows instead of cluster_id via the
+  // in-memory topic cache. Reads _bbRelationsFullCache directly (already
+  // warmed by _bbRenderParentField above) rather than re-fetching, so
+  // opening the menu is instant.
+  function _bbParentAncestorChoices(){
+    var list=[];
+    var rel=_bbRelationsFullCache||[];
+    var curId=_bbCurrentBoardId;
+    var guard=0;
+    while(curId && guard<50){
+      guard++;
+      var parentRow=rel.filter(function(r){ return r.status==='approved' && r.child_board_id===curId; })[0];
+      if(!parentRow) break;
+      list.push({id:parentRow.parent_board_id, name:parentRow.parent_board_name});
+      curId=parentRow.parent_board_id;
+    }
+    return list.reverse();
+  }
+  function _bbWireParentAncestorDropdown(){
+    var trigger=document.getElementById('bb-parent-caret'), menu=document.getElementById('bb-parent-menu');
+    if(!trigger || !menu) return;
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-parent-menu':null);
+      if(!willOpen){ menu.hidden=true; return; }
+      var choices=_bbParentAncestorChoices();
+      menu.innerHTML='';
+      if(!choices.length){
+        var empty=document.createElement('div');
+        empty.className='bb-cdrop-row';
+        empty.style.cssText='cursor:default;opacity:.6';
+        empty.textContent='Nothing above this.';
+        menu.appendChild(empty);
+      } else {
+        choices.forEach(function(h){
+          var row=document.createElement('div');
+          row.className='bb-cdrop-row';
+          if(!_bbCanOpenBoard(h.id)) row.style.opacity='.55';
+          row.textContent=h.name||'(untitled)';
+          row.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            menu.hidden=true;
+            _bbOpenAncestorBoard(h.id);
+          });
+          menu.appendChild(row);
+        });
+      }
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      _bbSyncMenuTheme(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    };
+  }
+
+  // Traveler name, Sept 5 2026 -- same shared member profile the Idea
+  // board's own _sboardRenderMemberName reads (T().getMember(), backed
+  // by the same t2t:member-loaded event), just filling in this board's
+  // own eyebrow instead of that one's.
+  function _bbRenderTravelerName(){
+    var m=T().getMember && T().getMember();
+    var el=document.getElementById('bb-traveler-name');
+    if(el && m && m.display_name) el.textContent=m.display_name.toUpperCase();
+  }
+
   async function _bbRenderRelations(){
     var body=document.getElementById('bb-relations-body'); if(!body) return;
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
@@ -5216,6 +5380,7 @@
           await _bbLoadRelationsFull(true);
           await _bbRenderRelations();
           _bbRenderBoardPicker();
+          _bbRenderParentField();
         }catch(e){ console.error('Briefing Board: could not respond to relationship request', e); window.alert('Could not respond to that request.'); }
       });
     });
@@ -5269,6 +5434,7 @@
         await _bbLoadRelationsFull(true);
         await _bbRenderRelations();
         _bbRenderBoardPicker();
+        _bbRenderParentField();
       }catch(e){ console.error('Briefing Board: could not request relationship', e); if(msg) msg.textContent='Could not send that request.'; }
     });
   }
@@ -6213,6 +6379,17 @@
     // X into the Utility button" -- b-bb-mg and bb-reset (the standalone
     // header icons) are gone; Jump to Menu and Reload now live inside
     // Utility instead (bb-settings-go-menu / bb-settings-go-reload).
+
+    // Traveler name + Parent, Sept 5 2026 -- one-time wiring, same
+    // pattern as the Idea board's own injectSeaOfIdeasCluster: the caret
+    // click only needs wiring once (its menu contents get rebuilt fresh
+    // every time it opens), and the name listener covers the case where
+    // the member profile finishes loading after this header is already
+    // on screen. An immediate call handles the opposite race -- the
+    // member already loaded before this wiring ran.
+    _bbWireParentAncestorDropdown();
+    _bbRenderTravelerName();
+    window.addEventListener('t2t:member-loaded', function(){ _bbRenderTravelerName(); });
 
     T().wire('bb-add-close', closeAddCard);
     // Aug 7 2026 -- Larry: "I hit ENTER on a Briefing Card entry but it

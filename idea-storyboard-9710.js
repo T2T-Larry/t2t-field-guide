@@ -1002,9 +1002,11 @@
     // PROJECT, Sept 2 2026 -- Larry: "Top Project for each member = IDEA
     // STORYBOARDS. The HEADERS for that board are the PROJECTS plus
     // COLLABORATOR and STAKEHOLDER." Every member has exactly one true
-    // top-level ROOT now (their Idea Storyboards board), so PROJECT
-    // stops being a picker that switches between several separate roots
-    // (that's what the retired _sboardRenderTitlePicker was for).
+    // top-level project now (see the retirement note on
+    // _sboardRenderTitlePicker above), so PROJECT stops being a picker
+    // that switches between several roots and becomes a fixed label
+    // reading "Idea Storyboards" (set once here, and again defensively
+    // in _sboardRenderMemberName on every chrome refresh).
     //
     // First cut of this (same day) opened openProjectSwitcher's popup on
     // click -- wrong per Larry's very next message: "I clicked on Idea
@@ -1013,35 +1015,23 @@
     // where Mouse Criteria/Field Guide/etc. show as ordinary Header
     // tiles (same screen every other Header already opens onto -- no
     // separate "master" screen to build), not surface a small popup
-    // instead of it. openProjectSwitcher's popup is real, tested code and
-    // still useful as a fast jump without scrolling the board -- kept
-    // reachable on double-click rather than deleted.
-    //
-    // Sept 5 2026 (follow-up) -- Larry: "When I switch to Field Guide as
-    // the PROJECT, Field Guide should appear in the PROJECT field. Idea
-    // Storyboards is the cluster of PROJECTS and only displays when
-    // consciously chosen." So PROJECT's text is no longer fixed here --
-    // set live in _sboardUpdateHeaderChrome instead, from whichever
-    // project is actually on screen (see that function's own comment).
-    // The click target follows the same logic: land on whatever project
-    // the label is currently showing (Field Guide's own top, say), not
-    // always Idea Storyboards -- a click has to land where the label
-    // says it will. ensureIdeaStoryboardsRoot still runs first since
-    // it's also what performs the one-time migration for a member who's
-    // never opened this before (confirmed live for Larry's own account:
+    // instead of it. Fixed: click ensures the root exists (this is also
+    // what actually RUNS the one-time migration for a member who's never
+    // opened it before -- confirmed live for Larry's own account:
     // no "Idea Storyboards" row existed yet, Mouse Criteria was still
-    // sitting at true root).
+    // sitting at true root) and drills straight into it.
+    // openProjectSwitcher's popup is real, tested code and still useful
+    // as a fast jump without scrolling the board -- kept reachable on
+    // double-click rather than deleted.
     (function(){
       var titleTrigger=document.getElementById('sc-title-trigger');
       if(titleTrigger){
-        titleTrigger.title='Click to jump to this project’s top; double-click for the fast-jump list';
+        titleTrigger.textContent='Idea Storyboards';
+        titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
         titleTrigger.addEventListener('click', async function(e){
           e.stopPropagation();
           var rootId=await T2TData.ensureIdeaStoryboardsRoot();
-          if(rootId) _sboardIdeaStoryboardsRootId=rootId;
-          var curRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
-          var target=curRow?_sboardProjectRowFor(curRow):null;
-          _sboardDrillInto(target||{id:rootId});
+          if(rootId) _sboardDrillInto({id:rootId});
         });
         titleTrigger.addEventListener('dblclick', function(e){
           e.stopPropagation();
@@ -2879,28 +2869,6 @@
       if(!willOpen){ menu.hidden=true; return; }
       var choices=_sboardProjectHeaderChoices();
       menu.innerHTML='';
-      // "Idea Storyboards" itself, Sept 5 2026 (follow-up) -- Larry:
-      // "Idea Storyboards is the cluster of PROJECTS and only displays
-      // when consciously chosen." Now that PROJECT's own label tracks
-      // whatever project is actually on screen (see
-      // _sboardUpdateHeaderChrome), the cluster view needs its own row
-      // here to still be reachable in one click -- Parent deliberately
-      // won't climb past a project's own root into it (July 16 2026
-      // fix), and the plain PROJECT click now lands on the CURRENT
-      // project's top, not the cluster. A light divider under it keeps
-      // it visually apart from the real projects below.
-      if(_sboardIdeaStoryboardsRootId){
-        var clusterRow=document.createElement('div');
-        clusterRow.className='sc-cdrop-row';
-        clusterRow.style.cssText='font-style:italic;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:2px;padding-bottom:6px';
-        clusterRow.textContent='Idea Storyboards';
-        clusterRow.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          menu.hidden=true;
-          _sboardDrillInto({id:_sboardIdeaStoryboardsRootId});
-        });
-        menu.appendChild(clusterRow);
-      }
       if(!choices.length){
         var empty=document.createElement('div');
         empty.className='sc-cdrop-row';
@@ -2920,36 +2888,6 @@
           menu.appendChild(row);
         });
       }
-      // (+) Add a project, Sept 5 2026 (follow-up) -- Larry: "should have
-      // (+) ... choices at the bottom to add ... a project" -- no matching
-      // (-) here (his own follow-up call): a project is already removable
-      // by trashing it from its own Topic level (the gear-menu "Trash this
-      // project" flow -- see _sboardConfirmTrashHeader/openSbProjectHub),
-      // so PROJECT's dropdown doesn't need a second way to do the same
-      // thing. Same dashed-circle button/markup as every other (+) row in
-      // this file (Type's own addRow via _sboardRenderDropdown, etc.) for
-      // a consistent look, just built by hand here since this menu isn't
-      // driven by _sboardRenderDropdown. _sboardCreateRootBoard already
-      // lands a new project as a child of Idea Storyboards and self-scopes
-      // it correctly (see that function's own comment) -- same call the
-      // retired Title picker used to make.
-      var addRow=document.createElement('div');
-      addRow.className='sc-cdrop-addrow';
-      var addBtn=document.createElement('button');
-      addBtn.type='button';
-      addBtn.className='sc-dotted-add-btn';
-      addBtn.title='Add a new project';
-      addBtn.textContent='+';
-      addBtn.addEventListener('click', async function(ev){
-        ev.stopPropagation();
-        menu.hidden=true;
-        var name=window.prompt('Name for the new project:');
-        if(!name || !name.trim()) return;
-        var newId=await _sboardCreateRootBoard(name.trim(), 'personal');
-        if(newId) _sboardSwitchToRootBoard(newId);
-      });
-      addRow.appendChild(addBtn);
-      menu.appendChild(addRow);
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';
@@ -6225,28 +6163,6 @@
     var areaEl=document.getElementById('sc-header-area');
     var parentHit=document.getElementById('sc-parent-hit');
     var parentLabel=document.getElementById('sc-parent-label');
-    var titleTriggerEl=document.getElementById('sc-title-trigger');
-    // PROJECT, Sept 5 2026 (follow-up) -- Larry: "When I switch to Field
-    // Guide as the PROJECT, Field Guide should appear in the PROJECT
-    // field. Idea Storyboards is the cluster of PROJECTS and only
-    // displays when consciously chosen." PROJECT had read a permanent
-    // "Idea Storyboards" ever since the Sept 2 change (see the retirement
-    // note on _sboardRenderTitlePicker) -- right while every member had
-    // exactly one real project, wrong now that a member stands inside
-    // any Header under that root (Field Guide, Mouse Criteria, etc.) and
-    // PROJECT kept reading "Idea Storyboards" no matter which one.
-    // _sboardProjectRowFor already resolves exactly the row this needs:
-    // it climbs cluster_id and stops at the nearest self-scoped row --
-    // the current project's own Header (Field Guide) if you're anywhere
-    // inside it, or the Idea Storyboards root itself if nothing more
-    // specific has been drilled into yet. Runs every chrome refresh,
-    // same as Parent/Topic just below.
-    if(titleTriggerEl){
-      var curProjRow=T2TShared.currentTopicId?_sboardProjectRowFor(_sboardAllRowsById[T2TShared.currentTopicId]):null;
-      titleTriggerEl.textContent=(curProjRow && (!_sboardIdeaStoryboardsRootId || String(curProjRow.id)!==String(_sboardIdeaStoryboardsRootId)))
-        ? (curProjRow.text_content||'(untitled)')
-        : 'Idea Storyboards';
-    }
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
       var topicRow=_sboardAllRowsById[T2TShared.currentTopicId];
@@ -6276,10 +6192,10 @@
         }
       }
       // Member name, Sept 2 2026 -- replaces the old Type/Title re-render
-      // pair here (Organization removed from the chrome). PROJECT itself
-      // is now re-rendered per Topic too, just above -- see the Sept 5
-      // follow-up note on titleTriggerEl at the top of this function, and
-      // the retirement notes on _sboardRenderTitlePicker.
+      // pair here (Organization removed from the chrome; PROJECT is now
+      // a fixed label wired once, not re-rendered per Topic -- see the
+      // retirement notes on _sboardRenderTitlePicker and the one-time
+      // PROJECT wiring in injectSeaOfIdeasCluster).
       _sboardRenderMemberName();
       var parentId=topicRow.cluster_id||null;
       var parentRow=parentId?_sboardAllRowsById[parentId]:null;
@@ -6393,7 +6309,27 @@
     // above for why). Same mirrored-gap approach, just flipped back:
     // Logo's frame now sits that same measured gap off Topic's RIGHT
     // edge instead of Parent's left edge.
-    var desiredSlotLeft=topicRect.right+gap;
+    //
+    // Same day, follow-up -- Larry: "Logo keeps drifting, needs to stay
+    // where it is put." Root cause: Topic sits in a centered, content-
+    // sized grid column (the 1fr/auto/1fr row set up Aug 16, above), so
+    // topicRect.right -- the live, actual right edge used here -- moves
+    // with every topic's own title length, even though Topic itself
+    // always stays centered. Anchoring Logo off that live edge meant it
+    // visibly slid sideways every time a shorter- or longer-titled card
+    // opened, though nothing about Logo changed. Fixed by anchoring off
+    // Topic's own reserved slot -- its CSS max-width, i.e. the width
+    // Topic would have if it were as long as its box ever allows --
+    // instead of its current shrink-to-fit size. Since Topic is always
+    // centered in sc-header-area regardless of title length, "half that
+    // reserved width off the header's own center" lands on the exact
+    // same pixel for every topic, while a real window resize or
+    // text-scale change (which should still move things) keeps working,
+    // since areaRect and the max-width itself (it reads the live
+    // --fg-text-scale variable) are both re-measured fresh every call.
+    var topicMaxWidth=parseFloat(getComputedStyle(topicBox).maxWidth)||topicRect.width;
+    var topicSlotRight=(areaRect.left+areaRect.width/2)+topicMaxWidth/2;
+    var desiredSlotLeft=topicSlotRight+gap;
     var wrapRect=wrap.getBoundingClientRect();
     var delta=desiredSlotLeft-slotRect.left;
     var baseLeft=(wrapRect.left-areaRect.left)+delta;
