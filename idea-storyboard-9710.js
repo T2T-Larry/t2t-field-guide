@@ -1098,7 +1098,9 @@
         // (see _sboardRenderProjectLabel's own Sept 6 note); this is just
         // the placeholder shown for the instant before that first real
         // render lands.
-        titleTrigger.textContent='Projects';
+        // Sept 6 2026, Larry: "What used to be Idea Storyboards is now
+        // PROJECTS." Same root, renamed label.
+        titleTrigger.textContent='PROJECTS';
         titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
         titleTrigger.addEventListener('click', async function(e){
           e.stopPropagation();
@@ -2999,18 +3001,28 @@
       if(!willOpen){ menu.hidden=true; return; }
       var choices=_sboardProjectHeaderChoices();
       menu.innerHTML='';
-      // Idea Storyboards row removed, Sept 6 2026 -- Larry: "delete any
-      // reference to Idea Storyboards, that is now not going to be
-      // used." This dropdown used to pin an "Idea Storyboards" row above
-      // the real projects (Sept 5) as a conscious way back to the
-      // account-wide root; that destination is retired now, so the list
-      // is just the real projects, nothing pinned above them -- the same
-      // shape briefing-board.js's own PROJECT dropdown (_bbRenderBoardPicker)
-      // already had. T2TData.ensureIdeaStoryboardsRoot and
-      // _sboardIdeaStoryboardsRootId are untouched (every real project
-      // still needs the one shared parent row it always has behind the
-      // scenes) -- this only removes it as something a traveler can see
-      // or choose.
+      // PROJECTS row restored, Sept 6 2026 -- Larry, later the same day:
+      // "What used to be Idea Storyboards is now PROJECTS and should top
+      // the projects list." Pinned back above the real projects, same
+      // spot the old "Idea Storyboards" row held before it was pulled
+      // earlier today -- just renamed and re-added.
+      if(_sboardIdeaStoryboardsRootId){
+        var pinned=document.createElement('div');
+        pinned.className='sc-cdrop-row';
+        pinned.style.fontWeight='700';
+        pinned.textContent='PROJECTS';
+        pinned.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          menu.hidden=true;
+          _sboardDrillInto({id:_sboardIdeaStoryboardsRootId});
+        });
+        menu.appendChild(pinned);
+        if(choices.length){
+          var sep=document.createElement('div');
+          sep.style.cssText='border-top:1px solid rgba(255,255,255,.15);margin:2px 0';
+          menu.appendChild(sep);
+        }
+      }
       if(!choices.length){
         var empty=document.createElement('div');
         empty.className='sc-cdrop-row';
@@ -3875,6 +3887,18 @@
       var eyebrow=b.label?('<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;line-height:1.2">'+b.label.replace(/</g,'&lt;')+'</div>'):'';
       return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'"><div>'+mark+(b.text_content||'(untitled)')+'</div>'+eyebrow+'</div>';
     }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
+    // PROJECTS, pinned above the real projects, Sept 6 2026 -- Larry:
+    // "What used to be Idea Storyboards is now PROJECTS and should top
+    // the projects list." Its own row, own click wiring (below) -- not
+    // part of allTop, so it skips the Rename/Archive/Delete quick menu
+    // every real project gets on double-click (there's nothing to
+    // rename/archive/delete here, it's the shared root every project
+    // sits under).
+    var isAtRoot=_sboardIdeaStoryboardsRootId && String(currentProjectId)===String(_sboardIdeaStoryboardsRootId);
+    var pinnedRow=_sboardIdeaStoryboardsRootId
+      ? '<div class="sb-hdr-vitem'+(isAtRoot?' current':'')+'" id="sb-proj-pinned-root" style="font-weight:700;border-bottom:1px solid #e0dcd0;margin-bottom:4px;padding-bottom:8px"><div>'+(isAtRoot?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'')+'PROJECTS</div></div>'
+      : '';
+    rows=pinnedRow+rows;
     var groupRows=''
       +'<div class="sb-hdr-vitem" data-group="collaborator">COLLABORATOR<span style="float:right;color:#a89a80">'+collab.length+'</span></div>'
       +'<div class="sb-hdr-vitem" data-group="stakeholder">STAKEHOLDER<span style="float:right;color:#a89a80">'+stake.length+'</span></div>';
@@ -3934,6 +3958,14 @@
         if(boardRow) _sboardProjectQuickMenu(boardRow);
       });
     });
+    (function(){
+      var pinnedEl=document.getElementById('sb-proj-pinned-root');
+      if(pinnedEl) pinnedEl.addEventListener('click', function(e){
+        e.stopPropagation();
+        closeSbDetail();
+        if(_sboardIdeaStoryboardsRootId) _sboardDrillInto({id:_sboardIdeaStoryboardsRootId});
+      });
+    })();
     Array.prototype.forEach.call(ov.querySelectorAll('.sb-hdr-vitem[data-group]'), function(row){
       row.addEventListener('click', async function(){
         var which=row.getAttribute('data-group');
@@ -6340,7 +6372,8 @@
     var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
     var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
     if(atRoot){
-      titleTrigger.textContent='Projects';
+      // Sept 6 2026, Larry: "What used to be Idea Storyboards is now PROJECTS."
+      titleTrigger.textContent='PROJECTS';
       titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
     } else {
       titleTrigger.textContent=projRow.text_content||'(untitled)';

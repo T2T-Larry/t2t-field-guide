@@ -2394,6 +2394,18 @@
       return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
     });
     var opts=realProjects.map(function(h){ return {value:'hdr:'+h.id, label:h.text_content||'(untitled)'}; });
+    // MASTER BRIEFING BOARD, pinned first, Sept 6 2026 -- Larry: "What
+    // used to be Idea Storyboards is now PROJECTS and should top the
+    // projects list... Master Briefing Board... defaults to it [PROJECTS]
+    // ... on the BB." The shared root every real project nests under
+    // (_bbIdeaStoryboardsRootId, same row the Idea Board itself now
+    // calls PROJECTS) is a real Header like any other, so it already
+    // resolves/creates its own linked board through the same 'hdr:'
+    // path below -- this is that same root, just labeled the way the
+    // Briefing Board itself talks about a top layer ("Master Briefing
+    // Board" already means "this project's own top layer" everywhere
+    // else in this file), not the Idea Board's plain "PROJECTS".
+    if(_bbIdeaStoryboardsRootId) opts.unshift({value:'hdr:'+_bbIdeaStoryboardsRootId, label:'MASTER BRIEFING BOARD'});
     var personalBoards=_bbBoards.filter(function(b){ return !b.storyboard_project_id; });
     personalBoards.forEach(function(b){ opts.push({value:'brd:'+b.id, label:b.name||'Untitled Board'}); });
     // Adopted children ride along too, Aug 16 2026 -- Larry: opening
