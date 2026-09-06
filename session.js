@@ -216,18 +216,33 @@
       // projects. Reachable at all times, including while the Idea Input
       // card is open on top of the board (see the isx-popup-layer nesting
       // note above — the header row is never covered by a popup).
-      T().wire('isx-topic-box', _isxOpenTopicSwitcher);
-      // TOPIC now gets the same lower-right corner-flip every other card
-      // has (see index.html/dream.html) — opens its own DETAILS back
-      // (notes, etc.) same as any card, without disturbing the existing
-      // click-anywhere-else-on-the-box = open Topic switcher behavior.
-      // July 18, 2026.
-      T().wire('isx-topic-corner-flip', function(e){
-        e.stopPropagation();
-        var cur=T2TShared.isxPath[T2TShared.isxPath.length-1];
-        if(!cur||!cur.id) return;
-        _isxFetchRow(cur.id).then(function(row){ if(row) T2TStoryboard.openDetail(row); });
-      });
+      // Single click opens the Topic switcher; double-click opens Topic's
+      // own DETAILS back (notes, etc.), same job a corner-flip triangle
+      // used to do here before it was removed Sept 6 2026 (Larry: "remove
+      // the gray corners flip option from all cards. Just double click to
+      // open cards."). Same click/dblclick disambiguation
+      // _isxMakeHeaderStackTile already uses elsewhere on this screen: the
+      // single-click action waits in a short timer so a second click
+      // arriving inside that window cancels it instead of firing both.
+      (function(){
+        var topicBoxEl=document.getElementById('isx-topic-box');
+        if(!topicBoxEl) return;
+        var topicClickTimer=null;
+        topicBoxEl.addEventListener('click', function(){
+          if(topicClickTimer) return;
+          topicClickTimer=setTimeout(function(){
+            topicClickTimer=null;
+            _isxOpenTopicSwitcher();
+          }, 250);
+        });
+        topicBoxEl.addEventListener('dblclick', function(e){
+          e.stopPropagation();
+          if(topicClickTimer){ clearTimeout(topicClickTimer); topicClickTimer=null; }
+          var cur=T2TShared.isxPath[T2TShared.isxPath.length-1];
+          if(!cur||!cur.id) return;
+          _isxFetchRow(cur.id).then(function(row){ if(row) T2TStoryboard.openDetail(row); });
+        });
+      })();
       // Keyboard shortcuts (Ctrl/Cmd+Z/Shift+Z, C/V, D, A, Delete/
       // Backspace) — only while 9711 is the active screen, and never
       // while focus is in a real text field (typing in Idea Input,
@@ -548,9 +563,9 @@
 
     // TOPIC — current position, large centered pill, matches 9710's own
     // #sc-topic-box treatment exactly (same class, same look). Written to
-    // the inner #isx-topic-text span, NOT the outer box — the box also
-    // holds the corner-flip div now, and textContent on the parent would
-    // wipe that child out on every single render. July 18, 2026.
+    // the inner #isx-topic-text span, NOT the outer box, so textContent on
+    // the parent doesn't wipe out other children the box holds on every
+    // single render. July 18, 2026.
     var _isxCurTopicEntry=T2TShared.isxPath[T2TShared.isxPath.length-1];
     topicText.textContent=_isxCurTopicEntry.text;
     // Color: 9710's own _sboardUpdateHeaderChrome already does this
@@ -1343,15 +1358,11 @@
       t.innerHTML='<div>'+(row.text_content||'')+'</div>';
     }
     // Same SHAPING card the Storyboard uses — full-size image view, heart,
-    // notes, lock — so a card behaves identically on both screens. Reached
-    // via the corner-flip (turned-up lower-right corner) instead of
-    // dblclick as of July 16, 2026.
-    var isxCornerFlip=document.createElement('div');
-    isxCornerFlip.className='isx-corner-flip';
-    isxCornerFlip.title='Flip card';
-    isxCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
-    isxCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-    t.appendChild(isxCornerFlip);
+    // notes, lock — so a card behaves identically on both screens. Used to
+    // be reached via a corner-flip triangle (turned-up lower-right
+    // corner); removed Sept 6 2026 (Larry: "remove the gray corners flip
+    // option from all cards. Just double click to open cards.") — the
+    // double-click below is now the only way in.
     // Person Assigned badge, Aug 9 2026 -- bridge pattern, the
     // initials cache/lookup lives in 9710's closure, this just borrows
     // it.
@@ -1412,13 +1423,7 @@
       +'<div class="isx-stack-layer" style="top:2.5px;left:2.5px;background:'+bg+'"></div>'
       +'<div class="isx-stack-front" style="background:'+bg+'">'
         +'<div>'+(iconPrefix||'')+(row.text_content||'(untitled)')+'</div>'
-        +'<div class="isx-corner-flip" title="Flip card"></div>'
       +'</div>';
-    var isxStackCornerFlip=t.querySelector('.isx-corner-flip');
-    if(isxStackCornerFlip){
-      isxStackCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); T2TStoryboard.openDetail(row); });
-      isxStackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-    }
     // Person Assigned badge, Aug 9 2026 -- header piles get the same
     // badge as plain cards.
     var isxStackFront=t.querySelector('.isx-stack-front');
@@ -1446,7 +1451,6 @@
     // double-click to be the color-options shortcut every other card has
     // -- locked July 27, 2026.
     t.addEventListener('click', function(e){
-      if(e.target.closest('.isx-corner-flip')) return;
       e.stopPropagation();
       if(_isxClickTimers[row.id]) return;
       _isxClickTimers[row.id]=setTimeout(function(){

@@ -297,8 +297,8 @@
     // mousemove -- it just snapped back on release, looking stuck.
     // Killing native drag here (the attribute for Chrome/Firefox,
     // dragstart preventDefault as backup for Safari) lets the real
-    // drag take over, same as the corner-flip tabs elsewhere in this
-    // codebase already do for their own elements.
+    // drag take over, same as other draggable elements elsewhere in this
+    // codebase already do for their own images.
     img.draggable = false;
     img.addEventListener('dragstart', function(e){ e.preventDefault(); });
     wrap.appendChild(img);

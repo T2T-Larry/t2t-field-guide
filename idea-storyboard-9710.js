@@ -235,13 +235,6 @@
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
         +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:calc(150px * var(--fg-text-scale,1));overflow:hidden;text-overflow:ellipsis}'
         +'.sc-pill.named{background:#fff;color:#1a3a5c;border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
-        // Corner-flip dog-ear — added July 16, 2026. Turned-up lower-right
-        // corner on every card (idea/subber + header, any size). Click
-        // opens the back of the card (openSbDetail). Kept separate from
-        // dblclick on purpose — dblclick is reserved for HEADER/sub-header
-        // drill-to-TOPIC navigation, and this avoids any collision with
-        // that or with the DETAILS image lightbox's own dblclick.
-        +'.sc-corner-flip{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 15px 15px;border-color:transparent transparent rgba(26,58,92,0.32) transparent;cursor:pointer;z-index:6;transition:border-width .12s}'
         // Order # badge -- Larry, Aug 3 2026: "small, no bigger that Notes
         // field" (.sb-notes-pill below is 12px; this is smaller still).
         // Moved to the upper-left corner (Larry, Aug 3 2026) so the number
@@ -304,7 +297,6 @@
         +'.sb-key-pick-select[disabled]{opacity:.35;cursor:not-allowed}'
         +'.sb-key-pick-edit{border:none;background:none;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#5b9bd5;flex-shrink:0;padding:0 2px}'
         +'.sb-key-lib-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px}'
-        +'.sc-corner-flip:hover{border-width:0 0 20px 20px;border-color:transparent transparent rgba(26,58,92,0.55) transparent}'
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:calc(19px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
         +'.sb-icon-btn.misc{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:14px 0}'
@@ -866,7 +858,7 @@
       // Topic eyebrow deleted, Sept 5 2026, Larry -- Topic's own box is
       // sized up (see the #sc-topic-box font-size bump below) to stand
       // out on its own, without a small label crowding it from above.
-      +'<div id="sc-topic-box" data-header-id="__topic__"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div><div class="sc-corner-flip" id="sc-topic-corner-flip" title="Flip card"></div></div>'
+      +'<div id="sc-topic-box" data-header-id="__topic__"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div></div>'
       +'<button type="button" class="sc-topic-caret" id="sc-topic-caret-down" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-parent-menu" hidden></div>'
       +'<div class="sc-cdrop-menu" id="sc-topic-child-menu" hidden></div>'
@@ -1167,11 +1159,12 @@
     _sboardWireAutoScroll();
 
     // Opening the TOPIC card, Aug 13 2026 (Larry: "Double click to open
-    // the TOPIC card") -- the corner-flip triangle was the only way in;
-    // double-click is a second way to the same place, same "second way
-    // in, not a replacement" rule already locked for Subber/Briefing
-    // cards. Kept separate from the plain-click drill-in that used to
-    // live here -- that was replaced by drag-and-drop onto TOPIC
+    // the TOPIC card") -- double-click is the way in. Was a second way
+    // alongside a corner-flip triangle; the corner-flip was removed
+    // Sept 6 2026 (Larry: "remove the gray corners flip option from all
+    // cards. Just double click to open cards.") so double-click is now
+    // the only way in. Kept separate from the plain-click drill-in that
+    // used to live here -- that was replaced by drag-and-drop onto TOPIC
     // (locked July 27, 2026) and stays that way; this only opens the
     // card, never changes what board is being viewed.
     function _sboardOpenTopicCard(){
@@ -1181,11 +1174,6 @@
         openRootPromptEditor();
       }
     }
-    var topicCornerFlip=document.getElementById('sc-topic-corner-flip');
-    if(topicCornerFlip) topicCornerFlip.addEventListener('click', function(e){
-      e.stopPropagation();
-      _sboardOpenTopicCard();
-    });
 
     // Drag any card (header or plain idea) onto the TOPIC box to make it
     // the viewed board -- replaces double-click-to-drill-in (locked July
@@ -4613,17 +4601,11 @@
       hb.textContent = item.heart_count>=2 ? '💕' : '❤️';
       tile.appendChild(hb);
     }
-    var cornerFlip=document.createElement('div');
-    cornerFlip.className='sc-corner-flip';
-    cornerFlip.title='Flip card';
-    cornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openSbDetail(item); });
-    cornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-    cornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
-    tile.appendChild(cornerFlip);
-    // Double-click also opens the card, Aug 11 2026 (Larry) -- same
-    // openSbDetail the corner-flip already triggers, just a second,
-    // faster way to get there on a subber (plain idea card). The
-    // corner-flip stays as-is; this doesn't replace it.
+    // Double-click opens the card (Aug 11 2026, Larry). Used to be a
+    // second, faster way in alongside a corner-flip triangle; the
+    // corner-flip was removed Sept 6 2026 (Larry: "remove the gray
+    // corners flip option from all cards. Just double click to open
+    // cards.") so double-click is now the only way in.
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetail(item); });
     // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
     // "remove card numbers from the front of the Idea Cards, leave on
@@ -4773,13 +4755,6 @@
     // 2026 (Larry: "is the LOCK not just another FLAG?") -- was a
     // standalone top-right icon.
     wrap.appendChild(back2); wrap.appendChild(back1); wrap.appendChild(front);
-    var stackCornerFlip=document.createElement('div');
-    stackCornerFlip.className='sc-corner-flip';
-    stackCornerFlip.title='Flip card';
-    stackCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
-    stackCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-    stackCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
-    front.appendChild(stackCornerFlip);
     // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
     // "remove card numbers from the front of the Idea Cards, leave on
     // back") -- see the matching note on the plain-card tile above.
@@ -4805,8 +4780,12 @@
     // card becomes the new TOPIC. Locked July 16, 2026.
     // Drilling in is now done by dragging this card onto the TOPIC box
     // (locked July 27, 2026, replacing double-click so double-click can
-    // mean color everywhere with zero header exceptions). Double-click here
-    // is the same color-options shortcut every other card has.
+    // mean color everywhere with zero header exceptions). Double-click
+    // opens the card straight to its color options, same as every other
+    // card, and is now the only way to open this card -- the corner-flip
+    // triangle that used to sit alongside it was removed Sept 6 2026
+    // (Larry: "remove the gray corners flip option from all cards. Just
+    // double click to open cards.").
     wrap.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
     // Click to select this Subber for the Tab/Shift+Tab and
     // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
@@ -4827,8 +4806,8 @@
     // to build, just a second doorway into it. Same 550ms hold threshold
     // as the heart-pill tap/hold pattern below, so the two "hold to do
     // something different" gestures on this board feel consistent. A
-    // short click/tap still does nothing dedicated here (double-click for
-    // color, corner-flip to open the back) -- this is purely additive.
+    // short click/tap still does nothing dedicated here (double-click
+    // opens the back, to color) -- this is purely additive.
     var stackHoldTimer=null;
     function stackStartHold(e){
       if(e && e.type==='mousedown' && e.button!==0) return;
@@ -5660,9 +5639,12 @@
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
         // July 17, 2026 it's treated exactly like any other header — same
-        // dblclick-to-drill-in, same corner-flip into openSbDetail().
-        // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
-        // is the color-options shortcut, same as every other card.
+        // dblclick-to-drill-in. Drilling in moved to drag-onto-TOPIC
+        // (July 27, 2026); double-click is the color-options shortcut,
+        // same as every other card, and is now the only way to open this
+        // card -- the corner-flip triangle that used to sit alongside it
+        // was removed Sept 6 2026 (Larry: "remove the gray corners flip
+        // option from all cards. Just double click to open cards.").
         hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(headerRow); });
         // Click to select this header for the Tab/Shift+Tab and
         // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
@@ -5677,13 +5659,6 @@
           }
           hd.classList.add('sb-kbd-selected');
         });
-        var hdCornerFlip=document.createElement('div');
-        hdCornerFlip.className='sc-corner-flip';
-        hdCornerFlip.title='Flip card';
-        hdCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openSbDetail(headerRow); });
-        hdCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-        hdCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
-        hd.appendChild(hdCornerFlip);
         // ORDER # badge removed from the card front, Aug 20 2026 (Larry:
         // "remove card numbers from the front of the Idea Cards, leave on
         // back") -- see the matching note on the plain-card tile above.
@@ -5870,15 +5845,12 @@
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
-          // is the color-options shortcut, same as every other card.
+          // is the color-options shortcut, same as every other card, and is
+          // now the only way to open this card -- the corner-flip triangle
+          // that used to sit alongside it was removed Sept 6 2026 (Larry:
+          // "remove the gray corners flip option from all cards. Just
+          // double click to open cards.").
           hd.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(newRow); });
-          var newCornerFlip=document.createElement('div');
-          newCornerFlip.className='sc-corner-flip';
-          newCornerFlip.title='Flip card';
-          newCornerFlip.addEventListener('click', function(e){ e.stopPropagation(); openSbDetail(newRow); });
-          newCornerFlip.addEventListener('mousedown', function(e){ e.stopPropagation(); });
-          newCornerFlip.addEventListener('dragstart', function(e){ e.preventDefault(); e.stopPropagation(); });
-          hd.appendChild(newCornerFlip);
         }
         // Locked no longer blocks dragging, Aug 25 2026 -- see the note
         // on _sboardMakeTile above.
@@ -9667,10 +9639,8 @@
       + '<button id="sb-trash-yes" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
       + '<button id="sb-trash-no" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
       + '</div></div></div>'
-      + '<div class="sc-corner-flip" id="sb-detail-corner-flip" title="Flip back to front"></div>'
       + '</div>';
     ov.classList.add('active');
-    T().wire('sb-detail-corner-flip', closeSbDetail);
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
     // Card overlay drags via _bbMakeDraggable in briefing-board.js, this
     // just never got the same treatment. Ported the same pattern rather
@@ -11066,10 +11036,11 @@
       tile.appendChild(hb);
     }
     // Double-click is the traveler color-options shortcut (locked July 27,
-    // 2026) -- opens the same DETAILS back the corner-flip does, but jumps
-    // straight to the color swatches instead of leaving them collapsed
-    // behind the Appearance gear. The corner-flip remains the only way to
-    // open the back generally; this dblclick used to just duplicate it.
+    // 2026) -- opens the same DETAILS back every other card's double-click
+    // reaches, but jumps straight to the color swatches instead of leaving
+    // them collapsed behind the Appearance gear. Double-click is this
+    // tile's only way to open the back (this Starburst tile never had its
+    // own corner-flip, unlike the shared tile type).
     tile.addEventListener('dblclick', function(e){ e.stopPropagation(); openSbDetailToColor(item); });
     tile.addEventListener('dragover', function(e){ e.preventDefault(); tile.style.outline='2px solid #5b9bd5'; });
     tile.addEventListener('dragleave', function(){ tile.style.outline='none'; });

@@ -3410,8 +3410,6 @@
       // of like flags from front of every type of card") -- the count
       // is still computed and available via each flag's hover tooltip,
       // just no longer rendered as a visible number on the card face.
-      +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
-      +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
       +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
       /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
@@ -4497,22 +4495,15 @@
           +startDueLine
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
           +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
-          +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '')
-          +'<div class="bb-corner" data-flip="'+c.id+'" title="Flip card"></div>';
+          +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '');
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
-        // Double-click also opens the card, Aug 11 2026 (Larry) -- same
-        // openCardDetail the corner-flip triangle already calls, just a
-        // second, faster way in (matches the subber-card double-click
-        // added to the Idea Storyboard this same session). Corner-flip
-        // stays as-is; this doesn't replace it.
+        // Double-click opens the card (Aug 11 2026, Larry). Used to be a
+        // second, faster way in alongside a corner-flip triangle; the
+        // corner-flip was removed Sept 6 2026 (Larry: "remove the gray
+        // corners flip option from all cards. Just double click to open
+        // cards.") so double-click is now the only way in.
         el.addEventListener('dblclick', function(e){ e.stopPropagation(); openCardDetail(c.id); });
         target.appendChild(el);
-      });
-    });
-    wrap.querySelectorAll('.bb-corner').forEach(function(el){
-      el.addEventListener('click', function(e){
-        e.stopPropagation();
-        openCardDetail(el.getAttribute('data-flip'));
       });
     });
     // July 22, 2026, Larry: dragging a card should be able to land it at

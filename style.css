@@ -642,11 +642,6 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     width:44px;height:44px;min-height:0;border-radius:50%;background:var(--brand-white);
     border:2px solid var(--brand-ink);box-shadow:0 2px 6px rgba(0,0,0,.3);padding:0;
     display:flex;align-items:center;justify-content:center;font-size:calc(19px * var(--fg-text-scale,1));cursor:pointer;z-index:80}
-  /* Corner-flip dog-ear, matches 9710's .sc-corner-flip — turned-up
-     lower-right corner, click opens the back of the card. July 16, 2026. */
-  .isx-corner-flip{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 15px 15px;
-    border-color:transparent transparent rgba(26,58,92,0.32) transparent;cursor:pointer;z-index:6;transition:border-width .12s}
-  .isx-corner-flip:hover{border-width:0 0 20px 20px;border-color:transparent transparent rgba(26,58,92,0.55) transparent}
   #isx-empty{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#93a4b5;font-style:italic;
     font-size:calc(13px * var(--fg-text-scale,1));text-align:center;width:70%;pointer-events:none}
 
