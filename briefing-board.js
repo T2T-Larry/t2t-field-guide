@@ -3186,13 +3186,26 @@
       // this doesn't flash off-position for a frame before that math
       // runs -- top:0 matches the plain top-alignment every other grid
       // item in this row already had.
-      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:absolute;top:0;left:50%;transform:translateX(-50%)}'
+      // Sept 6 2026 fix -- a position:absolute box with only `left` set
+      // (no `right`) shrink-to-fits within whatever space is left between
+      // that left edge and the container's own right edge, not its full
+      // natural content width; once _bbPositionBoardKindMidway's left
+      // landed close enough to that edge, "Briefing Board" wrapped to two
+      // lines. width:max-content forces the box back to its real content
+      // width regardless of available space, so the transform-based
+      // centering still lands it on the right midpoint without the wrap.
+      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:absolute;top:0;left:50%;transform:translateX(-50%);width:max-content}'
       // Sept 5 2026 -- Larry: match the Idea Board's header band. Bumped
       // to the same 42px this board-kind label uses there (idea-storyboard-
       // 9710.js sc-board-kind-trigger) and given the same raised/embossed
       // look (light highlight above, soft shadow below) instead of flat
       // text -- built with BB's own ink color, not Idea Board's blue.
-      +'.bb-mh{color:var(--bb-ink);font-size:calc(42px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25)}'
+      // Sept 6 2026, Larry: "Briefing Board needs to be on one line. If
+      // text is too large, shrink it a little." 42px -> 36px, plus a hard
+      // white-space:nowrap so this can never wrap again regardless of
+      // available width (belt-and-suspenders alongside the width:max-content
+      // fix on bb-mh-group-center above).
+      +'.bb-mh{color:var(--bb-ink);font-size:calc(36px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25);white-space:nowrap}'
       // TOPIC, Sept 5 2026 -- Larry: "concept is perfect. Raise size of
       // TOPIC to match or exceed Briefing Board" -- then "delete TOPIC
       // eyebrow" (the plain small label, gone from the markup above).
@@ -5925,6 +5938,18 @@
   // -- same discipline as _bbTopicChildChoices below: a board only ever
   // gets created for a specific ancestor if the traveler actually clicks
   // it (jumpToTopic), never just from opening this menu to look.
+  //
+  // Sept 6 2026, Larry (second note): "the up arrow never needs to go
+  // above the actual project ... it simply addresses the parents in this
+  // specific project" -- stops one step short of walking all the way to
+  // the account-wide Idea Storyboards root every real project nests
+  // under. A candidate ancestor is included right up through the
+  // project's own root card (e.g. "Field Guide") but not one step
+  // further: parentInfo.clusterId null means the candidate we're about
+  // to add has no parent of its own, i.e. it IS that shared root, not a
+  // real level of this project -- break before pushing it. Same
+  // "Idea Storyboards doesn't surface as a destination anywhere anymore"
+  // read as the PROJECT-dropdown and label changes elsewhere today.
   async function _bbTopicAncestorChoices(){
     var list=[];
     var curId=_bbCurrentTopicHeaderId;
@@ -5934,7 +5959,7 @@
       var info=await _bbFetchHeaderInfo(curId);
       if(!info || !info.clusterId) break;
       var parentInfo=await _bbFetchHeaderInfo(info.clusterId);
-      if(!parentInfo) break;
+      if(!parentInfo || !parentInfo.clusterId) break;
       list.push({id:info.clusterId, name:parentInfo.name});
       curId=info.clusterId;
     }

@@ -557,7 +557,7 @@
         // headers/Subbers always stay visible (they're navigation, not
         // person-filterable content) -- only leaf idea/text/image/link
         // cards get hidden when they don't match.
-        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(200px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'.sc-org-name-cdrop{margin-top:3px}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
@@ -991,7 +991,7 @@
       // on all boards" -- 9px/24px (the Sept 5 "read as subordinate to
       // traveler name" sizing) bumped to 14px/30px, and widened to fit.
       // See bb-board-trigger in briefing-board.js for the same bump.
-      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(200px * var(--fg-text-scale,1))"></button>'
+      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button>'
       +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'
@@ -1087,8 +1087,12 @@
         // Parent/Topic) overwrites this the moment the current project is
         // known, per Larry: PROJECT should show whichever project is
         // actually on screen (Field Guide, etc.), not a fixed label.
-        titleTrigger.textContent='PROJECTS';
-        titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
+        // Sept 6 2026 -- text itself no longer names Idea Storyboards
+        // (see _sboardRenderProjectLabel's own Sept 6 note); this is just
+        // the placeholder shown for the instant before that first real
+        // render lands.
+        titleTrigger.textContent='Projects';
+        titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
         titleTrigger.addEventListener('click', async function(e){
           e.stopPropagation();
           // Land wherever the label is currently pointing (Larry: the
@@ -2974,22 +2978,18 @@
       if(!willOpen){ menu.hidden=true; return; }
       var choices=_sboardProjectHeaderChoices();
       menu.innerHTML='';
-      // Idea Storyboards, Sept 5 2026 -- Larry: PROJECT should show
-      // whichever project is actually on screen, with Idea Storyboards
-      // itself reachable only as a conscious choice, never a default.
-      // Pinned as its own row at the top of this same dropdown, visually
-      // separated (bottom rule + bold) from the real projects below it.
-      var rootRow=document.createElement('div');
-      rootRow.className='sc-cdrop-row';
-      rootRow.style.cssText='font-weight:700;border-bottom:1px solid rgba(0,0,0,.15);margin-bottom:2px;padding-bottom:6px';
-      rootRow.textContent='Idea Storyboards';
-      rootRow.addEventListener('click', async function(ev){
-        ev.stopPropagation();
-        menu.hidden=true;
-        var rootId=await T2TData.ensureIdeaStoryboardsRoot();
-        if(rootId) _sboardDrillInto({id:rootId});
-      });
-      menu.appendChild(rootRow);
+      // Idea Storyboards row removed, Sept 6 2026 -- Larry: "delete any
+      // reference to Idea Storyboards, that is now not going to be
+      // used." This dropdown used to pin an "Idea Storyboards" row above
+      // the real projects (Sept 5) as a conscious way back to the
+      // account-wide root; that destination is retired now, so the list
+      // is just the real projects, nothing pinned above them -- the same
+      // shape briefing-board.js's own PROJECT dropdown (_bbRenderBoardPicker)
+      // already had. T2TData.ensureIdeaStoryboardsRoot and
+      // _sboardIdeaStoryboardsRootId are untouched (every real project
+      // still needs the one shared parent row it always has behind the
+      // scenes) -- this only removes it as something a traveler can see
+      // or choose.
       if(!choices.length){
         var empty=document.createElement('div');
         empty.className='sc-cdrop-row';
@@ -3009,34 +3009,6 @@
           menu.appendChild(row);
         });
       }
-      // (+) to start a brand-new project, Sept 6 2026 -- Larry: PROJECTS
-      // should work the same on every board, always with the ability to
-      // add a new one -- matches the (+) the Briefing Board's own
-      // PROJECT list already has (_bbRenderBoardPicker). This dropdown
-      // rebuilds its rows fresh every open (see above), so the add row
-      // just gets appended last, every time, same shell/classes
-      // (.sc-cdrop-addrow/.sc-dotted-add-btn) every other add-button on
-      // this board already uses.
-      var addRow=document.createElement('div');
-      addRow.className='sc-cdrop-addrow';
-      var addBtn=document.createElement('button');
-      addBtn.type='button';
-      addBtn.className='sc-dotted-add-btn';
-      addBtn.title='Add a new project';
-      addBtn.textContent='+';
-      addBtn.addEventListener('click', async function(ev){
-        ev.stopPropagation();
-        menu.hidden=true;
-        var name=window.prompt('Name for the new project:');
-        if(!name || !name.trim()) return;
-        var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
-        if(newId){
-          var freshRow=_sboardAllRowsById[newId];
-          _sboardDrillInto(freshRow||{id:newId});
-        }
-      });
-      addRow.appendChild(addBtn);
-      menu.appendChild(addRow);
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';
@@ -3072,6 +3044,17 @@
   // top-to-bottom as highest-to-nearest, matching how the arrow now sits
   // on the LEFT of Parent (see the header markup above): the levels that
   // come before the current parent, read in that order.
+  //
+  // Sept 6 2026, Larry: "the up arrow never needs to go above the actual
+  // project ... it simply addresses the parents in this specific
+  // project" -- the root row itself (Idea Storyboards) used to be
+  // included as the furthest, topmost entry; it no longer is. A
+  // candidate ancestor is only added while it still has a cluster_id of
+  // its own (i.e. it's a real level inside this project) -- the moment
+  // the climb reaches the shared account-wide root, that break happens
+  // before the push, so the list stops at the project's own root card
+  // (e.g. "Field Guide") and never shows one level past it. Standing
+  // right at that root card now correctly shows "Nothing above this."
   function _sboardParentAncestorChoices(){
     var list=[];
     var row=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
@@ -3080,7 +3063,7 @@
     while(curId && guard<50){
       guard++;
       var ancestor=_sboardAllRowsById[curId];
-      if(!ancestor) break;
+      if(!ancestor || !ancestor.cluster_id) break;
       list.push(ancestor);
       curId=ancestor.cluster_id||null;
     }
@@ -6321,21 +6304,23 @@
   // at boot in injectSeaOfIdeasCluster and never touched again.
   // _sboardProjectRowFor climbs from topicRow to its nearest self-scoped
   // ancestor, which is either the real project's own root (Field Guide,
-  // say) or the Idea Storyboards root itself if nothing more specific has
-  // been drilled into -- "Idea Storyboards" is reserved for genuinely
-  // standing at that root, never shown as a default while inside a real
-  // project. At the very top of a project's own root card, this will
-  // read the same as TOPIC (both are describing that same card from two
-  // different angles) -- PARENT still correctly shows Idea Storyboards
-  // one level up, so the three fields don't all collapse into one.
+  // say) or the account-wide root itself if nothing more specific has
+  // been drilled into.
+  //
+  // Sept 6 2026, Larry: "delete any reference to Idea Storyboards, that
+  // is now not going to be used" -- the atRoot case no longer names it:
+  // "Projects" reads as "you're looking at your projects" without
+  // surfacing the retired internal name. PARENT (below) got the same
+  // treatment the same day, so nothing on this screen still shows that
+  // name.
   function _sboardRenderProjectLabel(topicRow){
     var titleTrigger=document.getElementById('sc-title-trigger');
     if(!titleTrigger) return;
     var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
     var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
     if(atRoot){
-      titleTrigger.textContent='PROJECTS';
-      titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
+      titleTrigger.textContent='Projects';
+      titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
     } else {
       titleTrigger.textContent=projRow.text_content||'(untitled)';
       titleTrigger.title='Click to open '+(projRow.text_content||'this project')+'; double-click for the fast-jump list';
@@ -6392,7 +6377,19 @@
       // sitting at a project's own root) — fixed July 16, 2026. It used to
       // stay clickable here and climb all the way out to the cross-project
       // apex, which behaves like a project chooser and duplicated PROJECT.
-      if(parentId && parentRow){
+      // Sept 6 2026 fix -- this inert check went stale the moment every
+      // project started nesting under the shared Idea Storyboards root
+      // (Sept 2): parentRow was never null at a project's own root
+      // anymore, it was that shared root row itself, so this kept
+      // reading as "not inert" and showing "Idea Storyboards" as
+      // PARENT's label right at the one place it was supposed to go
+      // dim. parentIsAccountRoot (parentRow with no cluster_id of its
+      // own -- the one thing that's true only of that shared root)
+      // restores the original intent, and matches "delete any reference
+      // to Idea Storyboards" / "the up arrow never needs to go above the
+      // actual project" from today.
+      var parentIsAccountRoot = parentRow && !parentRow.cluster_id;
+      if(parentId && parentRow && !parentIsAccountRoot){
         if(parentLabel) parentLabel.textContent=parentRow.text_content||'(untitled)';
         if(parentHit){ parentHit.classList.remove('inert'); }
       } else {
