@@ -6782,7 +6782,7 @@
   // handler reads _bbBoards/_bbCurrentBoardId fresh at click time, not
   // at wire time, so it's always accurate even after switching boards.
   var _bbBoardKinds=[
-    {value:'IDEA', label:'IDEA'},
+    {value:'IDEA', label:'IDEAS'},
     {value:'PLAN', label:'PLAN'},
     {value:'BRIEFING BOARD', label:'BRIEFING BOARD'},
     {value:'SHARE', label:'SHARE'},

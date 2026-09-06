@@ -442,7 +442,14 @@
         +'#fg-root.cl-widescreen:not(.isx-full) #s-sea-of-ideas-cluster{min-height:calc(100vh - 24px)!important;max-height:calc(100vh - 24px)!important}'
         +'#s-sea-of-ideas-cluster #sc-board-wrap{display:flex}'
         +'#sc-groups-wrap{gap:2px!important}'
-        +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
+        // Sept 6 2026, Larry: "make all ID bands exactly the same look
+        // (other than color) on all the boards" -- this eyebrow (Parent/
+        // Logo/etc.) was the one place still missing the bold weight
+        // every other board's matching label already carries (compare
+        // briefing-board.js's .bb-mh-eyebrow, and this file's own larger
+        // .sc-traveler-eyebrow just below, both font-weight:700). Color
+        // stays its own per-board thing, untouched.
+        +'.sc-hdr-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a9cce3;margin-bottom:3px}'
         // Traveler name, Sept 5 2026 -- Larry: retire the gold nameplate
         // (kept in the DOM, hidden, not deleted -- see the sc-member-name
         // block further down) in favor of the same plain ice-blue eyebrow
@@ -2700,7 +2707,18 @@
       // it happened rather than getting a project with no Briefing Board
       // and no sign anything went wrong.
       try{
-        var bbIns=await _sb.from('briefing_boards').insert({user_id:user.id, board_type:boardType||'personal', name:name}).select().single();
+        // Sept 6 2026 -- fixed: this insert set the mirror board's name
+        // and type but never wrote storyboard_project_id back onto it,
+        // so PROJECT's own picker (_bbRenderBoardPicker in
+        // briefing-board.js, which treats any board with no
+        // storyboard_project_id as a separate "personal board" choice)
+        // had no way to know this board already belonged to the project
+        // it was just mirrored from -- it showed up as a second,
+        // identically-named entry alongside the real project every
+        // time. Found live on "Mouse Criteria" (two boards, same name,
+        // both storyboard_project_id null) -- data repaired directly;
+        // this stops it happening to the next new project.
+        var bbIns=await _sb.from('briefing_boards').insert({user_id:user.id, board_type:boardType||'personal', name:name, storyboard_project_id:ins.data.id}).select().single();
         if(!bbIns.error && bbIns.data){
           await _sb.from('ideas').update({briefing_board_id:bbIns.data.id}).eq('id',ins.data.id);
         } else {
@@ -2843,7 +2861,7 @@
   // _sboardRenderDropdown's trigger.onclick exactly, just without the
   // addRow.
   var _sboardBoardKinds=[
-    {value:'IDEA', label:'IDEA', soon:null},
+    {value:'IDEA', label:'IDEAS', soon:null},
     {value:'PLAN', label:'PLAN', soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING BOARD', soon:null},
     {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
@@ -2926,7 +2944,10 @@
   function _sboardSyncBoardKindChrome(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
     var kindNow=_sboardIsPlanBoard?'PLAN':'IDEA';
-    if(trigger) trigger.textContent=kindNow;
+    // Sept 6 2026, Larry: "change IDEA to IDEAS" -- kindNow stays 'IDEA'
+    // internally (matches storyboard_kind and every k.value comparison
+    // above), only the displayed word changes.
+    if(trigger) trigger.textContent=(kindNow==='IDEA'?'IDEAS':kindNow);
     if(menu){
       Array.prototype.forEach.call(menu.querySelectorAll('.sc-cdrop-row[data-kind]'), function(row){
         row.classList.toggle('active', row.getAttribute('data-kind')===kindNow);
