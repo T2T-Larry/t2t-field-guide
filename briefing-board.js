@@ -1794,7 +1794,29 @@
   // absent means "not checked yet" and PROJECT's own filter treats that
   // as include-by-default, so a slow/failed lookup never hides a real
   // project.
+  //
+  // Sept 6 2026 fix, Larry: "the BB still has the wrong projects." All
+  // three places that filled this set tested `!cluster_id` -- "sits at
+  // the database's true top level" -- which was the right test before
+  // Sept 2, when every real project genuinely lived there. Once the
+  // Idea Storyboards migration moved every real project one level down
+  // (nested under this member's own Idea Storyboards root instead), a
+  // real top-level project like "Field Guide" always has a cluster_id
+  // now (pointing at that root) and this test wrongly read it as a
+  // nested layer -- which is exactly why PROJECT's own filter below
+  // (`_bbRootHeaderIdSet[id]!==false`) was quietly excluding real
+  // projects. _bbIsProjectRoot/_bbIdeaStoryboardsRootId (fetched once in
+  // _bbInitBoardsAndData via the same T2TData.ensureIdeaStoryboardsRoot
+  // the Idea Board itself calls) replace that stale test everywhere it
+  // was used.
   var _bbRootHeaderIdSet = {};
+  var _bbIdeaStoryboardsRootId = null;
+  function _bbIsProjectRoot(clusterId){
+    // Degrades to the old (pre-migration) test only if the root id
+    // itself somehow never resolved -- a failed fetch shouldn't mark
+    // every real project as a nested layer.
+    return _bbIdeaStoryboardsRootId ? clusterId===_bbIdeaStoryboardsRootId : !clusterId;
+  }
   // Header cluster/name cache, Sept 5 2026 fix -- {headerId: {clusterId,
   // name}} for every Header this pass has touched, so PROJECT (when
   // standing on a nested layer's own auto-created board) and PARENT (when
@@ -1813,7 +1835,7 @@
       var res=await sb.from('ideas').select('id,cluster_id,text_content').in('id',linkedIds);
       if(res.error) return;
       (res.data||[]).forEach(function(r){
-        _bbRootHeaderIdSet[r.id]=!r.cluster_id;
+        _bbRootHeaderIdSet[r.id]=_bbIsProjectRoot(r.cluster_id||null);
         _bbHeaderInfoById[r.id]={clusterId:r.cluster_id||null, name:r.text_content||'(untitled)'};
       });
     }catch(e){ console.warn('Briefing Board: could not check which boards are project roots', e); }
@@ -1833,7 +1855,7 @@
       if(res.error || !res.data) return null;
       var info={clusterId:res.data.cluster_id||null, name:res.data.text_content||'(untitled)'};
       _bbHeaderInfoById[headerId]=info;
-      _bbRootHeaderIdSet[headerId]=!info.clusterId;
+      _bbRootHeaderIdSet[headerId]=_bbIsProjectRoot(info.clusterId);
       return info;
     }catch(e){ console.warn('Briefing Board: could not fetch ancestor Header', e); return null; }
   }
@@ -1868,7 +1890,7 @@
       // whether or not it ends up needing a new board: keeps
       // _bbRootHeaderIdSet (PROJECT's own root-vs-layer filter, above)
       // current without a second round-trip.
-      _bbRootHeaderIdSet[headerId] = !hdr.cluster_id;
+      _bbRootHeaderIdSet[headerId] = _bbIsProjectRoot(hdr.cluster_id||null);
       _bbHeaderInfoById[headerId] = {clusterId:hdr.cluster_id||null, name:hdr.text_content||'(untitled)'};
       // This Header may already point at a board this traveler's own
       // _bbBoards fetch didn't happen to include (shouldn't normally
@@ -1906,6 +1928,14 @@
       var res=await sb.from('briefing_boards').select('*').order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _bbBoards=res.data||[];
+      // Sept 6 2026 -- fetched once here, before _bbRefreshRootHeaderIdSet
+      // (right below) needs it: the same T2TData.ensureIdeaStoryboardsRoot
+      // the Idea Board itself calls, so _bbIsProjectRoot (see its own
+      // comment, above) can tell a real top-level project apart from a
+      // nested layer correctly. Safe to call every session -- self-
+      // healing/idempotent per that function's own doc comment.
+      try{ _bbIdeaStoryboardsRootId = await T2TData.ensureIdeaStoryboardsRoot(); }
+      catch(e){ console.warn('Briefing Board: could not resolve the Idea Storyboards root', e); }
       // Aug 16 2026 -- adopted parent-child edges, so the PROJECT
       // picker can show a board's children alongside its type-mates.
       // RLS already scopes this to relations touching a board this
@@ -2313,91 +2343,117 @@
   // found, or {pendingHeaderId} if some ancestor along the way hasn't
   // been fetched into the cache yet (caller kicks off that one fetch and
   // re-renders once it lands, rather than blocking here). Sept 5 2026 fix.
+  //
+  // Sept 6 2026 fix -- the `|| !info.clusterId` half of the stop test
+  // used to be the one that actually fired for most real projects (see
+  // the Sept 6 note on _bbRootHeaderIdSet's fill sites, above), which
+  // meant this quietly overshot every project's own root and climbed
+  // one step further to the shared Idea Storyboards row -- exactly the
+  // "up arrow never needs to go above the actual project" mistake Larry
+  // called out today, just here instead of on TOPIC's own arrow.
+  // _bbRootHeaderIdSet[curId]===true is the correct, sufficient stop
+  // condition now that its fill sites test the real thing (parent IS the
+  // Idea Storyboards root); the old clusterId-null fallback stays only
+  // as a last resort for the rare case that root id never resolved.
   function _bbClimbToProjectRoot(headerId){
     var curId=headerId, guard=0;
     while(curId && guard<25){
       guard++;
       var info=_bbHeaderInfoById[curId];
       if(!info) return {pendingHeaderId:curId};
-      if(_bbRootHeaderIdSet[curId]===true || !info.clusterId) return {rootHeaderId:curId, rootName:info.name};
+      if(_bbRootHeaderIdSet[curId]===true || (!_bbIdeaStoryboardsRootId && !info.clusterId)) return {rootHeaderId:curId, rootName:info.name};
       curId=info.clusterId;
     }
     return {};
   }
 
-  function _bbRenderBoardPicker(){
-    var activeType=_bbActiveBoardType();
-    // Sept 5 2026, Larry: "PROJECTS on a BB are exactly the same as on
-    // the Idea Board, always with the ability to (+) a new custom one."
-    // The Idea Board's own PROJECT dropdown (_sboardProjectHeaderChoices,
-    // idea-storyboard-9710.js) never filters by Type -- every real
-    // project shows, full stop. Dropped the board_type match here to
-    // match: PROJECT now always lists every board this traveler has,
-    // not just whichever Type happens to be active. Type itself is
-    // unaffected -- still its own separate picker, still used to file a
-    // board into a category -- this only changes which boards PROJECT
-    // is willing to show.
-    // Root-only, Sept 5 2026 -- once TOPIC could link a board to ANY
-    // Header (see _bbResolveOrCreateBoardForHeader), _bbBoards stopped
-    // being "every board is a project" -- a descended-into layer like
-    // Dream Phase gets one too now, and it must never appear in PROJECT
-    // as if it were a project of its own. _bbRootHeaderIdSet[id]===false
-    // is the only thing that excludes a board here: no linked Header at
-    // all (a personal/org board, never tied to an Idea project) still
-    // shows, same as always, and an id this traveler's set hasn't
-    // resolved yet defaults to shown rather than silently disappearing.
-    var filtered=_bbBoards.filter(function(b){ return !b.storyboard_project_id || _bbRootHeaderIdSet[b.storyboard_project_id]!==false; });
+  // Sept 6 2026 rewrite, Larry: "BB PROJECTS under the traveler name
+  // should be EXACTLY the same as on the IDEA BOARD! ... The BB still
+  // has the wrong projects." Root cause: this list used to be built from
+  // _bbBoards -- only projects that already happened to have a Briefing
+  // Board row of their own -- filtered by the now-fixed but previously
+  // stale _bbRootHeaderIdSet (see its own Sept 6 note, above). A real
+  // Idea Board project with no Briefing Board yet was simply invisible
+  // here no matter what; one that DID have a Briefing Board could still
+  // get wrongly excluded by the stale check. Sourced straight from
+  // T2TData.ensureIdeaStoryboardsRoot + a live query for that root's
+  // children now -- the exact same "this member's real top-level
+  // projects" data the Idea Board's own PROJECT popup (openProjectSwitcher,
+  // idea-storyboard-9710.js) reads via T2TData.topLevelBoards, sorted the
+  // same alphabetical way that popup already uses. Personal/org boards
+  // with no linked Idea project (storyboard_project_id null) still ride
+  // along too -- those were never the part that was wrong. Options are
+  // tagged 'hdr:'/'brd:' so onSelect knows whether it's landing on a real
+  // project (resolve-or-create that project's Briefing Board, same as
+  // TOPIC's own jumpToTopic) or an existing personal board directly.
+  async function _bbRenderBoardPicker(){
+    var realProjects=[];
+    try{ realProjects=await T2TData.topLevelBoards(); }
+    catch(e){ console.warn('Briefing Board: could not load top-level projects', e); }
+    realProjects=realProjects.slice().sort(function(a,b){
+      return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
+    });
+    var opts=realProjects.map(function(h){ return {value:'hdr:'+h.id, label:h.text_content||'(untitled)'}; });
+    var personalBoards=_bbBoards.filter(function(b){ return !b.storyboard_project_id; });
+    personalBoards.forEach(function(b){ opts.push({value:'brd:'+b.id, label:b.name||'Untitled Board'}); });
     // Adopted children ride along too, Aug 16 2026 -- Larry: opening
     // T2T should list Field Guide and Professional History as its
     // projects, not just other boards that happen to share T2T's own
-    // Type. Deduped by id in case a child's own Type already matched.
-    // Aug 16 2026 (later same day) -- resolved off the org-context
-    // board, not the literally-open one, so opening Field Guide shows
-    // the same T2T-family list as opening T2T itself, instead of an
-    // empty "children of Field Guide" list. Skipped entirely while
-    // browsing an empty Type (_bbPendingTypeOverride) -- there's no
-    // real context board yet, so _bbCurrentBoardId is just whatever
-    // was open before and its children don't belong in this list.
+    // Type. Deduped by id (or by linked project, if it has one) in case
+    // a child's own project already matched above. Aug 16 2026 (later
+    // same day) -- resolved off the org-context board, not the
+    // literally-open one, so opening Field Guide shows the same
+    // T2T-family list as opening T2T itself. Skipped entirely while
+    // browsing an empty Type (_bbPendingTypeOverride) -- there's no real
+    // context board yet, so _bbCurrentBoardId is just whatever was open
+    // before and its children don't belong in this list.
     if(!_bbPendingTypeOverride){
       var contextBoard=_bbOrgContextBoard(_bbCurrentBoardId);
       var children=_bbChildBoardsOf(contextBoard ? contextBoard.id : _bbCurrentBoardId);
-      children.forEach(function(c){ if(!filtered.some(function(b){ return b.id===c.id; })) filtered=filtered.concat([c]); });
+      children.forEach(function(c){
+        var key=c.storyboard_project_id?('hdr:'+c.storyboard_project_id):('brd:'+c.id);
+        if(!opts.some(function(o){ return o.value===key; })) opts.push({value:'brd:'+c.id, label:c.name||'Untitled Board'});
+      });
     }
-    var opts=filtered.map(function(b){ return {value:b.id, label:b.name||'Untitled Board'}; });
     // (-) on the PROJECT field, Aug 16 2026 -- Larry: "how do we handle
     // a (-) with a full project? Sounds like we need a hub screen, 3
     // choices even if they do not all work yet." Only offered when a
-    // real, currently-open board is actually showing in this list --
-    // not while browsing an empty Type (nothing real to remove).
+    // real, currently-open board exists at all -- not while browsing an
+    // empty Type (nothing real to remove).
     var currentBoardForRemove=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    var canRemoveBoard=!_bbPendingTypeOverride && currentBoardForRemove && filtered.some(function(b){ return b.id===currentBoardForRemove.id; });
-    // PROJECT while standing on a nested layer, Sept 5 2026 fix --
-    // _bbCurrentBoardId is that layer's own auto-created board (correctly
-    // excluded from `filtered`/`opts` above, same as always), so it never
-    // matches an option here. Before this fix, _bbRenderDropdown's own
-    // generic "nothing matched" fallback (first option in the list) took
-    // over, showing whichever board happened to be first -- e.g. Larry's
-    // personal "Larry BB" -- instead of the real project the layer
-    // actually lives in. Climb to that real root and show/select IT
-    // instead, exactly matching the Idea Board's own PROJECT ("shows
-    // whichever project is actually on screen").
-    var pickerCurrentId=_bbCurrentBoardId, pickerFallbackName=null;
-    if(currentBoardForRemove && !filtered.some(function(b){ return b.id===currentBoardForRemove.id; }) && currentBoardForRemove.storyboard_project_id){
+    var canRemoveBoard=!_bbPendingTypeOverride && !!currentBoardForRemove;
+    // Which option is "here" right now -- climb from the open board's
+    // own linked Header up to its real project root (same ceiling
+    // _bbClimbToProjectRoot now correctly stops at, per its own Sept 6
+    // fix above) so a nested layer like Dream Phase still shows Field
+    // Guide selected, exactly like PROJECT already reads everywhere
+    // else. A personal board with no linked project selects on its own
+    // 'brd:' option directly.
+    var pickerCurrentId=null, pickerFallbackName=null;
+    if(currentBoardForRemove && currentBoardForRemove.storyboard_project_id){
       var climb=_bbClimbToProjectRoot(currentBoardForRemove.storyboard_project_id);
       if(climb.rootHeaderId){
-        var rootBoard=_bbBoards.filter(function(b){ return b.storyboard_project_id===climb.rootHeaderId; })[0];
-        if(rootBoard) pickerCurrentId=rootBoard.id;
-        else { pickerCurrentId=null; pickerFallbackName=climb.rootName; }
+        var key='hdr:'+climb.rootHeaderId;
+        if(opts.some(function(o){ return o.value===key; })) pickerCurrentId=key;
+        else pickerFallbackName=climb.rootName;
       } else if(climb.pendingHeaderId){
         // Ancestor not in cache yet (rare -- usually already warmed by
         // _bbRefreshRootHeaderIdSet/_bbResolveOrCreateBoardForHeader
         // before this ever renders) -- fetch it once and re-render;
-        // this pass falls through to the old fallback rather than block.
+        // this pass falls through to the fallback-name display below.
         _bbFetchHeaderInfo(climb.pendingHeaderId).then(function(info){ if(info) _bbRenderBoardPicker(); });
       }
+    } else if(currentBoardForRemove){
+      pickerCurrentId='brd:'+currentBoardForRemove.id;
     }
-    _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, pickerCurrentId, async function(id){
-      await _bbSwitchToBoard(id);
+    _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, pickerCurrentId, async function(value){
+      var v=String(value);
+      if(v.indexOf('hdr:')===0){
+        var board=await _bbResolveOrCreateBoardForHeader(v.slice(4));
+        if(board) await _bbSwitchToBoard(board.id);
+      } else if(v.indexOf('brd:')===0){
+        await _bbSwitchToBoard(v.slice(4));
+      }
     }, async function(){
       var typeLabel=_bbTypeLabel(_bbActiveBoardType());
       var name=window.prompt('Name for the new '+typeLabel+' board:');
@@ -3141,11 +3197,24 @@
       // built on this board's light theme (white fill, accent border)
       // instead of that board's dark rgba() overlay, so it reads as one
       // of this header's own controls rather than a pasted-in dark chip.
-      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:18px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(9px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      // Sept 6 2026, Larry: "increase the size of the project down
+      // arrow" -- this is bb-project-caret's own class (the real,
+      // separate arrow button beside PROJECT's label, matching the Idea
+      // Board's own sc-project-caret). Width 18->24px, glyph 9->14px;
+      // height (30px) untouched since that already matches the row.
+      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:24px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(14px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-parent-caret:hover{opacity:1}'
       // Centered, Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-trigger.
       +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;width:100%}'
-      +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(9px * var(--fg-text-scale,1));opacity:.6;flex-shrink:0}'
+      // Sept 6 2026, Larry: "increase the size of the board type down
+      // arrow" -- the small trailing \u25be this class adds after any
+      // dropdown-trigger label; on this screen that's bb-boardkind-
+      // trigger's ("Briefing Board," the board-TYPE label Larry means,
+      // same family as IDEA/PLAN/SHARE/CAST) only arrow indicator, and
+      // also rides along on bb-board-trigger's PROJECT label (which
+      // already has its own separate real caret beside it too -- same
+      // shared class, moves with it, harmless). 9->14px to match.
+      +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(14px * var(--fg-text-scale,1));opacity:.65;flex-shrink:0}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
@@ -3675,7 +3744,15 @@
             // "Idea" / "Plan" family this dropdown already switches
             // between) now sits at the real midpoint between TOPIC's box
             // and LOGO's, not just in its own leftover grid column.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt" id="bb-mh-subtitle">A control and communication tool.</div></div>'
+            // Tagline dropped, Sept 6 2026 -- Larry: "delete the tag line
+            // under the Briefing Board." bb-mh-subtitle (the "A control
+            // and communication tool." / Master-rollup line) is simply
+            // not rendered here anymore. _bbSyncMasterSubtitle (below)
+            // is left exactly as it was -- it already no-ops the moment
+            // getElementById('bb-mh-subtitle') comes back null, so
+            // nothing to rebuild if this ever needs to come back; just
+            // put the div back with its old id.
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             +'<div class="bb-mhead-actions">'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
