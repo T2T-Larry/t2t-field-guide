@@ -1793,15 +1793,47 @@
   // as include-by-default, so a slow/failed lookup never hides a real
   // project.
   var _bbRootHeaderIdSet = {};
+  // Header cluster/name cache, Sept 5 2026 fix -- {headerId: {clusterId,
+  // name}} for every Header this pass has touched, so PROJECT (when
+  // standing on a nested layer's own auto-created board) and PARENT (when
+  // that layer has no board_relations adoption of its own) can both climb
+  // one step up the same Idea-tree cluster_id chain the Idea Board already
+  // uses, instead of the generic dropdown fallback or a flat "No parent
+  // yet". Populated here and in _bbResolveOrCreateBoardForHeader, wherever
+  // this data is already being fetched anyway -- never a dedicated
+  // round-trip of its own.
+  var _bbHeaderInfoById = {};
   async function _bbRefreshRootHeaderIdSet(){
     var linkedIds=_bbBoards.filter(function(b){ return b.storyboard_project_id; }).map(function(b){ return b.storyboard_project_id; });
     if(!linkedIds.length) return;
     try{
       var sb=T().sb;
-      var res=await sb.from('ideas').select('id,cluster_id').in('id',linkedIds);
+      var res=await sb.from('ideas').select('id,cluster_id,text_content').in('id',linkedIds);
       if(res.error) return;
-      (res.data||[]).forEach(function(r){ _bbRootHeaderIdSet[r.id]=!r.cluster_id; });
+      (res.data||[]).forEach(function(r){
+        _bbRootHeaderIdSet[r.id]=!r.cluster_id;
+        _bbHeaderInfoById[r.id]={clusterId:r.cluster_id||null, name:r.text_content||'(untitled)'};
+      });
     }catch(e){ console.warn('Briefing Board: could not check which boards are project roots', e); }
+  }
+  // Climbs from a nested layer's Header up to its real project root,
+  // resolving/creating the linked board for whichever Header it lands on
+  // (its immediate ancestor, one step at a time -- same "one level up"
+  // meaning PARENT already has everywhere else). Falls back to a plain
+  // Supabase fetch for any ancestor _bbHeaderInfoById hasn't seen yet
+  // (e.g. a grandparent layer nobody has opened via BB this session).
+  // Sept 5 2026 fix.
+  async function _bbFetchHeaderInfo(headerId){
+    if(_bbHeaderInfoById[headerId]) return _bbHeaderInfoById[headerId];
+    var sb=T().sb; if(!sb) return null;
+    try{
+      var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
+      if(res.error || !res.data) return null;
+      var info={clusterId:res.data.cluster_id||null, name:res.data.text_content||'(untitled)'};
+      _bbHeaderInfoById[headerId]=info;
+      _bbRootHeaderIdSet[headerId]=!info.clusterId;
+      return info;
+    }catch(e){ console.warn('Briefing Board: could not fetch ancestor Header', e); return null; }
   }
 
   // Header -> board resolver, Sept 5 2026 -- backs the deep-link above
@@ -1835,6 +1867,7 @@
       // _bbRootHeaderIdSet (PROJECT's own root-vs-layer filter, above)
       // current without a second round-trip.
       _bbRootHeaderIdSet[headerId] = !hdr.cluster_id;
+      _bbHeaderInfoById[headerId] = {clusterId:hdr.cluster_id||null, name:hdr.text_content||'(untitled)'};
       // This Header may already point at a board this traveler's own
       // _bbBoards fetch didn't happen to include (shouldn't normally
       // happen -- RLS scopes both the same way -- but cheap to check
@@ -2263,6 +2296,26 @@
     return _bbBoards.filter(function(b){ return childIds.indexOf(b.id)!==-1; });
   }
 
+  // Climbs a nested layer's own Header up its cluster_id chain to the
+  // real project root, same "keep climbing until self-scoped" idea as
+  // the Idea Board's _sboardProjectRowFor -- just walking
+  // _bbHeaderInfoById (this board's own cache of that same ideas data)
+  // instead of _sboardAllRowsById. Returns {rootHeaderId, rootName} once
+  // found, or {pendingHeaderId} if some ancestor along the way hasn't
+  // been fetched into the cache yet (caller kicks off that one fetch and
+  // re-renders once it lands, rather than blocking here). Sept 5 2026 fix.
+  function _bbClimbToProjectRoot(headerId){
+    var curId=headerId, guard=0;
+    while(curId && guard<25){
+      guard++;
+      var info=_bbHeaderInfoById[curId];
+      if(!info) return {pendingHeaderId:curId};
+      if(_bbRootHeaderIdSet[curId]===true || !info.clusterId) return {rootHeaderId:curId, rootName:info.name};
+      curId=info.clusterId;
+    }
+    return {};
+  }
+
   function _bbRenderBoardPicker(){
     var activeType=_bbActiveBoardType();
     // Sept 5 2026, Larry: "PROJECTS on a BB are exactly the same as on
@@ -2309,7 +2362,32 @@
     // not while browsing an empty Type (nothing real to remove).
     var currentBoardForRemove=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     var canRemoveBoard=!_bbPendingTypeOverride && currentBoardForRemove && filtered.some(function(b){ return b.id===currentBoardForRemove.id; });
-    _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, _bbCurrentBoardId, async function(id){
+    // PROJECT while standing on a nested layer, Sept 5 2026 fix --
+    // _bbCurrentBoardId is that layer's own auto-created board (correctly
+    // excluded from `filtered`/`opts` above, same as always), so it never
+    // matches an option here. Before this fix, _bbRenderDropdown's own
+    // generic "nothing matched" fallback (first option in the list) took
+    // over, showing whichever board happened to be first -- e.g. Larry's
+    // personal "Larry BB" -- instead of the real project the layer
+    // actually lives in. Climb to that real root and show/select IT
+    // instead, exactly matching the Idea Board's own PROJECT ("shows
+    // whichever project is actually on screen").
+    var pickerCurrentId=_bbCurrentBoardId, pickerFallbackName=null;
+    if(currentBoardForRemove && !filtered.some(function(b){ return b.id===currentBoardForRemove.id; }) && currentBoardForRemove.storyboard_project_id){
+      var climb=_bbClimbToProjectRoot(currentBoardForRemove.storyboard_project_id);
+      if(climb.rootHeaderId){
+        var rootBoard=_bbBoards.filter(function(b){ return b.storyboard_project_id===climb.rootHeaderId; })[0];
+        if(rootBoard) pickerCurrentId=rootBoard.id;
+        else { pickerCurrentId=null; pickerFallbackName=climb.rootName; }
+      } else if(climb.pendingHeaderId){
+        // Ancestor not in cache yet (rare -- usually already warmed by
+        // _bbRefreshRootHeaderIdSet/_bbResolveOrCreateBoardForHeader
+        // before this ever renders) -- fetch it once and re-render;
+        // this pass falls through to the old fallback rather than block.
+        _bbFetchHeaderInfo(climb.pendingHeaderId).then(function(info){ if(info) _bbRenderBoardPicker(); });
+      }
+    }
+    _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, pickerCurrentId, async function(id){
       await _bbSwitchToBoard(id);
     }, async function(){
       var typeLabel=_bbTypeLabel(_bbActiveBoardType());
@@ -2319,6 +2397,10 @@
     }, 'Add a board', canRemoveBoard ? function(){
       openProjectHub(currentBoardForRemove.id);
     } : null, 'Remove this project');
+    if(pickerFallbackName){
+      var triggerEl=document.getElementById('bb-board-trigger');
+      if(triggerEl) triggerEl.textContent=pickerFallbackName;
+    }
     // bb-project-caret, Sept 5 2026 -- the label-then-arrow shape Larry
     // wanted to match the Idea Board's own PROJECT field exactly. No new
     // behavior: forwards straight to the label button's own click, which
@@ -5523,6 +5605,33 @@
     var rel=await _bbLoadRelationsFull();
     var parentRow=rel.filter(function(r){ return r.status==='approved' && r.child_board_id===_bbCurrentBoardId; })[0];
     if(!parentRow){
+      // Sept 5 2026 fix -- an approved board_relations row is one real
+      // kind of parent (a deliberate org-adoption, e.g. a Client board
+      // adopted under a Company board), but it's not the only kind now
+      // that ANY Header can stand in for a board (see
+      // _bbResolveOrCreateBoardForHeader's Sept 5 note): a layer like
+      // Dream Phase was never "adopted" by anything -- its real parent is
+      // just one step up its own Idea-tree cluster_id chain, exactly what
+      // PARENT already means on the Idea Board. "No parent yet" is only
+      // correct for a true root/personal/org board; for a nested layer
+      // that simply hasn't been through the adoption flow, fall back to
+      // that Idea-tree ancestor instead of flatly saying it has none.
+      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      var headerId=board && board.storyboard_project_id;
+      var isNestedLayer=headerId && _bbRootHeaderIdSet[headerId]===false;
+      if(isNestedLayer){
+        var info=_bbHeaderInfoById[headerId] || await _bbFetchHeaderInfo(headerId);
+        var ancestorHeaderId=info && info.clusterId;
+        if(ancestorHeaderId){
+          var ancestorBoard=await _bbResolveOrCreateBoardForHeader(ancestorHeaderId);
+          if(ancestorBoard){
+            hit.textContent=ancestorBoard.name||'(untitled)';
+            hit.style.cursor=_bbCanOpenBoard(ancestorBoard.id)?'pointer':'default';
+            hit.onclick=function(){ _bbOpenAncestorBoard(ancestorBoard.id); };
+            return;
+          }
+        }
+      }
       hit.textContent='No parent yet';
       hit.style.cursor='default';
       hit.onclick=null;
