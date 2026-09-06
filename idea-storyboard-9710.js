@@ -170,7 +170,14 @@
     slotId:'sc-logo-slot', imgId:'sc-logo-img', addBtnId:'sc-logo-add-btn',
     inputId:'sc-logo-input', resizeHandleId:'sc-logo-resize-handle',
     eyebrowTopId:'sc-logo-eyebrow', eyebrowOnLogoId:'sc-logo-eyebrow-onlogo',
-    minSize:28, maxSize:140, defaultSize:46, minFrameFromCrop:12,
+    // Sept 6 2026 -- matched to Briefing Board's own logo range
+    // (briefing-board.js _bbLogoCfg) as part of "make all ID bands
+    // exactly the same look" -- the empty (+) frame and any newly
+    // added logo now open at the same footprint on both boards. A
+    // project's already-saved logo_w/logo_h is untouched by this (only
+    // the future resize ceiling/floor and the default for a brand-new
+    // upload change), so nothing already on screen jumps size.
+    minSize:20, maxSize:90, defaultSize:30, minFrameFromCrop:12,
     uploadPrefix:'logo', subjectLabel:'project',
     showToast:_sboardShowToast,
     positionAnchor:_sboardPositionLogoNearTopic,
@@ -297,7 +304,14 @@
         // Sept 5 2026, Larry: "increase text size of Idea Board TOPIC
         // field to stand out" (paired with deleting the Topic eyebrow
         // above it, see the header markup) -- 23px -> 30px.
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:0;padding:8px 18px;font-size:calc(30px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        // Sept 6 2026 -- carried the rest of the way to match the
+        // Briefing Board's own TOPIC box (bb-topic-hit, briefing-board.js:
+        // 44px, Playfair Display, rounded corners, tight 2px vertical
+        // padding) as part of "make all ID bands exactly the same look
+        // (other than color)" -- this box was still visibly smaller and
+        // square-cornered next to it. Background/border/text stay this
+        // board's own blue, only shape and type match now.
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:8px;padding:2px 16px;font-size:calc(44px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:1.15;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -564,7 +578,12 @@
         // headers/Subbers always stay visible (they're navigation, not
         // person-filterable content) -- only leaf idea/text/image/link
         // cards get hidden when they don't match.
-        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        // Sept 6 2026 -- bold + Playfair Display added to match the
+        // Briefing Board's own PROJECT/board-name look (bb-hdr-select in
+        // briefing-board.js), part of "make all ID bands exactly the
+        // same look (other than color)" -- this label read visibly
+        // thinner/plainer than its BB counterpart before this.
+        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:\'Playfair Display\',serif;font-weight:700;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'.sc-org-name-cdrop{margin-top:3px}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
@@ -572,7 +591,11 @@
         // sc-title-trigger into its own real button (see the header
         // markup and _sboardWireProjectHeaderDropdown) so it can carry a
         // job separate from the label it used to be fused to.
-        +'.sc-project-caret{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:6px;width:18px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(9px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+        // Sept 6 2026 -- widened to match the Briefing Board's own arrow
+        // chip (bb-parent-caret, briefing-board.js: 24px wide, 14px
+        // glyph) -- this one read noticeably smaller/harder to tap next
+        // to it. Same "make all ID bands exactly the same look" pass.
+        +'.sc-project-caret{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:6px;width:24px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(14px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
         +'.sc-project-caret:hover{opacity:1}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
         // Larry: "the + in a dotted line circle just like every other
@@ -877,8 +900,8 @@
       // overwrites it every render.
       +'<div id="sc-logo-wrap" style="position:absolute;top:10px;left:66%;display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow" id="sc-logo-eyebrow">Logo</div>'
-      +'<div id="sc-logo-slot" style="position:relative;width:46px;height:46px;box-sizing:border-box;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
-      +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:12px">'
+      +'<div id="sc-logo-slot" style="position:relative;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
+      +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">'
       // On-logo LOGO eyebrow, Aug 30 2026 -- shared window.T2TLogo
       // controller (idea-media-shared.js), first built for the Briefing
       // Board then brought here: lives inside sc-logo-slot itself so it
@@ -919,7 +942,13 @@
       // BOARD - SHARE - CAST -- BRIEFING BOARD and CAST are real,
       // already-built destinations (see _sboardWireBoardKindDropdown),
       // SHARE is still the only placeholder left.
-      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(42px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
+      // Sept 6 2026 -- stepped down 42px -> 36px to match the Briefing
+      // Board's own board-kind label after ITS Sept 6 shrink (bb-mh in
+      // briefing-board.js, "Briefing Board needs to be on one line...
+      // 42px -> 36px") -- part of "make all ID bands exactly the same
+      // look (other than color)"; this one was the last board-kind
+      // label still at the old size.
+      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(36px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
       +'<div style="position:absolute;top:10px;left:16px;z-index:3;display:flex;flex-direction:column;align-items:center">'
       // Traveler name, Sept 5 2026 -- Larry: "delete the nametag -- don't
