@@ -1763,6 +1763,7 @@
           _bbRenderTravelerName();
           _bbRenderParentField();
           await _bbRenderTopicField();
+          _bbPositionBoardKindMidway();
           await _bbLoadMasterRollupCards();
           await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
@@ -1779,6 +1780,7 @@
     _bbRenderTravelerName();
     _bbRenderParentField();
     await _bbRenderTopicField();
+    _bbPositionBoardKindMidway();
     await _bbLoadMasterRollupCards();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);
@@ -2067,7 +2069,14 @@
   // instead, ending in that literal dashed-circle (+). Mirrors the Idea
   // Board's own _sboardRenderDropdown, same shape, BB's own light theme.
   function _bbCloseAllDropdowns(exceptMenuId){
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-parent-menu'].forEach(function(id){
+    // Sept 6 2026 fix -- bb-topic-menu (TOPIC's descend caret, added Sept
+    // 5) was never added to this list, so a plain click elsewhere on the
+    // page never closed it via the document-level listener below; its
+    // own trigger's onclick happened to mask this whenever another
+    // dropdown opened, but not otherwise. Adding it, plus the new
+    // bb-topic-ancestor-menu (TOPIC's up-arrow, today), so both close
+    // the same way every other dropdown here already does.
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2388,19 +2397,6 @@
       }
     }
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, pickerCurrentId, async function(id){
-      // Cross-board PROJECT sync, Sept 6 2026 -- Larry: "if I change a
-      // project on a BB, when I look at the Idea Board, it should be
-      // set to that project." Piggybacks on the same device-local
-      // "last active project" pointer the Idea Board's own resume path
-      // already reads (window.T2TMedia.rememberProject/recallProject,
-      // idea-media-shared.js) instead of inventing a second one -- the
-      // Idea Board already remembers its own PROJECT switches this same
-      // way (see _sboardPersistLastTopic), this just makes the BB's own
-      // switch remember too, so whichever board you touched last wins.
-      var pickedBoard=_bbBoards.filter(function(b){ return b.id===id; })[0];
-      if(pickedBoard && pickedBoard.storyboard_project_id && window.T2TMedia && window.T2TMedia.rememberProject){
-        window.T2TMedia.rememberProject(pickedBoard.storyboard_project_id);
-      }
       await _bbSwitchToBoard(id);
     }, async function(){
       var typeLabel=_bbTypeLabel(_bbActiveBoardType());
@@ -2972,12 +2968,25 @@
       // auto-sized track back to back, then actions closes on a second
       // 1fr so it still pins flush to the true right edge exactly like
       // before -- only reason a trailing 1fr track works for that is
-      // bb-mhead-actions' own justify-self:end. Net visual read: TOPIC
-      // sits close to true center, "Briefing Board" sits right of it
-      // (same relative position the Idea Board's own big IDEA title
-      // holds, well right of its left-corner PROJECT/PARENT column),
-      // actions stay cornered top-right same as always.
-      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto auto 1fr;align-items:start;gap:10px;height:100%}'
+      // bb-mhead-actions' own justify-self:end.
+      //
+      // Sept 6 2026, Larry: "the hierarchy is set when a PROJECT is
+      // chosen. Center the TOPIC with up and down arrows on the board.
+      // The type of board should sit halfway between the TOPIC and arrow
+      // set and the LOGO." Dropped back to 3 tracks (typebox / TOPIC /
+      // actions) now that Parent's gone from the left column (see the
+      // Sept 6 note on bb-mh-typebox's markup, below) -- with both flanks
+      // equal 1fr, the middle auto-width TOPIC track lands exactly on
+      // true center, not just "close," the way it did sharing a column
+      // with the title. "Briefing Board" is no longer a grid track at
+      // all: bb-mh-group-center is taken out of grid flow with its own
+      // position:absolute (this position:relative is what its left/top
+      // measure against) and placed every render at the real midpoint
+      // between TOPIC's box and LOGO's, by _bbPositionBoardKindMidway
+      // below -- same "measure the actual boxes" approach as the Idea
+      // Board's own (currently unused) _sboardPositionProjectMidwayToLogo,
+      // just walking TOPIC->LOGO instead of Name->LOGO.
+      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;height:100%;position:relative}'
       // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
       // Board [title], A control and communication tool, in the center.
       // Far left: eyebrow TYPE with drop down list followed by a Field
@@ -2993,13 +3002,21 @@
       // Idea Board" -- on the Idea Board, Parent sits in the header
       // grid's own left column with justify-self:end, so it hugs Topic's
       // edge, while traveler-name/PROJECT float separately at the far
-      // left corner. Mirrored here with plain flex: this row now
-      // stretches across the whole left grid column (justify-self:stretch)
-      // and space-between pushes its two fieldgrps to opposite ends --
-      // traveler-name/PROJECT (first child) stays pinned at the far left
-      // corner, Parent (second child, moved up from the row below) lands
-      // at this column's right edge, right up against bb-mh-group-center
-      // (BB's own stand-in for Topic).
+      // left corner. Mirrored here with plain flex: this row stretches
+      // across the whole left grid column (justify-self:stretch) with
+      // space-between so a second field would land at this column's
+      // right edge if one existed.
+      //
+      // Sept 6 2026, Larry: "the hierarchy is set when a PROJECT is
+      // chosen" -- Parent (org-adoption aside, the common case was
+      // always just one step up TOPIC's own cluster_id chain, per the
+      // Sept 5 fix comment on _bbRenderParentField below) is retired
+      // from this column: traveler-name/PROJECT is the only fieldgrp
+      // left here now, and TOPIC's own new up-arrow (bb-topic-caret-up,
+      // see the TOPIC markup below) does the "jump to any level above"
+      // job instead, right on TOPIC itself. justify-content:space-between
+      // is harmless with one child (behaves like flex-start) so left
+      // as-is rather than touched for its own sake.
       +'.bb-mh-typebox{display:flex;justify-self:stretch;justify-content:space-between;align-items:flex-start;gap:14px}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
@@ -3098,7 +3115,7 @@
       // model (height/padding/radius/opacity/hover) exactly; color and
       // font stay Briefing's own established theme (Gear > Colors),
       // which was never the part that had drifted.
-      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(200px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-hdr-select:hover{opacity:1}'
       // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
       // gone; double-click the Title trigger to rename, same interaction
@@ -3162,7 +3179,14 @@
       // element, sized to lead. Gap between title and tagline widened
       // 2px -> 10px so the tagline reads as its own line, not crowded
       // against the title's descenders.
-      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
+      // Sept 6 2026 -- taken out of grid flow (see the Sept 6 note on
+      // bb-mhead-top above): position:absolute, centered on whatever
+      // left/top _bbPositionBoardKindMidway sets every render. The
+      // left:50% + translateX(-50%) pair is just the pre-JS fallback so
+      // this doesn't flash off-position for a frame before that math
+      // runs -- top:0 matches the plain top-alignment every other grid
+      // item in this row already had.
+      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:absolute;top:0;left:50%;transform:translateX(-50%)}'
       // Sept 5 2026 -- Larry: match the Idea Board's header band. Bumped
       // to the same 42px this board-kind label uses there (idea-storyboard-
       // 9710.js sc-board-kind-trigger) and given the same raised/embossed
@@ -3184,12 +3208,23 @@
       +'.bb-topic-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:2px 16px;box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc(44px * var(--fg-text-scale,1));line-height:1.15;cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:34px;align-self:stretch;cursor:pointer;font-size:calc(18px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-topic-caret:hover{opacity:.75}'
+      // Sept 6 2026 -- the new up-arrow (bb-topic-caret-up, shares this
+      // same class) goes inert once TOPIC is already sitting at a
+      // project's own root, same as Parent's own hit-box used to gray
+      // out with nothing above it. Set from _bbRenderTopicField below.
+      +'.bb-topic-caret:disabled{opacity:.35;cursor:default}'
       // Logo now rides along in the same right-side group as Utility/Close
       // (see the markup below) so it sits between the center title and
       // those two icons, mirroring how Logo sits between Topic and IDEA
-      // on the Idea Board -- align-items:center added so its taller
-      // eyebrow+frame stack lines up with the shorter icon buttons.
-      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:center}'
+      // on the Idea Board.
+      //
+      // Sept 6 2026, Larry: "the top of the 3 buttons in the upper right
+      // corner should bottom justify" -- Logo's taller eyebrow+frame
+      // stack, Utility, and Close now line up along their shared bottom
+      // edge (align-items:flex-end) instead of each one's vertical
+      // center; Logo was already the leftmost of the three, immediately
+      // left of Utility, so that part needed no change.
+      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --
@@ -3532,29 +3567,21 @@
               // Sept 5 2026, Larry: "increase the text size on the PROJECT
               // field on all boards" -- matches sc-title-trigger's own
               // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(200px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              // Parent, Sept 5 2026 -- Larry: "every board now and in the
-              // future" should have the same PARENT field the Idea/Plan
-              // header does. The data isn't new -- a board's one approved
-              // parent has been readable since Aug 16 (see _bbRenderRelations
-              // and the Links popup below) -- this just puts it in the
-              // header itself instead of behind a popup, plus the same
-              // fast-jump-to-any-level-above arrow the Idea board's own
-              // Parent got today. bb-parent-hit is a real button (not a
-              // plain div) since a single click already means something
-              // here -- step up to the immediate parent -- same as
-              // Idea/Plan's plain Parent click. _bbRenderParentField
-              // (below) fills in the name and wires that click each time
-              // the board switches; _bbWireParentAncestorDropdown wires
-              // the caret once, at startup.
-              +'<div class="bb-mh-fieldgrp">'
-                +'<div class="bb-mh-eyebrow">Parent</div>'
-                +'<div class="bb-cdrop" id="bb-parent-cdrop" style="display:flex;align-items:center;gap:2px">'
-                  +'<button type="button" class="bb-parent-caret" id="bb-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
-                  +'<button type="button" class="bb-hdr-select" id="bb-parent-hit" style="cursor:default"></button>'
-                  +'<div class="bb-cdrop-menu" id="bb-parent-menu" hidden></div>'
-                +'</div>'
-              +'</div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              // Parent field retired from the header, Sept 6 2026 --
+              // Larry: "the hierarchy is set when a PROJECT is chosen,"
+              // folding its "jump to any level above" job into a new
+              // up-arrow on TOPIC itself (bb-topic-caret-up, see the
+              // TOPIC markup just below) instead of a separate eyebrow
+              // and field over here. Same "retire in place, don't
+              // delete" treatment already used on TYPE/ORG NAME right
+              // below this comment: _bbRenderParentField and
+              // _bbWireParentAncestorDropdown are both left exactly as
+              // they were and still get called every render (they no-op
+              // the moment bb-parent-hit/bb-parent-caret don't resolve
+              // in the DOM, same as those two already do) -- nothing to
+              // rebuild if this ever needs to come back.
+              //
               // TYPE and ORG NAME (Client/Department/Partner categorization)
               // retired from the visible chrome, Sept 5 2026 -- Larry: BB's
               // header should look exactly like the Idea Board's, which has
@@ -3590,11 +3617,31 @@
             // includes everything at all levels") -- see
             // _bbMasterRollupDepth (a Preferences field, not a fixed
             // number) for how far down "everything" currently reaches.
+            // Up-arrow, Sept 6 2026 -- Larry: "an up arrow on the left
+            // side to allow us to select a parental level" instead of
+            // the separate Parent eyebrow/field this project used to
+            // carry (see the Sept 6 note where that field's markup used
+            // to sit, above). Mirrors the descend caret on the right --
+            // same class, same chip, opposite direction -- so TOPIC
+            // reads as one unit that climbs on the left and descends on
+            // the right. _bbTopicAncestorChoices/_bbWireTopicAncestor-
+            // Dropdown (near _bbWireTopicDropdown below) walk the same
+            // ideas.cluster_id chain the descend caret already reads,
+            // just upward -- the actual family tree TOPIC has always
+            // meant, not the separate board_relations org-adoption chain
+            // Parent's old dropdown used (that logic is untouched and
+            // still runs for any board that has one; this new arrow just
+            // doesn't attempt it, on the same "hierarchy comes from the
+            // PROJECT" read Larry gave this today). Goes visually inert
+            // (.bb-topic-caret:disabled, above) once TOPIC is already a
+            // project's own root -- nothing above it to jump to.
             +'<div class="bb-mh-fieldgrp bb-mh-group-topic">'
               +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:6px">'
+                +'<button type="button" class="bb-topic-caret" id="bb-topic-caret-up" title="Jump to any level above" aria-label="Jump to any level above">▴</button>'
                 +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:default"></button>'
                 +'<button type="button" class="bb-topic-caret" id="bb-topic-caret" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
                 +'<div class="bb-cdrop-menu" id="bb-topic-menu" hidden></div>'
+                +'<div class="bb-cdrop-menu" id="bb-topic-ancestor-menu" hidden></div>'
               +'</div>'
             +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
@@ -3607,7 +3654,15 @@
             // handling. bb-mh's own type styling stays as-is; only the
             // button chrome is stripped inline so nothing looks
             // different at rest.
-            +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt" id="bb-mh-subtitle">A control and communication tool.</div></div>'
+            //
+            // bb-boardkind-wrap id added Sept 6 2026 so
+            // _bbPositionBoardKindMidway (near _bbRenderTopicField below)
+            // has something to move -- "the type of board" (this is the
+            // board-kind label Larry meant, the same "Briefing Board" /
+            // "Idea" / "Plan" family this dropdown already switches
+            // between) now sits at the real midpoint between TOPIC's box
+            // and LOGO's, not just in its own leftover grid column.
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt" id="bb-mh-subtitle">A control and communication tool.</div></div>'
             +'<div class="bb-mhead-actions">'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
@@ -5741,6 +5796,7 @@
       hit.textContent='(not linked)';
       hit.style.cursor='default';
       _bbSyncMasterSubtitle(false);
+      _bbSyncTopicUpCaret(true); // nothing to climb from here either
       return;
     }
     try{
@@ -5750,10 +5806,21 @@
       _bbCurrentTopicIsRoot = !res.data.cluster_id;
       hit.textContent = res.data.text_content || board.name || '(untitled)';
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
+      _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
     }catch(e){
       console.warn('Briefing Board: could not load TOPIC field', e);
       hit.textContent=board.name||'(untitled)';
     }
+  }
+  // Sept 6 2026 -- goes inert (same treatment Parent's own hit-box used
+  // to get, see .bb-topic-caret:disabled above) once TOPIC is standing
+  // at a project's own root, since there's nothing left above it to jump
+  // to. A real disabled button rather than a style-only gray-out, so a
+  // stray click can't pop an empty menu.
+  function _bbSyncTopicUpCaret(isRoot){
+    var up=document.getElementById('bb-topic-caret-up');
+    if(!up) return;
+    up.disabled=!!isRoot;
   }
   // Rollup cache, Sept 5 2026 -- same "load into a module-level array,
   // let renderBoard() read it synchronously" shape as _bbForeignCards/
@@ -5840,6 +5907,122 @@
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
     };
   }
+
+  // TOPIC's up-arrow, Sept 6 2026 -- ascend counterpart to the descend
+  // caret just above (_bbTopicChildChoices/_bbWireTopicDropdown), folding
+  // in the "jump to any level above" job the retired Parent field used
+  // to do (see the Sept 6 note on that field's old markup, above).
+  // Deliberately walks the same ideas.cluster_id chain the descend caret
+  // already reads -- the real project/idea tree, "exactly what PARENT
+  // already means on the Idea Board" per the Sept 5 fix comment on
+  // _bbRenderParentField -- rather than reusing _bbParentAncestorChoices
+  // (the separate board_relations org-adoption chain that backed Parent's
+  // own dropdown): Larry's own framing today ("the hierarchy is set when
+  // a PROJECT is chosen") is squarely about the project tree, and TOPIC's
+  // two arrows reading off one consistent data source, one direction
+  // each, is worth more than folding in that rarer adoption case too.
+  // Read-only while building the list (_bbFetchHeaderInfo never writes)
+  // -- same discipline as _bbTopicChildChoices below: a board only ever
+  // gets created for a specific ancestor if the traveler actually clicks
+  // it (jumpToTopic), never just from opening this menu to look.
+  async function _bbTopicAncestorChoices(){
+    var list=[];
+    var curId=_bbCurrentTopicHeaderId;
+    var guard=0;
+    while(curId && guard<50){
+      guard++;
+      var info=await _bbFetchHeaderInfo(curId);
+      if(!info || !info.clusterId) break;
+      var parentInfo=await _bbFetchHeaderInfo(info.clusterId);
+      if(!parentInfo) break;
+      list.push({id:info.clusterId, name:parentInfo.name});
+      curId=info.clusterId;
+    }
+    return list.reverse();
+  }
+  function _bbWireTopicAncestorDropdown(){
+    var trigger=document.getElementById('bb-topic-caret-up'), menu=document.getElementById('bb-topic-ancestor-menu');
+    if(!trigger || !menu) return;
+    trigger.onclick=async function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-topic-ancestor-menu':null);
+      if(!willOpen){ menu.hidden=true; return; }
+      menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      _bbSyncMenuTheme(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.hidden=false;
+      var choices=await _bbTopicAncestorChoices();
+      if(menu.hidden) return; // closed again while this was in flight
+      menu.innerHTML='';
+      if(!choices.length){
+        var empty=document.createElement('div');
+        empty.className='bb-cdrop-row';
+        empty.style.cssText='cursor:default;opacity:.6';
+        empty.textContent='Nothing above this.';
+        menu.appendChild(empty);
+      } else {
+        choices.forEach(function(h){
+          var row=document.createElement('div');
+          row.className='bb-cdrop-row';
+          row.textContent=h.name||'(untitled)';
+          row.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            menu.hidden=true;
+            if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(h.id);
+          });
+          menu.appendChild(row);
+        });
+      }
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    };
+  }
+
+  // "Type of board" title, Sept 6 2026 -- Larry: "the type of board
+  // should sit halfway between the TOPIC and arrow set and the LOGO."
+  // Same measure-the-real-boxes approach as the Idea Board's own
+  // (currently unused) _sboardPositionProjectMidwayToLogo -- a fixed
+  // percentage drifts the moment TOPIC's text or Logo's own size changes
+  // -- just reading bb-topic-cdrop's right edge and bb-logo-slot's left
+  // edge instead of Name/Logo, and using bb-boardkind-wrap's own
+  // left:50%+translateX(-50%) (see its CSS above) to center on that
+  // midpoint instead of subtracting half its measured width by hand.
+  // Must run after both TOPIC and Logo have rendered for real content
+  // (see the call sites right after _bbRenderTopicField, below) --
+  // reading either box any earlier measures last render's stale size.
+  function _bbPositionBoardKindMidway(){
+    var wrap=document.getElementById('bb-boardkind-wrap');
+    var topicEl=document.getElementById('bb-topic-cdrop');
+    var logoEl=document.getElementById('bb-logo-slot');
+    var container=document.querySelector('#s-briefing-board .bb-mhead-top');
+    if(!wrap || !topicEl || !logoEl || !container) return;
+    var topicRect=topicEl.getBoundingClientRect();
+    var logoRect=logoEl.getBoundingClientRect();
+    var containerRect=container.getBoundingClientRect();
+    // Guard against a not-yet-laid-out screen -- nothing real to measure
+    // yet, leave the left:50% fallback in place.
+    if(!topicRect.width || !logoRect.width || !containerRect.width) return;
+    var midpoint=topicRect.right+(logoRect.left-topicRect.right)/2;
+    wrap.style.left=(midpoint-containerRect.left)+'px';
+  }
+  // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
+  // listener for the same reason (idea-storyboard-9710.js, near
+  // _sboardPositionProjectMidwayToLogo): a real browser-window resize
+  // changes TOPIC's and Logo's actual rendered positions, not just the
+  // text-scale re-render screen-fit.js already handles. No-ops instantly
+  // whenever the Briefing Board isn't the active screen.
+  window.addEventListener('resize', function(){
+    try{
+      var scr=document.getElementById('s-briefing-board');
+      if(scr && scr.classList.contains('active')) _bbPositionBoardKindMidway();
+    }catch(e){}
+  });
+
   // Master rollup, Sept 5 2026 -- Larry: "the top level of the BB =
   // MASTER BRIEFING BOARD which includes everything at all levels. Ah,
   // but might we want to limit the Master view to a number of levels?"
@@ -7018,6 +7201,7 @@
     // member already loaded before this wiring ran.
     _bbWireParentAncestorDropdown();
     _bbWireTopicDropdown();
+    _bbWireTopicAncestorDropdown(); // Sept 6 2026 -- TOPIC's new up-arrow
     _bbRenderTravelerName();
     window.addEventListener('t2t:member-loaded', function(){ _bbRenderTravelerName(); });
 
