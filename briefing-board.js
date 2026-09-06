@@ -2388,6 +2388,19 @@
       }
     }
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, pickerCurrentId, async function(id){
+      // Cross-board PROJECT sync, Sept 6 2026 -- Larry: "if I change a
+      // project on a BB, when I look at the Idea Board, it should be
+      // set to that project." Piggybacks on the same device-local
+      // "last active project" pointer the Idea Board's own resume path
+      // already reads (window.T2TMedia.rememberProject/recallProject,
+      // idea-media-shared.js) instead of inventing a second one -- the
+      // Idea Board already remembers its own PROJECT switches this same
+      // way (see _sboardPersistLastTopic), this just makes the BB's own
+      // switch remember too, so whichever board you touched last wins.
+      var pickedBoard=_bbBoards.filter(function(b){ return b.id===id; })[0];
+      if(pickedBoard && pickedBoard.storyboard_project_id && window.T2TMedia && window.T2TMedia.rememberProject){
+        window.T2TMedia.rememberProject(pickedBoard.storyboard_project_id);
+      }
       await _bbSwitchToBoard(id);
     }, async function(){
       var typeLabel=_bbTypeLabel(_bbActiveBoardType());
@@ -3085,7 +3098,7 @@
       // model (height/padding/radius/opacity/hover) exactly; color and
       // font stay Briefing's own established theme (Gear > Colors),
       // which was never the part that had drifted.
-      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(200px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-hdr-select:hover{opacity:1}'
       // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
       // gone; double-click the Title trigger to rename, same interaction
@@ -3519,7 +3532,7 @@
               // Sept 5 2026, Larry: "increase the text size on the PROJECT
               // field on all boards" -- matches sc-title-trigger's own
               // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(200px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent, Sept 5 2026 -- Larry: "every board now and in the
               // future" should have the same PARENT field the Idea/Plan
               // header does. The data isn't new -- a board's one approved

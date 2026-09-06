@@ -557,7 +557,7 @@
         // headers/Subbers always stay visible (they're navigation, not
         // person-filterable content) -- only leaf idea/text/image/link
         // cards get hidden when they don't match.
-        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:inherit;max-width:calc(200px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'.sc-org-name-cdrop{margin-top:3px}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
@@ -991,7 +991,7 @@
       // on all boards" -- 9px/24px (the Sept 5 "read as subordinate to
       // traveler name" sizing) bumped to 14px/30px, and widened to fit.
       // See bb-board-trigger in briefing-board.js for the same bump.
-      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button>'
+      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(200px * var(--fg-text-scale,1))"></button>'
       +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button>'
       +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
       +'</div>'
@@ -1087,7 +1087,7 @@
         // Parent/Topic) overwrites this the moment the current project is
         // known, per Larry: PROJECT should show whichever project is
         // actually on screen (Field Guide, etc.), not a fixed label.
-        titleTrigger.textContent='Idea Storyboards';
+        titleTrigger.textContent='PROJECTS';
         titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
         titleTrigger.addEventListener('click', async function(e){
           e.stopPropagation();
@@ -3009,6 +3009,34 @@
           menu.appendChild(row);
         });
       }
+      // (+) to start a brand-new project, Sept 6 2026 -- Larry: PROJECTS
+      // should work the same on every board, always with the ability to
+      // add a new one -- matches the (+) the Briefing Board's own
+      // PROJECT list already has (_bbRenderBoardPicker). This dropdown
+      // rebuilds its rows fresh every open (see above), so the add row
+      // just gets appended last, every time, same shell/classes
+      // (.sc-cdrop-addrow/.sc-dotted-add-btn) every other add-button on
+      // this board already uses.
+      var addRow=document.createElement('div');
+      addRow.className='sc-cdrop-addrow';
+      var addBtn=document.createElement('button');
+      addBtn.type='button';
+      addBtn.className='sc-dotted-add-btn';
+      addBtn.title='Add a new project';
+      addBtn.textContent='+';
+      addBtn.addEventListener('click', async function(ev){
+        ev.stopPropagation();
+        menu.hidden=true;
+        var name=window.prompt('Name for the new project:');
+        if(!name || !name.trim()) return;
+        var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
+        if(newId){
+          var freshRow=_sboardAllRowsById[newId];
+          _sboardDrillInto(freshRow||{id:newId});
+        }
+      });
+      addRow.appendChild(addBtn);
+      menu.appendChild(addRow);
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';
@@ -6306,7 +6334,7 @@
     var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
     var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
     if(atRoot){
-      titleTrigger.textContent='Idea Storyboards';
+      titleTrigger.textContent='PROJECTS';
       titleTrigger.title='Click to open Idea Storyboards; double-click for the fast-jump list';
     } else {
       titleTrigger.textContent=projRow.text_content||'(untitled)';
