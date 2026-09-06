@@ -3265,8 +3265,12 @@
       // left/top _bbPositionBoardKindMidway sets every render. The
       // left:50% + translateX(-50%) pair is just the pre-JS fallback so
       // this doesn't flash off-position for a frame before that math
-      // runs -- top:0 matches the plain top-alignment every other grid
-      // item in this row already had.
+      // runs -- top:0 matched the plain top-alignment every other grid
+      // item in this row had, back when this sat at the top like they
+      // did. Superseded below (still just the pre-JS fallback, same
+      // idea as left:50%): _bbPositionBoardKindMidway now also sets a
+      // real `top` every render so this bottom-justifies with the
+      // upper-right corner buttons instead.
       // Sept 6 2026 fix -- a position:absolute box with only `left` set
       // (no `right`) shrink-to-fits within whatever space is left between
       // that left edge and the container's own right edge, not its full
@@ -6123,6 +6127,23 @@
     if(!topicRect.width || !logoRect.width || !containerRect.width) return;
     var midpoint=topicRect.right+(logoRect.left-topicRect.right)/2;
     wrap.style.left=(midpoint-containerRect.left)+'px';
+    // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
+    // bottom-justify with the upper right corner buttons" -- same
+    // measure-the-real-boxes approach as the midpoint above, just
+    // matched to bb-mhead-actions' own actual bottom edge instead of a
+    // guessed fixed offset. That edge isn't a constant pixel value --
+    // Logo's eyebrow+frame stack (bb-mh-fieldgrp) is taller than a
+    // plain bb-icon-btn, so the actions row's real height shifts with
+    // Logo's own layout and text-scale; reading it live keeps this
+    // aligned instead of drifting the next time that stack changes.
+    var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
+    if(actionsEl){
+      var actionsRect=actionsEl.getBoundingClientRect();
+      var wrapRect=wrap.getBoundingClientRect();
+      if(actionsRect.height && wrapRect.height){
+        wrap.style.top=(actionsRect.bottom-wrapRect.height-containerRect.top)+'px';
+      }
+    }
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
   // listener for the same reason (idea-storyboard-9710.js, near
