@@ -1024,12 +1024,31 @@
         // its slot/eyebrow/handle ids live in the page.
       +'<div id="sc-logo-wrap" style="display:flex;flex-direction:column;align-items:center">'
       +'<div class="sc-hdr-eyebrow" id="sc-logo-eyebrow">Logo</div>'
-      +'<div id="sc-logo-slot" style="position:relative;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
+      // Sept 7 2026 fix (Larry: "the alignment is for default (unused)
+      // LOGO only -- once a LOGO is added, it should stay the same size
+      // and location set by the traveler without changing the other two
+      // buttons") -- sc-logo-slot used to be position:relative, sized by
+      // its own inline width/height, and living directly in this
+      // column; because sc-hdr-side's row (below) lines Logo/Utility/
+      // Close up along a shared bottom edge, growing the slot via the
+      // resize handle grew this whole column and dragged Utility/Close
+      // down with it -- the "shifted down" Larry reported. sc-logo-anchor
+      // is new: a fixed 30x30 placeholder that's the only thing the row
+      // actually measures, matching bb-logo-anchor's already-correct
+      // pattern on the Briefing Board (briefing-board.js). sc-logo-slot
+      // itself is now position:absolute inside it, so the resize handle
+      // (and the traveler's own saved logo_w/logo_h) can grow it up to
+      // 90px without ever changing this anchor's box or moving Utility/
+      // Close -- purely a visual overlay, same as Briefing Board already
+      // does.
+      +'<div id="sc-logo-anchor" style="position:relative;width:30px;height:30px;flex-shrink:0">'
+      +'<div id="sc-logo-slot" style="position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">'
       +'<div class="sc-logo-eyebrow-onlogo" id="sc-logo-eyebrow-onlogo">Logo</div>'
       +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
       +'<input type="file" id="sc-logo-input" accept="image/*" style="display:none">'
       +'<div class="sc-logo-resize-handle" id="sc-logo-resize-handle" title="Drag to resize" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:4px;background:#5b9bd5;border:2px solid #0d2440;cursor:nwse-resize;display:none;z-index:3;touch-action:none"></div>'
+      +'</div>'
       +'</div>'
       +'</div>'
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Utility">⚙️</button>'
