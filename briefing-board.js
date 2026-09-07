@@ -2008,6 +2008,136 @@
     }catch(e){ console.error('Briefing Board: could not resolve/create board for this layer', e); return null; }
   }
 
+  // Project field on the card back, Sept 7 2026 -- Larry: "BB has
+  // eyebrow project ID. Make this a dropdown field on the back of the
+  // card so we can change projects for a given BB card." Works out
+  // which option (_bbProjectPickerOptions' 'hdr:'/'brd:' tags) a given
+  // card is sitting under right now, same climb-to-root idea
+  // _bbRenderBoardPicker already uses for the whole open board -- just
+  // starting from the card's own link instead of the board's. A
+  // header-linked card (c.sourceHeaderId, auto-created/kept in sync by
+  // the ideas_sync_header_task_card DB trigger) climbs from its own
+  // topic; every other card climbs from whichever board it actually
+  // lives on (its home board for a merged/foreign card, the open board
+  // for a native one). Falls back to {} (no selection) if the answer
+  // isn't cached yet -- same "pending" shape _bbClimbToProjectRoot
+  // itself returns -- so the caller can re-render once it's warm.
+  function _bbCardProjectValue(c, homeBoardId){
+    if(c.sourceHeaderId){
+      var climb=_bbClimbToProjectRoot(c.sourceHeaderId);
+      if(climb.rootHeaderId) return {value:'hdr:'+climb.rootHeaderId, pendingHeaderId:null, fallbackName:climb.rootName};
+      if(climb.pendingHeaderId) return {value:null, pendingHeaderId:climb.pendingHeaderId, fallbackName:null};
+    }
+    var board=_bbBoards.filter(function(b){ return b.id===homeBoardId; })[0];
+    if(!board) return {value:null, pendingHeaderId:null, fallbackName:null};
+    if(board.storyboard_project_id){
+      var climb2=_bbClimbToProjectRoot(board.storyboard_project_id);
+      if(climb2.rootHeaderId) return {value:'hdr:'+climb2.rootHeaderId, pendingHeaderId:null, fallbackName:climb2.rootName};
+      if(climb2.pendingHeaderId) return {value:null, pendingHeaderId:climb2.pendingHeaderId, fallbackName:null};
+    }
+    return {value:'brd:'+board.id, pendingHeaderId:null, fallbackName:null};
+  }
+
+  // Moves a card to a different project, Sept 7 2026 -- the actual
+  // reassignment behind the Project dropdown (_bbRenderCardProjectField
+  // below). Writes this one card's row onto the given board directly --
+  // effectively the same move a drag onto that board's own screen would
+  // produce, just done from the card back instead. Deliberately allowed
+  // on a header-linked card too (Larry: every card, not just hand-typed
+  // ones) -- clearing source_header_id/topic_label here is what tells
+  // the ideas_sync_header_task_card trigger this card isn't its topic's
+  // stand-in any more (that trigger only ever looks a card up BY
+  // source_header_id, see its own definition), so the old topic simply
+  // gets a fresh auto-card next time it's touched, while this one lives
+  // on independently under its new project. Local copy is dropped from
+  // every card-source array it might be sitting in so the board redraws
+  // without a stale ghost of it -- then, if the screen already happens
+  // to be looking at the card's new home (e.g. a project just created
+  // on the spot, which _bbCreateBoard's own insert already switched the
+  // screen to), added straight back in so it shows up without waiting
+  // on a reload. Takes the actual card object rather than an id so a
+  // caller that's about to switch boards (losing whatever _bbCards
+  // pointed to before) can still hand over the right one.
+  async function _bbMoveCardObjectToBoard(c, targetBoard){
+    if(!c || !targetBoard) return false;
+    var sb=T().sb;
+    if(!sb){ window.alert('Not connected -- try again in a moment.'); return false; }
+    try{
+      var row=_bbCardToRow(c, targetBoard.id);
+      delete row.id;
+      row.source_header_id=null;
+      row.topic_label=null;
+      var res=await sb.from('briefing_cards').update(row).eq('id', c.id);
+      if(res.error){ console.error('Briefing Board: move card failed', res.error); window.alert('Could not move this card. Try again.'); return false; }
+    }catch(e){ console.error('Briefing Board: move card failed', e); window.alert('Could not move this card. Try again.'); return false; }
+    c.sourceHeaderId=null; c.topicLabel='';
+    _bbCards=_bbCardsList().filter(function(x){ return x.id!==c.id; });
+    if(_bbForeignCards) _bbForeignCards=_bbForeignCards.filter(function(x){ return x.id!==c.id; });
+    if(_bbSharedInCards) _bbSharedInCards=_bbSharedInCards.filter(function(x){ return x.id!==c.id; });
+    if(_bbRollupCards) _bbRollupCards=_bbRollupCards.filter(function(x){ return x.id!==c.id; });
+    if(_bbCurrentBoardId===targetBoard.id) _bbCards.push(c);
+    return true;
+  }
+
+  // Resolves a picker value ('hdr:'/'brd:', see _bbProjectPickerOptions)
+  // to a real board, then hands off to _bbMoveCardObjectToBoard -- the
+  // ordinary path when Larry picks an existing project from the
+  // dropdown (see _bbRenderCardProjectField's onSelect below).
+  async function _bbMoveCardToProject(cardId, value){
+    var v=String(value), targetBoard=null;
+    if(v.indexOf('hdr:')===0) targetBoard=await _bbResolveOrCreateBoardForHeader(v.slice(4));
+    else if(v.indexOf('brd:')===0) targetBoard=_bbBoards.filter(function(b){ return b.id===v.slice(4); })[0];
+    if(!targetBoard){ window.alert('Could not find that project. Try again in a moment.'); return; }
+    var c=_bbFindCardAnywhere(cardId);
+    if(!c) return;
+    var ok=await _bbMoveCardObjectToBoard(c, targetBoard);
+    if(!ok) return;
+    closeCardDetail();
+    renderBoard();
+  }
+
+  // Renders/wires the card back's own Project dropdown -- called from
+  // openCardDetail for whichever card just opened. Reuses the same
+  // _bbRenderDropdown widget the whole-board PROJECT switcher uses, so
+  // it looks and behaves identically (same menu, same "+" to start a
+  // new board and move straight into it). currentValue can come back
+  // null while an ancestor Header is still warming up in
+  // _bbHeaderInfoById -- shown as a plain "Loading…" trigger for that
+  // one render, then re-rendered for real once _bbFetchHeaderInfo
+  // resolves it, same pattern _bbRenderBoardPicker already uses. The
+  // "+" handler captures the card object before calling _bbCreateBoard
+  // (which switches the whole screen to the board it creates) so the
+  // move that follows always has the right card in hand regardless of
+  // what that switch just did to _bbCards.
+  async function _bbRenderCardProjectField(c){
+    var trigger=document.getElementById('bb-d-project-trigger'), menu=document.getElementById('bb-d-project-menu');
+    if(!trigger || !menu) return;
+    var homeBoardId = c._homeBoardId || _bbCurrentBoardId;
+    var pv=_bbCardProjectValue(c, homeBoardId);
+    if(pv.pendingHeaderId){
+      trigger.textContent='Loading…';
+      _bbFetchHeaderInfo(pv.pendingHeaderId).then(function(info){ if(info && _bbOpenCardId===c.id) _bbRenderCardProjectField(c); });
+      return;
+    }
+    var opts=await _bbProjectPickerOptions();
+    if(_bbOpenCardId!==c.id) return; // a different card opened while this was loading
+    if(pv.value && !opts.some(function(o){ return o.value===pv.value; }) && pv.fallbackName){
+      opts=opts.concat([{value:pv.value, label:pv.fallbackName}]);
+    }
+    _bbRenderDropdown('bb-d-project-trigger','bb-d-project-menu', opts, pv.value, function(value){
+      _bbMoveCardToProject(c.id, value);
+    }, async function(){
+      var name=window.prompt('Name for the new project:');
+      if(!name || !name.trim()) return;
+      var ok=await _bbCreateBoard(name.trim(), 'project');
+      if(!ok) return;
+      var targetBoard=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+      if(targetBoard) await _bbMoveCardObjectToBoard(c, targetBoard);
+      closeCardDetail();
+      renderBoard();
+    }, 'Add a project');
+  }
+
   async function _bbInitBoardsAndData(){
     var uid=await _bbCurrentUserId();
     if(!uid){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
@@ -2206,7 +2336,7 @@
     // dropdown opened, but not otherwise. Adding it, plus the new
     // bb-topic-ancestor-menu (TOPIC's up-arrow, today), so both close
     // the same way every other dropdown here already does.
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu','bb-d-project-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -2486,7 +2616,15 @@
   // tagged 'hdr:'/'brd:' so onSelect knows whether it's landing on a real
   // project (resolve-or-create that project's Briefing Board, same as
   // TOPIC's own jumpToTopic) or an existing personal board directly.
-  async function _bbRenderBoardPicker(){
+  // Sept 7 2026 -- factored out of _bbRenderBoardPicker's own inline
+  // build so the per-card Project field (openCardDetail's
+  // _bbRenderCardProjectField, below) can offer the exact same list of
+  // real projects/boards without a second hand-maintained copy. Nothing
+  // about the list itself changed by pulling it out -- same MASTER pin,
+  // same personal boards, same adopted children -- only the board
+  // switcher's own current-selection/add/remove handling stayed behind
+  // in _bbRenderBoardPicker, since a single card doesn't need those.
+  async function _bbProjectPickerOptions(){
     var realProjects=[];
     try{ realProjects=await T2TData.topLevelBoards(); }
     catch(e){ console.warn('Briefing Board: could not load top-level projects', e); }
@@ -2528,6 +2666,11 @@
         if(!opts.some(function(o){ return o.value===key; })) opts.push({value:'brd:'+c.id, label:c.name||'Untitled Board'});
       });
     }
+    return opts;
+  }
+
+  async function _bbRenderBoardPicker(){
+    var opts=await _bbProjectPickerOptions();
     // (-) on the PROJECT field, Aug 16 2026 -- Larry: "how do we handle
     // a (-) with a full project? Sounds like we need a hub screen, 3
     // choices even if they do not all work yet." Only offered when a
@@ -3946,6 +4089,20 @@
             // line, not worth a whole section for. Same id (bb-d-added),
             // same value, just riding quietly on the Task label instead.
             +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
+            // Project, Sept 7 2026 -- Larry: "BB has eyebrow project ID.
+            // Make this a dropdown field on the back of the card so we
+            // can change projects for a given BB card." The card
+            // front's own TOPIC eyebrow (topicEyebrow, above) already
+            // names whichever project a card is under; this is the
+            // editable version of that same fact, on the back. Same
+            // bb-cdrop trigger-button-plus-menu shape as the header's
+            // own PROJECT field (bb-board-trigger et al) -- no separate
+            // caret needed here since nothing on this button does
+            // double duty (the header's caret exists only to separate
+            // "open the menu" from the label's own double-click-to-
+            // rename; this field has no rename). Wired in
+            // _bbRenderCardProjectField, called from openCardDetail.
+            +'<div class="bb-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which project this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -4816,6 +4973,7 @@
     _bbDetailBeforeCardId=id;
     _bbDetailBeforeSnapshot=_bbSnapshotCardDetail(c);
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
+    _bbRenderCardProjectField(c);
     document.getElementById('bb-d-situation').value=c.situation||'';
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
