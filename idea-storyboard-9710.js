@@ -1108,9 +1108,13 @@
         // (see _sboardRenderProjectLabel's own Sept 6 note); this is just
         // the placeholder shown for the instant before that first real
         // render lands.
-        // Sept 6 2026, Larry: "What used to be Idea Storyboards is now
-        // PROJECTS." Same root, renamed label.
-        titleTrigger.textContent='PROJECTS';
+        // Sept 7 2026, Larry: PROJECT and TOPIC were both reading
+        // "PROJECTS" at root ("PROJECTS - PROJECTS - Wish Tank" on the
+        // live board) -- PROJECT now reads MASTER at root instead, TOPIC
+        // (the root Header's own name) keeps reading PROJECTS. Same
+        // MASTER wording applies board-wide, not just here -- see
+        // briefing-board.js's own root PROJECT label.
+        titleTrigger.textContent='MASTER';
         titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
         titleTrigger.addEventListener('click', async function(e){
           e.stopPropagation();
@@ -6444,8 +6448,10 @@
     var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
     var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
     if(atRoot){
-      // Sept 6 2026, Larry: "What used to be Idea Storyboards is now PROJECTS."
-      titleTrigger.textContent='PROJECTS';
+      // Sept 7 2026, Larry: PROJECT reads MASTER at root (not PROJECTS --
+      // that duplicated TOPIC's own root label, which stays PROJECTS).
+      // Uniform across every board kind, not just the Idea Board.
+      titleTrigger.textContent='MASTER';
       titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
     } else {
       titleTrigger.textContent=projRow.text_content||'(untitled)';
