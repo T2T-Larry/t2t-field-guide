@@ -840,15 +840,29 @@
   // whole-list save could never steal one onto the wrong board_id. That
   // safety was correct, but nothing ever widened the READ side to match,
   // so double-clicking one of those cards found nothing and silently did
-  // nothing. This checks all three places a card can live; every open/
-  // edit/save path below should go through this instead of
-  // _bbCardsList() alone whenever it's resolving the currently-open card.
+  // nothing. This checks every place a card can live; every open/edit/save
+  // path below should go through this instead of _bbCardsList() alone
+  // whenever it's resolving the currently-open card.
+  //
+  // Sept 7 2026 fix (Larry: "ALL CARDS EVERYWHERE NEED TO OPEN WITH A
+  // DOUBLE CLICK. One code!") -- the Master Briefing Board rollup
+  // (_bbRollupCards, added Sept 5 2026) repeated the exact bug this
+  // function exists to prevent: renderBoard() happily draws rollup cards
+  // on the board, but this lookup never learned about that fourth source,
+  // so double-clicking any card rolled up from a layer below silently did
+  // nothing -- while a card native to the board actually being viewed
+  // (already in _bbCardsList()) opened fine. Rewritten as a loop over
+  // every known card-source array instead of one hand-written check per
+  // source, so the next new source (whatever it turns out to be) can't
+  // quietly repeat this same miss by being left out of a list someone
+  // has to remember to update by hand.
   function _bbFindCardAnywhere(id){
-    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
-    if(c) return c;
-    c=(_bbForeignCards||[]).filter(function(x){ return x.id===id; })[0];
-    if(c) return c;
-    return (_bbSharedInCards||[]).filter(function(x){ return x.id===id; })[0];
+    var sources=[_bbCardsList(), _bbForeignCards, _bbSharedInCards, _bbRollupCards];
+    for(var i=0;i<sources.length;i++){
+      var list=sources[i]; if(!list) continue;
+      for(var j=0;j<list.length;j++){ if(list[j].id===id) return list[j]; }
+    }
+    return undefined;
   }
 
   function _bbCurrentBoardDefaultAssignee(){
