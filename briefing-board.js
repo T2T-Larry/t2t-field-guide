@@ -358,21 +358,29 @@
   // Shared apply-a-snapshot helper, reused by undo AND redo (they're the
   // same operation pointed at a different snapshot) and by the existing
   // Recent Moves panel's own per-item Undo button.
+  // Sept 7 2026 -- widened from _bbCardsList() alone to _bbFindCardAnywhere
+  // (every single-card mutator on this page now goes through the same
+  // one), plus an explicit _bbPersistMergedCardById so a merged
+  // (foreign/shared-in/rollup) card actually gets saved even when it
+  // isn't the card currently open in the detail overlay -- undo/redo,
+  // trash, and color can all target a card that was never opened.
   function _bbApplyCardSnapshot(cardId, snap){
-    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    var c=_bbFindCardAnywhere(cardId);
     if(!c) return;
     c.col=snap.col; c.priority=snap.priority;
     if(typeof snap.sortOrder==='number') c.sortOrder=snap.sortOrder;
     if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
     _bbStampDateEscalationHandled(c);
     _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(cardId);
     renderBoard();
   }
   function _bbApplyTrashState(cardId, trashedAt){
-    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    var c=_bbFindCardAnywhere(cardId);
     if(!c) return;
     c.trashedAt=trashedAt;
     _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(cardId);
     renderBoard();
   }
   // Card color, Session 234 (Aug 21) -- new for Briefing Cards, set from
@@ -381,10 +389,11 @@
   // BB_DETAIL_FIELDS (that group only covers fields the detail form
   // saves together on close; color saves immediately on click instead).
   function _bbApplyColor(cardId, color){
-    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    var c=_bbFindCardAnywhere(cardId);
     if(!c) return;
     c.color=color;
     _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(cardId);
     if(_bbOpenCardId===cardId) _bbRenderColorSwatches(c);
     renderBoard();
   }
@@ -420,10 +429,11 @@
     return snap;
   }
   function _bbApplyCardDetail(cardId, fields){
-    var c=_bbCardsList().filter(function(x){ return x.id===cardId; })[0];
+    var c=_bbFindCardAnywhere(cardId);
     if(!c) return;
     BB_DETAIL_FIELDS.forEach(function(k){ if(Object.prototype.hasOwnProperty.call(fields,k)) c[k]=fields[k]; });
     _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(cardId);
     if(_bbOpenCardId===cardId) openCardDetail(cardId);
     renderBoard();
   }
@@ -532,13 +542,14 @@
   async function _bbUndoMove(moveId){
     var m=_bbMovesCache.filter(function(x){ return x.id===moveId; })[0];
     if(!m) return;
-    var c=_bbCardsList().filter(function(x){ return x.id===m.card_id; })[0];
+    var c=_bbFindCardAnywhere(m.card_id);
     if(!c){ window.alert('That card is no longer on this board (it may have been trashed).'); return; }
     var before=_bbSnapshotCard(c);
     c.col=m.from_col; c.priority=m.from_priority; c.sortOrder=(typeof m.from_sort_order==='number')?m.from_sort_order:c.sortOrder;
     if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
     _bbStampDateEscalationHandled(c);
     _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(m.card_id);
     var sb=T().sb;
     if(sb){
       try{ await sb.from('briefing_card_moves').update({undone_at:new Date().toISOString()}).eq('id', moveId); }catch(e){ console.error('Briefing Board: mark move undone failed', e); }
@@ -793,12 +804,43 @@
     // fetch of that board quietly overwrote it back to the old value.
     // Whichever card is currently open gets checked here and, if it's a
     // foreign one, saved with its own narrow single-row write instead.
-    _bbPersistOpenForeignCardIfAny();
+    _bbPersistOpenMergedCardIfAny();
   }
-  async function _bbPersistOpenForeignCardIfAny(){
-    if(!_bbOpenCardId) return;
-    var fc=(_bbForeignCards||[]).concat(_bbSharedInCards||[]).filter(function(x){ return x.id===_bbOpenCardId; })[0];
-    if(!fc) return;
+  // Sept 7 2026 rename+extend (Larry: "ALL CARDS EVERYWHERE... One
+  // code!") -- was _bbPersistOpenForeignCardIfAny, foreign/shared-in
+  // only. The Master Briefing Board's rollup cards (_bbRollupCards,
+  // added Sept 5 2026) hit the exact same silent-loss bug this function
+  // was built to fix, for the exact same reason: a fourth card source
+  // existed on screen that this check never learned about, so every
+  // Notes/Priority/Signal-Flag/etc. edit on a rolled-up card patched the
+  // in-memory object and quietly never reached the database. One
+  // function now covers every merged source instead of one hand-written
+  // branch per source.
+  // Sept 7 2026 -- the one place that persists a merged (foreign/
+  // shared-in/rollup) card's current in-memory state to its real row,
+  // by id, regardless of what changed on it (col, trashedAt, color,
+  // task text, whatever -- _bbCardToRow serializes the whole object).
+  // Called two ways: right after whichever card is open in the detail
+  // overlay changes (_bbPersistOpenMergedCardIfAny, keyed off
+  // _bbOpenCardId), and directly by id from every other single-card
+  // mutator below (trash, undo/redo, color, unarchive, restore) so a
+  // merged card doesn't have to be open to have an action on it
+  // actually stick. Every one of those mutators used to check
+  // _bbCardsList() alone; a merged card silently "worked" for the rest
+  // of the session (the in-memory object really did change, so the
+  // board kept looking right) and then reverted on the next real fetch,
+  // because nothing had actually reached the database. No-ops cleanly
+  // for a native card or any id that isn't a merged card anywhere --
+  // native cards are already covered by the normal _bbCardsList()/
+  // _bbSaveLocal whole-list sync.
+  function _bbPersistMergedCardById(id){
+    if(!id) return;
+    var fc=(_bbForeignCards||[]).concat(_bbSharedInCards||[]).filter(function(x){ return x.id===id; })[0];
+    if(fc) return _bbPersistForeignFieldEdit(fc);
+    var rc=(_bbRollupCards||[]).filter(function(x){ return x.id===id; })[0];
+    if(rc) return _bbPersistRollupCard(rc);
+  }
+  async function _bbPersistForeignFieldEdit(fc){
     var sb=T().sb; if(!sb) return;
     try{
       var row=_bbCardToRow(fc, fc._homeBoardId);
@@ -819,6 +861,19 @@
       var res=await sb.from('briefing_cards').update(row).eq('id', fc.id);
       if(res.error) console.error('Briefing Board: foreign card save failed', res.error);
     }catch(e){ console.error('Briefing Board: foreign card save failed', e); }
+  }
+  function _bbPersistOpenMergedCardIfAny(){
+    return _bbPersistMergedCardById(_bbOpenCardId);
+  }
+  async function _bbPersistRollupCard(rc){
+    var sb=T().sb; if(!sb) return;
+    try{
+      var row=_bbCardToRow(rc, rc._homeBoardId);
+      delete row.id;
+      delete row.board_id;
+      var res=await sb.from('briefing_cards').update(row).eq('id', rc.id);
+      if(res.error) console.error('Briefing Board: rollup card save failed', res.error);
+    }catch(e){ console.error('Briefing Board: rollup card save failed', e); }
   }
   function _bbSeed(){
     return [
@@ -1684,6 +1739,37 @@
   }
   function _bbHandleSharedInDrop(zone, e, draggedId){
     return _bbHandleMergedCardDrop(zone, e, draggedId, _bbSharedInCards, _bbPersistSharedPosition);
+  }
+  // Sept 7 2026 -- rollup cards skip _bbHandleMergedCardDrop on purpose.
+  // That function's whole job is keeping a merged card's column change
+  // PRIVATE to this viewer (personal_col/shared_col) unless it crosses
+  // into/out of Doing/Done/Hang-Ups, because a foreign/shared-in card's
+  // real status belongs to whoever owns its home board, not to
+  // whoever's looking at it from elsewhere. A rollup card has no such
+  // owner/viewer split -- the Master Briefing Board IS a real
+  // management view of every layer below, so a drag here always writes
+  // straight through as the card's one true column, same as dragging it
+  // on its own home board would. Deliberately simpler than the native
+  // drop handler too (no fine H/M/L escalation by drop position within
+  // the column, just the coarse family -- same simplification the
+  // foreign/shared merged drop already makes): lands the card at the
+  // end of its target column on its own real board, via a Date.now()
+  // sortOrder rather than querying that board's real max first, so this
+  // can never collide with or renumber cards from a board that isn't
+  // even the one currently open.
+  function _bbHandleRollupDrop(zone, draggedId, rc){
+    var newCol=zone.getAttribute('data-col');
+    var wasCol=rc.col;
+    if(wasCol===newCol) return;
+    rc.col=newCol;
+    if(_bbIsDoCol(newCol)) rc.priority=_bbPriorityForDrop(newCol, rc.priority);
+    if(newCol==='doing' && _bbIsDoCol(wasCol) && !rc.startDate){ rc.startDate=_bbToday(); rc.addStart=true; }
+    if(newCol==='done' && wasCol!=='done') rc.completedDate=_bbToday();
+    if(wasCol==='done' && newCol!=='done'){ rc.completedDate=''; rc.verified=false; rc.pro=false; rc.grow=false; }
+    if(newCol==='hangups' && wasCol!=='hangups') rc.hangupSince=_bbToday();
+    if(wasCol==='hangups' && newCol!=='hangups') rc.hangupSince='';
+    rc.sortOrder=Date.now();
+    _bbPersistRollupCard(rc).then(renderBoard);
   }
 
   // Fired from closeCardDetail when a personal card's "Also show on"
@@ -4550,6 +4636,14 @@
           if(fc){ _bbHandlePersonalBoardDrop(zone, e, id); return; }
           var sc=_bbSharedInCards.filter(function(x){ return x.id===id; })[0];
           if(sc){ _bbHandleSharedInDrop(zone, e, id); return; }
+          // Sept 7 2026 fix (Larry) -- the exact same missed-source gap
+          // as the open/edit lookups above, just on the drop side: a
+          // rolled-up card dragged between columns used to hit this
+          // same dead end and silently do nothing (the very thing that
+          // made a NEW-column rollup card look stuck -- no visible way
+          // to move it into a priority column at all).
+          var rc=_bbRollupCards.filter(function(x){ return x.id===id; })[0];
+          if(rc){ _bbHandleRollupDrop(zone, id, rc); return; }
           return;
         }
         if(c){
@@ -4906,10 +5000,17 @@
   // already filters archived ones.
   function doTrashCard(){
     var id=_bbTrashPendingId;
-    var c=_bbCardsList().filter(function(x){ return x.id===id; })[0];
+    // Sept 7 2026 fix (Larry: "TRASH a NEW BB card is NOT working any
+    // more") -- same missed-source gap as the open/edit/drag lookups
+    // above, on the actual trash action itself: a card dragged straight
+    // to the trash can (the normal way in, especially now that opening
+    // a card first is no longer required) is very often a merged card,
+    // and this used to only ever look at _bbCardsList().
+    var c=_bbFindCardAnywhere(id);
     if(c){
       var ts=new Date().toISOString();
       c.trashedAt=ts;
+      _bbPersistMergedCardById(id);
       _bbPushAction({
         label:'Delete',
         undo: function(){ _bbApplyTrashState(id, null); },
@@ -6220,6 +6321,7 @@
             // through to its own board (board_id never changes here),
             // same as any other foreign card.
             c._foreign=true;
+            c._homeBoardId=rb.id;
             c._homeBoardName=rb.name||'(untitled)';
             return c;
           }));
