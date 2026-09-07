@@ -3984,16 +3984,21 @@
       var eyebrow=b.label?('<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a89a80;line-height:1.2">'+b.label.replace(/</g,'&lt;')+'</div>'):'';
       return '<div class="sb-hdr-vitem'+cur+'" data-pid="'+b.id+'"><div>'+mark+(b.text_content||'(untitled)')+'</div>'+eyebrow+'</div>';
     }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
-    // PROJECTS, pinned above the real projects, Sept 6 2026 -- Larry:
+    // MASTER, pinned above the real projects, Sept 6 2026 -- Larry:
     // "What used to be Idea Storyboards is now PROJECTS and should top
     // the projects list." Its own row, own click wiring (below) -- not
     // part of allTop, so it skips the Rename/Archive/Delete quick menu
     // every real project gets on double-click (there's nothing to
     // rename/archive/delete here, it's the shared root every project
     // sits under).
+    // Sept 7 2026, Larry: relabeled MASTER, matching the plain PROJECT
+    // eyebrow and the caret dropdown's own pinned root row (see this
+    // file's other Sept 7 notes) -- the "+ NEW PROJECT" add control
+    // further down in this same popup is untouched, still there exactly
+    // as before, this only changes the pinned row's own displayed word.
     var isAtRoot=_sboardIdeaStoryboardsRootId && String(currentProjectId)===String(_sboardIdeaStoryboardsRootId);
     var pinnedRow=_sboardIdeaStoryboardsRootId
-      ? '<div class="sb-hdr-vitem'+(isAtRoot?' current':'')+'" id="sb-proj-pinned-root" style="font-weight:700;border-bottom:1px solid #e0dcd0;margin-bottom:4px;padding-bottom:8px"><div>'+(isAtRoot?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'')+'PROJECTS</div></div>'
+      ? '<div class="sb-hdr-vitem'+(isAtRoot?' current':'')+'" id="sb-proj-pinned-root" style="font-weight:700;border-bottom:1px solid #e0dcd0;margin-bottom:4px;padding-bottom:8px"><div>'+(isAtRoot?'<span style="color:#0F6E56;margin-right:4px">✓</span>':'')+'MASTER</div></div>'
       : '';
     rows=pinnedRow+rows;
     var groupRows=''
