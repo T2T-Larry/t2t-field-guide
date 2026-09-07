@@ -3036,11 +3036,16 @@
       // the projects list." Pinned back above the real projects, same
       // spot the old "Idea Storyboards" row held before it was pulled
       // earlier today -- just renamed and re-added.
+      // Sept 7 2026, Larry: relabeled MASTER, matching the PROJECT
+      // eyebrow's own root label and the Briefing Board's equivalent
+      // pinned dropdown row (see briefing-board.js's own Sept 7 note) --
+      // this is the "go to root" link inside PROJECT's dropdown, same
+      // word PROJECT itself now reads at rest when standing at root.
       if(_sboardIdeaStoryboardsRootId){
         var pinned=document.createElement('div');
         pinned.className='sc-cdrop-row';
         pinned.style.fontWeight='700';
-        pinned.textContent='PROJECTS';
+        pinned.textContent='MASTER';
         pinned.addEventListener('click', function(ev){
           ev.stopPropagation();
           menu.hidden=true;
