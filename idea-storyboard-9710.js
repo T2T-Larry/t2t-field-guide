@@ -629,7 +629,14 @@
         +'.sc-dotted-remove-btn{border-color:#e08a7d;color:#e08a7d}'
         +'.sc-dotted-remove-btn:hover{background:rgba(224,138,125,.15);border-color:#e08a7d;color:#e08a7d}'
         +'#b-sc-purpose{width:100%;box-sizing:border-box}'
-        +'#sc-topic-box{display:inline-block;max-width:calc(320px * (0.6 + 0.4 * var(--fg-text-scale,1)));box-sizing:border-box;white-space:normal;word-wrap:break-word;position:relative;z-index:1}'
+        // Sept 8 2026, Larry: "DREAM PHASE should display on one line" --
+        // this is the actual TOPIC title box (not the smaller renderGroup
+        // column pill), and this older rule was still allowing it to wrap
+        // (white-space:normal, no ellipsis, a narrower max-width formula)
+        // even after the Sept 6 pass above matched its size/shape to BB's
+        // bb-topic-hit. Matched the rest of the way now: same nowrap +
+        // ellipsis, same max-width formula BB's own box uses.
+        +'#sc-topic-box{display:inline-block;max-width:calc(360px * var(--fg-text-scale,1));box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
         +'.sc-add-header-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
         +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
