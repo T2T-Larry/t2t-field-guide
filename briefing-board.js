@@ -7347,7 +7347,14 @@
         if(k.value==='SHARE'){ _bbShowToast('Share Storyboard coming soon'); return; }
         if(k.value==='IDEA' || k.value==='PLAN'){
           var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-          var projectId=board && board.storyboard_project_id;
+          // Sept 8 2026 fix -- one-board model, same reasoning as
+          // _bbRenderTopicField (line ~6387): board.storyboard_project_id
+          // is always the account root now, so in single-board mode this
+          // must read whichever project is actually being viewed right
+          // now (_bbProjectFilter()) instead of the fixed board-row value,
+          // or IDEA/PLAN always dropped you back at the root project
+          // regardless of which header's Briefing Board you were on.
+          var projectId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
           if(!projectId){ _bbShowToast('This board isn’t linked to a project.'); return; }
           if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
             window.T2TStoryboard.jumpToProjectKind(projectId, k.value);
