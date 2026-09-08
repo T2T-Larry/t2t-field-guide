@@ -1049,7 +1049,12 @@
       // Close -- purely a visual overlay, same as Briefing Board already
       // does.
       +'<div id="sc-logo-anchor" style="position:relative;width:30px;height:30px;flex-shrink:0">'
-      +'<div id="sc-logo-slot" style="position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">'
+      // visibility:hidden, Sept 8 2026 -- same hard-reset flash fix as
+      // Briefing Board's bb-logo-slot (see that CSS rule's own comment,
+      // briefing-board.js): stays hidden until T2TLogo.render applies
+      // the traveler's real saved position and reveals it, so this slot
+      // is never painted at its untouched corner first.
+      +'<div id="sc-logo-slot" style="position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;visibility:hidden">'
       +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">'
       +'<div class="sc-logo-eyebrow-onlogo" id="sc-logo-eyebrow-onlogo">Logo</div>'
       +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'

@@ -427,6 +427,21 @@
     if(cfg.positionAnchor) cfg.positionAnchor();
     var dx=(row && row.logo_dx)||0, dy=(row && row.logo_dy)||0;
     slot.style.transform=(dx||dy)?('translate('+dx+'px,'+dy+'px)'):'';
+    // Hard-reset flash fix, Sept 8 2026 -- Larry: "LOGO moves on its own
+    // when changing board types. LOGO must stay where traveler put it."
+    // Traced to a hard reset specifically, not a bug in the saved
+    // position itself: the header markup below plants this slot at its
+    // untouched, no-transform corner the instant the page's HTML goes
+    // up, then this render() call -- the one that actually applies the
+    // traveler's saved logo_dx/logo_dy -- only runs once the board's row
+    // finishes loading from Supabase. On a normal in-app screen switch
+    // that gap is one JS tick, invisible; on a hard reset (cold caches,
+    // a real network round trip) it's long enough to see the logo sit at
+    // its default spot and then jump to the dragged one. The slot now
+    // starts hidden (see its CSS/markup) and only ever becomes visible
+    // here, right after its real width/height/transform are already
+    // set, so nothing is ever painted before it's in the right place.
+    slot.style.visibility='visible';
     if(img){
       img.src=url||'';
       img.style.display=url?'block':'none';

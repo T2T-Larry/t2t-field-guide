@@ -2226,7 +2226,12 @@
 
   async function _bbInitBoardsAndData(){
     var uid=await _bbCurrentUserId();
-    if(!uid){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    // _bbRenderLogo() added to every early-exit branch below, Sept 8
+    // 2026: the logo slot now starts hidden (see .bb-logo-slot's own
+    // comment) and only ever becomes visible from inside that call, so
+    // any path that skips it entirely would leave the slot invisible
+    // for the rest of the session instead of just showing no logo/(+).
+    if(!uid){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); _bbRenderLogo(); return; }
     // Aug 3 2026 -- Signal Flags are traveler-wide now (merged with the
     // Storyboard's shared library), so they load once here rather than
     // per board switch. _bbEnsureKeyLibraryLoaded guards itself, so a
@@ -2287,7 +2292,7 @@
       await _bbRefreshRootHeaderIdSet();
     }catch(e){
       console.error('Briefing Board: could not load boards, staying local', e);
-      _bbCurrentBoardId=null; _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard();
+      _bbCurrentBoardId=null; _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); _bbRenderLogo();
       return;
     }
     if(!_bbBoards.length){
@@ -2296,7 +2301,7 @@
         if(!ins.error && ins.data) _bbBoards=[ins.data];
       }catch(e){}
     }
-    if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); _bbRenderLogo(); return; }
     // Sept 8 2026 -- T2TData's own single-board-mode check has no board
     // table to query itself, so this file (the one that actually loaded
     // _bbBoards, retired rows already excluded above) reports the count
@@ -3541,7 +3546,13 @@
       // fields instead of pushing them -- same tradeoff Larry already
       // accepted for it covering the LOGO eyebrow above it.
       +'.bb-logo-anchor{position:relative;width:30px;height:30px;flex-shrink:0}'
-      +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      // visibility:hidden, Sept 8 2026 -- starts hidden and stays that
+      // way until T2TLogo.render (idea-media-shared.js) sets it visible
+      // right after applying the traveler's saved logo_dx/logo_dy, so a
+      // hard reset never shows this slot sitting at its untouched corner
+      // before jumping to wherever it was actually dragged. See that
+      // render() function's own Sept 8 2026 comment for the full story.
+      +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;visibility:hidden}'
       +'.bb-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;border-radius:7px}'
       +'.bb-logo-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:4px;background:var(--bb-accent);border:2px solid #fff;cursor:nwse-resize;display:none;z-index:3;touch-action:none}'
       // LOGO eyebrow, on-logo + peek-on-hover, Aug 30 2026 (corrected
