@@ -2744,6 +2744,21 @@
       // Self-scoping, matching every existing root: a root's own
       // project_id and topic_scope_id both point at its own id.
       await _sb.from('ideas').update({project_id:ins.data.id, topic_scope_id:ins.data.id}).eq('id',ins.data.id);
+      // Sept 8 2026 -- one-board model: a traveler who's been through the
+      // Session 275 merge has exactly one true Briefing Board, and it
+      // must never grow a second, un-retired one just because a new
+      // project got added here. Larry: "Adding a new project should
+      // automatically add a HEADER to the PROJECTS idea board" -- a
+      // Header only. The mirror insert below (Aug 16 2026, pre-single-
+      // board) is skipped entirely for a single-board traveler; this is
+      // also the confirmed root cause of the stray duplicate "Wish Tank"
+      // Header found live on Sept 8 (created the same second as this
+      // traveler's own PROJECTS root, with zero cards behind it --
+      // repaired directly in the data, this stops it happening again).
+      // Multi-board travelers (Rachel/Kelly Arnold/LifeWave, still on
+      // the old per-project-board world) keep the mirror exactly as
+      // before.
+      if(!(window.T2TData && T2TData.isSingleBoardMode && T2TData.isSingleBoardMode())){
       // Aug 16 2026 -- mirror onto the Briefing Board the moment a board
       // is created here too, linked by briefing_board_id, so ownership/
       // PROJECT/adoption always resolve from one shared record no
@@ -2777,6 +2792,7 @@
           _sboardShowToast('Project saved, but its Briefing Board could not be created -- tell Claude so it can add one.');
         }
       }catch(e){ console.warn('Idea Board: could not mirror new board onto the Briefing Board', e); _sboardShowToast('Project saved, but its Briefing Board could not be created -- tell Claude so it can add one.'); }
+      }
       await _sboardLoadMyRoots(true);
       return ins.data.id;
     }catch(e){

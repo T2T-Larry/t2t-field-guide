@@ -2054,6 +2054,19 @@
   // isn't cached yet -- same "pending" shape _bbClimbToProjectRoot
   // itself returns -- so the caller can re-render once it's warm.
   function _bbCardProjectValue(c, homeBoardId){
+    // One-board model, Sept 8 2026 -- the board-climb logic below answers
+    // "which project does this card's BOARD belong to," which meant
+    // something when every project had its own board; on the one shared
+    // MASTER board it can't tell projects apart at all any more. A
+    // single-board traveler's real answer already lives on the card
+    // itself (project_header_id, written once at creation or by hand
+    // through this same field -- see _bbSetCardProjectHeader below), so
+    // read that directly instead of climbing a board link that no
+    // longer means anything.
+    if(_bbSingleBoardMode()){
+      if(!c.projectHeaderId) return {value:null, pendingHeaderId:null, fallbackName:null};
+      return {value:'hdr:'+c.projectHeaderId, pendingHeaderId:null, fallbackName:_bbProjectNameById[c.projectHeaderId]||null};
+    }
     if(c.sourceHeaderId){
       var climb=_bbClimbToProjectRoot(c.sourceHeaderId);
       if(climb.rootHeaderId) return {value:'hdr:'+climb.rootHeaderId, pendingHeaderId:null, fallbackName:climb.rootName};
@@ -2114,6 +2127,26 @@
   // to a real board, then hands off to _bbMoveCardObjectToBoard -- the
   // ordinary path when Larry picks an existing project from the
   // dropdown (see _bbRenderCardProjectField's onSelect below).
+  // One-board model, Sept 8 2026 -- the actual reassignment behind the
+  // card-back Project field for a single-board traveler. Unlike
+  // _bbMoveCardToProject below (which moves a card onto a different
+  // BOARD -- meaningless once there's only one true board), this is the
+  // one narrow project_header_id write T2TData.stampCardProject already
+  // exposes for a card's one-time creation stamp, reused here for an
+  // explicit hand reassignment through this field. Never rides on the
+  // whole-card save (_bbCardToRow already excludes this column), and
+  // never touches source_header_id/topic_label -- picking a project by
+  // hand here is independent of whatever topic a header-linked card is
+  // still standing in for.
+  async function _bbSetCardProjectHeader(cardId, headerId){
+    var c=_bbFindCardAnywhere(cardId);
+    if(!c || !headerId) return;
+    await T2TData.stampCardProject('briefing_cards', cardId, headerId);
+    c.projectHeaderId=headerId;
+    closeCardDetail();
+    renderBoard();
+  }
+
   async function _bbMoveCardToProject(cardId, value){
     var v=String(value), targetBoard=null;
     if(v.indexOf('hdr:')===0) targetBoard=await _bbResolveOrCreateBoardForHeader(v.slice(4));
@@ -2154,6 +2187,28 @@
     if(_bbOpenCardId!==c.id) return; // a different card opened while this was loading
     if(pv.value && !opts.some(function(o){ return o.value===pv.value; }) && pv.fallbackName){
       opts=opts.concat([{value:pv.value, label:pv.fallbackName}]);
+    }
+    // One-board model, Sept 8 2026 -- single-board travelers get the
+    // dedicated _bbSetCardProjectHeader path (one narrow write, no
+    // board involved); everyone else keeps the original Sept 7 move-
+    // to-a-different-board behavior untouched.
+    if(_bbSingleBoardMode()){
+      _bbRenderDropdown('bb-d-project-trigger','bb-d-project-menu', opts, pv.value, function(value){
+        var v=String(value);
+        if(v.indexOf('hdr:')===0) _bbSetCardProjectHeader(c.id, v.slice(4));
+      }, async function(){
+        var name=window.prompt('Name for the new project:');
+        if(!name || !name.trim()) return;
+        var rootId=_bbIdeaStoryboardsRootId;
+        if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
+        if(!rootId){ window.alert('Could not add a project right now. Try again in a moment.'); return; }
+        var hdr;
+        try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
+        catch(e){ console.error('Briefing Board: could not add project header', e); window.alert('Could not add the project "'+name.trim()+'". Try again.'); return; }
+        _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
+        await _bbSetCardProjectHeader(c.id, hdr.id);
+      }, 'Add a project');
+      return;
     }
     _bbRenderDropdown('bb-d-project-trigger','bb-d-project-menu', opts, pv.value, function(value){
       _bbMoveCardToProject(c.id, value);
@@ -2435,6 +2490,13 @@
     });
     var addRow=document.createElement('div');
     addRow.className='bb-cdrop-addrow';
+    // Sept 8 2026 -- defensive: a caller passing onAdd as null (meaning
+    // "no + here") used to still get this button built and wired, which
+    // threw the moment anyone actually clicked it (onAdd is not a
+    // function). Every known caller now always passes a real function,
+    // but this stays cheap insurance rather than a second silent way
+    // for a future "goes inert" caller to crash the same way.
+    if(onAdd){
     var addBtn=document.createElement('button');
     addBtn.type='button';
     addBtn.className='bb-dotted-add-btn';
@@ -2446,6 +2508,7 @@
       onAdd();
     });
     addRow.appendChild(addBtn);
+    }
     if(onRemove){
       var removeBtn=document.createElement('button');
       removeBtn.type='button';
@@ -2796,12 +2859,31 @@
       } else if(v.indexOf('brd:')===0){
         await _bbSwitchToBoard(v.slice(4));
       }
-    }, _bbSingleBoardMode() ? null : async function(){
+    }, _bbSingleBoardMode() ? async function(){
+      // One-board model, Sept 8 2026 -- Larry: "The list should have a
+      // (+) at the bottom of the list for a new project entry, no
+      // matter where you see this list. Adding a new project should
+      // automatically add a HEADER to the PROJECTS idea board." No new
+      // board row here (there's only ever the one true board in this
+      // world) -- just a new Header under PROJECTS, then land straight
+      // on it, same as picking any other project from this same menu.
+      var name=window.prompt('Name for the new project:');
+      if(!name || !name.trim()) return;
+      var rootId=_bbIdeaStoryboardsRootId;
+      if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
+      if(!rootId){ window.alert('Could not add a project right now. Try again in a moment.'); return; }
+      var hdr;
+      try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
+      catch(e){ console.error('Briefing Board: could not add project header', e); window.alert('Could not add the project "'+name.trim()+'". Try again.'); return; }
+      _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
+      var board=await _bbResolveOrCreateBoardForHeader(hdr.id);
+      if(board) await _bbSwitchToBoard(board.id);
+    } : async function(){
       var typeLabel=_bbTypeLabel(_bbActiveBoardType());
       var name=window.prompt('Name for the new '+typeLabel+' board:');
       if(!name || !name.trim()) return;
       await _bbCreateBoard(name.trim(), _bbActiveBoardType());
-    }, 'Add a board', (canRemoveBoard && !_bbSingleBoardMode()) ? function(){
+    }, _bbSingleBoardMode() ? 'Add a project' : 'Add a board', (canRemoveBoard && !_bbSingleBoardMode()) ? function(){
       openProjectHub(currentBoardForRemove.id);
     } : null, 'Remove this project');
     if(pickerFallbackName){
