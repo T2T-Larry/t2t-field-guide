@@ -3051,10 +3051,20 @@
     var rootId=_sboardIdeaStoryboardsRootId;
     if(!rootId) return [];
     var RESERVED={'NEW':1,'New Additions':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+    // Sept 8 2026, Larry: "Idea Board PROJECT LIST is not alphabetical."
+    // This used to sort by _sboardBySortOrder (on-board tile order), which
+    // made sense back when the arrow's own comment described the goal as
+    // "the order they appear under the Idea Storyboards TOPIC" -- but
+    // every other project list on the account (openProjectSwitcher just
+    // above, and briefing-board.js's own _bbProjectPickerOptions/
+    // _bbProjectPickerOptions comment: "sorted the same alphabetical way
+    // that popup already uses") is alphabetical, so this was the one
+    // holdout still reading on-board order. Matched to the same
+    // case-insensitive localeCompare every other project picker uses.
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
       .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(rootId) && !RESERVED[r.text_content]; })
-      .sort(_sboardBySortOrder);
+      .sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
   }
   function _sboardWireProjectHeaderDropdown(){
     var trigger=document.getElementById('sc-project-caret'), menu=document.getElementById('sc-title-menu');
