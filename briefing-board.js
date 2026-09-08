@@ -2982,7 +2982,7 @@
     slotId:'bb-logo-slot', imgId:'bb-logo-img', addBtnId:'bb-logo-add-btn',
     inputId:'bb-logo-input', resizeHandleId:'bb-logo-resize-handle',
     eyebrowTopId:'bb-logo-eyebrow', eyebrowOnLogoId:'bb-logo-eyebrow-onlogo',
-    minSize:20, maxSize:90, defaultSize:30, minFrameFromCrop:10,
+    minSize:IDBand.TOKENS.logo.minSize, maxSize:IDBand.TOKENS.logo.maxSize, defaultSize:IDBand.TOKENS.logo.defaultSize, minFrameFromCrop:10,
     uploadPrefix:'bb-logo', subjectLabel:'board',
     showToast:_bbShowToast,
     getRow:function(){ return _bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0]; },
@@ -3637,7 +3637,7 @@
       // separate arrow button beside PROJECT's label, matching the Idea
       // Board's own sc-project-caret). Width 18->24px, glyph 9->14px;
       // height (30px) untouched since that already matches the row.
-      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:24px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(14px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:'+IDBand.TOKENS.pickerCaret.width+'px;height:'+IDBand.TOKENS.pickerCaret.height+'px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc('+IDBand.TOKENS.pickerCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-parent-caret:hover{opacity:1}'
       // Centered, Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-trigger.
       +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;width:100%}'
@@ -3656,8 +3656,8 @@
       // stacking context no matter its own z-index, so board content
       // underneath painted over it. Living as a direct child of <body>
       // with a real viewport position escapes that.
-      +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
-      +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
+      +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:'+IDBand.TOKENS.dropdownMenu.radius+'px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:'+IDBand.TOKENS.dropdownMenu.zIndex+';padding:'+IDBand.TOKENS.dropdownMenu.padding+'px;box-sizing:border-box;max-height:'+IDBand.TOKENS.dropdownMenu.maxHeight+'px;overflow-y:auto;min-width:'+IDBand.TOKENS.dropdownMenu.minWidth+'px}'
+      +'.bb-cdrop-row{padding:'+IDBand.TOKENS.dropdownRow.padding+';font-family:var(--bb-body-font);font-size:calc('+IDBand.TOKENS.dropdownRow.fontSize+'px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:'+IDBand.TOKENS.dropdownRow.radius+'px;cursor:pointer;white-space:nowrap}'
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
       +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
@@ -3713,7 +3713,7 @@
       // white-space:nowrap so this can never wrap again regardless of
       // available width (belt-and-suspenders alongside the width:max-content
       // fix on bb-mh-group-center above).
-      +'.bb-mh{color:var(--bb-ink);font-size:calc(36px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25);white-space:nowrap}'
+      +'.bb-mh{color:var(--bb-ink);font-size:calc('+IDBand.TOKENS.boardKindLabel.fontSize+'px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25);white-space:nowrap}'
       // TOPIC, Sept 5 2026 -- Larry: "concept is perfect. Raise size of
       // TOPIC to match or exceed Briefing Board" -- then "delete TOPIC
       // eyebrow" (the plain small label, gone from the markup above).
@@ -3726,8 +3726,8 @@
       // flat text like the title, since Idea Board's own TOPIC box
       // (#sc-topic-box, idea-storyboard-9710.js) is a bordered box too --
       // this is that same idea sized for BB's header.
-      +'.bb-topic-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:2px 16px;box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc(44px * var(--fg-text-scale,1));line-height:1.15;cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:34px;align-self:stretch;cursor:pointer;font-size:calc(18px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      +'.bb-topic-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));line-height:'+IDBand.TOKENS.topicBox.lineHeight+';cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:'+IDBand.TOKENS.topicCaret.width+'px;align-self:stretch;cursor:pointer;font-size:calc('+IDBand.TOKENS.topicCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-topic-caret:hover{opacity:.75}'
       // Sept 6 2026 -- the new up-arrow (bb-topic-caret-up, shares this
       // same class) goes inert once TOPIC is already sitting at a

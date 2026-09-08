@@ -185,7 +185,7 @@
     // project's already-saved logo_w/logo_h is untouched by this (only
     // the future resize ceiling/floor and the default for a brand-new
     // upload change), so nothing already on screen jumps size.
-    minSize:20, maxSize:90, defaultSize:30, minFrameFromCrop:12,
+    minSize:IDBand.TOKENS.logo.minSize, maxSize:IDBand.TOKENS.logo.maxSize, defaultSize:IDBand.TOKENS.logo.defaultSize, minFrameFromCrop:12,
     uploadPrefix:'logo', subjectLabel:'project',
     showToast:_sboardShowToast,
     getRow:function(){ return _sboardCurrentRootRow(); },
@@ -310,7 +310,7 @@
         // (other than color)" -- this box was still visibly smaller and
         // square-cornered next to it. Background/border/text stay this
         // board's own blue, only shape and type match now.
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:8px;padding:2px 16px;font-size:calc(44px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:1.15;color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -519,8 +519,8 @@
         // context no matter how high its own z-index went. Living as a
         // direct child of <body> with a real viewport position escapes
         // that entirely.
-        +'.sc-cdrop-menu{position:fixed;background:#1a3a5c;border:1px solid rgba(255,255,255,.24);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
-        +'.sc-cdrop-row{padding:6px 10px;font-size:calc(11px * var(--fg-text-scale,1));color:#fff;border-radius:6px;cursor:pointer;white-space:nowrap}'
+        +'.sc-cdrop-menu{position:fixed;background:#1a3a5c;border:1px solid rgba(255,255,255,.24);border-radius:'+IDBand.TOKENS.dropdownMenu.radius+'px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:'+IDBand.TOKENS.dropdownMenu.zIndex+';padding:'+IDBand.TOKENS.dropdownMenu.padding+'px;box-sizing:border-box;max-height:'+IDBand.TOKENS.dropdownMenu.maxHeight+'px;overflow-y:auto;min-width:'+IDBand.TOKENS.dropdownMenu.minWidth+'px}'
+        +'.sc-cdrop-row{padding:'+IDBand.TOKENS.dropdownRow.padding+';font-size:calc('+IDBand.TOKENS.dropdownRow.fontSize+'px * var(--fg-text-scale,1));color:#fff;border-radius:'+IDBand.TOKENS.dropdownRow.radius+'px;cursor:pointer;white-space:nowrap}'
         +'.sc-cdrop-row:hover{background:rgba(255,255,255,.14)}'
         +'.sc-cdrop-row.active{background:rgba(255,255,255,.1);font-weight:700}'
         +'.sc-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}'
@@ -594,7 +594,7 @@
         // chip (bb-parent-caret, briefing-board.js: 24px wide, 14px
         // glyph) -- this one read noticeably smaller/harder to tap next
         // to it. Same "make all ID bands exactly the same look" pass.
-        +'.sc-project-caret{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:6px;width:24px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(14px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+        +'.sc-project-caret{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:6px;width:'+IDBand.TOKENS.pickerCaret.width+'px;height:'+IDBand.TOKENS.pickerCaret.height+'px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc('+IDBand.TOKENS.pickerCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
         +'.sc-project-caret:hover{opacity:1}'
         // TOPIC's own up/down arrows, Sept 6 2026 -- Larry: "UP and DOWN
         // ARROWS, just like on BB." Bigger than the small PROJECT-style
@@ -614,7 +614,7 @@
         // this board uses -- explicitly asked for here in black/white
         // instead of BB's brown, a deliberate one-off rather than this
         // board's usual ice-blue-on-navy palette.
-        +'.sc-topic-caret{background:#fff;border:2px solid #000;color:#000;border-radius:8px;padding:0;box-sizing:border-box;width:34px;align-self:stretch;cursor:pointer;opacity:1;font-size:calc(18px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+        +'.sc-topic-caret{background:#fff;border:2px solid #000;color:#000;border-radius:8px;padding:0;box-sizing:border-box;width:'+IDBand.TOKENS.topicCaret.width+'px;align-self:stretch;cursor:pointer;opacity:1;font-size:calc('+IDBand.TOKENS.topicCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
         +'.sc-topic-caret:hover{opacity:.75}'
         +'.sc-topic-caret:disabled{opacity:.35;cursor:default}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
@@ -912,7 +912,7 @@
       // 42px -> 36px") -- part of "make all ID bands exactly the same
       // look (other than color)"; this one was the last board-kind
       // label still at the old size.
-      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(36px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
+      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc('+IDBand.TOKENS.boardKindLabel.fontSize+'px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
       +'<div style="position:absolute;top:10px;left:16px;z-index:3;display:flex;flex-direction:column;align-items:center">'
       // Traveler name, Sept 5 2026 -- Larry: "delete the nametag -- don't
