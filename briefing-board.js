@@ -726,6 +726,15 @@
   var _bbHiddenTypesCache = [];
   var _bbHiddenTypesLoaded = false;
   var _bbBoards = [];
+  // Project-name lookup, Sept 8 2026 -- the card eyebrow needs a real
+  // project name for cards that carry a projectHeaderId but no
+  // topicLabel (see the eyebrow logic in renderBoard below for why).
+  // Populated once in _bbInitBoardsAndData from T2TData.fetchAllHeaders
+  // (same header rows the PROJECT tree itself is built from), keyed by
+  // header id -> its own text_content. Same "resolve once at init,
+  // self-heals on next reload" idiom as _bbIdeaStoryboardsRootId and
+  // _bbRelationsCache just below.
+  var _bbProjectNameById = {};
   // Adoption edges, Aug 16 2026 -- Larry opened T2T and expected
   // Field Guide and Professional History to show in the PROJECT
   // list underneath it; they didn't, because that list only ever
@@ -2193,6 +2202,16 @@
       // healing/idempotent per that function's own doc comment.
       try{ _bbIdeaStoryboardsRootId = await T2TData.ensureIdeaStoryboardsRoot(); }
       catch(e){ console.warn('Briefing Board: could not resolve the Idea Storyboards root', e); }
+      // Sept 8 2026 -- see _bbProjectNameById's own comment above: this
+      // is what lets a card's eyebrow name its actual project (Field
+      // Guide, Wish Tank, ...) instead of falling back to the one
+      // shared MASTER board's name for every card that has no
+      // topicLabel of its own.
+      try{
+        var _hdrs=await T2TData.fetchAllHeaders();
+        var _nameMap={}; (_hdrs||[]).forEach(function(h){ _nameMap[h.id]=h.text_content||''; });
+        _bbProjectNameById=_nameMap;
+      }catch(e){ console.warn('Briefing Board: could not load project names for card eyebrows', e); }
       // Aug 16 2026 -- adopted parent-child edges, so the PROJECT
       // picker can show a board's children alongside its type-mates.
       // RLS already scopes this to relations touching a board this
@@ -4811,7 +4830,18 @@
         // -- foreignBadge already names a foreign card's home board, so
         // this line only needs the fallback for cards that actually live
         // here.
-        var topicEyebrowText = (c.topicLabel||'').trim() || (c._foreign ? '' : _bbHomeBoardName);
+        // One-board model fix, Sept 8 2026 -- since Session 275 put every
+        // project onto one shared board literally named "PROJECTS," the
+        // old fallback (home board name) made every card missing a
+        // topicLabel show the same generic "PROJECTS" eyebrow, no matter
+        // which real project it belonged to -- backwards from the whole
+        // point of an eyebrow. Falls back to the card's own project name
+        // (via projectHeaderId, resolved through _bbProjectNameById)
+        // first; only a card with no project assigned at all falls
+        // through to the shared board's name now.
+        var topicEyebrowText = (c.topicLabel||'').trim()
+          || (c.projectHeaderId && _bbProjectNameById[c.projectHeaderId])
+          || (c._foreign ? '' : _bbHomeBoardName);
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
