@@ -590,6 +590,71 @@
     return chain;
   }
 
+  /* ── Project Filter (single-board model) ──
+     Sept 8 2026, Larry: "PROJECT FILTER crosses all boards and may have
+     new features of its own in the future." Moved here from
+     briefing-board.js for exactly that reason -- once a traveler has
+     exactly one real board left (see the retired column on
+     briefing_boards), "switching boards" is replaced by filtering that
+     one board's cards down to a project, and that idea belongs to every
+     board kind this app has, not just Briefing Board. This is Tool code:
+     generic state + persistence only. Each board file keeps whatever
+     reaction to the filter is specific to its own screen (Briefing
+     Board's TOPIC eyebrow, for instance) in its own file.
+
+     isSingleBoardMode() answers off a count the board file itself
+     reports via setBoardCount() right after it loads its own boards --
+     header-data.js has no board table of its own to query, so it can't
+     discover this independently. */
+
+  var _projectFilterBoardCount = 0;
+  var _projectFilterCurrent = null;
+
+  function setBoardCount(n){ _projectFilterBoardCount = n||0; }
+  function isSingleBoardMode(){ return _projectFilterBoardCount===1; }
+  function getProjectFilter(){ return _projectFilterCurrent; }
+
+  // normalized: null means "no restriction" (the account/master root --
+  // every task, every project); a Header id means "only this project's
+  // own cards," exact-match, never a descendant walk -- same "the only
+  // cards visible at any layer are those pertaining to that layer" rule
+  // Design Notes already locked for every other layer. rootHeaderId is
+  // passed in by the caller (each board kind resolves its own root via
+  // ensureIdeaStoryboardsRoot) rather than assumed here.
+  async function setProjectFilter(headerId, rootHeaderId){
+    var normalized = (!headerId || (rootHeaderId && headerId===rootHeaderId)) ? null : headerId;
+    _projectFilterCurrent = normalized;
+    try{ sessionStorage.setItem('bbCurrentProjectHeaderId', normalized||''); }catch(e){}
+    var sb=_sb(); if(!sb) return normalized;
+    try{
+      var u=await _currentUser();
+      if(u) await sb.from('profiles').update({active_project_header_id: normalized}).eq('user_id', u.id);
+    }catch(e){ console.error('T2TData: could not persist the active project filter', e); }
+    return normalized;
+  }
+
+  // projectField defaults to 'projectHeaderId' (Briefing Board's own row
+  // shape); pass a different name if another board kind's card objects
+  // tag their project under a different key.
+  function filterCardsByProject(cards, projectField){
+    if(!isSingleBoardMode() || !_projectFilterCurrent || !cards) return cards;
+    var want=_projectFilterCurrent, field=projectField||'projectHeaderId';
+    return cards.filter(function(c){ return c[field]===want; });
+  }
+
+  // The one-time, narrow write that tags a newly-created card with its
+  // project. Deliberately never folded into a whole-row save -- see
+  // projectHeaderId's own comment in each board file's row-mapping code
+  // for why viewing a project must never rewrite its cards' assignment.
+  // table names which card table to stamp (e.g. 'briefing_cards'), since
+  // different board kinds keep their cards in different tables.
+  async function stampCardProject(table, cardId, headerId){
+    if(!table || !cardId || !headerId) return;
+    var sb=_sb(); if(!sb) return;
+    try{ await sb.from(table).update({project_header_id:headerId}).eq('id',cardId); }
+    catch(e){ console.error('T2TData: could not tag the new card with its project', e); }
+  }
+
   window.T2TData = {
     RESERVED_HEADERS: RESERVED_HEADERS,
     fetchAllHeaders: fetchAllHeaders,
@@ -615,7 +680,13 @@
     ensureWishTank: ensureWishTank,
     getLastInputTopic: getLastInputTopic,
     setLastInputTopic: setLastInputTopic,
-    ancestorChain: ancestorChain
+    ancestorChain: ancestorChain,
+    setBoardCount: setBoardCount,
+    isSingleBoardMode: isSingleBoardMode,
+    getProjectFilter: getProjectFilter,
+    setProjectFilter: setProjectFilter,
+    filterCardsByProject: filterCardsByProject,
+    stampCardProject: stampCardProject
   };
 
 })();

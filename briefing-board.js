@@ -1022,6 +1022,16 @@
       // card is merged onto a different board (Personal BB read-through).
       sourceHeaderId: row.source_header_id || null,
       topicLabel: row.topic_label || '',
+      // One-board model, Sept 8 2026 -- which project (Header) this task
+      // belongs to; null means general/unassigned, visible only at
+      // MASTER root. Deliberately left OUT of _bbCardToRow's own payload
+      // below (same treatment as sourceHeaderId/topicLabel just above,
+      // for the same reason): a routine whole-board save must never be
+      // able to move or clear a card's project assignment just because
+      // it happened to be open while something else on it was edited.
+      // It's set exactly once, at creation (_bbStampCardProject), via
+      // its own narrow single-column write.
+      projectHeaderId: row.project_header_id || null,
       // "Hide initials on front" (Aug 28 2026) -- see idea-storyboard-9710.js's
       // _csSetHideBadge comment: that shared function writes hide_primary_badge
       // straight to this card's own briefing_cards row, but this mapping was
@@ -1978,6 +1988,18 @@
   // Header, only the board that stands in for it here.
   async function _bbResolveOrCreateBoardForHeader(headerId){
     if(!headerId) return null;
+    // One-board model, Sept 8 2026 -- a traveler with one true board
+    // never gets a second one created for them: "landing on" a project
+    // Header just means filtering the one board down to it. Every call
+    // site above (deep-links, PROJECT's dropdown, TOPIC's own descend/
+    // ascend, jumpToTopic) already expects a board object back and
+    // passes it straight to _bbSwitchToBoard, so this still returns
+    // one -- the same one, every time -- with the actual navigation
+    // happening here instead, via _bbSetProjectFilter.
+    if(_bbSingleBoardMode()){
+      await _bbSetProjectFilter(headerId);
+      return _bbBoards[0];
+    }
     var existing=_bbBoards.filter(function(b){ return b.storyboard_project_id===headerId; })[0];
     if(existing) return existing;
     var sb=T().sb, uid=await _bbCurrentUserId();
@@ -2155,7 +2177,12 @@
       // this intentionally no longer filters to user_id=uid. Row Level
       // Security alone decides what comes back: this traveler's own boards,
       // plus any board someone has added them to.
-      var res=await sb.from('briefing_boards').select('*').order('created_at',{ascending:true});
+      // Sept 8 2026 -- retired boards (superseded once their cards were
+      // merged onto one real MASTER board, see the retired column's own
+      // migration comment) are excluded here, never fetched at all --
+      // this is what makes _bbSingleBoardMode()'s length check correct
+      // for a traveler who's been through that merge.
+      var res=await sb.from('briefing_boards').select('*').eq('retired', false).order('created_at',{ascending:true});
       if(res.error) throw res.error;
       _bbBoards=res.data||[];
       // Sept 6 2026 -- fetched once here, before _bbRefreshRootHeaderIdSet
@@ -2196,6 +2223,13 @@
       }catch(e){}
     }
     if(!_bbBoards.length){ _bbCards=_bbLoadLocal()||_bbSeed(); renderBoard(); return; }
+    // Sept 8 2026 -- T2TData's own single-board-mode check has no board
+    // table to query itself, so this file (the one that actually loaded
+    // _bbBoards, retired rows already excluded above) reports the count
+    // once here, right after it's settled. Every other board kind that
+    // adopts the same project-filter API reports its own count the same
+    // way.
+    T2TData.setBoardCount(_bbBoards.length);
     // TOPIC deep-link, Sept 5 2026 -- Larry: "if an Idea Board changes a
     // PROJECT or a level, jumping to the BB should instantly go to the
     // same project and level" -- then, same day: "what if TOPIC is
@@ -2268,6 +2302,19 @@
     var match=_bbBoards.filter(function(b){ return b.id===remembered; })[0];
     var fallback=_bbBoards.filter(function(b){ return /field guide/i.test(b.name||''); })[0] || _bbBoards[0];
     await _bbSwitchToBoard((match||fallback).id);
+    // One-board model, Sept 8 2026 -- active_briefing_board_id always
+    // resolves to the same one board here, so it can't tell "where was I"
+    // any more; active_project_header_id (this account's equivalent,
+    // read only after a fresh, non-deep-linked load) picks up that job.
+    if(_bbSingleBoardMode()){
+      try{
+        var pf=await sb.from('profiles').select('active_project_header_id').eq('user_id',uid).single();
+        if(!pf.error && pf.data && pf.data.active_project_header_id) await _bbSetProjectFilter(pf.data.active_project_header_id);
+        else await _bbSetProjectFilter(null);
+        await _bbRenderTopicField();
+        renderBoard();
+      }catch(e){ console.warn('Briefing Board: could not restore the active project filter', e); }
+    }
   }
 
   // Org context, Aug 16 2026 -- Larry: opening Field Guide flipped the
@@ -2686,8 +2733,20 @@
     // else. A personal board with no linked project selects on its own
     // 'brd:' option directly.
     var pickerCurrentId=null, pickerFallbackName=null;
-    if(currentBoardForRemove && currentBoardForRemove.storyboard_project_id){
-      var climb=_bbClimbToProjectRoot(currentBoardForRemove.storyboard_project_id);
+    // One-board model, Sept 8 2026 -- the master board's own
+    // storyboard_project_id is fixed at the account root, so it can't
+    // say which project is actually on screen any more; whichever
+    // project _bbProjectFilter() names (root included) is the real
+    // answer in that world.
+    var pickerHeaderId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (currentBoardForRemove && currentBoardForRemove.storyboard_project_id);
+    if(pickerHeaderId && _bbIdeaStoryboardsRootId && pickerHeaderId===_bbIdeaStoryboardsRootId){
+      // Standing at MASTER root itself -- _bbClimbToProjectRoot only
+      // knows how to climb UP FROM a real project to its root, and the
+      // root has no clusterId of its own to climb from, so it can't
+      // answer this one; match the pinned MASTER option directly.
+      pickerCurrentId='hdr:'+_bbIdeaStoryboardsRootId;
+    } else if(pickerHeaderId){
+      var climb=_bbClimbToProjectRoot(pickerHeaderId);
       if(climb.rootHeaderId){
         var key='hdr:'+climb.rootHeaderId;
         if(opts.some(function(o){ return o.value===key; })) pickerCurrentId=key;
@@ -2702,6 +2761,14 @@
     } else if(currentBoardForRemove){
       pickerCurrentId='brd:'+currentBoardForRemove.id;
     }
+    // One-board model, Sept 8 2026 -- "Add a board" and "Remove this
+    // project" both meant something else (a new/existing briefing_boards
+    // row) that no longer applies once there's only one true board. A
+    // new project now comes from adding a Header on the Idea Board
+    // itself (unrelated to this dropdown); removing "the project" here
+    // would mean removing the only board a single-board traveler has,
+    // which is never right. Both go inert in that world rather than
+    // quietly doing the wrong thing.
     _bbRenderDropdown('bb-board-trigger','bb-board-menu', opts, pickerCurrentId, async function(value){
       var v=String(value);
       if(v.indexOf('hdr:')===0){
@@ -2710,12 +2777,12 @@
       } else if(v.indexOf('brd:')===0){
         await _bbSwitchToBoard(v.slice(4));
       }
-    }, async function(){
+    }, _bbSingleBoardMode() ? null : async function(){
       var typeLabel=_bbTypeLabel(_bbActiveBoardType());
       var name=window.prompt('Name for the new '+typeLabel+' board:');
       if(!name || !name.trim()) return;
       await _bbCreateBoard(name.trim(), _bbActiveBoardType());
-    }, 'Add a board', canRemoveBoard ? function(){
+    }, 'Add a board', (canRemoveBoard && !_bbSingleBoardMode()) ? function(){
       openProjectHub(currentBoardForRemove.id);
     } : null, 'Remove this project');
     if(pickerFallbackName){
@@ -4575,6 +4642,7 @@
     // board stays exactly what Larry asked for -- "the only cards
     // visible at any layer are those pertaining to that layer."
     if(_bbRollupCards && _bbRollupCards.length) cards = cards.concat(_bbRollupCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
+    cards = _bbProjectFilterCards(cards);
     cards = _bbSourceFilterCards(cards);
     // Primary-doer warm-up, Session 234 (Aug 21) -- same fire-and-forget
     // fetch-then-conditional-re-render pattern session.js already uses
@@ -6153,11 +6221,58 @@
   // renderBoard's Master rollup (_bbMasterRollupCardsIfAny) below.
   var _bbCurrentTopicHeaderId = null;
   var _bbCurrentTopicIsRoot = false;
+
+  // One true Briefing Board, Sept 8 2026 -- Larry: "EVERYTHING is a
+  // child of MASTER, including Field Guide and Wish Tank. There is only
+  // ONE BB and that is the MASTER. All other BBs are filters of the
+  // MASTER!" Every one of Larry's tasks was migrated onto his one real
+  // board that day (briefing_cards.project_header_id records which
+  // project each one belongs to; see that column's own migration
+  // comment). This is the single switch the rest of the file reads to
+  // tell that world apart from a traveler who still has several real
+  // boards (anyone not yet migrated the same way): _bbBoards.length===1
+  // means "board switching" no longer means anything -- Field Guide,
+  // Wish Tank, and every other project are just this one board's cards
+  // filtered down to a Header, never a different board_id. Every call
+  // site that used to branch on board identity now branches on this
+  // instead, so a traveler who gets migrated later needs no further
+  // code changes to land in the same behavior.
+  //
+  // Sept 8 2026, Larry: "PROJECT FILTER crosses all boards and may have
+  // new features of its own in the future" -- so the actual state and
+  // logic now live in header-data.js (T2TData), shared by every board
+  // kind, not trapped inside this one file. These are thin wrappers so
+  // every call site already written against the old names below keeps
+  // working unchanged; _bbBoards.length is reported to T2TData right
+  // after boards load, in _bbInitBoardsAndData.
+  function _bbSingleBoardMode(){ return T2TData.isSingleBoardMode(); }
+  function _bbProjectFilter(){ return T2TData.getProjectFilter(); }
+  async function _bbSetProjectFilter(headerId){
+    var normalized = await T2TData.setProjectFilter(headerId, _bbIdeaStoryboardsRootId);
+    // TOPIC's own eyebrow/rollup-adjacent state still wants the real
+    // header (root included), same meaning it always had -- this stays
+    // here since it's Briefing-Board-specific screen state, not
+    // something every board kind shares.
+    _bbCurrentTopicHeaderId = headerId || _bbIdeaStoryboardsRootId || null;
+    _bbCurrentTopicIsRoot = !normalized;
+  }
+  function _bbProjectFilterCards(cards){ return T2TData.filterCardsByProject(cards); }
+  // Sept 8 2026 -- the one-time, narrow write that actually tags a new
+  // card with its project (see projectHeaderId's own comment on
+  // _bbRowToCard for why this never rides on the general whole-board
+  // save). Called once, right when a card is created, never again.
+  async function _bbStampCardProject(cardId, headerId){ return T2TData.stampCardProject('briefing_cards', cardId, headerId); }
   async function _bbRenderTopicField(){
     var hit=document.getElementById('bb-topic-hit');
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     if(!hit || !board){ return; }
-    var headerId=board.storyboard_project_id;
+    // One-board model, Sept 8 2026 -- the master board's own
+    // storyboard_project_id never changes (it's always the account
+    // root), so in single-board mode TOPIC reads whichever project is
+    // actually being viewed right now (_bbProjectFilter(), already
+    // kept current by _bbSetProjectFilter) instead of re-deriving a
+    // fixed value off the board row every time.
+    var headerId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : board.storyboard_project_id;
     _bbCurrentTopicHeaderId=headerId;
     _bbCurrentTopicIsRoot=false;
     if(!headerId){
@@ -6214,9 +6329,17 @@
   function _bbSyncMasterSubtitle(isMaster){
     var sub=document.getElementById('bb-mh-subtitle');
     if(!sub) return;
-    sub.textContent = isMaster
-      ? 'Master Briefing Board — every layer below, up to '+_bbMasterRollupDepth()+' deep.'
-      : 'A control and communication tool.';
+    // Sept 8 2026 -- a single-board traveler's root (PROJECTS/MASTER)
+    // shows every task unfiltered now (_bbProjectFilterCards, driven by
+    // _bbProjectFilter()), not a depth-capped walk, so its own
+    // subtitle says so instead of citing a depth number that no longer
+    // applies to it.
+    var isAccountRoot = isMaster && _bbSingleBoardMode() && !_bbProjectFilter();
+    sub.textContent = !isMaster
+      ? 'A control and communication tool.'
+      : isAccountRoot
+        ? 'Master Briefing Board — every task, every project, unfiltered.'
+        : 'Master Briefing Board — every layer below, up to '+_bbMasterRollupDepth()+' deep.';
   }
   // Children of the current TOPIC, Sept 5 2026 -- same reserved-name
   // exclusion and sort order as the Idea Board's own
@@ -6440,7 +6563,16 @@
   // behalf, only reads ones that already exist. Cards pulled in this way
   // are marked _foreign/_homeBoardName (renderBoard's existing dashed-
   // border badge), same as any other card that visibly lives elsewhere.
+  // Sept 8 2026 -- superseded by the real fix: once a traveler has
+  // exactly one true Briefing Board (_bbSingleBoardMode, below), every
+  // task already lives on it, so there is nothing left to roll up --
+  // renderBoard's own project filter (_bbProjectFilterCards) does this
+  // job now, correctly and without a network round trip. This depth-
+  // limited walk stays as-is for any traveler not yet on the one-board
+  // model; _bbLoadMasterRollupCards (its only caller) skips calling it
+  // at all in single-board mode.
   async function _bbMasterRollupCardsIfAny(){
+    if(_bbSingleBoardMode()) return [];
     if(!_bbCurrentTopicIsRoot || !_bbCurrentTopicHeaderId) return [];
     var sb=T().sb;
     var maxDepth=_bbMasterRollupDepth();
@@ -7626,8 +7758,17 @@
       // it's set on the full Briefing Card (9370) instead, since that's
       // where it already lives alongside Start date and the Routine
       // controls. No sense asking twice.
-      cards.push({id:_bbUUID(), col:'new', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false});
+      // One-board model, Sept 8 2026 -- a new card pinned while a
+      // project filter is active belongs to that project; pinned at
+      // MASTER root (no filter) it's general/unassigned. Set on the
+      // in-memory card right away so it shows up correctly in this same
+      // render; the database side of the tag is its own one-time write
+      // just below (_bbStampCardProject), never the general save.
+      var newCardId=_bbUUID();
+      var newProjectHeaderId=(_bbSingleBoardMode() && _bbProjectFilter()) ? _bbProjectFilter() : null;
+      cards.push({id:newCardId, col:'new', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false, projectHeaderId:newProjectHeaderId});
       _bbSaveLocal(cards);
+      if(newProjectHeaderId) _bbStampCardProject(newCardId, newProjectHeaderId);
       renderBoard();
       // Aug 7 2026 -- Larry: pinning shouldn't close this screen, only
       // the X should. Clear the field and keep it open (and focused) so
