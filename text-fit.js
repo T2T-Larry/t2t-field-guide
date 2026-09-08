@@ -85,6 +85,21 @@
     var fontWeight=opts.fontWeight||'400';
     var maxHeightPx=opts.maxHeightPx||null;
     var lineHeight=opts.lineHeight||1.2;
+    // oneLine, Sept 8 2026 -- Larry: "DREAM PHASE should display on one
+    // line" (Idea Board's top-level phase/column tiles were wrapping a
+    // short two-word name across two lines instead of shrinking it
+    // further to fit one, the way Briefing Board's own labels read).
+    // Opt-in and off by default -- every other caller keeps today's
+    // behavior (accept the largest font that satisfies the per-word and
+    // height checks, wrapping across lines if the height budget allows
+    // it) exactly as the Aug 18/20 2026 notes above describe. When set,
+    // this instead requires the WHOLE phrase (not just each word) to
+    // measure within one line's width before accepting a size, so it
+    // keeps shrinking past the point a multi-line layout would have
+    // stopped -- and if even the floor size can't fit it on one line,
+    // returns the floor exactly as before, leaving the caller's own
+    // word-break:break-word CSS as the same last resort it always was.
+    var oneLine=!!opts.oneLine;
     var words=String(text||'').split(/\s+/).filter(Boolean);
     if(!words.length || !maxWidthPx || maxWidthPx<=0) return base;
     var safeWidthPx=Math.max(1, maxWidthPx-SAFETY_PX);
@@ -92,12 +107,16 @@
     while(size>min){
       c.font=fontWeight+' '+size+'px '+fontFamily;
       var fits=true;
-      for(var i=0;i<words.length;i++){
-        if(c.measureText(words[i]).width>safeWidthPx){ fits=false; break; }
-      }
-      if(fits && maxHeightPx){
-        var lines=_lineCount(c, words, safeWidthPx);
-        if(lines*size*lineHeight>maxHeightPx) fits=false;
+      if(oneLine){
+        fits=c.measureText(words.join(' ')).width<=safeWidthPx;
+      } else {
+        for(var i=0;i<words.length;i++){
+          if(c.measureText(words[i]).width>safeWidthPx){ fits=false; break; }
+        }
+        if(fits && maxHeightPx){
+          var lines=_lineCount(c, words, safeWidthPx);
+          if(lines*size*lineHeight>maxHeightPx) fits=false;
+        }
       }
       if(fits) return size;
       size-=step;

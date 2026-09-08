@@ -4464,7 +4464,7 @@
   //    long sentence wrapping to more lines than the box is tall for --
   //    see FGFitFontSize's own comment for why that's a separate check
   //    from the per-word width one this function already did.
-  function _sboardFitFontSize(text, base, min, maxWidthPx, maxHeightPx, lineHeight){
+  function _sboardFitFontSize(text, base, min, maxWidthPx, maxHeightPx, lineHeight, oneLine){
     if(!maxWidthPx){
       var len=(text||'').length;
       if(len<=14) return base;
@@ -4489,7 +4489,7 @@
     // before they're in the DOM, so there's no live computed style to
     // read; the site only ever uses one board font, so naming it directly
     // is exact rather than a guess.
-    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'\'Playfair Display\',Georgia,serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight});
+    return window.FGFitFontSize(text, maxWidthPx, {base:base, min:min, step:0.5, fontFamily:'\'Playfair Display\',Georgia,serif', fontWeight:'400', maxHeightPx:maxHeightPx, lineHeight:lineHeight, oneLine:!!oneLine});
   }
 
   function _sboardHeartsHTML(count){
@@ -5693,7 +5693,12 @@
         // handle nearly everything at a normal size now; this lower floor
         // is just the last-resort backstop for a genuinely long name, so
         // it can still shrink a little further before word-break kicks in.
-        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(8*_tsMult), HEADER_W-28, HEADER_H-14, 1.2);
+        // Sept 8 2026, Larry: "DREAM PHASE should display on one line" --
+        // top-level phase/project column tiles now shrink text as far as
+        // it takes to stay on one line (like Briefing Board's own
+        // labels), instead of accepting a 2-line wrap once the height
+        // budget allowed it. oneLine:true, see text-fit.js.
+        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(8*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, true);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
@@ -5900,7 +5905,10 @@
         // to the classic "NEW" only when there genuinely isn't a row to
         // read from yet (e.g. mid-creation).
         var localLabel=(newRow && newRow.text_content) ? newRow.text_content : 'NEW';
-        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
+        // oneLine:true, Sept 8 2026 -- same one-line preference as the
+        // ordinary column header pill just above, so a renamed NEW
+        // bucket (e.g. "(Dream Phase)") reads the same way.
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+_sboardFitFontSize(localLabel,Math.round(20*_tsMult),Math.round(8*_tsMult),HEADER_W-28,HEADER_H-14,1.2,true)+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(newRow&&newRow.color?';background:'+newRow.color:'');
         hd.textContent=localLabel;
         if(newRow){
           // Drilling in moved to drag-onto-TOPIC (July 27, 2026); double-click
