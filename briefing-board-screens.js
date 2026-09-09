@@ -1,27 +1,44 @@
 /* ============================================================
-   briefing-board-screens.js -- T2T Field Guide - BRIEFING BOARD (9350) SCREENS
+   briefing-board-screens.js -- T2T Field Guide - BRIEFING BOARD (9350)
 
-   Split out of briefing-board.js Sept 5, 2026, same pass as
-   briefing-board-styles.js. Pure HTML markup for every BB screen/overlay
-   (the board itself, Add a Card, the Briefing Card detail, Settings, the
-   Signal Flag builder/picker/library manager, Archive, History, the
-   Briefing Log, Recent Moves, Recently Deleted) built as one string and
-   injected once. No board logic lives here beyond the two calls out to
-   the rest of the module (styles, then wiring) at the very end.
+   STRUCTURE. Pure HTML markup for every BB screen and overlay --
+   the board itself, Add a Card, the Briefing Card detail, Settings,
+   Signal Flag builder/picker/library, Archive/History/Briefing Log,
+   Recent Moves, Recently Deleted. Empty shapes only -- nothing here
+   fills them with real cards or makes them respond to a tap; that's
+   briefing-board-ops.js's job once this markup exists.
 
-   Calls window._bbInjectStyles() (briefing-board-styles.js) and
-   window._bbWireBriefingBoard() (briefing-board.js) -- load this file
-   AFTER briefing-board-styles.js and BEFORE briefing-board.js, since
-   briefing-board.js's own startup calls window._bbInjectScreens() (this
-   file) once the DOM is ready.
+   Split out of briefing-board.js Sept 9, 2026 -- the file had grown
+   past 8,000 lines (Code Growth Watch flags a split well before
+   that). One earlier partial attempt at this split (Sept 5, 2026)
+   left briefing-board-styles.js / briefing-board-screens.js /
+   briefing-board-archive.js in the repo but never finished wiring
+   them in -- briefing-board.js kept its own internal copies the
+   whole time and nothing ever loaded those three files. This split
+   replaces that abandoned attempt: styles.js and screens.js are
+   regenerated fresh from the current code, archive.js's contents
+   now live inside briefing-board-card.js, and archive.js itself is
+   deleted.
+
+   All eight pieces below share one global scope on the page (same
+   as the single file did internally) -- there's no per-file wrapper
+   and no namespace object, so every function/variable here is
+   reachable by its plain name from any of the other seven files.
+   Load order does not matter: nothing at the top level of any of
+   these files calls into another file's code immediately -- it's
+   all either a definition, a constant, or an event-listener
+   registration whose callback runs later, once every file is
+   already loaded.
+
+   Sibling files: calls injectBriefingBoardStyles() (briefing-board-styles.js) and wireBriefingBoard() (briefing-board.js) at the end, same as before.
    ============================================================ */
 
-(function(){
+
 
   function injectBriefingBoardScreens(){
     var fg=document.getElementById('fg-root'); if(!fg) return;
     if(document.getElementById('s-briefing-board')) return;
-    window._bbInjectStyles();
+    injectBriefingBoardStyles();
 
     var div=document.createElement('div');
     div.innerHTML=
@@ -46,28 +63,20 @@
               // field on all boards" -- matches sc-title-trigger's own
               // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
               +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              // Parent, Sept 5 2026 -- Larry: "every board now and in the
-              // future" should have the same PARENT field the Idea/Plan
-              // header does. The data isn't new -- a board's one approved
-              // parent has been readable since Aug 16 (see _bbRenderRelations
-              // and the Links popup below) -- this just puts it in the
-              // header itself instead of behind a popup, plus the same
-              // fast-jump-to-any-level-above arrow the Idea board's own
-              // Parent got today. bb-parent-hit is a real button (not a
-              // plain div) since a single click already means something
-              // here -- step up to the immediate parent -- same as
-              // Idea/Plan's plain Parent click. _bbRenderParentField
-              // (below) fills in the name and wires that click each time
-              // the board switches; _bbWireParentAncestorDropdown wires
-              // the caret once, at startup.
-              +'<div class="bb-mh-fieldgrp">'
-                +'<div class="bb-mh-eyebrow">Parent</div>'
-                +'<div class="bb-cdrop" id="bb-parent-cdrop" style="display:flex;align-items:center;gap:2px">'
-                  +'<button type="button" class="bb-parent-caret" id="bb-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▾</button>'
-                  +'<button type="button" class="bb-hdr-select" id="bb-parent-hit" style="cursor:default"></button>'
-                  +'<div class="bb-cdrop-menu" id="bb-parent-menu" hidden></div>'
-                +'</div>'
-              +'</div>'
+              // Parent field retired from the header, Sept 6 2026 --
+              // Larry: "the hierarchy is set when a PROJECT is chosen,"
+              // folding its "jump to any level above" job into a new
+              // up-arrow on TOPIC itself (bb-topic-caret-up, see the
+              // TOPIC markup just below) instead of a separate eyebrow
+              // and field over here. Same "retire in place, don't
+              // delete" treatment already used on TYPE/ORG NAME right
+              // below this comment: _bbRenderParentField and
+              // _bbWireParentAncestorDropdown are both left exactly as
+              // they were and still get called every render (they no-op
+              // the moment bb-parent-hit/bb-parent-caret don't resolve
+              // in the DOM, same as those two already do) -- nothing to
+              // rebuild if this ever needs to come back.
+              //
               // TYPE and ORG NAME (Client/Department/Partner categorization)
               // retired from the visible chrome, Sept 5 2026 -- Larry: BB's
               // header should look exactly like the Idea Board's, which has
@@ -77,6 +86,58 @@
               // bb-type-trigger/bb-org-name-trigger in the DOM (_bbRenderDropdown
               // no-ops when its trigger/menu ids don't resolve), so this is
               // reversible by putting the fieldgrp back, nothing to rebuild.
+            +'</div>'
+            // TOPIC, Sept 5 2026 -- Larry: "Need TOPIC just like Idea
+            // Board. What if it is exactly the same? If Field Guide is
+            // open on the Idea Board, then the BB is set to the Field
+            // Guide BB. If DREAM PHASE is the TOPIC on the Idea Board,
+            // then DREAM PHASE is the BB." Its own grid track, between
+            // the left PROJECT/PARENT column and the big "Briefing
+            // Board" title -- the dead-center spot that title's own move
+            // to the right (see bb-mhead-top above) freed up. Shows
+            // whichever Header this exact board is linked to
+            // (storyboard_project_id) -- the project root itself when
+            // nothing's been descended into, same as PROJECT reads in
+            // that case, or a nested layer's own name once TOPIC's own
+            // ▾ has been used to go deeper. Same label-then-arrow shape
+            // as PROJECT/PARENT (bb-hdr-select + bb-parent-caret);
+            // _bbRenderTopicField below fills in the name and wires the
+            // arrow to list this layer's own children, each one a real,
+            // separate Briefing Board of its own (created on first visit
+            // via _bbResolveOrCreateBoardForHeader) -- so cards on a
+            // descended-into layer are that layer's alone, never mixed
+            // with its parent's. The one root layer of a project reads
+            // as its MASTER BRIEFING BOARD instead (Larry, same day:
+            // "the top level of the BB = MASTER BRIEFING BOARD which
+            // includes everything at all levels") -- see
+            // _bbMasterRollupDepth (a Preferences field, not a fixed
+            // number) for how far down "everything" currently reaches.
+            // Up-arrow, Sept 6 2026 -- Larry: "an up arrow on the left
+            // side to allow us to select a parental level" instead of
+            // the separate Parent eyebrow/field this project used to
+            // carry (see the Sept 6 note where that field's markup used
+            // to sit, above). Mirrors the descend caret on the right --
+            // same class, same chip, opposite direction -- so TOPIC
+            // reads as one unit that climbs on the left and descends on
+            // the right. _bbTopicAncestorChoices/_bbWireTopicAncestor-
+            // Dropdown (near _bbWireTopicDropdown below) walk the same
+            // ideas.cluster_id chain the descend caret already reads,
+            // just upward -- the actual family tree TOPIC has always
+            // meant, not the separate board_relations org-adoption chain
+            // Parent's old dropdown used (that logic is untouched and
+            // still runs for any board that has one; this new arrow just
+            // doesn't attempt it, on the same "hierarchy comes from the
+            // PROJECT" read Larry gave this today). Goes visually inert
+            // (.bb-topic-caret:disabled, above) once TOPIC is already a
+            // project's own root -- nothing above it to jump to.
+            +'<div class="bb-mh-fieldgrp bb-mh-group-topic">'
+              +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:6px">'
+                +'<button type="button" class="bb-topic-caret" id="bb-topic-caret-up" title="Jump to any level above" aria-label="Jump to any level above">▴</button>'
+                +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:default"></button>'
+                +'<button type="button" class="bb-topic-caret" id="bb-topic-caret" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
+                +'<div class="bb-cdrop-menu" id="bb-topic-menu" hidden></div>'
+                +'<div class="bb-cdrop-menu" id="bb-topic-ancestor-menu" hidden></div>'
+              +'</div>'
             +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
             // 2026 -- Larry: "the top center of the Briefing Board could
@@ -88,7 +149,23 @@
             // handling. bb-mh's own type styling stays as-is; only the
             // button chrome is stripped inline so nothing looks
             // different at rest.
-            +'<div class="bb-mh-group-center"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div><div class="bb-mt">A control and communication tool.</div></div>'
+            //
+            // bb-boardkind-wrap id added Sept 6 2026 so
+            // _bbPositionBoardKindMidway (near _bbRenderTopicField below)
+            // has something to move -- "the type of board" (this is the
+            // board-kind label Larry meant, the same "Briefing Board" /
+            // "Idea" / "Plan" family this dropdown already switches
+            // between) now sits at the real midpoint between TOPIC's box
+            // and LOGO's, not just in its own leftover grid column.
+            // Tagline dropped, Sept 6 2026 -- Larry: "delete the tag line
+            // under the Briefing Board." bb-mh-subtitle (the "A control
+            // and communication tool." / Master-rollup line) is simply
+            // not rendered here anymore. _bbSyncMasterSubtitle (below)
+            // is left exactly as it was -- it already no-ops the moment
+            // getElementById('bb-mh-subtitle') comes back null, so
+            // nothing to rebuild if this ever needs to come back; just
+            // put the div back with its old id.
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             +'<div class="bb-mhead-actions">'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
@@ -167,6 +244,20 @@
             // line, not worth a whole section for. Same id (bb-d-added),
             // same value, just riding quietly on the Task label instead.
             +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
+            // Project, Sept 7 2026 -- Larry: "BB has eyebrow project ID.
+            // Make this a dropdown field on the back of the card so we
+            // can change projects for a given BB card." The card
+            // front's own TOPIC eyebrow (topicEyebrow, above) already
+            // names whichever project a card is under; this is the
+            // editable version of that same fact, on the back. Same
+            // bb-cdrop trigger-button-plus-menu shape as the header's
+            // own PROJECT field (bb-board-trigger et al) -- no separate
+            // caret needed here since nothing on this button does
+            // double duty (the header's caret exists only to separate
+            // "open the menu" from the label's own double-click-to-
+            // rename; this field has no rename). Wired in
+            // _bbRenderCardProjectField, called from openCardDetail.
+            +'<div class="bb-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which project this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -331,7 +422,7 @@
           +'<div id="bb-rd-list" style="max-height:320px;overflow-y:auto"></div>'
         +'</div>';
       fg.appendChild(rdOv);
-      rdOv.addEventListener('click', function(e){ if(e.target===rdOv) window.BBArchive.closeRecentlyDeleted(); });
+      rdOv.addEventListener('click', function(e){ if(e.target===rdOv) closeRecentlyDeleted(); });
       _bbMakeDraggable(rdOv.querySelector('.bb-overlay-card'), rdOv.querySelector('.bb-overlay-head'));
     }
     // Recent Moves (9366), Aug 7 2026 -- Larry: a card he moved didn't
@@ -352,7 +443,7 @@
           +'<div id="bb-moves-list" style="max-height:320px;overflow-y:auto"></div>'
         +'</div>';
       fg.appendChild(mvOv);
-      mvOv.addEventListener('click', function(e){ if(e.target===mvOv) window.BBArchive.closeRecentMoves(); });
+      mvOv.addEventListener('click', function(e){ if(e.target===mvOv) closeRecentMoves(); });
       _bbMakeDraggable(mvOv.querySelector('.bb-overlay-card'), mvOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-settings-overlay')){
@@ -397,15 +488,29 @@
       _bbMakeDraggable(tmOv.querySelector('.bb-overlay-card'), tmOv.querySelector('.bb-overlay-head'));
     }
     // Key Library manager (9397), Aug 3 2026 -- Larry: "we need to be
-    // Session 271 (Sept 5 2026) -- the Signal Flags manager's own overlay
-    // (bb-keylibmanager-overlay), plus the key builder's and key
-    // picker's (bb-keybuilder-overlay, bb-keypicker-overlay, below)
-    // moved out along with the functions that used them: all three UI
-    // flows now go through the T2TStoryboard bridge's own floating
-    // overlay (idea-storyboard-9710.js's _sfEnsureOverlay), shared with
-    // the Idea Storyboard, instead of BB keeping its own copies. Only
-    // bb-keypeek-overlay (further down) stays -- the peek feature itself
-    // stayed BB-side.
+    // able to edit or trash any custom key." Didn't exist for the
+    // Briefing Board at all before (only the per-card slot picker,
+    // which can only assign/unassign, never edit or delete the key
+    // itself). Now that keys are the shared, traveler-wide custom_keys
+    // library, this is deliberately the twin of the Storyboard's own
+    // _sboardOpenKeyLibraryManager -- same pencil+trash-per-row shape,
+    // reachable from either board's gear menu, editing the same rows.
+    if(!document.getElementById('bb-keylibmanager-overlay')){
+      var klOv=document.createElement('div');
+      klOv.id='bb-keylibmanager-overlay'; klOv.className='bb-overlay';
+      klOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Signal Flags</span><button class="bb-close" id="bb-keylibmanager-close" aria-label="Close">✕</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-links-empty" style="margin-bottom:8px">One shared set, usable on any card, any board -- and on the Idea Storyboard too. Cards or Storyboard items that share a signal flag link to each other automatically.</div>'
+            +'<div id="bb-keylib-list"></div>'
+            +'<button class="jb" id="bb-keylib-add" style="width:100%;margin-bottom:0">+ Add a Flag</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(klOv);
+      klOv.addEventListener('click', function(e){ if(e.target===klOv) closeKeyLibManager(); });
+      _bbMakeDraggable(klOv.querySelector('.bb-overlay-card'), klOv.querySelector('.bb-overlay-head'));
+    }
     // Board Sharing (Aug 4 2026) -- lets the owner of a project/departmental/
     // company Briefing Board add other signed-in members so they can see
     // and edit it too. Same overlay shape as the Signal Flags manager.
@@ -491,7 +596,7 @@
           +'</div>'
         +'</div>';
       fg.appendChild(hxOv);
-      hxOv.addEventListener('click', function(e){ if(e.target===hxOv) window.BBArchive.closeHX(); });
+      hxOv.addEventListener('click', function(e){ if(e.target===hxOv) closeHX(); });
       _bbMakeDraggable(hxOv.querySelector('.bb-overlay-card'), hxOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-archive-overlay')){
@@ -503,7 +608,7 @@
           +'<div class="bbw"><div id="bb-archive-list" style="width:100%"></div></div>'
         +'</div>';
       fg.appendChild(archOv);
-      archOv.addEventListener('click', function(e){ if(e.target===archOv) window.BBArchive.closeArchive(); });
+      archOv.addEventListener('click', function(e){ if(e.target===archOv) closeArchive(); });
       _bbMakeDraggable(archOv.querySelector('.bb-overlay-card'), archOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-briefinglog-overlay')){
@@ -515,8 +620,45 @@
           +'<div class="bbw"><div id="bb-briefinglog-list" style="width:100%"></div></div>'
         +'</div>';
       fg.appendChild(blOv);
-      blOv.addEventListener('click', function(e){ if(e.target===blOv) window.BBArchive.closeBriefingLog(); });
+      blOv.addEventListener('click', function(e){ if(e.target===blOv) closeBriefingLog(); });
       _bbMakeDraggable(blOv.querySelector('.bb-overlay-card'), blOv.querySelector('.bb-overlay-head'));
+    }
+    if(!document.getElementById('bb-keybuilder-overlay')){
+      var kbOv=document.createElement('div');
+      kbOv.id='bb-keybuilder-overlay'; kbOv.className='bb-overlay';
+      kbOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Signal Flag</span><button class="bb-close" id="bb-keybuilder-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field"><label>Shape</label><div class="bb-flags">'
+              +SIGNAL_SHAPES.map(function(s){ return '<button class="bb-shape-btn" data-shape="'+s+'" title="'+s+'"><span style="display:inline-block;width:18px;height:18px;'+_bbShapeCSS(s,'#3B2510')+'"></span></button>'; }).join('')
+            +'</div></div>'
+            +'<div class="bb-field"><label>Color</label><div class="bb-swatches">'
+              +KEY_COLORS.map(function(col){ return '<button class="bb-key-swatch" data-color="'+col+'" style="background:'+col+'"></button>'; }).join('')
+            +'</div></div>'
+            +'<div class="bb-field"><label>Meaning</label><input type="text" id="bb-keybuilder-meaning" placeholder="What does this signal flag mean?"></div>'
+            +'<button class="bb-flag-btn" id="bb-keybuilder-save" style="width:100%">Save</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(kbOv);
+      kbOv.addEventListener('click', function(e){ if(e.target===kbOv) closeKeyBuilder(); });
+      _bbMakeDraggable(kbOv.querySelector('.bb-overlay-card'), kbOv.querySelector('.bb-overlay-head'));
+    }
+    if(!document.getElementById('bb-keypicker-overlay')){
+      var kpOv=document.createElement('div');
+      kpOv.id='bb-keypicker-overlay'; kpOv.className='bb-overlay';
+      kpOv.innerHTML=
+         '<div class="bb-overlay-card">'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Choose a Signal Flag</span><button class="bb-close" id="bb-keypicker-close" aria-label="Close">\u2715</button></div>'
+          +'<div class="bbw">'
+            +'<div class="bb-field" id="bb-keypicker-list"></div>'
+            +'<button class="bb-flag-btn" id="bb-keypicker-remove" style="width:100%;margin-bottom:8px">Remove this signal flag</button>'
+            +'<button class="bb-flag-btn" id="bb-keypicker-new" style="width:100%">Build a new signal flag</button>'
+          +'</div>'
+        +'</div>';
+      fg.appendChild(kpOv);
+      kpOv.addEventListener('click', function(e){ if(e.target===kpOv) closeKeyPicker(); });
+      _bbMakeDraggable(kpOv.querySelector('.bb-overlay-card'), kpOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-keypeek-overlay')){
       var kkOv=document.createElement('div');
@@ -564,9 +706,5 @@
       }
     });
 
-    window._bbWireBriefingBoard();
+    wireBriefingBoard();
   }
-
-  window._bbInjectScreens = injectBriefingBoardScreens;
-
-})();

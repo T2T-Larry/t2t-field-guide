@@ -1,19 +1,36 @@
 /* ============================================================
-   briefing-board-styles.js -- T2T Field Guide - BRIEFING BOARD (9350) STYLES
+   briefing-board-styles.js -- T2T Field Guide - BRIEFING BOARD (9350)
 
-   Split out of briefing-board.js Sept 5, 2026 as part of the file-growth
-   scoping pass (BB was 6,558 lines -- Code Growth Watch flags a split
-   well before that). This piece is pure CSS injected once as a single
-   <style> block -- no board state, no card data, nothing it reaches into
-   anywhere else -- so it's the lowest-risk piece to carry on its own.
+   STYLE. Pure CSS, injected once as a single <style> block. No
+   board state, no card data -- the lowest-risk piece, safe to edit
+   without touching how anything behaves.
 
-   Exposes window._bbInjectStyles() for briefing-board-screens.js (which
-   calls it once, before building the board's markup) and for
-   briefing-board.js itself if ever needed directly. Load this file
-   BEFORE briefing-board-screens.js and briefing-board.js.
+   Split out of briefing-board.js Sept 9, 2026 -- the file had grown
+   past 8,000 lines (Code Growth Watch flags a split well before
+   that). One earlier partial attempt at this split (Sept 5, 2026)
+   left briefing-board-styles.js / briefing-board-screens.js /
+   briefing-board-archive.js in the repo but never finished wiring
+   them in -- briefing-board.js kept its own internal copies the
+   whole time and nothing ever loaded those three files. This split
+   replaces that abandoned attempt: styles.js and screens.js are
+   regenerated fresh from the current code, archive.js's contents
+   now live inside briefing-board-card.js, and archive.js itself is
+   deleted.
+
+   All eight pieces below share one global scope on the page (same
+   as the single file did internally) -- there's no per-file wrapper
+   and no namespace object, so every function/variable here is
+   reachable by its plain name from any of the other seven files.
+   Load order does not matter: nothing at the top level of any of
+   these files calls into another file's code immediately -- it's
+   all either a definition, a constant, or an event-listener
+   registration whose callback runs later, once every file is
+   already loaded.
+
+   Sibling files: briefing-board.js (loads this indirectly via briefing-board-screens.js) and the rest of the BB family.
    ============================================================ */
 
-(function(){
+
 
   function injectBriefingBoardStyles(){
     if(document.getElementById('bb-style')) return;
@@ -49,7 +66,34 @@
       // var(--bb-accent)), only the sizing changed, per Larry's call to
       // keep BB's palette and just match the layout.
       +'.bb-mhead{background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);padding:10px 16px 4px;min-height:70px;box-sizing:border-box;flex-shrink:0}'
-      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;height:100%}'
+      // Sept 5 2026, Larry: "what if the Briefing Board title moves to
+      // the right, like where IDEA lives, leaving us a spot for the
+      // title of the Briefing Board's TOPIC/child dropdown list?" Grew
+      // from 3 tracks to 4: left (bb-mh-typebox: PROJECT/PARENT) stays
+      // 1fr, then TOPIC (new, see bb-mh-group-topic below) and the big
+      // "Briefing Board" title (bb-mh-group-center) each get their own
+      // auto-sized track back to back, then actions closes on a second
+      // 1fr so it still pins flush to the true right edge exactly like
+      // before -- only reason a trailing 1fr track works for that is
+      // bb-mhead-actions' own justify-self:end.
+      //
+      // Sept 6 2026, Larry: "the hierarchy is set when a PROJECT is
+      // chosen. Center the TOPIC with up and down arrows on the board.
+      // The type of board should sit halfway between the TOPIC and arrow
+      // set and the LOGO." Dropped back to 3 tracks (typebox / TOPIC /
+      // actions) now that Parent's gone from the left column (see the
+      // Sept 6 note on bb-mh-typebox's markup, below) -- with both flanks
+      // equal 1fr, the middle auto-width TOPIC track lands exactly on
+      // true center, not just "close," the way it did sharing a column
+      // with the title. "Briefing Board" is no longer a grid track at
+      // all: bb-mh-group-center is taken out of grid flow with its own
+      // position:absolute (this position:relative is what its left/top
+      // measure against) and placed every render at the real midpoint
+      // between TOPIC's box and LOGO's, by _bbPositionBoardKindMidway
+      // below -- same "measure the actual boxes" approach as the Idea
+      // Board's own (currently unused) _sboardPositionProjectMidwayToLogo,
+      // just walking TOPIC->LOGO instead of Name->LOGO.
+      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;height:100%;position:relative}'
       // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
       // Board [title], A control and communication tool, in the center.
       // Far left: eyebrow TYPE with drop down list followed by a Field
@@ -65,13 +109,21 @@
       // Idea Board" -- on the Idea Board, Parent sits in the header
       // grid's own left column with justify-self:end, so it hugs Topic's
       // edge, while traveler-name/PROJECT float separately at the far
-      // left corner. Mirrored here with plain flex: this row now
-      // stretches across the whole left grid column (justify-self:stretch)
-      // and space-between pushes its two fieldgrps to opposite ends --
-      // traveler-name/PROJECT (first child) stays pinned at the far left
-      // corner, Parent (second child, moved up from the row below) lands
-      // at this column's right edge, right up against bb-mh-group-center
-      // (BB's own stand-in for Topic).
+      // left corner. Mirrored here with plain flex: this row stretches
+      // across the whole left grid column (justify-self:stretch) with
+      // space-between so a second field would land at this column's
+      // right edge if one existed.
+      //
+      // Sept 6 2026, Larry: "the hierarchy is set when a PROJECT is
+      // chosen" -- Parent (org-adoption aside, the common case was
+      // always just one step up TOPIC's own cluster_id chain, per the
+      // Sept 5 fix comment on _bbRenderParentField below) is retired
+      // from this column: traveler-name/PROJECT is the only fieldgrp
+      // left here now, and TOPIC's own new up-arrow (bb-topic-caret-up,
+      // see the TOPIC markup below) does the "jump to any level above"
+      // job instead, right on TOPIC itself. justify-content:space-between
+      // is harmless with one child (behaves like flex-start) so left
+      // as-is rather than touched for its own sake.
       +'.bb-mh-typebox{display:flex;justify-self:stretch;justify-content:space-between;align-items:flex-start;gap:14px}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
@@ -116,7 +168,13 @@
       // fields instead of pushing them -- same tradeoff Larry already
       // accepted for it covering the LOGO eyebrow above it.
       +'.bb-logo-anchor{position:relative;width:30px;height:30px;flex-shrink:0}'
-      +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      // visibility:hidden, Sept 8 2026 -- starts hidden and stays that
+      // way until T2TLogo.render (idea-media-shared.js) sets it visible
+      // right after applying the traveler's saved logo_dx/logo_dy, so a
+      // hard reset never shows this slot sitting at its untouched corner
+      // before jumping to wherever it was actually dragged. See that
+      // render() function's own Sept 8 2026 comment for the full story.
+      +'.bb-logo-slot{position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;visibility:hidden}'
       +'.bb-logo-slot img{max-width:100%;max-height:100%;object-fit:contain;border-radius:7px}'
       +'.bb-logo-resize-handle{position:absolute;right:-6px;bottom:-6px;width:12px;height:12px;border-radius:4px;background:var(--bb-accent);border:2px solid #fff;cursor:nwse-resize;display:none;z-index:3;touch-action:none}'
       // LOGO eyebrow, on-logo + peek-on-hover, Aug 30 2026 (corrected
@@ -196,19 +254,32 @@
       // built on this board's light theme (white fill, accent border)
       // instead of that board's dark rgba() overlay, so it reads as one
       // of this header's own controls rather than a pasted-in dark chip.
-      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:18px;height:30px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc(9px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      // Sept 6 2026, Larry: "increase the size of the project down
+      // arrow" -- this is bb-project-caret's own class (the real,
+      // separate arrow button beside PROJECT's label, matching the Idea
+      // Board's own sc-project-caret). Width 18->24px, glyph 9->14px;
+      // height (30px) untouched since that already matches the row.
+      +'.bb-parent-caret{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:6px;width:'+IDBand.TOKENS.pickerCaret.width+'px;height:'+IDBand.TOKENS.pickerCaret.height+'px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc('+IDBand.TOKENS.pickerCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-parent-caret:hover{opacity:1}'
       // Centered, Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-trigger.
       +'.bb-cdrop-trigger{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;width:100%}'
-      +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(9px * var(--fg-text-scale,1));opacity:.6;flex-shrink:0}'
+      // Sept 6 2026, Larry: "increase the size of the board type down
+      // arrow" -- the small trailing \u25be this class adds after any
+      // dropdown-trigger label; on this screen that's bb-boardkind-
+      // trigger's ("Briefing Board," the board-TYPE label Larry means,
+      // same family as IDEA/PLAN/SHARE/CAST) only arrow indicator, and
+      // also rides along on bb-board-trigger's PROJECT label (which
+      // already has its own separate real caret beside it too -- same
+      // shared class, moves with it, harmless). 9->14px to match.
+      +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(14px * var(--fg-text-scale,1));opacity:.65;flex-shrink:0}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
       // stacking context no matter its own z-index, so board content
       // underneath painted over it. Living as a direct child of <body>
       // with a real viewport position escapes that.
-      +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:99999;padding:4px;box-sizing:border-box;max-height:240px;overflow-y:auto;min-width:120px}'
-      +'.bb-cdrop-row{padding:6px 10px;font-family:var(--bb-body-font);font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:6px;cursor:pointer;white-space:nowrap}'
+      +'.bb-cdrop-menu{position:fixed;background:#fff;border:1.5px solid var(--bb-accent);border-radius:'+IDBand.TOKENS.dropdownMenu.radius+'px;box-shadow:0 6px 18px rgba(0,0,0,.18);z-index:'+IDBand.TOKENS.dropdownMenu.zIndex+';padding:'+IDBand.TOKENS.dropdownMenu.padding+'px;box-sizing:border-box;max-height:'+IDBand.TOKENS.dropdownMenu.maxHeight+'px;overflow-y:auto;min-width:'+IDBand.TOKENS.dropdownMenu.minWidth+'px}'
+      +'.bb-cdrop-row{padding:'+IDBand.TOKENS.dropdownRow.padding+';font-family:var(--bb-body-font);font-size:calc('+IDBand.TOKENS.dropdownRow.fontSize+'px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:'+IDBand.TOKENS.dropdownRow.radius+'px;cursor:pointer;white-space:nowrap}'
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
       +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
@@ -234,19 +305,69 @@
       // element, sized to lead. Gap between title and tagline widened
       // 2px -> 10px so the tagline reads as its own line, not crowded
       // against the title's descenders.
-      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;justify-self:center;text-align:center}'
+      // Sept 6 2026 -- taken out of grid flow (see the Sept 6 note on
+      // bb-mhead-top above): position:absolute, centered on whatever
+      // left/top _bbPositionBoardKindMidway sets every render. The
+      // left:50% + translateX(-50%) pair is just the pre-JS fallback so
+      // this doesn't flash off-position for a frame before that math
+      // runs -- top:0 matched the plain top-alignment every other grid
+      // item in this row had, back when this sat at the top like they
+      // did. Superseded below (still just the pre-JS fallback, same
+      // idea as left:50%): _bbPositionBoardKindMidway now also sets a
+      // real `top` every render so this bottom-justifies with the
+      // upper-right corner buttons instead.
+      // Sept 6 2026 fix -- a position:absolute box with only `left` set
+      // (no `right`) shrink-to-fits within whatever space is left between
+      // that left edge and the container's own right edge, not its full
+      // natural content width; once _bbPositionBoardKindMidway's left
+      // landed close enough to that edge, "Briefing Board" wrapped to two
+      // lines. width:max-content forces the box back to its real content
+      // width regardless of available space, so the transform-based
+      // centering still lands it on the right midpoint without the wrap.
+      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:absolute;top:0;left:50%;transform:translateX(-50%);width:max-content}'
       // Sept 5 2026 -- Larry: match the Idea Board's header band. Bumped
       // to the same 42px this board-kind label uses there (idea-storyboard-
       // 9710.js sc-board-kind-trigger) and given the same raised/embossed
       // look (light highlight above, soft shadow below) instead of flat
       // text -- built with BB's own ink color, not Idea Board's blue.
-      +'.bb-mh{color:var(--bb-ink);font-size:calc(42px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25)}'
+      // Sept 6 2026, Larry: "Briefing Board needs to be on one line. If
+      // text is too large, shrink it a little." 42px -> 36px, plus a hard
+      // white-space:nowrap so this can never wrap again regardless of
+      // available width (belt-and-suspenders alongside the width:max-content
+      // fix on bb-mh-group-center above).
+      +'.bb-mh{color:var(--bb-ink);font-size:calc('+IDBand.TOKENS.boardKindLabel.fontSize+'px * var(--fg-text-scale,1));font-weight:700;line-height:1;font-family:var(--bb-head-font);text-shadow:-1px -1px 0 rgba(255,255,255,.6),1px 1px 2px rgba(59,37,16,.25);white-space:nowrap}'
+      // TOPIC, Sept 5 2026 -- Larry: "concept is perfect. Raise size of
+      // TOPIC to match or exceed Briefing Board" -- then "delete TOPIC
+      // eyebrow" (the plain small label, gone from the markup above).
+      // 44px so it reads at least as large as the "Briefing Board" title
+      // (.bb-mh, 42px) beside it -- own class rather than reusing
+      // bb-hdr-select (built for the small 11px PROJECT/PARENT chips,
+      // far too small a box for this) or bb-mh (no border/background,
+      // and this still needs to look pressable since its caret opens a
+      // real dropdown). Kept a bordered chip rather than switching to
+      // flat text like the title, since Idea Board's own TOPIC box
+      // (#sc-topic-box, idea-storyboard-9710.js) is a bordered box too --
+      // this is that same idea sized for BB's header.
+      +'.bb-topic-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));line-height:'+IDBand.TOKENS.topicBox.lineHeight+';cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:'+IDBand.TOKENS.topicCaret.width+'px;align-self:stretch;cursor:pointer;font-size:calc('+IDBand.TOKENS.topicCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      +'.bb-topic-caret:hover{opacity:.75}'
+      // Sept 6 2026 -- the new up-arrow (bb-topic-caret-up, shares this
+      // same class) goes inert once TOPIC is already sitting at a
+      // project's own root, same as Parent's own hit-box used to gray
+      // out with nothing above it. Set from _bbRenderTopicField below.
+      +'.bb-topic-caret:disabled{opacity:.35;cursor:default}'
       // Logo now rides along in the same right-side group as Utility/Close
       // (see the markup below) so it sits between the center title and
       // those two icons, mirroring how Logo sits between Topic and IDEA
-      // on the Idea Board -- align-items:center added so its taller
-      // eyebrow+frame stack lines up with the shorter icon buttons.
-      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:center}'
+      // on the Idea Board.
+      //
+      // Sept 6 2026, Larry: "the top of the 3 buttons in the upper right
+      // corner should bottom justify" -- Logo's taller eyebrow+frame
+      // stack, Utility, and Close now line up along their shared bottom
+      // edge (align-items:flex-end) instead of each one's vertical
+      // center; Logo was already the leftmost of the three, immediately
+      // left of Utility, so that part needed no change.
+      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:flex-end}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --
@@ -293,8 +414,22 @@
       // Center the board's columns as a group (Larry, July 22 2026)
       // instead of always hugging the left edge -- still scrolls
       // normally once there are enough columns to overflow.
-      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex;justify-content:center}'
-      +'#bb-cols{display:flex;gap:14px;height:100%}'
+      //
+      // Sept 9 2026 fix (Larry: "NEW column is cut off and cannot
+      // scroll to view it") -- centering via justify-content:center on
+      // the SCROLLING element (#bb-board-wrap) is a known flexbox trap:
+      // once #bb-cols is wider than the wrap, browsers clip whatever
+      // overflows past the START edge and never let scroll reach it,
+      // while the end (right) overflow scrolls fine. With NEW pinned
+      // first (leftmost) in COLUMNS above, it was always the one that
+      // silently became unreachable the moment enough columns existed
+      // to overflow -- on a laptop-width window, that's most of the
+      // time. Centering now lives on #bb-cols itself via margin:0 auto
+      // instead: auto margins center it when there's slack, same look
+      // as before, but collapse to 0 (not clip) the moment it overflows,
+      // so scrolling reaches both ends.
+      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex}'
+      +'#bb-cols{display:flex;gap:14px;height:100%;margin:0 auto}'
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
       +'.bb-col-head{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
       +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
@@ -334,8 +469,6 @@
       // of like flags from front of every type of card") -- the count
       // is still computed and available via each flag's hover tooltip,
       // just no longer rendered as a visible number on the card face.
-      +'.bb-corner{position:absolute;bottom:0;right:0;width:0;height:0;border-style:solid;border-width:0 0 13px 13px;border-color:transparent transparent rgba(59,37,16,0.35) transparent;cursor:pointer}'
-      +'.bb-corner:hover{border-width:0 0 17px 17px;border-color:transparent transparent rgba(59,37,16,0.6) transparent}'
       +'.bb-add-tile{border:1.5px dashed var(--bb-accent);border-radius:3px;text-align:center;padding:8px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);cursor:pointer;font-family:var(--bb-body-font)}'
       +'.bb-add-tile:hover{background:rgba(201,168,124,0.2)}'
       /* Fixed Trash can, July 20, 2026 -- same "small round drop target,
@@ -561,7 +694,3 @@
       +'.bb-hx-landing-btn{margin-bottom:12px}';
     document.head.appendChild(style);
   }
-
-  window._bbInjectStyles = injectBriefingBoardStyles;
-
-})();
