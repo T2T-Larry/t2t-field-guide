@@ -799,7 +799,11 @@
   function _bbSaveLocal(cards, deletedIds){
     _bbCards = cards;
     try{ sessionStorage.setItem('bbCards', JSON.stringify(cards)); }catch(e){}
-    _bbSyncCardsToSupabase(cards, deletedIds);
+    // Sept 9 2026 -- returns the sync promise now (was fire-and-forget)
+    // so a caller that needs a second, dependent write to land AFTER
+    // this one can chain onto it instead of racing it. See
+    // _bbSaveNewCard's own comment for the bug this fixed.
+    var syncPromise=_bbSyncCardsToSupabase(cards, deletedIds);
     // Foreign/shared-in card fix, Aug 14 2026 -- Larry: cards merged onto
     // this board from elsewhere (Personal BB's assigned-to-me read-through,
     // or a project board's shared-in cards) live in _bbForeignCards /
@@ -814,6 +818,7 @@
     // Whichever card is currently open gets checked here and, if it's a
     // foreign one, saved with its own narrow single-row write instead.
     _bbPersistOpenMergedCardIfAny();
+    return syncPromise;
   }
   // Sept 7 2026 rename+extend (Larry: "ALL CARDS EVERYWHERE... One
   // code!") -- was _bbPersistOpenForeignCardIfAny, foreign/shared-in
@@ -3792,8 +3797,22 @@
       // Center the board's columns as a group (Larry, July 22 2026)
       // instead of always hugging the left edge -- still scrolls
       // normally once there are enough columns to overflow.
-      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex;justify-content:center}'
-      +'#bb-cols{display:flex;gap:14px;height:100%}'
+      //
+      // Sept 9 2026 fix (Larry: "NEW column is cut off and cannot
+      // scroll to view it") -- centering via justify-content:center on
+      // the SCROLLING element (#bb-board-wrap) is a known flexbox trap:
+      // once #bb-cols is wider than the wrap, browsers clip whatever
+      // overflows past the START edge and never let scroll reach it,
+      // while the end (right) overflow scrolls fine. With NEW pinned
+      // first (leftmost) in COLUMNS above, it was always the one that
+      // silently became unreachable the moment enough columns existed
+      // to overflow -- on a laptop-width window, that's most of the
+      // time. Centering now lives on #bb-cols itself via margin:0 auto
+      // instead: auto margins center it when there's slack, same look
+      // as before, but collapse to 0 (not clip) the moment it overflows,
+      // so scrolling reaches both ends.
+      +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex}'
+      +'#bb-cols{display:flex;gap:14px;height:100%;margin:0 auto}'
       +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
       +'.bb-col-head{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
       +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
@@ -6637,6 +6656,26 @@
     // yet, leave the left:50% fallback in place.
     if(!topicRect.width || !logoRect.width || !containerRect.width) return;
     var midpoint=topicRect.right+(logoRect.left-topicRect.right)/2;
+    // Sept 9 2026 fix (Larry: "Briefing Board on ID BAND too large type.
+    // Overlaps child down arrow") -- the plain midpoint above never
+    // accounted for how wide "Briefing Board" itself actually renders.
+    // wrap is centered on that midpoint via transform:translateX(-50%),
+    // so half its real width extends to EACH side. On a laptop-width
+    // window, TOPIC's Sept 5 font bump (44px) leaves less gap before
+    // Logo than the title needs, so the raw midpoint could sit close
+    // enough to TOPIC that the title's own left half covered TOPIC's
+    // descend ("child") arrow, id="bb-topic-caret", right at TOPIC's
+    // own right edge. Clamp the midpoint so the title's rendered box
+    // (half its width each side, plus a small breathing gap) never
+    // reaches past TOPIC's right edge or Logo's left edge. If the two
+    // are close enough that no midpoint keeps both gaps, side with
+    // staying off TOPIC's arrow -- that's the one people click.
+    var wrapRect=wrap.getBoundingClientRect();
+    if(wrapRect.width){
+      var gap=8, half=wrapRect.width/2;
+      var minMid=topicRect.right+gap+half, maxMid=logoRect.left-gap-half;
+      midpoint = (maxMid>=minMid) ? Math.max(minMid, Math.min(midpoint, maxMid)) : minMid;
+    }
     wrap.style.left=(midpoint-containerRect.left)+'px';
     // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
     // bottom-justify with the upper right corner buttons" -- same
@@ -7897,8 +7936,28 @@
       var newCardId=_bbUUID();
       var newProjectHeaderId=(_bbSingleBoardMode() && _bbProjectFilter()) ? _bbProjectFilter() : null;
       cards.push({id:newCardId, col:'new', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false, projectHeaderId:newProjectHeaderId});
-      _bbSaveLocal(cards);
-      if(newProjectHeaderId) _bbStampCardProject(newCardId, newProjectHeaderId);
+      var _bbNewCardSync=_bbSaveLocal(cards);
+      // Sept 9 2026 fix (Larry: "Newly added card disappeared when saved
+      // and moved to MASTER") -- this used to fire the project stamp
+      // (a separate UPDATE by id) in parallel with _bbSaveLocal's own
+      // INSERT of that same new row, a genuine race: when the stamp's
+      // UPDATE reached Supabase before the INSERT did, it matched zero
+      // rows and silently did nothing -- Supabase doesn't error on an
+      // update that touches no rows. The card still LOOKED tagged for
+      // the rest of this session (this in-memory object already carries
+      // projectHeaderId, set just above), but the database row was left
+      // with no project_header_id at all, so the next real fetch showed
+      // it only at MASTER root -- "disappeared" from the project it was
+      // actually pinned to. Chaining onto _bbSaveLocal's own sync
+      // promise (now returned instead of fire-and-forget, see its own
+      // comment) guarantees the row exists before the stamp tries to
+      // update it, without delaying the optimistic render below.
+      if(newProjectHeaderId && _bbNewCardSync && _bbNewCardSync.then){
+        _bbNewCardSync.then(function(){ return _bbStampCardProject(newCardId, newProjectHeaderId); })
+          .catch(function(e){ console.error('Briefing Board: could not tag new card with its project', e); });
+      } else if(newProjectHeaderId){
+        _bbStampCardProject(newCardId, newProjectHeaderId);
+      }
       renderBoard();
       // Aug 7 2026 -- Larry: pinning shouldn't close this screen, only
       // the X should. Clear the field and keep it open (and focused) so
