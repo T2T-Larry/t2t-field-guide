@@ -2092,7 +2092,7 @@
   // without a second round trip for the common cases.
   async function _sboardFetchRoleSummaries(cardType, ids){
     var out={};
-    (ids||[]).forEach(function(id){ out[id]={starred:null, people:[]}; });
+    (ids||[]).forEach(function(id){ out[id]={starred:null, people:[], roles:{}}; });
     var _sb=T().sb;
     if(!_sb || !ids || !ids.length) return out;
     // Aug 29 2026 fix: this used to be one .in('card_id', ids) call built
@@ -2112,19 +2112,41 @@
     for(var i=0;i<ids.length;i+=CHUNK){ chunks.push(ids.slice(i,i+CHUNK)); }
     try{
       var results=await Promise.all(chunks.map(function(chunk){
-        return _sb.from('card_roles').select('card_id,user_id,is_primary').eq('card_type',cardType).in('card_id', chunk);
+        return _sb.from('card_roles').select('card_id,user_id,is_primary,role').eq('card_type',cardType).in('card_id', chunk);
       }));
       results.forEach(function(res){
         if(!res.error && res.data){
           res.data.forEach(function(r){
             var bucket=out[r.card_id]; if(!bucket) return;
             if(r.is_primary) bucket.starred=r.user_id;
-            if(bucket.people.indexOf(r.user_id)===-1) bucket.people.push(r.user_id);
+            if(bucket.people.indexOf(r.user_id)===-1){ bucket.people.push(r.user_id); bucket.roles[r.user_id]=r.role; }
           });
         }
       });
     }catch(e){}
     return out;
+  }
+
+  // Sept 9 2026, Larry: when a card has more than one person on its Call
+  // Sheet and nobody's starred a Primary, stop leaving the corner badge
+  // blank -- default to whoever sits at the top of that same roster the
+  // Call Sheet screen shows (see CS_ROLE_ORDER below: Stakeholder before
+  // Cast Member, etc.), so the badge always shows someone at a glance.
+  // Purely a fallback guess -- starring someone by hand on the Call Sheet
+  // screen still overrides this immediately, same as it always has.
+  var _sboardRoleRankOrder = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified'];
+  function _sboardTopRosterUid(summary){
+    var people=(summary&&summary.people)||[];
+    if(!people.length) return null;
+    var roles=(summary&&summary.roles)||{};
+    var best=people[0], bestRank=_sboardRoleRankOrder.indexOf(roles[best]);
+    if(bestRank<0) bestRank=_sboardRoleRankOrder.length;
+    for(var i=1;i<people.length;i++){
+      var r=_sboardRoleRankOrder.indexOf(roles[people[i]]);
+      if(r<0) r=_sboardRoleRankOrder.length;
+      if(r<bestRank){ best=people[i]; bestRank=r; }
+    }
+    return best;
   }
 
   // Walks a single Idea row's own cluster_id chain, one level per await,
@@ -2179,7 +2201,11 @@
       var key=_sboardEffKey(cardType,id);
       if(s.starred){ _sboardEffPrimaryCache[key]=s.starred; toWarm.push(s.starred); }
       else if(s.people.length===1){ _sboardEffPrimaryCache[key]=s.people[0]; toWarm.push(s.people[0]); }
-      else if(s.people.length>1){ _sboardEffPrimaryCache[key]=null; }
+      else if(s.people.length>1){
+        var _topUid=_sboardTopRosterUid(s);
+        _sboardEffPrimaryCache[key]=_topUid;
+        if(_topUid) toWarm.push(_topUid);
+      }
       else { climbNeeded.push(id); }
     });
     // Aug 29 2026 fix: these used to climb one card at a time (await
