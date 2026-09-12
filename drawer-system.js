@@ -239,7 +239,20 @@
       +   'border-radius:0 30px 30px 0;border-left:none;border-right:2px solid #999}'
       // Text-size picker -- Aug 3 2026, same overlay/card family as the
       // drawer color picker (drawer-style.js).
-      + '#sz-text-overlay{position:fixed;inset:0;z-index:9997;'
+      // Sept 12 2026, Larry (bug report): "fabulous on the Briefing
+      // Board, not on desktop" -- root cause: this overlay's z-index
+      // (9997) sat BELOW #sz-navbar/#sz-drawer-r (9998) and every tool
+      // button/gear/menu riding on them (9999). Briefing Board never
+      // showed the bug because its own full-screen mode hides the rail
+      // and drawer entirely (see the body:has(#fg-root.isx-full) rule
+      // in style.css) -- but on the plain desktop, opening Utility left
+      // the rail/drawer sitting UNDIMMED on top of this popup's own dark
+      // backdrop, both looking broken and silently eating clicks meant
+      // for the card underneath (including Sign Out, so "back to the
+      // sign-in screen" could seem to just not work). Raised well above
+      // every other desk object so the whole card -- text size, Sign
+      // Out, and the ✕ -- now actually sits on top and is reachable.
+      + '#sz-text-overlay{position:fixed;inset:0;z-index:10050;'
       +   'background:rgba(74,52,24,0.4);display:none;align-items:center;'
       +   'justify-content:center;padding:20px;box-sizing:border-box}'
       + '#sz-text-overlay.active{display:flex}'
