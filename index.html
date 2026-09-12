@@ -61,7 +61,7 @@
 <script src="idea-storyboard-9710.js?v=20260909b"></script>
 <script src="session.js?v=20260906a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260903h"></script>
+<script src="backpack.js?v=20260912a"></script>
 <script src="stories.js?v=20260903a"></script>
 <script src="briefing-board-styles.js?v=20260909b"></script>
 <script src="briefing-board-screens.js?v=20260909b"></script>
@@ -78,7 +78,7 @@
 <script src="drawer-style.js?v=20260904b"></script>
 <script src="desktop-style.js?v=20260904b"></script>
 <script src="drawer-surprise-tray.js?v=20260906a"></script>
-<script src="drawer-system.js?v=20260904e"></script>
+<script src="drawer-system.js?v=20260912a"></script>
 <script src="drawer-legacy-fixes.js?v=20260904b"></script>
 <script src="desktop-screen.js?v=20260904f"></script>
 <script src="tv-frame.js?v=20260801a"></script>
@@ -922,8 +922,24 @@
   T.wire('b-forgot', async function(){
     var email=document.getElementById('si-email').value.trim();
     if(!email){alert('Enter your email address first, then tap Forgot password.');return;}
-    var res=await _sb.auth.resetPasswordForEmail(email,{redirectTo:'https://t2t-larry.github.io/t2t-field-guide/'});
-    if(res.error){alert(res.error.message);}else{alert('Reset email sent! Check your inbox.');}
+    // Sept 12 2026, Larry: Bill tapped this and got no response at all --
+    // there was no try/catch here, so if the request ever threw instead of
+    // resolving with an error (a network hiccup, a rate limit, anything),
+    // the tap just did nothing with no feedback whatsoever. Wrapped it so
+    // there's always some alert, and added a brief "Sending..." state on
+    // the link itself so a slow network doesn't look like a dead click.
+    var link=document.getElementById('b-forgot');
+    var origText=link.textContent;
+    link.textContent='Sending…';
+    try{
+      var res=await _sb.auth.resetPasswordForEmail(email,{redirectTo:'https://t2t-larry.github.io/t2t-field-guide/'});
+      if(res.error){alert(res.error.message);}else{alert('Reset email sent! Check your inbox (and spam folder).');}
+    }catch(e){
+      console.error('T2T: forgot-password request failed', e);
+      alert('Something went wrong sending the reset email. Please wait a minute and try again.');
+    }finally{
+      link.textContent=origText;
+    }
   });
 
   // New member (beta) / Sign In toggle on the same card, Aug 3 2026.

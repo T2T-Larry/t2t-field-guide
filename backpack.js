@@ -1356,9 +1356,10 @@
   }
 
   // Sign-out, factored out Sept 12 2026 -- was inline inside b-sign-out's
-  // handler only. The new corner "who's signed in" widget below needs the
-  // exact same steps, so this is the one true sign-out path both call,
-  // rather than two copies that could quietly drift apart.
+  // handler only. Also exposed on window.T2T (see the public API below)
+  // so drawer-system.js's Utility button can offer Sign Out too -- one
+  // true sign-out path for both, rather than two copies that could
+  // quietly drift apart.
   async function doSignOutOfDevice(){
     try{ await _sb.auth.signOut(); }catch(e){ console.error('Sign out failed', e); }
     try{ localStorage.removeItem('bpLastPageNum'); }catch(e){}
@@ -1366,96 +1367,6 @@
     try{ sessionStorage.removeItem('bpLastPageNum'); }catch(e){}
     try{ sessionStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
     window.location.href='index.html';
-  }
-
-  /* ---------- Who's signed in / Sign Out -- upper-right corner --------
-     Sept 12 2026, Larry: Sign Out was three taps deep (gear -> Settings
-     -> Sign Out) and he'd already forgotten the path himself. Now it
-     matters for a real reason: a shared/family computer, e.g. Bill
-     wanting his daughter to have her OWN account on his device -- she
-     needs an obvious way to see "this says Bill" and get back to a
-     blank Sign In so she can tap "New member?" and create her own,
-     rather than everyone quietly sharing Bill's login.
-
-     A small always-there button in the corner shows whoever is
-     currently signed in (their first initial) on every screen -- desk,
-     Idea Board, anywhere -- since backpack.js loads on every phase
-     file already. Tapping it names them and offers the same one Sign
-     Out path as Settings, just far easier to find. Hidden until a real
-     member profile has actually loaded, so it never shows on the bare
-     Sign In screen itself (nobody's signed in yet to ask about).
-
-     Built as one fixed, non-draggable landmark rather than folded into
-     drawer-system.js's tool rail -- this is an identity check, not a
-     tool a traveler repositions or docks into a drawer. */
-  function injectWhoAmIStyle(){
-    if (document.getElementById('t2t-whoami-style')) return;
-    var css = ''
-      + '#t2t-whoami{position:fixed;top:10px;right:10px;z-index:10000;'
-      +   'width:34px;height:34px;border-radius:50%;border:2px solid #999;'
-      +   'background:#fff;color:#4a3418;font-size:14px;font-weight:700;'
-      +   'font-family:Georgia,serif;cursor:pointer;display:none;'
-      +   'align-items:center;justify-content:center;padding:0;'
-      +   'box-shadow:0 3px 8px rgba(0,0,0,.25);user-select:none}'
-      + '#t2t-whoami-card{position:fixed;top:50px;right:10px;z-index:10001;'
-      +   'display:none;width:220px;background:#fff;border-radius:10px;'
-      +   'box-shadow:0 8px 24px rgba(0,0,0,.3);padding:14px;'
-      +   'font-family:Georgia,serif;box-sizing:border-box}'
-      + '#t2t-whoami-card.t2t-whoami-open{display:block}'
-      + '#t2t-whoami-card .t2t-whoami-who{font-size:12px;color:#7a5c3a;margin-bottom:2px}'
-      + '#t2t-whoami-card .t2t-whoami-name{font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:12px}'
-      + '#t2t-whoami-card button{width:100%;border:none;border-radius:6px;padding:9px;'
-      +   'cursor:pointer;font-size:13px;margin-bottom:6px;font-family:inherit}'
-      + '#t2t-whoami-signout{background:#c0392b;color:#fff}'
-      + '#t2t-whoami-cancel{background:#eee;color:#333;margin-bottom:0}';
-    var style = document.createElement('style');
-    style.id = 't2t-whoami-style';
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-
-  function buildWhoAmI(){
-    if (document.getElementById('t2t-whoami')) return; // idempotent
-    injectWhoAmIStyle();
-
-    var btn = document.createElement('button');
-    btn.id = 't2t-whoami'; btn.type = 'button'; btn.title = 'Who’s signed in';
-
-    var card = document.createElement('div');
-    card.id = 't2t-whoami-card';
-    card.innerHTML = ''
-      + '<div class="t2t-whoami-who">Signed in as</div>'
-      + '<div class="t2t-whoami-name" id="t2t-whoami-name">Traveler</div>'
-      + '<button type="button" id="t2t-whoami-signout">Not you? Sign Out</button>'
-      + '<button type="button" id="t2t-whoami-cancel">Cancel</button>';
-
-    document.body.appendChild(btn);
-    document.body.appendChild(card);
-
-    function show(name){
-      var clean = (name||'').trim();
-      btn.textContent = clean ? clean.slice(0,1).toUpperCase() : '👤';
-      var n = document.getElementById('t2t-whoami-name');
-      if (n) n.textContent = clean || 'Traveler';
-      btn.style.display = 'flex';
-    }
-    if (_member.user_id) show(_member.display_name);
-    window.addEventListener('t2t:member-loaded', function(e){ show(e.detail && e.detail.display_name); });
-
-    btn.addEventListener('click', function(){ card.classList.toggle('t2t-whoami-open'); });
-    document.addEventListener('click', function(e){
-      if (card.classList.contains('t2t-whoami-open') && !card.contains(e.target) && e.target!==btn) {
-        card.classList.remove('t2t-whoami-open');
-      }
-    });
-    document.getElementById('t2t-whoami-cancel').addEventListener('click', function(){
-      card.classList.remove('t2t-whoami-open');
-    });
-    document.getElementById('t2t-whoami-signout').addEventListener('click', async function(){
-      card.classList.remove('t2t-whoami-open');
-      if(!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
-      await doSignOutOfDevice();
-    });
   }
 
   // goBackStack — Larry, August 1 2026: "Close Field Guide to obsolete
@@ -1534,6 +1445,10 @@
     loadVisitedFromSupabase:loadVisitedFromSupabase,
     getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
+    // Sept 12 2026 -- exposed so drawer-system.js's Utility (gear) button
+    // can offer Sign Out itself, without a second file re-implementing
+    // the same steps. See doSignOutOfDevice's own comment above.
+    signOutOfDevice:doSignOutOfDevice,
     onRealtimeChange:onRealtimeChange, isDragActive:function(){ return _t2tDragActive; },
     // Larry, July 27 2026: "Trivia button should light up if there are
     // any trivia docs [for the current page]." Mirrors renderTrivia's
@@ -1566,7 +1481,6 @@
   document.addEventListener('DOMContentLoaded',function(){
     injectMGOverlay();
     wireBackpack();
-    buildWhoAmI();
     /* cross-file landing — check if we were sent here to a specific page */
     var bpTarget = sessionStorage.getItem('bp_target');
     if (bpTarget) {

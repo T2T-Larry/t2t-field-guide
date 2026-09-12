@@ -254,6 +254,16 @@
       + '.sz-text-option.sz-text-active{border-color:#4a3418;border-width:2px;background:#f6ecd8;font-weight:700}'
       + '#sz-text-close{border:1px solid #b89968;background:#fff;padding:6px 16px;'
       +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#4a3418}'
+      // Sept 12 2026, Larry: fold "who's signed in / Sign Out" into this
+      // same Utility popup rather than a second icon -- one divider,
+      // one section, so the Utility button stays the single place for
+      // "settings about this device," text size and account alike.
+      + '#sz-util-divider{border-top:1px solid #e3d3ae;margin:2px 0 12px}'
+      + '#sz-util-who{font-size:11px;color:#888;font-style:italic;margin-bottom:2px}'
+      + '#sz-util-name{font-weight:700;color:#4a3418;font-style:normal}'
+      + '#sz-util-signout{display:block;width:100%;border:1px solid #b8544a;background:#fff;'
+      +   'padding:9px 12px;border-radius:10px;cursor:pointer;color:#a8332a;font-weight:700;'
+      +   'font-family:"Playfair Display",Georgia,serif;margin-bottom:12px;box-sizing:border-box}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -859,10 +869,18 @@
     return gear;
   }
 
-  /* ---------- Text-size picker -- Aug 3 2026. Same overlay+card
-     pattern as the drawer color picker (drawer-style.js), just
-     offering screen-fit.js's four boost levels instead of swatches.
-     Lazily built on first open, same as the color picker. ---------- */
+  /* ---------- Utility popup -- Aug 3 2026, started as just the text-size
+     picker (same overlay+card pattern as the drawer color picker in
+     drawer-style.js). Sept 12 2026, Larry: Sign Out was three taps deep
+     (gear -> Settings -> Sign Out) and mattered enough to fix now -- a
+     shared/family computer needs an obvious way to tell whose account is
+     open and hand it off (e.g. Bill signing out so his daughter can sign
+     up for her own, rather than everyone sharing his login). Rather than
+     adding a second icon, this is now the one Utility popup for both:
+     "Signed in as [Name]" plus a Sign Out button live right under the
+     text-size options, using the exact same Sign Out steps as the
+     Settings screen (window.T2T.signOutOfDevice, backpack.js). Lazily
+     built on first open, same as the color picker. ---------- */
   function buildTextSizeOverlay(){
     var overlay = document.createElement('div');
     overlay.id = 'sz-text-overlay';
@@ -870,17 +888,31 @@
     var card = document.createElement('div');
     card.id = 'sz-text-card';
     card.innerHTML = ''
-      + '<div class="sz-text-title">Text size</div>'
-      + '<div class="sz-text-sub">Bigger text for easier reading. Stays until you change it.</div>'
+      + '<div class="sz-text-title">Utility</div>'
+      + '<div class="sz-text-sub">Text size — bigger text stays until you change it</div>'
       + '<div id="sz-text-options"></div>'
+      + '<div id="sz-util-divider"></div>'
+      + '<div id="sz-util-who">Signed in as <span id="sz-util-name">Traveler</span></div>'
+      + '<button id="sz-util-signout" type="button">Sign Out</button>'
       + '<button id="sz-text-close" type="button">✕</button>';
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
     guardedBackdropClose(overlay, closeTextSizePicker);
     card.querySelector('#sz-text-close').addEventListener('click', closeTextSizePicker);
+    card.querySelector('#sz-util-signout').addEventListener('click', async function(){
+      if (!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
+      if (window.T2T && window.T2T.signOutOfDevice) await window.T2T.signOutOfDevice();
+    });
 
     return overlay;
+  }
+
+  function refreshUtilWhoAmI(overlay){
+    var nameEl = overlay.querySelector('#sz-util-name');
+    if (!nameEl) return;
+    var m = window.T2T && window.T2T.getMember && window.T2T.getMember();
+    nameEl.textContent = (m && m.display_name) ? m.display_name : 'Traveler';
   }
 
   function openTextSizePicker(){
@@ -902,6 +934,7 @@
       });
       row.appendChild(opt);
     });
+    refreshUtilWhoAmI(overlay);
     overlay.classList.add('active');
     if (overlay._markOpened) overlay._markOpened();
   }
