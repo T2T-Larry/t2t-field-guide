@@ -186,31 +186,6 @@
       if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
         applyPos(saved.left, saved.top);
         restored = true;
-        // Sept 12 2026, Larry (bug report): "Utility button and X are
-        // now totally missing from desktop screen" -- a saved spot
-        // used to be trusted as-is, with nothing checking it against
-        // the window it's actually opening in. Drag the gear (or
-        // anything else on this shared system) near the edge on a wide
-        // window, then come back on a narrower one -- same monitor
-        // resized, a laptop instead of an external display, whatever
-        // -- and the saved left/top can land past the new edge:
-        // present in the DOM, fully styled, just physically off the
-        // visible screen. Every free-dragged desk object restores
-        // through this one path, so clamp it back into whatever
-        // screen it's actually opening on (a small margin in from the
-        // true edge, never flush against it) and re-save the
-        // corrected spot so it doesn't drift off again next time this
-        // same window size loads it.
-        var rect = el.getBoundingClientRect();
-        var margin = 4;
-        var maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
-        var maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
-        var clampedLeft = Math.min(Math.max(saved.left, margin), maxLeft);
-        var clampedTop = Math.min(Math.max(saved.top, margin), maxTop);
-        if (clampedLeft !== saved.left || clampedTop !== saved.top) {
-          applyPos(clampedLeft, clampedTop);
-          try { localStorage.setItem(storeKey, JSON.stringify({ left: clampedLeft, top: clampedTop })); } catch(e){}
-        }
       }
     } catch(e){}
     // skipDefaultPos -- for objects whose "home" is normal document

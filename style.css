@@ -71,7 +71,7 @@ body{display:flex;align-items:center;justify-content:center;padding:16px;min-hei
    tray split into two trays (STORYBOARDS/LIBRARY), each with its own
    id, so this safety net now covers both by class, same treatment
    .sz-tool-btn/.sz-tool-stack-grip already got. */
-body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-close-x,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen .sz-tool-stack,body.t2t-bare-screen #sz-phases,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen .sz-tool-stack-grip{display:none!important}
+body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-screen #tv-frame,body.t2t-bare-screen #tv-vignette,body.t2t-bare-screen #sz-nameplate,body.t2t-bare-screen #sz-notebook,body.t2t-bare-screen #sz-gear,body.t2t-bare-screen #sz-menu,body.t2t-bare-screen #bm-rail,body.t2t-bare-screen .sz-tool-stack,body.t2t-bare-screen #sz-phases,body.t2t-bare-screen .sz-tool-btn,body.t2t-bare-screen .sz-tool-stack-grip{display:none!important}
 /* Larry, August 1 2026: "elements of the desktop have creeped into the
    storyboard: shortcuts, and the 2 drawers." The Storyboard (1010) and
    Session (9711) both go full-screen via #fg-root.isx-full, but that
@@ -82,15 +82,6 @@ body.t2t-bare-screen #sz-navbar,body.t2t-bare-screen #sz-drawer-r,body.t2t-bare-
    isx-full itself, no matter which of the several ways in or out of
    1010/9711 gets used. */
 body:has(#fg-root.isx-full) #sz-navbar,body:has(#fg-root.isx-full) #sz-drawer-r,body:has(#fg-root.isx-full) #bm-rail,body:has(#fg-root.isx-full) #sz-nameplate{display:none!important}
-/* Sept 12 2026: #sz-gear/#sz-close-x moved out of #sz-navbar to their
-   own fixed spot in the corner (Larry: "fixed to the upper right
-   corner... just like on ALL other screens"), so they're no longer
-   descendants of #sz-navbar and this rule's :has() selector above
-   doesn't catch them on its own anymore. Every full-screen tool
-   (Storyboard/Session/Briefing Board/Gems) already has its own
-   Utility+Close pair in its own header, so the desktop's fixed pair
-   still needs to hide here same as before -- listed explicitly. */
-body:has(#fg-root.isx-full) #sz-gear,body:has(#fg-root.isx-full) #sz-close-x{display:none!important}
 /* Closed desk (Larry, July 31 2026 -- "put an X on the tv screen to close it
    into the Field Guide Button... Phases and Shortcuts disappear and reappear
    when it is opened") -- NARROWED July 31 2026, later same day, Larry:
