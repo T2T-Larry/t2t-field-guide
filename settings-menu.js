@@ -82,7 +82,12 @@ in their own file-header comments the next time they're touched).
       };
     }
     return [
-      item('people',      '&#128101;', 'People',       'Open a project to manage its Guests'),
+      // Sept 12 2026, Larry: "remove the People screen ... CAST is our
+      // source of truth" -- Idea Storyboard/Desktop/Session no longer
+      // pass an onClick for this, so it renders disabled with this
+      // explanation (Briefing Board still passes one -- Relationships,
+      // a different feature, lives there).
+      item('people',      '&#128101;', 'People',       "Add people through a project's own Cast (Call Sheet) instead"),
       item('appearance',  '&#127912;', 'Appearance',   null),
       item('preferences', '&#128295;', 'Preferences',  'Open a project to change its preferences'),
       item('reload',      '&#128260;', 'Reload',       null),

@@ -173,7 +173,7 @@
     tile.className='sc-pill named';
     tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-weight:400;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(entry.color?';background:'+entry.color:';background:#f4ede0')+';border:1px dashed #b89968';
     var ownerLine=entry.ownerName?('👤 '+entry.ownerName):(entry.ownerInitials?('👤 '+entry.ownerInitials):'👤 —');
-    var star=entry.isPrimaryStakeholder?'★ ':'';
+    var star=entry.isKeyStakeholder?'🔑 ':''; // 🔑 = Key Stakeholder (Sept 12 2026); ★ Primary Doer isn't shown on this tile at all -- it's a per-person Call Sheet flag, not part of the ownership eyebrow
     tile.innerHTML='<div style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a6040;margin-bottom:3px">'+star+ownerLine+'</div>'
       +'<div style="font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c">'+(entry.text||'(untitled)')+'</div>';
     tile.title=entry.isDelegatedTopic?'Delegated TOPIC — owned by '+(entry.ownerName||'another traveler'):'Owned by '+(entry.ownerName||'another traveler');

@@ -1144,21 +1144,21 @@
       body.innerHTML = built.html;
       window.T2TSettingsMenu.wireHomeItems(body, built.items);
     } else if(screen==='people'){
-      if(titleEl) titleEl.textContent='People';
+      // Guests retired Sept 12 2026, Larry: "remove the People screen ...
+      // CAST is our source of truth" -- the Guests button (board_members,
+      // view-only invites) is gone; Relationships is a different feature
+      // (parent/child board adoption, board_relations) and stays. Titled
+      // Relationships now since that's this screen's only content.
+      if(titleEl) titleEl.textContent='Relationships';
       body.innerHTML=
-         '<div class="bb-field" id="bb-sharing-field">'
-          +'<button class="bb-flag-btn" id="bb-open-sharing" style="width:100%">&#127915; Guests</button>'
-        +'</div>'
-        +'<div class="bb-field" id="bb-relations-field">'
+        '<div class="bb-field" id="bb-relations-field">'
           +'<button class="bb-flag-btn" id="bb-open-relations" style="width:100%">&#128279; Relationships</button>'
         +'</div>';
       // Aug 30 2026, Larry: "Delete Cast from Utility button" -- CAST is
       // now its own destination on the board-kind dropdown up top (same
       // roster either way, openTeamRoster/_tmAddMember), so the nested
       // People -> Cast entry that used to duplicate it is gone.
-      T().wire('bb-open-sharing', function(){ closeSettings(); openSharingManager(); });
       T().wire('bb-open-relations', function(){ closeSettings(); openRelationsManager(); });
-      _bbLoadSharing();
     } else if(screen==='appearance'){
       if(titleEl) titleEl.textContent='Appearance';
       body.innerHTML=

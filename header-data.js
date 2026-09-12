@@ -199,17 +199,25 @@
   }
 
   /* promotedPrimaryEntries — the PROJECT-list shortcut for every project
-     ROOT (not any nested card) where this traveler has been made Primary
-     via the 👥 Call Sheet (card_roles.is_primary), on a project someone
-     else owns. Two-step manual join, same pattern as collaboratorEntries:
+     ROOT (not any nested card) where this traveler has been made PRIMARY
+     via the 👥 Call Sheet (card_roles.role='primary' -- the accountable
+     one, "responsible for making it happen"), on a project someone else
+     owns. Two-step manual join, same pattern as collaboratorEntries:
      read this traveler's own card_roles rows, then the referenced ideas
      rows. Scoped to self-scoped rows only (topic_scope_id===id) so a
      Primary assignment on an ordinary nested card doesn't masquerade as a
-     whole-project promotion. */
+     whole-project promotion.
+     Sept 12 2026, Larry re-split PRIMARY (accountability) from ★ Primary
+     Doer (card_roles.is_primary, "who's actually doing the work" -- his
+     example: the building manager is PRIMARY, the plumber is ★). This
+     list is specifically about accountability -- "you were made
+     responsible for someone else's project" -- so it now reads
+     role='primary', not is_primary. Being starred as the doer on someone
+     else's project (without being made PRIMARY) doesn't belong here. */
   async function promotedPrimaryEntries(){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
-      var roles=await sb.from('card_roles').select('card_id').eq('card_type','idea').eq('user_id',u.id).eq('is_primary',true);
+      var roles=await sb.from('card_roles').select('card_id').eq('card_type','idea').eq('user_id',u.id).eq('role','primary');
       if(roles.error){ console.warn('promotedPrimaryEntries card_roles error:', roles.error); return []; }
       var ids=(roles.data||[]).map(function(r){ return r.card_id; });
       if(!ids.length) return [];
@@ -223,13 +231,21 @@
 
   /* stakeholderEntries — same shape as promotedPrimaryEntries, but for a
      card_roles row of role='stakeholder' rather than is_primary. Carries
-     isPrimaryStakeholder (card_roles.is_primary_stakeholder) through so
-     the STAKEHOLDER group and the PROJECT popup's fast-access list (Primary
-     Stakeholder only) can both read off the same fetch. */
+     isKeyStakeholder (card_roles.is_key) through so the STAKEHOLDER group
+     and the PROJECT popup's fast-access list (Key Stakeholder only) can
+     both read off the same fetch.
+     Sept 12 2026, Larry: unified the app's two different "special
+     stakeholder" flags into one -- this used to read the separate
+     is_primary_stakeholder column (added Sept 2 for Board-of-Directors
+     auto-flagging, shown only here/the project list/card badges) instead
+     of is_key (the original 🔑 Key Stakeholder toggle on the Call Sheet
+     roster, "can directly interfere with progress"). No production row
+     had is_primary_stakeholder set, so this was a clean cutover, not a
+     migration. */
   async function stakeholderEntries(){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
-      var roles=await sb.from('card_roles').select('card_id,is_primary_stakeholder').eq('card_type','idea').eq('user_id',u.id).eq('role','stakeholder');
+      var roles=await sb.from('card_roles').select('card_id,is_key').eq('card_type','idea').eq('user_id',u.id).eq('role','stakeholder');
       if(roles.error){ console.warn('stakeholderEntries card_roles error:', roles.error); return []; }
       var rows=roles.data||[];
       if(!rows.length) return [];
@@ -237,12 +253,12 @@
       var proj=await sb.from('ideas').select('id,text_content,user_id,topic_scope_id,color').in('id',ids);
       if(proj.error){ console.warn('stakeholderEntries ideas error:', proj.error); return []; }
       var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
-      var primaryByCard={}; rows.forEach(function(r){ primaryByCard[r.card_id]=!!r.is_primary_stakeholder; });
+      var keyByCard={}; rows.forEach(function(r){ keyByCard[r.card_id]=!!r.is_key; });
       return ids
         .map(function(id){ return byId[id]; })
         .filter(function(p){ return p && p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
         .map(function(p){
-          return {id:p.id, text:p.text_content, ownerUserId:p.user_id, color:p.color, isPrimaryStakeholder:!!primaryByCard[p.id]};
+          return {id:p.id, text:p.text_content, ownerUserId:p.user_id, color:p.color, isKeyStakeholder:!!keyByCard[p.id]};
         });
     }catch(e){ console.warn('stakeholderEntries exception:', e); return []; }
   }
@@ -251,16 +267,16 @@
      project's Cast (see _csInsertRole in idea-storyboard-9710.js), so the
      Board-of-Directors starting state can be set atomically with the row
      itself instead of an insert-then-update. Board-of-Directors members
-     default to Primary Stakeholder (opt-out from there, see
-     setPrimaryStakeholder); an ordinary Stakeholder starts unflagged
-     (opt-in later, self-only). */
+     default to 🔑 Key Stakeholder (opt-out from there, see
+     setKeyStakeholder); an ordinary Stakeholder starts unflagged (opt-in
+     later, self-only). */
   async function addStakeholderToCast(cardId, userId, isBoardMember){
     try{
       var sb=_sb(); var u=await _currentUser();
       if(!u) return {ok:false, msg:'Not signed in.'};
       var ins=await sb.from('card_roles').insert({
         card_type:'idea', card_id:cardId, role:'stakeholder', user_id:userId,
-        is_board_member:!!isBoardMember, is_primary_stakeholder:!!isBoardMember,
+        is_board_member:!!isBoardMember, is_key:!!isBoardMember,
         added_by:u.id
       }).select().single();
       if(ins.error) return {ok:false, msg:ins.error.message};
@@ -268,15 +284,20 @@
     }catch(e){ return {ok:false, msg:(e&&e.message)||'Could not add them as a Stakeholder.'}; }
   }
 
-  /* setPrimaryStakeholder — self-designation only: a plain Stakeholder can
-     flag (or unflag) themselves as Primary Stakeholder on a project.
-     Board-of-Directors members start flagged already (addStakeholderToCast
-     above); this is the opt-in/opt-out path for everyone else. */
-  async function setPrimaryStakeholder(cardId, flag){
+  /* setKeyStakeholder (renamed from setPrimaryStakeholder, Sept 12 2026 --
+     see stakeholderEntries' comment above) — self-designation only: a
+     plain Stakeholder can flag (or unflag) themselves as 🔑 Key
+     Stakeholder on a project. Board-of-Directors members start flagged
+     already (addStakeholderToCast above); this is the opt-in/opt-out
+     path for everyone else. Not currently wired to any button (the Call
+     Sheet's own 🔑 checkbox -- _csToggleKey in idea-storyboard-people.js
+     -- is the live path for this today); kept as a public API in case a
+     self-service toggle is wanted outside the full Call Sheet later. */
+  async function setKeyStakeholder(cardId, flag){
     try{
       var sb=_sb(); var u=await _currentUser();
       if(!u) return {ok:false, msg:'Not signed in.'};
-      var upd=await sb.from('card_roles').update({is_primary_stakeholder:!!flag})
+      var upd=await sb.from('card_roles').update({is_key:!!flag})
         .eq('card_type','idea').eq('card_id',cardId).eq('user_id',u.id).eq('role','stakeholder');
       if(upd.error) return {ok:false, msg:upd.error.message};
       return {ok:true};
@@ -420,38 +441,67 @@
   }
 
   /* collaboratorEntries — the actual list of "brought into" projects
-     for COLLABORATOR's shortcut buttons. storyboard_members is the
-     existing roster/permission layer for exactly this: a traveler
-     ends up with a row there either as a plain Cast Member someone
-     added them as, or as a delegated TOPIC's owner (mirrored here
-     automatically by the delegate_topic() database function) — either
-     way, "is this mine" is decided by the referenced project's own
-     user_id, never by who added the row. Two-step manual join
-     (fetch storyboard_members, then the referenced ideas rows) rather
-     than a PostgREST embed, matching how every other multi-table read
-     in this file is written.
-     Placement rule (per the design lock): whose root project it is,
-     not Primary-vs-not — so this only excludes rows the traveler
-     themself owns, it does not try to distinguish Primary from
-     Stakeholder from plain Cast Member. Still returns [] for everyone
-     today (storyboard_members has no rows in production yet) until a
-     real second Cast member exists to test against — verified against
-     the live database Sept 2, 2026 before writing this. */
+     for COLLABORATOR's shortcut buttons. Two sources, merged: an explicit
+     People-screen invite (storyboard_members — also covers a delegated
+     TOPIC's owner, mirrored in automatically by the delegate_topic()
+     database function), and a plain Cast Member / Facilitator /
+     Facilitator-qualified placement on the project's own Call Sheet
+     (card_roles — added Sept 12, 2026, see the function body for why).
+     Either way, "is this mine" is decided by the referenced project's own
+     user_id, never by who added the row. Manual joins (fetch the roster
+     rows, then the referenced ideas rows) rather than a PostgREST embed,
+     matching how every other multi-table read in this file is written.
+     Placement rule (per the design lock): whose root project it is, not
+     Primary-vs-not — so this only excludes rows the traveler themself
+     owns, it does not try to distinguish Primary from Stakeholder from
+     plain Cast Member. First verified against two real production rows
+     (Bill Fritsch + the "Claude" member account, both storyboard_members
+     on Larry's "Field Guide" project) Sept 12, 2026. */
   async function collaboratorEntries(){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
       var mem=await sb.from('storyboard_members').select('project_id,role').eq('user_id',u.id);
       if(mem.error){ console.warn('collaboratorEntries storyboard_members error:', mem.error); return []; }
-      var rows=mem.data||[];
-      if(!rows.length) return [];
-      var ids=rows.map(function(r){ return r.project_id; });
-      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_owner_user_id,color').in('id',ids);
+      var memRows=mem.data||[];
+
+      // Sept 12 2026, Larry: "CAST is our source of truth -- a person
+      // listed as a Cast member is a Collaborator, full stop." Before this,
+      // only an explicit People-screen invite (storyboard_members) landed
+      // here -- a plain Cast Member / Facilitator / Facilitator-qualified
+      // placement on someone else's project already granted real read
+      // access (is_storyboard_member()'s card_roles fallback already
+      // covers all five working roles), but had no way to ever be FOUND:
+      // not shown at the project root (that's Primary-only, see
+      // promotedPrimaryEntries), not shown here either. Folded in below,
+      // self-scoped to the project root exactly like
+      // promotedPrimaryEntries/stakeholderEntries (topic_scope_id===id) so
+      // a Cast placement on an ordinary nested card never masquerades as a
+      // whole-project placement. (Primary stays root-only/fast-access, and
+      // 'stakeholder' stays its own bucket below -- this only adds the
+      // three plain Cast working roles.)
+      var castRoles=await sb.from('card_roles').select('card_id,role')
+        .eq('card_type','idea').eq('user_id',u.id)
+        .in('role',['cast_member','facilitator','facilitator_qualified']);
+      if(castRoles.error) console.warn('collaboratorEntries card_roles error:', castRoles.error);
+      var castRows=castRoles.data||[];
+      if(!memRows.length && !castRows.length) return [];
+
+      var roleByProject={};
+      memRows.forEach(function(r){ roleByProject[r.project_id]=r.role; });
+      castRows.forEach(function(r){ if(!(r.card_id in roleByProject)) roleByProject[r.card_id]=r.role; });
+
+      var allIds={};
+      memRows.forEach(function(r){ allIds[r.project_id]=true; });
+      castRows.forEach(function(r){ allIds[r.card_id]=true; });
+      var ids=Object.keys(allIds);
+      if(!ids.length) return [];
+
+      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_owner_user_id,topic_scope_id,color').in('id',ids);
       if(proj.error){ console.warn('collaboratorEntries ideas error:', proj.error); return []; }
       var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
-      var roleByProject={}; rows.forEach(function(r){ roleByProject[r.project_id]=r.role; });
       return ids
         .map(function(id){ return byId[id]; })
-        .filter(function(p){ return p && p.user_id!==u.id; })
+        .filter(function(p){ return p && p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
         .map(function(p){
           return {
             id:p.id,
@@ -673,7 +723,7 @@
     stakeholderEntries: stakeholderEntries,
     promotedPrimaryEntries: promotedPrimaryEntries,
     addStakeholderToCast: addStakeholderToCast,
-    setPrimaryStakeholder: setPrimaryStakeholder,
+    setKeyStakeholder: setKeyStakeholder,
     ensureIdeaStoryboardsRoot: ensureIdeaStoryboardsRoot,
     ensureNewAdditionsHeader: ensureNewAdditionsHeader,
     ensureTrashHeader: ensureTrashHeader,

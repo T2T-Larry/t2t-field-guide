@@ -63,8 +63,8 @@
   // does everything the old pair did plus the two new rules -- nothing
   // else called them by name, so they're gone rather than kept as a
   // second, now-redundant path. _sboardCardPrimaryCache/_sboardCpKey stay:
-  // _csTogglePrimary below still uses them to drop a single card's stale
-  // entry after a manual star/unstar.
+  // _csTogglePrimaryDoer below still uses them to drop a single card's
+  // stale entry after a manual star/unstar.
   var _sboardCardPrimaryCache = {};
   function _sboardCpKey(cardType, cardId){ return (cardType||'idea')+':'+cardId; }
 
@@ -624,11 +624,19 @@
   // Session 255 (Aug 28 2026), Larry: three basic roles -- Stakeholder,
   // Primary, Cast Member -- with Facilitator and Facilitator-qualified
   // (backup) as the two Cast Member variants that matter enough to call
-  // out on their own. PRIMARY replaces the old "Leader" role AND absorbs
-  // the separate ★ primary-doer star into one idea: "the person
-  // responsible for making it happen." See _csSaveRole for how it keeps
-  // the existing is_primary/★ plumbing (corner badge, board filter
-  // fallback) in sync without rewiring those call sites.
+  // out on their own. PRIMARY replaces the old "Leader" role.
+  // Sept 12 2026, Larry re-split this from the ★ primary-doer star that
+  // Session 255 had merged into it: "★ means primary doer, which could
+  // be a Cast Member. PRIMARY is the person responsible to make sure the
+  // project happens. They could be two different people -- the building
+  // manager is PRIMARY but the plumber is ★." So role='primary' (picked
+  // right here in the role panel) is the accountable one; is_primary
+  // (the ★, toggled independently via _csTogglePrimaryDoer -- see that
+  // function and _csRenderRow's primaryMark) is whoever's actually doing
+  // the work. They default to the same person (see _csAutoPrimaryIfSolo/
+  // _csAutoPrimaryIfEmpty, which set both together when there's only one
+  // person to begin with) but picking a role here no longer touches
+  // is_primary at all -- see _csSaveRole.
   // Guest added Sept 12 2026, Larry: the role screen (this same panel --
   // Call Sheet full view and the compact 👥 dropdown both read off this
   // one list) needed a lightest-weight option for someone along for
@@ -691,13 +699,18 @@
     var email=m?(m.email||''):'';
     var phone=m?(m.phone||''):'';
     var star=r.is_parent_connection?'<span class="cs-parent-star" title="Carried over from the parent">★</span>':'';
-    // Primary doer star, Session 234 -- same toggle as the compact 👥
+    // Primary Doer star, Session 234 -- same toggle as the compact 👥
     // dropdown (_sbPeopleRenderList); both read/write the same
-    // card_roles.is_primary column via _csTogglePrimary.
-    // Passive now, Session 255 -- PRIMARY is picked from the role panel
-    // like any other role (see CS_ROLE_ORDER comment); this is just the
-    // at-a-glance ★ for whoever currently holds it, not a click target.
-    var primaryMark=r.role==='primary'?'<span class="cs-primary-toggle cs-primary-on" title="Primary — the person responsible for making it happen">★</span>':'';
+    // card_roles.is_primary column via _csTogglePrimaryDoer.
+    // Sept 12 2026, Larry: ★ Primary Doer and PRIMARY (the role, "the
+    // person responsible for making it happen") are two independent
+    // things again -- his example: the building manager is PRIMARY, the
+    // plumber doing the actual work is ★. They're usually the same
+    // person (see _csAutoPrimaryIfSolo), but don't have to be. So this is
+    // a real click target here too now, not just passive display --
+    // mirrors the compact dropdown's ★/☆ button exactly (see
+    // _csTogglePrimaryDoer below).
+    var primaryMark='<button type="button" class="cs-primary-toggle'+(r.is_primary?' cs-primary-on':'')+'" style="background:none;border:0;padding:0;font:inherit;font-size:1em" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'★ Primary Doer — the one actually doing the work. Tap to unstar.':'Tap to make this person the ★ Primary Doer')+'">'+(r.is_primary?'★':'☆')+'</button>';
     // Board-wide filter checkbox, Session 255 -- Larry: check one or more
     // people and the whole board narrows to their assignments (any role,
     // Stakeholder included -- being recognized as a Stakeholder carries
@@ -854,13 +867,22 @@
   // its Call Sheet needs no manual star -- this makes it real the moment
   // that becomes true, rather than leaving it as a display-only guess.
   // Called after every roster change (add/remove/role-edit); a no-op
-  // whenever the card has zero, 2+, or an already-starred sole person.
+  // whenever the card has zero, 2+, or an already-accounted-for sole
+  // person.
+  // Sept 12 2026, Larry: "if the first person assigned is automatically
+  // the PRIMARY" -- with PRIMARY (role) and ★ Primary Doer (is_primary)
+  // now independent flags (see CS_ROLE_ORDER comment), the solo case is
+  // the one place both still default together: with only one person on
+  // the card, they're both the accountable one AND the one doing the
+  // work, so this sets role AND is_primary at once. Guard checks role,
+  // not is_primary, so a manual un-star (someone deliberately toggled
+  // themselves off ★ while still solo) is respected and not re-applied.
   async function _csAutoPrimaryIfSolo(){
     if(!_csItem) return;
-    if(!_csRoles || _csRoles.length!==1 || _csRoles[0].is_primary) return;
+    if(!_csRoles || _csRoles.length!==1 || _csRoles[0].role==='primary') return;
     var _sb=T().sb; if(!_sb) return;
     try{
-      var upd=await _sb.from('card_roles').update({is_primary:true}).eq('id', _csRoles[0].id);
+      var upd=await _sb.from('card_roles').update({role:'primary', is_primary:true}).eq('id', _csRoles[0].id);
       if(upd.error) return;
       await _csLoadRoles(_csItem);
       _sboardInvalidateEffPrimary();
@@ -891,13 +913,13 @@
   // at zero -- same two call-site shapes _csAutoPrimaryIfSolo already
   // uses), resolve the exact same climb the badge already trusts and write
   // it as a REAL role:'primary'+is_primary:true row, not just a display
-  // guess. Written with both fields set together (unlike the older
-  // solo-case above, which only ever toggled is_primary) so this row is
-  // indistinguishable from a deliberate human pick -- including showing
-  // the ★ Primary tag in the full Call Sheet, and properly handing off to
-  // Stakeholder rather than being silently ignored the moment someone else
-  // IS explicitly assigned (see _csPriorPrimaryToStakeholder, used from both
-  // _csSaveRole and _csTogglePrimary below).
+  // guess. Written with both fields set together (same as the solo case
+  // above now does too, Sept 12 2026) so this row is indistinguishable
+  // from a deliberate human pick -- including showing both the "Primary"
+  // role tag and the ★ Primary Doer star in the full Call Sheet, and
+  // properly handing off to Stakeholder rather than being silently
+  // ignored the moment someone else IS explicitly assigned Primary (see
+  // _csPriorPrimaryToStakeholder, called from _csSaveRole).
   async function _csAutoPrimaryIfEmpty(){
     if(!_csItem) return;
     if(_csRoles && _csRoles.length) return; // only the true-empty case
@@ -924,26 +946,38 @@
 
   // Flip side of the cascade below, Aug 29 2026 (Larry, same request as
   // _csAutoPrimaryIfEmpty above): displacing a card's own PRIMARY -- by
-  // picking a new one from the role panel, or starring someone else in the
-  // compact dropdown -- must hand off whoever held it to Stakeholder, not
-  // just clear their is_primary flag and leave their role field still
-  // reading "Primary" (which used to leave a stale ★ Primary tag showing
-  // in the Cast list for someone who wasn't primary anymore, and quietly
+  // picking a new one from the role panel -- must hand off whoever held
+  // it to Stakeholder, not just leave their role field still reading
+  // "Primary" (which used to leave a stale "Primary" tag showing in the
+  // Cast list for someone who wasn't primary anymore, and quietly
   // blocked _csApplyAncestorStakeholders from ever crediting them, since
   // it only inserts a Stakeholder row for someone with NO existing row on
   // this card). Larry, Aug 29: "PRIMARY is by definition a STAKEHOLDER" --
   // not a demotion, there's a real sense in which PRIMARY reports to the
   // Stakeholders to do the role well, so this is PRIMARY handing the card
-  // back to that reporting relationship, not losing standing on it. The
-  // one-is_primary-per-card DB constraint guarantees at most one row can
-  // match role:'primary' here.
+  // back to that reporting relationship, not losing standing on it. Only
+  // one row can ever match role:'primary' -- not a DB constraint, this
+  // function IS the enforcement, called every time a new Primary is
+  // picked (_csSaveRole) before the new one is written.
+  //
+  // Sept 12 2026, Larry: "the previous PRIMARY becomes a KEY STAKEHOLDER,
+  // unless that is manually changed -- playing the odds!" -- whoever just
+  // ran the card is odds-on to still be worth deferring to, so the
+  // hand-off now defaults them to 🔑 Key Stakeholder (is_key:true)
+  // instead of a plain Stakeholder row. Still just a starting default,
+  // same as any other Cast placement -- the 🔑 checkbox on their row
+  // toggles it off same as it always has. Deliberately does NOT touch
+  // is_primary (★ Primary Doer, since the same re-split) -- accountability
+  // changing hands has nothing to do with who's actually doing the work;
+  // if the outgoing PRIMARY also happens to be starred as the doer, they
+  // stay starred.
   async function _csPriorPrimaryToStakeholder(cardType, cardId, keepRowId){
     var _sb=T().sb; if(!_sb) return;
     try{
       var prior=await _sb.from('card_roles').select('id').eq('card_type',cardType).eq('card_id',cardId).eq('role','primary').neq('id',keepRowId);
       var rows=(!prior.error && prior.data) ? prior.data : [];
       for(var i=0;i<rows.length;i++){
-        await _sb.from('card_roles').update({role:'stakeholder', is_primary:false, is_key:false}).eq('id', rows[i].id);
+        await _sb.from('card_roles').update({role:'stakeholder', is_key:true}).eq('id', rows[i].id);
       }
     }catch(e){}
   }
@@ -953,9 +987,11 @@
   // assigned to another person. If another person is assigned, the
   // PRIMARY person from the level above is automatically a STAKEHOLDER
   // as they are responsible for the larger hierarchy." Fires the moment a
-  // card lands its own explicit Primary (solo tacit-assignment above, or
-  // a manual star in _csTogglePrimary) -- walks every ancestor level all
-  // the way to the top of the chain, and for each level whose own
+  // card lands its own explicit Primary (solo or empty tacit-assignment
+  // above, or an explicit pick in _csSaveRole -- accountability changing
+  // hands, not the ★ Primary Doer star, see Sept 12 2026 notes above) --
+  // walks every ancestor level all the way to the top of the chain, and
+  // for each level whose own
   // effective primary (reusing the same climb-if-empty resolver
   // everything else here uses) differs from this card's own primary,
   // writes a REAL card_roles row (role:'stakeholder') for that person on
@@ -1010,10 +1046,14 @@
       var meRes=await _sb.auth.getUser();
       var me=meRes && meRes.data ? meRes.data.user : null;
       // Board of Directors capture, Sept 2 2026 (Idea Storyboards, design
-      // lock second amendment): a Stakeholder starts flagged Primary
+      // lock second amendment): a Stakeholder starts flagged 🔑 Key
       // Stakeholder automatically when added as a Board of Directors
       // member (opt-out from there); an ordinary Stakeholder starts
-      // unflagged (opt-in later, self-only -- see setPrimaryStakeholder).
+      // unflagged (opt-in later, self-only -- see T2TData.setKeyStakeholder,
+      // or the Call Sheet's own 🔑 checkbox, _csToggleKey below, which is
+      // the live path for this today). Sept 12 2026: this used to flag a
+      // separate is_primary_stakeholder column -- unified onto is_key, the
+      // same 🔑 Key Stakeholder flag the full Call Sheet already showed.
       // Routed through T2TData.addStakeholderToCast, which sets that
       // starting state atomically with the row itself, instead of the
       // bare insert every other role still uses here.
@@ -1052,34 +1092,29 @@
   // instead of inserting a second one. Clears is_key if they're moved
   // off Stakeholder, since the toggle only makes sense there.
   //
-  // PRIMARY now absorbs the ★ star (see CS_ROLE_ORDER comment above), so
-  // picking Primary here also sets is_primary=true on this row -- clearing
-  // it off anyone else on the card first, same order _csTogglePrimary
-  // already used, so the one-star-per-card constraint never trips -- and
-  // moving someone OFF Primary clears their own is_primary. This keeps
-  // the corner badge and the board's person-filter fallback (both still
-  // keyed off is_primary) correct without touching that code.
+  // Sept 12 2026, Larry re-split PRIMARY (the role) from ★ Primary Doer
+  // (is_primary) -- see the CS_ROLE_ORDER comment above. Picking Primary
+  // here no longer touches is_primary at all; whoever's starred as
+  // Primary Doer stays starred regardless of who's accountable now. Only
+  // the accountability hand-off (demoting whoever held role='primary'
+  // before) still happens here, via _csPriorPrimaryToStakeholder.
   async function _csSaveRole(rowId, newRole){
     if(!rowId || !_csItem) return;
     var _sb=T().sb; if(!_sb) return;
     // Captured before any of the writes below -- this row's user_id
-    // doesn't change here (only its role/is_primary do), and the
-    // Stakeholder cascade at the bottom needs it once newRole is
-    // 'primary'. Same style _csTogglePrimary already uses.
+    // doesn't change here (only its role does), and the Stakeholder
+    // cascade at the bottom needs it once newRole is 'primary'.
     var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
     try{
       if(newRole==='primary'){
         // Aug 29 2026, Larry: "PRIMARY is by definition a STAKEHOLDER
         // (responsible for making whatever it is happen)" -- so whoever
-        // held Primary before this pick doesn't just lose the star, they
+        // held Primary before this pick doesn't just lose the role, they
         // fall back to being a Stakeholder on this same card, not a role
-        // left dangling as "Primary" with is_primary quietly false. See
-        // _csPriorPrimaryToStakeholder.
+        // left dangling as "Primary". See _csPriorPrimaryToStakeholder.
         await _csPriorPrimaryToStakeholder(_csCardType||'idea', _csItem.id, rowId);
-        var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
-        if(clear.error) throw clear.error;
       }
-      var patch={role:newRole, is_primary:(newRole==='primary')};
+      var patch={role:newRole};
       if(newRole!=='stakeholder') patch.is_key=false;
       var upd=await _sb.from('card_roles').update(patch).eq('id', rowId);
       if(upd.error) throw upd.error;
@@ -1089,9 +1124,11 @@
         // "BOOK was assigned to Rachel... I should automatically be a
         // Stakeholder on Rachel's card"). Picking Primary from this same
         // role panel is exactly as much "specifically assigned to another
-        // person" as the compact-dropdown star (_csTogglePrimary) or the
-        // solo-tacit case (_csAutoPrimaryIfSolo) -- both of those already
-        // called this; this panel just never had. Only on the pick-Primary
+        // person" as the solo/empty-tacit cases (_csAutoPrimaryIfSolo/
+        // _csAutoPrimaryIfEmpty) -- those already called this; this panel
+        // just never had. Sept 12 2026: no longer also triggered by the
+        // ★ Primary Doer star (_csTogglePrimaryDoer) -- that's a separate
+        // flag now, not an accountability change. Only on the pick-Primary
         // branch, using the row's own user_id captured above.
         await _csApplyAncestorStakeholders(_csCardType||'idea', _csItem.id, row.user_id);
       }
@@ -1146,6 +1183,14 @@
     try{ await _sb.from('card_roles').update({notes:notes}).eq('id', rowId); }catch(e){}
   }
 
+  // Sept 12 2026, Larry confirmed this is already right: 🔑 Key
+  // Stakeholder is a plain per-row flag with no exclusivity -- unlike
+  // PRIMARY (role) or ★ Primary Doer (is_primary), which each allow only
+  // one per card, any number of Stakeholder rows can be 🔑'd at once.
+  // "Could be more than one person, like a board of directors where we
+  // cannot have just one and not the others and they cannot be simply
+  // stakeholders (politics)." Nothing to change here -- confirming for
+  // the record.
   async function _csToggleKey(rowId){
     if(!rowId) return;
     var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
@@ -1159,16 +1204,27 @@
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }
 
-  // Primary doer star, Session 234 (Aug 21) -- replaces the old Person
-  // Assigned dropdown. card_roles.is_primary has a DB constraint allowing
-  // at most one true row per card (card_roles_one_primary_per_card), so
-  // setting a new primary clears any other starred row on this card FIRST
-  // -- setting the new one true before that clear would trip the
-  // constraint. Un-starring the current primary (tap it again) just
-  // leaves nobody starred; the corner badge/Team filter fall back to
-  // whatever pre-twin-heads assigned_user_id the card already had, if any
+  // ★ Primary Doer star, Session 234 (Aug 21) -- replaces the old Person
+  // Assigned dropdown. card_roles.is_primary allows at most one true row
+  // per card (enforced here in app code, same as it always has been --
+  // there's no separate DB constraint), so setting a new Primary Doer
+  // clears any other starred row on this card FIRST -- setting the new
+  // one true before that clear would leave two starred at once. Un-
+  // starring the current one (tap it again) just leaves nobody starred;
+  // the corner badge/Team filter fall back to the tacit-assignment climb
   // (see _sboardEnsureCardPrimary).
-  async function _csTogglePrimary(rowId){
+  //
+  // Sept 12 2026, Larry: renamed from _csTogglePrimary now that ★ Primary
+  // Doer is fully independent of PRIMARY (the role) -- see the
+  // CS_ROLE_ORDER comment and _csSaveRole above. Starring/un-starring
+  // someone here no longer touches who's accountable at all: it used to
+  // also demote whoever held role='primary' to Stakeholder
+  // (_csPriorPrimaryToStakeholder) and credit the Stakeholder cascade up
+  // the ancestor chain (_csApplyAncestorStakeholders), both of which were
+  // really about accountability changing hands, not about who's doing
+  // the work. Those two only fire from _csSaveRole's actual Primary pick
+  // now. This function just flips is_primary, nothing else.
+  async function _csTogglePrimaryDoer(rowId){
     if(!rowId || !_csItem) return;
     var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
     if(!row) return;
@@ -1178,23 +1234,10 @@
         var off=await _sb.from('card_roles').update({is_primary:false}).eq('id', rowId);
         if(off.error) throw off.error;
       } else {
-        // Aug 29 2026, Larry: "PRIMARY is by definition a STAKEHOLDER" --
-        // same hand-off as _csSaveRole's role-panel pick, so starring
-        // someone from the compact dropdown doesn't leave the person they
-        // replaced stuck showing "Primary" with is_primary already false.
-        await _csPriorPrimaryToStakeholder(_csCardType||'idea', _csItem.id, rowId);
         var clear=await _sb.from('card_roles').update({is_primary:false}).eq('card_type',_csCardType||'idea').eq('card_id',_csItem.id).neq('id', rowId);
         if(clear.error) throw clear.error;
         var on=await _sb.from('card_roles').update({is_primary:true}).eq('id', rowId);
         if(on.error) throw on.error;
-        // Stakeholder cascade (Aug 28 2026, see _csApplyAncestorStakeholders)
-        // -- a manual star is "specifically assigned to another person"
-        // exactly like the solo-tacit case, so it owes the same credit up
-        // the ancestor chain. Only on the star-ON branch; un-starring
-        // (row.is_primary branch above) doesn't undo any Stakeholder rows
-        // it already earned -- those were real, deliberate credits, not a
-        // display guess that should vanish the moment the star does.
-        await _csApplyAncestorStakeholders(_csCardType||'idea', _csItem.id, row.user_id);
       }
       await _csLoadRoles(_csItem);
       _csRefreshUI();
@@ -1279,12 +1322,14 @@
       return '<div class="sc-cdrop-row sb-people-row">'
         +'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+CS_ROLE_SYM[r.role]+' '+key+star+_esc9710(name)+'</span>'
         +'<span style="display:flex;align-items:center;flex-shrink:0">'
-          // Primary doer star, Session 234 (Aug 21, replaces the old
+          // ★ Primary Doer star, Session 234 (Aug 21, replaces the old
           // Person Assigned dropdown): tap to make this person the one
           // whose initials show on the card's corner badge and who the
           // board's Team filter matches. At most one starred per card --
-          // _csTogglePrimary clears any other before setting this one.
-          +'<button type="button" class="sb-people-star'+(r.is_primary?' active':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'Primary doer — tap to unstar':'Tap to make primary doer')+'">'+(r.is_primary?'★':'☆')+'</button>'
+          // _csTogglePrimaryDoer clears any other before setting this
+          // one. Sept 12 2026: independent of PRIMARY (the role) -- see
+          // CS_ROLE_ORDER comment further down.
+          +'<button type="button" class="sb-people-star'+(r.is_primary?' active':'')+'" data-rowid="'+_esc9710(r.id)+'" title="'+(r.is_primary?'★ Primary Doer — tap to unstar':'Tap to make ★ Primary Doer')+'">'+(r.is_primary?'★':'☆')+'</button>'
           +'<span class="sc-view-row-role">'+CS_ROLE_LABEL[r.role]+'</span>'
           +(_sbPeopleRemoveMode?'<button type="button" class="sb-people-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</button>':'')
         +'</span>'
@@ -1339,7 +1384,7 @@
 
     // _csItem/_csCardType drive every card_roles read/write below
     // (_csLoadRoles, _csInsertRole, _csRemoveRole, _csToggleKey,
-    // _csTogglePrimary) -- setting them here (not just inside
+    // _csTogglePrimaryDoer) -- setting them here (not just inside
     // openCallSheet) fixes a real bug: add/remove/star from this compact
     // dropdown silently did nothing if the full Call Sheet screen had
     // never been opened first this session, since _csItem stayed null.
@@ -1395,7 +1440,7 @@
     menu.onclick=function(e){
       e.stopPropagation();
       var star=e.target.closest('.sb-people-star');
-      if(star){ _csTogglePrimary(star.getAttribute('data-rowid')); return; }
+      if(star){ _csTogglePrimaryDoer(star.getAttribute('data-rowid')); return; }
       var x=e.target.closest('.sb-people-x');
       if(x){ _csRemoveRole(x.getAttribute('data-rowid')); }
     };
@@ -1527,11 +1572,16 @@
       var email=m?(m.email||''):'';
       var star=r.is_parent_connection?'<span class="cs-pr-star">★</span>':'';
       var keytag=r.is_key?'<span class="cs-pr-keytag">KEY</span>':'';
+      // ★ Primary Doer tag, Sept 12 2026 -- printed same as the KEY tag,
+      // so the paper Call Sheet shows who's actually doing the work even
+      // though PRIMARY (the section this row sits under, if role is
+      // 'primary') is now a separate, independent flag from this.
+      var doertag=r.is_primary?'<span class="cs-pr-keytag">★ DOER</span>':'';
       var notesPrefix=role==='stakeholder'?'Expectations/boundaries: ':'Notes: ';
       return '<tr class="cs-pr-row">'
         +'<td class="cs-pr-role">'+(i===0?_esc9710(CS_ROLE_LABEL[role]):'')+'</td>'
         +'<td class="cs-pr-name">'
-          +'<div class="cs-pr-nameline">'+keytag+star+_esc9710(name)+'</div>'
+          +'<div class="cs-pr-nameline">'+doertag+keytag+star+_esc9710(name)+'</div>'
           +(email?('<div class="cs-pr-email">'+_esc9710(email)+'</div>'):'')
           +(r.notes?('<div class="cs-pr-notes">'+notesPrefix+_esc9710(r.notes)+'</div>'):'')
         +'</td>'
@@ -1742,6 +1792,8 @@
       });
 
       body.addEventListener('click', function(e){
+        var primaryDoer=e.target.closest('.cs-primary-toggle');
+        if(primaryDoer){ _csTogglePrimaryDoer(primaryDoer.getAttribute('data-rowid')); return; }
         var nm=e.target.closest('.cs-name-click');
         if(nm){
           var panel=document.getElementById('cs-rp-'+nm.getAttribute('data-rowid'));

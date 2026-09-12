@@ -1505,19 +1505,6 @@
     }
   }
 
-  // Manage Access, reached from the gear menu's People tab (Aug 8 2026)
-  // -- same screen the PROJECT quick menu's own Manage Access opens,
-  // just a second door in. Computes isOwner itself since the gear menu
-  // doesn't already have it handy the way the quick menu does.
-  async function _sboardOpenShareManagerFromGear(scopeRow, backFn){
-    var projectRow=scopeRow||_sboardCurrentProjectRow();
-    if(!projectRow) return;
-    var _sb=T().sb;
-    var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
-    var isOwner=!!me && (projectRow.topic_owner_user_id ? projectRow.topic_owner_user_id===me.id : projectRow.user_id===me.id);
-    _sboardOpenShareManager(projectRow, isOwner, backFn||function(){ _sboardOpenPeopleMenu(); });
-  }
-
   // Sept 12 2026 (later same day), Larry: "This should be its own
   // file, right? You are not making multiple copies?" -- the seven-
   // item Home list (icons, labels, order, disabled look, Sign Out's
@@ -1530,7 +1517,12 @@
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     var built = window.T2TSettingsMenu.renderHomeHTML({
-      people:      { onClick: function(){ _sboardOpenPeopleMenu(); } },
+      // People/Guests retired Sept 12 2026, Larry: "remove the People
+      // screen ... CAST is our source of truth." No onClick passed here
+      // now, same as Desktop/Session -- settings-menu.js's canonical
+      // Home list renders it disabled with its own explanation rather
+      // than leaving it out (per the "gray out, don't omit" lock from
+      // earlier the same day).
       appearance:  { onClick: _sboardOpenAppearanceMenu },
       preferences: { onClick: _sboardOpenPreferencesMenu },
       reload:      { onClick: function(){ closeSbDetail(); T().resetAndReturn(); } },
@@ -1551,37 +1543,11 @@
     window.T2TSettingsMenu.wireHomeItems(ov, built.items);
     T().wire('sb-gear-close', closeSbDetail);
   }
-  function _sboardOpenPeopleMenu(scopeRow, backFn){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    // Fractal Casting (Aug 9 2026): this same screen now also opens
-    // scoped to a delegated TOPIC header instead of always the root
-    // PROJECT -- a small subtitle makes clear whose Cast/Guests this is.
-    var isTopicScope=!!(scopeRow && scopeRow.topic_owner_user_id);
-    var subtitle=isTopicScope ? '<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin:-6px 0 8px">'+_esc9710(scopeRow.text_content||'this TOPIC')+'</div>' : '';
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isTopicScope?'2px':'10px')+'"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
-      +subtitle
-      // Cast dropped from here Sept 12 2026, Larry: "Leave CAST off the
-      // Utility button everywhere" -- matches the Briefing Board's own
-      // People screen, which never had a Cast entry to begin with (CAST
-      // is its own destination on the board-kind dropdown up top, same
-      // roster either way -- see _sboardOpenTeam/openTeamRoster).
-      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
-      +'</div>'
-      +'</div>';
-    ov.classList.add('active');
-    T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
-    T().wire('sb-people-close', backFn||_sboardOpenGearMenu);
-  }
-
-  // Fractal Casting entry points (Aug 9 2026) -- reuse every screen above
-  // completely unchanged, just handed a header row instead of always the
-  // root PROJECT. "Same pattern repeating at every scale."
-  function _sboardOpenPeopleMenuForTopic(headerRow){
-    _sboardOpenPeopleMenu(headerRow, function(){ closeSbDetail(); openSbDetail(headerRow); });
-  }
+  // People/Guests screen retired Sept 12 2026, Larry: "remove the People
+  // screen ... CAST is our source of truth." Both old entry points (the
+  // gear menu's People item, above, and the TOPIC button in
+  // idea-storyboard-card-detail.js) are gone; this screen and its
+  // Manage-Access/Guests flow have no caller left.
 
   async function _sboardOpenDelegateTopicPicker(headerRow, scopeRow){
     var ov=document.getElementById('sb-detail-overlay'); if(!ov) return;

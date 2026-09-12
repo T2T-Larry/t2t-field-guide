@@ -373,9 +373,12 @@
         var effRowsById=(isOn9711 && _isxDetailCtx && _isxDetailCtx.rowsById) ? _isxDetailCtx.rowsById : _sboardAllRowsById;
         (async function(){
           if(item.topic_owner_user_id){
-            btn.title='Cast / Guests for this TOPIC';
+            // Sept 12 2026, Larry: "remove the People screen" -- Guests
+            // retired, CAST is the one door in now. Opens the Call Sheet
+            // directly instead of the old (now-empty) People/Guests menu.
+            btn.title='Cast for this TOPIC';
             btn.style.display='';
-            btn.onclick=function(){ _sboardOpenPeopleMenuForTopic(item); };
+            btn.onclick=function(){ openCallSheet(item, function(){ closeSbDetail(); openSbDetail(item); }, 'idea'); };
             return;
           }
           var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}

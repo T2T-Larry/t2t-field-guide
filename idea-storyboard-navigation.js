@@ -1624,9 +1624,9 @@
   // 264-265 design lock): PROJECT becomes the global shortcut into all
   // of it. The flat list now mixes this traveler's own top-level
   // Headers (self-originated, from topLevelBoards -- unchanged) with
-  // Headers they've been promoted into as Primary (T2TData.
+  // Headers they've been promoted into as PRIMARY (T2TData.
   // promotedPrimaryEntries -- carries an ownership eyebrow, since it
-  // isn't their own project) and any project where they're Primary
+  // isn't their own project) and any project where they're a 🔑 Key
   // Stakeholder (one-click fast access, per the design lock -- plain
   // Stakeholder and Cast Member placements still require opening the
   // STAKEHOLDER/COLLABORATOR group below). Both group rows are always
@@ -1642,18 +1642,27 @@
     try{ promoted=await T2TData.promotedPrimaryEntries(); }catch(e){ console.warn('promotedPrimaryEntries failed:', e); }
     try{ collab=await T2TData.collaboratorEntries(); }catch(e){ console.warn('collaboratorEntries failed:', e); }
     try{ stake=await T2TData.stakeholderEntries(); }catch(e){ console.warn('stakeholderEntries failed:', e); }
-    var primaryStakeItems=stake.filter(function(s){ return s.isPrimaryStakeholder; });
+    // Sept 12 2026, Larry: unified the app's two "special stakeholder"
+    // flags into one -- isKeyStakeholder (card_roles.is_key), same 🔑
+    // Key Stakeholder toggle already on the Call Sheet roster. Not
+    // exclusive -- Larry: a whole board of directors can each hold it at
+    // once ("we cannot have just one and not the others -- politics").
+    // ★ is its own separate thing again (Primary Doer, card_roles.
+    // is_primary) -- reserved for whoever's actually doing the work, not
+    // shown in this popup's eyebrow at all; PRIMARY here means the
+    // accountable role (promotedPrimaryEntries, above).
+    var keyStakeItems=stake.filter(function(s){ return s.isKeyStakeholder; });
 
     // One normalized shape for every row this popup can show: id,
     // text_content, user_id (so the existing owner-only quick-menu
     // logic keeps working unchanged), and an optional small label
-    // (the ownership eyebrow, or a Primary Stakeholder tag).
+    // (the ownership eyebrow, or a Key Stakeholder tag).
     var allTop=boards.map(function(b){
       return {id:b.id, text_content:b.text_content, user_id:b.user_id, label:null};
     }).concat(promoted.map(function(p){
       return {id:p.id, text_content:p.text, user_id:p.ownerUserId, label:(p.ownerName||p.ownerInitials||'shared with you')};
-    })).concat(primaryStakeItems.map(function(s){
-      return {id:s.id, text_content:s.text, user_id:s.ownerUserId, label:'★ Primary Stakeholder — '+(s.ownerName||s.ownerInitials||'shared')};
+    })).concat(keyStakeItems.map(function(s){
+      return {id:s.id, text_content:s.text, user_id:s.ownerUserId, label:'🔑 Key Stakeholder — '+(s.ownerName||s.ownerInitials||'shared')};
     }));
     allTop=allTop.slice().sort(function(a,b){
       return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
@@ -1817,17 +1826,18 @@
     if(isOwner){
       body+='<button class="sc-ov-btn" id="sb-pq-rename" style="width:100%;margin-bottom:6px">Rename</button>'
         +'<button class="sc-ov-btn" id="sb-pq-archive" style="width:100%;margin-bottom:6px">Archive</button>'
-        +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83C\uDFAB Guests</button>'
         +'<button class="sc-ov-btn" id="sb-pq-delete" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Delete</button>';
     } else {
-      body+='<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Shared with you -- only the owner can rename, archive, or delete this project.</div>'
-        +'<button class="sc-ov-btn" id="sb-pq-share" style="width:100%;margin-bottom:6px">\uD83E\uDD1D View Access</button>';
+      // Guests/View Access retired Sept 12 2026, Larry: "remove the
+      // People screen ... CAST is our source of truth" -- a shared
+      // project's own Cast (Call Sheet) is the one place access is
+      // granted or checked now.
+      body+='<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Shared with you -- only the owner can rename, archive, or delete this project.</div>';
     }
     body+='<button class="sc-ov-btn" id="sb-pq-cancel" style="width:100%">Cancel</button>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'+body+'</div>';
     ov.classList.add('active');
     T().wire('sb-pq-cancel', openProjectSwitcher);
-    T().wire('sb-pq-share', function(){ _sboardOpenShareManager(boardRow, isOwner); });
     if(isOwner){
       T().wire('sb-pq-rename', function(){ _sboardProjectRenamePrompt(boardRow); });
       T().wire('sb-pq-archive', async function(){
@@ -1848,82 +1858,11 @@
     }
   }
 
-  // Manage Access (Aug 4 2026) -- lets a PROJECT's owner add other signed-
-  // in members so they can see and edit everything in it (equal access,
-  // same as the owner) -- everything except renaming/archiving/deleting
-  // the PROJECT itself, which stays owner-only. Backed by
-  // storyboard_members + RLS (Supabase migration "add_storyboard_sharing").
-  async function _sboardRenderShareList(boardRow, isOwner){
-    var list=document.getElementById('sb-share-list'); if(!list) return;
-    var _sb=T().sb;
-    var res=await _sb.rpc('list_storyboard_members', {p_project_id: boardRow.id});
-    var rows=(!res.error && res.data) ? res.data.filter(function(m){ return m.access_level==='view'; }) : [];
-    var addRow=document.getElementById('sb-share-add-row');
-    if(addRow) addRow.style.display = isOwner ? 'block' : 'none';
-    if(!rows.length){
-      list.innerHTML='<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#a89a80;font-style:italic;padding:6px 0">No guests yet.</div>';
-      return;
-    }
-    list.innerHTML=rows.map(function(m){
-      var safeLabel=(m.name||m.email||'').replace(/</g,'&lt;');
-      var phoneLine = m.phone ? (' &nbsp;&nbsp; \u260E '+String(m.phone).replace(/</g,'&lt;')) : '';
-      var sponsorLine = m.sponsor_name ? '<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a89a80;font-style:italic;margin-top:2px">Cast sponsor: '+String(m.sponsor_name).replace(/</g,'&lt;')+'</div>' : '';
-      return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:5px 0;border-bottom:1px solid #e0dcd0;font-size:calc(12px * var(--fg-text-scale,1))">'
-        +'<span><div>'+safeLabel+'</div><div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">\u2709 '+(m.email||'').replace(/</g,'&lt;')+phoneLine+'</div>'+sponsorLine+'</span>'
-        +(isOwner ? '<button class="sb-share-remove" data-user-id="'+m.user_id+'" style="background:none;border:none;color:#b8562f;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1))" title="Remove">&#10005;</button>' : '')
-        +'</div>';
-    }).join('');
-    if(!isOwner) return;
-    Array.prototype.forEach.call(list.querySelectorAll('.sb-share-remove'), function(btn){
-      btn.addEventListener('click', async function(){
-        var uidToRemove=btn.getAttribute('data-user-id');
-        if(!window.confirm('Remove this person from the project? They will lose access immediately.')) return;
-        await _sb.from('storyboard_members').delete().eq('project_id', boardRow.id).eq('user_id', uidToRemove);
-        await _sboardRenderShareList(boardRow, isOwner);
-      });
-    });
-  }
-
-  function _sboardOpenShareManager(boardRow, isOwner, backFn){
-    var ov=document.getElementById('sb-detail-overlay');
-    var safeName=(boardRow.text_content||'(untitled)').replace(/</g,'&lt;');
-    var goBack = backFn || function(){ _sboardProjectQuickMenu(boardRow); };
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Guests</span><button class="sc-ov-btn" id="sb-share-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">'+safeName+'</div>'
-      +'<div id="sb-share-list" style="text-align:left;margin-bottom:10px"></div>'
-      +'<div id="sb-share-add-row" style="margin-bottom:10px">'
-        +'<div style="display:flex;gap:6px;margin-bottom:6px">'
-          +'<input id="sb-share-add-email" type="email" placeholder="Their email address" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
-          +'<button class="sc-ov-btn save" id="sb-share-add-go">Add</button>'
-        +'</div>'
-      +'</div>'
-      +'<div id="sb-share-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
-      +'</div>';
-    ov.classList.add('active');
-    _sboardRenderShareList(boardRow, isOwner);
-    T().wire('sb-share-close', goBack);
-    T().wire('sb-share-add-go', async function(){
-      if(!isOwner) return;
-      var errEl=document.getElementById('sb-share-err');
-      var input=document.getElementById('sb-share-add-email');
-      var email=(input&&input.value||'').trim().toLowerCase();
-      if(!email){ if(errEl) errEl.textContent='Enter an email first.'; return; }
-      var accessLevel='view';
-      var _sb=T().sb;
-      try{
-        var res=await _sb.rpc('find_member_by_email', {p_email: email});
-        var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
-        if(!match){ if(errEl) errEl.textContent='No T2T member found with that email -- they need an active Field Guide account first.'; return; }
-        var myUser=(await _sb.auth.getUser()).data.user;
-        var ins=await _sb.from('storyboard_members').insert({project_id: boardRow.id, user_id: match.user_id, added_by: myUser?myUser.id:null, access_level: accessLevel});
-        if(ins.error){ if(errEl) errEl.textContent=ins.error.message||'Could not add that person.'; return; }
-        if(input) input.value='';
-        if(errEl) errEl.textContent='';
-        await _sboardRenderShareList(boardRow, isOwner);
-      }catch(err){ if(errEl) errEl.textContent=err.message; }
-    });
-  }
+  // Manage Access / Guests retired Sept 12 2026, Larry: "remove the
+  // People screen ... CAST is our source of truth." storyboard_members
+  // still exists in the database (nothing there was deleted), but
+  // nothing in the app writes to it anymore -- a project's own Cast
+  // (Call Sheet) is the one door in now.
 
   // Rename a Project in place — same "nothing is permanent" treatment as
   // Header rename. Returns to the (refreshed) PROJECT list on save or
