@@ -7825,15 +7825,24 @@
   // responsible for making it happen." See _csSaveRole for how it keeps
   // the existing is_primary/★ plumbing (corner badge, board filter
   // fallback) in sync without rewiring those call sites.
-  var CS_ROLE_ORDER = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified'];
+  // Guest added Sept 12 2026, Larry: the role screen (this same panel --
+  // Call Sheet full view and the compact 👥 dropdown both read off this
+  // one list) needed a lightest-weight option for someone along for
+  // visibility only, no responsibility on the card. Appended at the end
+  // -- least involved, listed last -- rather than inserted among the
+  // four working roles above it. Needs 'guest' allowed by the
+  // card_roles_role_check constraint in Supabase (added same day).
+  var CS_ROLE_ORDER = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified','guest'];
   var CS_ROLE_LABEL = {
     stakeholder:'Stakeholder', primary:'Primary',
     cast_member:'Cast Member', facilitator:'Facilitator',
-    facilitator_qualified:'Facilitator-qualified (backup)'
+    facilitator_qualified:'Facilitator-qualified (backup)',
+    guest:'Guest'
   };
   var CS_ROLE_SYM = {
     stakeholder:'👤', primary:'🎯',
-    cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦'
+    cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦',
+    guest:'🎫'
   };
 
   async function _csLoadRoles(item){
@@ -8688,10 +8697,14 @@
   // Facilitator-qualified as the two Cast Member variants worth calling
   // out) -- the on-screen list is flat now, but a printed call sheet
   // still reads better grouped.
+  // Guest group added Sept 12 2026, alongside the new CS_ROLE_ORDER entry
+  // -- without its own group here a Guest would silently vanish from the
+  // printed Call Sheet even though they still show on-screen.
   var CS_PRINT_GROUPS = [
     {title:'Stakeholders', sub:'Invested, not doing — who controls or is affected by this. KEY = can directly interfere with progress. EXPECTATIONS/BOUNDARIES shown in place of Notes.', roles:['stakeholder']},
     {title:'Primary', sub:'The person responsible for making it happen', roles:['primary']},
-    {title:'Cast Member', sub:'Facilitator-qualified = backup', roles:['cast_member','facilitator','facilitator_qualified']}
+    {title:'Cast Member', sub:'Facilitator-qualified = backup', roles:['cast_member','facilitator','facilitator_qualified']},
+    {title:'Guest', sub:'Along for visibility only — no responsibility on this card', roles:['guest']}
   ];
 
   function _csFmtToday(){
@@ -9102,12 +9115,34 @@
         +'<button class="sc-ov-btn" id="sb-set-go-people" style="width:100%">&#128101; People</button>'
         +'<button class="sc-ov-btn" id="sb-set-go-appearance" style="width:100%">&#127912; Appearance</button>'
         +'<button class="sc-ov-btn" id="sb-set-go-preferences" style="width:100%">&#128295; Preferences</button>'
+        // Reload / Jump to Menu, Sept 12 2026 -- Larry: bring every board's
+        // Settings home in line with each other. These two are generic app
+        // navigation (T().resetAndReturn/T().goMG, same functions the
+        // Briefing Board's own Settings home already calls), so they apply
+        // here exactly as-is. History has no Storyboard equivalent (the
+        // Briefing Board's History is its own card-move log) so it's left
+        // out rather than wired to nothing.
+        +'<button class="sc-ov-btn" id="sb-set-go-reload" style="width:100%">&#128260; Reload</button>'
+        +'<button class="sc-ov-btn" id="sb-set-go-menu" style="width:100%">&#128269; Jump to Menu</button>'
+      +'</div>'
+      // Sign Out, Sept 12 2026 -- same bottom-of-Settings option as the
+      // Briefing Board and the desk-level Utility popup, same one true
+      // sign-out path (T().signOutOfDevice, backpack.js).
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="sb-set-go-signout" style="width:100%;border-color:#b8544a;color:#a8332a">&#128682; Sign Out</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-set-go-people', function(){ _sboardOpenPeopleMenu(); });
     T().wire('sb-set-go-appearance', _sboardOpenAppearanceMenu);
     T().wire('sb-set-go-preferences', _sboardOpenPreferencesMenu);
+    T().wire('sb-set-go-reload', function(){ closeSbDetail(); T().resetAndReturn(); });
+    T().wire('sb-set-go-menu', function(){ closeSbDetail(); T().goMG(); });
+    T().wire('sb-set-go-signout', async function(){
+      if(!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
+      closeSbDetail();
+      if(T().signOutOfDevice) await T().signOutOfDevice();
+    });
     T().wire('sb-gear-close', closeSbDetail);
   }
   function _sboardOpenPeopleMenu(scopeRow, backFn){
@@ -9121,13 +9156,16 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isTopicScope?'2px':'10px')+'"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +subtitle
+      // Cast dropped from here Sept 12 2026, Larry: "Leave CAST off the
+      // Utility button everywhere" -- matches the Briefing Board's own
+      // People screen, which never had a Cast entry to begin with (CAST
+      // is its own destination on the board-kind dropdown up top, same
+      // roster either way -- see _sboardOpenTeam/openTeamRoster).
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
         +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
     T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
     T().wire('sb-people-close', backFn||_sboardOpenGearMenu);
   }

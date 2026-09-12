@@ -1139,13 +1139,25 @@
         // re-added here.
         +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-reload" style="width:100%">&#128260; Reload</button></div>'
         +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-menu" style="width:100%">&#128269; Jump to Menu</button></div>'
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-history" style="width:100%">&#128337; History</button></div>';
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-history" style="width:100%">&#128337; History</button></div>'
+        // Sign Out, Sept 12 2026 -- Larry: every Utility/Settings screen
+        // should end in the same Sign Out option, at the bottom. Reuses
+        // the one true sign-out path (T().signOutOfDevice, backpack.js)
+        // that drawer-system.js's Utility popup already uses, so there's
+        // still just one real sign-out implementation, now offered from
+        // a third place. Same red styling as that popup's button.
+        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-signout" style="width:100%;border-color:#b8544a;color:#a8332a">&#128682; Sign Out</button></div>';
       T().wire('bb-settings-go-people', function(){ _bbRenderSettingsScreen('people'); });
       T().wire('bb-settings-go-appearance', function(){ _bbRenderSettingsScreen('appearance'); });
       T().wire('bb-settings-go-preferences', function(){ _bbRenderSettingsScreen('preferences'); });
       T().wire('bb-settings-go-reload', function(){ closeSettings(); T().resetAndReturn(); });
       T().wire('bb-settings-go-menu', function(){ closeSettings(); T().goMG(); });
       T().wire('bb-settings-go-history', function(){ closeSettings(); openHX(); });
+      T().wire('bb-settings-go-signout', async function(){
+        if(!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
+        closeSettings();
+        if(T().signOutOfDevice) await T().signOutOfDevice();
+      });
     } else if(screen==='people'){
       if(titleEl) titleEl.textContent='People';
       body.innerHTML=
