@@ -250,8 +250,9 @@
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
       + '#sz-drawer-r.sz-dock-left #sz-drawer-r-toggle{left:auto;right:-28px;'
       +   'border-radius:0 30px 30px 0;border-left:none;border-right:2px solid #999}'
-      // Text-size picker -- Aug 3 2026, same overlay/card family as the
-      // drawer color picker (drawer-style.js).
+      // Settings popup -- Aug 3 2026, started as just the text-size
+      // picker, same overlay/card family as the drawer color picker
+      // (drawer-style.js).
       // Sept 12 2026, Larry (bug report): "fabulous on the Briefing
       // Board, not on desktop" -- root cause: this overlay's z-index
       // (9997) sat BELOW #sz-navbar/#sz-drawer-r (9998) and every tool
@@ -261,16 +262,14 @@
       // in style.css) -- but on the plain desktop, opening Utility left
       // the rail/drawer sitting UNDIMMED on top of this popup's own dark
       // backdrop, both looking broken and silently eating clicks meant
-      // for the card underneath (including Sign Out, so "back to the
-      // sign-in screen" could seem to just not work). Raised well above
-      // every other desk object so the whole card -- text size, Sign
-      // Out, and the ✕ -- now actually sits on top and is reachable.
-      // Sept 12 2026 (later same day): #sz-gear itself moved to a
-      // fixed corner spot above EVERY other desk object (including
-      // this overlay's earlier 10050) so a dragged item could never
-      // cover it again -- bumped this overlay's own z-index to sit
-      // one above that, so opening Utility still dims/covers the gear
-      // and ✕ underneath it rather than leaving them poking through.
+      // for the card underneath. Raised well above every other desk
+      // object so the whole card actually sits on top and is reachable.
+      // Sept 12 2026 (later same day): #sz-gear itself moved to a fixed
+      // corner spot above EVERY other desk object (including this
+      // overlay's earlier 10050) so a dragged item could never cover it
+      // again -- bumped this overlay's own z-index to sit one above
+      // that, so opening Settings still dims/covers the gear and ✕
+      // underneath it rather than leaving them poking through.
       + '#sz-text-overlay{position:fixed;inset:0;z-index:2000000001;'
       +   'background:rgba(74,52,24,0.4);display:none;align-items:center;'
       +   'justify-content:center;padding:20px;box-sizing:border-box}'
@@ -286,16 +285,28 @@
       + '.sz-text-option.sz-text-active{border-color:#4a3418;border-width:2px;background:#f6ecd8;font-weight:700}'
       + '#sz-text-close{border:1px solid #b89968;background:#fff;padding:6px 16px;'
       +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#4a3418}'
-      // Sept 12 2026, Larry: fold "who's signed in / Sign Out" into this
-      // same Utility popup rather than a second icon -- one divider,
-      // one section, so the Utility button stays the single place for
-      // "settings about this device," text size and account alike.
-      + '#sz-util-divider{border-top:1px solid #e3d3ae;margin:2px 0 12px}'
-      + '#sz-util-who{font-size:11px;color:#888;font-style:italic;margin-bottom:2px}'
+      + '#sz-util-who{font-size:11px;color:#888;font-style:italic;margin-bottom:12px}'
       + '#sz-util-name{font-weight:700;color:#4a3418;font-style:normal}'
-      + '#sz-util-signout{display:block;width:100%;border:1px solid #b8544a;background:#fff;'
-      +   'padding:9px 12px;border-radius:10px;cursor:pointer;color:#a8332a;font-weight:700;'
-      +   'font-family:"Playfair Display",Georgia,serif;margin-bottom:12px;box-sizing:border-box}'
+      // Settings home -- Sept 12 2026, Larry: "Utility button on ALL
+      // screens should look exactly the same as on the BB screen
+      // (except the Hx which is BB only)." Same drill-down list every
+      // full-screen tool's own Settings already uses (People,
+      // Appearance, Preferences, Reload, Jump to Menu, History, Sign
+      // Out). Larry's follow-up ("what if Hx is on all screens but
+      // grayed out when not relative?"): rather than each screen
+      // omitting whatever doesn't apply to it, EVERY screen shows the
+      // full list and simply disables the entries that don't apply
+      // here -- People/Preferences/History need an open project or a
+      // card-move log, neither of which exists on the plain desktop.
+      // .sz-set-btn:disabled is that grayed state; a disabled button
+      // fires no click at all, so nothing further to wire for those.
+      + '.sz-set-btn{display:block;width:100%;text-align:left;border:1px solid #cfae7e;'
+      +   'background:#fff;padding:9px 12px;border-radius:10px;cursor:pointer;color:#4a3418;'
+      +   'font-family:"Playfair Display",Georgia,serif;margin-bottom:6px;box-sizing:border-box}'
+      + '.sz-set-btn:hover{background:#f6ecd8}'
+      + '.sz-set-btn:disabled{opacity:.45;cursor:not-allowed;background:#f3f0ea;color:#8a7a5c}'
+      + '.sz-set-btn:disabled:hover{background:#f3f0ea}'
+      + '.sz-set-signout{border-color:#b8544a;color:#a8332a;font-weight:700;margin-top:6px}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -885,8 +896,9 @@
   }
 
   /* ---------- The gear -- picks up the shared card shadow, single
-     tap opens the text-size picker, double-click resets every tool/
-     rail-button position back home.
+     tap opens the Settings drill-down (same shape as every other
+     screen's own Utility), double-click resets every tool/rail-button
+     position back home.
 
      Sept 12 2026, Larry: "Utility button... fixed to the upper right
      corner of the screen just like on ALL other screens. This is a
@@ -911,7 +923,7 @@
       if (n >= 2) {
         resetToolStack();
       } else {
-        openTextSizePicker();
+        openSettingsPopup();
       }
     }, 320);
     return gear;
@@ -922,12 +934,14 @@
      screen" -- same pairing every other full-screen tool already has
      (its own gear+X sit together in the header; X there closes back
      to the desktop). The desktop itself is the top of that stack, so
-     its own X closes "for real," same wording the Briefing Board
-     Settings screen already uses for its own top-level X -- signs out
-     of this device and returns to Sign In. Reuses the one true
-     sign-out path (window.T2T.signOutOfDevice, backpack.js), same
-     confirm text as the Utility popup's own Sign Out button so it
-     reads as the same action, not a second, different one. ---------- */
+     its own X closes "for real" -- signs out of this device and
+     returns to Sign In. Reuses the one true sign-out path
+     (window.T2T.signOutOfDevice, backpack.js).
+     Sept 12 2026 (later same day), Larry, emphatically: "X should go
+     to the sign in screen!!!" -- no confirm step first (the Settings
+     drill-down's own Sign Out button below still asks first; this
+     corner ✕ is a single, deliberate, clearly-labeled control on its
+     own, not a stray click target, so it just goes). ---------- */
   function buildCloseX(){
     var x = document.createElement('button');
     x.id = 'sz-close-x';
@@ -935,92 +949,138 @@
     x.title = 'Sign out and return to Sign In';
     x.textContent = '✕';
     x.addEventListener('click', async function(){
-      if (!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
       if (window.T2T && window.T2T.signOutOfDevice) await window.T2T.signOutOfDevice();
     });
     return x;
   }
 
-  /* ---------- Utility popup -- Aug 3 2026, started as just the text-size
-     picker (same overlay+card pattern as the drawer color picker in
-     drawer-style.js). Sept 12 2026, Larry: Sign Out was three taps deep
-     (gear -> Settings -> Sign Out) and mattered enough to fix now -- a
-     shared/family computer needs an obvious way to tell whose account is
-     open and hand it off (e.g. Bill signing out so his daughter can sign
-     up for her own, rather than everyone sharing his login). Rather than
-     adding a second icon, this is now the one Utility popup for both:
-     "Signed in as [Name]" plus a Sign Out button live right under the
-     text-size options, using the exact same Sign Out steps as the
-     Settings screen (window.T2T.signOutOfDevice, backpack.js). Lazily
-     built on first open, same as the color picker. ---------- */
-  function buildTextSizeOverlay(){
+  /* ---------- Settings popup -- Aug 3 2026, started as just the
+     text-size picker (same overlay+card pattern as the drawer color
+     picker in drawer-style.js). Sept 12 2026, Larry: Sign Out was
+     three taps deep (gear -> Settings -> Sign Out) and mattered
+     enough to fix -- folded "Signed in as [Name]" + Sign Out into
+     this same popup.
+
+     Sept 12 2026 (later same day), Larry: "Utility button on ALL
+     screens should look exactly the same as on the BB screen (except
+     the Hx which is BB only)" -- rebuilt as the same Settings-home
+     drill-down every full-screen tool's own Utility already uses
+     (People, Appearance, Preferences, Reload, Jump to Menu, History,
+     Sign Out), X always meaning "back one screen" until you're back
+     at the top, where it closes for real -- same convention as the
+     Briefing Board's own Settings screen. Follow-up ("what if Hx is
+     on all screens but grayed out when not relative?"): every entry
+     shows here, but People/Preferences/History are disabled -- they
+     need an open project or a card-move log, neither of which exists
+     on the plain desktop. A disabled button just doesn't fire a click,
+     so there's nothing further to wire for those three.
+
+     _szNav is a small screen stack ([] closed, ['home'], or
+     ['home','appearance']) so X can generically "pop and re-render,
+     or close if that empties the stack" -- and so the external
+     window.openFGTextSizePicker API (below) can open straight to
+     Appearance with no Settings home beneath it, where the same X
+     logic naturally closes it outright instead of stepping back to a
+     home screen that call never entered. Lazily built on first open,
+     same as the color picker. ---------- */
+  var _szNav = [];
+
+  function buildSettingsOverlay(){
     var overlay = document.createElement('div');
     overlay.id = 'sz-text-overlay';
-
     var card = document.createElement('div');
     card.id = 'sz-text-card';
-    card.innerHTML = ''
-      + '<div class="sz-text-title">Utility</div>'
-      + '<div class="sz-text-sub">Text size — bigger text stays until you change it</div>'
-      + '<div id="sz-text-options"></div>'
-      + '<div id="sz-util-divider"></div>'
-      + '<div id="sz-util-who">Signed in as <span id="sz-util-name">Traveler</span></div>'
-      + '<button id="sz-util-signout" type="button">Sign Out</button>'
-      + '<button id="sz-text-close" type="button">✕</button>';
     overlay.appendChild(card);
     document.body.appendChild(overlay);
-
-    guardedBackdropClose(overlay, closeTextSizePicker);
-    card.querySelector('#sz-text-close').addEventListener('click', closeTextSizePicker);
-    card.querySelector('#sz-util-signout').addEventListener('click', async function(){
-      if (!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
-      if (window.T2T && window.T2T.signOutOfDevice) await window.T2T.signOutOfDevice();
-    });
-
+    // Backdrop click always closes outright, whatever screen is
+    // showing -- same as the Briefing Board Settings overlay.
+    guardedBackdropClose(overlay, closeSettingsPopup);
     return overlay;
   }
 
-  function refreshUtilWhoAmI(overlay){
-    var nameEl = overlay.querySelector('#sz-util-name');
-    if (!nameEl) return;
-    var m = window.T2T && window.T2T.getMember && window.T2T.getMember();
-    nameEl.textContent = (m && m.display_name) ? m.display_name : 'Traveler';
+  function _szBack(){
+    _szNav.pop();
+    if (_szNav.length) _szRenderScreen(); else closeSettingsPopup();
   }
 
-  function openTextSizePicker(){
-    if (!window.FGTextSize) return; // screen-fit.js not loaded on this file
-    var overlay = document.getElementById('sz-text-overlay') || buildTextSizeOverlay();
-    var row = overlay.querySelector('#sz-text-options');
-    row.innerHTML = '';
-    var current = window.FGTextSize.getIndex();
-    window.FGTextSize.levels.forEach(function(label, i){
-      var opt = document.createElement('button');
-      opt.type = 'button';
-      opt.className = 'sz-text-option' + (i === current ? ' sz-text-active' : '');
-      opt.textContent = label;
-      opt.style.fontSize = (13 + i * 3) + 'px';
-      opt.addEventListener('click', function(){
-        window.FGTextSize.setIndex(i);
-        showZeroToast('Text size: ' + label);
-        closeTextSizePicker();
-      });
-      row.appendChild(opt);
-    });
-    refreshUtilWhoAmI(overlay);
+  function _szRenderScreen(){
+    var overlay = document.getElementById('sz-text-overlay') || buildSettingsOverlay();
+    var card = overlay.querySelector('#sz-text-card');
+    if (_szNav[_szNav.length - 1] === 'appearance') _szRenderAppearance(card);
+    else _szRenderHome(card);
     overlay.classList.add('active');
     if (overlay._markOpened) overlay._markOpened();
   }
 
-  function closeTextSizePicker(){
+  function _szRenderHome(card){
+    var m = window.T2T && window.T2T.getMember && window.T2T.getMember();
+    var name = (m && m.display_name) ? m.display_name : 'Traveler';
+    card.innerHTML = ''
+      + '<div class="sz-text-title">Settings</div>'
+      + '<div id="sz-util-who">Signed in as <span id="sz-util-name">' + name + '</span></div>'
+      + '<button type="button" class="sz-set-btn" id="sz-set-people" disabled title="Open a project to manage its Guests">&#128101; People</button>'
+      + '<button type="button" class="sz-set-btn" id="sz-set-appearance">&#127912; Appearance</button>'
+      + '<button type="button" class="sz-set-btn" id="sz-set-preferences" disabled title="Open a project to change its preferences">&#128295; Preferences</button>'
+      + '<button type="button" class="sz-set-btn" id="sz-set-reload">&#128260; Reload</button>'
+      + '<button type="button" class="sz-set-btn" id="sz-set-menu">&#128269; Jump to Menu</button>'
+      + '<button type="button" class="sz-set-btn" id="sz-set-history" disabled title="Board history — open a Briefing Board to use this">&#128337; History</button>'
+      + '<button type="button" class="sz-set-btn sz-set-signout" id="sz-set-signout">&#128682; Sign Out</button>'
+      + '<button type="button" id="sz-text-close">✕</button>';
+    card.querySelector('#sz-set-appearance').addEventListener('click', function(){ _szNav.push('appearance'); _szRenderScreen(); });
+    card.querySelector('#sz-set-reload').addEventListener('click', function(){ closeSettingsPopup(); if (window.T2T && window.T2T.resetAndReturn) window.T2T.resetAndReturn(); });
+    card.querySelector('#sz-set-menu').addEventListener('click', function(){ closeSettingsPopup(); if (window.T2T && window.T2T.goMG) window.T2T.goMG(); });
+    card.querySelector('#sz-set-signout').addEventListener('click', async function(){
+      if (!confirm('Sign out of the Field Guide on this device? Good for handing it to someone else to sign in, or to create their own account.')) return;
+      closeSettingsPopup();
+      if (window.T2T && window.T2T.signOutOfDevice) await window.T2T.signOutOfDevice();
+    });
+    card.querySelector('#sz-text-close').addEventListener('click', _szBack);
+  }
+
+  function _szRenderAppearance(card){
+    if (!window.FGTextSize) { _szBack(); return; } // screen-fit.js not loaded on this file
+    var current = window.FGTextSize.getIndex();
+    var optsHtml = window.FGTextSize.levels.map(function(label, i){
+      return '<button type="button" class="sz-text-option' + (i === current ? ' sz-text-active' : '') + '" data-i="' + i + '" style="font-size:' + (13 + i * 3) + 'px">' + label + '</button>';
+    }).join('');
+    card.innerHTML = ''
+      + '<div class="sz-text-title">Appearance</div>'
+      + '<div class="sz-text-sub">Text size — bigger text stays until you change it</div>'
+      + '<div id="sz-text-options">' + optsHtml + '</div>'
+      + '<button type="button" id="sz-text-close">✕</button>';
+    card.querySelectorAll('#sz-text-options .sz-text-option').forEach(function(opt){
+      opt.addEventListener('click', function(){
+        var i = Number(opt.getAttribute('data-i'));
+        window.FGTextSize.setIndex(i);
+        showZeroToast('Text size: ' + window.FGTextSize.levels[i]);
+        _szBack();
+      });
+    });
+    card.querySelector('#sz-text-close').addEventListener('click', _szBack);
+  }
+
+  function openSettingsPopup(){
+    _szNav = ['home'];
+    _szRenderScreen();
+  }
+
+  function closeSettingsPopup(){
+    _szNav = [];
     var overlay = document.getElementById('sz-text-overlay');
     if (overlay) overlay.classList.remove('active');
   }
 
   // Exposed so full-screen tools (Storyboard, Session, Briefing Board,
-  // Gems) that hide the desk's own gear can still open the same picker
-  // from their own in-tool settings/gear menu. Aug 3 2026. Unchanged
-  // name/shape by this split -- those four files needed no changes.
-  window.openFGTextSizePicker = openTextSizePicker;
+  // Gems) that hide the desk's own gear can still open the same
+  // Appearance/text-size screen from their own in-tool settings/gear
+  // menu. Aug 3 2026, unchanged name/shape by this split. Opens
+  // straight to Appearance with no Settings home beneath it in this
+  // call's own stack, so its X closes the popup outright -- exactly
+  // the behavior these external callers already expect.
+  window.openFGTextSizePicker = function(){
+    _szNav = ['appearance'];
+    _szRenderScreen();
+  };
 
   /* ---------- Collapse / expand toggle for the rail. ---------- */
   function buildToggle(bar, onChange){
