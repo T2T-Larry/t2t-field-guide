@@ -629,15 +629,24 @@
   // responsible for making it happen." See _csSaveRole for how it keeps
   // the existing is_primary/★ plumbing (corner badge, board filter
   // fallback) in sync without rewiring those call sites.
-  var CS_ROLE_ORDER = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified'];
+  // Guest added Sept 12 2026, Larry: the role screen (this same panel --
+  // Call Sheet full view and the compact 👥 dropdown both read off this
+  // one list) needed a lightest-weight option for someone along for
+  // visibility only, no responsibility on the card. Appended at the end
+  // -- least involved, listed last -- rather than inserted among the
+  // four working roles above it. Needs 'guest' allowed by the
+  // card_roles_role_check constraint in Supabase (added same day).
+  var CS_ROLE_ORDER = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified','guest'];
   var CS_ROLE_LABEL = {
     stakeholder:'Stakeholder', primary:'Primary',
     cast_member:'Cast Member', facilitator:'Facilitator',
-    facilitator_qualified:'Facilitator-qualified (backup)'
+    facilitator_qualified:'Facilitator-qualified (backup)',
+    guest:'Guest'
   };
   var CS_ROLE_SYM = {
     stakeholder:'👤', primary:'🎯',
-    cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦'
+    cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦',
+    guest:'🎫'
   };
 
   async function _csLoadRoles(item){
@@ -1492,10 +1501,14 @@
   // Facilitator-qualified as the two Cast Member variants worth calling
   // out) -- the on-screen list is flat now, but a printed call sheet
   // still reads better grouped.
+  // Guest group added Sept 12 2026, alongside the new CS_ROLE_ORDER entry
+  // -- without its own group here a Guest would silently vanish from the
+  // printed Call Sheet even though they still show on-screen.
   var CS_PRINT_GROUPS = [
     {title:'Stakeholders', sub:'Invested, not doing — who controls or is affected by this. KEY = can directly interfere with progress. EXPECTATIONS/BOUNDARIES shown in place of Notes.', roles:['stakeholder']},
     {title:'Primary', sub:'The person responsible for making it happen', roles:['primary']},
-    {title:'Cast Member', sub:'Facilitator-qualified = backup', roles:['cast_member','facilitator','facilitator_qualified']}
+    {title:'Cast Member', sub:'Facilitator-qualified = backup', roles:['cast_member','facilitator','facilitator_qualified']},
+    {title:'Guest', sub:'Along for visibility only — no responsibility on this card', roles:['guest']}
   ];
 
   function _csFmtToday(){

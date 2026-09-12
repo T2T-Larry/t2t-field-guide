@@ -1334,12 +1334,7 @@
     // INITIAL_SESSION resume check there finds no session at all.
     wire('b-sign-out',async function(){
       if(!confirm('Sign out of the Field Guide on this device?')) return;
-      try{ await _sb.auth.signOut(); }catch(e){ console.error('Sign out failed', e); }
-      try{ localStorage.removeItem('bpLastPageNum'); }catch(e){}
-      try{ localStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
-      try{ sessionStorage.removeItem('bpLastPageNum'); }catch(e){}
-      try{ sessionStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
-      window.location.href='index.html';
+      await doSignOutOfDevice();
     });
 
     /* CHANGE PASSWORD */
@@ -1358,6 +1353,20 @@
     });
 
     drawPentagonArrows();
+  }
+
+  // Sign-out, factored out Sept 12 2026 -- was inline inside b-sign-out's
+  // handler only. Also exposed on window.T2T (see the public API below)
+  // so drawer-system.js's Utility button can offer Sign Out too -- one
+  // true sign-out path for both, rather than two copies that could
+  // quietly drift apart.
+  async function doSignOutOfDevice(){
+    try{ await _sb.auth.signOut(); }catch(e){ console.error('Sign out failed', e); }
+    try{ localStorage.removeItem('bpLastPageNum'); }catch(e){}
+    try{ localStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
+    try{ sessionStorage.removeItem('bpLastPageNum'); }catch(e){}
+    try{ sessionStorage.removeItem('bpCurrentScreenNum'); }catch(e){}
+    window.location.href='index.html';
   }
 
   // goBackStack — Larry, August 1 2026: "Close Field Guide to obsolete
@@ -1436,6 +1445,10 @@
     loadVisitedFromSupabase:loadVisitedFromSupabase,
     getVisited:getVisited,
     sb:_sb, getMember:function(){return _member;},
+    // Sept 12 2026 -- exposed so drawer-system.js's Utility (gear) button
+    // can offer Sign Out itself, without a second file re-implementing
+    // the same steps. See doSignOutOfDevice's own comment above.
+    signOutOfDevice:doSignOutOfDevice,
     onRealtimeChange:onRealtimeChange, isDragActive:function(){ return _t2tDragActive; },
     // Larry, July 27 2026: "Trivia button should light up if there are
     // any trivia docs [for the current page]." Mirrors renderTrivia's

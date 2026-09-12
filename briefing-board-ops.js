@@ -1125,27 +1125,24 @@
     var titleEl=document.getElementById('bb-settings-title');
     if(screen==='home'){
       if(titleEl) titleEl.textContent='Settings';
-      body.innerHTML=
-         '<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-people" style="width:100%">&#128101; People</button></div>'
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-appearance" style="width:100%">&#127912; Appearance</button></div>'
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-preferences" style="width:100%">&#128295; Preferences</button></div>'
-        // Aug 30 2026, Larry: Reload and Jump to Menu used to be their
-        // own icons next to Utility/Close in the header row -- moved in
-        // here so the header stays down to just Utility and X. History
-        // moves in too, right next to its own Archive/Log destinations
-        // it already used to launch (see openHX). Relationships was
-        // ALSO its own header icon, but it already had a home under
-        // People below, so that duplicate icon is just gone, not
-        // re-added here.
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-reload" style="width:100%">&#128260; Reload</button></div>'
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-menu" style="width:100%">&#128269; Jump to Menu</button></div>'
-        +'<div class="bb-field"><button class="bb-flag-btn" id="bb-settings-go-history" style="width:100%">&#128337; History</button></div>';
-      T().wire('bb-settings-go-people', function(){ _bbRenderSettingsScreen('people'); });
-      T().wire('bb-settings-go-appearance', function(){ _bbRenderSettingsScreen('appearance'); });
-      T().wire('bb-settings-go-preferences', function(){ _bbRenderSettingsScreen('preferences'); });
-      T().wire('bb-settings-go-reload', function(){ closeSettings(); T().resetAndReturn(); });
-      T().wire('bb-settings-go-menu', function(){ closeSettings(); T().goMG(); });
-      T().wire('bb-settings-go-history', function(){ closeSettings(); openHX(); });
+      // Sept 12 2026, Larry: "This should be its own file, right? You
+      // are not making multiple copies?" -- the seven-item Home list
+      // (icons, labels, order, disabled look, Sign Out's confirm+
+      // call) now comes from settings-menu.js, shared with Desktop/
+      // Storyboard/Session, instead of being hand-typed here. This
+      // screen's own People/Appearance/Preferences bodies below (real
+      // Briefing Board features) are untouched.
+      var built = window.T2TSettingsMenu.renderHomeHTML({
+        people:      { onClick: function(){ _bbRenderSettingsScreen('people'); } },
+        appearance:  { onClick: function(){ _bbRenderSettingsScreen('appearance'); } },
+        preferences: { onClick: function(){ _bbRenderSettingsScreen('preferences'); } },
+        reload:      { onClick: function(){ closeSettings(); T().resetAndReturn(); } },
+        menu:        { onClick: function(){ closeSettings(); T().goMG(); } },
+        history:     { onClick: function(){ closeSettings(); openHX(); } },
+        signout:     { onClick: function(){ window.T2TSettingsMenu.confirmSignOut(closeSettings); } }
+      }, { idPrefix: 'bb-settings-go-', btnClass: 'bb-flag-btn', includeHeading: false, wrapClass: 'bb-field' });
+      body.innerHTML = built.html;
+      window.T2TSettingsMenu.wireHomeItems(body, built.items);
     } else if(screen==='people'){
       if(titleEl) titleEl.textContent='People';
       body.innerHTML=

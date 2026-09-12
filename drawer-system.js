@@ -91,7 +91,13 @@
       // collapse or not -- and the real tool stack's own position:fixed
       // layout keeps it rendering correctly regardless of this panel's
       // collapsed width.
-      + '#sz-navbar.sz-collapsed #sz-menu,#sz-navbar.sz-collapsed #sz-gear{display:none}'
+      // Sept 12 2026: #sz-menu is gone (Larry: "delete the menu button
+      // in the drawer totally" -- every screen already has its own ☰
+      // Jump to Menu reachable a dozen other ways, this free-floating
+      // desk copy was pure redundancy) and #sz-gear no longer lives in
+      // this rail at all (see buildGear's own Sept 12 comment) -- so
+      // this rule has nothing left to hide and is retired rather than
+      // left pointing at IDs that no longer exist here.
       + '#sz-navbar-toggle{position:absolute;top:50%;transform:translateY(-50%);'
       +   'right:-28px;width:28px;height:60px;'
       +   'border-radius:0 30px 30px 0;border:2px solid #999;border-left:none;'
@@ -155,22 +161,29 @@
       + '.sz-tool-face{padding:7px 4px;border-radius:4px;text-align:center;font-size:11px;'
       +   'color:#4a3418;font-family:"Playfair Display",Georgia,serif;white-space:nowrap;'
       +   'background:radial-gradient(circle at 35% 30%,#f3d98a,#c9973a 55%,#8a6420 100%)}'
-      // Larry, July 31 2026 (bug report): gear dragged into the right
-      // drawer vanished completely on release. Same root cause already
-      // documented above for tool buttons: drawer panels paint at
-      // z-index:9998, and gear/menu never got the z-index:9999 fix when
-      // they were made drawer-dockable earlier today -- they rendered
-      // UNDER whichever drawer they'd just been dropped onto, invisible
-      // but not actually gone. Both now carry z-index:9999, same as
-      // every other floating desk object.
-      + '#sz-gear{width:36px;height:36px;border-radius:50%;border:2px solid #999;'
-      +   'background:#fff;font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;'
+      // Gear + the ✕ next to it -- Sept 12 2026, Larry: fixed to the
+      // upper-right corner "just like on ALL other screens," never
+      // draggable, never hidden by drawer/collapse state, so they're
+      // simple position:fixed circles anchored to the viewport corner
+      // instead of the free-drag family's usual "restore from a saved
+      // spot" treatment. z-index deliberately way above the rail/
+      // drawer (9998), every tool button (9999), AND above
+      // window.T2TFront's own ever-climbing bring-to-front counter
+      // (drag-engine.js, starts at 10000 and only goes up as things
+      // get dragged) -- these two are no longer part of that counter
+      // at all, so a plain 10000-ish value would eventually lose to
+      // the very first thing someone else drags after this loads and
+      // get covered by it. Fixed corner objects need to just always
+      // win instead.
+      + '#sz-gear{position:fixed;top:16px;right:66px;width:36px;height:36px;border-radius:50%;'
+      +   'border:2px solid #999;background:#fff;font-size:18px;line-height:1;cursor:pointer;'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
-      +   'display:flex;align-items:center;justify-content:center;margin-top:6px;z-index:9999}'
-      + '#sz-menu{width:36px;height:36px;border-radius:50%;border:2px solid #999;'
-      +   'background:#fff;font-size:16px;line-height:1;cursor:pointer;flex-shrink:0;'
+      +   'display:flex;align-items:center;justify-content:center;z-index:2000000000}'
+      + '#sz-close-x{position:fixed;top:16px;right:16px;width:36px;height:36px;border-radius:50%;'
+      +   'border:2px solid #999;background:#fff;font-size:16px;line-height:1;cursor:pointer;'
+      +   'color:#a8332a;font-weight:700;'
       +   'box-shadow:0 3px 8px rgba(0,0,0,.25);'
-      +   'display:flex;align-items:center;justify-content:center;margin-top:10px;z-index:9999}'
+      +   'display:flex;align-items:center;justify-content:center;z-index:2000000000}'
       // Larry, July 26: "single/double/triple click drawers on the
       // sides of 0000" -- both the left drawer (0001/0002/0003) and a
       // new right drawer (0004/0005/0006) show one of three "mode"
@@ -237,9 +250,27 @@
       +   'display:flex;align-items:center;justify-content:center;z-index:1}'
       + '#sz-drawer-r.sz-dock-left #sz-drawer-r-toggle{left:auto;right:-28px;'
       +   'border-radius:0 30px 30px 0;border-left:none;border-right:2px solid #999}'
-      // Text-size picker -- Aug 3 2026, same overlay/card family as the
-      // drawer color picker (drawer-style.js).
-      + '#sz-text-overlay{position:fixed;inset:0;z-index:9997;'
+      // Settings popup -- Aug 3 2026, started as just the text-size
+      // picker, same overlay/card family as the drawer color picker
+      // (drawer-style.js).
+      // Sept 12 2026, Larry (bug report): "fabulous on the Briefing
+      // Board, not on desktop" -- root cause: this overlay's z-index
+      // (9997) sat BELOW #sz-navbar/#sz-drawer-r (9998) and every tool
+      // button/gear/menu riding on them (9999). Briefing Board never
+      // showed the bug because its own full-screen mode hides the rail
+      // and drawer entirely (see the body:has(#fg-root.isx-full) rule
+      // in style.css) -- but on the plain desktop, opening Utility left
+      // the rail/drawer sitting UNDIMMED on top of this popup's own dark
+      // backdrop, both looking broken and silently eating clicks meant
+      // for the card underneath. Raised well above every other desk
+      // object so the whole card actually sits on top and is reachable.
+      // Sept 12 2026 (later same day): #sz-gear itself moved to a fixed
+      // corner spot above EVERY other desk object (including this
+      // overlay's earlier 10050) so a dragged item could never cover it
+      // again -- bumped this overlay's own z-index to sit one above
+      // that, so opening Settings still dims/covers the gear and ✕
+      // underneath it rather than leaving them poking through.
+      + '#sz-text-overlay{position:fixed;inset:0;z-index:2000000001;'
       +   'background:rgba(74,52,24,0.4);display:none;align-items:center;'
       +   'justify-content:center;padding:20px;box-sizing:border-box}'
       + '#sz-text-overlay.active{display:flex}'
@@ -254,6 +285,31 @@
       + '.sz-text-option.sz-text-active{border-color:#4a3418;border-width:2px;background:#f6ecd8;font-weight:700}'
       + '#sz-text-close{border:1px solid #b89968;background:#fff;padding:6px 16px;'
       +   'border-radius:14px;font-size:11px;font-weight:600;cursor:pointer;color:#4a3418}'
+      + '#sz-util-who{font-size:11px;color:#888;font-style:italic;margin-bottom:12px}'
+      + '#sz-util-name{font-weight:700;color:#4a3418;font-style:normal}'
+      // Settings home -- Sept 12 2026, Larry: "Utility button on ALL
+      // screens should look exactly the same as on the BB screen
+      // (except the Hx which is BB only)." Same drill-down list every
+      // full-screen tool's own Settings already uses (People,
+      // Appearance, Preferences, Reload, Jump to Menu, History, Sign
+      // Out). Larry's follow-up ("what if Hx is on all screens but
+      // grayed out when not relative?"): rather than each screen
+      // omitting whatever doesn't apply to it, EVERY screen shows the
+      // full list and simply disables the entries that don't apply
+      // here -- People/Preferences/History need an open project or a
+      // card-move log, neither of which exists on the plain desktop.
+      // .sz-set-btn:disabled is that grayed state; a disabled button
+      // fires no click at all, so nothing further to wire for those.
+      + '.sz-set-btn{display:block;width:100%;text-align:left;border:1px solid #cfae7e;'
+      +   'background:#fff;padding:9px 12px;border-radius:10px;cursor:pointer;color:#4a3418;'
+      +   'font-family:"Playfair Display",Georgia,serif;margin-bottom:6px;box-sizing:border-box}'
+      + '.sz-set-btn:hover{background:#f6ecd8}'
+      + '.sz-set-btn:disabled{opacity:.45;cursor:not-allowed;background:#f3f0ea;color:#8a7a5c}'
+      + '.sz-set-btn:disabled:hover{background:#f3f0ea}'
+      // .sz-set-btn-danger -- shared naming convention from settings-
+      // menu.js (btnClass + "-danger" for whichever item it flags as
+      // dangerous; today that's only Sign Out).
+      + '.sz-set-btn-danger{border-color:#b8544a;color:#a8332a;font-weight:700;margin-top:6px}'
       ;
     var style = document.createElement('style');
     style.id = 'sz-style';
@@ -467,8 +523,10 @@
   var _toolStackRecs = []; // [{ rec, items, orderKey, stackKey }, ...] -- one per tray
   var _toolButtonRecs = [];
 
-  var GEAR_POS_KEY = 't2t_gearPos';
-  var MENU_POS_KEY = 't2t_menuPos';
+  // t2t_gearPos/t2t_menuPos (the old free-drag position keys for these
+  // two) retired Sept 12 2026 along with their wireDetachableRailButton
+  // calls below -- gear is fixed now, menu is gone. Left in browsers'
+  // localStorage from before, harmlessly unread by anything anymore.
   var _railButtonRecs = [];
 
   function wireDetachableRailButton(btn, storeKey, leftBar){
@@ -841,8 +899,23 @@
   }
 
   /* ---------- The gear -- picks up the shared card shadow, single
-     tap opens the text-size picker, double-click resets every tool/
-     rail-button position back home. ---------- */
+     tap opens the Settings drill-down (same shape as every other
+     screen's own Utility), double-click resets every tool/rail-button
+     position back home.
+
+     Sept 12 2026, Larry: "Utility button... fixed to the upper right
+     corner of the screen just like on ALL other screens. This is a
+     standard rule!" -- every full-screen tool (Idea Storyboard's
+     isx-gear-btn/isx-end-btn, Briefing Board's bb-gear/bb-close-x)
+     already pins its own Utility+Close pair in a fixed header
+     corner, never part of the free-drag/dock system the rest of the
+     desk's tool buttons use. The plain desktop was the one screen
+     where gear was still a draggable rail object (and could end up
+     hidden inside a collapsed drawer, or dragged off-screen entirely
+     -- see drag-engine.js's restore-clamp fix, same session). Gear
+     now builds and is positioned exactly like those other screens:
+     fixed, always on top, never draggable, never part of #sz-navbar
+     or its collapse/hide rules. ---------- */
   function buildGear(){
     var gear = document.createElement('button');
     gear.id = 'sz-gear';
@@ -853,82 +926,161 @@
       if (n >= 2) {
         resetToolStack();
       } else {
-        openTextSizePicker();
+        openSettingsPopup();
       }
     }, 320);
     return gear;
   }
 
-  /* ---------- Text-size picker -- Aug 3 2026. Same overlay+card
-     pattern as the drawer color picker (drawer-style.js), just
-     offering screen-fit.js's four boost levels instead of swatches.
-     Lazily built on first open, same as the color picker. ---------- */
-  function buildTextSizeOverlay(){
+  /* ---------- The ✕ next to it -- Larry, Sept 12 2026: "there should
+     be an X on the desktop which takes us back to the sign in
+     screen" -- same pairing every other full-screen tool already has
+     (its own gear+X sit together in the header; X there closes back
+     to the desktop). The desktop itself is the top of that stack, so
+     its own X closes "for real" -- signs out of this device and
+     returns to Sign In. Reuses the one true sign-out path
+     (window.T2T.signOutOfDevice, backpack.js).
+     Sept 12 2026 (later same day), Larry, emphatically: "X should go
+     to the sign in screen!!!" -- no confirm step first (the Settings
+     drill-down's own Sign Out button below still asks first; this
+     corner ✕ is a single, deliberate, clearly-labeled control on its
+     own, not a stray click target, so it just goes). ---------- */
+  function buildCloseX(){
+    var x = document.createElement('button');
+    x.id = 'sz-close-x';
+    x.type = 'button';
+    x.title = 'Sign out and return to Sign In';
+    x.textContent = '✕';
+    x.addEventListener('click', async function(){
+      if (window.T2T && window.T2T.signOutOfDevice) await window.T2T.signOutOfDevice();
+    });
+    return x;
+  }
+
+  /* ---------- Settings popup -- Aug 3 2026, started as just the
+     text-size picker (same overlay+card pattern as the drawer color
+     picker in drawer-style.js). Sept 12 2026, Larry: Sign Out was
+     three taps deep (gear -> Settings -> Sign Out) and mattered
+     enough to fix -- folded "Signed in as [Name]" + Sign Out into
+     this same popup.
+
+     Sept 12 2026 (later same day), Larry: "Utility button on ALL
+     screens should look exactly the same as on the BB screen (except
+     the Hx which is BB only)" -- rebuilt as the same Settings-home
+     drill-down every full-screen tool's own Utility already uses
+     (People, Appearance, Preferences, Reload, Jump to Menu, History,
+     Sign Out), X always meaning "back one screen" until you're back
+     at the top, where it closes for real -- same convention as the
+     Briefing Board's own Settings screen. Follow-up ("what if Hx is
+     on all screens but grayed out when not relative?"): every entry
+     shows here, but People/Preferences/History are disabled -- they
+     need an open project or a card-move log, neither of which exists
+     on the plain desktop. A disabled button just doesn't fire a click,
+     so there's nothing further to wire for those three.
+
+     _szNav is a small screen stack ([] closed, ['home'], or
+     ['home','appearance']) so X can generically "pop and re-render,
+     or close if that empties the stack" -- and so the external
+     window.openFGTextSizePicker API (below) can open straight to
+     Appearance with no Settings home beneath it, where the same X
+     logic naturally closes it outright instead of stepping back to a
+     home screen that call never entered. Lazily built on first open,
+     same as the color picker. ---------- */
+  var _szNav = [];
+
+  function buildSettingsOverlay(){
     var overlay = document.createElement('div');
     overlay.id = 'sz-text-overlay';
-
     var card = document.createElement('div');
     card.id = 'sz-text-card';
-    card.innerHTML = ''
-      + '<div class="sz-text-title">Text size</div>'
-      + '<div class="sz-text-sub">Bigger text for easier reading. Stays until you change it.</div>'
-      + '<div id="sz-text-options"></div>'
-      + '<button id="sz-text-close" type="button">✕</button>';
     overlay.appendChild(card);
     document.body.appendChild(overlay);
-
-    guardedBackdropClose(overlay, closeTextSizePicker);
-    card.querySelector('#sz-text-close').addEventListener('click', closeTextSizePicker);
-
+    // Backdrop click always closes outright, whatever screen is
+    // showing -- same as the Briefing Board Settings overlay.
+    guardedBackdropClose(overlay, closeSettingsPopup);
     return overlay;
   }
 
-  function openTextSizePicker(){
-    if (!window.FGTextSize) return; // screen-fit.js not loaded on this file
-    var overlay = document.getElementById('sz-text-overlay') || buildTextSizeOverlay();
-    var row = overlay.querySelector('#sz-text-options');
-    row.innerHTML = '';
-    var current = window.FGTextSize.getIndex();
-    window.FGTextSize.levels.forEach(function(label, i){
-      var opt = document.createElement('button');
-      opt.type = 'button';
-      opt.className = 'sz-text-option' + (i === current ? ' sz-text-active' : '');
-      opt.textContent = label;
-      opt.style.fontSize = (13 + i * 3) + 'px';
-      opt.addEventListener('click', function(){
-        window.FGTextSize.setIndex(i);
-        showZeroToast('Text size: ' + label);
-        closeTextSizePicker();
-      });
-      row.appendChild(opt);
-    });
+  function _szBack(){
+    _szNav.pop();
+    if (_szNav.length) _szRenderScreen(); else closeSettingsPopup();
+  }
+
+  function _szRenderScreen(){
+    var overlay = document.getElementById('sz-text-overlay') || buildSettingsOverlay();
+    var card = overlay.querySelector('#sz-text-card');
+    if (_szNav[_szNav.length - 1] === 'appearance') _szRenderAppearance(card);
+    else _szRenderHome(card);
     overlay.classList.add('active');
     if (overlay._markOpened) overlay._markOpened();
   }
 
-  function closeTextSizePicker(){
+  function _szRenderHome(card){
+    var m = window.T2T && window.T2T.getMember && window.T2T.getMember();
+    var name = (m && m.display_name) ? m.display_name : 'Traveler';
+    // Sept 12 2026 (later same day), Larry: "This should be its own
+    // file, right? You are not making multiple copies?" -- the Home
+    // list itself (icons, labels, order, disabled look) now comes
+    // from settings-menu.js, shared with Storyboard/Session/Briefing
+    // Board, instead of being hand-typed here. Desktop only supplies
+    // WHICH of the seven it can actually do (just Appearance/Reload/
+    // Jump to Menu/Sign Out -- no open project here for People/
+    // Preferences, and no board for History) and what each does.
+    var built = window.T2TSettingsMenu.renderHomeHTML({
+      appearance: { onClick: function(){ _szNav.push('appearance'); _szRenderScreen(); } },
+      reload:     { onClick: function(){ closeSettingsPopup(); if (window.T2T && window.T2T.resetAndReturn) window.T2T.resetAndReturn(); } },
+      menu:       { onClick: function(){ closeSettingsPopup(); if (window.T2T && window.T2T.goMG) window.T2T.goMG(); } },
+      signout:    { onClick: function(){ window.T2TSettingsMenu.confirmSignOut(closeSettingsPopup); } }
+    }, { idPrefix: 'sz-set-', btnClass: 'sz-set-btn', memberName: name });
+    card.innerHTML = built.html + '<button type="button" id="sz-text-close">✕</button>';
+    window.T2TSettingsMenu.wireHomeItems(card, built.items);
+    card.querySelector('#sz-text-close').addEventListener('click', _szBack);
+  }
+
+  function _szRenderAppearance(card){
+    if (!window.FGTextSize) { _szBack(); return; } // screen-fit.js not loaded on this file
+    var current = window.FGTextSize.getIndex();
+    var optsHtml = window.FGTextSize.levels.map(function(label, i){
+      return '<button type="button" class="sz-text-option' + (i === current ? ' sz-text-active' : '') + '" data-i="' + i + '" style="font-size:' + (13 + i * 3) + 'px">' + label + '</button>';
+    }).join('');
+    card.innerHTML = ''
+      + '<div class="sz-text-title">Appearance</div>'
+      + '<div class="sz-text-sub">Text size — bigger text stays until you change it</div>'
+      + '<div id="sz-text-options">' + optsHtml + '</div>'
+      + '<button type="button" id="sz-text-close">✕</button>';
+    card.querySelectorAll('#sz-text-options .sz-text-option').forEach(function(opt){
+      opt.addEventListener('click', function(){
+        var i = Number(opt.getAttribute('data-i'));
+        window.FGTextSize.setIndex(i);
+        showZeroToast('Text size: ' + window.FGTextSize.levels[i]);
+        _szBack();
+      });
+    });
+    card.querySelector('#sz-text-close').addEventListener('click', _szBack);
+  }
+
+  function openSettingsPopup(){
+    _szNav = ['home'];
+    _szRenderScreen();
+  }
+
+  function closeSettingsPopup(){
+    _szNav = [];
     var overlay = document.getElementById('sz-text-overlay');
     if (overlay) overlay.classList.remove('active');
   }
 
   // Exposed so full-screen tools (Storyboard, Session, Briefing Board,
-  // Gems) that hide the desk's own gear can still open the same picker
-  // from their own in-tool settings/gear menu. Aug 3 2026. Unchanged
-  // name/shape by this split -- those four files needed no changes.
-  window.openFGTextSizePicker = openTextSizePicker;
-
-  /* ---------- The MAP (☰) button. ---------- */
-  function buildMenuButton(){
-    var m = document.createElement('button');
-    m.id = 'sz-menu';
-    m.type = 'button';
-    m.title = 'Menu (Map / Idea / Journal / Search / Tools)';
-    m.textContent = '☰';
-    m.addEventListener('click', function(){
-      if (window.T2T) window.T2T.goMG();
-    });
-    return m;
-  }
+  // Gems) that hide the desk's own gear can still open the same
+  // Appearance/text-size screen from their own in-tool settings/gear
+  // menu. Aug 3 2026, unchanged name/shape by this split. Opens
+  // straight to Appearance with no Settings home beneath it in this
+  // call's own stack, so its X closes the popup outright -- exactly
+  // the behavior these external callers already expect.
+  window.openFGTextSizePicker = function(){
+    _szNav = ['appearance'];
+    _szRenderScreen();
+  };
 
   /* ---------- Collapse / expand toggle for the rail. ---------- */
   function buildToggle(bar, onChange){
@@ -1365,11 +1517,7 @@
     mid.appendChild(mode2);
     mid.appendChild(surprise.el);
 
-    var menuBtn = buildMenuButton();
-    var gearBtn = buildGear();
     bar.appendChild(mid);
-    bar.appendChild(menuBtn);
-    bar.appendChild(gearBtn);
 
     // Notebook: built and drag-wired by Desktop Screen (it's desk
     // furniture, not drawer content -- see this file's header comment)
@@ -1405,8 +1553,13 @@
     var rail = dockRail(bar, notebook);
     updateNotebookVisibility(bar, notebook);
 
-    wireDetachableRailButton(menuBtn, MENU_POS_KEY, bar);
-    wireDetachableRailButton(gearBtn, GEAR_POS_KEY, bar);
+    // Gear + its ✕ -- Sept 12 2026, Larry: fixed to the upper-right
+    // corner "just like on ALL other screens," not part of this rail
+    // at all anymore (see buildGear/buildCloseX above for the full
+    // reasoning). Appended straight to body, once, outside the drawer
+    // entirely -- nothing to dock, collapse, or drag.
+    if (!document.getElementById('sz-gear')) document.body.appendChild(buildGear());
+    if (!document.getElementById('sz-close-x')) document.body.appendChild(buildCloseX());
   }
 
   /* ---------- Mode panels for the two "magic" drawers -- Larry, July

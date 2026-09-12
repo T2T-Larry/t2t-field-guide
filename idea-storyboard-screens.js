@@ -326,6 +326,13 @@
         +'.sc-overlay-actions{display:flex;gap:8px;justify-content:flex-end}'
         +'.sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 12px;border-radius:14px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;color:#5b9bd5}'
         +'.sc-ov-btn.save{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'
+        // Sept 12 2026, Larry: "Hx on all screens but grayed out when
+        // not relative" -- every Settings home now shows the full BB
+        // list and just disables what doesn't apply here, instead of
+        // omitting it. Same grayed treatment as the desktop's own
+        // .sz-set-btn:disabled (drawer-system.js).
+        +'.sc-ov-btn:disabled{opacity:.45;cursor:not-allowed;background:#f3f0ea;color:#8a9aa8}'
+        +'.sc-ov-btn:disabled:hover{background:#f3f0ea}'
         +'.sb-gear-tabs{display:flex;gap:4px;margin-bottom:10px}'
         +'.sb-gear-tab{flex:1;font-size:calc(11px * var(--fg-text-scale,1));padding:7px 3px;border-radius:8px;border:1px solid #cfe4f2;background:#fff;cursor:pointer;color:#5b9bd5;font-family:inherit}'
         +'.sb-gear-tab.active{background:#5b9bd5;color:#fff;border-color:#5b9bd5}'

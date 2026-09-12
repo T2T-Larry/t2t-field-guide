@@ -1518,27 +1518,37 @@
     _sboardOpenShareManager(projectRow, isOwner, backFn||function(){ _sboardOpenPeopleMenu(); });
   }
 
-  // Settings screen stack, Aug 8 2026 -- Larry: Settings should be a
-  // simple drill-down (Settings home -> People -> Cast/Guests), not a
-  // tab bar, with X always meaning "back one screen" until you're back
-  // at the top, where X closes for real. Each screen is its own render
-  // into the shared sb-detail-overlay, same pattern this file already
-  // uses everywhere else.
+  // Sept 12 2026 (later same day), Larry: "This should be its own
+  // file, right? You are not making multiple copies?" -- the seven-
+  // item Home list (icons, labels, order, disabled look, Sign Out's
+  // confirm+call) now comes from settings-menu.js, shared with
+  // Desktop/Session/Briefing Board, instead of being hand-typed here.
+  // This file still owns its own title-row-with-X heading and its own
+  // People/Appearance/Preferences screens below Home -- those are
+  // real Storyboard features, not something to share.
   function _sboardOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    var built = window.T2TSettingsMenu.renderHomeHTML({
+      people:      { onClick: function(){ _sboardOpenPeopleMenu(); } },
+      appearance:  { onClick: _sboardOpenAppearanceMenu },
+      preferences: { onClick: _sboardOpenPreferencesMenu },
+      reload:      { onClick: function(){ closeSbDetail(); T().resetAndReturn(); } },
+      menu:        { onClick: function(){ closeSbDetail(); T().goMG(); } },
+      // History has no Storyboard equivalent (the Briefing Board's
+      // History is its own card-move log), so it shows here disabled
+      // rather than omitted, same convention as People/Preferences on
+      // the plain desktop.
+      signout:     { onClick: function(){ window.T2TSettingsMenu.confirmSignOut(closeSbDetail); } }
+    }, { idPrefix: 'sb-set-go-', btnClass: 'sc-ov-btn', includeHeading: false });
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Settings</span><button class="sc-ov-btn" id="sb-gear-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-set-go-people" style="width:100%">&#128101; People</button>'
-        +'<button class="sc-ov-btn" id="sb-set-go-appearance" style="width:100%">&#127912; Appearance</button>'
-        +'<button class="sc-ov-btn" id="sb-set-go-preferences" style="width:100%">&#128295; Preferences</button>'
+        + built.html
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-set-go-people', function(){ _sboardOpenPeopleMenu(); });
-    T().wire('sb-set-go-appearance', _sboardOpenAppearanceMenu);
-    T().wire('sb-set-go-preferences', _sboardOpenPreferencesMenu);
+    window.T2TSettingsMenu.wireHomeItems(ov, built.items);
     T().wire('sb-gear-close', closeSbDetail);
   }
   function _sboardOpenPeopleMenu(scopeRow, backFn){
@@ -1552,13 +1562,16 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isTopicScope?'2px':'10px')+'"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">People</span><button class="sc-ov-btn" id="sb-people-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +subtitle
+      // Cast dropped from here Sept 12 2026, Larry: "Leave CAST off the
+      // Utility button everywhere" -- matches the Briefing Board's own
+      // People screen, which never had a Cast entry to begin with (CAST
+      // is its own destination on the board-kind dropdown up top, same
+      // roster either way -- see _sboardOpenTeam/openTeamRoster).
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-team" style="width:100%">🎭 Cast</button>'
         +'<button class="sc-ov-btn" id="sb-gear-share" style="width:100%">🎫 Guests</button>'
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-gear-team', function(){ closeSbDetail(); _sboardOpenTeam(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
     T().wire('sb-gear-share', function(){ closeSbDetail(); _sboardOpenShareManagerFromGear(scopeRow, function(){ closeSbDetail(); _sboardOpenPeopleMenu(scopeRow, backFn); }); });
     T().wire('sb-people-close', backFn||_sboardOpenGearMenu);
   }

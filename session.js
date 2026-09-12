@@ -884,29 +884,75 @@
   // _sboardOpenGearMenu in idea-storyboard-9710.js): moves the 🎨 Recolor
   // button that used to sit in the top row behind one Options icon next
   // to ✕. Added July 17, 2026.
+  // Sept 12 2026, Larry: "I said ALL Utility screens should be
+  // IDENTICAL. ALL! Just gray out stuff that doesn't apply." Session's
+  // Options menu used to be its own, smaller thing (just Recolor/
+  // Reset/Signal Flags/Text size, none of the Settings-home items
+  // every other screen now has). Rebuilt on the same shared Home list
+  // as Desktop/Storyboard/Briefing Board (settings-menu.js) -- People
+  // and History gray out (no guest management or board-history log
+  // here), and Session's own three actions move into Appearance/
+  // Preferences, same as Storyboard's own Options already organizes
+  // its equivalent actions. Nothing Session could already do is gone,
+  // it's just reachable through the same drill-down as everywhere
+  // else now.
   function _isxOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    var built = window.T2TSettingsMenu.renderHomeHTML({
+      appearance:  { onClick: _isxOpenAppearanceMenu },
+      preferences: { onClick: _isxOpenPreferencesMenu },
+      reload:      { onClick: function(){ T2TStoryboard.closeDetail(); T().resetAndReturn(); } },
+      menu:        { onClick: function(){ T2TStoryboard.closeDetail(); T().goMG(); } },
+      signout:     { onClick: function(){ window.T2TSettingsMenu.confirmSignOut(T2TStoryboard.closeDetail); } }
+    }, { idPrefix: 'isx-set-go-', btnClass: 'sc-ov-btn', includeHeading: false });
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Options</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Settings</span><button class="sc-ov-btn" id="isx-gear-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-      +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
-      +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
-      +'<button class="sc-ov-btn" id="isx-gear-keys" style="width:100%">🚩 Signal Flags</button>'
-      +'<button class="sc-ov-btn" id="isx-gear-textsize" style="width:100%">🔠 Text size</button>'
+        + built.html
       +'</div>'
-      +'<button class="sc-ov-btn" id="isx-gear-close" style="width:100%" aria-label="Close">✕</button>'
+      +'</div>';
+    ov.classList.add('active');
+    window.T2TSettingsMenu.wireHomeItems(ov, built.items);
+    T().wire('isx-gear-close', T2TStoryboard.closeDetail);
+  }
+
+  // Appearance sub-screen -- Session's own board-look actions (used to
+  // sit loose in the old flat Options menu), same shape as Storyboard's
+  // own Appearance screen.
+  function _isxOpenAppearanceMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Appearance</span><button class="sc-ov-btn" id="isx-appearance-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="isx-gear-recolor" style="width:100%">🎨 Recolor all headers</button>'
+        +'<button class="sc-ov-btn" id="isx-gear-reset" style="width:100%">🔄 Reset headers to A–Z</button>'
+        +'<button class="sc-ov-btn" id="isx-gear-textsize" style="width:100%">🔠 Text size</button>'
+      +'</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('isx-gear-recolor', function(){ T2TStoryboard.closeDetail(); _isxOpenRecolorAll(); });
     T().wire('isx-gear-reset', function(){ T2TStoryboard.closeDetail(); _isxOpenResetHeadersConfirm(); });
-    // Aug 3 2026: same shared traveler-wide Signal Flags library as 9710's
-    // own gear menu -- one library, reachable from either screen.
-    T().wire('isx-gear-keys', function(){ T2TStoryboard.closeDetail(); T2TStoryboard.openKeyLibraryManager(); });
-    // Aug 3 2026: same shared picker as 9710 (see its own gear menu) --
-    // Session is full-screen too, so the desk's gear is hidden here.
     T().wire('isx-gear-textsize', function(){ T2TStoryboard.closeDetail(); if (window.openFGTextSizePicker) window.openFGTextSizePicker(); });
-    T().wire('isx-gear-close', T2TStoryboard.closeDetail);
+    T().wire('isx-appearance-close', _isxOpenGearMenu);
+  }
+
+  // Preferences sub-screen -- Signal Flags used to sit loose in the old
+  // flat Options menu; same shared traveler-wide library Storyboard's
+  // own Preferences screen already reaches.
+  function _isxOpenPreferencesMenu(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov) return;
+    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="isx-preferences-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
+        +'<button class="sc-ov-btn" id="isx-gear-keys" style="width:100%">🚩 Signal Flags</button>'
+      +'</div>'
+      +'</div>';
+    ov.classList.add('active');
+    T().wire('isx-gear-keys', function(){ T2TStoryboard.closeDetail(); T2TStoryboard.openKeyLibraryManager(); });
+    T().wire('isx-preferences-close', _isxOpenGearMenu);
   }
 
   // Factory reset — headers only, current board only (Locked July 18,
