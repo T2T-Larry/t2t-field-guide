@@ -142,6 +142,33 @@
   var _sboardLastAction = null;
   var _sboardLastUndone = null;
   function _sboardPushAction(entry){ _sboardLastAction=entry; _sboardLastUndone=null; }
+
+  // Sept 13 2026 -- Larry: "If a card is added to a screen filtered by a
+  // cast member, we need to assume that card is for that person. Right
+  // now the card disappears as there is no way to assign a person on the
+  // input card." Root cause: _sboardFilterByPerson (idea-storyboard-
+  // navigation.js) hides any card whose id isn't in
+  // _sboardFilterMatchCardIds, a Set built from real card_roles rows --
+  // a brand-new card has no card_roles row yet, so it's invisible the
+  // instant it lands on a board that's currently filtered to one person.
+  // Fix: when exactly one person is the active filter, write that same
+  // card_roles row (role:'primary', matching the normal 👥 "assign
+  // primary" insert in idea-storyboard-people.js) the moment the card is
+  // created, then recompute the filter's match set so the render that
+  // follows already includes it. Left alone when zero or more than one
+  // person is filtered at once -- "assume it's for that person" only
+  // reads as unambiguous for a single active filter.
+  async function _sboardAutoAssignToActiveFilter(row){
+    try{
+      if(!row || row.content_type==='header') return;
+      if(!_sboardPersonFilterIds || _sboardPersonFilterIds.length!==1) return;
+      var _sb=T().sb; if(!_sb) return;
+      var me=(await _sb.auth.getUser()).data.user;
+      var ins=await _sb.from('card_roles').insert({card_type:'idea', card_id:row.id, role:'primary', is_primary:true, user_id:_sboardPersonFilterIds[0], added_by: me?me.id:null});
+      if(ins.error){ console.warn('Idea Storyboard: auto-assign insert failed', ins.error); return; }
+      await _sboardRecomputeFilterMatches();
+    }catch(e){ console.warn('Idea Storyboard: could not auto-assign new card to active Cast filter', e); }
+  }
   function _sboardShowToast(msg){
     var banner=document.getElementById('sb-undo-toast');
     if(!banner){

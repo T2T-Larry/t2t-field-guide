@@ -228,6 +228,28 @@
     _bbRecomputeFilterMatches().then(function(){ renderBoard(); });
   }
 
+  // Sept 13 2026 -- Larry: "If a card is added to a screen filtered by a
+  // cast member, we need to assume that card is for that person," same
+  // fix as the Idea/Plan board's _sboardAutoAssignToActiveFilter (idea-
+  // storyboard-shared.js) -- "should work on ALL boards." Root cause is
+  // identical here: _bbSourceFilterCards hides any card whose id isn't in
+  // _bbFilterMatchCardIds, a Set built from real card_roles rows, and a
+  // brand-new card has no card_roles row yet. Called from _bbSaveNewCard
+  // (briefing-board.js) once the new row is confirmed saved. Left alone
+  // when zero or more than one person is filtered at once, same
+  // single-filter-only reasoning as the Idea board fix.
+  async function _bbAutoAssignToActiveFilter(cardId){
+    try{
+      if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1) return;
+      var sb=T().sb; if(!sb) return;
+      var me=(await sb.auth.getUser()).data.user;
+      var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', is_primary:true, user_id:_bbPersonFilterIds[0], added_by: me?me.id:null});
+      if(ins.error){ console.warn('Briefing Board: auto-assign insert failed', ins.error); return; }
+      await _bbRecomputeFilterMatches();
+      renderBoard();
+    }catch(e){ console.warn('Briefing Board: could not auto-assign new card to active Cast filter', e); }
+  }
+
   // Session 255: the only way left to set this is the Cast popup's
   // checkboxes -- any role, any of the checked people (not just whoever's
   // starred primary), resolved by _bbRecomputeFilterMatches before this

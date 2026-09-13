@@ -1362,7 +1362,16 @@
       e.stopPropagation();
       var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
       if(window.T2TStoryboard && T2TStoryboard.openCallSheet){
-        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds);
+        // Sept 13 2026 fix -- Larry: "Changed PRIMARY on BB card but
+        // initials did not change on front of card." openCallSheet's own
+        // comment already explains why: it falls back to calling
+        // renderSeaBoard only for cardType 'idea' -- "Briefing Board must
+        // supply its own renderBoard explicitly since this file has no
+        // idea what that page's render function is called." This call
+        // just never actually supplied it, so every Call Sheet change on
+        // a Briefing Card (star, role, add/remove) silently updated the
+        // database but never repainted the card in front of you.
+        T2TStoryboard.openCallSheet(c, null, 'briefing_card', _bbCastFilterChange, _bbPersonFilterIds, function(){ renderBoard(); });
       }
     });
 

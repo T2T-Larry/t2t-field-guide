@@ -707,6 +707,13 @@
       headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
       boardId: T2TShared.currentTopicId,
       onSaved: async function(row){
+        // Sept 13 2026 -- must happen before the render below, not after,
+        // so the board that redraws already knows this card belongs to
+        // whoever the active Cast filter is (see
+        // _sboardAutoAssignToActiveFilter's own comment, idea-storyboard-
+        // shared.js) -- otherwise it would flash in and then vanish on
+        // the very next filter-driven render.
+        await _sboardAutoAssignToActiveFilter(row);
         _sboardAddRow(row);
         await renderSeaBoard(true);
         _sboardVerifyAdded(row&&row.id, 'What you just added');

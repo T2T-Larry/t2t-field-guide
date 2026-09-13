@@ -301,6 +301,17 @@ function T(){ return window.T2T; }
       } else if(newProjectHeaderId){
         _bbStampCardProject(newCardId, newProjectHeaderId);
       }
+      // Sept 13 2026 -- same race reasoning as the project-stamp fix just
+      // above: chain onto _bbNewCardSync so the row exists in Supabase
+      // before the card_roles insert points at it. See
+      // _bbAutoAssignToActiveFilter's own comment (briefing-board-
+      // master.js) for why this exists at all.
+      if(_bbNewCardSync && _bbNewCardSync.then){
+        _bbNewCardSync.then(function(){ return _bbAutoAssignToActiveFilter(newCardId); })
+          .catch(function(e){ console.error('Briefing Board: could not auto-assign new card', e); });
+      } else {
+        _bbAutoAssignToActiveFilter(newCardId);
+      }
       renderBoard();
       // Aug 7 2026 -- Larry: pinning shouldn't close this screen, only
       // the X should. Clear the field and keep it open (and focused) so
