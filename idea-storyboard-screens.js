@@ -190,7 +190,22 @@
     // upload change), so nothing already on screen jumps size.
     minSize:IDBand.TOKENS.logo.minSize, maxSize:IDBand.TOKENS.logo.maxSize, defaultSize:IDBand.TOKENS.logo.defaultSize, minFrameFromCrop:12,
     uploadPrefix:'logo', subjectLabel:'project',
-    showToast:_sboardShowToast,
+    // Sept 13 2026 fix -- was a direct reference (showToast:_sboardShowToast),
+    // which reads _sboardShowToast's value the instant this object literal
+    // runs (this file's own top-level code, executed as the script loads).
+    // _sboardShowToast itself lives in idea-storyboard-shared.js, which
+    // loads AFTER this file in every page's <script> list -- so at that
+    // instant it didn't exist yet, threw a ReferenceError, and aborted the
+    // rest of this file's top-level code before _sboardLogoCfg finished
+    // being assigned. Every later call site (injectSeaOfIdeasCluster's
+    // T2TLogo.wire(_sboardLogoCfg)) then found _sboardLogoCfg itself
+    // undefined, which is what actually froze the Idea Board: the crash
+    // landed BEFORE the PROJECT/TOPIC/PARENT dropdown-wiring calls further
+    // down in injectSeaOfIdeasCluster, so none of them ever got wired up.
+    // Wrapping it in a function (same pattern getRow/saveLogo already use
+    // below) defers the lookup until a toast is actually shown, by which
+    // time every script has loaded -- no HTML script-order change needed.
+    showToast:function(msg){ _sboardShowToast(msg); },
     getRow:function(){ return _sboardCurrentRootRow(); },
     saveLogo:async function(patch){
       var root=_sboardCurrentRootRow();
