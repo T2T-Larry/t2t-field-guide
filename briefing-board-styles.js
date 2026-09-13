@@ -291,13 +291,6 @@
       // trigger so every other bb-cdrop-trigger (which has no separate
       // caret of its own) keeps its only arrow indicator.
       +'#bb-board-trigger.bb-cdrop-trigger:after{content:none}'
-      // Sept 13 2026, Larry: "Team has 2 down arrows. only need one" --
-      // same shape as the board-trigger fix just above: bb-view-trigger
-      // (the VIEW/"Team" label) sits right next to its own dedicated
-      // bb-view-caret button, so the shared-class arrow this rule adds
-      // to every bb-cdrop-trigger was the redundant second one here too.
-      // Suppressed the same way, for the same reason.
-      +'#bb-view-trigger.bb-cdrop-trigger:after{content:none}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
@@ -394,25 +387,6 @@
       // center; Logo was already the leftmost of the three, immediately
       // left of Utility, so that part needed no change.
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:flex-end}'
-      // Sept 13 2026 fix -- VIEW (added this same day) was left as a
-      // plain flex child of bb-mhead-actions above, which is a right-
-      // anchored row (justify-content:flex-end): adding a new item to it
-      // just grows the row leftward from Logo/Utility/Close's shared
-      // right edge, landing VIEW wherever that happened to reach rather
-      // than "right after Board Type" as designed (see the Sept 13
-      // comment on VIEW's markup in briefing-board-screens.js). Since
-      // Board Type itself is a real, currently-measured box position
-      // (bb-mh-group-center/#bb-boardkind-wrap, position:absolute, just
-      // above) rather than a fixed spot, the only way to reliably sit
-      // "after" it is the same fix: take VIEW out of the flex row too and
-      // place it by measuring Board Type's own actual right edge, done in
-      // _bbPositionBoardKindMidway (briefing-board-master-nav.js) right
-      // alongside where that edge is already calculated. top:10px matches
-      // TOPIC/PROJECT's own row baseline (not Board Type's lower,
-      // bottom-aligned one) since VIEW's eyebrow+control shape is sized
-      // and meant to read like those fields, not like Board Type's single
-      // small title line.
-      +'#bb-view-wrap{position:absolute;top:10px;left:0}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --
@@ -563,7 +537,16 @@
       // Storyboards/Signal Flags) read a touch low against their checkbox
       // -- nudge just the text up so it optically centers on the box.
       +'.bb-addition-eyebrow{transform:translateY(-1.5px)}'
-      +'.bb-addition-body{margin-top:6px}'
+      // Tightened stack spacing, Sept 13 2026 (Larry, screenshot: "the
+      // checklist spacing needs tightening") -- the run of opt-in fields
+      // (Checklist through Signal Flags, plus "Also show on" riding in
+      // the middle of that same run) was using the general .bb-field
+      // 12px gap, which reads too loose stacked nine-deep. Scoped to
+      // just this run via .bb-addition and #bb-d-shared-wrap's own ID
+      // -- ordinary fields elsewhere (Task, Project, Priority, etc.)
+      // keep their normal 12px .bb-field spacing untouched.
+      +'.bb-field.bb-addition,#bb-d-shared-wrap{margin-bottom:7px}'
+      +'.bb-addition-body{margin-top:4px}'
       +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
       // Quiet Added-date, Aug 27 2026 (Larry: "What if the date added is
       // quietly after the TASK Eyebrow?") -- rides on the Task label
