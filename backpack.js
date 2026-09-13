@@ -308,25 +308,15 @@
     window.location.reload();
   }
 
-  // July 22, 2026, Larry: wants a keyboard shortcut too, not just the
-  // button. F3 didn't actually work -- Chrome grabs it for its own
-  // "Find Next" before page JS ever sees it, preventDefault or not.
-  // Ctrl+Alt+R came next and DID work, but felt awkward to reach with
-  // one hand; asked for Alt+C instead. Not reserved by Chrome/Firefox/
-  // Edge on Windows or Mac. Checked via e.code ('KeyC') rather than
-  // e.key -- on a Mac, Option+C types the character "ç", so e.key
-  // would come through as that instead of "c"; e.code reports the
-  // physical key regardless of what character a modifier+layout
-  // combination produces, so this works the same on both platforms.
-  // Global (works from any screen, matching the button living in both
-  // the backpack menu and, more importantly per Larry, right on the
-  // Briefing Board itself).
-  document.addEventListener('keydown', function(e){
-    if(e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code==='KeyC'){
-      e.preventDefault();
-      resetAndReturn();
-    }
-  });
+  // Alt+C keyboard shortcut for resetAndReturn removed Sept 13 2026 --
+  // Larry: "no more backpack, so delete Alt-C." It was added July 22
+  // 2026 as an alternate way to reach the reset/reload action from the
+  // (now-obsolete) backpack menu; that menu is gone and every screen's
+  // own Settings popup already has a working "Reload" option wired to
+  // this same resetAndReturn() (see briefing-board-ops.js, drawer-
+  // system.js, idea-storyboard-header.js, session.js), so the shortcut
+  // itself was the only thing removed here -- resetAndReturn() stays,
+  // still called by all of those.
 
   /* ── GEMS REGISTRY ── */
   var _gemsRegistry = {};
