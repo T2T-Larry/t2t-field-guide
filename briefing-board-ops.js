@@ -188,6 +188,31 @@
   // steady pink face it draws every time regardless.
   var _bbOverdueFlashIds = [];
 
+  // Lasso multi-select, Sept 2026 (Larry: "Lasso to move items at the
+  // same time"). Scope decision: the Idea Storyboard's own lasso
+  // (session.js, _isxWireLasso) works on a freeform x/y canvas, where
+  // rubber-band selection and group-drag are natural. This board is a
+  // column/list, not a canvas, and its single-card drag-drop
+  // (_bbCardBefore / the zone 'drop' handler above) is a carefully
+  // tuned, position-sensitive thing -- exact drop position decides
+  // priority escalation (H/HH, M/MH, L/ML) and a full sortOrder
+  // renumber. Generalizing THAT to a multi-card group-drag, correctly,
+  // for every column and priority edge case, isn't something to get
+  // right blind in one pass with no way to click-test it live -- a
+  // mistake there could scramble ordering/priority across many real
+  // cards at once. So this ships a scoped, lower-risk version instead:
+  // rubber-band select multiple cards within one column (mirrors the
+  // Idea Board's own rectangle-overlap technique), then move the whole
+  // selection together by clicking a DIFFERENT column's header --
+  // no drag involved, so it never touches the position-sensitive drop
+  // path above. Selected cards land at the bottom of the target
+  // column with that column's base priority (no top/bottom escalation
+  // nuance, which only ever meant something for one card's exact
+  // position among neighbors). "Cluster them" -- the other half of
+  // the card -- isn't included; there's no defined "cluster" concept
+  // on this list-shaped board yet.
+  var _bbLassoSelected = {};
+
   // Initials for the card-face badge, July 21, 2026 (evening) -- Assigned
   // To is a free-text stand-in field (e.g. "Doc (Larry E. Smithers)"),
   // so the full name never fit in the small round badge. If the text
@@ -546,6 +571,16 @@
 
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
+    // Preserve each column's own scroll position across this full
+    // rebuild, Sept 2026 (Larry: "leave scroll at last position used
+    // instead of jumping back to top of list") -- renderBoard tears
+    // down and recreates every column's DOM on every call (any card
+    // edit, drag, or filter change), which used to silently reset
+    // scrollTop to 0 on all of them every single time.
+    var _bbScrollByCol={};
+    wrap.querySelectorAll('.bb-col-cards[data-col]').forEach(function(el){
+      _bbScrollByCol[el.getAttribute('data-col')]=el.scrollTop;
+    });
     wrap.innerHTML='';
     // Board-name eyebrow fallback, Sept 5 2026 -- the currently-open
     // board's own name, used below so a plain hand-typed card (no
@@ -586,6 +621,20 @@
         +(cd.key==='new' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
     });
+    // Lasso bulk-move target, Sept 2026 -- while 1+ cards are lasso-
+    // selected (see _bbLassoSelected above), clicking a column's head
+    // sends the whole selection there together, no drag needed.
+    // Clicking the head of a column that's ALREADY holding part of the
+    // selection is a no-op (nothing to move within the same column via
+    // this path).
+    wrap.querySelectorAll('.bb-col').forEach(function(colEl){
+      var head=colEl.querySelector('.bb-col-head');
+      if(head) head.addEventListener('click', function(){
+        var ids=Object.keys(_bbLassoSelected);
+        if(!ids.length) return;
+        _bbBulkMoveSelectedTo(colEl.getAttribute('data-col'));
+      });
+    });
     _bbFitColumnWidths();
     // July 22, 2026 (later), Larry: wants to freely drag a card to a
     // new position WITHIN a column, not just between columns. Position
@@ -623,7 +672,8 @@
         var cardIsOverdue=_bbIsOverdue(c)||_bbStartIsOverdue;
         var cardJustWentOverdue=_bbOverdueFlashIds.indexOf(c.id)!==-1;
         el.className='bb-card'+(c._foreign?' bb-card-foreign':'')
-          +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'');
+          +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'')
+          +(_bbLassoSelected[c.id]?' bb-lasso-selected':'');
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         if(c.color) el.style.background=c.color;
@@ -678,19 +728,20 @@
         // to the board" (c.assigned) is still recorded for later, just
         // not displayed here; not important enough to take up card-face
         // space, though it does show read-only on the back of the card.
-        var startBadge = c.startDate ? '<span class="bb-date">'+_esc(c.startDate)+'</span>' : '';
-        // Aug 30 2026, Larry: "When date passes intended START DATE, Add
-        // START DUE: (date) to front of pink card" -- then, seeing the
-        // first pass land it as a relabel of the top-row date badge
-        // (next to priority/routine): "No. the START DUE date should
-        // appear under the task and above the DUE date, if any." So
-        // this is its own line instead, matching where bb-done-date
-        // already sits relative to bb-task/bb-bottom, and only shows up
-        // once the Start Date has actually passed (the same
-        // _bbIsStartOverdue check that turns the card pink) -- the
-        // top-row badge above goes back to always just the bare date,
-        // exactly as it was before this feature existed.
-        var startDueLine = _bbStartIsOverdue ? ('<div class="bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '';
+        //
+        // Consolidated into one lower-right stack, Sept 2026 (Larry:
+        // "Move all date references to the lower right corner of a
+        // card") -- Start Date, START DUE, DUE, and COMPLETED used to
+        // be scattered across a top-row badge and two separate
+        // full-width lines above/below the task; all four now live
+        // together in bb-date-stack, right below the budget line,
+        // stacked in that same order (only whichever ones actually
+        // apply to this card render at all).
+        var dateStackHTML = ''
+          + (c.startDate ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
+          + (_bbStartIsOverdue ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
+          + (c.due ? ('<div class="bb-date-line bb-due">DUE: '+_esc(c.due)+'</div>') : '')
+          + (c.col==='done' && c.completedDate ? ('<div class="bb-date-line bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '');
         // Signal Flags row, bottom-left corner -- Notes badge joined
         // this group Aug 11 2026 (Larry: move it down "with other
         // signal flags") instead of sitting up top with the rest of
@@ -749,13 +800,11 @@
           || (c._foreign ? '' : _bbHomeBoardName);
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+startBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +'<div class="bb-task">'+_esc(c.task)+'</div>'
-          +startDueLine
-          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-due">'+(c.due?('DUE: '+_esc(c.due)):'')+'</span></div>'
-          +(c.col==='done' && c.completedDate ? ('<div class="bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '')
+          +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-date-stack">'+dateStackHTML+'</span></div>'
           +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '');
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click opens the card (Aug 11 2026, Larry). Used to be a
@@ -784,6 +833,55 @@
       });
       return closest.el;
     }
+    // Lasso rubber-band selection, Sept 2026 -- mousedown on empty space
+    // inside a column's own card list (never on a card itself, and
+    // never while that mousedown is actually the start of a card drag)
+    // draws a dashed rectangle; any card in THIS column overlapping it
+    // at mouseup gets added to _bbLassoSelected. Scoped to one column
+    // at a time (mousemove outside this zone's own bounds doesn't pull
+    // in cards from a neighboring column) -- see the scope note on
+    // _bbLassoSelected above for why this stays column-local rather
+    // than a free 2D rectangle across the whole board.
+    wrap.querySelectorAll('.bb-col-cards').forEach(function(zone){
+      var lassoBox=null, lassoStartX=0, lassoStartY=0, lassoActive=false;
+      zone.addEventListener('mousedown', function(e){
+        if(e.button!==0 || e.target.closest('.bb-card')) return;
+        lassoActive=true;
+        lassoStartX=e.clientX; lassoStartY=e.clientY;
+        lassoBox=document.createElement('div');
+        lassoBox.className='bb-lasso-rect';
+        document.body.appendChild(lassoBox);
+        _bbPositionLassoRect(lassoBox, lassoStartX, lassoStartY, e.clientX, e.clientY);
+        e.preventDefault();
+      });
+      zone.addEventListener('mousemove', function(e){
+        if(!lassoActive || !lassoBox) return;
+        _bbPositionLassoRect(lassoBox, lassoStartX, lassoStartY, e.clientX, e.clientY);
+      });
+      function finishLasso(e){
+        if(!lassoActive) return;
+        lassoActive=false;
+        if(lassoBox){
+          var rect=lassoBox.getBoundingClientRect();
+          // Foreign/shared-in/rollup cards (bb-card-foreign) are
+          // skipped -- each has its own separate save path (see
+          // _bbHandlePersonalBoardDrop/_bbHandleSharedInDrop/
+          // _bbHandleRollupDrop on the single-card drop above), which
+          // _bbBulkMoveSelectedTo doesn't replicate. Simplest safe
+          // answer: they're just not lasso-selectable.
+          zone.querySelectorAll('.bb-card:not(.bb-card-foreign)').forEach(function(cardEl){
+            var box=cardEl.getBoundingClientRect();
+            var overlaps = box.left<rect.right && box.right>rect.left && box.top<rect.bottom && box.bottom>rect.top;
+            var id=cardEl.getAttribute('data-id');
+            if(overlaps){ _bbLassoSelected[id]=true; cardEl.classList.add('bb-lasso-selected'); }
+          });
+          lassoBox.remove();
+          lassoBox=null;
+        }
+      }
+      zone.addEventListener('mouseup', finishLasso);
+      zone.addEventListener('mouseleave', function(e){ if(lassoActive) finishLasso(e); });
+    });
     wrap.querySelectorAll('.bb-col-cards').forEach(function(zone){
       zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('bb-dragover'); });
       zone.addEventListener('dragleave', function(){ zone.classList.remove('bb-dragover'); });
@@ -900,7 +998,70 @@
     var addTile=document.getElementById('bb-add-tile');
     if(addTile) addTile.addEventListener('click', openAddCard);
     _bbFitTaskText();
+    // Restore the per-column scroll positions captured before this
+    // render tore the columns down (see top of function).
+    wrap.querySelectorAll('.bb-col-cards[data-col]').forEach(function(el){
+      var key=el.getAttribute('data-col');
+      if(_bbScrollByCol.hasOwnProperty(key)) el.scrollTop=_bbScrollByCol[key];
+    });
   }
+
+  // Lasso helpers -- see _bbLassoSelected's own comment (top of file)
+  // for the scope decision behind all three of these.
+  function _bbPositionLassoRect(box, x1, y1, x2, y2){
+    box.style.left=Math.min(x1,x2)+'px';
+    box.style.top=Math.min(y1,y2)+'px';
+    box.style.width=Math.abs(x2-x1)+'px';
+    box.style.height=Math.abs(y2-y1)+'px';
+  }
+  function _bbClearLassoSelection(){
+    if(!Object.keys(_bbLassoSelected).length) return;
+    _bbLassoSelected={};
+    document.querySelectorAll('.bb-card.bb-lasso-selected').forEach(function(el){ el.classList.remove('bb-lasso-selected'); });
+  }
+  // Moves every lasso-selected card to targetCol together, no drag
+  // involved -- see _bbLassoSelected's comment for why this is
+  // deliberately simpler than the position-sensitive single-card drop
+  // path above (base priority only, landed at the bottom, one plain
+  // sortOrder append per card in whatever order they happen to be in).
+  // Duplicates a small slice of that path's per-card side effects
+  // (hangup stamp, done-date stamp, doing+start-date stamp, done->not-
+  // done reset) rather than refactoring it out into something shared --
+  // see card 6a63c554 (cluster movement routines into one file) for
+  // that broader question, left to Larry for later.
+  function _bbBulkMoveSelectedTo(targetCol){
+    var ids=Object.keys(_bbLassoSelected);
+    if(!ids.length) return;
+    var allCards=_bbCardsList();
+    var existing=allCards.filter(function(c){ return c.col===targetCol; });
+    var nextSort=existing.reduce(function(mx,c){ return Math.max(mx, (typeof c.sortOrder==='number')?c.sortOrder:0); }, -1)+1;
+    ids.forEach(function(id){
+      var c=_bbFindCardAnywhere(id);
+      if(!c) return;
+      var wasCol=c.col;
+      if(wasCol===targetCol) return;
+      c.col=targetCol;
+      if(_bbIsDoCol(c.col)) c.priority=_bbPriorityForDrop(c.col, c.priority);
+      if(c.col==='doing' && _bbIsDoCol(wasCol) && !c.startDate){ c.startDate=_bbToday(); c.addStart=true; }
+      if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
+      if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
+      if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
+      if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
+      c.sortOrder=nextSort++;
+    });
+    _bbSaveLocal(allCards);
+    _bbClearLassoSelection();
+    renderBoard();
+  }
+  // Click on empty board background, or Escape, clears the selection --
+  // wired once here (module scope), not per-render.
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape') _bbClearLassoSelection();
+  });
+  document.addEventListener('mousedown', function(e){
+    if(e.target.closest('.bb-card') || e.target.closest('.bb-col-cards') || e.target.closest('.bb-col-head')) return;
+    _bbClearLassoSelection();
+  });
 
   // Shrink-to-fit for card task text -- Aug 18 2026, Larry: "can we
   // shrink text size when necessary to prevent splitting words on all
@@ -989,6 +1150,27 @@
   function closeAddCard(){
     var ov=document.getElementById('bb-add-overlay'); if(ov) ov.classList.remove('active');
   }
+
+  // Sept 2026, Larry: "shortcut keystroke to open an input card ...
+  // Ctrl-N?" -- built as Alt+N instead. Ctrl+N is grabbed by every
+  // major browser for its own New Window before page JS ever sees it
+  // (can't be overridden); Alt+N is not reserved by Chrome/Firefox/Edge
+  // on Windows or Mac, same reasoning backpack.js's Alt+C reload
+  // shortcut already used. Checked via e.code ('KeyN'), not e.key, so
+  // Mac's Option+N (which types a different character depending on
+  // layout) doesn't throw this off -- same technique as Alt+C. Only
+  // live while the Briefing Board screen is actually showing, and
+  // skipped while focus is in a real text field so it can't interrupt
+  // renaming or editing something else on the board.
+  document.addEventListener('keydown', function(e){
+    var screen=document.getElementById('s-briefing-board');
+    if(!screen || !screen.classList.contains('active')) return;
+    if(!(e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code==='KeyN')) return;
+    var tag=(e.target&&e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+    e.preventDefault();
+    openAddCard();
+  });
 
   function _bbHighlightPriority(priority){
     var btns=document.querySelectorAll('#bb-detail-overlay .bb-pri-btn');

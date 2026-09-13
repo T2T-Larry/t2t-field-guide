@@ -253,6 +253,17 @@
         if(!screen || !screen.classList.contains('active')) return;
         var tag=(e.target&&e.target.tagName||'').toLowerCase();
         if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+        // Sept 2026, Larry: "shortcut keystroke to open an input card
+        // ... Ctrl-N?" -- built as Alt+N instead, same reasoning as the
+        // Briefing Board's own Alt+N (briefing-board-ops.js) and
+        // backpack.js's Alt+C: Ctrl+N is grabbed by every major browser
+        // for its own New Window before page JS ever sees it, Alt+N
+        // isn't reserved anywhere. e.code so Mac's Option+N (a
+        // different typed character depending on layout) doesn't
+        // matter. Opens the same Idea Input the 💡 button opens here,
+        // targeted at whichever header this canvas is currently
+        // focused on.
+        if(e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code==='KeyN'){ e.preventDefault(); _isxOpenIdeaCaptureHere(); return; }
         var mod=e.metaKey||e.ctrlKey;
         if(mod){
           var k=e.key.toLowerCase();

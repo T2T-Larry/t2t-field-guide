@@ -93,7 +93,18 @@
       // below -- same "measure the actual boxes" approach as the Idea
       // Board's own (currently unused) _sboardPositionProjectMidwayToLogo,
       // just walking TOPIC->LOGO instead of Name->LOGO.
-      +'.bb-mhead-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;height:100%;position:relative}'
+      // Sept 2026, Larry: "move TOPIC to the left next to the PROJECT
+      // list ... that would leave more space between the Board type and
+      // the top right corner buttons to add CAST view." First column
+      // was 1fr (stretchy), which let PROJECT sit left-aligned inside a
+      // wide flexible box with TOPIC's own column starting only after
+      // that whole box ended -- visually far apart even though they
+      // were the grid's first two tracks. auto instead of 1fr makes
+      // this column exactly as wide as PROJECT itself, so TOPIC's
+      // column begins right after it (just the 10px grid gap between
+      // them). Only the actions column stays 1fr, absorbing the space
+      // this frees up on the right for a future CAST view button.
+      +'.bb-mhead-top{display:grid;grid-template-columns:auto auto 1fr;align-items:start;gap:10px;height:100%;position:relative}'
       // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
       // Board [title], A control and communication tool, in the center.
       // Far left: eyebrow TYPE with drop down list followed by a Field
@@ -270,8 +281,16 @@
       // same family as IDEA/PLAN/SHARE/CAST) only arrow indicator, and
       // also rides along on bb-board-trigger's PROJECT label (which
       // already has its own separate real caret beside it too -- same
-      // shared class, moves with it, harmless). 9->14px to match.
+      // shared class, moves with it).
       +'.bb-cdrop-trigger:after{content:\'\u25be\';font-size:calc(14px * var(--fg-text-scale,1));opacity:.65;flex-shrink:0}'
+      // Sept 2026, Larry: "two down arrows on the BB projects field
+      // area -- keep the separate down arrow for consistency with
+      // others." bb-board-trigger sits right next to its own dedicated
+      // bb-project-caret button, so the shared-class arrow above is the
+      // redundant one here specifically; suppressed only on this one
+      // trigger so every other bb-cdrop-trigger (which has no separate
+      // caret of its own) keeps its only arrow indicator.
+      +'#bb-board-trigger.bb-cdrop-trigger:after{content:none}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
@@ -450,8 +469,12 @@
       +'.bb-col[data-col="do-h"] .bb-col-head{background:#c0272a;color:#fff}'
       +'.bb-col[data-col="do-m"] .bb-col-head{background:#3F8F3F;color:#fff}'
       +'.bb-col[data-col="do-l"] .bb-col-head{background:#e0c22e;color:#3B2510}'
-      +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px}'
+      +'.bb-col-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:60px;user-select:none}'
       +'.bb-col-cards.bb-dragover{outline:2px dashed var(--bb-accent);outline-offset:2px}'
+      // Lasso multi-select, Sept 2026 -- see _bbLassoSelected's comment
+      // in briefing-board-ops.js for the scope this covers.
+      +'.bb-lasso-rect{position:fixed;border:1.5px dashed #5b9bd5;background:rgba(91,155,213,.14);pointer-events:none;z-index:9998}'
+      +'.bb-card.bb-lasso-selected{outline:2px solid #5b9bd5;outline-offset:1px}'
       +'.bb-card{position:relative;background:#FFFDF7;border:1px solid var(--bb-accent);border-radius:3px;box-shadow:1px 2px 4px rgba(59,37,16,0.18);padding:8px 8px 12px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1.3;cursor:grab;font-family:var(--bb-body-font)}'
       +'.bb-card .bb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}'
       +'.bb-card .bb-top-left{display:flex;align-items:center;gap:4px}'
@@ -460,10 +483,17 @@
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px;word-break:break-word}'
       +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
-      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
+      +'.bb-card .bb-bottom{display:flex;justify-content:space-between;align-items:flex-end;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
+      // Date stack, Sept 2026 (Larry: "Move all date references to the
+      // lower right corner of a card") -- Start Date, START DUE, DUE,
+      // and COMPLETED all render into this one right-aligned column
+      // now, instead of a top-row badge plus two separate full-width
+      // lines above/below the task. Order matches dateStackHTML.
+      +'.bb-date-stack{display:flex;flex-direction:column;align-items:flex-end;text-align:right}'
+      +'.bb-date-line{line-height:1.2}'
       +'.bb-card .bb-bottom .bb-due{color:#a3372b}'
-      +'.bb-start-due{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#a3372b;margin:-3px 0 3px}'
-      +'.bb-done-date{font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:#3F6B3A;text-align:right;margin-top:1px}'
+      +'.bb-start-due{color:#a3372b}'
+      +'.bb-done-date{color:#3F6B3A}'
       +'.bb-key-badges{position:absolute;bottom:2px;left:4px;display:flex;gap:7px;pointer-events:none}'
       // pointer-events:auto here, Aug 4 2026 -- the container above stays
       // click-through (so it never steals a card drag), but the wrap
@@ -550,8 +580,15 @@
       +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
       +'.bb-key-pick-empty-msg{font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
-      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      +'.bb-checklist-row .bb-checklist-check{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0}'
+      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:1px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
+      // Three-state toggle button, Sept 2026 (replaces the old plain
+      // checkbox) -- todo: empty box. doing: amber outline with a
+      // hollow check. done: solid green fill with a white check,
+      // matching the existing strike-through green (--bb-sub-ish) tone
+      // used elsewhere for "finished."
+      +'.bb-checklist-row .bb-checklist-check{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0;box-sizing:border-box;border-radius:3px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(10px * var(--fg-text-scale,1));line-height:1;color:transparent}'
+      +'.bb-checklist-row .bb-checklist-check.bb-checklist-doing{border-color:#b8860b;color:#b8860b;background:#fff}'
+      +'.bb-checklist-row .bb-checklist-check.bb-checklist-done{border-color:#3F6B3A;background:#3F6B3A;color:#fff}'
       +'.bb-checklist-text{flex:1}'
       +'.bb-checklist-text.bb-checklist-done{text-decoration:line-through;color:var(--bb-sub)}'
       +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:0 4px}'

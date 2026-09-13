@@ -1088,31 +1088,29 @@
     // Guard against a not-yet-laid-out screen -- nothing real to measure
     // yet, leave the left:50% fallback in place.
     if(!topicRect.width || !logoRect.width || !containerRect.width) return;
-    // Shrink the label to the real gap BEFORE any of the midpoint/clamp
+    // Shrink the label to the real gap BEFORE any of the position/clamp
     // math below, which reads wrap's rendered width -- so the clamp
     // always sees the already-fitted (often smaller) box, same as
     // measuring "the real boxes" everywhere else in this function.
     _bbFitBoardKindLabel((logoRect.left-topicRect.right)-20);
+    // Sept 2026, Larry: "Board Type next to TOPIC" -- was centered at
+    // the midpoint between TOPIC and LOGO (often nowhere near TOPIC on
+    // a wide window). Now targets the position immediately to TOPIC's
+    // right instead of a midpoint -- wrap is still centered on
+    // wrap.style.left via transform:translateX(-50%), so "immediately
+    // right of TOPIC" means TOPIC's right edge plus a small gap plus
+    // half of wrap's own width (so wrap's LEFT edge, not its center,
+    // is what actually sits at that gap). Falls back to the old
+    // midpoint-vs-logo clamp as a ceiling only, so on a narrow window
+    // this still can't run into the Logo/actions on the right --
+    // same safety the Sept 9 2026 overlap fix already had, just a
+    // minimum instead of a preferred value now.
     var midpoint=topicRect.right+(logoRect.left-topicRect.right)/2;
-    // Sept 9 2026 fix (Larry: "Briefing Board on ID BAND too large type.
-    // Overlaps child down arrow") -- the plain midpoint above never
-    // accounted for how wide "Briefing Board" itself actually renders.
-    // wrap is centered on that midpoint via transform:translateX(-50%),
-    // so half its real width extends to EACH side. On a laptop-width
-    // window, TOPIC's Sept 5 font bump (44px) leaves less gap before
-    // Logo than the title needs, so the raw midpoint could sit close
-    // enough to TOPIC that the title's own left half covered TOPIC's
-    // descend ("child") arrow, id="bb-topic-caret", right at TOPIC's
-    // own right edge. Clamp the midpoint so the title's rendered box
-    // (half its width each side, plus a small breathing gap) never
-    // reaches past TOPIC's right edge or Logo's left edge. If the two
-    // are close enough that no midpoint keeps both gaps, side with
-    // staying off TOPIC's arrow -- that's the one people click.
     var wrapRect=wrap.getBoundingClientRect();
     if(wrapRect.width){
       var gap=8, half=wrapRect.width/2;
       var minMid=topicRect.right+gap+half, maxMid=logoRect.left-gap-half;
-      midpoint = (maxMid>=minMid) ? Math.max(minMid, Math.min(midpoint, maxMid)) : minMid;
+      midpoint = (maxMid>=minMid) ? Math.min(minMid, maxMid) : minMid;
     }
     wrap.style.left=(midpoint-containerRect.left)+'px';
     // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to

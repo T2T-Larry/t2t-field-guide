@@ -592,7 +592,7 @@
     if(!_bbCurrentBoardId) return;
     var sb=T().sb; if(!sb) return;
     try{
-      var rows=items.map(function(it,i){ return {id:it.id, card_id:cardId, item_text:it.text||'', done:!!it.done, sort_order:i}; });
+      var rows=items.map(function(it,i){ var st=it.status||(it.done?'done':'todo'); return {id:it.id, card_id:cardId, item_text:it.text||'', status:st, done:st==='done', sort_order:i}; });
       if(rows.length){
         var res=await sb.from('briefing_checklist_items').upsert(rows);
         if(res.error) throw res.error;
@@ -613,7 +613,7 @@
       try{
         var res=await sb.from('briefing_checklist_items').select('*').eq('card_id',cardId).order('sort_order',{ascending:true});
         if(!res.error){
-          var items=(res.data||[]).map(function(r){ return {id:r.id, text:r.item_text||'', done:!!r.done}; });
+          var items=(res.data||[]).map(function(r){ var st=r.status||(r.done?'done':'todo'); return {id:r.id, text:r.item_text||'', status:st, done:st==='done'}; });
           if(_bbOpenCardId===cardId){ _bbChecklistCache=items; _bbRenderChecklist(); }
           return;
         }
@@ -628,30 +628,41 @@
       list.innerHTML='';
       return;
     }
+    // Three-state toggle, Sept 2026 (Larry: "How to distinguish a
+    // checklist item in DOING from a checked item as DONE? Three click
+    // toggle?") -- cycles todo -> doing -> done -> todo on each click,
+    // replacing the old plain checked/unchecked box. todo shows an
+    // empty box, doing an open/hollow check, done a solid filled check
+    // (with the existing strike-through text treatment).
+    var CL_GLYPH={todo:'', doing:'&#10003;', done:'&#10003;'};
     list.innerHTML=_bbChecklistCache.map(function(it){
+      var st=it.status||(it.done?'done':'todo');
       return '<div class="bb-checklist-row">'
-        +'<input type="checkbox" class="bb-checklist-check" data-id="'+_esc(it.id)+'"'+(it.done?' checked':'')+'>'
-        +'<span class="bb-checklist-text'+(it.done?' bb-checklist-done':'')+'">'+_esc(it.text)+'</span>'
+        +'<button type="button" class="bb-checklist-check bb-checklist-'+st+'" data-id="'+_esc(it.id)+'" title="'+st+' — click to advance">'+CL_GLYPH[st]+'</button>'
+        +'<span class="bb-checklist-text'+(st==='done'?' bb-checklist-done':'')+'">'+_esc(it.text)+'</span>'
         +'<button class="bb-checklist-remove" data-id="'+_esc(it.id)+'" title="Remove">&#10005;</button>'
         +'</div>';
     }).join('');
     list.querySelectorAll('.bb-checklist-check').forEach(function(cb){
-      cb.addEventListener('change', function(){
+      cb.addEventListener('click', function(){
         var id=cb.getAttribute('data-id');
         var it=_bbChecklistCache.filter(function(x){ return x.id===id; })[0];
         if(it && _bbOpenCardId){
-          it.done=cb.checked;
+          var cur=it.status||(it.done?'done':'todo');
+          var next={todo:'doing', doing:'done', done:'todo'}[cur];
+          it.status=next;
+          it.done=(next==='done');
           _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
           _bbRenderChecklist();
           // Sept 13 2026, Master BB card (do-h): "When all items on a
           // checklist are completed, move the card to DONE." Forward-only
-          // -- unchecking an item never pulls a card back OUT of Done,
-          // same one-way "mark Done" shape as the Lock button's own
-          // is-it-actually-finished path just below (wireLockButton).
-          // Mutate + _bbSaveLocal/renderBoard mirrors wirePriorityButtons'
-          // own pattern for changing a card's column live while its
-          // detail overlay is still open.
-          if(_bbChecklistCache.length && _bbChecklistCache.every(function(x){ return x.done; })){
+          // -- taking an item back out of Done never pulls the card back
+          // OUT of Done, same one-way "mark Done" shape as the Lock
+          // button's own is-it-actually-finished path just below
+          // (wireLockButton). Mutate + _bbSaveLocal/renderBoard mirrors
+          // wirePriorityButtons' own pattern for changing a card's
+          // column live while its detail overlay is still open.
+          if(_bbChecklistCache.length && _bbChecklistCache.every(function(x){ return (x.status||(x.done?'done':'todo'))==='done'; })){
             var card=_bbFindCardAnywhere(_bbOpenCardId);
             if(card && card.col!=='done'){
               card.col='done';
@@ -767,7 +778,7 @@
       var input=document.getElementById('bb-d-checklist-new');
       var text=input?input.value.trim():'';
       if(!text || !_bbOpenCardId) return;
-      _bbChecklistCache.push({id:_bbUUID(), text:text, done:false});
+      _bbChecklistCache.push({id:_bbUUID(), text:text, status:'todo', done:false});
       _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
       if(input) input.value='';
       _bbRenderChecklist();
@@ -1230,14 +1241,27 @@
         if(c.grow){ var ta=document.getElementById('bb-d-grow-note'); if(ta) ta.focus(); }
       }
     });
-    // Verified complete is the ONLY thing that signals removal to the
-    // archive -- Larry, July 20: no separate Archive button needed.
-    // Only does anything while the card is actually sitting in Done;
-    // elsewhere it's a quiet no-op (another hidden Mickey -- the action
-    // exists for later, nothing to explain about it now).
+    // Complete (renamed from "Verified", Sept 2026 -- Larry: two-step
+    // meaning) now does double duty. Off of Done, checking it means the
+    // work itself is finished -- it moves the card straight to Done,
+    // same as the Lock button's "yes, done" path (including clearing a
+    // Hang-Up's parked state, since finishing IS the resolution to a
+    // Hang-Up). Already sitting in Done, checking it again is the
+    // confirmed-and-done signal that sends it to the Archive -- no
+    // separate Archive button needed, unchanged from the original
+    // July 20 design.
     T().wire('bb-d-verify', function(){
       var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c || c.col!=='done') return;
+      if(!c) return;
+      if(c.col!=='done'){
+        var wasCol=c.col;
+        c.col='done';
+        if(!c.completedDate) c.completedDate=_bbToday();
+        if(wasCol==='hangups') c.hangupSince='';
+        _bbSaveLocal(_bbCardsList());
+        closeCardDetail();
+        return;
+      }
       c.verified=true;
       c.archived=true;
       _bbSaveLocal(_bbCardsList());

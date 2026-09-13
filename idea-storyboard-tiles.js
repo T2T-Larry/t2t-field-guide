@@ -464,29 +464,36 @@
     // Click to select this Subber for the Tab/Shift+Tab and
     // Ctrl+Down/Ctrl+Up keyboard shortcuts (see wireSboardUndoKeyboard).
     // Aug 20 2026 (Larry: MOVE vs VIEW shortcuts).
+    //
+    // Sept 2026, Larry: "Long click on Sub-header opens view of
+    // sub-header contents. Make single click move that header to
+    // topic?" -- a short click now drills straight in (_sboardDrillInto,
+    // same "become the new TOPIC" move dragging this tile onto the
+    // TOPIC box already does), replacing the old plain
+    // select-for-keyboard-shortcuts behavior. Guarded by stackHeld
+    // (set by the hold-timer below) so releasing after a long hold --
+    // which still fires a native 'click' afterward, same as any
+    // mousedown+mouseup pair -- doesn't also drill in right on top
+    // of the peek view that hold just opened.
     wrap.addEventListener('click', function(e){
-      if(_sboardSelectedHeaderId===headerRow.id) return;
-      var prevId=_sboardSelectedHeaderId;
-      _sboardSelectedHeaderId=headerRow.id;
-      if(prevId){
-        var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(prevId))+'"]');
-        if(prevEl) prevEl.classList.remove('sb-kbd-selected');
-      }
-      wrap.classList.add('sb-kbd-selected');
+      if(stackHeld){ stackHeld=false; return; }
+      _sboardDrillInto(headerRow);
     });
     // Click-and-hold a sub-header to peek at its subber cards, Aug 11 2026
     // (Larry) -- reuses openSbHeaderPeek, the same grid view CLUSTER's
     // bucket pill already opens on a plain click, so there's no new screen
     // to build, just a second doorway into it. Same 550ms hold threshold
     // as the heart-pill tap/hold pattern below, so the two "hold to do
-    // something different" gestures on this board feel consistent. A
-    // short click/tap still does nothing dedicated here (double-click
-    // opens the back, to color) -- this is purely additive.
-    var stackHoldTimer=null;
+    // something different" gestures on this board feel consistent.
+    // stackHeld (Sept 2026) marks that the hold actually fired, so the
+    // click handler above can tell a real short click (drill in) apart
+    // from the click that always follows releasing a long hold (open
+    // the peek only, don't also drill in).
+    var stackHoldTimer=null, stackHeld=false;
     function stackStartHold(e){
       if(e && e.type==='mousedown' && e.button!==0) return;
       clearTimeout(stackHoldTimer);
-      stackHoldTimer=setTimeout(function(){ openSbHeaderPeek(headerRow); }, 550);
+      stackHoldTimer=setTimeout(function(){ stackHeld=true; openSbHeaderPeek(headerRow); }, 550);
     }
     function stackCancelHold(){ clearTimeout(stackHoldTimer); }
     wrap.addEventListener('mousedown', stackStartHold);

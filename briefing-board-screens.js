@@ -253,13 +253,6 @@
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
             +'</div></div>'
-            // Added-date, Aug 27 2026 (Larry: "What if the date added is
-            // quietly after the TASK Eyebrow?") -- the standalone "Dates"
-            // block (below) used to hold this, but once Start Date moved
-            // into its own checkbox that block was down to one static
-            // line, not worth a whole section for. Same id (bb-d-added),
-            // same value, just riding quietly on the Task label instead.
-            +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
             // Project, Sept 7 2026 -- Larry: "BB has eyebrow project ID.
             // Make this a dropdown field on the back of the card so we
             // can change projects for a given BB card." The card
@@ -273,7 +266,18 @@
             // "open the menu" from the label's own double-click-to-
             // rename; this field has no rename). Wired in
             // _bbRenderCardProjectField, called from openCardDetail.
+            // Moved above Task, Sept 2026 (Larry: "Move Project field
+            // above task on back of BB card") -- which project a card
+            // belongs to reads as the more important fact to confirm
+            // first, before the task text itself.
             +'<div class="bb-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which project this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div></div>'
+            // Added-date, Aug 27 2026 (Larry: "What if the date added is
+            // quietly after the TASK Eyebrow?") -- the standalone "Dates"
+            // block (below) used to hold this, but once Start Date moved
+            // into its own checkbox that block was down to one static
+            // line, not worth a whole section for. Same id (bb-d-added),
+            // same value, just riding quietly on the Task label instead.
+            +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -352,7 +356,7 @@
             // -- reads as one contiguous section.
             +'<hr class="bb-field-divider">'
             +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
-            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Verified</button></div></div>'
+            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Complete</button></div></div>'
             +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
             // Bottom action row, Session 234 (Aug 21, Larry: "add the same
             // bottom row as on the IDEA CARD to the BB Cards? lock - twin
