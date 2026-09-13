@@ -225,9 +225,24 @@
   var _sboardPendingTypeOverride = null;
 
   async function _sboardLoadMyRoots(force){
-    var _sb=T().sb; if(!_sb) return _sboardMyRoots||[];
+    var _sb=T().sb; if(!_sb){ _sboardMyRoots=_sboardMyRoots||[]; return _sboardMyRoots; }
     var user=(await _sb.auth.getUser()).data.user;
-    if(!user) return _sboardMyRoots||[];
+    // Sept 13 2026 fix (Larry: whole site frozen solid for any signed-out
+    // visitor) -- this used to just RETURN _sboardMyRoots||[] here without
+    // ever ASSIGNING it, so the module-level _sboardMyRoots stayed
+    // undefined forever whenever there was no signed-in user yet.
+    // _sboardRenderTypePicker() (below) treats "still undefined" as "go
+    // fetch it," so it kept calling straight back into this function on
+    // every resolution -- an unbroken .then()-to-.then() recursion with
+    // no real async gap once backpack.js's same-day getUser() cache made
+    // this resolve instantly instead of over a real network round trip.
+    // That's a runaway microtask loop: it never yields to the browser's
+    // event loop, so nothing else -- not a repaint, not another script,
+    // not even a totally unrelated click -- ever got a turn. Assigning
+    // the empty array here (same pattern the catch block below already
+    // uses) makes "signed out" a stable, final answer instead of "keep
+    // asking," which is what actually stops the recursion.
+    if(!user){ _sboardMyRoots=_sboardMyRoots||[]; return _sboardMyRoots; }
     if(!force && _sboardMyRoots && _sboardMyRootsLoadedFor===user.id) return _sboardMyRoots;
     try{
       // Sept 2, 2026 -- consolidation: this used to run its own copy of
@@ -1358,10 +1373,22 @@
     }catch(e){ console.error('Idea Board: could not save Organization name', e); }
   }
 
+  // Sept 13 2026 -- belt-and-suspenders alongside the _sboardLoadMyRoots
+  // fix above: even with that fixed, nothing stopped some OTHER future
+  // gap in _sboardLoadMyRoots from putting this same re-trigger-on-every-
+  // call shape back into a same-tab-freezing loop. This flag makes that
+  // failure mode impossible regardless of what _sboardLoadMyRoots does or
+  // doesn't set: at most one fetch-and-retry is ever in flight, so even a
+  // _sboardMyRoots that never becomes truthy just leaves the picker empty
+  // once, instead of spinning the tab forever.
+  var _sboardTypePickerRootsPending=false;
   function _sboardRenderTypePicker(){
     var roots=_sboardMyRoots;
     if(!roots){
-      _sboardLoadMyRoots().then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
+      if(!_sboardTypePickerRootsPending){
+        _sboardTypePickerRootsPending=true;
+        _sboardLoadMyRoots().then(function(){ _sboardTypePickerRootsPending=false; _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardRenderTitlePicker(); });
+      }
       roots=[];
     }
     var extra=_sboardExtraBoardTypes(roots);
