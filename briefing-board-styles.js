@@ -580,7 +580,21 @@
       +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
       +'.bb-key-pick-empty-msg{font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
-      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:1px 0;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
+      // Sept 13 2026 (Master BB card, do-m: "Tighten checklist spacing --
+      // there is currently room for a check box between the checkboxes.
+      // Move check boxes up next to each other and fix the register so
+      // words align up center of boxes.") -- row padding dropped to 0 and
+      // an explicit 14px line-height (matching the checkbox's own 14px
+      // height, below) added so nothing but the checkbox itself sets each
+      // row's height. Browser default line-height on 13px text runs
+      // noticeably taller than 14px, so without this every row carried
+      // several extra px of invisible space above/below its checkbox --
+      // stacked across rows, that's what read as "room for a checkbox
+      // between the checkboxes." Matching line-height to checkbox height
+      // also IS the fix for "register" -- text and checkbox now share the
+      // same box height, so align-items:center lines their middles up
+      // exactly instead of the text's (taller) line-box nudging it off.
+      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:0;line-height:14px;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
       // Three-state toggle button, Sept 2026 (replaces the old plain
       // checkbox) -- todo: empty box. doing: amber outline with a
       // hollow check. done: solid green fill with a white check,
@@ -589,9 +603,22 @@
       +'.bb-checklist-row .bb-checklist-check{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0;box-sizing:border-box;border-radius:3px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(10px * var(--fg-text-scale,1));line-height:1;color:transparent}'
       +'.bb-checklist-row .bb-checklist-check.bb-checklist-doing{border-color:#b8860b;color:#b8860b;background:#fff}'
       +'.bb-checklist-row .bb-checklist-check.bb-checklist-done{border-color:#3F6B3A;background:#3F6B3A;color:#fff}'
-      +'.bb-checklist-text{flex:1}'
+      +'.bb-checklist-text{flex:1;line-height:14px}'
       +'.bb-checklist-text.bb-checklist-done{text-decoration:line-through;color:var(--bb-sub)}'
       +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:0 4px}'
+      // Tiny head-icon button, Sept 13 2026 -- Master BB card (do-m):
+      // "assign a person to a checklist item ... tiny head button at end
+      // of checklist task." Same 14px "register" as the checkbox on the
+      // other end of the row (see the checkbox comment above) so the row
+      // stays visually level. Plain outline/grey when unassigned, filled
+      // accent + white initials once someone's picked -- same at-a-glance
+      // language as a "primary" card_roles dot elsewhere on the board.
+      +'.bb-checklist-assignee{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0;box-sizing:border-box;border-radius:50%;border:1.5px solid var(--bb-sub);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(8px * var(--fg-text-scale,1));line-height:1;color:var(--bb-sub);font-weight:600}'
+      +'.bb-checklist-assignee.bb-checklist-assignee-set{border-color:var(--bb-accent);background:var(--bb-accent);color:#fff}'
+      +'.bb-cl-assignee-menu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:4px;min-width:120px;max-height:220px;overflow-y:auto}'
+      +'.bb-cl-assignee-menu .bb-cdrop-row{padding:5px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-family:var(--bb-body-font);color:var(--bb-ink);cursor:pointer;border-radius:4px;white-space:nowrap}'
+      +'.bb-cl-assignee-menu .bb-cdrop-row:hover{background:rgba(0,0,0,.06)}'
+      +'.bb-cl-assignee-menu .bb-cdrop-row.active{font-weight:700}'
       +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
       +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
       +'.bb-links-empty{font-size:calc(12px * var(--fg-text-scale,1));font-style:italic;color:var(--bb-sub);padding:2px 0}'

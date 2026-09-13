@@ -166,7 +166,36 @@
             // nothing to rebuild if this ever needs to come back; just
             // put the div back with its old id.
             +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
+            // "filtering by person is fine from the CAST card but not
+            // convenient for a quick view -- add a VIEW dropdown to the
+            // right of Board Type, same size as MASTER on the left").
+            // Session 255 had removed the previous version of this in
+            // favor of the Cast popup's checkboxes being the only filter
+            // control; this rebuild keeps that popup exactly as-is (it's
+            // still how you filter by MORE than one person at once) and
+            // adds this back purely as a one-click shortcut onto the
+            // same _bbPersonFilterIds/_bbSourceFilter state, for the
+            // common case of "just show me one person's cards." See
+            // _bbWireViewDropdown (briefing-board-master-nav.js).
+            // Sized off .bb-hdr-select (same class MASTER's own trigger
+            // uses, bb-board-trigger above) rather than inventing a new
+            // size, so "same size as MASTER" holds even if that class's
+            // sizing changes later.
             +'<div class="bb-mhead-actions">'
+              // Placed as the FIRST child here (not a new top-level grid
+              // item, on purpose) -- bb-mhead-top's grid only has 3
+              // explicit column tracks (auto auto 1fr) and boardkind-wrap
+              // above is deliberately taken OUT of that flow via its own
+              // position:absolute; a 4th real grid item would have
+              // overflowed into an implicit new row instead of sitting
+              // beside Board Type. bb-mhead-actions is already the
+              // right-hand flex row immediately after Board Type in
+              // reading order, so putting VIEW first inside it lands it
+              // exactly "to the right of Board Type" without touching
+              // the grid at all. See _bbWireViewDropdown (briefing-
+              // board-master-nav.js).
+              +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Quickly filter this board to one person" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))">Team</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
               // Relationships used to ride along here as their own icons
@@ -222,6 +251,13 @@
             // project tagging isn't a thing yet (mirrors _bbSaveNewCard's
             // own _bbSingleBoardMode() gate below).
             +'<div class="bb-field" id="bb-add-project-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-add-project-trigger" title="Which project is this task for?" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))">MASTER</button><div class="bb-cdrop-menu" id="bb-add-project-menu" hidden></div></div></div>'
+            // "Assign to" mirrors the Project field just above: a
+            // bb-hdr-select trigger + bb-cdrop-menu, populated from the
+            // board roster in _bbRenderAddCardAssignField() (briefing-board-ops.js).
+            // Defaults to "Unassigned" -- picking a name here takes
+            // precedence over the ambient VIEW/Cast-filter auto-assign
+            // in _bbSaveNewCard() (briefing-board.js).
+            +'<div class="bb-field" id="bb-add-assignee-field"><label>Assign to</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-add-assignee-trigger" title="Who is this task for?" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))">Unassigned</button><div class="bb-cdrop-menu" id="bb-add-assignee-menu" hidden></div></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
             +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
             +'<div id="bb-add-status" style="font-size:calc(11px * var(--fg-text-scale,1));color:#5a7a3a;min-height:14px;margin-top:4px;text-align:center"></div>'

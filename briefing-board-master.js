@@ -225,6 +225,12 @@
     if(checked && idx<0) _bbPersonFilterIds.push(uid);
     if(!checked && idx>=0) _bbPersonFilterIds.splice(idx,1);
     _bbSourceFilter = _bbPersonFilterIds.length ? {mode:'person', uids:_bbPersonFilterIds.slice()} : null;
+    // Keep the VIEW dropdown's own label in sync -- Sept 13 2026, the
+    // VIEW dropdown and this Cast popup now both read/write the exact
+    // same _bbPersonFilterIds, so a change made from either one has to
+    // show up on the other's trigger too, or VIEW would keep showing
+    // "Team" while a Cast-popup filter was actually still active.
+    if(typeof _bbSyncViewTriggerLabel==='function') _bbSyncViewTriggerLabel();
     _bbRecomputeFilterMatches().then(function(){ renderBoard(); });
   }
 
@@ -248,6 +254,25 @@
       await _bbRecomputeFilterMatches();
       renderBoard();
     }catch(e){ console.warn('Briefing Board: could not auto-assign new card to active Cast filter', e); }
+  }
+
+  // Explicit "Assign to" pick on the Add-a-Card form, Sept 13 2026 --
+  // Larry: "Add option to Assign a person to a task on the BB entry
+  // card." Same card_roles insert shape as the ambient auto-assign
+  // above, just driven by a person the user chose on purpose (userId)
+  // rather than whichever VIEW/Cast filter happens to be open --
+  // _bbSaveNewCard (briefing-board.js) calls this instead of
+  // _bbAutoAssignToActiveFilter when an explicit pick was made.
+  async function _bbAssignCardToPerson(cardId, userId){
+    try{
+      if(!cardId || !userId) return;
+      var sb=T().sb; if(!sb) return;
+      var me=(await sb.auth.getUser()).data.user;
+      var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', is_primary:true, user_id:userId, added_by: me?me.id:null});
+      if(ins.error){ console.warn('Briefing Board: explicit assign insert failed', ins.error); return; }
+      await _bbRecomputeFilterMatches();
+      renderBoard();
+    }catch(e){ console.warn('Briefing Board: could not assign new card to chosen person', e); }
   }
 
   // Session 255: the only way left to set this is the Cast popup's
@@ -602,6 +627,7 @@
           _bbRenderParentField();
           await _bbRenderTopicField();
           _bbPositionBoardKindMidway();
+          _bbSyncViewTriggerLabel();
           await _bbLoadMasterRollupCards();
           await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
@@ -619,6 +645,7 @@
     _bbRenderParentField();
     await _bbRenderTopicField();
     _bbPositionBoardKindMidway();
+    _bbSyncViewTriggerLabel();
     await _bbLoadMasterRollupCards();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);

@@ -1140,11 +1140,38 @@
       _bbRenderAddCardProjectField();
     }, 'Add a project');
   }
+  // Add-a-Card's own "Assign to" field, Sept 13 2026 -- Master BB card
+  // (do-m): "Add option to Assign a person to a task on the BB entry
+  // card." Same _bbRenderDropdown widget as Project just above, but the
+  // options come from the board roster (_bbAllRosterRows, briefing-
+  // board-master-nav.js) instead of the project-header list, and there's
+  // no "+ Add" button -- picking a person is optional, so "Unassigned"
+  // is always the first, always-present option instead. Holds the pick
+  // in _bbNewCardAssigneeId until Pin It writes the card; _bbSaveNewCard
+  // (briefing-board.js) reads it and, when set, calls the new
+  // _bbAssignCardToPerson() instead of the ambient filter-based
+  // auto-assign. Shown on every board (not gated to single-board mode
+  // like Project), since who a task is for isn't a per-project concept.
+  var _bbNewCardAssigneeId=null;
+  async function _bbRenderAddCardAssignField(){
+    var field=document.getElementById('bb-add-assignee-field');
+    if(!field) return;
+    _bbNewCardAssigneeId=null;
+    if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
+    if(!document.getElementById('bb-add-overlay').classList.contains('active')) return;
+    var opts=[{value:'', label:'Unassigned'}].concat((_bbAllRosterRows?_bbAllRosterRows():[]).map(function(m){
+      return {value:String(m.user_id), label:m.name||m.email||'(unnamed)'};
+    }));
+    _bbRenderDropdown('bb-add-assignee-trigger','bb-add-assignee-menu', opts, '', function(value){
+      _bbNewCardAssigneeId = value || null;
+    }, null);
+  }
   function openAddCard(){
     var t=document.getElementById('bb-new-task'); if(t) t.value='';
     var ov=document.getElementById('bb-add-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
     _bbRenderAddCardProjectField();
+    _bbRenderAddCardAssignField();
   }
 
   function closeAddCard(){

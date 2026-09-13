@@ -592,7 +592,7 @@
     if(!_bbCurrentBoardId) return;
     var sb=T().sb; if(!sb) return;
     try{
-      var rows=items.map(function(it,i){ var st=it.status||(it.done?'done':'todo'); return {id:it.id, card_id:cardId, item_text:it.text||'', status:st, done:st==='done', sort_order:i}; });
+      var rows=items.map(function(it,i){ var st=it.status||(it.done?'done':'todo'); return {id:it.id, card_id:cardId, item_text:it.text||'', status:st, done:st==='done', sort_order:i, assignee_id:it.assigneeId||null}; });
       if(rows.length){
         var res=await sb.from('briefing_checklist_items').upsert(rows);
         if(res.error) throw res.error;
@@ -613,7 +613,7 @@
       try{
         var res=await sb.from('briefing_checklist_items').select('*').eq('card_id',cardId).order('sort_order',{ascending:true});
         if(!res.error){
-          var items=(res.data||[]).map(function(r){ var st=r.status||(r.done?'done':'todo'); return {id:r.id, text:r.item_text||'', status:st, done:st==='done'}; });
+          var items=(res.data||[]).map(function(r){ var st=r.status||(r.done?'done':'todo'); return {id:r.id, text:r.item_text||'', status:st, done:st==='done', assigneeId:r.assignee_id||null}; });
           if(_bbOpenCardId===cardId){ _bbChecklistCache=items; _bbRenderChecklist(); }
           return;
         }
@@ -635,11 +635,20 @@
     // empty box, doing an open/hollow check, done a solid filled check
     // (with the existing strike-through text treatment).
     var CL_GLYPH={todo:'', doing:'&#10003;', done:'&#10003;'};
+    // Tiny head-icon button, Sept 13 2026, Master BB card (do-m): "Add
+    // option to assign a person to a checklist item." Sits between the
+    // task text and the remove (x), same 14px round "register" as the
+    // checkbox at the other end of the row. Shows initials once someone
+    // is picked (via _bbChecklistAssigneeInitials below); click opens a
+    // small roster popup (_bbOpenChecklistAssigneeMenu).
     list.innerHTML=_bbChecklistCache.map(function(it){
       var st=it.status||(it.done?'done':'todo');
+      var hasAssignee=!!it.assigneeId;
+      var initials=hasAssignee?_bbChecklistAssigneeInitials(it.assigneeId):'';
       return '<div class="bb-checklist-row">'
         +'<button type="button" class="bb-checklist-check bb-checklist-'+st+'" data-id="'+_esc(it.id)+'" title="'+st+' — click to advance">'+CL_GLYPH[st]+'</button>'
         +'<span class="bb-checklist-text'+(st==='done'?' bb-checklist-done':'')+'">'+_esc(it.text)+'</span>'
+        +'<button type="button" class="bb-checklist-assignee'+(hasAssignee?' bb-checklist-assignee-set':'')+'" data-id="'+_esc(it.id)+'" title="'+(hasAssignee?_bbChecklistAssigneeName(it.assigneeId):'Assign to...')+'">'+_esc(initials)+'</button>'
         +'<button class="bb-checklist-remove" data-id="'+_esc(it.id)+'" title="Remove">&#10005;</button>'
         +'</div>';
     }).join('');
@@ -684,6 +693,75 @@
         _bbRenderChecklist();
       });
     });
+    list.querySelectorAll('.bb-checklist-assignee').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var id=btn.getAttribute('data-id');
+        _bbOpenChecklistAssigneeMenu(id, btn);
+      });
+    });
+  }
+  // Roster lookups for the checklist head-icon, Sept 13 2026 -- same
+  // roster source as the VIEW dropdown and the Add-a-Card "Assign to"
+  // field (_bbAllRosterRows, briefing-board-master-nav.js), so all three
+  // "who is this for" pickers on the board agree on the same name list.
+  // Falls back to a blank/"(unassigned)" rather than throwing if the
+  // roster hasn't loaded yet -- the button itself always renders either way.
+  function _bbChecklistAssigneeName(uid){
+    if(!uid) return '';
+    var row=(typeof _bbAllRosterRows==='function'?_bbAllRosterRows():[]).filter(function(m){ return String(m.user_id)===String(uid); })[0];
+    return row?(row.name||row.email||'(unnamed)'):'(unknown)';
+  }
+  function _bbChecklistAssigneeInitials(uid){
+    var name=_bbChecklistAssigneeName(uid);
+    if(!name || name==='(unknown)') return '?';
+    var parts=name.trim().split(/\s+/);
+    var initials=parts.length>1 ? (parts[0][0]+parts[parts.length-1][0]) : name.slice(0,2);
+    return initials.toUpperCase();
+  }
+  var _bbClAssigneeMenuEl=null;
+  function _bbCloseChecklistAssigneeMenu(){
+    if(_bbClAssigneeMenuEl){ _bbClAssigneeMenuEl.remove(); _bbClAssigneeMenuEl=null; }
+    document.removeEventListener('mousedown', _bbClAssigneeMenuOutsideClick, true);
+  }
+  function _bbClAssigneeMenuOutsideClick(e){
+    if(_bbClAssigneeMenuEl && !_bbClAssigneeMenuEl.contains(e.target)) _bbCloseChecklistAssigneeMenu();
+  }
+  async function _bbOpenChecklistAssigneeMenu(itemId, anchorBtn){
+    _bbCloseChecklistAssigneeMenu();
+    if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
+    // Anchor button (and the card overlay it lives on) may have closed
+    // or re-rendered while the roster was loading -- bail rather than
+    // popping a menu that points at nothing.
+    if(!document.body.contains(anchorBtn)) return;
+    var it=_bbChecklistCache.filter(function(x){ return x.id===itemId; })[0];
+    if(!it) return;
+    var menu=document.createElement('div');
+    menu.className='bb-cl-assignee-menu';
+    var rows=[{user_id:'', name:'Unassigned'}].concat(typeof _bbAllRosterRows==='function'?_bbAllRosterRows():[]);
+    menu.innerHTML=rows.map(function(m){
+      var isActive=(String(m.user_id||'')===String(it.assigneeId||''));
+      return '<div class="bb-cdrop-row'+(isActive?' active':'')+'" data-uid="'+_esc(String(m.user_id||''))+'">'+_esc(m.name||m.email||'(unnamed)')+'</div>';
+    }).join('');
+    document.body.appendChild(menu);
+    _bbSyncMenuTheme(menu);
+    var r=anchorBtn.getBoundingClientRect();
+    menu.style.left=Math.max(8, r.left-100)+'px';
+    menu.style.top=(r.bottom+4)+'px';
+    var mr=menu.getBoundingClientRect();
+    if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    menu.querySelectorAll('.bb-cdrop-row').forEach(function(row){
+      row.addEventListener('click', function(e){
+        e.stopPropagation();
+        var uid=row.getAttribute('data-uid')||null;
+        it.assigneeId=uid||null;
+        _bbCloseChecklistAssigneeMenu();
+        if(_bbOpenCardId) _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
+        _bbRenderChecklist();
+      });
+    });
+    _bbClAssigneeMenuEl=menu;
+    setTimeout(function(){ document.addEventListener('mousedown', _bbClAssigneeMenuOutsideClick, true); }, 0);
   }
   // Small calendar popup for the date fields (Due date / Start date),
   // Aug 7 2026 -- Larry: pick from a calendar instead of typing

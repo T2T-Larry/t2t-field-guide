@@ -306,18 +306,33 @@ function T(){ return window.T2T; }
       // before the card_roles insert points at it. See
       // _bbAutoAssignToActiveFilter's own comment (briefing-board-
       // master.js) for why this exists at all.
+      // Explicit "Assign to" pick (_bbNewCardAssigneeId, briefing-board-
+      // ops.js) takes precedence when Larry actually chose someone on the
+      // form -- only falls back to the ambient VIEW/Cast-filter
+      // auto-assign when the field was left on "Unassigned".
+      var _bbPickedAssigneeId=(typeof _bbNewCardAssigneeId!=='undefined')?_bbNewCardAssigneeId:null;
       if(_bbNewCardSync && _bbNewCardSync.then){
-        _bbNewCardSync.then(function(){ return _bbAutoAssignToActiveFilter(newCardId); })
-          .catch(function(e){ console.error('Briefing Board: could not auto-assign new card', e); });
+        _bbNewCardSync.then(function(){
+          return _bbPickedAssigneeId ? _bbAssignCardToPerson(newCardId, _bbPickedAssigneeId) : _bbAutoAssignToActiveFilter(newCardId);
+        }).catch(function(e){ console.error('Briefing Board: could not assign new card', e); });
       } else {
-        _bbAutoAssignToActiveFilter(newCardId);
+        if(_bbPickedAssigneeId) _bbAssignCardToPerson(newCardId, _bbPickedAssigneeId);
+        else _bbAutoAssignToActiveFilter(newCardId);
       }
+      // Reset for the next card so a deliberate pick doesn't silently
+      // leak onto the next "Pin it" after this one closes/reopens.
+      _bbNewCardAssigneeId=null;
       renderBoard();
       // Aug 7 2026 -- Larry: pinning shouldn't close this screen, only
       // the X should. Clear the field and keep it open (and focused) so
       // several cards can be pinned back to back, with a quiet "Pinned"
       // flash standing in for the feedback the old auto-close used to give.
       if(t){ t.value=''; t.focus(); }
+      // Assign-to trigger's own label needs resetting too, same reason
+      // as clearing the task text above -- otherwise it keeps showing
+      // the last-picked name after _bbNewCardAssigneeId is already null.
+      var assigneeTrigger=document.getElementById('bb-add-assignee-trigger');
+      if(assigneeTrigger) assigneeTrigger.textContent='Unassigned';
       var statusEl=document.getElementById('bb-add-status');
       if(statusEl){
         statusEl.textContent='Pinned ✓';
@@ -368,6 +383,7 @@ function T(){ return window.T2T; }
     T().wire('bb-moves', openRecentMoves);
     wireTopicBar();
     _bbWireBoardKindDropdown();
+    _bbWireViewDropdown();
     wireBbUndoKeyboard();
     wireLogoUpload();
   }

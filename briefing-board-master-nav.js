@@ -59,7 +59,7 @@
     // dropdown opened, but not otherwise. Adding it, plus the new
     // bb-topic-ancestor-menu (TOPIC's up-arrow, today), so both close
     // the same way every other dropdown here already does.
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu','bb-d-project-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-view-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu','bb-d-project-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -1766,6 +1766,84 @@
         menu.hidden=true;
       }
     };
+  }
+
+  // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m -- see the
+  // HTML comment on bb-view-wrap in briefing-board-screens.js for the
+  // full "why"). One-click shortcut onto the exact same filter state
+  // the Cast popup's checkboxes already write (_bbPersonFilterIds /
+  // _bbSourceFilter / _bbRecomputeFilterMatches, briefing-board-master.js)
+  // -- picking a name here is exactly like checking just that one box in
+  // Cast and unchecking everyone else. Deliberately single-select only
+  // (this trigger can't show more than one name at once); anyone who
+  // wants a multi-person filter still reaches for the Cast popup, same
+  // as before this existed.
+  function _bbSyncViewTriggerLabel(){
+    var trigger=document.getElementById('bb-view-trigger');
+    if(!trigger) return;
+    if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1){
+      // Zero people (Team, unfiltered) or 2+ (a multi-person filter set
+      // from the Cast popup, which this trigger can't represent as one
+      // name) both fall back to the neutral "Team" label -- never shows
+      // a wrong or partial name.
+      trigger.textContent='Team';
+      return;
+    }
+    var uid=_bbPersonFilterIds[0];
+    var row=(_bbAllRosterRows?_bbAllRosterRows():[]).filter(function(m){ return String(m.user_id)===String(uid); })[0];
+    trigger.textContent=row?(row.name||'1 person'):'1 person';
+  }
+  function _bbWireViewDropdown(){
+    var trigger=document.getElementById('bb-view-trigger'), caret=document.getElementById('bb-view-caret'), menu=document.getElementById('bb-view-menu');
+    if(!trigger || !menu) return;
+    async function openMenu(){
+      await _bbLoadRoster();
+      menu.innerHTML='';
+      var teamRow=document.createElement('div');
+      teamRow.className='bb-cdrop-row'+((!_bbPersonFilterIds || !_bbPersonFilterIds.length) ? ' active' : '');
+      teamRow.textContent='Team';
+      teamRow.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        _bbPersonFilterIds=[];
+        _bbSourceFilter=null;
+        _bbSyncViewTriggerLabel();
+        _bbRecomputeFilterMatches().then(renderBoard);
+      });
+      menu.appendChild(teamRow);
+      _bbAllRosterRows().forEach(function(m){
+        var row=document.createElement('div');
+        var isActive=_bbPersonFilterIds && _bbPersonFilterIds.length===1 && String(_bbPersonFilterIds[0])===String(m.user_id);
+        row.className='bb-cdrop-row'+(isActive?' active':'');
+        row.textContent=m.name||m.email||'(unnamed)';
+        row.addEventListener('click', function(e){
+          e.stopPropagation();
+          menu.hidden=true;
+          _bbPersonFilterIds=[String(m.user_id)];
+          _bbSourceFilter={mode:'person', uids:_bbPersonFilterIds.slice()};
+          _bbSyncViewTriggerLabel();
+          _bbRecomputeFilterMatches().then(renderBoard);
+        });
+        menu.appendChild(row);
+      });
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      _bbSyncMenuTheme(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(120,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    }
+    function toggle(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-view-menu':null);
+      if(willOpen) openMenu(); else menu.hidden=true;
+    }
+    trigger.onclick=toggle;
+    if(caret) caret.onclick=toggle;
   }
 
   function wireTopicBar(){
