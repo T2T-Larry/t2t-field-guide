@@ -35,6 +35,59 @@
   };
   const _sb = supabase.createClient(SB_URL, SB_KEY, { auth:{ storage:_t2tAuthStorage } });
 
+  // ── CACHED SIGNED-IN USER (Sept 13 2026) ─────────────────────────
+  // Larry, after the sign-in page started looking frozen: "the who's-
+  // signed-in check should happen once, on sign-in only." Before this,
+  // ~57 places across the app (every board, screen, and helper file)
+  // each independently called _sb.auth.getUser(), which asks Supabase
+  // over the network every single time -- harmless at small scale, but
+  // a burst of ~10 of these firing within a few seconds is what made
+  // sign-in look stuck once there was more shared/CAST data to check
+  // against (Bill's newly-shared project, Larry's full 343-card set).
+  //
+  // Fix lives at the one choke point every one of those 57 call sites
+  // already shares -- they all call .auth.getUser() on this same _sb
+  // client instance. Overriding it here, once, means every existing
+  // call site anywhere in the app (any file, any page) now gets the
+  // cached answer instantly instead of a fresh network round trip --
+  // no need to hunt down and rewrite each of the 57 individually, and
+  // nothing new can accidentally reintroduce the old per-call pattern
+  // later, since there's only one real implementation left to call.
+  // The genuine "ask Supabase" call still happens, exactly once per
+  // page load, via onAuthStateChange below (Supabase's own documented
+  // signal for "the client has now finished figuring out whether
+  // anyone is signed in" -- see index.html's INITIAL_SESSION comment
+  // for why that event specifically, not a one-shot getSession()).
+  // Sign-in, sign-out, and token refresh each fire their own event on
+  // the same listener, so the cache never goes stale after the first
+  // check either.
+  var _cachedAuthUser; // undefined = not known yet; null = known signed-out
+  var _authUserWaiters = [];
+  function _settleCachedAuthUser(u){
+    _cachedAuthUser = u || null;
+    var waiters = _authUserWaiters; _authUserWaiters = [];
+    waiters.forEach(function(resolve){ resolve({ data:{ user:_cachedAuthUser }, error:null }); });
+  }
+  _sb.auth.getUser = function(){
+    if (_cachedAuthUser !== undefined) {
+      return Promise.resolve({ data:{ user:_cachedAuthUser }, error:null });
+    }
+    return new Promise(function(resolve){ _authUserWaiters.push(resolve); });
+  };
+  _sb.auth.onAuthStateChange(function(_event, session){
+    _settleCachedAuthUser(session && session.user);
+  });
+  // Belt-and-suspenders, matching the 12-second "having trouble
+  // connecting" banner index.html already shows for a slow/flaky
+  // sign-in check: if onAuthStateChange genuinely never fires (a
+  // broken Supabase client, not just a slow one), don't leave every
+  // caller across the app waiting forever -- settle as signed-out
+  // after 15 seconds so the rest of the page can still do something
+  // sensible (e.g. send the traveler to Sign In) instead of hanging.
+  setTimeout(function(){
+    if (_cachedAuthUser === undefined) _settleCachedAuthUser(null);
+  }, 15000);
+
   /* ── MEMBER PROFILE ── */
   var _member = {
     user_id:null, email:null, display_name:null,
