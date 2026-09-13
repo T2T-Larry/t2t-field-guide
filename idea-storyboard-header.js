@@ -1702,25 +1702,19 @@
   }
 
   async function _sboardEnsurePurposeHeader(parentId){
+    // Sept 13 2026 -- Larry: "I no longer want Purpose and MISC to
+    // autogenerate on boards." Lookup-only now, same change as
+    // header-data.js's ensurePurposeHeader/ensureMiscHeader (see those
+    // comments): an existing Purpose header is still found and used
+    // exactly as before; the insert-if-missing branch is removed, so a
+    // project with no Purpose header simply gets none.
     var _sb=T().sb;
-    var user=(await _sb.auth.getUser()).data.user;
-    if(!user) throw new Error('Not signed in.');
-    // Shared-project fix, Aug 14 2026 -- Larry: 'one shared purpose for
-    // every story.' Drop the user_id filter on the lookup so every Cast
-    // member reuses the project's one true Purpose header instead of each
-    // person who opens it spawning their own. RLS still governs what this
-    // user is allowed to see, so this can't leak a Purpose header from a
-    // project they're not on.
     var q=_sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length){ _sboardPurposeId=existing.data[0].id; return _sboardPurposeId; }
-    if(await _sboardParentDefaultsSeeded(parentId)){ _sboardPurposeId=null; return null; }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
-    if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
-    _sboardPurposeId=ins.data.id;
-    _sboardMarkParentDefaultsSeeded(parentId);
-    return _sboardPurposeId;
+    _sboardPurposeId=null;
+    return null;
   }
 
   async function _sboardEnsureNewAdditionsHeader(parentId, desiredName){

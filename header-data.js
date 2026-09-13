@@ -382,40 +382,31 @@
   }
 
   async function ensureMiscHeader(parentId){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    // Shared-project fix, Aug 14 2026 -- see ensureHeaderNamed above: drop
-    // the user_id filter on the lookup so every Cast member reuses the
-    // same MISC instead of each person spawning their own.
+    // Sept 13 2026 -- Larry: "I no longer want Purpose and MISC to
+    // autogenerate on boards." Lookup-only now: if a MISC header already
+    // exists on this parent, it's still found and used exactly as before
+    // (nothing changes for boards that already have one). What's removed
+    // is the insert-if-missing branch below it -- a board with no MISC
+    // simply gets none, no default ever created. Left _parentDefaultsSeeded
+    // untouched (still used by ensureNewAdditionsHeader's own flag check)
+    // rather than deleting it here.
+    var sb=_sb();
     var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','MISC');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    if(await _parentDefaultsSeeded(parentId)) return null;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'MISC',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('MISC setup failed: '+ins.error.message);
-    _markParentDefaultsSeeded(parentId);
-    return ins.data.id;
+    return null;
   }
 
   async function ensurePurposeHeader(parentId){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    // Shared-project fix, Aug 14 2026 -- Larry: 'one shared purpose for
-    // every story.' Drop the user_id filter on the lookup so every Cast
-    // member reuses the project's one true Purpose header instead of each
-    // person who opens it spawning their own. RLS still governs what this
-    // user is allowed to see, so this can't leak a Purpose header from a
-    // project they're not on.
+    // Sept 13 2026 -- same change as ensureMiscHeader above: lookup-only,
+    // no more auto-create. See that function's comment.
+    var sb=_sb();
     var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q.limit(1);
     if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    if(await _parentDefaultsSeeded(parentId)) return null;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Purpose',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('Purpose setup failed: '+ins.error.message);
-    _markParentDefaultsSeeded(parentId);
-    return ins.data.id;
+    return null;
   }
 
   /* COLLABORATOR — Sept 2, 2026 design lock (IDEA STORYBOARDS /
