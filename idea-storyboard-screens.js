@@ -1619,12 +1619,28 @@
         // select per render, not a repeat insert -- same reasoning
         // already applied to NEW/Purpose/MISC just below, which never
         // had this restriction.
+        // Sept 13 2026 -- Larry: "if alfred is not on any other boards,
+        // he is not a collaborator on anybody's board, nor is he a
+        // stakeholder. Those headers are likely to be very confusing
+        // and should only appear when person is added to someone's
+        // board." Before this, both headers were ensured unconditionally
+        // for every traveler on every render -- so a solo traveler with
+        // zero actual collaborator/stakeholder relationships still saw
+        // two empty reserved buckets with no shortcuts in them. Now
+        // gated on the same entries-lists the headers exist to hold:
+        // only ensure (and thus only ever create) a header once this
+        // traveler actually has at least one real entry for it. A
+        // header that already exists keeps working exactly as before
+        // (ensureCollaboratorHeader/ensureStakeholderHeader still just
+        // find and return it -- this only stops the FIRST creation from
+        // happening for someone who'll never have anything to put in it).
         if(rootId){
           try{
-            await Promise.all([
-              T2TData.ensureCollaboratorHeader(rootId),
-              T2TData.ensureStakeholderHeader(rootId)
-            ]);
+            var _collabAndStakeEntries=await Promise.all([T2TData.collaboratorEntries(), T2TData.stakeholderEntries()]);
+            var _ensureHeaderCalls=[];
+            if(_collabAndStakeEntries[0] && _collabAndStakeEntries[0].length) _ensureHeaderCalls.push(T2TData.ensureCollaboratorHeader(rootId));
+            if(_collabAndStakeEntries[1] && _collabAndStakeEntries[1].length) _ensureHeaderCalls.push(T2TData.ensureStakeholderHeader(rootId));
+            if(_ensureHeaderCalls.length) await Promise.all(_ensureHeaderCalls);
           }catch(e){ console.warn('Idea Storyboards COLLABORATOR/STAKEHOLDER ensure failed:', e); }
         }
         var _ensureResults=await Promise.all([

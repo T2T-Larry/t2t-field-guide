@@ -291,6 +291,13 @@
       // trigger so every other bb-cdrop-trigger (which has no separate
       // caret of its own) keeps its only arrow indicator.
       +'#bb-board-trigger.bb-cdrop-trigger:after{content:none}'
+      // Sept 13 2026, Larry: "Team has 2 down arrows. only need one" --
+      // same shape as the board-trigger fix just above: bb-view-trigger
+      // (the VIEW/"Team" label) sits right next to its own dedicated
+      // bb-view-caret button, so the shared-class arrow this rule adds
+      // to every bb-cdrop-trigger was the redundant second one here too.
+      // Suppressed the same way, for the same reason.
+      +'#bb-view-trigger.bb-cdrop-trigger:after{content:none}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
@@ -387,6 +394,25 @@
       // center; Logo was already the leftmost of the three, immediately
       // left of Utility, so that part needed no change.
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:flex-end}'
+      // Sept 13 2026 fix -- VIEW (added this same day) was left as a
+      // plain flex child of bb-mhead-actions above, which is a right-
+      // anchored row (justify-content:flex-end): adding a new item to it
+      // just grows the row leftward from Logo/Utility/Close's shared
+      // right edge, landing VIEW wherever that happened to reach rather
+      // than "right after Board Type" as designed (see the Sept 13
+      // comment on VIEW's markup in briefing-board-screens.js). Since
+      // Board Type itself is a real, currently-measured box position
+      // (bb-mh-group-center/#bb-boardkind-wrap, position:absolute, just
+      // above) rather than a fixed spot, the only way to reliably sit
+      // "after" it is the same fix: take VIEW out of the flex row too and
+      // place it by measuring Board Type's own actual right edge, done in
+      // _bbPositionBoardKindMidway (briefing-board-master-nav.js) right
+      // alongside where that edge is already calculated. top:10px matches
+      // TOPIC/PROJECT's own row baseline (not Board Type's lower,
+      // bottom-aligned one) since VIEW's eyebrow+control shape is sized
+      // and meant to read like those fields, not like Board Type's single
+      // small title line.
+      +'#bb-view-wrap{position:absolute;top:10px;left:0}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --

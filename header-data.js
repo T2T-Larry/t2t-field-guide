@@ -20,6 +20,30 @@
     return (res && res.data && res.data.user) || null;
   }
 
+  /* Sept 13 2026 -- Larry found alfredenewman@madmag.com with two
+     "COLLABORATOR" header rows on the same board, created 127ms apart.
+     Root cause: ensureCollaboratorHeader/ensureStakeholderHeader are
+     plain check-then-insert (select for an existing row, insert if
+     none found) with no DB unique constraint and no app-level lock, so
+     two near-simultaneous calls for the same parent (e.g. a render that
+     fires the ensure twice, or two tabs) both pass the "not found yet"
+     check before either insert lands, and both insert. Fixed with an
+     in-flight promise cache keyed by header name + parent: the first
+     caller's real ensure-work is stored here and every concurrent
+     caller for the same key gets that same in-flight promise back
+     instead of starting its own select-then-insert race. Cleared once
+     the promise settles (success or failure) so a later, non-concurrent
+     call still re-checks the DB fresh rather than reusing a stale id
+     forever. */
+  var _headerEnsureInFlight={};
+  function _headerEnsureOnce(key, fn){
+    if(_headerEnsureInFlight[key]) return _headerEnsureInFlight[key];
+    var p=fn().then(function(v){ delete _headerEnsureInFlight[key]; return v; },
+                     function(e){ delete _headerEnsureInFlight[key]; throw e; });
+    _headerEnsureInFlight[key]=p;
+    return p;
+  }
+
   /* Reserved structural headers — never selectable as a PROJECT/TOPIC
      destination, only ever landing buckets for content.
      COLLABORATOR added Sept 2, 2026 (Session 264/265 design lock,
@@ -185,17 +209,19 @@
      Idea Storyboards root — like COLLABORATOR, it's a personal filing
      bucket for shortcuts and has no meaning on someone else's project. */
   async function ensureStakeholderHeader(parentId){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','STAKEHOLDER');
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
-    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    if(await _parentDefaultsSeeded(parentId)) return null;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'STAKEHOLDER',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('STAKEHOLDER setup failed: '+ins.error.message);
-    _markParentDefaultsSeeded(parentId);
-    return ins.data.id;
+    return _headerEnsureOnce('STAKEHOLDER:'+(parentId===null||parentId===undefined?'root':parentId), async function(){
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) throw new Error('Not signed in.');
+      var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','STAKEHOLDER');
+      q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+      var existing=await q.limit(1);
+      if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+      if(await _parentDefaultsSeeded(parentId)) return null;
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'STAKEHOLDER',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      if(ins.error) throw new Error('STAKEHOLDER setup failed: '+ins.error.message);
+      _markParentDefaultsSeeded(parentId);
+      return ins.data.id;
+    });
   }
 
   /* promotedPrimaryEntries — the PROJECT-list shortcut for every project
@@ -418,17 +444,19 @@
      COLLABORATOR header is a personal filing bucket for shortcuts, it
      has no meaning on someone else's project. */
   async function ensureCollaboratorHeader(parentId){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','COLLABORATOR');
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
-    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    if(await _parentDefaultsSeeded(parentId)) return null;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'COLLABORATOR',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('COLLABORATOR setup failed: '+ins.error.message);
-    _markParentDefaultsSeeded(parentId);
-    return ins.data.id;
+    return _headerEnsureOnce('COLLABORATOR:'+(parentId===null||parentId===undefined?'root':parentId), async function(){
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) throw new Error('Not signed in.');
+      var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','COLLABORATOR');
+      q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+      var existing=await q.limit(1);
+      if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+      if(await _parentDefaultsSeeded(parentId)) return null;
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'COLLABORATOR',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      if(ins.error) throw new Error('COLLABORATOR setup failed: '+ins.error.message);
+      _markParentDefaultsSeeded(parentId);
+      return ins.data.id;
+    });
   }
 
   /* collaboratorEntries — the actual list of "brought into" projects

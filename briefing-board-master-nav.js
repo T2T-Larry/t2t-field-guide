@@ -1088,11 +1088,30 @@
     // Guard against a not-yet-laid-out screen -- nothing real to measure
     // yet, leave the left:50% fallback in place.
     if(!topicRect.width || !logoRect.width || !containerRect.width) return;
+    // Sept 13 2026 fix -- VIEW sits to the right of Board Type now (see
+    // below), so figuring out how much room Board Type itself can use
+    // has to reserve VIEW's own width first, or the two would still
+    // fight over the same pixels the moment a window got narrow enough.
+    // Measured before the fit call below on purpose: VIEW's width comes
+    // from its own fixed CSS sizing (bb-hdr-select), not from anything
+    // this function changes, so there's no ordering hazard reading it
+    // early like there would be re-measuring wrap after refitting it.
+    var viewWrap=document.getElementById('bb-view-wrap');
+    var viewRect=viewWrap?viewWrap.getBoundingClientRect():null;
+    var viewGap=8, viewReserve=(viewRect&&viewRect.width)?(viewRect.width+viewGap):0;
     // Shrink the label to the real gap BEFORE any of the position/clamp
     // math below, which reads wrap's rendered width -- so the clamp
     // always sees the already-fitted (often smaller) box, same as
     // measuring "the real boxes" everywhere else in this function.
-    _bbFitBoardKindLabel((logoRect.left-topicRect.right)-20);
+    // Sept 13 2026 -- floored at 24px (rather than letting VIEW's
+    // reserved space push this to zero or negative on a narrow window):
+    // _bbFitBoardKindLabel treats anything <=0 as "don't bother
+    // shrinking" and shows the label at full size, which is exactly the
+    // overflow this whole function exists to prevent. A small positive
+    // floor keeps it always actually fitting -- shrunk down near
+    // _bbFitBoardKindLabel's own 14px floor on a truly tiny window --
+    // instead of giving up and overflowing past VIEW/Logo.
+    _bbFitBoardKindLabel(Math.max(24, (logoRect.left-topicRect.right)-20-viewReserve));
     // Sept 2026, Larry: "Board Type next to TOPIC" -- was centered at
     // the midpoint between TOPIC and LOGO (often nowhere near TOPIC on
     // a wide window). Now targets the position immediately to TOPIC's
@@ -1109,7 +1128,7 @@
     var wrapRect=wrap.getBoundingClientRect();
     if(wrapRect.width){
       var gap=8, half=wrapRect.width/2;
-      var minMid=topicRect.right+gap+half, maxMid=logoRect.left-gap-half;
+      var minMid=topicRect.right+gap+half, maxMid=logoRect.left-viewReserve-gap-half;
       midpoint = (maxMid>=minMid) ? Math.min(minMid, maxMid) : minMid;
     }
     wrap.style.left=(midpoint-containerRect.left)+'px';
@@ -1125,10 +1144,25 @@
     var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
     if(actionsEl){
       var actionsRect=actionsEl.getBoundingClientRect();
-      var wrapRect=wrap.getBoundingClientRect();
-      if(actionsRect.height && wrapRect.height){
-        wrap.style.top=(actionsRect.bottom-wrapRect.height-containerRect.top)+'px';
+      var wrapRect2=wrap.getBoundingClientRect();
+      if(actionsRect.height && wrapRect2.height){
+        wrap.style.top=(actionsRect.bottom-wrapRect2.height-containerRect.top)+'px';
       }
+    }
+    // Sept 13 2026 fix (Larry: "VIEW ... should be to the left after the
+    // board type" -- it was landing over by Logo instead, overlapping
+    // Board Type, because it was still a plain flex child of
+    // bb-mhead-actions, a row that grows LEFTWARD from Logo/Utility/
+    // Close's shared right edge; adding VIEW to it never actually put it
+    // next to Board Type, just closer to Logo). VIEW is now taken out of
+    // that flex row (position:absolute, briefing-board-styles.js) and
+    // placed here instead, right after Board Type's own just-computed
+    // real right edge -- same "measure the actual box" approach as
+    // everything else in this function, so it tracks correctly whatever
+    // width Board Type ends up at on any given window.
+    if(viewWrap&&viewRect&&viewRect.width){
+      var wrapRectFinal=wrap.getBoundingClientRect();
+      viewWrap.style.left=(wrapRectFinal.right-containerRect.left+viewGap)+'px';
     }
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
