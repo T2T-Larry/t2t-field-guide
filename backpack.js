@@ -179,6 +179,13 @@
         _member.briefing_board_id= res.data.briefing_board_id || null;
         var nameEl = document.getElementById('jcov-member-name');
         if (nameEl && _member.display_name) nameEl.textContent = _member.display_name.toUpperCase();
+        // Sept 13 2026 (Master BB): cache the display name locally so
+        // the very next boot's #fg-boot-loader (see index.html etc.
+        // and style.css) can paint it immediately, before this same
+        // profile lookup has had a chance to run again.
+        if (_member.display_name) {
+          try { localStorage.setItem('t2t_display_name', _member.display_name); } catch(e){}
+        }
         // Larry, July 27 2026 (bug report): the desk nametag stayed
         // stuck on "Traveler" even after a real sign-in -- it used to
         // just poll this profile for ~20 seconds and quietly give up,
@@ -487,6 +494,15 @@
   /* ── CORE NAV ── */
   function nav(id, push) {
     var t=document.getElementById(id); if(!t) return;
+    // Sept 13 2026 (Master BB, green-bar follow-up): the very first
+    // nav() call of a page load is always the moment bare-screen's
+    // fate gets decided -- either a resumed real screen or Sign In --
+    // so it's also the right moment to tear down the boot loader (see
+    // style.css and each phase file's own inline script) no matter
+    // which way that decision goes. Every later nav() call in this
+    // same page load is a no-op here since the element is already gone.
+    var _bootLoader = document.getElementById('fg-boot-loader');
+    if (_bootLoader) _bootLoader.remove();
     var fg=document.getElementById('fg-root');
     var pool=document.getElementById('bp-util-pool');
     if(pool&&fg&&t.parentNode===pool){ fg.appendChild(t); }

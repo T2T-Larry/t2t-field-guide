@@ -179,6 +179,20 @@ body.t2t-bare-screen .fg{align-self:center!important}
    CSS alone so it can't race with JS load order like the widget
    position did. */
 body.t2t-bare-screen{background:#d0d0d0!important}
+/* Sept 13 2026 (Master BB, Larry: "a blank desktop with the member
+   name on it would be better") -- #fg-boot-loader is baked into every
+   phase file's markup right at the top of <body>, so it paints the
+   instant bare-screen's own gray ground does, before backpack.js has
+   even loaded, let alone decided whether this load lands on a real
+   screen or Sign In. A tiny inline script sitting right next to the
+   div (see each HTML file) fills in the name synchronously from a
+   small local cache (written by loadMemberProfile every time it
+   succeeds) -- no network round trip needed just to paint a name that
+   was already known a moment ago. backpack.js's nav() removes this
+   div outright the first time it runs, for ANY destination (Sign In
+   included), so it never lingers once a real decision has been made. */
+#fg-boot-loader{position:fixed;inset:0;z-index:999997;display:flex;align-items:center;justify-content:center;background:#d0d0d0;pointer-events:none}
+#fg-boot-loader-name{font-family:'Playfair Display',Georgia,serif;font-size:15px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--brand-brown-mid);text-align:center;padding:0 24px;opacity:.85}
 .card{min-height:520px;max-height:520px;border-radius:12px 12px 0 0;overflow-x:hidden;overflow-y:auto;flex:1;display:flex;flex-direction:column} /* Larry, Aug 4 2026: reverted the across-the-board 480px trim -- sign-in wasn't actually the problem, so a blanket shrink wasn't the right lever. Back to 520px default; Cover (0100) gets its own shorter override below since that's the screen that's actually too tall (sparse content, lots of empty space). */
 #s-cover.card{min-height:400px;max-height:400px} /* Larry, Aug 4 2026: Cover (0100) content is just the T2T mark, tagline and byline -- 520px left a lot of dead air under the TV frame. Scoped to this screen only. */
 /* Phase tray buttons (0105) -- Larry, Aug 4 2026: sized to match the Create hub's own compact list-item scale, not the bigger Blue Sky door tiles. */

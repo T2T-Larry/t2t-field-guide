@@ -1116,6 +1116,59 @@
     renderBoard();
   }
 
+  // Sept 13 2026 (Master BB, Larry: "Allow card duplication") -- makes
+  // an independent copy of the open card, right in the same column, so
+  // Larry doesn't have to retype something close to an existing card.
+  // Deliberately a plain JSON deep-clone (every field these card
+  // objects carry is already JSON-safe -- _bbSaveLocal round-trips the
+  // whole list through JSON.stringify/parse the same way) rather than
+  // hand-listing fields one by one, so a future field added to the
+  // card shape is duplicated automatically without anyone remembering
+  // to update this function too.
+  function doDuplicateCard(){
+    var id=_bbOpenCardId;
+    var c=_bbFindCardAnywhere(id);
+    if(!c) return;
+    var copy=JSON.parse(JSON.stringify(c));
+    copy.id=_bbUUID();
+    copy.task=(c.task||'').trim() ? c.task+' (copy)' : 'Untitled (copy)';
+    copy.assigned=_bbToday();
+    copy.completedDate=null;
+    copy.verified=false;
+    copy.trashedAt=null;
+    copy.archived=false;
+    // Right after the original in sort order -- easy to spot, and the
+    // board's own drag/reorder logic renormalizes whole-number gaps
+    // like this the next time anything in the column moves.
+    copy.sortOrder=(typeof c.sortOrder==='number' ? c.sortOrder : 0)+0.5;
+    var list=_bbCardsList();
+    list.push(copy);
+    _bbSaveLocal(list);
+    _bbPushAction({
+      label:'Duplicate',
+      // The duplicate is a brand-new row, so "undo" here means the
+      // same soft-delete doTrashCard already uses elsewhere -- never a
+      // hard removal, so it's still recoverable from Recently Deleted
+      // even after an undo.
+      undo: function(){
+        var again=_bbFindCardAnywhere(copy.id);
+        if(!again) return;
+        again.trashedAt=new Date().toISOString();
+        _bbSaveLocal(_bbCardsList());
+        renderBoard();
+      },
+      redo: function(){
+        var again=_bbFindCardAnywhere(copy.id);
+        if(!again) return;
+        again.trashedAt=null;
+        _bbSaveLocal(_bbCardsList());
+        renderBoard();
+      }
+    });
+    renderBoard();
+    _bbShowToast('Card duplicated');
+  }
+
   function openRecentlyDeleted(){
     _bbRenderRecentlyDeleted();
     var ov=document.getElementById('bb-recently-deleted-overlay');
@@ -1460,6 +1513,12 @@
       e.stopPropagation();
       var row=document.getElementById('bb-d-color-row'); if(!row) return;
       row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
+    });
+
+    // ⧉ Duplicate -- see doDuplicateCard just above.
+    T().wire('bb-d-duplicate', function(e){
+      e.stopPropagation();
+      if(_bbOpenCardId) doDuplicateCard();
     });
 
     // 🗑️ Trash -- same "Moose poop?" confirm dragging a card to the

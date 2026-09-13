@@ -387,6 +387,23 @@
       // center; Logo was already the leftmost of the three, immediately
       // left of Utility, so that part needed no change.
       +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:flex-end}'
+      // Sept 13 2026 fix (live-site check, Larry's Master BB "Live check
+      // the site for bugs" card) -- View was overlapping Board Type's
+      // "Briefing Board" title on every board. _bbPositionBoardKindMidway
+      // (briefing-board-master-nav.js) already computes and sets
+      // #bb-view-wrap's `left` every render on the assumption that it's
+      // been taken out of bb-mhead-actions' flex flow -- its own comment
+      // says so explicitly -- but no rule anywhere actually gave it
+      // position:absolute, so that computed `left` was silently a no-op
+      // (inline `left` does nothing on a static/flex-flow element) and
+      // View just sat wherever the flex row put it: right where Board
+      // Type's own midpoint math also lands, since neither one knew about
+      // the other in that layout. top:0 matches every other fieldgrp in
+      // this header (Logo, Topic) at rest, same as Board Type's own
+      // top:0 fallback above -- and is the only measurement the
+      // positioning function assumes is already in place, since it only
+      // ever sets `left`.
+      +'#bb-view-wrap{position:absolute;top:0}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --

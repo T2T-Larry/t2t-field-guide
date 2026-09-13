@@ -410,6 +410,12 @@
               +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who is working on this?">👥</button>'
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
               +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Utility">⚙️</button>'
+              // Duplicate, Sept 13 2026 (Master BB, Larry: "Allow card
+              // duplication") -- same bottom-row icon-button treatment as
+              // its neighbors; wired in wireBbDetailActions just below
+              // Trash so the two "make a copy / get rid of it" actions
+              // sit together.
+              +'<button class="bb-icon-btn" id="bb-d-duplicate" type="button" title="Duplicate this card"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>'
               +'<button class="bb-icon-btn" id="bb-d-trash" type="button" title="Trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></button>'
             +'</div>'
           +'</div>'
