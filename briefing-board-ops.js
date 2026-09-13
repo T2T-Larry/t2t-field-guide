@@ -50,6 +50,35 @@
   // which already treated L:[L,ML] as a pair) -- H DO = HH/H, M DO =
   // MH/M, L DO = ML/L. Keeps the buttons and the drag columns agreeing
   // on where a card lands instead of fighting each other.
+  // Column width, Sept 13 2026 -- Master BB card (do-h): "Narrow the
+  // width of the BB so that all columns fit on the screen on the
+  // desktop view." Same measure-the-real-box approach as
+  // _bbPositionBoardKindMidway (briefing-board-master-nav.js) rather
+  // than a fixed CSS breakpoint -- this codebase has no @media rules
+  // for the board at all, so a width computed from #bb-board-wrap's
+  // actual visible size fits whatever desktop window is open instead
+  // of guessing one width that only works at one size. Only ever
+  // shrinks columns below the original 190px default, never grows them
+  // past it; never shrinks past BB_COL_MIN either -- below that floor
+  // this leaves #bb-board-wrap's existing overflow-x:auto to scroll,
+  // same as it does today, which is the right call on a phone-width
+  // screen (this card is scoped to "the desktop view").
+  var BB_COL_DEFAULT=190, BB_COL_MIN=132, BB_COL_GAP=14;
+  function _bbFitColumnWidths(){
+    var wrapEl=document.getElementById('bb-board-wrap');
+    if(!wrapEl) return;
+    var cs=getComputedStyle(wrapEl);
+    var padX=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
+    var available=wrapEl.clientWidth-padX;
+    if(!available) return;
+    var fitWidth=(available-(COLUMNS.length-1)*BB_COL_GAP)/COLUMNS.length;
+    var colWidth=Math.max(BB_COL_MIN, Math.min(BB_COL_DEFAULT, fitWidth));
+    document.documentElement.style.setProperty('--bb-col-width', colWidth+'px');
+  }
+  window.addEventListener('resize', function(){
+    var scr=document.getElementById('s-briefing-board');
+    if(scr && scr.classList.contains('active')) _bbFitColumnWidths();
+  });
   var COLUMNS = [
     // July 23, 2026, Larry: DO-L used to double as the no-priority
     // bucket ("as an incentive to prioritize"), but Larry wants a real
@@ -557,6 +586,7 @@
         +(cd.key==='new' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
       wrap.appendChild(col);
     });
+    _bbFitColumnWidths();
     // July 22, 2026 (later), Larry: wants to freely drag a card to a
     // new position WITHIN a column, not just between columns. Position
     // is now c.sortOrder (manual, set by dragging -- see the drop
@@ -908,10 +938,52 @@
     try { _bbFitTaskText(); } catch(e){}
   });
 
+  // Add-a-Card's own Project tag, Sept 13 2026 -- Master BB card (do-h):
+  // "BB entry Card should have project tag above task in case the task
+  // idea is not for the current project TOPIC." Mirrors the card-back's
+  // own Project field (_bbRenderCardProjectField, briefing-board-
+  // master.js) -- same _bbProjectPickerOptions list, same _bbRenderDropdown
+  // widget, same "+ Add a project" -- just holding the pick in
+  // _bbNewCardProjectHeaderId until Pin It writes the card, instead of an
+  // existing card's projectHeaderId. Single-board-mode only (hidden
+  // otherwise), matching _bbSaveNewCard's own existing _bbSingleBoardMode()
+  // gate below -- per-card project tagging isn't a multi-board concept.
+  var _bbNewCardProjectHeaderId=null;
+  async function _bbRenderAddCardProjectField(){
+    var field=document.getElementById('bb-add-project-field');
+    if(!field) return;
+    if(!_bbSingleBoardMode()){ field.style.display='none'; return; }
+    field.style.display='';
+    // Defaults to whatever project filter is currently open -- same
+    // starting point _bbSaveNewCard always silently used before this
+    // field existed -- but it's now just the default, not the final word.
+    _bbNewCardProjectHeaderId=_bbProjectFilter()||_bbIdeaStoryboardsRootId||null;
+    var opts=await _bbProjectPickerOptions();
+    document.getElementById('bb-add-overlay'); // no-op guard point (overlay may have closed while opts loaded)
+    if(!document.getElementById('bb-add-overlay').classList.contains('active')) return;
+    var currentValue=_bbNewCardProjectHeaderId ? 'hdr:'+_bbNewCardProjectHeaderId : null;
+    _bbRenderDropdown('bb-add-project-trigger','bb-add-project-menu', opts, currentValue, function(value){
+      var v=String(value);
+      if(v.indexOf('hdr:')===0) _bbNewCardProjectHeaderId=v.slice(4);
+    }, async function(){
+      var name=window.prompt('Name for the new project:');
+      if(!name || !name.trim()) return;
+      var rootId=_bbIdeaStoryboardsRootId;
+      if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
+      if(!rootId){ window.alert('Could not add a project right now. Try again in a moment.'); return; }
+      var hdr;
+      try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
+      catch(e){ console.error('Briefing Board: could not add project header', e); window.alert('Could not add the project "'+name.trim()+'". Try again.'); return; }
+      _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
+      _bbNewCardProjectHeaderId=hdr.id;
+      _bbRenderAddCardProjectField();
+    }, 'Add a project');
+  }
   function openAddCard(){
     var t=document.getElementById('bb-new-task'); if(t) t.value='';
     var ov=document.getElementById('bb-add-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+    _bbRenderAddCardProjectField();
   }
 
   function closeAddCard(){

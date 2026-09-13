@@ -206,6 +206,22 @@
          '<div class="bb-overlay-card">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Add a Card</span><button class="bb-close" id="bb-add-close" aria-label="Close">✕</button></div>'
           +'<div class="bbw">'
+            // Project tag, Sept 13 2026 -- Master BB card (do-h): "BB
+            // entry Card should have project tag above task in case the
+            // task idea is not for the current project TOPIC." Defaults
+            // to whatever project filter is currently open (today's
+            // existing behavior, see _bbSaveNewCard's own comment) but
+            // is now an explicit, changeable picker instead of a silent
+            // assumption -- so a task that occurs to you about a
+            // DIFFERENT project doesn't quietly get pinned to whichever
+            // one happens to be on screen. Same trigger/menu widget as
+            // the card-back's own Project field (bb-d-project-trigger),
+            // just prefixed bb-add- and populated in openAddCard
+            // (briefing-board-ops.js) instead of openCardDetail. Hidden
+            // by openAddCard outside single-board mode, where per-card
+            // project tagging isn't a thing yet (mirrors _bbSaveNewCard's
+            // own _bbSingleBoardMode() gate below).
+            +'<div class="bb-field" id="bb-add-project-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-add-project-trigger" title="Which project is this task for?" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))">MASTER</button><div class="bb-cdrop-menu" id="bb-add-project-menu" hidden></div></div></div>'
             +'<div class="bb-field"><label>Task</label><textarea id="bb-new-task" placeholder="What needs to be done?"></textarea></div>'
             +'<button class="jb" id="b-bb-save-card">Pin it to the board</button>'
             +'<div id="bb-add-status" style="font-size:calc(11px * var(--fg-text-scale,1));color:#5a7a3a;min-height:14px;margin-top:4px;text-align:center"></div>'

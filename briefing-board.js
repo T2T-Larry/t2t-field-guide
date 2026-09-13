@@ -270,7 +270,14 @@ function T(){ return window.T2T; }
       // render; the database side of the tag is its own one-time write
       // just below (_bbStampCardProject), never the general save.
       var newCardId=_bbUUID();
-      var newProjectHeaderId=(_bbSingleBoardMode() && _bbProjectFilter()) ? _bbProjectFilter() : null;
+      // Sept 13 2026 -- now takes the Add-a-Card Project field's own pick
+      // (_bbNewCardProjectHeaderId, briefing-board-ops.js) when one was
+      // made, instead of always silently assuming the current filter --
+      // see that field's own comment (Master BB card, do-h). Falls back
+      // to the old filter-based default if the field never got a chance
+      // to populate for some reason, so this never regresses to no tag
+      // at all in single-board mode.
+      var newProjectHeaderId=_bbSingleBoardMode() ? (_bbNewCardProjectHeaderId || _bbProjectFilter() || null) : null;
       cards.push({id:newCardId, col:'new', sortOrder:maxOrder+1, assigned:_bbToday(), task:text, person:_bbCurrentBoardDefaultAssignee(), due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false, reviewedBy:REVIEWERS[0], archived:false, projectHeaderId:newProjectHeaderId});
       var _bbNewCardSync=_bbSaveLocal(cards);
       // Sept 9 2026 fix (Larry: "Newly added card disappeared when saved

@@ -430,7 +430,14 @@
       // so scrolling reaches both ends.
       +'#bb-board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;background:var(--bb-bg);display:flex}'
       +'#bb-cols{display:flex;gap:14px;height:100%;margin:0 auto}'
-      +'.bb-col{flex-shrink:0;width:190px;display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
+      // width driven by --bb-col-width (set live by _bbFitColumnWidths in
+      // briefing-board-ops.js, default 190px here matches its own
+      // BB_COL_DEFAULT) instead of a fixed 190px, Sept 13 2026 -- Master
+      // BB card (do-h): "Narrow the width of the BB so that all columns
+      // fit on the screen on the desktop view." flex-shrink stays 0 so
+      // the JS-computed width is authoritative; below its own floor
+      // width, #bb-board-wrap's existing overflow-x:auto still scrolls.
+      +'.bb-col{flex-shrink:0;width:var(--bb-col-width,190px);display:flex;flex-direction:column;background:rgba(201,168,124,0.14);border:1px solid var(--bb-accent);border-radius:8px;padding:8px}'
       +'.bb-col-head{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-bg);background:var(--bb-ink);border-radius:4px;text-align:center;padding:7px 4px;margin-bottom:4px}'
       +'.bb-col[data-col="hangups"] .bb-col-head{background:#a3372b;color:#fff}'
       // July 22, 2026, Larry: color the 3 Do column headers red/green/

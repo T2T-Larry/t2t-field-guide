@@ -639,7 +639,29 @@
       cb.addEventListener('change', function(){
         var id=cb.getAttribute('data-id');
         var it=_bbChecklistCache.filter(function(x){ return x.id===id; })[0];
-        if(it && _bbOpenCardId){ it.done=cb.checked; _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache); _bbRenderChecklist(); }
+        if(it && _bbOpenCardId){
+          it.done=cb.checked;
+          _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
+          _bbRenderChecklist();
+          // Sept 13 2026, Master BB card (do-h): "When all items on a
+          // checklist are completed, move the card to DONE." Forward-only
+          // -- unchecking an item never pulls a card back OUT of Done,
+          // same one-way "mark Done" shape as the Lock button's own
+          // is-it-actually-finished path just below (wireLockButton).
+          // Mutate + _bbSaveLocal/renderBoard mirrors wirePriorityButtons'
+          // own pattern for changing a card's column live while its
+          // detail overlay is still open.
+          if(_bbChecklistCache.length && _bbChecklistCache.every(function(x){ return x.done; })){
+            var card=_bbFindCardAnywhere(_bbOpenCardId);
+            if(card && card.col!=='done'){
+              card.col='done';
+              if(!card.completedDate) card.completedDate=_bbToday();
+              _bbUpdateReviewUI(card);
+              _bbSaveLocal(_bbCardsList());
+              renderBoard();
+            }
+          }
+        }
       });
     });
     list.querySelectorAll('.bb-checklist-remove').forEach(function(btn){

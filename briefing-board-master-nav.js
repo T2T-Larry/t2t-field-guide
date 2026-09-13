@@ -1050,6 +1050,32 @@
   // Must run after both TOPIC and Logo have rendered for real content
   // (see the call sites right after _bbRenderTopicField, below) --
   // reading either box any earlier measures last render's stale size.
+  // Shrink-to-fit for the "Briefing Board"/"Idea"/"Plan"/etc label, Sept 13
+  // 2026 (Master BB card, do-h: "Shrink text to fit Board Type between
+  // TOPIC and Utility button") -- the Sept 9 fix below only ever clamped
+  // the label's POSITION so its box couldn't overlap TOPIC's arrow or
+  // Logo; it never touched the label's own font-size, so on a narrow
+  // desktop window (TOPIC pushed wide, Logo pushed in) the fixed 42px
+  // text could still visually crowd or touch its neighbors even while
+  // "fitting" by the position clamp's math. Reuses the same
+  // window.FGFitFontSize one-line shrink every other board title already
+  // uses (text-fit.js) rather than inventing a second shrink mechanism.
+  // Resets to the natural CSS size first so this never ratchets smaller
+  // across repeated calls, then only shrinks -- never grows past what the
+  // stylesheet already sets.
+  function _bbFitBoardKindLabel(availableWidthPx){
+    var trigger=document.getElementById('bb-boardkind-trigger');
+    if(!trigger || !window.FGFitFontSize) return;
+    trigger.style.fontSize='';
+    if(!availableWidthPx || availableWidthPx<=0) return;
+    var cs=getComputedStyle(trigger);
+    var baseSize=parseFloat(cs.fontSize)||42;
+    var fitted=window.FGFitFontSize(trigger.textContent, availableWidthPx, {
+      base:baseSize, min:Math.max(14, Math.round(baseSize*0.4)), step:0.5,
+      fontFamily:cs.fontFamily, fontWeight:cs.fontWeight, oneLine:true
+    });
+    if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
+  }
   function _bbPositionBoardKindMidway(){
     var wrap=document.getElementById('bb-boardkind-wrap');
     var topicEl=document.getElementById('bb-topic-cdrop');
@@ -1062,6 +1088,11 @@
     // Guard against a not-yet-laid-out screen -- nothing real to measure
     // yet, leave the left:50% fallback in place.
     if(!topicRect.width || !logoRect.width || !containerRect.width) return;
+    // Shrink the label to the real gap BEFORE any of the midpoint/clamp
+    // math below, which reads wrap's rendered width -- so the clamp
+    // always sees the already-fitted (often smaller) box, same as
+    // measuring "the real boxes" everywhere else in this function.
+    _bbFitBoardKindLabel((logoRect.left-topicRect.right)-20);
     var midpoint=topicRect.right+(logoRect.left-topicRect.right)/2;
     // Sept 9 2026 fix (Larry: "Briefing Board on ID BAND too large type.
     // Overlaps child down arrow") -- the plain midpoint above never
