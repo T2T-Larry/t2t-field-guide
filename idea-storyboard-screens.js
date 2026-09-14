@@ -381,7 +381,10 @@
         // boxes instead of one flat list. cs-doers boxes Leader + Cast
         // Member together per Larry's "the doers" framing; Principal/
         // Stakeholder and Facilitator each get their own box.
-        +'.cs-crumb{font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:0.06em;color:#7a6040;text-align:center;margin:-6px 0 12px}'
+        // cs-crumb (the old single-line breadcrumb here) retired Sept 14
+        // 2026 -- replaced on-screen by the PROJECT/TASK fields built
+        // directly in openCallSheet (idea-storyboard-people.js) and, on
+        // the printed page, by cs-pr-field/cs-pr-field-label above.
         +'.cs-group{border:1px solid #efe9dc;border-radius:10px;padding:8px 10px 4px;margin-bottom:10px;text-align:left}'
         +'.cs-group.cs-doers{background:#f7fbfe;border-color:#cfe4f2}'
         +'.cs-group-title{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1a3a5c;margin-bottom:2px}'
@@ -434,7 +437,14 @@
         +'.cs-pr-sub{font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#7a6040;margin-top:4px}'
         +'.cs-pr-mast-right{text-align:right;font-family:Arial,sans-serif;font-size:11px;color:#7a6040}'
         +'.cs-pr-date{font-weight:700;color:#1a3a5c;font-size:12px}'
-        +'.cs-pr-crumb{font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.06em;color:#7a6040;margin:12px 0 26px;text-align:center}'
+        // Sept 14 2026, Larry: "classic call sheet" -- PROJECT and TASK
+        // as their own labeled lines (cs-pr-field/cs-pr-field-label)
+        // replace the old single centered cs-pr-crumb line, matching the
+        // same split on the on-screen header (openCallSheet, idea-
+        // storyboard-people.js).
+        +'.cs-pr-field{font-family:Arial,sans-serif;font-size:12px;color:#1a3a5c;margin:10px 0 0;text-align:left}'
+        +'.cs-pr-field:last-of-type{margin-bottom:20px}'
+        +'.cs-pr-field-label{display:inline-block;width:64px;font-weight:700;letter-spacing:0.08em;color:#7a6040;font-size:10.5px}'
         +'.cs-pr-group{margin-bottom:22px}'
         +'.cs-pr-group-title{font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#1a3a5c;border-bottom:1.5px solid #1a3a5c;padding-bottom:4px;margin-bottom:2px}'
         +'.cs-pr-group-sub{font-family:Arial,sans-serif;font-size:10px;color:#7a6040;font-style:italic;margin:2px 0 10px}'

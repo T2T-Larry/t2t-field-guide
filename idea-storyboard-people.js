@@ -1618,6 +1618,11 @@
       var m=_csMemberLookup(r.user_id);
       var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
       var email=m?(m.email||''):'';
+      // Sept 14 2026, Larry: "classic call sheet" needs a phone number
+      // printed too, not just email -- the on-screen editable row already
+      // has both (_csRenderRow above), the print version only ever had
+      // email.
+      var phone=m?(m.phone||''):'';
       var star=r.is_parent_connection?'<span class="cs-pr-star">★</span>':'';
       var keytag=r.is_key?'<span class="cs-pr-keytag">KEY</span>':'';
       // ★ Primary Doer tag, Sept 12 2026 -- printed same as the KEY tag,
@@ -1634,7 +1639,8 @@
         +'<td class="cs-pr-role">'+(i===0?_esc9710(CS_ROLE_LABEL[role]):'')+'</td>'
         +'<td class="cs-pr-name">'
           +'<div class="cs-pr-nameline">'+doertag+keytag+star+_esc9710(name)+'</div>'
-          +(email?('<div class="cs-pr-email">'+_esc9710(email)+'</div>'):'')
+          +(email?('<div class="cs-pr-email">✉ '+_esc9710(email)+'</div>'):'')
+          +(phone?('<div class="cs-pr-email">☎ '+_esc9710(phone)+'</div>'):'')
           +(r.notes?('<div class="cs-pr-notes">'+notesPrefix+_esc9710(r.notes)+'</div>'):'')
           +needsLine+desiresLine
         +'</td>'
@@ -1651,17 +1657,22 @@
   }
 
   async function _csBuildPrintDoc(){
-    // See _csCrumbText's own comment (Aug 30 2026 fix) for why this can't
-    // just be item.id/item.text_content for a Briefing Card.
-    var crumbText=await _csCrumbText(_csItem, _csCardType);
+    // Sept 14 2026, Larry: "classic call sheet" -- PROJECT and TASK as
+    // their own labeled lines on the printed page too, matching the
+    // on-screen header (_csProjectTaskParts, same split used there). See
+    // _csCrumbText's own comment (Aug 30 2026 fix) for why this can't just
+    // be item.id/item.text_content for a Briefing Card -- that same fix
+    // lives inside _csProjectTaskParts now.
+    var parts=await _csProjectTaskParts(_csItem, _csCardType);
     var doc=document.getElementById('cs-print-doc');
     if(!doc){ doc=document.createElement('div'); doc.id='cs-print-doc'; doc.className='cs-print-doc'; document.body.appendChild(doc); }
     var today=_csFmtToday();
     doc.innerHTML='<div class="cs-pr-masthead">'
-        +'<div class="cs-pr-mast-left"><h1>📋 Call Sheet</h1><div class="cs-pr-sub">T2T Field Guide</div></div>'
+        +'<div class="cs-pr-mast-left"><h1>📋 CALL SHEET</h1><div class="cs-pr-sub">T2T Field Guide</div></div>'
         +'<div class="cs-pr-mast-right"><div class="cs-pr-date">'+today+'</div><div>Printed from the Idea Storyboard</div></div>'
       +'</div>'
-      +'<div class="cs-pr-crumb">'+_esc9710(crumbText)+'</div>'
+      +'<div class="cs-pr-field"><span class="cs-pr-field-label">PROJECT</span>'+_esc9710(parts.project||'—')+'</div>'
+      +'<div class="cs-pr-field"><span class="cs-pr-field-label">TASK</span>'+_esc9710(parts.task||'(untitled)')+'</div>'
       +CS_PRINT_GROUPS.map(_csPrintGroupHTML).join('')
       +'<div class="cs-pr-footer"><span>T2T Field Guide — Call Sheet</span><span>Generated '+today+'</span></div>';
   }
@@ -1789,6 +1800,31 @@
     }catch(e){ return item.text_content||''; }
   }
 
+  // Sept 14 2026, Larry: "classic call sheet" redesign -- PROJECT and TASK
+  // as their own labeled fields instead of one combined breadcrumb line.
+  // Same underlying walk _csCrumbText already does (kept above, still used
+  // nowhere else but left intact rather than deleted); this just splits
+  // the result in two instead of joining it into one string. For a
+  // Briefing Card, topicLabel already IS "the project" and item.task
+  // already IS "the task" -- no ancestor walk needed. For an Idea/Plan
+  // card, everything above the card's own leaf is PROJECT and the leaf
+  // itself (this card's own text) is TASK.
+  async function _csProjectTaskParts(item, cardType){
+    if(!item) return {project:'', task:''};
+    if(cardType==='briefing_card'){
+      return {project:item.topicLabel||'', task:item.task||'(untitled)'};
+    }
+    try{
+      var chain=(window.T2TData && window.T2TData.ancestorChain) ? await window.T2TData.ancestorChain(item.id) : [];
+      if(chain && chain.length){
+        var task=(chain[chain.length-1] && chain[chain.length-1].text) || item.text_content || '(untitled)';
+        var project=chain.slice(0,-1).map(function(c){ return c.text||'(untitled)'; }).join(' / ');
+        return {project:project, task:task};
+      }
+      return {project:'', task:item.text_content||'(untitled)'};
+    }catch(e){ return {project:'', task:item.text_content||''}; }
+  }
+
   async function openCallSheet(item, backFn, cardType, onFilterChange, currentFilterIds, onRosterChange){
     _csItem=item;
     _csCardType=cardType||'idea';
@@ -1817,14 +1853,27 @@
     // carries (see _csSetHideBadge's own comment for why there are two).
     var _csHideBadgeNow = (_csCardType==='briefing_card') ? !!item.hidePrimaryBadge : !!item.hide_primary_badge;
     cardEl.innerHTML='<div id="cs-body">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
-        +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">🎭 CAST</span>'
-        +'<div style="display:flex;align-items:center;gap:6px">'
-          +'<div class="tm-print-tile" id="cs-print-tile" title="Print Call Sheet">&#128438;</div>'
-          +'<button id="cs-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
-        +'</div>'
+      // Sept 14 2026, Larry: "classic call sheet" redesign -- CALL SHEET is
+      // now the big centered title (this screen's own name), not a small
+      // eyebrow sharing a row with the close/print buttons. PROJECT and
+      // TASK get their own labeled fields below the title (see
+      // _csProjectTaskParts above); 🎭 CAST moves down to introduce the
+      // roster itself, which is the same list VIEW's board-level filter
+      // draws its names from, just scoped to this one card.
+      +'<div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:2px">'
+        +'<div class="tm-print-tile" id="cs-print-tile" title="Print Call Sheet">&#128438;</div>'
+        +'<button id="cs-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
       +'</div>'
-      +'<div class="cs-crumb" id="cs-crumb">Loading…</div>'
+      +'<div style="text-align:center;font-size:calc(19px * var(--fg-text-scale,1));font-weight:700;letter-spacing:0.05em;color:#2C2C2A;margin:2px 0 10px">📋 CALL SHEET</div>'
+      +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px;text-align:left">'
+        +'<span style="font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:0.08em;color:#7a6040;flex-shrink:0">PROJECT</span>'
+        +'<span id="cs-project-field" style="font-size:calc(12px * var(--fg-text-scale,1));color:#2C2C2A">Loading…</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:10px;text-align:left">'
+        +'<span style="font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:0.08em;color:#7a6040;flex-shrink:0">TASK</span>'
+        +'<span id="cs-task-field" style="font-size:calc(12px * var(--fg-text-scale,1));color:#2C2C2A">Loading…</span>'
+      +'</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A;margin-bottom:4px;text-align:left">🎭 CAST</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(11px * var(--fg-text-scale,1));color:#5b5b56;margin:2px 0 8px">'
         +'<span>Initials on front</span>'
         +'<div class="sb-gear-tabs" id="cs-hide-badge-toggle" style="margin-bottom:0;width:auto;min-width:88px">'
@@ -1853,15 +1902,19 @@
     T().wire('cs-close', goBack);
     T().wire('cs-print-tile', _csPrint);
 
-    // Breadcrumb -- same ancestor walk header-data.js already uses to
-    // resume a session at depth (ancestorChain), reused here purely for
-    // display: Organization/Project/.../this card's own name. See
-    // _csCrumbText above for the Aug 30 2026 Briefing Card fix.
+    // PROJECT / TASK fields -- same ancestor walk header-data.js already
+    // uses to resume a session at depth (ancestorChain), reused here to
+    // fill the two labeled fields under the CALL SHEET title. See
+    // _csProjectTaskParts above (Sept 14 2026 split of the old single-line
+    // crumb, which is still available via _csCrumbText for the Aug 30
+    // 2026 Briefing Card fix it carries).
     (function(){
-      var crumbEl=document.getElementById('cs-crumb');
-      if(!crumbEl) return;
+      var projEl=document.getElementById('cs-project-field'), taskEl=document.getElementById('cs-task-field');
+      if(!projEl || !taskEl) return;
       (async function(){
-        crumbEl.textContent=await _csCrumbText(item, cardType);
+        var parts=await _csProjectTaskParts(item, cardType);
+        projEl.textContent=parts.project||'—';
+        taskEl.textContent=parts.task||'(untitled)';
       })();
     })();
 
