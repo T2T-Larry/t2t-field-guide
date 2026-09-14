@@ -729,7 +729,14 @@
     // _sboardPersonFilterIds / _sboardFilterByPerson.
     var checked=(_csActiveFilterIds||[]).indexOf(String(r.user_id))>=0;
     var filterChk='<input type="checkbox" class="cs-filter-chk" data-uid="'+_esc9710(r.user_id)+'" title="Show this person’s cards across the whole board"'+(checked?' checked':'')+'>';
-    var hasNotes=!!(r.notes && String(r.notes).length);
+    // Sept 14 2026, Larry: Stakeholder Survey -- needs and desires are
+    // their own fields now, distinct from the Expectations/Boundaries
+    // note below (a Stakeholder can have expectations of the project
+    // without that capturing what they personally need or want out of
+    // it). Same pencil-toggle pattern as Notes; the pencil lights up if
+    // ANY of the three has content, so nothing with something written in
+    // it is ever hidden by default.
+    var hasNotes=!!((r.notes && String(r.notes).length) || (r.needs && String(r.needs).length) || (r.desires && String(r.desires).length));
     var pencil='<span class="cs-notes-pencil'+(hasNotes?' cs-notes-has':'')+'" data-rowid="'+_esc9710(r.id)+'" title="Notes">✏️</span>';
     // Role choices only show once the name is clicked, Session 255 --
     // Larry: "role choices only show when clicking the name." Still the
@@ -751,12 +758,19 @@
     var isStakeholder=r.role==='stakeholder';
     var notesLbl=isStakeholder?'EXPECTATIONS / BOUNDARIES:':'NOTES:';
     var notesPh=isStakeholder?'What do they expect? What’s off-limits?':'—';
+    // Stakeholder Survey rows -- Stakeholder only, same show/hide as the
+    // Notes row above (all three sit behind the one ✏️ pencil).
+    var surveyRows=isStakeholder
+      ? '<div class="tm-notes-row cs-notes-row cs-survey-row" id="cs-needs-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">NEEDS:</span><input type="text" class="tm-notes-input cs-needs-input" data-rowid="'+_esc9710(r.id)+'" placeholder="What do they need to succeed here?" value="'+_esc9710(r.needs||'')+'"></div>'
+        +'<div class="tm-notes-row cs-notes-row cs-survey-row" id="cs-desires-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">DESIRES:</span><input type="text" class="tm-notes-input cs-desires-input" data-rowid="'+_esc9710(r.id)+'" placeholder="What would they love to see happen?" value="'+_esc9710(r.desires||'')+'"></div>'
+      : '';
     return '<div class="tm-row">'
       +'<div class="tm-sym">'+filterChk+'</div>'
       +'<div class="tm-body">'
         +'<div class="tm-name">'+primaryMark+star+'<span class="cs-name-click" data-rowid="'+_esc9710(r.id)+'" style="cursor:pointer">'+_esc9710(name)+'</span> <span class="cs-role-tag">· '+CS_ROLE_LABEL[r.role]+'</span>'+pencil+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
         +'<div class="tm-contact">✉ <input type="text" class="cs-contact-input cs-contact-email" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(email)+'" placeholder="email"> &nbsp; ☎ <input type="text" class="cs-contact-input cs-contact-phone" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(phone)+'" placeholder="phone"></div>'
         +'<div class="tm-notes-row cs-notes-row" id="cs-nr-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">'+notesLbl+'</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="'+_esc9710(notesPh)+'" value="'+_esc9710(r.notes||'')+'"></div>'
+        +surveyRows
         +panel
       +'</div>'
     +'</div>';
@@ -1198,6 +1212,19 @@
     try{ await _sb.from('card_roles').update({notes:notes}).eq('id', rowId); }catch(e){}
   }
 
+  // Stakeholder Survey, Sept 14 2026 -- same save-on-blur pattern as
+  // Notes, just two more columns.
+  async function _csSaveNeeds(rowId, needs){
+    if(!rowId) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{ await _sb.from('card_roles').update({needs:needs}).eq('id', rowId); }catch(e){}
+  }
+  async function _csSaveDesires(rowId, desires){
+    if(!rowId) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{ await _sb.from('card_roles').update({desires:desires}).eq('id', rowId); }catch(e){}
+  }
+
   // Sept 12 2026, Larry confirmed this is already right: 🔑 Key
   // Stakeholder is a plain per-row flag with no exclusivity -- unlike
   // PRIMARY (role) or ★ Primary Doer (is_primary), which each allow only
@@ -1599,12 +1626,17 @@
       // 'primary') is now a separate, independent flag from this.
       var doertag=r.is_primary?'<span class="cs-pr-keytag">★ DOER</span>':'';
       var notesPrefix=role==='stakeholder'?'Expectations/boundaries: ':'Notes: ';
+      // Stakeholder Survey (needs/desires), Sept 14 2026 -- printed same
+      // as Notes, Stakeholder rows only.
+      var needsLine=(role==='stakeholder' && r.needs)?('<div class="cs-pr-notes">Needs: '+_esc9710(r.needs)+'</div>'):'';
+      var desiresLine=(role==='stakeholder' && r.desires)?('<div class="cs-pr-notes">Desires: '+_esc9710(r.desires)+'</div>'):'';
       return '<tr class="cs-pr-row">'
         +'<td class="cs-pr-role">'+(i===0?_esc9710(CS_ROLE_LABEL[role]):'')+'</td>'
         +'<td class="cs-pr-name">'
           +'<div class="cs-pr-nameline">'+doertag+keytag+star+_esc9710(name)+'</div>'
           +(email?('<div class="cs-pr-email">'+_esc9710(email)+'</div>'):'')
           +(r.notes?('<div class="cs-pr-notes">'+notesPrefix+_esc9710(r.notes)+'</div>'):'')
+          +needsLine+desiresLine
         +'</td>'
       +'</tr>';
     }).join('');
@@ -1669,6 +1701,62 @@
   // plain callbacks rather than a hardcoded function name.
   function closeCallSheet(){
     var ov=document.getElementById('cs-callsheet-overlay');
+    if(ov){ ov.style.display='none'; ov.classList.remove('active'); }
+  }
+
+  // Project Cast Roster, Sept 14 2026, Larry -- "names, roles and contact
+  // for everyone on this card AND below on the whole project." A separate,
+  // deliberately-heavier screen from the flat per-card Call Sheet above:
+  // it walks the full ideas/cluster_id tree (plus any linked Briefing
+  // Board task assignments -- see project_cast_roster() in Supabase)
+  // beneath whichever card it's opened on. Reached from the CAST choice
+  // in the board-kind switcher (IDEA/PLAN/BRIEFING BOARD/SHARE/CAST,
+  // idea-storyboard-navigation.js) when the current card is the TOPIC
+  // (project) -- CAST is a board choice like the others, not a button
+  // buried inside every card's own Call Sheet. Still callable with any
+  // card (opens its own standalone overlay, independent of whether a
+  // Call Sheet is open underneath it), so nothing stops a future call
+  // site from using it on a narrower scope too.
+  async function _csOpenProjectRoster(item){
+    if(!item || !item.id) return;
+    if(!document.getElementById('cs-roster-overlay')){
+      var ovEl=document.createElement('div');
+      ovEl.id='cs-roster-overlay';
+      ovEl.style.cssText='display:none;position:fixed;inset:0;z-index:10000;background:rgba(20,20,18,0.55);align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+      ovEl.innerHTML='<div id="cs-roster-card" style="text-align:left;background:#F5F1E8;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,0.3);max-height:88vh;overflow-y:auto;width:min(420px,100%);position:relative;box-sizing:border-box"></div>';
+      document.body.appendChild(ovEl);
+      ovEl.addEventListener('click', function(e){ if(e.target===ovEl) _csCloseProjectRoster(); });
+    }
+    var ov=document.getElementById('cs-roster-overlay');
+    var cardEl=document.getElementById('cs-roster-card');
+    if(!ov || !cardEl) return;
+    cardEl.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        +'<span style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A">🗂️ PROJECT CAST ROSTER</span>'
+        +'<button id="cs-roster-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
+      +'</div>'
+      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;margin-bottom:10px">Everyone on this project — this card and everything below it.</div>'
+      +'<div id="cs-roster-rows">Loading…</div>';
+    ov.style.display='flex';
+    ov.classList.add('active');
+    T().wire('cs-roster-close', _csCloseProjectRoster);
+    var rowsEl=document.getElementById('cs-roster-rows');
+    try{
+      var _sb=T().sb;
+      var res=_sb ? await _sb.rpc('project_cast_roster', {p_root_id:item.id}) : {error:{message:'Not connected.'}};
+      if(res.error){ rowsEl.innerHTML='<div style="color:#b8562f;font-size:calc(11px * var(--fg-text-scale,1))">'+_esc9710(res.error.message||'Could not load the roster.')+'</div>'; return; }
+      var rows=res.data||[];
+      if(!rows.length){ rowsEl.innerHTML='<div style="color:#5b5b56;font-size:calc(11px * var(--fg-text-scale,1))">Nobody on this project yet.</div>'; return; }
+      rowsEl.innerHTML=rows.map(function(r){
+        var roleLabels=(r.roles||[]).map(function(role){ return CS_ROLE_LABEL[role]||role; }).join(' · ');
+        return '<div class="tm-row"><div class="tm-body">'
+          +'<div class="tm-name">'+_esc9710(r.name||'(unknown)')+' <span class="cs-role-tag">· '+_esc9710(roleLabels)+'</span></div>'
+          +'<div class="tm-contact">'+(r.email?('✉ '+_esc9710(r.email)):'')+(r.phone?(' &nbsp; ☎ '+_esc9710(r.phone)):'')+'</div>'
+        +'</div></div>';
+      }).join('');
+    }catch(e){ rowsEl.innerHTML='<div style="color:#b8562f;font-size:calc(11px * var(--fg-text-scale,1))">Could not load the roster.</div>'; }
+  }
+  function _csCloseProjectRoster(){
+    var ov=document.getElementById('cs-roster-overlay');
     if(ov){ ov.style.display='none'; ov.classList.remove('active'); }
   }
 
@@ -1823,8 +1911,16 @@
         }
         var pencil=e.target.closest('.cs-notes-pencil');
         if(pencil){
-          var nrow=document.getElementById('cs-nr-'+pencil.getAttribute('data-rowid'));
-          if(nrow) nrow.style.display=(nrow.style.display==='none')?'flex':'none';
+          var prid=pencil.getAttribute('data-rowid');
+          var nrow=document.getElementById('cs-nr-'+prid);
+          var willShow=nrow?(nrow.style.display==='none'):true;
+          if(nrow) nrow.style.display=willShow?'flex':'none';
+          // Stakeholder Survey rows (Needs/Desires, absent for non-Stakeholder
+          // rows) show/hide together with Notes, one pencil for all three.
+          var needsRow=document.getElementById('cs-needs-'+prid);
+          if(needsRow) needsRow.style.display=willShow?'flex':'none';
+          var desiresRow=document.getElementById('cs-desires-'+prid);
+          if(desiresRow) desiresRow.style.display=willShow?'flex':'none';
           return;
         }
         var x=e.target.closest('.cs-remove-x'); if(x){ _csRemoveRole(x.getAttribute('data-rowid')); return; }
@@ -1833,6 +1929,8 @@
       body.addEventListener('change', function(e){
         var t=e.target;
         if(t.classList.contains('cs-notes-input')){ _csSaveNotes(t.getAttribute('data-rowid'), t.value); return; }
+        if(t.classList.contains('cs-needs-input')){ _csSaveNeeds(t.getAttribute('data-rowid'), t.value); return; }
+        if(t.classList.contains('cs-desires-input')){ _csSaveDesires(t.getAttribute('data-rowid'), t.value); return; }
         if(t.classList.contains('cs-r-role')){ _csSaveRole(t.getAttribute('data-rowid'), t.value); return; }
         if(t.classList.contains('cs-key-chk')){ _csToggleKey(t.getAttribute('data-rowid')); return; }
         if(t.classList.contains('cs-filter-chk')){

@@ -628,9 +628,20 @@
           return;
         }
         if(k.value==='CAST'){
+          // Sept 14 2026, Larry: CAST is a board choice like Idea/Plan/
+          // Briefing Board/Share, not a small icon buried inside every
+          // card's Call Sheet -- picking it here, with the current card
+          // as TOPIC (project), opens the full Project Cast Roster
+          // (idea-storyboard-people.js's _csOpenProjectRoster): everyone
+          // on this project and everything below it, roles and contact,
+          // one screen. Replaces the older storyboard_members-only Team
+          // Roster (_sboardOpenTeam) as this menu's destination -- that
+          // function stays in place for now (nothing else calls it yet),
+          // but CAST-the-board-choice now means the real Cast, same
+          // source of truth as everywhere else.
           var castRow=_sboardCurrentProjectRow();
           if(!castRow){ _sboardShowToast('Open a project first.'); return; }
-          _sboardOpenTeam(castRow, closeSbDetail);
+          _csOpenProjectRoster(castRow);
           return;
         }
         if(k.soon) _sboardShowToast(k.soon);

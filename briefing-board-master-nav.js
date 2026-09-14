@@ -1816,11 +1816,15 @@
     var trigger=document.getElementById('bb-view-trigger');
     if(!trigger) return;
     if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1){
-      // Zero people (Team, unfiltered) or 2+ (a multi-person filter set
+      // Zero people (All, unfiltered) or 2+ (a multi-person filter set
       // from the Cast popup, which this trigger can't represent as one
-      // name) both fall back to the neutral "Team" label -- never shows
+      // name) both fall back to the neutral "All" label -- never shows
       // a wrong or partial name.
-      trigger.textContent='Team';
+      // Sept 14 2026: was "Team" -- renamed to "All" so this unfiltered
+      // state can never be mistaken for the new Team role (Cast/Team
+      // split, idea-storyboard-people.js), which means something
+      // specific and different (real edit access on a card).
+      trigger.textContent='All';
       return;
     }
     var uid=_bbPersonFilterIds[0];
@@ -1835,7 +1839,7 @@
       menu.innerHTML='';
       var teamRow=document.createElement('div');
       teamRow.className='bb-cdrop-row'+((!_bbPersonFilterIds || !_bbPersonFilterIds.length) ? ' active' : '');
-      teamRow.textContent='Team';
+      teamRow.textContent='All';
       teamRow.addEventListener('click', function(e){
         e.stopPropagation();
         menu.hidden=true;
