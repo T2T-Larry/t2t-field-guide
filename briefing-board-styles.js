@@ -290,7 +290,13 @@
       // redundant one here specifically; suppressed only on this one
       // trigger so every other bb-cdrop-trigger (which has no separate
       // caret of its own) keeps its only arrow indicator.
-      +'#bb-board-trigger.bb-cdrop-trigger:after{content:none}'
+      //
+      // Sept 14 2026, Larry: same complaint, this time on VIEW ("two
+      // dropdown arrows, only need one"). bb-view-trigger has the exact
+      // same shape as bb-board-trigger -- its own dedicated bb-view-caret
+      // button sits right beside it (briefing-board-screens.js) -- so the
+      // shared-class arrow is redundant there too. Same one-line fix.
+      +'#bb-board-trigger.bb-cdrop-trigger:after,#bb-view-trigger.bb-cdrop-trigger:after{content:none}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
