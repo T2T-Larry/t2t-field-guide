@@ -188,7 +188,10 @@
   // Cast Member, etc.), so the badge always shows someone at a glance.
   // Purely a fallback guess -- starring someone by hand on the Call Sheet
   // screen still overrides this immediately, same as it always has.
-  var _sboardRoleRankOrder = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified'];
+  // Sept 14 2026: 'team' (real edit access on this card) ranks ahead of
+  // the plain 'cast_member' default (on the roster, no standing) -- see
+  // CS_ROLE_ORDER below for the full Cast/Team split.
+  var _sboardRoleRankOrder = ['stakeholder','primary','team','cast_member','facilitator','facilitator_qualified'];
   function _sboardTopRosterUid(summary){
     var people=(summary&&summary.people)||[];
     if(!people.length) return null;
@@ -644,15 +647,23 @@
   // -- least involved, listed last -- rather than inserted among the
   // four working roles above it. Needs 'guest' allowed by the
   // card_roles_role_check constraint in Supabase (added same day).
-  var CS_ROLE_ORDER = ['stakeholder','primary','cast_member','facilitator','facilitator_qualified','guest'];
+  // Sept 14 2026, Larry: CAST/TEAM split -- everyone on a card's roster is
+  // "Cast" in some role or another; 'team' is the one that carries real
+  // edit access on this specific card (what 'cast_member' used to grant,
+  // before this date -- see the Supabase migration on card_roles/
+  // can_edit_storyboard). A person cast for no specific role is just a
+  // plain Cast Member -- present on the roster, no standing, like an
+  // extra -- which is why 'cast_member' now sits below 'team' here
+  // instead of being the working/edit role.
+  var CS_ROLE_ORDER = ['stakeholder','primary','team','cast_member','facilitator','facilitator_qualified','guest'];
   var CS_ROLE_LABEL = {
-    stakeholder:'Stakeholder', primary:'Primary',
+    stakeholder:'Stakeholder', primary:'Primary', team:'Team',
     cast_member:'Cast Member', facilitator:'Facilitator',
     facilitator_qualified:'Facilitator-qualified (backup)',
     guest:'Guest'
   };
   var CS_ROLE_SYM = {
-    stakeholder:'👤', primary:'🎯',
+    stakeholder:'👤', primary:'🎯', team:'🛠️',
     cast_member:'☐', facilitator:'🎤', facilitator_qualified:'✦',
     guest:'🎫'
   };
@@ -1076,6 +1087,10 @@
   // New adds default to Cast Member -- Session 255, replacing the old
   // per-role add buttons. Click the name afterward to pick a different
   // role; nothing forces Cast Member to stick.
+  // Sept 14 2026: this default is now also the deliberate no-edit floor --
+  // adding someone no longer hands them edit access. That only happens if
+  // someone picks Team (or Primary/Facilitator/Facilitator-qualified, or
+  // Key Stakeholder) for them afterward.
   async function _csConfirmAdd(email){
     var errEl=document.getElementById('cs-error');
     if(!email || !_csItem) return;
@@ -1549,10 +1564,16 @@
   // Guest group added Sept 12 2026, alongside the new CS_ROLE_ORDER entry
   // -- without its own group here a Guest would silently vanish from the
   // printed Call Sheet even though they still show on-screen.
+  // Sept 14 2026: split the old combined "Cast Member" group in two --
+  // Team now carries what that group used to mean (real edit access,
+  // Facilitator-qualified = backup), and plain Cast Member gets its own
+  // group for the no-standing default so it doesn't silently vanish from
+  // print either.
   var CS_PRINT_GROUPS = [
     {title:'Stakeholders', sub:'Invested, not doing — who controls or is affected by this. KEY = can directly interfere with progress. EXPECTATIONS/BOUNDARIES shown in place of Notes.', roles:['stakeholder']},
     {title:'Primary', sub:'The person responsible for making it happen', roles:['primary']},
-    {title:'Cast Member', sub:'Facilitator-qualified = backup', roles:['cast_member','facilitator','facilitator_qualified']},
+    {title:'Team', sub:'Full edit access on this card. Facilitator-qualified = backup', roles:['team','facilitator','facilitator_qualified']},
+    {title:'Cast Member', sub:'On the roster — visibility only, no edit access', roles:['cast_member']},
     {title:'Guest', sub:'Along for visibility only — no responsibility on this card', roles:['guest']}
   ];
 

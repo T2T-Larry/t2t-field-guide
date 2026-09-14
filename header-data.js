@@ -463,9 +463,9 @@
      for COLLABORATOR's shortcut buttons. Two sources, merged: an explicit
      People-screen invite (storyboard_members — also covers a delegated
      TOPIC's owner, mirrored in automatically by the delegate_topic()
-     database function), and a plain Cast Member / Facilitator /
-     Facilitator-qualified placement on the project's own Call Sheet
-     (card_roles — added Sept 12, 2026, see the function body for why).
+     database function), and a Team / Facilitator / Facilitator-qualified
+     placement on the project's own Call Sheet (card_roles — added Sept 12,
+     2026, see the function body for why).
      Either way, "is this mine" is decided by the referenced project's own
      user_id, never by who added the row. Manual joins (fetch the roster
      rows, then the referenced ideas rows) rather than a PostgREST embed,
@@ -473,9 +473,17 @@
      Placement rule (per the design lock): whose root project it is, not
      Primary-vs-not — so this only excludes rows the traveler themself
      owns, it does not try to distinguish Primary from Stakeholder from
-     plain Cast Member. First verified against two real production rows
+     plain Team. First verified against two real production rows
      (Bill Fritsch + the "Claude" member account, both storyboard_members
-     on Larry's "Field Guide" project) Sept 12, 2026. */
+     on Larry's "Field Guide" project) Sept 12, 2026.
+
+     Sept 14 2026, Larry: CAST/TEAM split — Cast is everyone on a card's
+     roster, Team is the subset with real edit access on that card. The
+     role that used to be called 'cast_member' (and granted edit) is now
+     'team'; 'cast_member' is the new no-edit default (present on the
+     roster, no standing — "an extra"). This list only ever wanted the
+     real editors, so it swaps in 'team' here and drops plain
+     'cast_member' rows, which no longer belong in a Collaborator list. */
   async function collaboratorEntries(){
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
@@ -486,21 +494,20 @@
       // Sept 12 2026, Larry: "CAST is our source of truth -- a person
       // listed as a Cast member is a Collaborator, full stop." Before this,
       // only an explicit People-screen invite (storyboard_members) landed
-      // here -- a plain Cast Member / Facilitator / Facilitator-qualified
-      // placement on someone else's project already granted real read
-      // access (is_storyboard_member()'s card_roles fallback already
-      // covers all five working roles), but had no way to ever be FOUND:
-      // not shown at the project root (that's Primary-only, see
-      // promotedPrimaryEntries), not shown here either. Folded in below,
-      // self-scoped to the project root exactly like
-      // promotedPrimaryEntries/stakeholderEntries (topic_scope_id===id) so
-      // a Cast placement on an ordinary nested card never masquerades as a
-      // whole-project placement. (Primary stays root-only/fast-access, and
-      // 'stakeholder' stays its own bucket below -- this only adds the
-      // three plain Cast working roles.)
+      // here -- a Team / Facilitator / Facilitator-qualified placement on
+      // someone else's project already granted real read access
+      // (is_storyboard_member()'s card_roles fallback already covers all
+      // the working roles), but had no way to ever be FOUND: not shown at
+      // the project root (that's Primary-only, see promotedPrimaryEntries),
+      // not shown here either. Folded in below, self-scoped to the project
+      // root exactly like promotedPrimaryEntries/stakeholderEntries
+      // (topic_scope_id===id) so a Cast placement on an ordinary nested
+      // card never masquerades as a whole-project placement. (Primary
+      // stays root-only/fast-access, and 'stakeholder' stays its own
+      // bucket below -- this only adds the real-edit working roles.)
       var castRoles=await sb.from('card_roles').select('card_id,role')
         .eq('card_type','idea').eq('user_id',u.id)
-        .in('role',['cast_member','facilitator','facilitator_qualified']);
+        .in('role',['team','facilitator','facilitator_qualified']);
       if(castRoles.error) console.warn('collaboratorEntries card_roles error:', castRoles.error);
       var castRows=castRoles.data||[];
       if(!memRows.length && !castRows.length) return [];
