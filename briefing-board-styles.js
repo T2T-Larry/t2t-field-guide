@@ -301,6 +301,13 @@
       +'.bb-cdrop-row{padding:'+IDBand.TOKENS.dropdownRow.padding+';font-family:var(--bb-body-font);font-size:calc('+IDBand.TOKENS.dropdownRow.fontSize+'px * var(--fg-text-scale,1));color:var(--bb-ink);border-radius:'+IDBand.TOKENS.dropdownRow.radius+'px;cursor:pointer;white-space:nowrap}'
       +'.bb-cdrop-row:hover{background:var(--bb-bg)}'
       +'.bb-cdrop-row.active{background:var(--bb-bg);font-weight:700}'
+      // VIEW dropdown's checkbox rows, Sept 14 2026 -- .bb-cdrop-row's own
+      // rules above (padding/font/hover) still apply since the label
+      // keeps that class; this just lays the checkbox and name out on one
+      // line instead of the plain single-line text the class assumes.
+      +'.bb-cdrop-row.bb-view-person-row{display:flex;align-items:center;gap:6px}'
+      +'.bb-cdrop-row.bb-view-person-row input[type=checkbox]{margin:0;flex:none}'
+      +'.bb-view-person-tag{opacity:.6;font-size:.85em;font-weight:400}'
       +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
       // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): same
       // change as the Idea Board's own sc-view-row/-addform -- the

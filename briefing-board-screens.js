@@ -195,7 +195,7 @@
               // exactly "to the right of Board Type" without touching
               // the grid at all. See _bbWireViewDropdown (briefing-
               // board-master-nav.js).
-              +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Quickly filter this board to one person" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter this board to one or more people" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
               // Relationships used to ride along here as their own icons

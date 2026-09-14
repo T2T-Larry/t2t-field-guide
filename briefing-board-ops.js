@@ -569,6 +569,22 @@
     document.addEventListener('touchend', onUp);
   }
 
+  // Level-scoped card set, before the person filter -- Sept 14 2026.
+  // Pulled out of renderBoard so the VIEW dropdown (briefing-board-
+  // master-nav.js, _bbAssignedRosterRows) can ask "which cards actually
+  // show at this level" without duplicating the foreign/shared/rollup/
+  // project-filter logic here. Same list renderBoard draws from, just
+  // stopping one step short of _bbSourceFilterCards (the person filter
+  // itself, which is what the VIEW list needs to look PAST -- otherwise
+  // picking a person would hide everyone else from the picker too).
+  function _bbLevelCards(){
+    var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
+    if(_bbForeignCards && _bbForeignCards.length) cards = cards.concat(_bbForeignCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
+    if(_bbSharedInCards && _bbSharedInCards.length) cards = cards.concat(_bbSharedInCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
+    if(_bbRollupCards && _bbRollupCards.length) cards = cards.concat(_bbRollupCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
+    return _bbProjectFilterCards(cards);
+  }
+
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     // Preserve each column's own scroll position across this full
@@ -590,17 +606,7 @@
     var _bbHomeBoardName=_bbHomeBoardRow ? (_bbHomeBoardRow.name||'') : '';
     var _keyLib=_bbLoadKeyLibrary();
     _bbAutoEscalateDates();
-    var cards=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
-    if(_bbForeignCards && _bbForeignCards.length) cards = cards.concat(_bbForeignCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
-    if(_bbSharedInCards && _bbSharedInCards.length) cards = cards.concat(_bbSharedInCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
-    // Master Briefing Board rollup, Sept 5 2026 -- only ever populated
-    // (_bbLoadMasterRollupCards, called from _bbSwitchToBoard right
-    // after _bbRenderTopicField) when this board's own TOPIC is a
-    // project root; empty everywhere else, so a descended-into layer's
-    // board stays exactly what Larry asked for -- "the only cards
-    // visible at any layer are those pertaining to that layer."
-    if(_bbRollupCards && _bbRollupCards.length) cards = cards.concat(_bbRollupCards.filter(function(c){ return !c.archived && !c.trashedAt; }));
-    cards = _bbProjectFilterCards(cards);
+    var cards=_bbLevelCards();
     cards = _bbSourceFilterCards(cards);
     // Primary-doer warm-up, Session 234 (Aug 21) -- same fire-and-forget
     // fetch-then-conditional-re-render pattern session.js already uses

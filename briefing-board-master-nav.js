@@ -1804,22 +1804,34 @@
 
   // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m -- see the
   // HTML comment on bb-view-wrap in briefing-board-screens.js for the
-  // full "why"). One-click shortcut onto the exact same filter state
-  // the Cast popup's checkboxes already write (_bbPersonFilterIds /
-  // _bbSourceFilter / _bbRecomputeFilterMatches, briefing-board-master.js)
-  // -- picking a name here is exactly like checking just that one box in
-  // Cast and unchecking everyone else. Deliberately single-select only
-  // (this trigger can't show more than one name at once); anyone who
-  // wants a multi-person filter still reaches for the Cast popup, same
-  // as before this existed.
+  // full "why"). Reads/writes the exact same filter state the Cast
+  // popup's checkboxes already write (_bbPersonFilterIds / _bbSourceFilter
+  // / _bbRecomputeFilterMatches, briefing-board-master.js) -- checking a
+  // name here is exactly like checking that same box in Cast.
+  //
+  // Sept 14 2026, Larry: two problems with the single-select version
+  // this replaces. (1) It only ever listed board members (_bbAllRosterRows,
+  // sourced from board sharing/access) -- someone cast onto a task
+  // through a card's own 👥 Cast popup without also being added to the
+  // board's roster never showed up as a name to pick, even though they
+  // plainly have a task "on that level." (2) It could only hold one
+  // person at a time, forcing anyone who wanted two people's cards
+  // together to go find the Cast popup instead. Fixed both: the list now
+  // comes from _bbAssignedRosterRows (roster, plus anyone with an actual
+  // card_roles row on a card visible at this level -- see that function
+  // below), and every row gets a real checkbox wired to the same
+  // _bbCastFilterChange the Cast popup uses, so multiple people can be
+  // checked at once straight from VIEW.
+  //
+  // _bbViewMenuRowsCache holds whatever name list the menu was last built
+  // from, so the trigger label can resolve an assigned-only person's name
+  // too (_bbAllRosterRows alone wouldn't know them).
+  var _bbViewMenuRowsCache = [];
   function _bbSyncViewTriggerLabel(){
     var trigger=document.getElementById('bb-view-trigger');
     if(!trigger) return;
-    if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1){
-      // Zero people (All, unfiltered) or 2+ (a multi-person filter set
-      // from the Cast popup, which this trigger can't represent as one
-      // name) both fall back to the neutral "All" label -- never shows
-      // a wrong or partial name.
+    var ids=_bbPersonFilterIds||[];
+    if(!ids.length){
       // Sept 14 2026: was "Team" -- renamed to "All" so this unfiltered
       // state can never be mistaken for the new Team role (Cast/Team
       // split, idea-storyboard-people.js), which means something
@@ -1827,15 +1839,53 @@
       trigger.textContent='All';
       return;
     }
-    var uid=_bbPersonFilterIds[0];
-    var row=(_bbAllRosterRows?_bbAllRosterRows():[]).filter(function(m){ return String(m.user_id)===String(uid); })[0];
-    trigger.textContent=row?(row.name||'1 person'):'1 person';
+    var pool=(_bbViewMenuRowsCache&&_bbViewMenuRowsCache.length)?_bbViewMenuRowsCache:_bbAllRosterRows();
+    function nameFor(uid){
+      var row=pool.filter(function(m){ return String(m.user_id)===String(uid); })[0];
+      return row?(row.name||row.email):null;
+    }
+    if(ids.length===1){
+      trigger.textContent=nameFor(ids[0])||'1 person';
+      return;
+    }
+    trigger.textContent=ids.length+' people';
+  }
+  // Everyone selectable from VIEW at this level: the board roster
+  // (_bbAllRosterRows) plus anyone who has an actual card_roles row on a
+  // card _bbLevelCards() says is visible here right now but who never got
+  // added to the board's own roster/sharing list. Merged and de-duped by
+  // user_id; roster wins when someone's in both (it already has their
+  // name/email/phone on file).
+  async function _bbAssignedRosterRows(){
+    var rows=_bbAllRosterRows().slice();
+    var sb=T().sb; if(!sb || typeof _bbLevelCards!=='function') return rows;
+    var have={}; rows.forEach(function(r){ have[String(r.user_id)]=true; });
+    var ids=_bbLevelCards().map(function(c){ return c.id; }).filter(Boolean);
+    if(!ids.length) return rows;
+    try{
+      var res=await sb.from('card_roles').select('user_id').eq('card_type','briefing_card').in('card_id', ids);
+      var seen={}, extraIds=[];
+      (res.data||[]).forEach(function(r){
+        var uid=String(r.user_id);
+        if(have[uid] || seen[uid]) return;
+        seen[uid]=true; extraIds.push(uid);
+      });
+      if(!extraIds.length) return rows;
+      var pool=await _bbFetchAllMembers();
+      extraIds.forEach(function(uid){
+        var m=(pool||[]).filter(function(p){ return String(p.user_id)===uid; })[0];
+        rows.push({user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', phone:m?(m.phone||''):'', isOwner:false, role:null, can_facilitate:false, is_facilitator:false, notes:'', assignedOnly:true});
+      });
+      return rows;
+    }catch(e){ return rows; }
   }
   function _bbWireViewDropdown(){
     var trigger=document.getElementById('bb-view-trigger'), caret=document.getElementById('bb-view-caret'), menu=document.getElementById('bb-view-menu');
     if(!trigger || !menu) return;
     async function openMenu(){
       await _bbLoadRoster();
+      var rows=await _bbAssignedRosterRows();
+      _bbViewMenuRowsCache=rows;
       menu.innerHTML='';
       var teamRow=document.createElement('div');
       teamRow.className='bb-cdrop-row'+((!_bbPersonFilterIds || !_bbPersonFilterIds.length) ? ' active' : '');
@@ -1849,19 +1899,17 @@
         _bbRecomputeFilterMatches().then(renderBoard);
       });
       menu.appendChild(teamRow);
-      _bbAllRosterRows().forEach(function(m){
-        var row=document.createElement('div');
-        var isActive=_bbPersonFilterIds && _bbPersonFilterIds.length===1 && String(_bbPersonFilterIds[0])===String(m.user_id);
-        row.className='bb-cdrop-row'+(isActive?' active':'');
-        row.textContent=m.name||m.email||'(unnamed)';
-        row.addEventListener('click', function(e){
-          e.stopPropagation();
-          menu.hidden=true;
-          _bbPersonFilterIds=[String(m.user_id)];
-          _bbSourceFilter={mode:'person', uids:_bbPersonFilterIds.slice()};
-          _bbSyncViewTriggerLabel();
-          _bbRecomputeFilterMatches().then(renderBoard);
+      rows.forEach(function(m){
+        var checked=_bbPersonFilterIds && _bbPersonFilterIds.indexOf(String(m.user_id))>=0;
+        var row=document.createElement('label');
+        row.className='bb-cdrop-row bb-view-person-row';
+        row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(checked?' checked':'')+'> <span>'+_esc(m.name||m.email||'(unnamed)')+(m.assignedOnly?' <span class="bb-view-person-tag" title="Has a task here, not on this board’s roster">• task only</span>':'')+'</span>';
+        var chk=row.querySelector('input');
+        chk.addEventListener('change', function(){
+          _bbCastFilterChange(m.user_id, chk.checked);
+          teamRow.className='bb-cdrop-row'+((!_bbPersonFilterIds || !_bbPersonFilterIds.length) ? ' active' : '');
         });
+        row.addEventListener('click', function(e){ e.stopPropagation(); });
         menu.appendChild(row);
       });
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
