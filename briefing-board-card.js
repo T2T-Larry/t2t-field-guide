@@ -463,6 +463,115 @@
     return (d.getMonth()+1)+'/'+d.getDate();
   }
 
+  // Add to Calendar (📆), Sept 14 2026 -- Larry: get dates on a Briefing
+  // Board card into Outlook. Scoped to the simple, no-login version: one
+  // click downloads a standard .ics file for this card's Due Date (or,
+  // if there's no Due Date, its Start Date); opening that file is what
+  // Outlook (or Google/Apple -- .ics is the universal format, not an
+  // Outlook-specific one) uses to drop it onto the calendar. This is
+  // one-way and one-time by design -- if the date changes later on the
+  // card, the calendar event doesn't move with it, the traveler just
+  // downloads a fresh one. A live two-way sync would need Larry to
+  // register the Field Guide with Microsoft first (an app registration,
+  // same shape as the GitHub token) and was deliberately not what was
+  // asked for here.
+  //
+  // Time is free text on this card (bb-d-due-time/bb-d-start-time have
+  // no format enforced anywhere else in the app -- see _bbParseDue's own
+  // comment on the date field for the same reason), so _bbParseTimeOfDay
+  // below is deliberately permissive (2pm, 2:30pm, 14:30, 2:30 p.m.) and
+  // simply falls back to an all-day event when it can't make sense of
+  // whatever was typed, rather than blocking the download.
+  function _bbIcsEscape(s){
+    return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r\n|\r|\n/g,'\\n');
+  }
+  function _bbIcsPad(n){ return n<10 ? ('0'+n) : String(n); }
+  function _bbIcsUtcStamp(d){
+    return d.getUTCFullYear()+_bbIcsPad(d.getUTCMonth()+1)+_bbIcsPad(d.getUTCDate())+'T'
+      +_bbIcsPad(d.getUTCHours())+_bbIcsPad(d.getUTCMinutes())+_bbIcsPad(d.getUTCSeconds())+'Z';
+  }
+  function _bbParseTimeOfDay(s){
+    if(!s) return null;
+    var m=String(s).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m?\.?$/i);
+    if(!m){
+      // Also accept bare 24-hour "HH:MM" with no am/pm marker at all.
+      var m24=String(s).trim().match(/^(\d{1,2}):(\d{2})$/);
+      if(!m24) return null;
+      var h24=parseInt(m24[1],10), mi24=parseInt(m24[2],10);
+      if(h24<0||h24>23||mi24<0||mi24>59) return null;
+      return {h:h24, m:mi24};
+    }
+    var h=parseInt(m[1],10), mi=m[2]?parseInt(m[2],10):0;
+    var ap=m[3].toLowerCase();
+    if(ap==='p' && h<12) h+=12;
+    if(ap==='a' && h===12) h=0;
+    if(h<0||h>23||mi<0||mi>59) return null;
+    return {h:h, m:mi};
+  }
+  function _bbDownloadTextFile(filename, text, mime){
+    var blob=new Blob([text], {type:(mime||'text/plain')+';charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=filename; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 0);
+  }
+  // Builds and downloads the .ics for one Briefing Card, reading straight
+  // off the open detail form's own inputs (not the in-memory card object)
+  // so it always reflects whatever's typed right now, saved or not --
+  // same reasoning as the Save button reading these same fields.
+  function _bbAddToCalendar(c){
+    if(!c) return;
+    var dueEl=document.getElementById('bb-d-due'), dueTimeEl=document.getElementById('bb-d-due-time');
+    var startEl=document.getElementById('bb-d-start'), startTimeEl=document.getElementById('bb-d-start-time');
+    var dueVal=(dueEl?dueEl.value:c.due||'').trim();
+    var startVal=(startEl?startEl.value:c.startDate||'').trim();
+    var which = dueVal
+      ? {dateStr:dueVal, timeStr:(dueTimeEl?dueTimeEl.value:c.dueTime||'').trim()}
+      : (startVal ? {dateStr:startVal, timeStr:(startTimeEl?startTimeEl.value:c.startTime||'').trim()} : null);
+    if(!which){
+      alert('Add a Due Date or Start Date to this card first \u2014 Add to Calendar builds the event from whichever one is set.');
+      return;
+    }
+    var d=_bbParseDue(which.dateStr);
+    if(!d){
+      alert('Couldn\u2019t read that date (expected MM/DD or MM/DD/YYYY) \u2014 fix it and try again.');
+      return;
+    }
+    var taskEl=document.getElementById('bb-d-task');
+    var taskVal=((taskEl?taskEl.value:c.task)||'').trim()||'(untitled)';
+    var notesEl=document.getElementById('bb-d-notes');
+    var notesVal=((notesEl?notesEl.value:c.notes)||'').trim();
+    var projectLabel=(c.projectHeaderId && window._bbProjectNameById && _bbProjectNameById[c.projectHeaderId]) || c.topicLabel || '';
+    var descParts=[];
+    if(projectLabel) descParts.push('Project: '+projectLabel);
+    if(notesVal) descParts.push(notesVal);
+    descParts.push('From the T2T Field Guide Briefing Board.');
+
+    var tm=_bbParseTimeOfDay(which.timeStr);
+    var y=d.getFullYear(), mo=_bbIcsPad(d.getMonth()+1), da=_bbIcsPad(d.getDate());
+    var lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//T2T Field Guide//Briefing Board//EN','CALSCALE:GREGORIAN','BEGIN:VEVENT'];
+    lines.push('UID:bb-'+(c.id||Math.random().toString(36).slice(2))+'-'+Date.now()+'@t2t-field-guide');
+    lines.push('DTSTAMP:'+_bbIcsUtcStamp(new Date()));
+    if(tm){
+      lines.push('DTSTART:'+y+mo+da+'T'+_bbIcsPad(tm.h)+_bbIcsPad(tm.m)+'00');
+      var endD=new Date(y, d.getMonth(), d.getDate(), tm.h, tm.m, 0);
+      endD.setHours(endD.getHours()+1);
+      lines.push('DTEND:'+endD.getFullYear()+_bbIcsPad(endD.getMonth()+1)+_bbIcsPad(endD.getDate())+'T'+_bbIcsPad(endD.getHours())+_bbIcsPad(endD.getMinutes())+'00');
+    } else {
+      lines.push('DTSTART;VALUE=DATE:'+y+mo+da);
+      var endD2=new Date(y, d.getMonth(), d.getDate()+1);
+      lines.push('DTEND;VALUE=DATE:'+endD2.getFullYear()+_bbIcsPad(endD2.getMonth()+1)+_bbIcsPad(endD2.getDate()));
+    }
+    lines.push('SUMMARY:'+_bbIcsEscape(taskVal));
+    if(descParts.length) lines.push('DESCRIPTION:'+_bbIcsEscape(descParts.join('\n')));
+    lines.push('END:VEVENT');
+    lines.push('END:VCALENDAR');
+
+    var safeName=taskVal.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'event';
+    _bbDownloadTextFile(safeName+'.ics', lines.join('\r\n'), 'text/calendar');
+  }
+
   function _bbCardToRow(c, boardId){
     var keys=c.keys||[];
     return {
@@ -1519,6 +1628,14 @@
     T().wire('bb-d-duplicate', function(e){
       e.stopPropagation();
       if(_bbOpenCardId) doDuplicateCard();
+    });
+
+    // 📆 Add to Calendar -- see _bbAddToCalendar's own comment above for
+    // scope (one-way .ics download, Due Date preferred over Start Date).
+    T().wire('bb-d-calendar', function(e){
+      e.stopPropagation();
+      var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+      _bbAddToCalendar(c);
     });
 
     // 🗑️ Trash -- same "Moose poop?" confirm dragging a card to the

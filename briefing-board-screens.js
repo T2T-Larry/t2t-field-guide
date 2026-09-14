@@ -410,6 +410,12 @@
               +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who is working on this?">👥</button>'
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
               +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Utility">⚙️</button>'
+              // Add to Calendar, Sept 14 2026 (Larry: "Can you get dates
+              // on a plan or on the BB to an Outlook calendar?") -- one
+              // click downloads a standard .ics for this card's Due Date
+              // (or Start Date if no Due Date is set); see
+              // _bbAddToCalendar in briefing-board-card.js.
+              +'<button class="bb-icon-btn" id="bb-d-calendar" type="button" title="Add to Calendar (downloads an .ics for Outlook, Google, or Apple Calendar)">📆</button>'
               // Duplicate, Sept 13 2026 (Master BB, Larry: "Allow card
               // duplication") -- same bottom-row icon-button treatment as
               // its neighbors; wired in wireBbDetailActions just below
