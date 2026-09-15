@@ -241,7 +241,25 @@ function T(){ return window.T2T; }
     _bbWireTopicDropdown();
     _bbWireTopicAncestorDropdown(); // Sept 6 2026 -- TOPIC's new up-arrow
     _bbRenderTravelerName();
-    window.addEventListener('t2t:member-loaded', function(){ _bbRenderTravelerName(); });
+    // Sept 15 2026 fix -- ID Band jumbled/overlapping live (Larry: "the
+    // ID BAND is jumbled together"). _bbRenderTravelerName already
+    // re-ran here when the member profile finished loading after this
+    // header was already on screen, but nothing ever re-ran
+    // _bbPositionIdBandRow (briefing-board-master-nav.js) afterward --
+    // so when the real traveler name ("Larry Smithers") replaced
+    // whatever shorter placeholder PROJECT measured when the chain was
+    // first laid out, PROJECT's box grew wider without the rest of the
+    // chain (TOPIC/STORYBOARD/VIEW) ever shifting over to make room,
+    // and TOPIC piled on top of it. Same active-screen guard the resize
+    // listener and fonts.ready pass already use, so this never fires
+    // while some other screen is open.
+    window.addEventListener('t2t:member-loaded', function(){
+      _bbRenderTravelerName();
+      try{
+        var scr=document.getElementById('s-briefing-board');
+        if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
+      }catch(e){}
+    });
 
     T().wire('bb-add-close', closeAddCard);
     // Aug 7 2026 -- Larry: "I hit ENTER on a Briefing Card entry but it
