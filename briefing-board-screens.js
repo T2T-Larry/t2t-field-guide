@@ -224,27 +224,29 @@
             // uses, bb-board-trigger above) rather than inventing a new
             // size, so "same size as MASTER" holds even if that class's
             // sizing changes later.
+            //
+            // Moved out of bb-mhead-actions, Sept 15 2026 -- Larry: "what
+            // happened to the VIEW field?" It used to live as the first
+            // child inside bb-mhead-actions (see the Aug 30 2026 note
+            // still just below, on Logo) because that row was, at the
+            // time, the only place already sitting at the header's right
+            // side. That stopped working the moment bb-mhead-actions
+            // itself got position:absolute (this same Sept 15 rewrite,
+            // briefing-board-styles.js) to pin it to the header's right
+            // edge now that the grid is gone: an absolutely-positioned
+            // element becomes the new containing block for its own
+            // absolutely-positioned children, so #bb-view-wrap's `left`
+            // (set by _bbPositionIdBandRow against bb-mhead-top) was
+            // silently landing relative to bb-mhead-actions' own edge
+            // instead -- nowhere near the intended spot. VIEW is now a
+            // direct sibling of Project/Topic/Board Type inside
+            // bb-mhead-top, the same "everything positions against one
+            // shared container" model the rest of the chain already
+            // follows, and bb-mhead-actions goes back to containing just
+            // Logo/Return/Utility/Close, which never needed to be
+            // positioned against anything of their own.
+            +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-view-trigger" title="Filter this board to one or more people">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
             +'<div class="bb-mhead-actions">'
-              // Placed as the FIRST child here (not a new top-level grid
-              // item, on purpose) -- bb-mhead-top's grid only has 3
-              // explicit column tracks (auto auto 1fr) and boardkind-wrap
-              // above is deliberately taken OUT of that flow via its own
-              // position:absolute; a 4th real grid item would have
-              // overflowed into an implicit new row instead of sitting
-              // beside Board Type. bb-mhead-actions is already the
-              // right-hand flex row immediately after Board Type in
-              // reading order, so putting VIEW first inside it lands it
-              // exactly "to the right of Board Type" without touching
-              // the grid at all. See _bbWireViewDropdown (briefing-
-              // board-master-nav.js).
-              // Sept 15 2026 -- same .bb-mh-field-trigger class swap as
-              // PROJECT/STORYBOARD above (same token, so "same size as the
-              // other names" holds by construction); font-weight pulled
-              // back to normal here specifically (see #bb-view-trigger in
-              // briefing-board-styles.js) -- Larry: VIEW's own text
-              // shouldn't be bold like PROJECT/STORYBOARD's identity
-              // fields, it's a filter control, not a name.
-              +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-view-trigger" title="Filter this board to one or more people">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
               // Relationships used to ride along here as their own icons
