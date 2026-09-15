@@ -27,6 +27,15 @@
    Talks to the rest of the app only through window.T2T (T().sb,
    T().nav is not used here at all — this never navigates) and
    window.T2TSea.resolveOEmbed (the shared link-preview lookup).
+
+   Unified drop zone, Sept 2026 (Session 285/286) — the 1170 Idea card
+   is now a real drop target, not just a paste target: an image file
+   dropped on it goes through the same pending-preview-then-SAVE path
+   as a pasted image; a dropped/dragged link (from a browser tab, a
+   file's own URL, etc.) goes through the same path as a pasted URL.
+   Any other raw file (a document, a video) gets a plain "not supported
+   yet, paste a link instead" message — V1 deliberately does not host
+   raw documents/video. See _icHandleIdeaDrop.
    ============================================================ */
 
 (function(){
@@ -324,13 +333,14 @@
       preview.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:140px;border-radius:8px;'
         +'display:block;margin:0 auto 8px;object-fit:contain">';
       preview.style.display='block';
+      preview.dataset.icRole='image';
     }
   }
 
   function _icClearPendingImage(){
     _icInputPendingImageFile=null;
     var preview=document.getElementById('isx-paste-preview');
-    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
+    if(preview){ preview.innerHTML=''; preview.style.display='none'; preview.dataset.icRole=''; }
   }
 
   // Same preview-then-confirm shape as the image path: show what the
@@ -344,6 +354,7 @@
     if(preview){
       preview.innerHTML='<div style="font-size:10px;color:#7a90a8;text-align:center;padding:10px 0">Looking up this link\u2026</div>';
       preview.style.display='block';
+      preview.dataset.icRole='link';
     }
     _icResolveOEmbed(url).then(function(meta){
       if(!_icInputPendingLink || _icInputPendingLink.url!==url) return; // cancelled or replaced meanwhile
@@ -361,7 +372,7 @@
   function _icClearPendingLink(){
     _icInputPendingLink=null;
     var preview=document.getElementById('isx-paste-preview');
-    if(preview){ preview.innerHTML=''; preview.style.display='none'; }
+    if(preview){ preview.innerHTML=''; preview.style.display='none'; preview.dataset.icRole=''; }
   }
 
   // A single bare URL, nothing else on the line — conservative on
@@ -369,6 +380,75 @@
   // just types normally instead of getting hijacked into link mode.
   function _icIsBareUrl(text){
     return /^https?:\/\/\S+$/i.test((text||'').trim());
+  }
+
+  // Unified drop zone, Sept 2026 — the card already accepted a pasted
+  // image or a pasted bare URL (Ctrl/Cmd+V, above); this is the same two
+  // outcomes reached by dragging instead of pasting, plus the one new
+  // case paste can't produce: a raw file (not an image) dropped from the
+  // desktop. V1 scope only (Session 285, Sept 15 2026) — images upload,
+  // any link saves as a link reference, everything else (a .docx, an
+  // .mp4, any other raw file) gets a plain boundary message rather than
+  // silently failing or pretending to handle it.
+  function _icShowFormatBoundaryMessage(){
+    var preview=document.getElementById('isx-paste-preview');
+    if(!preview) return;
+    preview.innerHTML='<div style="font-size:11px;color:var(--brand-blue-gray);text-align:center;padding:6px 4px">'
+      +'That file type isn’t supported yet — paste a link instead.</div>';
+    preview.style.display='block';
+    if(preview._icBoundaryTimer) clearTimeout(preview._icBoundaryTimer);
+    preview._icBoundaryTimer=setTimeout(function(){
+      // Only clear it if nothing else (an image/link preview) took over
+      // the box in the meantime.
+      if(preview.dataset.icRole!=='boundary') return;
+      preview.innerHTML=''; preview.style.display='none';
+    }, 3200);
+    preview.dataset.icRole='boundary';
+  }
+
+  // First line of a dragged text/uri-list payload (browsers append
+  // '#'-prefixed comment lines after the real URL per the drag-and-drop
+  // spec) — falls back to text/plain for sources (e.g. some in-page drag
+  // handles) that only set that.
+  function _icExtractDraggedUrl(dt){
+    var uriList=dt.getData('text/uri-list');
+    if(uriList){
+      var line=uriList.split(/\r?\n/).map(function(l){return l.trim();})
+        .filter(function(l){ return l && l.charAt(0)!=='#'; })[0];
+      if(line) return line;
+    }
+    var plain=(dt.getData('text/plain')||'').trim();
+    return plain;
+  }
+
+  function _icHandleIdeaDrop(e){
+    e.preventDefault();
+    var card=document.querySelector('#isx-popup-layer .isx-pcard');
+    if(card) card.classList.remove('isx-drop-ready');
+    var dt=e.dataTransfer;
+    if(!dt) return;
+    if(dt.files && dt.files.length){
+      var file=dt.files[0];
+      if(file.type && file.type.indexOf('image/')===0){
+        _icShowPendingImage(file);
+      } else {
+        _icShowFormatBoundaryMessage();
+      }
+      return;
+    }
+    var dragged=_icExtractDraggedUrl(dt);
+    if(_icIsBareUrl(dragged)){
+      _icShowPendingLink(dragged.trim());
+      return;
+    }
+    // Plain dragged text that isn't a URL (e.g. a text selection dragged
+    // in from elsewhere) — drop it into the idea field itself rather
+    // than discarding it; SAVE/ENTER still decides what happens to it,
+    // same as typing it directly.
+    if(dragged){
+      var ta=document.getElementById('isx-idea-text');
+      if(ta){ ta.value = ta.value ? (ta.value+'\n'+dragged) : dragged; ta.focus(); }
+    }
   }
 
   function _icCommitIdeaPanel(){
@@ -475,6 +555,29 @@
           e.preventDefault();
           _icShowPendingLink(text.trim());
         }
+      });
+    }
+
+    // Unified drop zone — the whole card is the target, not just the
+    // textarea, so dropping doesn't depend on hitting a small hit area.
+    // dragover must preventDefault too, or the browser never fires drop
+    // at all (it just opens the dropped file as its own page/tab).
+    var dropCard=document.querySelector('#isx-popup-layer .isx-pcard');
+    if(dropCard){
+      var dragDepth=0; // dragenter/dragleave fire on every child crossed, not just the card's own edge
+      dropCard.addEventListener('dragenter', function(e){
+        e.preventDefault();
+        dragDepth++;
+        dropCard.classList.add('isx-drop-ready');
+      });
+      dropCard.addEventListener('dragover', function(e){ e.preventDefault(); });
+      dropCard.addEventListener('dragleave', function(){
+        dragDepth=Math.max(0, dragDepth-1);
+        if(dragDepth===0) dropCard.classList.remove('isx-drop-ready');
+      });
+      dropCard.addEventListener('drop', function(e){
+        dragDepth=0;
+        _icHandleIdeaDrop(e);
       });
     }
   }

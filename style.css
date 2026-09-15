@@ -713,6 +713,11 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-cancel{flex:0 0 78px;padding:11px 6px;border:1.5px solid var(--isx-navy);border-radius:9px;background:transparent;
     color:var(--isx-navy);font-family:'Playfair Display',serif;font-weight:700;letter-spacing:.5px;font-size:calc(12px * var(--fg-text-scale,1));cursor:pointer}
   .isx-cancel:hover{background:rgba(91,155,213,.12)}
+  /* Unified drop zone, Sept 2026 — the whole 1170 Idea card shows this
+     dashed-outline cue while an external drag (an image file, a link
+     dragged from a browser tab) hovers over it, echoing the .isx-dropzone
+     look above rather than inventing a second visual language. */
+  .isx-pcard.isx-drop-ready{outline:2px dashed var(--isx-paleblue);outline-offset:4px}
 
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
   .isx-tnode{margin:2px 0 2px 14px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--isx-navy);cursor:pointer;padding:2px 4px;border-radius:5px}
