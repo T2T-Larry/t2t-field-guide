@@ -1148,33 +1148,30 @@
     boardkindWrap.style.left=(x-containerRect.left)+'px'; x+=br.width+ID_BAND_GAP;
     viewWrap.style.left=(x-containerRect.left)+'px';
 
-    // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
-    // bottom-justify with the upper right corner buttons" -- unchanged
-    // rule, applied to TOPIC/STORYBOARD/VIEW so they share one bottom
-    // edge with Logo/Utility/Close. actionsEl's real bottom edge isn't a
-    // constant pixel value (Logo's eyebrow+frame stack is taller than a
-    // plain bb-icon-btn), so this reads it live rather than guessing.
-    //
-    // PROJECT is the one exception, Sept 15 2026 (Larry, live-site
-    // second look: "move member name back where it was. PROJECT[S]
-    // fields need to center vertically on the ID BAND, different from
-    // other fields") -- an earlier pass of this same rewrite bottom-
-    // justified all four together, which dragged the traveler-name
-    // eyebrow (the topmost of PROJECT's three stacked lines: name,
-    // "Project" eyebrow, trigger box) down and away from where it had
-    // always sat. PROJECT centers vertically on the band's own height
-    // instead -- TOPIC/STORYBOARD/VIEW keep bottom-justifying, PROJECT
-    // does not.
-    if(ar.height){
-      [topicWrap, boardkindWrap, viewWrap].forEach(function(el){
-        var r=el.getBoundingClientRect();
-        if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
-      });
-    }
-    var prNow=projectWrap.getBoundingClientRect();
-    if(prNow.height && containerRect.height){
-      projectWrap.style.top=((containerRect.height-prNow.height)/2)+'px';
-    }
+    // Vertical, Sept 15 2026, third pass -- Larry, live-site: "TOPIC
+    // field must be centered vertically on the ID BAND. It is too high"
+    // plus "all fields must be lower (except PROJECT which is too low)."
+    // The Sept 6 2026 bottom-justify-to-actionsEl rule (still in place
+    // two passes ago) matches every field's BOTTOM edge to Logo/Utility/
+    // Close's shared bottom edge -- fine when a field is roughly the
+    // same height as those icons, but TOPIC's box (44px, the tallest
+    // thing in this row) pokes its TOP edge well above the icons once
+    // bottom-matched, reading as "too high." All four fields now center
+    // on the band's own height instead (containerRect, same reference
+    // PROJECT already used) -- one shared rule, no more per-field
+    // exceptions to keep straight. PROJECT's earlier "too low" reading
+    // traced back to a separate bug fixed the same session (traveler
+    // name had been nested inside PROJECT's own fieldgrp, making it a
+    // three-line stack taller than TOPIC/STORYBOARD/VIEW's single row);
+    // traveler name is now its own standalone element pinned to the
+    // header's corner (bb-traveler-eyebrow, briefing-board-styles.js),
+    // never measured or moved by this function, so PROJECT is back to
+    // the same two-line eyebrow+trigger shape as the other three and
+    // this one shared centering rule fits all four evenly.
+    [projectWrap, topicWrap, boardkindWrap, viewWrap].forEach(function(el){
+      var r=el.getBoundingClientRect();
+      if(r.height && containerRect.height) el.style.top=((containerRect.height-r.height)/2)+'px';
+    });
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
   // listener for the same reason (idea-storyboard-9710.js, near

@@ -45,37 +45,44 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
+            // Traveler name, Sept 5 2026 -- moved to the header's far
+            // left corner, matching where the Idea Board keeps its own
+            // traveler name. Standalone, Sept 15 2026 (Larry, emphatic:
+            // "traveler name is NOT part of a 3 line stack!!!! Traveler
+            // name moves back to the left corner of the screen") -- an
+            // earlier pass of today's PROJECT-eyebrow change nested this
+            // inside bb-project-wrap's own fieldgrp, which dragged it
+            // into that field's centering/chain math along with
+            // everything else in the Sept 15 rewrite. It never belonged
+            // there: this is its own fixed corner element, pinned to the
+            // header's top-left independent of PROJECT/TOPIC/STORYBOARD/
+            // VIEW's shared row (see #bb-traveler-name in briefing-board-
+            // styles.js). _bbRenderTravelerName (below) fills in the text.
+            +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
+            // PROJECT, Sept 5 2026 -- board-switcher field, right beside
+            // the traveler name corner above. "Project" eyebrow label
+            // dropped that same day, then added back Sept 15 (Larry
+            // asked for it to match VIEW/STORYBOARD's own eyebrow-then-
+            // box shape) -- now just a plain two-line field (eyebrow +
+            // trigger), same shape as STORYBOARD/VIEW, no longer sharing
+            // a box with the traveler name (see the standalone note
+            // just above). bb-project-caret gives this field the Idea
+            // Board's exact two-piece shape (label button, then its own
+            // arrow) -- wired in _bbRenderBoardPicker, right after that
+            // function's existing _bbRenderDropdown call, to open the
+            // same board-switch menu the label itself already opens.
+            // Sept 5 2026, Larry: "increase the text size on the PROJECT
+            // field on all boards" -- matches sc-title-trigger's own
+            // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
+            // That 14px/30px/120px sizing now comes from the shared
+            // .bb-mh-field-trigger class (briefing-board-styles.js,
+            // reading IDBand.TOKENS.fieldBox) instead of this button's
+            // own inline style, so PROJECT/STORYBOARD/VIEW can never
+            // drift out of sync again -- see the Sept 15 2026 note on
+            // bb-boardkind-trigger below for the "why now" (Larry: board
+            // type wasn't actually matching PROJECT's size).
             +'<div class="bb-mh-typebox" id="bb-project-wrap">'
-              // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
-              // of this row (was third) to sit at the header's far left
-              // corner, matching where the Idea Board keeps its own
-              // traveler-name/PROJECT column. "Project" eyebrow label
-              // dropped -- Idea Board dropped its own the same day so the
-              // board-switcher itself reads as the only thing in this
-              // column, directly under the traveler's name. bb-project-caret
-              // added so this field gets the Idea Board's exact two-piece
-              // shape (label button, then its own arrow) -- wired in
-              // _bbRenderBoardPicker, right after that function's existing
-              // _bbRenderDropdown call, to open the same board-switch menu
-              // the label itself already opens. _bbRenderTravelerName
-              // (below) fills in the traveler-name text.
-              // Sept 5 2026, Larry: "increase the text size on the PROJECT
-              // field on all boards" -- matches sc-title-trigger's own
-              // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
-              // That 14px/30px/120px sizing now comes from the shared
-              // .bb-mh-field-trigger class (briefing-board-styles.js,
-              // reading IDBand.TOKENS.fieldBox) instead of this button's
-              // own inline style, so PROJECT/STORYBOARD/VIEW can never
-              // drift out of sync again -- see the Sept 15 2026 note on
-              // bb-boardkind-trigger below for the "why now" (Larry: board
-              // type wasn't actually matching PROJECT's size).
-              // "Project" eyebrow, Sept 15 2026 -- Larry asked this back
-              // (it was dropped Sept 5, see the note above) so this field
-              // reads the same eyebrow-then-box shape as VIEW just added
-              // Sept 13. Traveler-name eyebrow stays above it, unchanged --
-              // this is additive, not a replacement; easy to drop back out
-              // if Larry wants just the one eyebrow here after all.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent field retired from the header, Sept 6 2026 --
               // Larry: "the hierarchy is set when a PROJECT is chosen,"
               // folding its "jump to any level above" job into a new

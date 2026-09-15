@@ -171,7 +171,14 @@
       // active, the same way every other label on this header already
       // does. Sized up from the standard 9px eyebrow the same way (15px)
       // since it's the traveler's own name, not a field label.
-      +'.bb-traveler-eyebrow{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap}'
+      // Pinned to the header's own top-left corner, Sept 15 2026 (Larry,
+      // emphatic correction: this is NOT part of PROJECT's field --
+      // see the markup comment on bb-traveler-name, briefing-board-
+      // screens.js) -- fixed position:absolute;top:0;left:0, entirely
+      // independent of _bbPositionIdBandRow's PROJECT-TOPIC-STORYBOARD-
+      // VIEW chain (briefing-board-master-nav.js), which no longer
+      // measures or moves this element at all.
+      +'.bb-traveler-eyebrow{position:absolute;top:0;left:0;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap}'
       // Logo/artwork, Aug 28 2026 -- Larry: give the Briefing Board the
       // same Logo option the Idea Board already has. Mirrors that
       // board's own upload -> crop -> resize-handle pipeline
