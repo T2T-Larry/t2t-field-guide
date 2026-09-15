@@ -415,6 +415,11 @@
      instant a real content screen goes full-screen, restored the
      instant it isn't. Only a display:none/'' toggle -- never touches
      left/top -- so it can't jump or lose its spot. ---------- */
+  // Shared with retireDrawersToDesk() further down this file -- the
+  // three tray wraps that used to live inside the two drawers and now
+  // float independently on the open desk instead (Sept 15 2026).
+  var RETIRED_TRAY_IDS = ['sz-tools-storyboards', 'sz-tools-library', 'sz-phases'];
+
   function watchCustomTrayDeskOnlyVisibility(){
     var fg = document.getElementById('fg-root');
     if (!fg) return;
@@ -434,6 +439,22 @@
           });
           var nbHide = document.getElementById('sz-notebook');
           if (nbHide) nbHide.style.display = 'none';
+          // Sept 15 2026 bug report (Larry): "Desktop button travel to
+          // Idea board and block board view!" -- the three retired-
+          // drawer tray groups (STORYBOARDS/LIBRARY/PHASES) are now
+          // independent document.body children, exactly like the
+          // Notebook above, so they need this SAME treatment -- the
+          // CSS-only body:has(#fg-root.isx-full) rule added alongside
+          // retireDrawersToDesk() below evidently isn't enough by
+          // itself (this is the one mechanism already proven, on this
+          // exact "bled onto the Idea Board" bug, against the Notebook
+          // back on Aug 3 2026 -- belt-and-suspenders with the CSS
+          // rule rather than replacing it, since neither one is known
+          // to be the actual point of failure without live testing).
+          RETIRED_TRAY_IDS.forEach(function(id){
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
         } else {
           // Back on the desk -- let the normal slot/mode rules
           // recompute everyone's real visibility rather than guessing
@@ -444,6 +465,10 @@
           if (rightBarEl) window.SZDrag.refreshRidersForSlot('right', rightBarEl.dataset.mode || '1', rightBarEl);
           var nbShow = document.getElementById('sz-notebook');
           if (nbShow) nbShow.style.display = ''; // slot-riding case is already handled by the refresh calls above; this covers the plain default-spot case
+          RETIRED_TRAY_IDS.forEach(function(id){
+            var el = document.getElementById(id);
+            if (el) el.style.display = '';
+          });
         }
       }
       requestAnimationFrame(tick);
