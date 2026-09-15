@@ -1202,6 +1202,31 @@
       if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
     }catch(e){}
   });
+  // Font-load race, Sept 15 2026 -- root cause of "distances between
+  // PROJECT/TOPIC/STORYBOARD/VIEW look right sometimes, wrong other
+  // times, with no code change in between" (looked correct only right
+  // after forcing a real browser resize). PROJECT/TOPIC/STORYBOARD/VIEW
+  // all render in the Playfair Display head font (var(--bb-head-font)),
+  // loaded from Google Fonts with display:swap (index.html's <link>) --
+  // the very first paint shows a fallback system font, and
+  // _bbPositionIdBandRow's very first call (right after board data
+  // loads, above) usually lands before Playfair Display has actually
+  // finished loading, so it measures every box's width in the WRONG
+  // font. Nothing ever re-measured after the real font swapped in,
+  // since only an actual window resize ever re-triggered this function
+  // -- a plain page load, with no resize in between, kept the fallback-
+  // font positions forever. document.fonts.ready fires once the swap
+  // has genuinely happened (immediately, if it already had); this
+  // re-runs the same position pass the resize listener above uses,
+  // once, right when the real widths become known.
+  if(window.document && document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){
+      try{
+        var scr=document.getElementById('s-briefing-board');
+        if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
+      }catch(e){}
+    });
+  }
 
   // Traveler name, Sept 5 2026 -- same shared member profile the Idea
   // board's own _sboardRenderMemberName reads (T().getMember(), backed
