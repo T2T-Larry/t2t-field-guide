@@ -38,6 +38,11 @@
   var _sboardRoleShortcuts = [];
   var _sboardRoleShortcutsKind = null;
   var _sboardRoleShortcutsTopicId = null;
+  // Pending Collaborator invites, Sept 15 2026 (Master BB card: "Collaborator
+  // Projects need accept/reject toggle by person assigned") -- only ever
+  // populated alongside _sboardRoleShortcuts when its kind is 'collaborator';
+  // see T2TData.pendingCollaboratorEntries and _sboardMakePendingCollabTile.
+  var _sboardPendingCollabEntries = [];
   // Which header/Subber tile is "selected" for the Tab/Shift+Tab (nest/
   // un-nest) and Ctrl+Down/Ctrl+Up (drill in/out) keyboard shortcuts --
   // set by clicking a header or Subber tile (see renderGroup and

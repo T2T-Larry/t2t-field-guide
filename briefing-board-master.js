@@ -560,6 +560,12 @@
     _bbPendingTypeOverride=null;
     _bbCurrentBoardId=boardId;
     try{ sessionStorage.setItem('bbCurrentBoardId', boardId); }catch(e){}
+    // Board-type color, Sept 15 2026 -- re-apply Appearance for whichever
+    // board this switch is landing on: its board_type may differ from
+    // the board just left (_bbCurrentTheme() reads the new board's Type,
+    // see briefing-board-ops.js), so this repaints instead of leaving
+    // whatever the previous board's Type-color painted on screen.
+    _bbApplyTheme(_bbCurrentTheme());
     var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
     var sb=T().sb;
     // July 23, 2026, Larry: persist the active board to the database (not
@@ -992,6 +998,13 @@
     // re-fetches needlessly.
     await _bbEnsureKeyLibraryLoaded();
     await _bbEnsureHiddenTypesLoaded();
+    // Board-type color, Sept 15 2026 -- loaded here, before anything
+    // below can call _bbSwitchToBoard (every path through this function
+    // ends in one), so _bbCurrentTheme()'s cache read is already warm by
+    // the time it first matters. See T2TData.ensureBoardTypeColorsLoaded
+    // in header-data.js and _bbApplyTheme/_bbCurrentTheme in
+    // briefing-board-ops.js.
+    await T2TData.ensureBoardTypeColorsLoaded('bb_theme');
     var sb=T().sb;
     try{
       // Aug 4 2026, Larry: board sharing -- the owner can grant other

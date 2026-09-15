@@ -104,13 +104,13 @@
       // Topic it lives on ("The Parent of any Header is the TOPIC" --
       // Larry's own Briefing Board card, Aug 9). Loose idea cards keep
       // the "NEW" fallback unchanged.
-      curHeaderLabel=curHeaderRow9711?(curHeaderRow9711.text_content||'(untitled)'):(isHeaderType?topicLabel:'NEW');
+      curHeaderLabel=curHeaderRow9711?(curHeaderRow9711.text_content||'(untitled)'):(isHeaderType?topicLabel:'Parking Lot');
     } else {
       var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
       topicLabel=(T2TShared.currentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
       var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
       var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
-      var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'NEW');
+      var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'Parking Lot');
       parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Wish Tank';
 
       // HEADER: "NEW" here means whichever board's own uncategorized bucket is
@@ -120,7 +120,7 @@
       isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
       var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
       // Same Header-vs-loose-card fix as the 9711 branch above.
-      curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):(isHeaderType?topicLabel:'NEW');
+      curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):(isHeaderType?topicLabel:'Parking Lot');
     }
 
     // TOP ROW -- PARENT / VIEW / ORDER, Aug 7 2026 (Larry). Replaces the
@@ -213,9 +213,9 @@
       + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
       + '<div class="sb-hdr-vitem'+(isMisc?' current':'')+'" id="sb-misc-pinned" style="border:0.5px solid #D3D1C7;border-radius:8px;margin-bottom:6px;font-weight:600">'+(isMisc?'📦 Misc ✓ — tap to move out':'📦 Misc (project archive)')+'</div>'
       + '<div class="sb-hdr-vlist" id="sb-hdr-vlist">'
-      + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">NEW</div>'
+      + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">Parking Lot</div>'
       + (_effPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_effPurposeId)?' current':'')+'" data-hid="'+_effPurposeId+'">Purpose</div>'):'')
-      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW' && !(_effNewAdditionsId && String(h.id)===String(_effNewAdditionsId)); })
+      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW' && h.text_content!=='Parking Lot' && !(_effNewAdditionsId && String(h.id)===String(_effNewAdditionsId)); })
           .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
       + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
       + '</div>'
@@ -574,7 +574,7 @@
       // screen-agnostic header list instead (same pattern already used by
       // openMoveToProjectPicker just above), so this works regardless of
       // which screen opened DETAILS.
-      var reserved=['Trash','MISC','Purpose','NEW','New Additions'];
+      var reserved=['Trash','MISC','Purpose','NEW','New Additions','Parking Lot'];
       var topicIdForProject=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : T2TShared.currentTopicId;
       var candidates=[];
       if(topicIdForProject && window.T2TData && window.T2TData.ancestorChain && window.T2TData.fetchAllHeaders && window.T2TData.headerDescendants){

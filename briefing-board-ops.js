@@ -478,7 +478,21 @@
     fgr.style.setProperty('--bb-accent', t.accent);
     fgr.style.setProperty('--bb-ink', t.ink);
     fgr.style.setProperty('--bb-sub', t.sub);
-    try{ sessionStorage.setItem('bbTheme', themeKey); }catch(e){}
+    // Sept 15 2026, Larry (Master BB session with Bill): "Board color
+    // should be different for each type of board. Now a color change
+    // changes all boards to the same color." This used to be one
+    // sessionStorage value shared by every board in the tab (by design --
+    // see the old "Appearance restores immediately -- a personal
+    // preference shared across all of a traveler's boards" comment that
+    // used to sit on the boot-time restore call in
+    // briefing-board-screens.js), then briefly went per-SPECIFIC-board
+    // (briefing_boards.theme) -- still too narrow per Larry's follow-up:
+    // the real unit is board_type (Personal/Client/..., see
+    // BB_BOARD_TYPES below), same as the Idea Storyboard's matching fix.
+    // Now reads/writes T2TData's shared board_type_color store (surface
+    // 'bb_theme'), keyed by _bbActiveBoardType() -- same table, same
+    // per-traveler scoping, as the Idea Storyboard's 'idea_bg' rows.
+    T2TData.setBoardTypeColor(_bbActiveBoardType(), 'bb_theme', themeKey);
     _bbHighlightAppearance();
   }
   function _bbApplyFont(fontKey){
@@ -490,7 +504,12 @@
     _bbHighlightAppearance();
   }
   function _bbCurrentTheme(){
-    try{ return sessionStorage.getItem('bbTheme')||'gold'; }catch(e){ return 'gold'; }
+    // Board-type color, Sept 15 2026 -- see _bbApplyTheme above. Loaded
+    // once per tab via T2TData.ensureBoardTypeColorsLoaded('bb_theme')
+    // (see _bbInitBoardsAndData in briefing-board-master.js); reads the
+    // cache synchronously here, falling back to 'gold' before that load
+    // finishes or for a board_type that's never had a color chosen.
+    return T2TData.getBoardTypeColor(_bbActiveBoardType(), 'bb_theme')||'gold';
   }
   function _bbCurrentFont(){
     try{ return sessionStorage.getItem('bbFont')||'classic'; }catch(e){ return 'classic'; }
@@ -1450,7 +1469,9 @@
     } else if(screen==='appearance'){
       if(titleEl) titleEl.textContent='Appearance';
       body.innerHTML=
-         '<div class="bb-field"><label>Color theme</label><div class="bb-swatches">'
+         '<div class="bb-field"><label>Color theme</label>'
+          +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:6px">One theme for every '+_esc(_bbTypeLabel(_bbActiveBoardType()))+' board. Other Types keep their own.</div>'
+          +'<div class="bb-swatches">'
           +THEMES.map(function(t){ return '<button class="bb-theme-swatch" data-theme="'+t.key+'" title="'+t.label+'" style="background:'+t.bg+';border-color:'+t.accent+'"></button>'; }).join('')
         +'</div></div>'
         +'<div class="bb-field"><label>Font</label><div class="bb-flags">'

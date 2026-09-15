@@ -42,8 +42,29 @@
     {n:'Charcoal', c:'#2c2c2a'},
     {n:'Black', c:'#000000'}
   ];
+  // Sept 15 2026, Larry (Master BB session with Bill): "Board color
+  // should be different for each type of board. Now a color change
+  // changes all boards to the same color." This used to be one shared
+  // localStorage key -- every Idea/Plan Storyboard in the browser read
+  // and painted the exact same value, so picking a color on one project
+  // silently repainted every other project too (the July 18 2026 note
+  // below on 9711 SESSION even records that a real per-Topic
+  // Supabase-stored color existed before that simplification).
+  //
+  // First pass at this fix (same session) keyed it off the individual
+  // project's own root row instead -- too narrow, and it referenced a
+  // column (ideas.board_bg_color) that was never actually migrated in,
+  // which broke this screen's main board fetch outright. Larry's
+  // follow-up made the real unit clear: board_type (Personal/Client/...,
+  // see IB_BOARD_TYPES below) -- a traveler's three Client boards should
+  // look alike as a set, distinct from their Personal set. Now reads
+  // T2TData's shared board_type_color store (surface 'idea_bg'),
+  // keyed by _sboardActiveBoardType() -- loaded once per tab (see the
+  // Promise.all in idea-storyboard-screens.js) and read synchronously
+  // here afterward, same latency-hiding shape as the hidden-Types cache
+  // just below in this file.
   function _sboardGetBoardBg(){
-    try{ return localStorage.getItem('t2t_seaOfIdeas_boardBg')||''; }catch(e){ return ''; }
+    return T2TData.getBoardTypeColor(_sboardActiveBoardType(), 'idea_bg');
   }
   function _sboardGetRootPrompt(){
     try{ return localStorage.getItem('t2t_seaOfIdeas_rootPrompt')||'What do you want?'; }catch(e){ return 'What do you want?'; }
@@ -98,7 +119,7 @@
     if(isxArea) isxArea.style.background=bg;
   }
   function _sboardSetBoardBg(c){
-    try{ localStorage.setItem('t2t_seaOfIdeas_boardBg', c); }catch(e){}
+    T2TData.setBoardTypeColor(_sboardActiveBoardType(), 'idea_bg', c); // caches + paints immediately, saves in the background
     _sboardApplyBoardBg();
   }
   function openBoardBgPicker(){
@@ -108,9 +129,10 @@
       return '<button class="sb-bg-swatch" data-c="'+p.c+'" title="'+p.n+'" style="width:36px;height:36px;border-radius:8px;background:'+p.c+';border:1.5px solid #cfe4f2;cursor:pointer;margin:3px"></button>';
     }).join('');
     var cur=_sboardGetBoardBg()||'#1a3a5c';
+    var typeLabelForBg=_sboardTypeLabel(_sboardActiveBoardType());
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Storyboard background</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">One color for the whole screen. Stays until you change it.</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">One color for every '+_esc(typeLabelForBg)+' board. Stays until you change it -- other Types keep their own.</div>'
       +'<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:12px">'+swHTML+'</div>'
       +'<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">'
       +'<label for="sb-bg-custom" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Custom:</label>'
@@ -733,7 +755,7 @@
   function _sboardProjectHeaderChoices(){
     var rootId=_sboardIdeaStoryboardsRootId;
     if(!rootId) return [];
-    var RESERVED={'NEW':1,'New Additions':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
     // Sept 8 2026, Larry: "Idea Board PROJECT LIST is not alphabetical."
     // This used to sort by _sboardBySortOrder (on-board tile order), which
     // made sense back when the arrow's own comment described the goal as
@@ -918,7 +940,7 @@
   // query -- BB has to query live since it doesn't keep this board's
   // whole-account cache around, but Idea Board already does (same
   // shortcut _sboardParentAncestorChoices takes for the up-arrow).
-  var SBOARD_TOPIC_CHILD_RESERVED={'NEW':1,'New Additions':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  var SBOARD_TOPIC_CHILD_RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
   function _sboardTopicChildChoices(){
     var topicId=T2TShared.currentTopicId;
     if(!topicId) return [];

@@ -1002,7 +1002,7 @@
       var res=await _sb.from('ideas').select('id,text_content')
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
-      var excludedNames=['Purpose','NEW','New Additions','Trash'];
+      var excludedNames=['Purpose','NEW','New Additions','Parking Lot','Trash'];
       var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; }).map(function(r){ return r.id; });
       for(var i=0;i<ids.length;i++){
         delete _isxCardPos[ids[i]];
@@ -1026,7 +1026,7 @@
       var res=await _sb.from('ideas').select('id,text_content')
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
-      var excludedNames=['Purpose','NEW','New Additions'];
+      var excludedNames=['Purpose','NEW','New Additions','Parking Lot'];
       var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; })
         .map(function(r){ return r.id; }).concat(miscId?[miscId]:[]);
       var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
@@ -1152,7 +1152,7 @@
       // every cluster this tab has visited, not just this one, so filter
       // down to this Topic's own direct children the same way the network
       // query itself always scoped to (.eq('cluster_id', clusterId)).
-      var excludedNames=['Purpose','NEW','New Additions'];
+      var excludedNames=['Purpose','NEW','New Additions','Parking Lot'];
       var allRows=Object.keys(_isxAllRowsById).map(function(k){ return _isxAllRowsById[k]; }).filter(function(r){
         if(String(r.cluster_id)!==String(clusterId)) return false;
         if(r.content_type!=='header') return true;

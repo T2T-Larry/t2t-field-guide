@@ -1255,7 +1255,12 @@
       // above), so there's nothing left for this listener to reposition.
       window.addEventListener('t2t:member-loaded', function(){ _sboardRenderMemberName(); });
     })();
-    Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded()]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); });
+    // Board-type color folded into this same startup batch, Sept 15
+    // 2026 -- see T2TData.ensureBoardTypeColorsLoaded/getBoardTypeColor
+    // in header-data.js. _sboardApplyBoardBg already ran once just below
+    // with whatever was cached (nothing, on a fresh tab); this repaints
+    // with the real per-Type color once it's actually loaded.
+    Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded(), T2TData.ensureBoardTypeColorsLoaded('idea_bg')]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardApplyBoardBg(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
@@ -1591,41 +1596,14 @@
         // round trip. That sequential chain is what made opening a project
         // for the first time (Purpose/Ideas being created fresh) feel slow.
         //
-        // Landing-zone name, Aug 25 2026 -- Larry: a plain "NEW" label
-        // gave no hint what it was actually holding, especially right
-        // after promoting a header (with its own loose content already
-        // on it) up into its own Topic -- that content lands here, and
-        // "NEW" is a poor description of something that already existed.
-        // Titling it after the Topic's own name instead, in parentheses,
-        // says exactly whose leftover content this is at a glance.
+        // Landing-zone name -- was titled after the Topic's own name in
+        // parentheses (Aug 25 2026 -- Larry: a plain "NEW" label gave no
+        // hint what it was actually holding), retired Sept 15 2026 in
+        // favor of one consistent "Parking Lot" name (Larry + Bill; see
+        // _sboardEnsureNewAdditionsHeader in idea-storyboard-header.js,
+        // which now also self-heals any board still carrying an old
+        // per-Topic "(...)" name from that scheme).
         //
-        // First attempt (shipped, then reverted same day) read the
-        // Topic's name out of _sboardAllRowsById instead of asking
-        // Supabase directly -- looked fine reasoning through the code,
-        // but that cache is only ever refilled by the fetch FURTHER DOWN
-        // this same function, so at this exact point it still holds
-        // whatever the PREVIOUS render left there. Landing on a Topic
-        // Supabase hasn't been asked about yet in this tab (e.g. a
-        // header just created this same session, or the very first
-        // Topic opened after a fresh page load) meant an empty lookup --
-        // silently fell back to null/plain "NEW" every time, which
-        // Larry then confirmed live: the rename never happened. Fetching
-        // this one row directly (indexed by id, effectively free) has no
-        // such ordering dependency -- correct regardless of what any
-        // earlier render happened to leave cached. Kept concurrent with
-        // the other two ensure-calls below by wrapping the two-step
-        // fetch-then-ensure sequence in its own async function rather
-        // than awaiting it first and serializing everything after it.
-        var _sbFetchNewAdditionsDesiredName=async function(){
-          if(!T2TShared.currentTopicId) return null;
-          try{
-            var _sbTopicNameRes=await _sb.from('ideas').select('text_content').eq('id',T2TShared.currentTopicId).maybeSingle();
-            if(!_sbTopicNameRes.error && _sbTopicNameRes.data && _sbTopicNameRes.data.text_content){
-              return '('+_sbTopicNameRes.data.text_content+')';
-            }
-          }catch(e){}
-          return null;
-        };
         // Idea Storyboards root resolved FIRST and on its own, Sept 2
         // 2026 -- deliberately NOT folded into the NEW/Purpose/MISC
         // Promise.all just below, for two reasons. (1) COLLABORATOR/
@@ -1693,9 +1671,7 @@
           }catch(e){ console.warn('Idea Storyboards COLLABORATOR/STAKEHOLDER ensure failed:', e); }
         }
         var _ensureResults=await Promise.all([
-          T2TShared.currentTopicId ? _sbFetchNewAdditionsDesiredName().then(function(_sbDesiredName){
-            return _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId, _sbDesiredName);
-          }) : Promise.resolve(null),
+          T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId) : Promise.resolve(null),
           currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
           T2TData.ensureMiscHeader(T2TShared.currentTopicId)
         ]);
@@ -1820,7 +1796,7 @@
       // cache-only patch so a live update elsewhere on the board doesn't
       // make this strip flicker away and back.
       if(!fromCache || String(T2TShared.currentTopicId)!==String(_sboardRoleShortcutsTopicId)){
-        _sboardRoleShortcuts=[]; _sboardRoleShortcutsKind=null;
+        _sboardRoleShortcuts=[]; _sboardRoleShortcutsKind=null; _sboardPendingCollabEntries=[];
         _sboardRoleShortcutsTopicId=T2TShared.currentTopicId;
         if(T2TShared.currentTopicId && _sboardIdeaStoryboardsRootId && window.T2TData){
           if(String(T2TShared.currentTopicId)===String(_sboardIdeaStoryboardsRootId)){
@@ -1832,6 +1808,13 @@
               if(_curTopicRowForShortcuts.text_content==='COLLABORATOR'){
                 _sboardRoleShortcutsKind='collaborator';
                 try{ _sboardRoleShortcuts=await T2TData.collaboratorEntries()||[]; }catch(e){ console.warn('collaboratorEntries failed:', e); }
+                // Pending invites, Sept 15 2026 -- "Collaborator Projects
+                // need accept/reject toggle by person assigned." A Team/
+                // Facilitator assignment on someone else's project now
+                // lands 'pending' (see idea-storyboard-people.js
+                // _csInsertRole) until the person it names responds, so
+                // this bucket is the one place they see and act on it.
+                try{ _sboardPendingCollabEntries=await T2TData.pendingCollaboratorEntries()||[]; }catch(e){ console.warn('pendingCollaboratorEntries failed:', e); }
               } else if(_curTopicRowForShortcuts.text_content==='STAKEHOLDER'){
                 _sboardRoleShortcutsKind='stakeholder';
                 try{ _sboardRoleShortcuts=await T2TData.stakeholderEntries()||[]; }catch(e){ console.warn('stakeholderEntries failed:', e); }
@@ -1842,7 +1825,7 @@
       }
 
       var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
-      var reservedNames=['Trash','MISC','Purpose','NEW','New Additions'];
+      var reservedNames=['Trash','MISC','Purpose','NEW','New Additions','Parking Lot'];
       // Name-based backstop, added July 12, 2026 — id-based exclusion above
       // only catches Purpose/MISC/Ideas rows this exact render already
       // resolved for the current project. Any orphaned row still carrying
@@ -1980,7 +1963,7 @@
 
       function renderGroup(headerRow, depth){
         var name=headerRow.text_content||'(untitled cluster)';
-        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='NEW');
+        var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='NEW'||name==='Parking Lot');
         // MISC can take a new card just as freely as any content header —
         // it's specifically for ideas that don't relate to the current
         // TOPIC, so excluding it from the [+] made no sense. Purpose picked
@@ -2021,7 +2004,11 @@
         // instead of a bare "NEW"), so a traveler can tell at a glance
         // whose loose content it's holding without needing to rename it
         // by hand first.
-        var _sbReservedAutoNames=['NEW','New Additions','MISC','Purpose'];
+        // Sept 15 2026: Parking Lot added alongside the legacy names
+        // (Larry + Bill's rename, see the ensure-call above) so a board
+        // that hasn't reopened this Topic since still hides its
+        // auto-managed placeholder correctly under either name.
+        var _sbReservedAutoNames=['NEW','New Additions','Parking Lot','MISC','Purpose'];
         subs=subs.filter(function(s){
           var _sbAutoManaged=_sbReservedAutoNames.indexOf(s.text_content)!==-1
             || /^\(.*\)$/.test(String(s.text_content||'').trim());
@@ -2306,7 +2293,7 @@
         // reads the real row's own name when there is one, falling back
         // to the classic "NEW" only when there genuinely isn't a row to
         // read from yet (e.g. mid-creation).
-        var localLabel=(newRow && newRow.text_content) ? newRow.text_content : 'NEW';
+        var localLabel=(newRow && newRow.text_content) ? newRow.text_content : 'Parking Lot';
         // oneLine:true, Sept 8 2026 -- same one-line preference as the
         // ordinary column header pill just above, so a renamed NEW
         // bucket (e.g. "(Dream Phase)") reads the same way.
@@ -2502,6 +2489,27 @@
         });
         shortcutsWrap.appendChild(shortcutsRow);
         wrap.appendChild(shortcutsWrap);
+      }
+
+      // Pending Collaborator invites, Sept 15 2026 -- its own row,
+      // independent of the accepted-shortcuts block above (has to show
+      // even when that one's empty -- a brand-new invite with nothing
+      // else accepted yet). Rendered below the accepted row.
+      if(_sboardPendingCollabEntries && _sboardPendingCollabEntries.length && _sboardRoleShortcutsKind==='collaborator' && String(T2TShared.currentTopicId)===String(_sboardRoleShortcutsTopicId)){
+        var pendingWrap=document.createElement('div');
+        pendingWrap.id='sc-pending-collab-wrap';
+        pendingWrap.style.cssText='margin-top:10px;padding-top:10px;border-top:1px dashed #d99a3a';
+        var pendingLabel=document.createElement('div');
+        pendingLabel.style.cssText='font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#a3702b;margin-bottom:6px';
+        pendingLabel.textContent='PENDING — RESPOND';
+        pendingWrap.appendChild(pendingLabel);
+        var pendingRow=document.createElement('div');
+        pendingRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px';
+        _sboardPendingCollabEntries.forEach(function(entry){
+          pendingRow.appendChild(_sboardMakePendingCollabTile(entry, HEADER_W, HEADER_H));
+        });
+        pendingWrap.appendChild(pendingRow);
+        wrap.appendChild(pendingWrap);
       }
 
       _sboardUpdateHeaderChrome();

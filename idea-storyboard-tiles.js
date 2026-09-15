@@ -184,6 +184,53 @@
     return tile;
   }
 
+  // Pending Collaborator invite tile, Sept 15 2026 (Master BB card:
+  // "Collaborator Projects need accept/reject toggle by person
+  // assigned"). Same footprint/shape as _sboardMakeRoleShortcutTile
+  // above so the two rows read as one family, but not clickable to
+  // drill in -- nothing to open yet -- and carries its own Accept/
+  // Decline pair instead. entry: {id, text, ownerName, ownerInitials,
+  // color, roleId} -- roleId is the card_roles row this responds to
+  // (see T2TData.respondToCollaboratorInvite).
+  function _sboardMakePendingCollabTile(entry, width, height){
+    var tile=document.createElement('div');
+    tile.className='sc-pill named';
+    tile.style.cssText='position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:'+width+'px;height:'+height+'px;box-sizing:border-box;padding:5px 8px;font-family:inherit;font-weight:400;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(entry.color?';background:'+entry.color:';background:#fbf2e3')+';border:1.5px dashed #d99a3a';
+    var ownerLine=entry.ownerName?('👤 '+entry.ownerName):(entry.ownerInitials?('👤 '+entry.ownerInitials):'👤 —');
+    var body=document.createElement('div');
+    body.innerHTML='<div style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#a3702b;margin-bottom:2px">'+ownerLine+'</div>'
+      +'<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;margin-bottom:4px">'+(entry.text||'(untitled)')+'</div>';
+    tile.appendChild(body);
+    tile.title='Invited by '+(entry.ownerName||'another traveler')+' -- accept to add this to your Collaborator list, or decline to turn it down.';
+    var btnRow=document.createElement('div');
+    btnRow.style.cssText='display:flex;gap:4px';
+    var acceptBtn=document.createElement('button');
+    acceptBtn.type='button';
+    acceptBtn.textContent='✓ Accept';
+    acceptBtn.style.cssText='flex:1;background:#e8f5f2;border:1px solid #3a7d3a;color:#215c21;border-radius:6px;padding:3px 4px;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;cursor:pointer';
+    var declineBtn=document.createElement('button');
+    declineBtn.type='button';
+    declineBtn.textContent='✕ Decline';
+    declineBtn.style.cssText='flex:1;background:#fdeceb;border:1px solid #b8562f;color:#8a3a1f;border-radius:6px;padding:3px 4px;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;cursor:pointer';
+    function respond(accept){
+      acceptBtn.disabled=true; declineBtn.disabled=true;
+      T2TData.respondToCollaboratorInvite(entry.roleId, accept).then(function(res){
+        if(!res || !res.ok){
+          _sboardShowToast((res&&res.msg)||'Could not update that invite.');
+          acceptBtn.disabled=false; declineBtn.disabled=false;
+          return;
+        }
+        _sboardShowToast(accept?'Added to your Collaborator list.':'Invite declined.');
+        _sboardSpinWhile(renderSeaBoard());
+      });
+    }
+    acceptBtn.addEventListener('click', function(e){ e.stopPropagation(); respond(true); });
+    declineBtn.addEventListener('click', function(e){ e.stopPropagation(); respond(false); });
+    btnRow.appendChild(acceptBtn); btnRow.appendChild(declineBtn);
+    tile.appendChild(btnRow);
+    return tile;
+  }
+
   function _sboardMakeTile(item, width, straight, groupParentId, height){
     width=width||70;
     height=height||width;

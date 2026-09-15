@@ -843,19 +843,22 @@
       hit.style.cursor='default';
       _bbSyncMasterSubtitle(false);
       _bbSyncTopicUpCaret(true); // nothing to climb from here either
+      _bbFitTopicText();
       return;
     }
     try{
       var sb=T().sb;
       var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
-      if(res.error || !res.data){ hit.textContent=board.name||'(untitled)'; return; }
+      if(res.error || !res.data){ hit.textContent=board.name||'(untitled)'; _bbFitTopicText(); return; }
       _bbCurrentTopicIsRoot = !res.data.cluster_id;
       hit.textContent = res.data.text_content || board.name || '(untitled)';
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
+      _bbFitTopicText();
     }catch(e){
       console.warn('Briefing Board: could not load TOPIC field', e);
       hit.textContent=board.name||'(untitled)';
+      _bbFitTopicText();
     }
   }
   // Sept 6 2026 -- goes inert (same treatment Parent's own hit-box used
@@ -898,7 +901,7 @@
   // briefing-board.js doesn't keep the Idea Board's account-wide
   // _sboardAllRowsById around, and this is only needed the moment the
   // caret is actually pressed.
-  var BB_RESERVED_HEADER_NAMES = {'NEW':1,'New Additions':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  var BB_RESERVED_HEADER_NAMES = {'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
   async function _bbTopicChildChoices(headerId){
     if(!headerId) return [];
     var sb=T().sb;
@@ -1076,17 +1079,25 @@
     });
     if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
   }
+  // TOPIC's own shrink-to-fit, Sept 15 2026 -- Larry (Master BB session
+  // with Bill): a long TOPIC title was cutting off with "..." instead of
+  // shrinking. bb-topic-hit has a hard max-width and used only the
+  // ellipsis fallback; this makes it actually shrink first, same shared
+  // helper the Idea Board's own sc-topic-box now uses too (text-fit.js:
+  // FGFitBoxTextOneLine). Called right after every hit.textContent write
+  // above, in _bbRenderTopicField.
+  function _bbFitTopicText(){
+    var hit=document.getElementById('bb-topic-hit');
+    if(hit && window.FGFitBoxTextOneLine) window.FGFitBoxTextOneLine(hit, hit);
+  }
   // Shared gap between every link in the PROJECT-TOPIC-STORYBOARD-VIEW
-  // chain below, Sept 15 2026 -- one constant so all three gaps (PROJECT-
-  // TOPIC, TOPIC-STORYBOARD, STORYBOARD-VIEW) read as the identical
-  // distance and can't drift apart from each other. Started at a flat
-  // 10px (matching .bb-mhead-top's old grid gap); widened same day,
-  // Larry, live-site: "distance between sets of fields should be about
-  // the width of one down arrow field" -- reads off IDBand.TOKENS.
-  // pickerCaret.width (the real down-arrow buttons beside PROJECT/TOPIC/
-  // STORYBOARD/VIEW, id-band.js) instead of a second hand-typed number,
-  // so it can never drift from "one arrow's width" either.
-  var ID_BAND_GAP = IDBand.TOKENS.pickerCaret.width;
+  // chain below, Sept 15 2026 -- matches .bb-mhead-top's old grid
+  // `gap:10px` (PROJECT to TOPIC), so TOPIC-to-STORYBOARD and
+  // STORYBOARD-to-VIEW read as the identical distance -- Larry: "board
+  // type field needs to be the same distance from the TOPIC as the
+  // PROJECT field." One constant instead of three separately-typed
+  // numbers so it can't drift apart a second time.
+  var ID_BAND_GAP = 10;
   // ID Band row layout, Sept 15 2026 rewrite (renamed from
   // _bbPositionBoardKindMidway) -- Larry: "Move PROJECT - TOPIC -
   // STORYBOARD - VIEW to now center on the BB again." The old version
@@ -1151,30 +1162,33 @@
     boardkindWrap.style.left=(x-containerRect.left)+'px'; x+=br.width+ID_BAND_GAP;
     viewWrap.style.left=(x-containerRect.left)+'px';
 
-    // Vertical, Sept 15 2026, third pass -- Larry, live-site: "TOPIC
-    // field must be centered vertically on the ID BAND. It is too high"
-    // plus "all fields must be lower (except PROJECT which is too low)."
-    // The Sept 6 2026 bottom-justify-to-actionsEl rule (still in place
-    // two passes ago) matches every field's BOTTOM edge to Logo/Utility/
-    // Close's shared bottom edge -- fine when a field is roughly the
-    // same height as those icons, but TOPIC's box (44px, the tallest
-    // thing in this row) pokes its TOP edge well above the icons once
-    // bottom-matched, reading as "too high." All four fields now center
-    // on the band's own height instead (containerRect, same reference
-    // PROJECT already used) -- one shared rule, no more per-field
-    // exceptions to keep straight. PROJECT's earlier "too low" reading
-    // traced back to a separate bug fixed the same session (traveler
-    // name had been nested inside PROJECT's own fieldgrp, making it a
-    // three-line stack taller than TOPIC/STORYBOARD/VIEW's single row);
-    // traveler name is now its own standalone element pinned to the
-    // header's corner (bb-traveler-eyebrow, briefing-board-styles.js),
-    // never measured or moved by this function, so PROJECT is back to
-    // the same two-line eyebrow+trigger shape as the other three and
-    // this one shared centering rule fits all four evenly.
-    [projectWrap, topicWrap, boardkindWrap, viewWrap].forEach(function(el){
-      var r=el.getBoundingClientRect();
-      if(r.height && containerRect.height) el.style.top=((containerRect.height-r.height)/2)+'px';
-    });
+    // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
+    // bottom-justify with the upper right corner buttons" -- unchanged
+    // rule, applied to TOPIC/STORYBOARD/VIEW so they share one bottom
+    // edge with Logo/Utility/Close. actionsEl's real bottom edge isn't a
+    // constant pixel value (Logo's eyebrow+frame stack is taller than a
+    // plain bb-icon-btn), so this reads it live rather than guessing.
+    //
+    // PROJECT is the one exception, Sept 15 2026 (Larry, live-site
+    // second look: "move member name back where it was. PROJECT[S]
+    // fields need to center vertically on the ID BAND, different from
+    // other fields") -- an earlier pass of this same rewrite bottom-
+    // justified all four together, which dragged the traveler-name
+    // eyebrow (the topmost of PROJECT's three stacked lines: name,
+    // "Project" eyebrow, trigger box) down and away from where it had
+    // always sat. PROJECT centers vertically on the band's own height
+    // instead -- TOPIC/STORYBOARD/VIEW keep bottom-justifying, PROJECT
+    // does not.
+    if(ar.height){
+      [topicWrap, boardkindWrap, viewWrap].forEach(function(el){
+        var r=el.getBoundingClientRect();
+        if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
+      });
+    }
+    var prNow=projectWrap.getBoundingClientRect();
+    if(prNow.height && containerRect.height){
+      projectWrap.style.top=((containerRect.height-prNow.height)/2)+'px';
+    }
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
   // listener for the same reason (idea-storyboard-9710.js, near

@@ -465,6 +465,12 @@
       _sboardRenderProjectLabel(null);
       if(parentCaret){ parentCaret.disabled=true; }
     }
+    // Shrink TOPIC's own text to fit its box instead of letting the
+    // "..." ellipsis fallback do it -- Sept 15 2026, Larry (Master BB
+    // session with Bill). See FGFitBoxTextOneLine, text-fit.js.
+    if(topicBox && topicText && window.FGFitBoxTextOneLine){
+      window.FGFitBoxTextOneLine(topicBox, topicText);
+    }
     // One traveler-chosen color paints the whole screen (header strip +
     // board area) — no more separate hardcoded navy/purple fighting it.
     // Locked July 16, 2026.
@@ -1138,7 +1144,7 @@
       if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
       var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id)
         .eq('content_type','header').is('cluster_id',null)
-        .in('text_content',['Purpose','NEW','New Additions','MISC']);
+        .in('text_content',['Purpose','NEW','New Additions','Parking Lot','MISC']);
       if(res.error) throw new Error(res.error.message);
       var orphans=(res.data||[]).filter(function(r){ return String(r.id)!==String(wt.id); });
       var ov2=document.getElementById('sb-detail-overlay');
@@ -1254,7 +1260,7 @@
       .filter(Boolean);
     var parentSet={};
     parentIds.forEach(function(id){ parentSet[String(id)]=true; });
-    var _sbReservedAutoNames=['NEW','New Additions','MISC','Purpose'];
+    var _sbReservedAutoNames=['NEW','New Additions','Parking Lot','MISC','Purpose'];
     return Object.keys(_sboardAllRowsById).filter(function(id){
       var r=_sboardAllRowsById[id];
       if(!(r && r.cluster_id!=null && parentSet[String(r.cluster_id)])) return false;
@@ -1717,25 +1723,39 @@
     return null;
   }
 
-  async function _sboardEnsureNewAdditionsHeader(parentId, desiredName){
+  // Renamed NEW -> Parking Lot, Sept 15 2026, Larry + Bill: this used to
+  // title itself after whichever Topic it sat under in parentheses
+  // ("(Thumb Rest)", "(Ohio Projects)") instead of a plain "NEW" -- Aug
+  // 25 2026, meant to say at a glance whose leftover content this was.
+  // Bill's suggestion (same Sept 15 session): one consistent name
+  // instead, same as the shared T2TData.ensureNewAdditionsHeader header-
+  // data.js now uses for every OTHER caller of this same reserved
+  // bucket. No longer takes a desiredName -- always Parking Lot. Matches
+  // (and self-heals) 'NEW', 'New Additions', 'Parking Lot', or any old
+  // per-Topic "(...)" name -- the last matched by shape (starts with
+  // "(", ends with ")"), since nothing else in this app names a header
+  // that way.
+  async function _sboardEnsureNewAdditionsHeader(parentId){
     var _sb=T().sb;
     var user=(await _sb.auth.getUser()).data.user;
     if(!user) throw new Error('Not signed in.');
-    var name=desiredName||'NEW';
-    // Matches the current label, the desired label, and the pre-rename one,
-    // so boards from any earlier naming era self-heal instead of spawning
-    // a duplicate reserved header.
+    var name='Parking Lot';
     // Shared-project fix, Aug 14 2026 -- see _sboardEnsurePurposeHeader
     // above: drop the user_id filter so every Cast member reuses the same
-    // NEW header instead of each person spawning their own.
-    var q=_sb.from('ideas').select('id,text_content').eq('content_type','header').in('text_content',['NEW','New Additions',name]);
+    // Parking Lot header instead of each person spawning their own.
+    var q=_sb.from('ideas').select('id,text_content').eq('content_type','header');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
+    var existing=await q;
     if(!existing.error && existing.data && existing.data.length){
-      var row=existing.data[0];
-      _sboardNewAdditionsId=row.id;
-      if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
-      return _sboardNewAdditionsId;
+      var row=existing.data.filter(function(r){
+        var t=r.text_content||'';
+        return t==='NEW'||t==='New Additions'||t==='Parking Lot'||(t.charAt(0)==='('&&t.charAt(t.length-1)===')');
+      })[0];
+      if(row){
+        _sboardNewAdditionsId=row.id;
+        if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
+        return _sboardNewAdditionsId;
+      }
     }
     // Bug fix, Aug 25 2026 (Larry: "Moved up 'People Too Busy' header but
     // saw NO subbers as previously designed" -- really its own loose
@@ -1773,7 +1793,7 @@
   }
 
   function _sboardMoveOptionsHTML(excludeId, currentClusterId){
-    var opts='<option value=""'+(!currentClusterId?' selected':'')+'>NEW</option>';
+    var opts='<option value=""'+(!currentClusterId?' selected':'')+'>Parking Lot</option>';
     opts+=_sboardHeaderList.filter(function(h){ return String(h.id)!==String(excludeId); })
       .map(function(h){ var sel=(currentClusterId && String(h.id)===String(currentClusterId))?' selected':''; return '<option value="'+h.id+'"'+sel+'>'+(h.text_content||'(untitled)')+'</option>'; }).join('');
     opts+='<option value="__new__">+ Create new header…</option>';

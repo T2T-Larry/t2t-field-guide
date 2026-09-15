@@ -52,7 +52,12 @@
      shortcut buttons into everything they were brought INTO rather
      than originated. See ensureCollaboratorHeader/collaboratorEntries
      below. */
-  var RESERVED_HEADERS = ['NEW','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
+  // 'NEW'/'New Additions' kept alongside 'Parking Lot' (Sept 15 2026
+  // rename, Larry + Bill) so a board that hasn't self-healed onto the new
+  // name yet -- or an old per-Topic "(Thumb Rest)"-style catch-all, see
+  // ensureNewAdditionsHeader below -- still gets excluded from ordinary
+  // header listings, not just the current name.
+  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
 
   /* ── generic tree helpers ── */
 
@@ -164,8 +169,20 @@
      re-runs on every call but is a cheap no-op once nothing still
      qualifies — its own WHERE clause requires cluster_id null, which a
      migrated row no longer has. */
-  async function ensureIdeaStoryboardsRoot(){
-    try{
+  // Sept 15 2026 -- wrapped in the same in-flight-promise lock as
+  // ensureCollaboratorHeader/ensureStakeholderHeader (see the Sept 13
+  // 2026 note on _headerEnsureOnce above). This is called from nearly
+  // every screen's boot path (Idea Board, Briefing Board, Plan...), so
+  // it was the single biggest source of duplicate reserved headers in
+  // practice -- Larry and Bill found their own accounts' PROJECTS root
+  // itself split into two, each half holding real projects the other
+  // didn't (cleaned up in the Sept 15 2026 data pass; see the Master BB
+  // "Some boards showing 2 (header) headers" card). One key per tab is
+  // fine here (no parentId to key off, unlike the other ensure*
+  // functions below) -- this app only ever has one signed-in traveler
+  // per tab, so concurrent callers are always racing for the same root.
+  var ensureIdeaStoryboardsRoot = function(){
+    return _headerEnsureOnce('PROJECTS_ROOT', async function(){
       var sb=_sb(); var u=await _currentUser();
       if(!u) return null;
       // Sept 6 2026, Larry: "What used to be Idea Storyboards is now
@@ -200,8 +217,8 @@
         }
       }
       return rootId;
-    }catch(e){ console.warn('ensureIdeaStoryboardsRoot exception:', e); return null; }
-  }
+    }).catch(function(e){ console.warn('ensureIdeaStoryboardsRoot exception:', e); return null; });
+  };
 
   /* STAKEHOLDER — mirrors ensureCollaboratorHeader exactly (same reserved-
      bucket mechanic: one shared header per parent, created on first use,
@@ -332,8 +349,12 @@
 
   /* ── ensure-named-header helpers (find existing under parent, else create) ── */
 
-  async function ensureHeaderNamed(name, parentId){
-    try{
+  // Sept 15 2026 -- same in-flight-promise lock as ensureCollaboratorHeader/
+  // ensureIdeaStoryboardsRoot above (see the Sept 13 2026 _headerEnsureOnce
+  // note); this generic helper was one of the unprotected ones the
+  // Sept 15 2026 duplicate-header data pass found actual duplicates from.
+  function ensureHeaderNamed(name, parentId){
+    return _headerEnsureOnce('NAMED:'+name+':'+(parentId===null||parentId===undefined?'root':parentId), async function(){
       var sb=_sb(); var u=await _currentUser(); if(!u) return null;
       // Shared-project fix, Aug 14 2026: the existence check used to be
       // scoped to rows this same signed-in user created (.eq('user_id',...)),
@@ -353,7 +374,7 @@
       var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
       if(ins.error) console.warn('ensureHeaderNamed insert error:', ins.error);
       return ins.data?ins.data.id:null;
-    }catch(e){ console.warn('ensureHeaderNamed exception:', e); return null; }
+    }).catch(function(e){ console.warn('ensureHeaderNamed exception:', e); return null; });
   }
 
   /* Deletion-sticks backstop, Aug 18 2026 -- Larry: "Allow NEW and MISC
@@ -505,8 +526,14 @@
       // card never masquerades as a whole-project placement. (Primary
       // stays root-only/fast-access, and 'stakeholder' stays its own
       // bucket below -- this only adds the real-edit working roles.)
+      // Sept 15 2026: a Team/Facilitator/Facilitator-qualified placement
+      // now starts 'pending' when someone else made it (see _csInsertRole
+      // in idea-storyboard-people.js) -- excluded here until the named
+      // person accepts, so it doesn't show as a live collaboration before
+      // they've said yes. See pendingCollaboratorEntries below for where
+      // it *does* show meanwhile.
       var castRoles=await sb.from('card_roles').select('card_id,role')
-        .eq('card_type','idea').eq('user_id',u.id)
+        .eq('card_type','idea').eq('user_id',u.id).eq('status','accepted')
         .in('role',['team','facilitator','facilitator_qualified']);
       if(castRoles.error) console.warn('collaboratorEntries card_roles error:', castRoles.error);
       var castRows=castRoles.data||[];
@@ -541,51 +568,189 @@
     }catch(e){ console.warn('collaboratorEntries exception:', e); return []; }
   }
 
-  async function ensureNewAdditionsHeader(parentId){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    // Matches both the current label and the pre-rename one, so boards built
-    // before the NEW rename self-heal the first time they're opened again
-    // instead of spawning a duplicate reserved header.
-    // Shared-project fix, Aug 14 2026 -- see ensurePurposeHeader above:
-    // drop the user_id filter so every Cast member reuses the same NEW
-    // header instead of each person spawning their own.
-    var q=sb.from('ideas').select('id,text_content').eq('content_type','header').in('text_content',['NEW','New Additions']);
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
-    if(!existing.error && existing.data && existing.data.length){
-      var row=existing.data[0];
-      if(row.text_content!=='NEW'){ try{ await sb.from('ideas').update({text_content:'NEW'}).eq('id',row.id); }catch(e){} }
-      return row.id;
-    }
-    if(await _parentDefaultsSeeded(parentId)) return null;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'NEW',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('NEW setup failed: '+ins.error.message);
-    _markParentDefaultsSeeded(parentId);
-    return ins.data.id;
+  /* pendingCollaboratorEntries -- the flip side of collaboratorEntries'
+     Sept 15 2026 change: Team/Facilitator/Facilitator-qualified rows that
+     someone else placed for this traveler, sitting at 'pending' until they
+     say yes or no. Same manual-join shape as collaboratorEntries above
+     (roster rows, then the referenced ideas rows), so the returned entries
+     drop straight into _sboardMakePendingCollabTile the same way accepted
+     ones drop into _sboardMakeRoleShortcutTile -- the only addition is
+     roleId, the card_roles row id respondToCollaboratorInvite acts on. */
+  async function pendingCollaboratorEntries(){
+    try{
+      var sb=_sb(); var u=await _currentUser(); if(!u) return [];
+      var pend=await sb.from('card_roles').select('id,card_id,role')
+        .eq('card_type','idea').eq('user_id',u.id).eq('status','pending')
+        .in('role',['team','facilitator','facilitator_qualified']);
+      if(pend.error){ console.warn('pendingCollaboratorEntries card_roles error:', pend.error); return []; }
+      var rows=pend.data||[];
+      if(!rows.length) return [];
+
+      var ids=rows.map(function(r){ return r.card_id; });
+      var proj=await sb.from('ideas').select('id,text_content,user_id,color').in('id',ids);
+      if(proj.error){ console.warn('pendingCollaboratorEntries ideas error:', proj.error); return []; }
+      var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
+
+      return rows
+        .map(function(r){ var p=byId[r.card_id]; return p?{r:r,p:p}:null; })
+        .filter(Boolean)
+        .map(function(x){
+          return {
+            id:x.p.id,
+            roleId:x.r.id,
+            text:x.p.text_content,
+            ownerUserId:x.p.user_id,
+            color:x.p.color,
+            role:x.r.role
+          };
+        });
+    }catch(e){ console.warn('pendingCollaboratorEntries exception:', e); return []; }
   }
 
-  async function ensureTrashHeader(){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Trash').limit(1);
-    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Trash',created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('Trash setup failed: '+ins.error.message);
-    return ins.data.id;
+  /* respondToCollaboratorInvite -- accept keeps the card_roles row and
+     flips it to 'accepted' (so it's picked up by collaboratorEntries'
+     status filter above on the next render); decline removes the row
+     entirely rather than leaving a 'declined' row sitting on someone
+     else's Call Sheet forever. roleId is card_roles.id, from the roleId
+     field pendingCollaboratorEntries returns. */
+  async function respondToCollaboratorInvite(roleId, accept){
+    try{
+      if(!roleId) return {ok:false, msg:'Missing invite.'};
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) return {ok:false, msg:'Not signed in.'};
+      if(accept){
+        var upd=await sb.from('card_roles').update({status:'accepted'}).eq('id',roleId).eq('user_id',u.id);
+        if(upd.error){ console.warn('respondToCollaboratorInvite accept error:', upd.error); return {ok:false, msg:'Could not accept that invite.'}; }
+      } else {
+        var del=await sb.from('card_roles').delete().eq('id',roleId).eq('user_id',u.id);
+        if(del.error){ console.warn('respondToCollaboratorInvite decline error:', del.error); return {ok:false, msg:'Could not decline that invite.'}; }
+      }
+      return {ok:true};
+    }catch(e){ console.warn('respondToCollaboratorInvite exception:', e); return {ok:false, msg:'Something went wrong.'}; }
+  }
+
+  /* Board-type color, Sept 15 2026 -- Larry, after the first pass at this
+     fix used the wrong unit: "Board color should be different for each
+     TYPE of board... should only change a single board type." Shared by
+     the Idea Storyboard's Storyboard-background picker and the Briefing
+     Board's Color-theme picker (same board_type_color table, same
+     owner-only-rows pattern as org_type_hidden above it in this file's
+     sibling functions). 'surface' keeps the two screens' different kinds
+     of value apart under the same board_type grouping: 'idea_bg' is a
+     free hex string, 'bb_theme' is one of THEMES' fixed keys (gold, etc,
+     see briefing-board-ops.js) -- never mix the two in one cache entry.
+     Cached per surface, loaded once per tab (ensureBoardTypeColorsLoaded),
+     read synchronously afterward (getBoardTypeColor) so a picker/repaint
+     never has to await mid-render -- exactly the latency-hiding shape
+     _sboardHiddenTypesCache/org_type_hidden already uses elsewhere. */
+  var _boardTypeColorCache = {};    // "surface:board_type" -> color
+  var _boardTypeColorLoaded = {};   // surface -> true once a real fetch has completed
+  var _boardTypeColorLoading = {};  // surface -> in-flight promise, so concurrent callers share one fetch
+  function _boardTypeColorKey(boardType, surface){ return (surface||'idea_bg')+':'+(boardType||'personal'); }
+  function ensureBoardTypeColorsLoaded(surface){
+    surface=surface||'idea_bg';
+    if(_boardTypeColorLoaded[surface]) return Promise.resolve();
+    if(_boardTypeColorLoading[surface]) return _boardTypeColorLoading[surface];
+    _boardTypeColorLoading[surface]=(async function(){
+      try{
+        var sb=_sb(); if(!sb) return;
+        var u=await _currentUser(); if(!u) return;
+        var res=await sb.from('board_type_color').select('board_type,color').eq('user_id',u.id).eq('surface',surface);
+        if(res.error) throw res.error;
+        (res.data||[]).forEach(function(r){ _boardTypeColorCache[_boardTypeColorKey(r.board_type,surface)]=r.color; });
+        _boardTypeColorLoaded[surface]=true;
+      }catch(e){ console.warn('T2TData: could not load board-type colors ('+surface+')', e); }
+      _boardTypeColorLoading[surface]=null;
+    })();
+    return _boardTypeColorLoading[surface];
+  }
+  function getBoardTypeColor(boardType, surface){
+    return _boardTypeColorCache[_boardTypeColorKey(boardType,surface)] || '';
+  }
+  async function setBoardTypeColor(boardType, surface, color){
+    surface=surface||'idea_bg'; boardType=boardType||'personal';
+    _boardTypeColorCache[_boardTypeColorKey(boardType,surface)]=color; // paint immediately, don't wait on the round trip
+    try{
+      var sb=_sb(); if(!sb) return {ok:false};
+      var u=await _currentUser(); if(!u) return {ok:false};
+      var up=await sb.from('board_type_color').upsert({user_id:u.id, board_type:boardType, surface:surface, color:color, updated_at:new Date().toISOString()});
+      if(up.error){ console.warn('T2TData: could not save this board type\'s color', up.error); return {ok:false}; }
+      return {ok:true};
+    }catch(e){ console.warn('T2TData: could not save this board type\'s color', e); return {ok:false}; }
+  }
+
+  // Sept 15 2026 -- same in-flight-promise lock pattern as
+  // ensureCollaboratorHeader/ensureIdeaStoryboardsRoot above. NEW was one
+  // of the two reserved headers the Sept 15 2026 duplicate-header data
+  // pass found actual duplicates of (9 copies on one board).
+  //
+  // Renamed NEW -> Parking Lot, Sept 15 2026, Larry + Bill (same session,
+  // after the duplicate-header pass above): plain "NEW" didn't say what
+  // it actually held. Also retires the Idea Storyboard's own separate
+  // per-Topic naming attempt at the same problem (titling this header
+  // "(Thumb Rest)", "(Ohio Projects)", etc, after whichever Topic it sat
+  // under -- see the old _sboardEnsureNewAdditionsHeader in
+  // idea-storyboard-header.js) in favor of Bill's one consistent name.
+  // Self-heals any of the three: an existing 'NEW'/'New Additions' row,
+  // or an old per-Topic "(...)" one -- matched here by shape (starts
+  // with "(", ends with ")") since nothing else in this app names a
+  // header that way.
+  function ensureNewAdditionsHeader(parentId){
+    return _headerEnsureOnce('NEW:'+(parentId===null||parentId===undefined?'root':parentId), async function(){
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) throw new Error('Not signed in.');
+      // Shared-project fix, Aug 14 2026 -- see ensurePurposeHeader above:
+      // drop the user_id filter so every Cast member reuses the same
+      // Parking Lot header instead of each person spawning their own.
+      var q=sb.from('ideas').select('id,text_content').eq('content_type','header');
+      q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
+      var existing=await q;
+      if(!existing.error && existing.data && existing.data.length){
+        var row=existing.data.filter(function(r){
+          var t=r.text_content||'';
+          return t==='NEW'||t==='New Additions'||t==='Parking Lot'||(t.charAt(0)==='('&&t.charAt(t.length-1)===')');
+        })[0];
+        if(row){
+          if(row.text_content!=='Parking Lot'){ try{ await sb.from('ideas').update({text_content:'Parking Lot'}).eq('id',row.id); }catch(e){} }
+          return row.id;
+        }
+      }
+      if(await _parentDefaultsSeeded(parentId)) return null;
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Parking Lot',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      if(ins.error) throw new Error('Parking Lot setup failed: '+ins.error.message);
+      _markParentDefaultsSeeded(parentId);
+      return ins.data.id;
+    });
+  }
+
+  // Sept 15 2026 -- same lock; no parentId here (Trash is always the
+  // account's own single top-level bucket), so one constant key covers
+  // it, same reasoning as ensureIdeaStoryboardsRoot's 'PROJECTS_ROOT' key.
+  function ensureTrashHeader(){
+    return _headerEnsureOnce('TRASH', async function(){
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) throw new Error('Not signed in.');
+      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Trash').limit(1);
+      if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Trash',created_at:new Date().toISOString()}).select().single();
+      if(ins.error) throw new Error('Trash setup failed: '+ins.error.message);
+      return ins.data.id;
+    });
   }
 
   /* Archived mirrors Trash exactly (same reserved-bucket mechanic, same
      recoverability) but means "finished, not wrong" rather than "shouldn't
      exist" — added August 1, 2026 for Project Selection archive/delete. */
-  async function ensureArchivedHeader(){
-    var sb=_sb(); var u=await _currentUser();
-    if(!u) throw new Error('Not signed in.');
-    var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Archived').limit(1);
-    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Archived',created_at:new Date().toISOString()}).select().single();
-    if(ins.error) throw new Error('Archived setup failed: '+ins.error.message);
-    return ins.data.id;
+  function ensureArchivedHeader(){
+    return _headerEnsureOnce('ARCHIVED', async function(){
+      var sb=_sb(); var u=await _currentUser();
+      if(!u) throw new Error('Not signed in.');
+      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Archived').limit(1);
+      if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Archived',created_at:new Date().toISOString()}).select().single();
+      if(ins.error) throw new Error('Archived setup failed: '+ins.error.message);
+      return ins.data.id;
+    });
   }
 
   /* Sept 2, 2026 -- resolves through the Idea Storyboards root now, not
@@ -597,26 +762,33 @@
      migrated row. Without resolving through the root first, this would
      have silently spawned a second, duplicate Wish Tank the first time an
      existing one got swept in as a child out from under the old lookup. */
-  async function ensureWishTank(){
-    try{
-      var sb=_sb(); var u=await _currentUser();
-      if(!u) return {id:null, error:'Not signed in'};
-      var rootId=await ensureIdeaStoryboardsRoot();
-      if(!rootId) return {id:null, error:'Could not resolve the Idea Storyboards root'};
-      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').eq('cluster_id',rootId).limit(1);
-      if(existing.error) return {id:null, error:'Select failed: '+existing.error.message};
-      if(existing.data && existing.data.length) return {id:existing.data[0].id, error:null};
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Wish Tank',cluster_id:rootId,created_at:new Date().toISOString()}).select().single();
-      if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
-      var wishTankId=ins.data.id;
-      // Self-scoped like every other real project root (see
-      // _sboardCreateRootBoard's own matching update in
-      // idea-storyboard-9710.js) -- otherwise _sboardProjectRowFor would
-      // climb straight past a freshly-created Wish Tank into Idea
-      // Storyboards itself, now that Wish Tank sits one level deeper.
-      try{ await sb.from('ideas').update({project_id:wishTankId, topic_scope_id:wishTankId}).eq('id',wishTankId); }catch(e){}
-      return {id:wishTankId, error:null};
-    }catch(e){ return {id:null, error:'Exception: '+(e&&e.message?e.message:String(e))}; }
+  // Sept 15 2026 -- same lock; one constant key (Wish Tank is always the
+  // one account-wide row under the PROJECTS root, same reasoning as
+  // ensureTrashHeader/ensureArchivedHeader above). This function already
+  // never throws (every branch returns {id,error}), so the lock just
+  // wraps the existing try/catch shape unchanged.
+  function ensureWishTank(){
+    return _headerEnsureOnce('WISH_TANK', async function(){
+      try{
+        var sb=_sb(); var u=await _currentUser();
+        if(!u) return {id:null, error:'Not signed in'};
+        var rootId=await ensureIdeaStoryboardsRoot();
+        if(!rootId) return {id:null, error:'Could not resolve the Idea Storyboards root'};
+        var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').eq('cluster_id',rootId).limit(1);
+        if(existing.error) return {id:null, error:'Select failed: '+existing.error.message};
+        if(existing.data && existing.data.length) return {id:existing.data[0].id, error:null};
+        var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Wish Tank',cluster_id:rootId,created_at:new Date().toISOString()}).select().single();
+        if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
+        var wishTankId=ins.data.id;
+        // Self-scoped like every other real project root (see
+        // _sboardCreateRootBoard's own matching update in
+        // idea-storyboard-9710.js) -- otherwise _sboardProjectRowFor would
+        // climb straight past a freshly-created Wish Tank into Idea
+        // Storyboards itself, now that Wish Tank sits one level deeper.
+        try{ await sb.from('ideas').update({project_id:wishTankId, topic_scope_id:wishTankId}).eq('id',wishTankId); }catch(e){}
+        return {id:wishTankId, error:null};
+      }catch(e){ return {id:null, error:'Exception: '+(e&&e.message?e.message:String(e))}; }
+    });
   }
 
   /* ── 9711 Idea Input — sticky last-topic (Locked July 13, 2026) ──
@@ -745,6 +917,11 @@
     ensurePurposeHeader: ensurePurposeHeader,
     ensureCollaboratorHeader: ensureCollaboratorHeader,
     collaboratorEntries: collaboratorEntries,
+    pendingCollaboratorEntries: pendingCollaboratorEntries,
+    respondToCollaboratorInvite: respondToCollaboratorInvite,
+    ensureBoardTypeColorsLoaded: ensureBoardTypeColorsLoaded,
+    getBoardTypeColor: getBoardTypeColor,
+    setBoardTypeColor: setBoardTypeColor,
     ensureStakeholderHeader: ensureStakeholderHeader,
     stakeholderEntries: stakeholderEntries,
     promotedPrimaryEntries: promotedPrimaryEntries,

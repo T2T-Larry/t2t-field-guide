@@ -1086,7 +1086,19 @@
         var sres=await T2TData.addStakeholderToCast(_csItem.id, match.user_id, !!isBoardMember);
         if(!sres.ok) return sres;
       } else {
-        var ins=await _sb.from('card_roles').insert({card_type:_csCardType||'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null});
+        var insRow={card_type:_csCardType||'idea', card_id:_csItem.id, role:role, user_id:match.user_id, added_by: me?me.id:null};
+        // Sept 15 2026, Master BB card: "Collaborator Projects need
+        // accept/reject toggle by person assigned." Only Team/Facilitator/
+        // Facilitator-qualified carry real edit access, so only those three
+        // gate on acceptance -- and only when someone else is doing the
+        // assigning; picking one of these for yourself (rare, but the Call
+        // Sheet doesn't block it) needs no invite step. See
+        // T2TData.pendingCollaboratorEntries/respondToCollaboratorInvite
+        // in header-data.js for where the person accepts or declines.
+        if(['team','facilitator','facilitator_qualified'].indexOf(role)!==-1 && me && String(match.user_id)!==String(me.id)){
+          insRow.status='pending';
+        }
+        var ins=await _sb.from('card_roles').insert(insRow);
         if(ins.error) throw ins.error;
       }
       await _csLoadRoles(_csItem);
@@ -1145,6 +1157,16 @@
       }
       var patch={role:newRole};
       if(newRole!=='stakeholder') patch.is_key=false;
+      // Sept 15 2026: picking Team/Facilitator/Facilitator-qualified for
+      // someone else from this panel is exactly as much "assigned to
+      // another person" as the add-form path above -- same pending gate,
+      // same self-assignment exception. Any other role (or moving back to
+      // one) always lands accepted; nothing else in this file has ever
+      // needed to distinguish, so this is the one place that resets it.
+      var _meResForRole=await _sb.auth.getUser();
+      var _meForRole=_meResForRole && _meResForRole.data ? _meResForRole.data.user : null;
+      var _gatedRolesForSave=['team','facilitator','facilitator_qualified'];
+      patch.status=(_gatedRolesForSave.indexOf(newRole)!==-1 && row && _meForRole && String(row.user_id)!==String(_meForRole.id)) ? 'pending' : 'accepted';
       var upd=await _sb.from('card_roles').update(patch).eq('id', rowId);
       if(upd.error) throw upd.error;
       if(newRole==='primary' && row){

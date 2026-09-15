@@ -123,4 +123,47 @@
     }
     return min;
   };
+
+  // Shared "shrink a hard-max-width, single-line box's own text so it
+  // almost never needs to truncate" helper -- Sept 15 2026, Larry (Master
+  // BB session with Bill): TOPIC was cutting long titles off with "..."
+  // instead of shrinking them, on both boards that show a TOPIC box
+  // (sc-topic-box on the Idea Board, bb-topic-hit on the Briefing Board --
+  // same look/tokens, same bug, same fix). Both already carry
+  // white-space:nowrap + text-overflow:ellipsis as what SHOULD be a
+  // last-resort safety net for a single word/URL too wide even at the
+  // floor size, not the everyday behavior -- this reuses the same
+  // FGFitFontSize one-line shrink every board title already uses
+  // (_bbFitBoardKindLabel, briefing-board-master-nav.js) so that
+  // fallback stops being the normal case.
+  //
+  // el = the element whose CSS max-width/padding/border/font define the
+  // box (the thing text-overflow:ellipsis would otherwise fire on).
+  // textEl = the element actually holding the text -- pass the same
+  // value as el when there's no separate child span (font-size set on el
+  // cascades to a plain text-holding child either way). Resets to the
+  // natural CSS size first so this never ratchets smaller across
+  // repeated calls -- only ever shrinks, never grows past the stylesheet.
+  window.FGFitBoxTextOneLine=function(el, textEl, opts){
+    textEl=textEl||el;
+    if(!el || !textEl || !window.FGFitFontSize) return;
+    opts=opts||{};
+    el.style.fontSize='';
+    var cs=getComputedStyle(el);
+    var maxW=parseFloat(cs.maxWidth);
+    if(!maxW) return;
+    // box-sizing:border-box on both known callers -- max-width already
+    // includes padding+border, so the text's real available width is
+    // narrower than maxW by both.
+    var padL=parseFloat(cs.paddingLeft)||0, padR=parseFloat(cs.paddingRight)||0;
+    var borL=parseFloat(cs.borderLeftWidth)||0, borR=parseFloat(cs.borderRightWidth)||0;
+    var avail=maxW-padL-padR-borL-borR;
+    if(avail<=0) return;
+    var baseSize=parseFloat(cs.fontSize)||opts.base||16;
+    var fitted=window.FGFitFontSize(textEl.textContent, avail, {
+      base:baseSize, min:opts.min||Math.max(14,Math.round(baseSize*0.4)), step:0.5,
+      fontFamily:cs.fontFamily, fontWeight:cs.fontWeight, oneLine:true
+    });
+    if(fitted<baseSize) el.style.fontSize=fitted+'px';
+  };
 })();
