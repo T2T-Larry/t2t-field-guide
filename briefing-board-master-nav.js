@@ -1077,13 +1077,16 @@
     if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
   }
   // Shared gap between every link in the PROJECT-TOPIC-STORYBOARD-VIEW
-  // chain below, Sept 15 2026 -- matches .bb-mhead-top's old grid
-  // `gap:10px` (PROJECT to TOPIC), so TOPIC-to-STORYBOARD and
-  // STORYBOARD-to-VIEW read as the identical distance -- Larry: "board
-  // type field needs to be the same distance from the TOPIC as the
-  // PROJECT field." One constant instead of three separately-typed
-  // numbers so it can't drift apart a second time.
-  var ID_BAND_GAP = 10;
+  // chain below, Sept 15 2026 -- one constant so all three gaps (PROJECT-
+  // TOPIC, TOPIC-STORYBOARD, STORYBOARD-VIEW) read as the identical
+  // distance and can't drift apart from each other. Started at a flat
+  // 10px (matching .bb-mhead-top's old grid gap); widened same day,
+  // Larry, live-site: "distance between sets of fields should be about
+  // the width of one down arrow field" -- reads off IDBand.TOKENS.
+  // pickerCaret.width (the real down-arrow buttons beside PROJECT/TOPIC/
+  // STORYBOARD/VIEW, id-band.js) instead of a second hand-typed number,
+  // so it can never drift from "one arrow's width" either.
+  var ID_BAND_GAP = IDBand.TOKENS.pickerCaret.width;
   // ID Band row layout, Sept 15 2026 rewrite (renamed from
   // _bbPositionBoardKindMidway) -- Larry: "Move PROJECT - TOPIC -
   // STORYBOARD - VIEW to now center on the BB again." The old version

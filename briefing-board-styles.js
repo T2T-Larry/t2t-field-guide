@@ -159,7 +159,16 @@
       // its internal flex-column layout, this rule only adds the
       // positioning.
       +'.bb-mh-group-topic{position:absolute;top:0;left:0}'
-      +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
+      // Diminished, Sept 15 2026 -- Larry, live-site: "make ALL eyebrow
+      // size to diminish its importance." These three (Project/
+      // Storyboard/View, all added or resized this same session) were
+      // reading as loud as a real field label instead of a quiet hint
+      // above one -- weight dropped from bold to normal, letter-spacing
+      // and size trimmed, opacity added on top of the already-muted
+      // --bb-sub color. Does NOT touch .bb-traveler-eyebrow -- that one
+      // carries the traveler's actual name, not a field hint, and Larry
+      // didn't ask for it to shrink.
+      +'.bb-mh-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));font-weight:400;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);opacity:.7}'
       // Traveler name, Sept 5 2026 -- Larry: "every board now and in the
       // future" should carry the same PROJECT and PARENT fields the
       // Idea/Plan header does, starting here. Mirrors the plain eyebrow
