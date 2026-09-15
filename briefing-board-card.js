@@ -200,7 +200,8 @@
     if(!preview) return;
     if(!url){ preview.style.display='none'; preview.innerHTML=''; return; }
     preview.style.display='';
-    preview.innerHTML=(thumb ? ('<img src="'+thumb+'">') : '')+_esc(title||url);
+    var glyph=(!thumb && _bbIsPdfUrl(url)) ? '📄 ' : '';
+    preview.innerHTML=(thumb ? ('<img src="'+thumb+'">') : '')+glyph+_esc(title||url);
   }
   function wireBbUndoKeyboard(){
     document.addEventListener('keydown', function(e){
@@ -1646,6 +1647,49 @@
     });
   }
 
+  // Attach-a-PDF, Sept 15 2026 -- Larry/Rachel bug report: the Links
+  // field only ever accepted a pasted web URL, so a traveler holding an
+  // actual PDF (a document on their own device, not something already
+  // hosted online -- Rachel hit this testing on an iPad) had no way to
+  // get it onto a card at all. Reuses the exact same Supabase Storage
+  // bucket ('sea-of-ideas') and upload pattern already proven out for
+  // Notebook/Idea Storyboard image uploads (notebook-open.js,
+  // idea-media-shared.js) -- just no image-compress step, and the
+  // resulting public URL is written straight into the SAME linkUrl
+  // field an ordinary pasted link uses. That's deliberate: it means the
+  // already-working "🎬 Open link" badge on the board face, and the
+  // preview here, both just work for an attached PDF with no separate
+  // code path to maintain -- clicking it opens the real file, reliably,
+  // because it's now a real direct link like any other.
+  function _bbIsPdfUrl(url){ return /\.pdf(\?.*)?$/i.test((url||'').trim()); }
+  async function _bbUploadLinkFile(file){
+    var input=document.getElementById('bb-d-link-url');
+    var preview=document.getElementById('bb-d-link-preview');
+    if(!file) return;
+    if(file.type && file.type!=='application/pdf' && !/\.pdf$/i.test(file.name||'')){
+      window.alert('Please choose a PDF file.'); return;
+    }
+    if(preview){ preview.style.display=''; preview.textContent='Uploading '+(file.name||'file')+'…'; }
+    try{
+      var sb=T().sb; if(!sb) throw new Error('Not signed in.');
+      var u=await sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user) throw new Error('Not signed in.');
+      var fname=(file.name||('attachment-'+Date.now()+'.pdf')).replace(/[^a-zA-Z0-9._-]/g,'_');
+      var path=user.id+'/bb-attach-'+Date.now()+'-'+fname;
+      var up=await sb.storage.from('sea-of-ideas').upload(path, file);
+      if(up.error) throw up.error;
+      var pub=sb.storage.from('sea-of-ideas').getPublicUrl(path);
+      var url=pub.data && pub.data.publicUrl;
+      if(!url) throw new Error('No public URL returned.');
+      if(_bbLinkTimer){ clearTimeout(_bbLinkTimer); _bbLinkTimer=null; }
+      _bbLinkPendingUrl=url; _bbLinkPendingThumb=null; _bbLinkPendingTitle=file.name||url;
+      if(input) input.value=url;
+      _bbRenderLinkPreview(_bbLinkPendingUrl, _bbLinkPendingThumb, _bbLinkPendingTitle);
+    }catch(e){
+      console.error('Briefing Board: PDF attach failed', e);
+      if(preview){ preview.style.display=''; preview.textContent='Attach failed — '+((e&&e.message)||'try again'); }
+    }
+  }
   function wireLinkField(){
     var input=document.getElementById('bb-d-link-url');
     if(input) input.addEventListener('input', function(){
@@ -1667,6 +1711,13 @@
       _bbLinkPendingUrl=null; _bbLinkPendingThumb=null; _bbLinkPendingTitle=null;
       var linkInput=document.getElementById('bb-d-link-url'); if(linkInput) linkInput.value='';
       _bbRenderLinkPreview(null);
+    });
+    var fileInput=document.getElementById('bb-d-link-file');
+    T().wire('bb-d-link-attach', function(){ if(fileInput) fileInput.click(); });
+    if(fileInput) fileInput.addEventListener('change', function(){
+      var f=fileInput.files && fileInput.files[0];
+      fileInput.value=''; // allow re-picking the same file later
+      if(f) _bbUploadLinkFile(f);
     });
   }
   // Additions, Aug 27 2026 -- checking a box opens its section and

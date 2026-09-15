@@ -330,8 +330,19 @@
      Field Guide button still opens/closes it instantly either way,
      same as before. ---------- */
   var DESK_CLOSED_KEY = 't2t_deskClosed';
-  var _deskClosed = false;
-  try { _deskClosed = localStorage.getItem(DESK_CLOSED_KEY) === '1'; } catch(e){}
+  // Sept 15 2026, Larry: "Desktop needs to be the T2T Hub after
+  // signing in" -- clarified as "just desktop and buttons," i.e. the
+  // plain desk itself, not the Field Guide widget auto-opened on top
+  // of it. Only changes the FIRST-EVER default (nothing saved yet for
+  // this browser) from open to closed -- a returning traveler's own
+  // saved open/closed state (the "stay where the traveler puts it"
+  // rule, July 31/Sept 4 2026) is read and respected exactly as
+  // before, untouched.
+  var _deskClosed = true;
+  try {
+    var _savedDeskClosed = localStorage.getItem(DESK_CLOSED_KEY);
+    if (_savedDeskClosed !== null) _deskClosed = _savedDeskClosed === '1';
+  } catch(e){}
 
   function isDeskClosed(){
     return _deskClosed;
@@ -440,11 +451,118 @@
     tick();
   }
 
+  /* ---------- Retire the drawers to the open desk -- Sept 15 2026,
+     Larry (after live-testing with Rachel, on an iPad): the two side
+     drawers' single/double/triple-tap mode switch was unreliable on
+     touch -- a plain single tap sometimes opened Drawer 2 instead of
+     Drawer 1 (most likely cause: makeTapCounter, drawer-system.js,
+     counts every click event in a burst and a touch device can fire
+     more than one per tap under the right conditions -- flagged here,
+     not guessed at blind, since it can't be confirmed without live
+     device testing). Separately, and regardless of that bug, Larry
+     decided the drawers themselves should stop being where navigation
+     lives at all: "Remove items from drawers. Leave code for drawers
+     but make them go away visibly" and, on what the Desktop should
+     show right after signing in, "just desktop and buttons."
+
+     Nothing about the drawer SYSTEM is touched by this function --
+     every one of the six split files (Drag Engine, Drawer Style,
+     Drawer System, Drawer Surprise Tray, this file, Desktop Style) is
+     unchanged and still fully wired, so the drawers themselves could
+     come back with a one-line revert of the call at the bottom of
+     init() below. This only changes where the three navigation groups
+     built inside them (STORYBOARDS, LIBRARY, PHASES) physically live
+     once buildNavBar()/buildRightDrawer() finish constructing them:
+     pulled out onto the open desk as their own free-floating objects
+     -- the exact same treatment the Notebook already gets -- instead
+     of nested inside a drawer's mode-1 panel. The (now-empty) drawer
+     bars and their toggle nubs are hidden outright.
+
+     "Remove items from drawers" also covers anyone already mid-session
+     with something actually DOCKED into a drawer slot (a tool button
+     dragged in by hand, the Notebook, anything sitting in the custom-
+     tray slot) -- unclaimEveryDrawerSlot() below sweeps every claim
+     key so nothing is left stranded, invisible, behind a drawer that
+     no longer shows. ---------- */
+  var RETIRED_DRAWER_STYLE_ID = 'sz-drawers-retired-style';
+  function injectDrawerRetiredStyle(){
+    if (document.getElementById(RETIRED_DRAWER_STYLE_ID)) return;
+    var css = ''
+      + '#sz-navbar,#sz-drawer-r,#sz-navbar-toggle,#sz-drawer-r-toggle{display:none!important}'
+      // Larry, Sept 15 2026: "enlarge the text on the buttons" -- now
+      // that these stand on their own on the open desk instead of
+      // packed into a narrow drawer column, they can afford to be
+      // bigger and easier to read/tap (this mattered on Rachel's
+      // iPad specifically).
+      + '.sz-tool-btn{width:170px}'
+      + '.sz-tool-face{font-size:15px;padding:9px 6px}'
+      // Matches style.css's own body:has(#fg-root.isx-full) rule that
+      // already hides #sz-navbar/#sz-drawer-r (and gear/X) the instant
+      // a full-screen tool (Briefing Board, Idea Storyboard, etc.)
+      // opens -- these three trays used to be DOM descendants of those
+      // bars, so they hid for free; now that they float independently
+      // on the open desk, they need that exact same rule spelled out
+      // for their own ids or they'd float on top of every full-screen
+      // tool instead of getting out of the way with everything else.
+      + 'body:has(#fg-root.isx-full) #sz-tools-storyboards,'
+      +   'body:has(#fg-root.isx-full) #sz-tools-library,'
+      +   'body:has(#fg-root.isx-full) #sz-phases{display:none!important}';
+    var style = document.createElement('style');
+    style.id = RETIRED_DRAWER_STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  function unclaimEveryDrawerSlot(){
+    try {
+      var toRemove = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('t2t_claimSlot_') === 0) toRemove.push(k);
+      }
+      toRemove.forEach(function(k){ localStorage.removeItem(k); });
+    } catch(e){}
+  }
+
+  // Moves an already-built tray wrap out onto the open desk. If it
+  // already carries its own position (a traveler dragged it
+  // independently before this session, or it just got restored from a
+  // saved spot by makeDraggable during buildNavBar/buildRightDrawer),
+  // that position is left exactly as-is -- only a tray with no
+  // position of its own yet (still sitting in normal in-flow layout,
+  // per makeDraggable's skipDefaultPos branch) gets one of these
+  // defaults. Also strips '.sz-mode-panel' -- the Phase tray wrap IS
+  // one of the drawer's own mode-1 panels (see buildRightDrawer), and
+  // that class's display:none!important rule applies globally, not
+  // just while parented inside the drawer -- left on, a traveler whose
+  // saved tap-mode happened to be 2 or 3 would find the whole Phase
+  // tray invisible after this move.
+  function floatFree(el, defaultLeft, defaultTop){
+    if (!el) return;
+    el.classList.remove('sz-mode-panel', 'sz-mode-active');
+    if (el.parentNode !== document.body) document.body.appendChild(el);
+    if (el.style.position !== 'fixed') {
+      el.style.position = 'fixed';
+      el.style.left = defaultLeft + 'px';
+      el.style.top = defaultTop + 'px';
+      el.style.right = 'auto'; el.style.bottom = 'auto'; el.style.margin = '0';
+    }
+  }
+
+  function retireDrawersToDesk(){
+    injectDrawerRetiredStyle();
+    unclaimEveryDrawerSlot();
+    floatFree(document.getElementById('sz-tools-storyboards'), 16, 70);
+    floatFree(document.getElementById('sz-tools-library'), 16, 420);
+    floatFree(document.getElementById('sz-phases'), Math.max(16, window.innerWidth - 190), 70);
+  }
+
   function init(){
     window.SZLegacyFixes.runAll();
     buildDeskWatermark();
     window.SZDrawerSystem.buildNavBar();
     window.SZDrawerSystem.buildRightDrawer();
+    retireDrawersToDesk();
     // The real Field Guide tool button (in Drawer System's tray) is
     // the reopen/close handle for mid-session clicks. Here at boot,
     // re-apply whatever was saved last (see the persisted

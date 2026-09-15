@@ -727,7 +727,8 @@
         // now renders inside .bb-key-badges below instead, so every
         // per-card "signal" lives in the same corner.
         var notesBadge = (c.notes && c.notes.trim()) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
-        var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="Open link">🎬</a>' : '';
+        var _linkIsPdf = c.linkUrl && /\.pdf(\?.*)?$/i.test(c.linkUrl.trim());
+        var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="'+(_linkIsPdf?'Open PDF':'Open link')+'">'+(_linkIsPdf?'📄':'🎬')+'</a>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
         // exists (manually set in advance, or auto-stamped the moment
         // this card first moves into Doing) -- the quieter "date added
