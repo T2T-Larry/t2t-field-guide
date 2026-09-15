@@ -104,7 +104,18 @@
       // column begins right after it (just the 10px grid gap between
       // them). Only the actions column stays 1fr, absorbing the space
       // this frees up on the right for a future CAST view button.
-      +'.bb-mhead-top{display:grid;grid-template-columns:auto auto 1fr;align-items:start;gap:10px;height:100%;position:relative}'
+      // Sept 15 2026 rewrite -- Larry: "Move PROJECT - TOPIC - STORYBOARD -
+      // VIEW to now center on the BB again." This grid (PROJECT/TOPIC as
+      // real tracks, "Briefing Board"/VIEW bolted on afterward as absolute
+      // overrides once each one in turn started overlapping its neighbor --
+      // see the Sept 6/9/13 notes throughout this file) never had a way to
+      // center all four as one group; PROJECT was always pinned flush to
+      // the grid's own left edge. All four fields (plus bb-mhead-actions)
+      // are now absolutely positioned by one function, _bbPositionIdBandRow
+      // (briefing-board-master-nav.js, renamed from
+      // _bbPositionBoardKindMidway) -- this row goes back to a plain
+      // position:relative anchor, nothing left for the grid to do.
+      +'.bb-mhead-top{display:block;height:100%;position:relative}'
       // TYPE + NAME, Aug 3 2026 -- Larry: "TOPIC is a permanent Briefing
       // Board [title], A control and communication tool, in the center.
       // Far left: eyebrow TYPE with drop down list followed by a Field
@@ -135,8 +146,19 @@
       // job instead, right on TOPIC itself. justify-content:space-between
       // is harmless with one child (behaves like flex-start) so left
       // as-is rather than touched for its own sake.
-      +'.bb-mh-typebox{display:flex;justify-self:stretch;justify-content:space-between;align-items:flex-start;gap:14px}'
+      // Sept 15 2026 -- taken out of grid flow (see .bb-mhead-top above),
+      // same absolute-box-positioned-every-render treatment "Briefing
+      // Board" (.bb-mh-group-center) already had -- left/top here are just
+      // the pre-JS fallback so this never flashes off-position for a frame.
+      // justify-self/justify-content dropped, meaningless outside a grid.
+      +'.bb-mh-typebox{position:absolute;top:0;left:0;display:flex;align-items:flex-start;gap:14px}'
       +'.bb-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
+      // Sept 15 2026 -- TOPIC out of grid flow too, same reasoning as
+      // bb-mh-typebox just above; .bb-mh-fieldgrp (shared with Logo/View,
+      // both of which stay their own separate story) already gives this
+      // its internal flex-column layout, this rule only adds the
+      // positioning.
+      +'.bb-mh-group-topic{position:absolute;top:0;left:0}'
       +'.bb-mh-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       // Traveler name, Sept 5 2026 -- Larry: "every board now and in the
       // future" should carry the same PROJECT and PARENT fields the
@@ -241,6 +263,25 @@
       // which was never the part that had drifted.
       +'.bb-hdr-select{background:#fff;border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-family:var(--bb-head-font);font-weight:700;font-size:calc(11px * var(--fg-text-scale,1));max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-hdr-select:hover{opacity:1}'
+      // PROJECT/STORYBOARD/VIEW's shared size, Sept 15 2026 -- Larry:
+      // "board type field must be the same size type and boldness as
+      // PROJECT field" / "VIEW ... should be same size as the other
+      // names." PROJECT (bb-board-trigger) and VIEW (bb-view-trigger) had
+      // each been bumped to 14px/30px-tall/120px-wide with their own
+      // one-off inline style (Sept 5 and Sept 13 2026); STORYBOARD
+      // (bb-boardkind-trigger) never got the same treatment, so it sat at
+      // .bb-hdr-select's smaller base size instead. One real class now,
+      // reading the same IDBand.TOKENS.fieldBox all three are documented
+      // (id-band.js) as sharing, so this can't quietly drift apart a
+      // fourth time -- add/remove .bb-mh-field-trigger on a trigger button
+      // instead of copying numbers into a new inline style.
+      +'.bb-mh-field-trigger{font-size:calc('+IDBand.TOKENS.fieldBox.fontSize+'px * var(--fg-text-scale,1));height:'+IDBand.TOKENS.fieldBox.height+'px;max-width:calc('+IDBand.TOKENS.fieldBox.maxWidth+'px * var(--fg-text-scale,1))}'
+      // VIEW alone drops back to normal weight, Sept 15 2026 -- Larry:
+      // "VIEW field ... not bold." PROJECT and STORYBOARD stay bold
+      // (.bb-hdr-select's own font-weight:700, part of "boldness" item 1
+      // asked STORYBOARD to match) -- VIEW is a filter control, not an
+      // identity field, so it's the one exception.
+      +'#bb-view-trigger{font-weight:400}'
       // Rename, Aug 13 2026 (Larry) -- the separate pencil button is
       // gone; double-click the Title trigger to rename, same interaction
       // as the Idea Board's Title (see wireTopicBar's dblclick wiring).
@@ -356,7 +397,19 @@
       // lines. width:max-content forces the box back to its real content
       // width regardless of available space, so the transform-based
       // centering still lands it on the right midpoint without the wrap.
-      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;position:absolute;top:0;left:50%;transform:translateX(-50%);width:max-content}'
+      // gap 10px->3px, Sept 15 2026 -- this box just gained a real
+      // "Storyboard" eyebrow above its trigger (briefing-board-screens.js);
+      // 10px was sized for the old tagline this box used to also carry
+      // (dropped Sept 6, see below), way more space than an eyebrow-to-box
+      // pair needs -- 3px matches .bb-mh-fieldgrp's own eyebrow spacing
+      // (PROJECT/VIEW), so all three fields read as the same shape.
+      // left:50%+translateX(-50%) fallback dropped, Sept 15 2026 --
+      // _bbPositionIdBandRow now always sets a real `left` as a plain
+      // left-edge coordinate (same convention as bb-mh-typebox/
+      // bb-mh-group-topic/#bb-view-wrap), not a self-centering midpoint,
+      // so this needs the same plain left:0 pre-JS fallback they use
+      // instead of its own centering transform.
+      +'.bb-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;position:absolute;top:0;left:0;width:max-content}'
       // Sept 5 2026 -- Larry: match the Idea Board's header band. Bumped
       // to the same 42px this board-kind label uses there (idea-storyboard-
       // 9710.js sc-board-kind-trigger) and given the same raised/embossed
@@ -399,7 +452,13 @@
       // edge (align-items:flex-end) instead of each one's vertical
       // center; Logo was already the leftmost of the three, immediately
       // left of Utility, so that part needed no change.
-      +'.bb-mhead-actions{display:flex;gap:8px;flex-shrink:0;justify-self:end;justify-content:flex-end;align-items:flex-end}'
+      // Sept 15 2026 -- pinned to the header's own right edge directly
+      // (position:absolute;top:0;right:0) now that bb-mhead-top is no
+      // longer a grid (see that rule above) -- justify-self:end was what
+      // did this job before, meaningless outside a grid item. Same visual
+      // result: this row still lands flush against the header's true
+      // right edge every render.
+      +'.bb-mhead-actions{position:absolute;top:0;right:0;display:flex;gap:8px;flex-shrink:0;align-items:flex-end}'
       // Sept 13 2026 fix (live-site check, Larry's Master BB "Live check
       // the site for bugs" card) -- View was overlapping Board Type's
       // "Briefing Board" title on every board. _bbPositionBoardKindMidway
@@ -416,7 +475,12 @@
       // top:0 fallback above -- and is the only measurement the
       // positioning function assumes is already in place, since it only
       // ever sets `left`.
-      +'#bb-view-wrap{position:absolute;top:0}'
+      // left:0 fallback added Sept 15 2026 -- same pre-JS-measurement
+      // reasoning as bb-mh-typebox/bb-mh-group-topic above, now that
+      // _bbPositionIdBandRow (renamed from _bbPositionBoardKindMidway)
+      // positions VIEW as the last link in the PROJECT-TOPIC-STORYBOARD-
+      // VIEW chain rather than off Board Type's own midpoint math.
+      +'#bb-view-wrap{position:absolute;top:0;left:0}'
       +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --

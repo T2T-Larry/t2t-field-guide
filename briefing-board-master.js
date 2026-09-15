@@ -626,8 +626,12 @@
           _bbRenderTravelerName();
           _bbRenderParentField();
           await _bbRenderTopicField();
-          _bbPositionBoardKindMidway();
+          // Sept 15 2026 -- VIEW's own label set BEFORE the position pass
+          // now (was after), since _bbPositionIdBandRow measures VIEW's
+          // real rendered width as part of the chain -- reading it before
+          // its text is set would measure last render's stale width.
           _bbSyncViewTriggerLabel();
+          _bbPositionIdBandRow();
           await _bbLoadMasterRollupCards();
           await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
           renderBoard();
@@ -644,8 +648,11 @@
     _bbRenderTravelerName();
     _bbRenderParentField();
     await _bbRenderTopicField();
-    _bbPositionBoardKindMidway();
+    // Sept 15 2026 -- see the same reordering note on the migration path
+    // above; VIEW's label has to be set before _bbPositionIdBandRow
+    // measures it.
     _bbSyncViewTriggerLabel();
+    _bbPositionIdBandRow();
     await _bbLoadMasterRollupCards();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
     await _bbLoadForeignCardsForPersonalBoard(board);

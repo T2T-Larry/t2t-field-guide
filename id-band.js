@@ -80,7 +80,14 @@
       // down-arrow only -- neither field has an "up" the way TOPIC does
       // (PROJECT always mirrors TOPIC's own top-of-hierarchy ancestor;
       // STORYBOARD's five options are a flat set, not a hierarchy).
-      fieldBox: { fontSize:30, radius:8, padding:'2px 12px', lineHeight:1.15 },
+      // fontSize corrected 30->14 same day, once PROJECT/STORYBOARD/VIEW
+      // actually got wired to this token (briefing-board-styles.js
+      // .bb-mh-field-trigger) instead of each carrying its own ad hoc
+      // inline style -- 14/30/120 is PROJECT's real, already-live size
+      // (bb-board-trigger's Sept 5 2026 bump), which is what "PROJECT
+      // and Board Type are the same size" actually means; 30 here was
+      // this token's first pass, written before anything read it.
+      fieldBox: { fontSize:14, height:30, maxWidth:120, radius:8, padding:'2px 12px', lineHeight:1.15 },
       fieldCaret: { width:24, glyphSize:14 }
     }
   };

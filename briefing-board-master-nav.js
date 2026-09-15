@@ -1076,93 +1076,90 @@
     });
     if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
   }
-  function _bbPositionBoardKindMidway(){
-    var wrap=document.getElementById('bb-boardkind-wrap');
-    var topicEl=document.getElementById('bb-topic-cdrop');
-    var logoEl=document.getElementById('bb-logo-slot');
+  // Shared gap between every link in the PROJECT-TOPIC-STORYBOARD-VIEW
+  // chain below, Sept 15 2026 -- matches .bb-mhead-top's old grid
+  // `gap:10px` (PROJECT to TOPIC), so TOPIC-to-STORYBOARD and
+  // STORYBOARD-to-VIEW read as the identical distance -- Larry: "board
+  // type field needs to be the same distance from the TOPIC as the
+  // PROJECT field." One constant instead of three separately-typed
+  // numbers so it can't drift apart a second time.
+  var ID_BAND_GAP = 10;
+  // ID Band row layout, Sept 15 2026 rewrite (renamed from
+  // _bbPositionBoardKindMidway) -- Larry: "Move PROJECT - TOPIC -
+  // STORYBOARD - VIEW to now center on the BB again." The old version
+  // only ever placed Board Type at the midpoint between TOPIC and Logo,
+  // with VIEW chasing along after it and PROJECT/TOPIC left pinned to
+  // the grid's own flush-left edge (see briefing-board-styles.js for the
+  // grid removal this replaces) -- nothing ever centered all four as one
+  // group. This positions all four (now all position:absolute, same
+  // file) as a single left-to-right chain, ID_BAND_GAP apart, then
+  // centers that chain's total width on the header -- clamped so it
+  // never runs under Logo/Utility/Close on the right or off the
+  // container's own left edge, same "measure the real boxes, clamp
+  // against a hard edge" shape every positioning fix in this file has
+  // used since Sept 6.
+  function _bbPositionIdBandRow(){
+    var projectWrap=document.getElementById('bb-project-wrap');
+    var topicWrap=document.getElementById('bb-topic-wrap');
+    var boardkindWrap=document.getElementById('bb-boardkind-wrap');
+    var viewWrap=document.getElementById('bb-view-wrap');
+    var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
     var container=document.querySelector('#s-briefing-board .bb-mhead-top');
-    if(!wrap || !topicEl || !logoEl || !container) return;
-    var topicRect=topicEl.getBoundingClientRect();
-    var logoRect=logoEl.getBoundingClientRect();
+    if(!projectWrap || !topicWrap || !boardkindWrap || !viewWrap || !actionsEl || !container) return;
     var containerRect=container.getBoundingClientRect();
     // Guard against a not-yet-laid-out screen -- nothing real to measure
-    // yet, leave the left:50% fallback in place.
-    if(!topicRect.width || !logoRect.width || !containerRect.width) return;
-    // Sept 13 2026 fix -- VIEW sits to the right of Board Type now (see
-    // below), so figuring out how much room Board Type itself can use
-    // has to reserve VIEW's own width first, or the two would still
-    // fight over the same pixels the moment a window got narrow enough.
-    // Measured before the fit call below on purpose: VIEW's width comes
-    // from its own fixed CSS sizing (bb-hdr-select), not from anything
-    // this function changes, so there's no ordering hazard reading it
-    // early like there would be re-measuring wrap after refitting it.
-    var viewWrap=document.getElementById('bb-view-wrap');
-    var viewRect=viewWrap?viewWrap.getBoundingClientRect():null;
-    var viewGap=8, viewReserve=(viewRect&&viewRect.width)?(viewRect.width+viewGap):0;
-    // Shrink the label to the real gap BEFORE any of the position/clamp
-    // math below, which reads wrap's rendered width -- so the clamp
-    // always sees the already-fitted (often smaller) box, same as
-    // measuring "the real boxes" everywhere else in this function.
-    // Sept 13 2026 -- floored at 24px (rather than letting VIEW's
-    // reserved space push this to zero or negative on a narrow window):
-    // _bbFitBoardKindLabel treats anything <=0 as "don't bother
-    // shrinking" and shows the label at full size, which is exactly the
-    // overflow this whole function exists to prevent. A small positive
-    // floor keeps it always actually fitting -- shrunk down near
-    // _bbFitBoardKindLabel's own 14px floor on a truly tiny window --
-    // instead of giving up and overflowing past VIEW/Logo.
-    _bbFitBoardKindLabel(Math.max(24, (logoRect.left-topicRect.right)-20-viewReserve));
-    // Sept 2026, Larry: "Board Type next to TOPIC" -- was centered at
-    // the midpoint between TOPIC and LOGO (often nowhere near TOPIC on
-    // a wide window). Now targets the position immediately to TOPIC's
-    // right instead of a midpoint -- wrap is still centered on
-    // wrap.style.left via transform:translateX(-50%), so "immediately
-    // right of TOPIC" means TOPIC's right edge plus a small gap plus
-    // half of wrap's own width (so wrap's LEFT edge, not its center,
-    // is what actually sits at that gap). Falls back to the old
-    // midpoint-vs-logo clamp as a ceiling only, so on a narrow window
-    // this still can't run into the Logo/actions on the right --
-    // same safety the Sept 9 2026 overlap fix already had, just a
-    // minimum instead of a preferred value now.
-    var midpoint=topicRect.right+(logoRect.left-topicRect.right)/2;
-    var wrapRect=wrap.getBoundingClientRect();
-    if(wrapRect.width){
-      var gap=8, half=wrapRect.width/2;
-      var minMid=topicRect.right+gap+half, maxMid=logoRect.left-viewReserve-gap-half;
-      midpoint = (maxMid>=minMid) ? Math.min(minMid, maxMid) : minMid;
-    }
-    wrap.style.left=(midpoint-containerRect.left)+'px';
+    // yet, leave the left:0/top:0 CSS fallback in place.
+    if(!containerRect.width) return;
+
+    var pr=projectWrap.getBoundingClientRect();
+    var tr=topicWrap.getBoundingClientRect();
+    var vr=viewWrap.getBoundingClientRect();
+    var ar=actionsEl.getBoundingClientRect();
+    if(!pr.width || !tr.width || !vr.width) return;
+
+    // Shrink Board Type's own label to whatever room is actually left
+    // once Project, Topic, View, and the three gaps between all four are
+    // accounted for -- same "measure the real boxes before fitting"
+    // order the Sept 13 2026 version used, just budgeted against the
+    // whole chain now instead of only the Topic-to-Logo gap. Floored at
+    // 24px for the same reason as before: _bbFitBoardKindLabel treats
+    // anything <=0 as "don't shrink," which is exactly the overflow this
+    // exists to prevent.
+    var available=containerRect.width-pr.width-tr.width-vr.width-(ID_BAND_GAP*4);
+    _bbFitBoardKindLabel(Math.max(24, available));
+
+    var br=boardkindWrap.getBoundingClientRect();
+    if(!br.width) return;
+
+    var totalWidth=pr.width+ID_BAND_GAP+tr.width+ID_BAND_GAP+br.width+ID_BAND_GAP+vr.width;
+    // Preferred: the whole chain centered on the header's real width
+    // ("center on the BB"). Never let it run under Logo/Utility/Close
+    // (actionsEl, already pinned to the header's own right edge) or off
+    // the container's own left edge -- same min/max clamp shape the old
+    // midpoint math used, just applied to the chain's total width.
+    var rightLimit=ar.left-ID_BAND_GAP;
+    var leftLimit=containerRect.left;
+    var preferredLeft=containerRect.left+(containerRect.width-totalWidth)/2;
+    var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
+
+    var x=groupLeft;
+    projectWrap.style.left=(x-containerRect.left)+'px'; x+=pr.width+ID_BAND_GAP;
+    topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+ID_BAND_GAP;
+    boardkindWrap.style.left=(x-containerRect.left)+'px'; x+=br.width+ID_BAND_GAP;
+    viewWrap.style.left=(x-containerRect.left)+'px';
+
     // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
-    // bottom-justify with the upper right corner buttons" -- same
-    // measure-the-real-boxes approach as the midpoint above, just
-    // matched to bb-mhead-actions' own actual bottom edge instead of a
-    // guessed fixed offset. That edge isn't a constant pixel value --
-    // Logo's eyebrow+frame stack (bb-mh-fieldgrp) is taller than a
-    // plain bb-icon-btn, so the actions row's real height shifts with
-    // Logo's own layout and text-scale; reading it live keeps this
-    // aligned instead of drifting the next time that stack changes.
-    var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
-    if(actionsEl){
-      var actionsRect=actionsEl.getBoundingClientRect();
-      var wrapRect2=wrap.getBoundingClientRect();
-      if(actionsRect.height && wrapRect2.height){
-        wrap.style.top=(actionsRect.bottom-wrapRect2.height-containerRect.top)+'px';
-      }
-    }
-    // Sept 13 2026 fix (Larry: "VIEW ... should be to the left after the
-    // board type" -- it was landing over by Logo instead, overlapping
-    // Board Type, because it was still a plain flex child of
-    // bb-mhead-actions, a row that grows LEFTWARD from Logo/Utility/
-    // Close's shared right edge; adding VIEW to it never actually put it
-    // next to Board Type, just closer to Logo). VIEW is now taken out of
-    // that flex row (position:absolute, briefing-board-styles.js) and
-    // placed here instead, right after Board Type's own just-computed
-    // real right edge -- same "measure the actual box" approach as
-    // everything else in this function, so it tracks correctly whatever
-    // width Board Type ends up at on any given window.
-    if(viewWrap&&viewRect&&viewRect.width){
-      var wrapRectFinal=wrap.getBoundingClientRect();
-      viewWrap.style.left=(wrapRectFinal.right-containerRect.left+viewGap)+'px';
+    // bottom-justify with the upper right corner buttons" -- unchanged
+    // rule, now applied to all four chain links instead of just Board
+    // Type, so PROJECT/TOPIC/STORYBOARD/VIEW all share one bottom edge
+    // with Logo/Utility/Close. actionsEl's real bottom edge isn't a
+    // constant pixel value (Logo's eyebrow+frame stack is taller than a
+    // plain bb-icon-btn), so this reads it live rather than guessing.
+    if(ar.height){
+      [projectWrap, topicWrap, boardkindWrap, viewWrap].forEach(function(el){
+        var r=el.getBoundingClientRect();
+        if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
+      });
     }
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
@@ -1174,7 +1171,7 @@
   window.addEventListener('resize', function(){
     try{
       var scr=document.getElementById('s-briefing-board');
-      if(scr && scr.classList.contains('active')) _bbPositionBoardKindMidway();
+      if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
     }catch(e){}
   });
 

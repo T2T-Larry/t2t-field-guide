@@ -45,7 +45,7 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
-            +'<div class="bb-mh-typebox">'
+            +'<div class="bb-mh-typebox" id="bb-project-wrap">'
               // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
               // of this row (was third) to sit at the header's far left
               // corner, matching where the Idea Board keeps its own
@@ -62,7 +62,20 @@
               // Sept 5 2026, Larry: "increase the text size on the PROJECT
               // field on all boards" -- matches sc-title-trigger's own
               // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              // That 14px/30px/120px sizing now comes from the shared
+              // .bb-mh-field-trigger class (briefing-board-styles.js,
+              // reading IDBand.TOKENS.fieldBox) instead of this button's
+              // own inline style, so PROJECT/STORYBOARD/VIEW can never
+              // drift out of sync again -- see the Sept 15 2026 note on
+              // bb-boardkind-trigger below for the "why now" (Larry: board
+              // type wasn't actually matching PROJECT's size).
+              // "Project" eyebrow, Sept 15 2026 -- Larry asked this back
+              // (it was dropped Sept 5, see the note above) so this field
+              // reads the same eyebrow-then-box shape as VIEW just added
+              // Sept 13. Traveler-name eyebrow stays above it, unchanged --
+              // this is additive, not a replacement; easy to drop back out
+              // if Larry wants just the one eyebrow here after all.
+              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent field retired from the header, Sept 6 2026 --
               // Larry: "the hierarchy is set when a PROJECT is chosen,"
               // folding its "jump to any level above" job into a new
@@ -130,7 +143,7 @@
             // PROJECT" read Larry gave this today). Goes visually inert
             // (.bb-topic-caret:disabled, above) once TOPIC is already a
             // project's own root -- nothing above it to jump to.
-            +'<div class="bb-mh-fieldgrp bb-mh-group-topic">'
+            +'<div class="bb-mh-fieldgrp bb-mh-group-topic" id="bb-topic-wrap">'
               +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:6px">'
                 +'<button type="button" class="bb-topic-caret" id="bb-topic-caret-up" title="Jump to any level above" aria-label="Jump to any level above">▴</button>'
                 +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:default"></button>'
@@ -174,7 +187,27 @@
             // bb-mh-group-center's centering (left:50%+translateX(-50%))
             // re-measures the box every render, so the new, wider footprint
             // doesn't need any position math changed here.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles" style="font-family:var(--bb-head-font);letter-spacing:1px;">TASKS</button><button type="button" class="bb-parent-caret" id="bb-boardkind-caret" title="Switch to Ideas, Plan, Share, or Roles" aria-label="Switch storyboard type">▾</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            //
+            // Sept 15 2026, round two -- Larry: this still wasn't actually
+            // matching PROJECT ("same size type and boldness"). The inline
+            // font-family/letter-spacing above was left over from when this
+            // was still the bare .bb-mh title text and never got the same
+            // 14px/30px/120px sizing PROJECT's own bb-board-trigger got on
+            // Sept 5 -- dropped in favor of the new shared
+            // .bb-mh-field-trigger class (briefing-board-styles.js) both
+            // buttons now carry, so they truly can't drift apart again.
+            // "Storyboard" eyebrow added above the box to match VIEW's own
+            // eyebrow-then-box shape (same request as PROJECT's, above).
+            // bb-mh-group-center's own gap tightened 10px->3px the same day
+            // to match .bb-mh-fieldgrp's eyebrow-to-box spacing now that
+            // this box has a real eyebrow sitting on top of it (that 10px
+            // was sized for the old, now-gone tagline, not for this).
+            // Positioning itself (left/top, plus the matching TOPIC-side
+            // gap for PROJECT and TOPIC-STORYBOARD-VIEW as one centered
+            // group) moved to _bbPositionIdBandRow (briefing-board-master-
+            // nav.js, renamed from _bbPositionBoardKindMidway) -- see that
+            // function for the full story.
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Storyboard</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles">TASKS</button><button type="button" class="bb-parent-caret" id="bb-boardkind-caret" title="Switch to Ideas, Plan, Share, or Roles" aria-label="Switch storyboard type">▾</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the
@@ -204,7 +237,14 @@
               // exactly "to the right of Board Type" without touching
               // the grid at all. See _bbWireViewDropdown (briefing-
               // board-master-nav.js).
-              +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-view-trigger" title="Filter this board to one or more people" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
+              // Sept 15 2026 -- same .bb-mh-field-trigger class swap as
+              // PROJECT/STORYBOARD above (same token, so "same size as the
+              // other names" holds by construction); font-weight pulled
+              // back to normal here specifically (see #bb-view-trigger in
+              // briefing-board-styles.js) -- Larry: VIEW's own text
+              // shouldn't be bold like PROJECT/STORYBOARD's identity
+              // fields, it's a filter control, not a name.
+              +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-view-trigger" title="Filter this board to one or more people">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
               // Relationships used to ride along here as their own icons
