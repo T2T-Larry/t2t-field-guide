@@ -396,6 +396,36 @@
 
   function toast(cfg, msg){ if(cfg.showToast) cfg.showToast(msg); }
 
+  // Sept 15 2026 -- Larry: "when a traveler moves or resizes a logo, it
+  // STAYS where it is put." Resize/drag saves used to be a bare
+  // try{await cfg.saveLogo(...)}catch(_e){} -- any failure (a network
+  // blip, anything) was thrown away silently. The frame still LOOKED
+  // right for the rest of that visit (the drag/resize already moved the
+  // slot's own DOM style directly), so nothing seemed wrong until the
+  // next time render() ran from a fresh row read -- cold reload, a
+  // different session, even just switching board types and back -- at
+  // which point it snapped to whichever position/size last actually
+  // made it into the database, looking exactly like "the logo moved on
+  // its own." This wraps every save with one silent retry (a single
+  // dropped request shouldn't need a traveler's attention) and only
+  // surfaces a toast if the second attempt also fails, so a real
+  // failure is now visible in the moment it happens instead of showing
+  // up as unexplained drift later.
+  async function saveLogoPatch(cfg, patch){
+    try{
+      await cfg.saveLogo(patch);
+      return true;
+    }catch(e1){
+      try{
+        await cfg.saveLogo(patch);
+        return true;
+      }catch(e2){
+        toast(cfg, 'Logo position didn’t save — try moving it again');
+        return false;
+      }
+    }
+  }
+
   // Reflects whichever row cfg.getRow() currently returns into the DOM
   // -- called after every wire-up's own header re-render, same as
   // _bbRenderLogo/the old _sboardUpdateHeaderChrome inline block used
@@ -653,7 +683,7 @@
       var w=Math.round(parseFloat(slot.style.width)||startW);
       var h=Math.round(parseFloat(slot.style.height)||startH);
       if(cfg.getRow()){
-        try{ await cfg.saveLogo({logo_w:w, logo_h:h}); }catch(_e){}
+        await saveLogoPatch(cfg, {logo_w:w, logo_h:h});
       }
       // Larry: "remove resize tab after crop and resize edited" -- once
       // a resize drag finishes, the handle goes back to hidden-until-
@@ -714,7 +744,7 @@
       if(!cfg.getRow()) return;
       var dx=ev.clientX-startX, dy=ev.clientY-startY;
       var newDx=Math.round(startDx+dx), newDy=Math.round(startDy+dy);
-      try{ await cfg.saveLogo({logo_dx:newDx, logo_dy:newDy}); }catch(_e){}
+      await saveLogoPatch(cfg, {logo_dx:newDx, logo_dy:newDy});
     });
   }
 

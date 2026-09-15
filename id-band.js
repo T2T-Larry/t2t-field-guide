@@ -69,8 +69,56 @@
       // included here yet: Briefing Board currently uses 10, the
       // Idea Board 12 -- a real drift, not a formatting difference,
       // and not this file's call to pick one silently.
-      logo: { minSize:20, maxSize:90, defaultSize:30 }
+      logo: { minSize:20, maxSize:90, defaultSize:30 },
+
+      // PROJECT and STORYBOARD (formerly the board-kind label), Sept 15
+      // 2026 -- Larry: "all the actual fields should look like the TOPIC
+      // field with white background and frame... PROJECT and Board Type
+      // [now STORYBOARD] are the same size and smaller than TOPIC."
+      // Same look template as topicBox (white bg, board's-own-color
+      // frame, same font/radius family) at a smaller size, with a single
+      // down-arrow only -- neither field has an "up" the way TOPIC does
+      // (PROJECT always mirrors TOPIC's own top-of-hierarchy ancestor;
+      // STORYBOARD's five options are a flat set, not a hierarchy).
+      fieldBox: { fontSize:30, radius:8, padding:'2px 12px', lineHeight:1.15 },
+      fieldCaret: { width:24, glyphSize:14 }
     }
+  };
+
+  // RETURN button, Sept 15 2026 -- Bill: "a RETURN button to jump back
+  // to the last screen." Scoped to the one concrete case this ID Band
+  // itself creates: switching STORYBOARD kind (IDEAS/PLAN/TASKS/SHARE/
+  // ROLES) navigates you away from wherever you were. recordReturn is
+  // called right before that jump, from each board's own STORYBOARD
+  // dropdown handler; consumeReturn is read once by the RETURN button
+  // and clears itself so a second press doesn't jump again with stale
+  // state. Deliberately a single remembered stop, not a full history
+  // stack -- "the last screen," not "every screen."
+  var _lastBoard = null;
+  window.IDBand.recordReturn = function(kind, topicId){
+    _lastBoard = { kind: kind, topicId: topicId||null };
+  };
+  window.IDBand.consumeReturn = function(){
+    var v = _lastBoard;
+    _lastBoard = null;
+    return v;
+  };
+  window.IDBand.hasReturn = function(){ return !!_lastBoard; };
+
+  // Shared RETURN click handler -- both boards' RETURN button call this
+  // directly rather than each re-implementing the same dispatch.
+  window.IDBand.jumpToRecorded = function(){
+    var v=window.IDBand.consumeReturn();
+    if(!v) return false;
+    if(v.kind==='BRIEFING BOARD'){
+      if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(v.topicId);
+      return true;
+    }
+    if(v.kind==='IDEA' || v.kind==='PLAN'){
+      if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(v.topicId, v.kind);
+      return true;
+    }
+    return false;
   };
 
 })();

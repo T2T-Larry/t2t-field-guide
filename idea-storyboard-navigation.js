@@ -583,12 +583,18 @@
   // list never changes; open/close/position logic mirrors
   // _sboardRenderDropdown's trigger.onclick exactly, just without the
   // addRow.
+  // Sept 15 2026 -- Larry renamed the STORYBOARD options everywhere on
+  // screen: BRIEFING BOARD -> TASKS, CAST -> ROLES. Only the display
+  // label changes here -- value stays the original internal name since
+  // every handler below (and the row's own storyboard_project_id, the
+  // file names, etc.) still keys off it; renaming those too would be a
+  // much bigger, purely backstage change with no visible upside.
   var _sboardBoardKinds=[
     {value:'IDEA', label:'IDEAS', soon:null},
     {value:'PLAN', label:'PLAN', soon:null},
-    {value:'BRIEFING BOARD', label:'BRIEFING BOARD', soon:null},
+    {value:'BRIEFING BOARD', label:'TASKS', soon:null},
     {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
-    {value:'CAST', label:'CAST', soon:null}
+    {value:'CAST', label:'ROLES', soon:null}
   ];
   function _sboardWireBoardKindDropdown(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
@@ -602,7 +608,7 @@
       row.addEventListener('click', function(e){
         e.stopPropagation();
         menu.hidden=true;
-        if(k.value==='PLAN'){ _sboardOpenOrCreatePlanBoard(); return; }
+        if(k.value==='PLAN'){ IDBand.recordReturn('IDEA', T2TShared.currentTopicId); _sboardOpenOrCreatePlanBoard(); return; }
         if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return; }
         if(k.value==='BRIEFING BOARD'){
           // Sept 5 2026, Larry: "if an Idea Board changes a PROJECT or a
@@ -620,6 +626,7 @@
           // leaving whatever board was already open in place.
           var bbTopicId=T2TShared.currentTopicId;
           if(!bbTopicId){ _sboardShowToast('Open a project first.'); return; }
+          IDBand.recordReturn('IDEA', bbTopicId);
           if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic){
             window.T2TBriefingBoard.jumpToTopic(bbTopicId);
           } else if(window.T2T && window.T2T.nav){
@@ -665,6 +672,15 @@
       } else {
         menu.hidden=true;
       }
+    };
+    // sc-board-kind-caret, Sept 15 2026 -- same forward-to-trigger pattern
+    // as sc-project-caret: no independent behavior, just a wider/visible
+    // click target now that STORYBOARD has its own arrow instead of
+    // relying on the whole word being clickable.
+    var kindCaret=document.getElementById('sc-board-kind-caret');
+    if(kindCaret) kindCaret.onclick=function(e){
+      e.stopPropagation();
+      trigger.click();
     };
     _sboardSyncBoardKindChrome();
   }

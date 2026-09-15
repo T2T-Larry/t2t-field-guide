@@ -1742,12 +1742,16 @@
   // once (wireTopicBar) since the menu itself never changes -- every
   // handler reads _bbBoards/_bbCurrentBoardId fresh at click time, not
   // at wire time, so it's always accurate even after switching boards.
+  // Sept 15 2026 -- Larry renamed the STORYBOARD options everywhere on
+  // screen: BRIEFING BOARD -> TASKS, CAST -> ROLES (display label only,
+  // same reasoning as idea-storyboard-navigation.js's own copy of this
+  // list -- value stays the internal name every handler below keys off).
   var _bbBoardKinds=[
     {value:'IDEA', label:'IDEAS'},
     {value:'PLAN', label:'PLAN'},
-    {value:'BRIEFING BOARD', label:'BRIEFING BOARD'},
+    {value:'BRIEFING BOARD', label:'TASKS'},
     {value:'SHARE', label:'SHARE'},
-    {value:'CAST', label:'CAST'}
+    {value:'CAST', label:'ROLES'}
   ];
   function _bbWireBoardKindDropdown(){
     var trigger=document.getElementById('bb-boardkind-trigger'), menu=document.getElementById('bb-boardkind-menu');
@@ -1774,6 +1778,7 @@
           // regardless of which header's Briefing Board you were on.
           var projectId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
           if(!projectId){ _bbShowToast('This board isn’t linked to a project.'); return; }
+          IDBand.recordReturn('BRIEFING BOARD', projectId);
           if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
             window.T2TStoryboard.jumpToProjectKind(projectId, k.value);
           }
@@ -1799,6 +1804,14 @@
       } else {
         menu.hidden=true;
       }
+    };
+    // bb-boardkind-caret, Sept 15 2026 -- same forward-to-trigger pattern
+    // as bb-project-caret above: no independent behavior, just widens the
+    // click target now that STORYBOARD has a visible arrow of its own.
+    var kindCaret=document.getElementById('bb-boardkind-caret');
+    if(kindCaret) kindCaret.onclick=function(e){
+      e.stopPropagation();
+      trigger.click();
     };
   }
 
@@ -1960,6 +1973,9 @@
     T().wire('bb-briefinglog-close', closeBriefingLog);
     T().wire('bb-briefinglog-back', function(){ closeBriefingLog(); openHX(); });
     T().wire('bb-gear', openSettings);
+    T().wire('bb-return', function(){
+      if(!IDBand.jumpToRecorded()) _bbShowToast('Nothing to return to yet');
+    });
     // Double-click the board's own background (not a card) opens the same
     // Board Settings the gear does -- Color Theme is the first field in that
     // panel, so this is BB's version of the traveler color-options shortcut

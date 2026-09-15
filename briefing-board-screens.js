@@ -165,7 +165,16 @@
             // getElementById('bb-mh-subtitle') comes back null, so
             // nothing to rebuild if this ever needs to come back; just
             // put the div back with its old id.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><button type="button" class="bb-mh bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Idea, Plan, Share, or Cast" style="background:none;border:none;padding:0;margin:0;cursor:pointer">Briefing Board</button><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            // Sept 15 2026 -- Larry: PROJECT and STORYBOARD share one
+            // look template (same as bb-board-trigger/bb-project-caret),
+            // sized smaller than TOPIC, down-arrow only. Was bare .bb-mh
+            // embossed text with no visible box or caret; now the same
+            // bb-hdr-select-box + bb-parent-caret pair as PROJECT, just
+            // with the STORYBOARD dropdown's own trigger/menu ids kept.
+            // bb-mh-group-center's centering (left:50%+translateX(-50%))
+            // re-measures the box every render, so the new, wider footprint
+            // doesn't need any position math changed here.
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles" style="font-family:var(--bb-head-font);letter-spacing:1px;">TASKS</button><button type="button" class="bb-parent-caret" id="bb-boardkind-caret" title="Switch to Ideas, Plan, Share, or Roles" aria-label="Switch storyboard type">▾</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the
@@ -213,6 +222,20 @@
               // near injectBriefingBoardStyles), no position math tied to
               // where its wrapper sits in the row.
               +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
+              // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump
+              // back to the last screen." Same icon-btn family as
+              // Utility/Close (bb-icon-btn, already white+frame), placed
+              // before them so Utility/Close stay the fixed rightmost
+              // pair. Always visible rather than conditionally
+              // shown/hidden -- BB doesn't reliably re-run its header
+              // wiring on every jump back in (see wireTopicBar's single
+              // boot-time call in briefing-board.js), so a show/hide
+              // synced to "is there something to return to" could go
+              // stale. Its own click handler (_bbWireBoardKindDropdown's
+              // neighbor, IDBand.jumpToRecorded) already no-ops with a
+              // toast when nothing's been recorded, which is the safer
+              // failure mode.
+              +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
             +'</div>'

@@ -326,9 +326,15 @@
         // 44px, Playfair Display, rounded corners, tight 2px vertical
         // padding) as part of "make all ID bands exactly the same look
         // (other than color)" -- this box was still visibly smaller and
-        // square-cornered next to it. Background/border/text stay this
-        // board's own blue, only shape and type match now.
-        +'#sc-topic-box{text-align:center;background:#eaf3fb;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        // square-cornered next to it. Border/text stay this board's own
+        // blue; background was also this board's own tint (#eaf3fb)
+        // until Sept 15 2026 -- Larry: "the actual fields should look
+        // like the TOPIC field with white background and frame though
+        // colors should be different for each type of board." Fill is
+        // now white everywhere, matching Briefing Board's bb-topic-hit
+        // (which was already white); only the frame/text color is this
+        // board's own identity now.
+        +'#sc-topic-box{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -617,7 +623,17 @@
         // briefing-board.js), part of "make all ID bands exactly the
         // same look (other than color)" -- this label read visibly
         // thinner/plainer than its BB counterpart before this.
-        +'.sc-hdr-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:\'Playfair Display\',serif;font-weight:700;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        //
+        // Sept 15 2026 -- Larry: "all the actual fields should look like
+        // the TOPIC field with white background and frame though colors
+        // should be different for each type of board." This was still
+        // the old translucent-on-dark chip (rgba white on this board's
+        // own navy), never brought up to match Briefing Board's own
+        // bb-hdr-select (white bg, var(--bb-accent) frame) despite the
+        // Sept 6 pass matching everything else about it. Fixed here:
+        // white fill, #1a3a5c frame/text -- this board's identity color,
+        // same idea as bb-hdr-select using --bb-accent.
+        +'.sc-hdr-select{background:#fff;border:1.5px solid #1a3a5c;color:#1a3a5c;border-radius:8px;padding:0 8px;box-sizing:border-box;height:30px;font-size:calc(11px * var(--fg-text-scale,1));font-family:\'Playfair Display\',serif;font-weight:700;max-width:calc(104px * var(--fg-text-scale,1));cursor:pointer;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
         +'.sc-org-name-cdrop{margin-top:3px}'
         +'.sc-hdr-select:hover{opacity:1}'
         +'.sc-hdr-select option{color:#2C2C2A}'
@@ -629,7 +645,9 @@
         // chip (bb-parent-caret, briefing-board.js: 24px wide, 14px
         // glyph) -- this one read noticeably smaller/harder to tap next
         // to it. Same "make all ID bands exactly the same look" pass.
-        +'.sc-project-caret{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:6px;width:'+IDBand.TOKENS.pickerCaret.width+'px;height:'+IDBand.TOKENS.pickerCaret.height+'px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc('+IDBand.TOKENS.pickerCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+        // Sept 15 2026 -- same white-bg/frame fix as sc-hdr-select above,
+        // matching bb-parent-caret's own white+var(--bb-accent) look.
+        +'.sc-project-caret{background:#fff;border:1.5px solid #1a3a5c;color:#1a3a5c;border-radius:6px;width:'+IDBand.TOKENS.pickerCaret.width+'px;height:'+IDBand.TOKENS.pickerCaret.height+'px;box-sizing:border-box;padding:0;cursor:pointer;opacity:.85;font-size:calc('+IDBand.TOKENS.pickerCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
         +'.sc-project-caret:hover{opacity:1}'
         // TOPIC's own up/down arrows, Sept 6 2026 -- Larry: "UP and DOWN
         // ARROWS, just like on BB." Bigger than the small PROJECT-style
@@ -947,7 +965,17 @@
       // 42px -> 36px") -- part of "make all ID bands exactly the same
       // look (other than color)"; this one was the last board-kind
       // label still at the old size.
-      +'<button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Briefing Board, Share, or Cast" style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc('+IDBand.TOKENS.boardKindLabel.fontSize+'px * var(--fg-text-scale,1));letter-spacing:1px;color:#5b9bd5;white-space:nowrap;text-shadow:-1px -1px 0 rgba(255,255,255,.3),1px 1px 2px rgba(0,0,0,.5);background:none;border:none;padding:0;margin:0;cursor:pointer">IDEA</button>'
+      // Sept 15 2026 -- Larry: PROJECT and STORYBOARD share one look
+      // template (sc-hdr-select box + sc-project-caret arrow), sized
+      // smaller than TOPIC, down-arrow only. Was bare shadow-embossed
+      // text with no box or visible caret; now the same pair PROJECT
+      // already uses (see sc-title-trigger/sc-project-caret above),
+      // just with STORYBOARD's own trigger/menu ids kept so
+      // _sboardWireBoardKindDropdown needs no change. The wrapping div
+      // keeps the same translate(-50%,-50%) anchor -- that centers on
+      // the box regardless of its size, so the new, larger footprint
+      // doesn't shift where it sits.
+      +'<div style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Tasks, Share, or Roles">IDEAS</button><button type="button" class="sc-project-caret" id="sc-board-kind-caret" title="Switch to Plan, Tasks, Share, or Roles" aria-label="Switch storyboard type">▾</button></div>'
       +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
       +'<div style="position:absolute;top:10px;left:16px;z-index:3;display:flex;flex-direction:column;align-items:center">'
       // Traveler name, Sept 5 2026 -- Larry: "delete the nametag -- don't
@@ -1098,6 +1126,14 @@
       +'</div>'
       +'</div>'
       +'</div>'
+        // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump back to
+        // the last screen." Same muted-icon family as Utility, mirrors
+        // bb-return on the Briefing Board (id-band.js's IDBand.jumpToRecorded
+        // handles both). b-sc-close above is actually Close, despite its
+        // pre-existing "Return" tooltip -- left that alone, out of scope
+        // here, but naming this one sc-return (not b-sc-return) avoids
+        // reading like a third b-sc-* variant of the same old confusion.
+        +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-return" title="Return to previous screen">↩︎</button>'
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Utility">⚙️</button>'
         +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
@@ -1133,6 +1169,9 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
+    T().wire('sc-return', function(){
+      if(!IDBand.jumpToRecorded()) _sboardShowToast('Nothing to return to yet');
+    });
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
     _sboardWireProjectHeaderDropdown();
