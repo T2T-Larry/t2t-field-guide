@@ -57,7 +57,11 @@
   // panel (bb-moves icon, next to Trash) lists them with an Undo
   // button that puts the card straight back where it was -- no need to
   // guess, no dependency on the card ever having been trashed.
-  var BB_MOVE_COL_LABEL = {'new':'NEW','do-h':'DO (H)','do-m':'DO (M)','do-l':'DO (L)','doing':'Doing','done':'Done','hangups':'Hang-Ups'};
+  // 'new' relabeled 'Parking Lot' Sept 16 2026, matching the column
+  // header's own rename (briefing-board-ops.js COLUMNS) -- same column,
+  // same key, just the display text so this panel's move history reads
+  // consistently with the board itself.
+  var BB_MOVE_COL_LABEL = {'new':'Parking Lot','do-h':'DO (H)','do-m':'DO (M)','do-l':'DO (L)','doing':'Doing','done':'Done','hangups':'Hang-Ups'};
   function _bbMoveDesc(col, priority){
     var label = BB_MOVE_COL_LABEL[col] || col || '?';
     return priority ? (label+' \u2014 '+priority) : label;

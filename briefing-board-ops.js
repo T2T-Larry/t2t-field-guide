@@ -85,7 +85,12 @@
     // 4th column for it instead -- NEW now holds anything that hasn't
     // been given a priority yet, and DO-L goes back to meaning plain L
     // only. Sits first so an untriaged card is the first thing seen.
-    {key:'new',     label:'NEW'},
+    // Relabeled 'Parking Lot' Sept 16 2026, Larry: for consistency with
+    // the Idea Board's own reserved 'Parking Lot' bucket name (header-
+    // data.js RESERVED_HEADERS) -- key stays 'new' (every card's stored
+    // column value, BB_MOVE_COL_LABEL above, and BB_RESERVED_HEADER_NAMES
+    // below are untouched), this only changes the text travelers see.
+    {key:'new',     label:'Parking Lot'},
     // July 22, 2026 (later): Larry likes the red/green/yellow header
     // colors enough to drop the H/M/L letters entirely -- color alone
     // reads as priority now, plain "DO" on all 3.
