@@ -1196,30 +1196,32 @@
 
     // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
     // bottom-justify with the upper right corner buttons" -- unchanged
-    // rule, applied to TOPIC/STORYBOARD/VIEW so they share one bottom
-    // edge with Logo/Utility/Close. actionsEl's real bottom edge isn't a
-    // constant pixel value (Logo's eyebrow+frame stack is taller than a
-    // plain bb-icon-btn), so this reads it live rather than guessing.
+    // rule, now applied to PROJECT/STORYBOARD/VIEW so they share one
+    // bottom edge with Logo/Utility/Close. actionsEl's real bottom edge
+    // isn't a constant pixel value (Logo's eyebrow+frame stack is taller
+    // than a plain bb-icon-btn), so this reads it live rather than
+    // guessing.
     //
-    // PROJECT is the one exception, Sept 15 2026 (Larry, live-site
-    // second look: "move member name back where it was. PROJECT[S]
-    // fields need to center vertically on the ID BAND, different from
-    // other fields") -- an earlier pass of this same rewrite bottom-
-    // justified all four together, which dragged the traveler-name
-    // eyebrow (the topmost of PROJECT's three stacked lines: name,
-    // "Project" eyebrow, trigger box) down and away from where it had
-    // always sat. PROJECT centers vertically on the band's own height
-    // instead -- TOPIC/STORYBOARD/VIEW keep bottom-justifying, PROJECT
-    // does not.
+    // TOPIC is the one exception now, Sept 16 2026 (Larry, live-site
+    // third look: TOPIC should center vertically on the band, PROJECT
+    // should bottom-justify with the other buttons after all). This
+    // flips the Sept 15 version of this same rule, which had PROJECT as
+    // the lone center-vertical exception and TOPIC bottom-justifying
+    // with STORYBOARD/VIEW -- swapped in place, same shape. The
+    // traveler-name eyebrow that PROJECT's own center-justify used to
+    // protect is no longer PROJECT's problem either way: it moved out to
+    // its own fixed top-left-corner position Sept 16 (see the markup
+    // comment on bb-traveler-name, briefing-board-screens.js), so it no
+    // longer moves when PROJECT does.
     if(ar.height){
-      [topicWrap, boardkindWrap, viewWrap].forEach(function(el){
+      [projectWrap, boardkindWrap, viewWrap].forEach(function(el){
         var r=el.getBoundingClientRect();
         if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
       });
     }
-    var prNow=projectWrap.getBoundingClientRect();
-    if(prNow.height && containerRect.height){
-      projectWrap.style.top=((containerRect.height-prNow.height)/2)+'px';
+    var trNow=topicWrap.getBoundingClientRect();
+    if(trNow.height && containerRect.height){
+      topicWrap.style.top=((containerRect.height-trNow.height)/2)+'px';
     }
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize

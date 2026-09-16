@@ -45,6 +45,26 @@
        '<div class="sc" id="s-briefing-board">'
         +'<div class="bb-mhead">'
           +'<div class="bb-mhead-top">'
+            // Traveler name, Sept 16 2026 -- pulled out to a direct sibling
+            // of PROJECT (was nested inside it, see the note this replaces
+            // just below) so it's a real DOM child of .bb-mhead-top itself,
+            // not of #bb-project-wrap. .bb-traveler-eyebrow's CSS
+            // (briefing-board-styles.js) has said position:absolute;top:0;
+            // left:0 "entirely independent of _bbPositionIdBandRow's
+            // PROJECT-TOPIC-STORYBOARD-VIEW chain" since Sept 15 -- Larry's
+            // "emphatic correction" that this isn't part of PROJECT's field
+            // -- but top:0/left:0 only ever means the header's own top-left
+            // corner when .mhead-top (position:relative) is the nearest
+            // positioned ancestor. Left nested inside #bb-project-wrap
+            // (also position:absolute, so IT was the actual containing
+            // block), the name silently kept following PROJECT wherever
+            // PROJECT's own top moved -- exactly the bug Larry flagged
+            // live ("traveler name needs to move to the upper left
+            // corner") once PROJECT stopped centering and started
+            // bottom-justifying (see _bbPositionIdBandRow's own Sept 16
+            // note, briefing-board-master-nav.js). This move finally
+            // matches the CSS's already-stated intent instead of fighting it.
+            +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
             +'<div class="bb-mh-typebox" id="bb-project-wrap">'
               // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
               // of this row (was third) to sit at the header's far left
@@ -58,7 +78,11 @@
               // _bbRenderBoardPicker, right after that function's existing
               // _bbRenderDropdown call, to open the same board-switch menu
               // the label itself already opens. _bbRenderTravelerName
-              // (below) fills in the traveler-name text.
+              // (below) fills in the traveler-name text. Its markup moved
+              // out to a sibling of this box Sept 16 2026 -- see the note
+              // just above -- but stays wired the same way (plain
+              // getElementById('bb-traveler-name')), so nothing else here
+              // changes.
               // Sept 5 2026, Larry: "increase the text size on the PROJECT
               // field on all boards" -- matches sc-title-trigger's own
               // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
@@ -75,7 +99,7 @@
               // Sept 13. Traveler-name eyebrow stays above it, unchanged --
               // this is additive, not a replacement; easy to drop back out
               // if Larry wants just the one eyebrow here after all.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-traveler-eyebrow" id="bb-traveler-name"></div><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent field retired from the header, Sept 6 2026 --
               // Larry: "the hierarchy is set when a PROJECT is chosen,"
               // folding its "jump to any level above" job into a new
