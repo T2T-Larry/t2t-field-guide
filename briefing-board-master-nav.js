@@ -1112,6 +1112,37 @@
   // container's own left edge, same "measure the real boxes, clamp
   // against a hard edge" shape every positioning fix in this file has
   // used since Sept 6.
+  // Sept 16 2026 fix -- Larry, live-site, still jumbled after the Sept 15
+  // member-name patch: PROJECT/TOPIC were still landing overlapped even
+  // though the member-name race that patch targeted wasn't the only way
+  // these boxes' widths change after this function's already run once.
+  // Chasing each async cause one at a time (member name, board picker
+  // text, font swap, logo load...) is exactly the whack-a-mole the Sept
+  // 15 comments below already describe losing to -- a ResizeObserver on
+  // the boxes whose CONTENT (not this function) can change their size
+  // catches every future cause the same way, without knowing what it is.
+  // boardkindWrap is deliberately NOT observed -- this function itself
+  // resizes it (_bbFitBoardKindLabel), so observing it would just be
+  // watching its own output; it's re-measured fresh on every pass
+  // regardless. Set up once, lazily, the first time real elements exist.
+  var _bbIdBandObserverSetUp=false;
+  function _bbSetUpIdBandObserver(projectWrap, topicWrap, viewWrap, actionsEl, container){
+    if(_bbIdBandObserverSetUp || typeof ResizeObserver==='undefined') return;
+    _bbIdBandObserverSetUp=true;
+    var pending=false;
+    var ro=new ResizeObserver(function(){
+      if(pending) return;
+      pending=true;
+      requestAnimationFrame(function(){
+        pending=false;
+        try{
+          var scr=document.getElementById('s-briefing-board');
+          if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
+        }catch(e){}
+      });
+    });
+    [projectWrap, topicWrap, viewWrap, actionsEl, container].forEach(function(el){ ro.observe(el); });
+  }
   function _bbPositionIdBandRow(){
     var projectWrap=document.getElementById('bb-project-wrap');
     var topicWrap=document.getElementById('bb-topic-wrap');
@@ -1120,6 +1151,7 @@
     var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
     var container=document.querySelector('#s-briefing-board .bb-mhead-top');
     if(!projectWrap || !topicWrap || !boardkindWrap || !viewWrap || !actionsEl || !container) return;
+    _bbSetUpIdBandObserver(projectWrap, topicWrap, viewWrap, actionsEl, container);
     var containerRect=container.getBoundingClientRect();
     // Guard against a not-yet-laid-out screen -- nothing real to measure
     // yet, leave the left:0/top:0 CSS fallback in place.

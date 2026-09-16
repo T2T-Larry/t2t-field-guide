@@ -835,12 +835,40 @@
     T().registerScreenActivate('s-briefing-board', function(){
       var fgr=document.getElementById('fg-root');
       if(fgr) fgr.classList.add('isx-full');
+      var settled;
       if(!_bbInitStarted){
         _bbInitStarted=true;
-        _bbInitBoardsAndData();
+        settled=_bbInitBoardsAndData();
       } else {
         renderBoard();
+        settled=Promise.resolve();
       }
+      // Sept 16 2026 fix -- Larry, live-site: ID Band still jumbled after
+      // the Sept 15 member-name patch. Root cause: _bbInitBoardsAndData
+      // (and the plain renderBoard() re-activation branch above) already
+      // call _bbPositionIdBandRow once data/text are in, but that can
+      // still land before Playfair Display has actually swapped in --
+      // the ORIGINAL global document.fonts.ready listener
+      // (briefing-board-master-nav.js) was meant to catch that, but it's
+      // a ONE-SHOT promise that typically resolves the moment fonts load
+      // (near-instant on a warm cache), almost always before this screen
+      // has even finished its own async data load and gone 'active' --
+      // so its "only reposition if already active" guard silently loses
+      // every time on a fast/cached load, not just an occasional slow
+      // one. Chaining a fresh .then() here, AFTER this activation's own
+      // data settles, can't lose that race: fonts are essentially always
+      // ready well before board data is, so this fires immediately and
+      // measures the boxes in their real, final, on-screen state.
+      if(settled && settled.then) settled.then(function(){
+        try{
+          if(document.fonts && document.fonts.ready){
+            document.fonts.ready.then(function(){
+              var scr=document.getElementById('s-briefing-board');
+              if(scr && scr.classList.contains('active') && typeof _bbPositionIdBandRow==='function') _bbPositionIdBandRow();
+            });
+          }
+        }catch(e){}
+      });
     });
 
     wireBriefingBoard();
