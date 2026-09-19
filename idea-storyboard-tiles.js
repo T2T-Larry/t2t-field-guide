@@ -435,8 +435,30 @@
     var statusEl=document.getElementById('sc-status');
     try{
       if(targetItem.content_type!=='header'){
-        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',targetItem.id);
+        // .select() + row-count check, Sept 19 2026 -- same fix already
+        // applied to _sboardMoveCard/_sboardReorderOrMoveColumnItem's own
+        // writes (Larry: "moves that silently didn't save" -- without
+        // .select(), a write filtered out by RLS or a stale id still
+        // comes back with no .error, so it looks like it worked when
+        // nothing was touched).
+        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',targetItem.id).select('id');
         if(upd.error) throw upd.error;
+        if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- nothing promoted.');
+        // Cache patch, Sept 19 2026 (Larry: "dropped a card into a subber
+        // but it disappeared until I came back to the board later") --
+        // the promotion above only ever reached Supabase; the local
+        // _sboardAllRowsById cache still had the target's old
+        // content_type, so the patch-only render _sboardMoveCard triggers
+        // just below (renderSeaBoard(true), no network refetch) drew the
+        // target as if it were still a plain card. The card being moved
+        // under it, now parented to an id the render didn't recognize as
+        // a header, had nowhere valid to appear -- it stayed invisible
+        // until something else (leaving and returning to the board, a
+        // realtime patch) forced a real fetch that picked up the correct
+        // row. Patching the cache here, same as every other write in this
+        // file already does before its own renderSeaBoard(true), keeps
+        // this one immediately consistent too.
+        _sboardPatchRow(targetItem.id, {content_type:'header'});
       }
       await _sboardMoveCard(draggedId, targetItem.id);
     }catch(err){
