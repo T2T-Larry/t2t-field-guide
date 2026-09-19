@@ -324,6 +324,7 @@
       boardId: _isxCurrentTopicId(),
       projectLabel: _icPath.length ? _icPath[0].text : null,
       topicLabel: _icPath.length ? _icPath[_icPath.length-1].text : null,
+      projectId: _icPath.length ? _icPath[0].id : null,
       onSaved: function(row){
         _isxAddRow(row);
         if(row && row.content_type==='header'){ _isxRenderLadder(); }
@@ -2007,7 +2008,8 @@
         headerLabel: T2TShared.isxHeaderLabel,
         boardId: _isxCurrentTopicId(),
         projectLabel: _icPath2.length ? _icPath2[0].text : null,
-        topicLabel: _icPath2.length ? _icPath2[_icPath2.length-1].text : null
+        topicLabel: _icPath2.length ? _icPath2[_icPath2.length-1].text : null,
+        projectId: _icPath2.length ? _icPath2[0].id : null
       });
     },
     getCurrentBoardContext: function(){ return T2TShared.currentTopicId?{boardId:T2TShared.currentTopicId}:null; },

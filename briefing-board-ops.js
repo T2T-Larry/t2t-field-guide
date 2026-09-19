@@ -1197,12 +1197,24 @@
       _bbNewCardAssigneeId = value || null;
     }, null);
   }
+  // NEW card on Briefing Board, Sept 19 2026 -- Larry: "This same NEW
+  // card needs to be on the BB... think of it and it goes there." Same
+  // door (the [+ new card] tile, Alt+N) now opens the one shared NEW
+  // card instead of this board's own bb-add-overlay form; idea-
+  // capture.js's _icSaveBBCard writes a real Briefing Board card behind
+  // it (same shape _bbSaveNewCard always built). bb-add-overlay and
+  // _bbSaveNewCard are left in place, unused, rather than deleted in the
+  // same pass that replaces their only caller -- flag for cleanup once
+  // this is confirmed live and nothing else still reaches for them.
   function openAddCard(){
-    var t=document.getElementById('bb-new-task'); if(t) t.value='';
-    var ov=document.getElementById('bb-add-overlay');
-    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
-    _bbRenderAddCardProjectField();
-    _bbRenderAddCardAssignField();
+    var headerId=_bbSingleBoardMode() ? (_bbNewCardProjectHeaderId || _bbProjectFilter() || null) : null;
+    var label=(headerId && typeof _bbProjectNameById!=='undefined' && _bbProjectNameById[headerId]) ? _bbProjectNameById[headerId] : null;
+    window.IdeaCapture.open({
+      mode:'bb',
+      boardId: headerId,
+      projectId: headerId,
+      projectLabel: label
+    });
   }
 
   function closeAddCard(){

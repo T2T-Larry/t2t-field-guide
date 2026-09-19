@@ -727,9 +727,10 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      already primed for the next entry the moment this one is typed. */
   .isx-ptitle-black{color:#000}
   .isx-p-project{font-size:calc(9.5px * var(--fg-text-scale,1));text-transform:uppercase;letter-spacing:.6px;
-    color:#7a90a8;text-align:center;margin-bottom:1px}
+    color:#7a90a8;text-align:center;margin-bottom:1px;cursor:pointer}
   .isx-p-topic{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:var(--isx-navy);
-    text-align:center;margin-bottom:8px}
+    text-align:center;margin-bottom:8px;cursor:pointer}
+  .isx-p-caret{opacity:.55;font-size:.75em}
   .isx-p-type-row{display:flex;gap:6px;margin-bottom:8px}
   .isx-p-subject-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
   .isx-p-subject-row #isx-p-subject{flex:1;font-size:calc(12px * var(--fg-text-scale,1));font-weight:400;text-align:left}

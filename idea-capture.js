@@ -59,6 +59,19 @@
   var _icTopicLabel='-';        // TOPIC field -- opts.topicLabel, or '-' (Parking Lot) if none given
   var _icEntryType='idea';      // 'idea' | 'task' | 'note' -- the O IDEA/TASK/NOTES selector
   var _icCastOn=false;          // single head-cast button -- assign PRIMARY right after this saves
+  // PROJECT/TOPIC picker, Sept 19 2026 round 3 -- _icProjectId is the
+  // real row id behind PROJECT (needed to look up that project's own
+  // TOPIC list); picking a PROJECT re-points _icBoardId at that
+  // project's own root (its Parking Lot) until a TOPIC is also picked,
+  // same "PROJECT changes, TOPIC cascades under it" rule Larry described.
+  var _icProjectId=null;
+  // Which board this open() targets, Sept 19 2026 round 3 -- 'idea'
+  // (default) saves into the ideas table exactly as before; 'bb' saves a
+  // real Briefing Board card instead, via _icSaveBBCard. HEADER/SUBBER
+  // and image/link attachments only apply in 'idea' mode -- BB cards
+  // have no header/subber concept and (like the rest of Briefing Board
+  // today) are text-only.
+  var _icMode='idea';
 
   // ── Image (9713) card state — kept for completeness; this panel has
   //    no live entry point right now (superseded by paste-in
@@ -274,7 +287,8 @@
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
-    _icProjectLabel='-'; _icTopicLabel='-'; _icEntryType='idea'; _icCastOn=false;
+    _icProjectLabel='-'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastOn=false; _icMode='idea';
+    var stray=document.getElementById('isx-p-field-menu'); if(stray) stray.remove();
     if(cb) cb();
   }
 
@@ -289,9 +303,60 @@
   function _icMaybeOpenCastPicker(row, keepOpenCard){
     if(!_icCastOn || !row || !row.id) { _icCastOn=false; return; }
     _icCastOn=false;
+    if(_icMode==='bb'){
+      // Briefing Board cards assign PRIMARY from their own card detail
+      // overlay, not the idea-side Call Sheet -- same "reuse the real,
+      // already-built picker" call as the idea path above, just BB's own.
+      if(typeof window.openCardDetail==='function') window.openCardDetail(row.id);
+      return;
+    }
     if(typeof window.openCallSheet==='function'){
       window.openCallSheet(row, null, 'idea', null, null, null);
     }
+  }
+
+  // Briefing Board save path, Sept 19 2026 -- Larry: "YES save to BB!!
+  // That is the point. Think of it and it goes there." Mirrors
+  // briefing-board.js's own _bbSaveNewCard (same card shape, same
+  // project-tag + auto-assign sequencing) rather than inventing a
+  // second way to create a BB card; this is just a second DOOR into
+  // that same save path. PROJECT/TOPIC picked on this card become the
+  // card's projectHeaderId tag -- '-' (Parking Lot) leaves it untagged,
+  // same meaning Parking Lot already has everywhere else.
+  function _icSaveBBCard(){
+    var ta=document.getElementById('isx-idea-text');
+    var rawText=(ta?ta.value:'').trim();
+    if(!rawText) return;
+    var text=_icComposeText(rawText);
+    if(typeof _bbCardsList!=='function' || typeof _bbSaveLocal!=='function' || typeof _bbUUID!=='function'){
+      console.error('NEW card (BB): Briefing Board save functions are not loaded on this page.');
+      return;
+    }
+    var cards=_bbCardsList();
+    var maxOrder=cards.filter(function(c){ return c.col==='new' && typeof c.sortOrder==='number'; })
+      .reduce(function(m,c){ return Math.max(m,c.sortOrder); }, -1);
+    var newCardId=_bbUUID();
+    var projectHeaderId=_icBoardId||null;
+    cards.push({id:newCardId, col:'new', sortOrder:maxOrder+1, assigned:(typeof _bbToday==='function'?_bbToday():''),
+      task:text, person:(typeof _bbCurrentBoardDefaultAssignee==='function'?_bbCurrentBoardDefaultAssignee():''),
+      due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false,
+      reviewedBy:(typeof REVIEWERS!=='undefined'?REVIEWERS[0]:''), archived:false, projectHeaderId:projectHeaderId});
+    var sync=_bbSaveLocal(cards);
+    if(projectHeaderId && typeof _bbStampCardProject==='function'){
+      if(sync && sync.then) sync.then(function(){ return _bbStampCardProject(newCardId, projectHeaderId); })
+        .catch(function(e){ console.error('NEW card (BB): could not tag project', e); });
+      else _bbStampCardProject(newCardId, projectHeaderId);
+    }
+    if(typeof _bbAutoAssignToActiveFilter==='function'){
+      if(sync && sync.then) sync.then(function(){ return _bbAutoAssignToActiveFilter(newCardId); })
+        .catch(function(e){ console.error('NEW card (BB): could not auto-assign', e); });
+      else _bbAutoAssignToActiveFilter(newCardId);
+    }
+    if(typeof renderBoard==='function') renderBoard();
+    var row={id:newCardId};
+    if(_icOnSaved) _icOnSaved(row);
+    _icMaybeOpenCastPicker(row);
+    _icResetIdeaPanelForNext(false);
   }
 
   // RULE: every screen reveals its OWN number on triple-click — never a
@@ -357,8 +422,11 @@
     _icClearPendingImage();
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
-      var toggleBtn=card.querySelector('#isx-p-header-toggle');
-      if(toggleBtn) toggleBtn.classList.remove('on');
+      // Repaint HEADER/SUBBER back to its SUBBER default after each save
+      // (not present at all in 'bb' mode, hence the null guards).
+      var hBtn=card.querySelector('#isx-p-header-btn'), sBtn=card.querySelector('#isx-p-subber-btn');
+      if(hBtn) hBtn.classList.remove('on');
+      if(sBtn) sBtn.classList.add('on');
       var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
       var flash=document.createElement('div');
       flash.className='isx-save-flash';
@@ -437,11 +505,11 @@
   // any link saves as a link reference, everything else (a .docx, an
   // .mp4, any other raw file) gets a plain boundary message rather than
   // silently failing or pretending to handle it.
-  function _icShowFormatBoundaryMessage(){
+  function _icShowFormatBoundaryMessage(msg){
     var preview=document.getElementById('isx-paste-preview');
     if(!preview) return;
     preview.innerHTML='<div style="font-size:11px;color:var(--brand-blue-gray);text-align:center;padding:6px 4px">'
-      +'That file type isn’t supported yet — paste a link instead.</div>';
+      +(msg||'That file type isn’t supported yet — paste a link instead.')+'</div>';
     preview.style.display='block';
     if(preview._icBoundaryTimer) clearTimeout(preview._icBoundaryTimer);
     preview._icBoundaryTimer=setTimeout(function(){
@@ -499,6 +567,18 @@
   }
 
   function _icCommitIdeaPanel(){
+    // Briefing Board cards are text-only today (see _icMode's own
+    // comment) -- a pending image/link is a dead end there rather than
+    // silently mis-saving, so it stops here with a plain explanation
+    // instead of reaching the ideas-table-only save paths below.
+    if(_icMode==='bb'){
+      if(_icInputPendingImageFile || _icInputPendingLink){
+        _icShowFormatBoundaryMessage('Briefing Board cards are text-only for now — type it in as text instead.');
+        return;
+      }
+      _icSaveBBCard();
+      return;
+    }
     if(_icInputPendingImageFile){
       var file=_icInputPendingImageFile;
       var preview=document.getElementById('isx-paste-preview');
@@ -544,6 +624,96 @@
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+
+  // Small popup list, anchored under whichever field opened it -- same
+  // shape as every other ID Band dropdown (fixed position, closes on an
+  // outside click), just local to this file so PROJECT/TOPIC don't have
+  // to reach into briefing-board-master-nav.js's own copy of this idea.
+  function _icOpenFieldDropdown(anchorEl, rows, onPick){
+    var old=document.getElementById('isx-p-field-menu');
+    if(old) old.remove();
+    var menu=document.createElement('div');
+    menu.id='isx-p-field-menu';
+    menu.style.cssText='position:fixed;z-index:100000;background:#fff;border:1.5px solid #b0a898;border-radius:8px;'
+      +'box-shadow:0 6px 18px rgba(0,0,0,.18);max-height:220px;overflow:auto;min-width:140px;padding:4px;'
+      +'font-family:"Playfair Display",serif';
+    if(!rows.length){
+      var e=document.createElement('div');
+      e.style.cssText='padding:6px 10px;font-size:11px;color:#93a4b5';
+      e.textContent='Nothing here yet.';
+      menu.appendChild(e);
+    } else {
+      rows.forEach(function(r){
+        var row=document.createElement('div');
+        row.style.cssText='padding:6px 10px;font-size:12px;color:var(--isx-navy);cursor:pointer;border-radius:5px';
+        row.textContent=r.label;
+        row.addEventListener('mouseenter', function(){ row.style.background='#eef2f6'; });
+        row.addEventListener('mouseleave', function(){ row.style.background=''; });
+        row.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          menu.remove();
+          onPick(r);
+        });
+        menu.appendChild(row);
+      });
+    }
+    document.body.appendChild(menu);
+    var r=anchorEl.getBoundingClientRect();
+    menu.style.left=r.left+'px';
+    menu.style.top=(r.bottom+4)+'px';
+    menu.style.minWidth=Math.max(140,r.width)+'px';
+    var mr=menu.getBoundingClientRect();
+    if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    setTimeout(function(){
+      document.addEventListener('click', function closeOnce(){
+        var m=document.getElementById('isx-p-field-menu'); if(m) m.remove();
+        document.removeEventListener('click', closeOnce);
+      }, {once:true});
+    }, 0);
+  }
+
+  // PROJECT lists every top-level project this traveler owns (the same
+  // list feeding the Idea Board's own project switcher); TOPIC lists the
+  // headers directly under whichever PROJECT is current. Picking a
+  // PROJECT re-points the entry at that project's own Parking Lot (no
+  // TOPIC yet) until a TOPIC is also picked -- Larry, Sept 19 2026:
+  // "just because you are in a given project... doesn't mean you might
+  // not think of an idea for a completely different project."
+  function _icWireProjectTopicPickers(){
+    var projEl=document.getElementById('isx-p-project');
+    var topicEl=document.getElementById('isx-p-topic');
+    if(projEl) projEl.addEventListener('click', async function(ev){
+      ev.stopPropagation();
+      var roots=[];
+      try{ roots=(typeof _sboardLoadMyRoots==='function') ? (await _sboardLoadMyRoots())||[] : []; }
+      catch(e){ console.warn('NEW card: could not load project list', e); }
+      // Parking Lot, Sept 19 2026 -- Larry: "if location is undecided,"
+      // PROJECT needs its own '-' option too, same meaning '-' already
+      // has on TOPIC -- files nowhere in particular until reassigned.
+      var rows=[{id:null, label:'– (Parking Lot)'}].concat(
+        roots.map(function(r){ return {id:r.id, label:r.text_content||'(untitled)'}; }));
+      _icOpenFieldDropdown(projEl, rows, function(picked){
+        _icProjectId=picked.id; _icProjectLabel=picked.id?picked.label:'-';
+        _icBoardId=picked.id; _icHeaderId=null; _icTopicLabel='-';
+        var pt=document.getElementById('isx-p-project-txt'); if(pt) pt.textContent=_icEsc(_icProjectLabel);
+        var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=_icEsc(_icTopicLabel);
+      });
+    });
+    if(topicEl) topicEl.addEventListener('click', async function(ev){
+      ev.stopPropagation();
+      if(!_icProjectId) return; // nothing to cascade from -- pick a PROJECT first
+      var rows=[{id:null, label:'– (Parking Lot)'}];
+      try{
+        var _sb=T().sb;
+        var res=await _sb.from('ideas').select('id,text_content').eq('content_type','header').eq('cluster_id',_icProjectId).order('text_content');
+        if(!res.error && res.data) rows=rows.concat(res.data.map(function(h){ return {id:h.id, label:h.text_content||'(untitled)'}; }));
+      }catch(e){ console.warn('NEW card: could not load topic list', e); }
+      _icOpenFieldDropdown(topicEl, rows, function(picked){
+        _icBoardId=picked.id||_icProjectId; _icTopicLabel=picked.id?picked.label:'-'; _icHeaderId=null;
+        var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=_icEsc(_icTopicLabel);
+      });
+    });
+  }
   function _icRenderIdeaPanel(){
     _icIdeaMode='idea';
     _icEntryType='idea';
@@ -552,8 +722,8 @@
     _icInputPendingLink=null;
     _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
       +'<div class="isx-ptitle isx-ptitle-black" style="text-align:center;margin:0 0 4px">NEW</div>'
-      +'<div class="isx-p-project" id="isx-p-project">'+_icEsc(_icProjectLabel)+'</div>'
-      +'<div class="isx-p-topic" id="isx-p-topic">'+_icEsc(_icTopicLabel)+'</div>'
+      +'<div class="isx-p-project" id="isx-p-project"><span id="isx-p-project-txt">'+_icEsc(_icProjectLabel)+'</span> <span class="isx-p-caret">▾</span></div>'
+      +'<div class="isx-p-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel)+'</span> <span class="isx-p-caret">▾</span></div>'
       +'<div class="isx-p-type-row">'
         +'<button class="isx-src-btn on" type="button" data-type="idea">IDEA</button>'
         +'<button class="isx-src-btn" type="button" data-type="task">TASK</button>'
@@ -563,10 +733,14 @@
         +'<input type="text" id="isx-p-subject" placeholder="Subject (optional)">'
         +'<button class="isx-p-cast-btn" type="button" id="isx-p-cast-btn" title="Assign PRIMARY once saved">👤</button>'
       +'</div>'
-      +'<div class="isx-p-bottom-row">'
-        +'<button class="isx-p-hs-btn" type="button" id="isx-p-header-btn">HEADER</button>'
-        +'<button class="isx-p-hs-btn on" type="button" id="isx-p-subber-btn">SUBBER</button>'
-      +'</div>'
+      // HEADER/SUBBER only means something on the Idea Board's own header
+      // hierarchy -- a Briefing Board card has no such concept, so this
+      // row is skipped entirely in 'bb' mode rather than shown disabled.
+      +(_icMode==='bb' ? '' :
+        '<div class="isx-p-bottom-row">'
+          +'<button class="isx-p-hs-btn" type="button" id="isx-p-header-btn">HEADER</button>'
+          +'<button class="isx-p-hs-btn on" type="button" id="isx-p-subber-btn">SUBBER</button>'
+        +'</div>')
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="Type, paste, or drop anything…"></textarea>'
       +'<div class="isx-save-row">'
@@ -613,6 +787,16 @@
         castBtn.classList.toggle('on', _icCastOn);
       };
     })();
+
+    // PROJECT/TOPIC picker, Sept 19 2026 round 3 -- Larry: picking a
+    // PROJECT filters TOPIC down to that project's own topics, since an
+    // entry made while standing in one project might really belong to a
+    // different one. PROJECT lists every project this traveler owns
+    // (same list the Idea Board's own project switcher reads);  TOPIC
+    // lists the headers directly under whichever PROJECT is current,
+    // fetched fresh each time it's opened so a newly-added header
+    // always shows up.
+    _icWireProjectTopicPickers();
 
     _icWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
@@ -800,6 +984,11 @@
     // puts the card on top of whatever's currently showing.
     // opts.projectLabel/opts.topicLabel (Sept 19 2026) — the PROJECT/TOPIC
     // eyebrow text to show; omit or pass null/'' for Parking Lot ('-').
+    // opts.projectId (round 3) — the real row id behind projectLabel, so
+    // the PROJECT/TOPIC fields can be repicked from inside the card; a
+    // caller that omits it just means those fields render read-only.
+    // opts.mode (round 3) — 'idea' (default) or 'bb'; see _icMode's own
+    // comment above for what changes in 'bb' mode.
     open: function(opts){
       opts=opts||{};
       _icHeaderId=opts.headerId||null;
@@ -807,6 +996,8 @@
       _icBoardId=opts.boardId||null;
       _icProjectLabel=opts.projectLabel||'-';
       _icTopicLabel=opts.topicLabel||'-';
+      _icProjectId=opts.projectId||null;
+      _icMode=opts.mode==='bb'?'bb':'idea';
       _icOnSaved=typeof opts.onSaved==='function'?opts.onSaved:null;
       _icOnClosed=typeof opts.onClosed==='function'?opts.onClosed:null;
       _icRenderIdeaPanel();

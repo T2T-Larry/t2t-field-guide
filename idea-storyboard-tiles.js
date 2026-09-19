@@ -758,6 +758,7 @@
       headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
       boardId: T2TShared.currentTopicId,
       projectLabel: projectRow ? (projectRow.text_content||null) : null,
+      projectId: projectRow ? projectRow.id : null,
       topicLabel: topicRow ? (topicRow.text_content||null) : null,
       onSaved: async function(row){
         // Sept 13 2026 -- must happen before the render below, not after,
