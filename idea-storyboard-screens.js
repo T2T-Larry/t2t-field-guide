@@ -905,7 +905,18 @@
         // Ctrl+Down/Ctrl+Up to drill into/back out of one). Click a header
         // or Subber tile to select it; this ring shows which one the
         // keyboard shortcuts will act on.
-        +'#s-sea-of-ideas-cluster .sb-kbd-selected{outline:3px solid #2d7dff!important;outline-offset:-2px}';
+        +'#s-sea-of-ideas-cluster .sb-kbd-selected{outline:3px solid #2d7dff!important;outline-offset:-2px}'
+        // Alt+M "move armed" highlight, Sept 19 2026 (Larry: "what if
+        // Alt-M prepares card to move with next click where it goes?").
+        // Pulsing amber ring on the armed card itself, distinct from the
+        // blue keyboard-selection ring above and the green drop-target
+        // cues below, so it reads as "waiting for you to click a
+        // destination" rather than either of those. The green hover cue
+        // on every other card while armed echoes the same "totally
+        // green if ready for drop" cue a real drag already shows.
+        +'#s-sea-of-ideas-cluster .sb-move-armed{outline:3px dashed #f5a623!important;outline-offset:-2px;animation:sbMoveArmedPulse 1s ease-in-out infinite}'
+        +'@keyframes sbMoveArmedPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.55)}50%{box-shadow:0 0 0 9px rgba(245,166,35,0)}}'
+        +'body.sb-move-arming [data-header-id]:hover{outline:5px solid #22c55e!important;outline-offset:-2px;cursor:copy}';
       document.head.appendChild(style);
     }
     var div=document.createElement('div');

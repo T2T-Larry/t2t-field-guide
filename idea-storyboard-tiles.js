@@ -394,22 +394,25 @@
       if(!raw || raw==='sb-goup') return;
       var parentId=groupParentId!==undefined?groupParentId:(item.cluster_id||null);
       if(raw.indexOf('header:')===0){
-        // A Subber dropped onto a plain card -- Aug 22 2026 (Larry: "sub-
-        // headers always cluster to the top... I want to mix them into
-        // the story"). Used to be silently ignored (this whole branch
-        // didn't exist -- a dragged Subber over a plain-card tile just
-        // did nothing on drop). Always a sibling reorder here, never the
-        // middle "stack into a header" zone plain-idea-on-idea gets --
-        // that zone specifically converts the TARGET card into a brand
-        // new header, which isn't what dragging an EXISTING Subber onto
-        // it should trigger. (Nesting a Subber under another header is a
-        // perfectly normal move elsewhere -- Larry corrected an earlier,
-        // wrong pass here that treated it as something to avoid -- it's
-        // just not what this particular gesture is for.) So this simply
-        // goes by which half of the card it landed on.
+        // A Header or Subber dropped onto a plain card -- Sept 19 2026
+        // (Larry: "drag & drop header or subber onto any card to drop it
+        // into that card... if subber, make the card instantly a
+        // header"). Used to always reorder here, on the reasoning that
+        // the middle "stack" zone specifically promotes the TARGET card
+        // to a header, which an Aug 22 2026 pass here treated as not what
+        // dragging an EXISTING Header/Subber onto a plain card should
+        // trigger. Larry's since asked for the direct gesture, matching
+        // what the header-stack tile's own bucket zone already does
+        // (see _sboardMakeHeaderStackTile's drop handler, updated the
+        // same day for header-onto-header nesting): the middle third now
+        // stacks -- promoting the target to a header if it isn't one
+        // already and filing the dragged Header/Subber under it -- same
+        // 3-zone split (edges reorder, middle nests) every tile on this
+        // board now shares.
         var draggedHeaderId=raw.slice(7);
         if(String(draggedHeaderId)===String(item.id)) return;
-        _sboardReorderOrMoveColumnItem(draggedHeaderId, item.id, parentId, frac>=0.5);
+        if(frac>=0.3 && frac<=0.7){ _sboardStackIntoHeader(draggedHeaderId, item); }
+        else{ _sboardReorderOrMoveColumnItem(draggedHeaderId, item.id, parentId, frac>0.7); }
       } else if(frac>=0.3 && frac<=0.7){
         _sboardStackIntoHeader(raw, item);
       } else {

@@ -88,6 +88,18 @@
   // set on dragstart, cleared on dragend, read by the enlarged drop zone
   // added to renderGroup's own "block" below.
   var _sboardDraggingHeaderId = null;
+  // Alt+M "move armed" state, Sept 19 2026 (Larry: "what if Alt-M
+  // prepares card to move with next click where it goes?") -- a
+  // keyboard-only alternative to actually dragging a card. Holds the id
+  // of whatever card was selected (_sboardSelectedHeaderId) at the
+  // moment Alt+M was pressed; the next click anywhere on the board
+  // either files it into whatever card/header/Subber/TOPIC got clicked
+  // (same "middle zone" stack gesture a real drag's drop already does --
+  // see _sboardStackIntoHeader) or, clicked on nothing recognizable,
+  // cancels the arm. See wireSboardUndoKeyboard for the keydown branch
+  // and _sboardMoveArmClickHandler for the capture-phase click it wires
+  // up while armed.
+  var _sboardMoveArmedId = null;
   var _sboardHeadersById = {};
   var _sboardHeaderList = [];
   var _sboardTopLevelOrder = [];
@@ -242,6 +254,49 @@
   function _sboardCanGoUpFromTopic(){
     var row=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
     return !!(row && row.cluster_id);
+  }
+  // Alt+M move-arm helpers, Sept 19 2026 -- see _sboardMoveArmedId's own
+  // comment above for the gesture this supports. Cancel clears the amber
+  // ring, drops the capture-phase click listener, and (if msg is given)
+  // toasts why -- called both for a real cancel (Escape, clicking empty
+  // space, clicking the armed card itself) and, silently (no msg), right
+  // before a successful move commits, since the move itself gets its own
+  // "Move" undo-toast from _sboardMoveCard/_sboardStackIntoHeader.
+  function _sboardCancelMoveArm(msg){
+    if(_sboardMoveArmedId){
+      var armEl=document.querySelector('[data-header-id="'+CSS.escape(String(_sboardMoveArmedId))+'"]');
+      if(armEl) armEl.classList.remove('sb-move-armed');
+    }
+    _sboardMoveArmedId=null;
+    document.body.classList.remove('sb-move-arming');
+    document.removeEventListener('click', _sboardMoveArmClickHandler, true);
+    if(msg) _sboardShowToast(msg);
+  }
+  // Capture phase, not bubble -- runs before the clicked tile's own click
+  // handler (select / drill-in / open-peek, depending which kind of tile
+  // it is), and stopPropagation stops that handler from also firing right
+  // after this one acts. Wired up only while a move is armed (added in
+  // the Alt+M keydown branch below, removed by _sboardCancelMoveArm), so
+  // ordinary clicks are completely unaffected the rest of the time.
+  function _sboardMoveArmClickHandler(e){
+    if(!_sboardMoveArmedId) return;
+    var armedId=_sboardMoveArmedId;
+    var topicBox=document.getElementById('sc-topic-box');
+    if(topicBox && topicBox.contains(e.target)){
+      e.preventDefault(); e.stopPropagation();
+      _sboardCancelMoveArm();
+      if(T2TShared.currentTopicId) _sboardMoveCard(armedId, T2TShared.currentTopicId);
+      return;
+    }
+    var targetEl=e.target && e.target.closest ? e.target.closest('[data-header-id]') : null;
+    if(!targetEl){ _sboardCancelMoveArm('Move canceled.'); return; }
+    var targetId=targetEl.getAttribute('data-header-id');
+    e.preventDefault(); e.stopPropagation();
+    if(String(targetId)===String(armedId)){ _sboardCancelMoveArm('Move canceled.'); return; }
+    _sboardCancelMoveArm();
+    var targetRow=_sboardAllRowsById[targetId];
+    if(!targetRow){ _sboardShowToast('Could not find that card.'); return; }
+    _sboardStackIntoHeader(armedId, targetRow);
   }
   function wireSboardUndoKeyboard(){
     // climbOut/drillIn hold the actual VIEW navigation -- doesn't move or
@@ -399,6 +454,28 @@
         _sboardMoveCard(trashSelId, _sboardTrashId);
         return;
       }
+      // Alt+M, Sept 19 2026 (Larry: "what if Alt-M prepares card to move
+      // with next click where it goes?") -- a keyboard-driven stand-in
+      // for actually dragging the selected card. Same selection this
+      // whole handler already uses (Tab/Page/Arrow/Delete above). Pressed
+      // again while already armed, or Escape at any time while armed,
+      // cancels instead of re-arming -- see _sboardCancelMoveArm.
+      if(k==='m' && e.altKey){
+        e.preventDefault();
+        if(_sboardMoveArmedId){ _sboardCancelMoveArm('Move canceled.'); return; }
+        if(!_sboardSelectedHeaderId || _sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          _sboardShowToast('Click a card first, then Alt+M to move it.');
+          return;
+        }
+        _sboardMoveArmedId=_sboardSelectedHeaderId;
+        var armEl=document.querySelector('[data-header-id="'+CSS.escape(String(_sboardMoveArmedId))+'"]');
+        if(armEl) armEl.classList.add('sb-move-armed');
+        document.body.classList.add('sb-move-arming');
+        document.addEventListener('click', _sboardMoveArmClickHandler, true);
+        _sboardShowToast('Move armed — click a card to drop it in. Esc to cancel.');
+        return;
+      }
+      if(k==='escape' && _sboardMoveArmedId){ e.preventDefault(); _sboardCancelMoveArm('Move canceled.'); return; }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
