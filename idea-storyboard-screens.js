@@ -610,11 +610,18 @@
         +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
         +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}'
-        // VIEW's "a filter is on" state, Sept 19 2026 -- same idea as BB's
-        // own .bb-icon-btn.bb-view-on (briefing-board-styles.js), solid
-        // accent fill instead of the usual muted/translucent look, so it's
-        // obvious at a glance that the board isn't showing everyone.
-        +'.sc-hdr-btn-muted.sc-view-on{background:#5b9bd5;border-color:#5b9bd5;color:#fff;opacity:1}'
+        // VIEW, Sept 19 2026 -- Larry: "Can head icon be gray to be more
+        // visible?" The usual sc-hdr-btn-muted look (near-transparent
+        // white on navy) read too faint for a button that's meant to be
+        // found at a glance -- solid gray instead, same idea as Return/
+        // Utility's frame but filled in rather than just outlined.
+        +'#sc-view-trigger{background:#9aa5b1;border-color:#9aa5b1;opacity:1}'
+        +'#sc-view-trigger:hover{background:#aab4bf}'
+        // VIEW's "a filter is on" state -- same idea as BB's own
+        // .bb-icon-btn.bb-view-on (briefing-board-styles.js), solid accent
+        // fill instead of gray, so it's obvious at a glance both that VIEW
+        // exists and that the board isn't showing everyone right now.
+        +'#sc-view-trigger.sc-view-on{background:#5b9bd5;border-color:#5b9bd5;color:#fff}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'button.sc-hdr-eyebrow{background:none;border:none;padding:0;margin:0 0 3px;cursor:pointer;font-family:inherit;width:auto}'
         +'button.sc-hdr-eyebrow:hover{opacity:.65}'
@@ -1089,11 +1096,13 @@
     });
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
-    // _sboardWireProjectHeaderDropdown() no longer wired at boot, Sept 19
-    // 2026 -- its trigger (sc-project-caret) is gone, matching BB's own
-    // bb-board-trigger (a single field, no separate caret). Left defined,
-    // just unreachable, same "retire in place" treatment as the two
-    // functions right below.
+    // _sboardWireProjectHeaderDropdown(), Sept 19 2026 -- re-pointed at
+    // sc-title-trigger now that sc-project-caret is gone (see that
+    // function's own trigger lookup, above): PROJECT drops down on click
+    // exactly like STORYBOARD's sc-board-kind-trigger does, per Larry's
+    // same-day follow-up ("PROJECT field must drop down on IDEA board
+    // just like STORYBOARD field").
+    _sboardWireProjectHeaderDropdown();
     _sboardWireViewFilterDropdown();
     // _sboardWireParentAncestorDropdown()/_sboardWireTopicChildDropdown()
     // no longer wired at boot, Sept 19 2026 -- TOPIC's up/down arrow chips
@@ -1120,14 +1129,19 @@
     // where Mouse Criteria/Field Guide/etc. show as ordinary Header
     // tiles (same screen every other Header already opens onto -- no
     // separate "master" screen to build), not surface a small popup
-    // instead of it. Fixed: click ensures the root exists (this is also
-    // what actually RUNS the one-time migration for a member who's never
-    // opened it before -- confirmed live for Larry's own account:
-    // no "Idea Storyboards" row existed yet, Mouse Criteria was still
-    // sitting at true root) and drills straight into it.
-    // openProjectSwitcher's popup is real, tested code and still useful
-    // as a fast jump without scrolling the board -- kept reachable on
-    // double-click rather than deleted.
+    // instead of it.
+    // Sept 19 2026, Larry: "PROJECT field must drop down on IDEA board
+    // just like STORYBOARD field" -- a single click on PROJECT now opens
+    // the same project-list dropdown STORYBOARD opens (see
+    // _sboardWireProjectHeaderDropdown's boot call below, now pointed at
+    // sc-title-trigger since sc-project-caret is gone), rather than
+    // drilling straight into the current project. The ensure-root-then-
+    // drill-in logic this click handler used to run lives on now as that
+    // dropdown's pinned MASTER row instead (same behavior, reached one
+    // click deeper) -- see that row's own click handler,
+    // _sboardWireProjectHeaderDropdown. openProjectSwitcher's popup is
+    // real, tested code and still useful as a fast jump without scrolling
+    // the board -- kept reachable on double-click rather than deleted.
     (function(){
       var titleTrigger=document.getElementById('sc-title-trigger');
       if(titleTrigger){
@@ -1148,21 +1162,6 @@
         // briefing-board.js's own root PROJECT label.
         titleTrigger.textContent='MASTER';
         titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
-        titleTrigger.addEventListener('click', async function(e){
-          e.stopPropagation();
-          // Land wherever the label is currently pointing (Larry: the
-          // click has to land where the label says it will) -- only
-          // falls back to the Idea Storyboards root itself when nothing
-          // more specific is resolved, or that root is genuinely current.
-          var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
-          var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
-          if(projRow && _sboardIdeaStoryboardsRootId && String(projRow.id)!==String(_sboardIdeaStoryboardsRootId)){
-            _sboardDrillInto(projRow);
-          } else {
-            var rootId=await T2TData.ensureIdeaStoryboardsRoot();
-            if(rootId) _sboardDrillInto({id:rootId});
-          }
-        });
         titleTrigger.addEventListener('dblclick', function(e){
           e.stopPropagation();
           openProjectSwitcher();

@@ -774,7 +774,10 @@
       .sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
   }
   function _sboardWireProjectHeaderDropdown(){
-    var trigger=document.getElementById('sc-project-caret'), menu=document.getElementById('sc-title-menu');
+    // Sept 19 2026 -- re-pointed at sc-title-trigger (PROJECT's only
+    // element now, sc-project-caret is gone): a single click on PROJECT
+    // opens this same list, matching STORYBOARD's sc-board-kind-trigger.
+    var trigger=document.getElementById('sc-title-trigger'), menu=document.getElementById('sc-title-menu');
     if(!trigger || !menu) return;
     trigger.onclick=function(e){
       e.stopPropagation();
@@ -798,10 +801,16 @@
         pinned.className='sc-cdrop-row';
         pinned.style.fontWeight='700';
         pinned.textContent='MASTER';
-        pinned.addEventListener('click', function(ev){
+        // Ensure-root-then-drill-in, Sept 19 2026 -- carried over from the
+        // old direct-click handler this dropdown replaced (see the boot
+        // wiring's own note, idea-storyboard-screens.js): this is also
+        // what actually RUNS the one-time migration for a member who's
+        // never opened MASTER before (no "Idea Storyboards" row yet).
+        pinned.addEventListener('click', async function(ev){
           ev.stopPropagation();
           menu.hidden=true;
-          _sboardDrillInto({id:_sboardIdeaStoryboardsRootId});
+          var rootId=await T2TData.ensureIdeaStoryboardsRoot();
+          if(rootId) _sboardDrillInto({id:rootId});
         });
         menu.appendChild(pinned);
         if(choices.length){
