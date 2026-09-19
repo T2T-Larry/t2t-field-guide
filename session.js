@@ -315,10 +315,15 @@
   // path above — opens 1170 (Idea Input) targeting whatever bucket 9711
   // is currently focused on.
   function _isxOpenIdeaCaptureHere(){
+    // NEW card, Sept 19 2026 -- PROJECT is the root of isxPath, TOPIC is
+    // its current (last) entry; '-' (Parking Lot) if the path is empty.
+    var _icPath=T2TShared.isxPath||[];
     window.IdeaCapture.open({
       headerId: T2TShared.isxHeaderId,
       headerLabel: T2TShared.isxHeaderLabel,
       boardId: _isxCurrentTopicId(),
+      projectLabel: _icPath.length ? _icPath[0].text : null,
+      topicLabel: _icPath.length ? _icPath[_icPath.length-1].text : null,
       onSaved: function(row){
         _isxAddRow(row);
         if(row && row.content_type==='header'){ _isxRenderLadder(); }
@@ -1996,10 +2001,13 @@
         console.error('Quick idea add: could not resolve a target Topic', e);
         return;
       }
+      var _icPath2=T2TShared.isxPath||[];
       window.IdeaCapture.open({
         headerId: T2TShared.isxHeaderId,
         headerLabel: T2TShared.isxHeaderLabel,
-        boardId: _isxCurrentTopicId()
+        boardId: _isxCurrentTopicId(),
+        projectLabel: _icPath2.length ? _icPath2[0].text : null,
+        topicLabel: _icPath2.length ? _icPath2[_icPath2.length-1].text : null
       });
     },
     getCurrentBoardContext: function(){ return T2TShared.currentTopicId?{boardId:T2TShared.currentTopicId}:null; },

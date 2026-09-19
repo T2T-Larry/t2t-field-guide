@@ -611,10 +611,12 @@
   // every handler below (and the row's own storyboard_project_id, the
   // file names, etc.) still keys off it; renaming those too would be a
   // much bigger, purely backstage change with no visible upside.
+  // Sept 19 2026 -- Larry: change BRIEFING BOARD's display label back
+  // from TASKS to BRIEFING (BB for short). CAST stays ROLES.
   var _sboardBoardKinds=[
     {value:'IDEA', label:'IDEAS', soon:null},
     {value:'PLAN', label:'PLAN', soon:null},
-    {value:'BRIEFING BOARD', label:'TASKS', soon:null},
+    {value:'BRIEFING BOARD', label:'BRIEFING', soon:null},
     {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
     {value:'CAST', label:'ROLES', soon:null}
   ];

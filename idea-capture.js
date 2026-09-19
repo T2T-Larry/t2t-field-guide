@@ -54,6 +54,12 @@
   var _icInputPendingImageFile=null;
   var _icInputPendingLink=null; // {url, title, thumb}
 
+  // ── NEW card fields, Sept 19 2026 (Larry's "NEW CARD" spec) ──
+  var _icProjectLabel='-';      // PROJECT eyebrow -- opts.projectLabel, or '-' (Parking Lot) if none given
+  var _icTopicLabel='-';        // TOPIC field -- opts.topicLabel, or '-' (Parking Lot) if none given
+  var _icEntryType='idea';      // 'idea' | 'task' | 'note' -- the O IDEA/TASK/NOTES selector
+  var _icCastOn=false;          // single head-cast button -- assign PRIMARY right after this saves
+
   // ── Image (9713) card state — kept for completeness; this panel has
   //    no live entry point right now (superseded by paste-in
   //    living inside the Idea card itself), but stays wired in case a
@@ -120,11 +126,21 @@
   //    branching on which screen is open — the caller decided that by
   //    what it passed to open(). ──
 
+  // NEW card, Sept 19 2026 — SUBJECT has no column of its own on `ideas`,
+  // so it saves as the entry's own first line rather than a new field
+  // (avoids a schema change for a V1 pass); blank when no subject was typed.
+  function _icComposeText(body){
+    var subjEl=document.getElementById('isx-p-subject');
+    var subject=subjEl?subjEl.value.trim():'';
+    return subject ? (subject+'\n\n'+body) : body;
+  }
+
   async function _icSaveCard(imageUrl){
     var headerId=_icHeaderId||_icBoardId;
     var ta=document.getElementById('isx-idea-text');
-    var text=(ta?ta.value:'').trim();
-    if(!text && !imageUrl) return;
+    var rawText=(ta?ta.value:'').trim();
+    if(!rawText && !imageUrl) return;
+    var text=_icComposeText(rawText);
     var savedOk=false, saveErr=null, row=null;
     try{
       var _sb=T().sb;
@@ -132,8 +148,13 @@
       if(!user){
         saveErr='Not signed in.';
       } else {
+        // HEADER/SUBBER wins over the IDEA/TASK/NOTES selector -- HEADER
+        // is a structural choice (this becomes a bucket other cards file
+        // under), not a content flavor, same precedence the old
+        // Make-this-a-Header toggle already had.
         var contentType = imageUrl ? 'image' : 'text';
-        if(!imageUrl && (_icIdeaMode==='header' || _icIsAutoHeaderText(text))) contentType='header';
+        if(!imageUrl && (_icIdeaMode==='header' || _icIsAutoHeaderText(rawText))) contentType='header';
+        else if(!imageUrl) contentType = (_icEntryType==='task') ? 'task' : (_icEntryType==='note') ? 'note' : 'text';
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: contentType,
@@ -149,6 +170,7 @@
 
     if(savedOk){
       if(_icOnSaved) _icOnSaved(row);
+      _icMaybeOpenCastPicker(row);
       _icResetIdeaPanelForNext(row && row.content_type==='header');
     } else {
       var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
@@ -186,6 +208,12 @@
 
   async function _icSaveLinkCard(url, thumb, title){
     var headerId=_icHeaderId||_icBoardId;
+    // NEW card, Sept 19 2026 -- a typed SUBJECT wins over the auto-fetched
+    // oEmbed title, same "author's own words beat the automatic guess" call
+    // as elsewhere in this file.
+    var subjEl=document.getElementById('isx-p-subject');
+    var subject=subjEl?subjEl.value.trim():'';
+    var finalTitle=subject||title||url;
     var savedOk=false, saveErr=null, row=null;
     try{
       var _sb=T().sb;
@@ -195,7 +223,7 @@
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type:'link',
-          text_content: JSON.stringify({url:url, title:title||url}),
+          text_content: JSON.stringify({url:url, title:finalTitle}),
           image_url: thumb||null,
           cluster_id: headerId||null,
           created_at:new Date().toISOString()
@@ -215,8 +243,10 @@
       // video sat invisible until the next manual refresh. Grab the
       // callback first, close, then call it.
       var _onSavedCb=_icOnSaved;
+      var wantCast=_icCastOn;
       _icClosePopup();
       if(_onSavedCb) _onSavedCb(row);
+      if(wantCast) _icMaybeOpenCastPicker(row, true);
     } else {
       var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
       if(errBox){
@@ -244,7 +274,24 @@
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
+    _icProjectLabel='-'; _icTopicLabel='-'; _icEntryType='idea'; _icCastOn=false;
     if(cb) cb();
+  }
+
+  // Single head-cast button, Sept 19 2026 -- rather than build a second,
+  // parallel person-picker just for this small card, the cast button
+  // hands off to the real Cast/Call Sheet picker (idea-storyboard-
+  // people.js's openCallSheet) the instant the new card has a saved row
+  // to attach PRIMARY to. That's the same picker every other card in the
+  // app already uses to assign PRIMARY, so there's only one such picker
+  // to keep working, not two. `keepOpenCard` is true for the link-save
+  // path, which already closed the popup itself before this runs.
+  function _icMaybeOpenCastPicker(row, keepOpenCard){
+    if(!_icCastOn || !row || !row.id) { _icCastOn=false; return; }
+    _icCastOn=false;
+    if(typeof window.openCallSheet==='function'){
+      window.openCallSheet(row, null, 'idea', null, null, null);
+    }
   }
 
   // RULE: every screen reveals its OWN number on triple-click — never a
@@ -484,17 +531,42 @@
     if(ta){ ta.value=''; ta.focus(); }
   }
 
-  // ── 1170 — Idea ──
+  // ── 1170 — NEW card (Larry's "NEW CARD" spec, Sept 19 2026) ──
+  // PROJECT/TOPIC default to wherever this card was opened from (see
+  // open()'s projectLabel/topicLabel opts) -- '-' means Parking Lot, same
+  // meaning '-' has everywhere else in the app. The O IDEA/TASK/NOTES
+  // selector picks the entry's flavor; HEADER/SUBBER is the same
+  // structural choice the old Make-a-Header toggle made, just shown as
+  // two plain buttons instead of one toggle-with-words. The cast button
+  // (head icon) is optional -- see _icMaybeOpenCastPicker for what it does.
+  function _icEsc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
   function _icRenderIdeaPanel(){
     _icIdeaMode='idea';
+    _icEntryType='idea';
+    _icCastOn=false;
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
-    _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">\u2715</button>'
-      +'<div class="isx-ptitle">\ud83d\udca1 Idea</div>'
-      +'<div class="isx-psub">Ideas are fragile. Write it down before it escapes.</div>'
-      +'<button class="isx-src-btn" id="isx-p-header-toggle" type="button" style="width:100%;margin-bottom:8px">\ud83c\udff7\ufe0f Make this a Header</button>'
+    _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
+      +'<div class="isx-ptitle" style="text-align:center;margin:0 0 4px">NEW</div>'
+      +'<div class="isx-p-project" id="isx-p-project">'+_icEsc(_icProjectLabel)+'</div>'
+      +'<div class="isx-p-topic" id="isx-p-topic">'+_icEsc(_icTopicLabel)+'</div>'
+      +'<div class="isx-p-type-row">'
+        +'<button class="isx-src-btn on" type="button" data-type="idea">○ IDEA</button>'
+        +'<button class="isx-src-btn" type="button" data-type="task">○ TASK</button>'
+        +'<button class="isx-src-btn" type="button" data-type="note">○ NOTES</button>'
+      +'</div>'
+      +'<div class="isx-p-subject"><input type="text" id="isx-p-subject" placeholder="Subject (optional)"></div>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
-      +'<textarea id="isx-idea-text" placeholder="What if\u2026?"></textarea>'
+      +'<textarea id="isx-idea-text" placeholder="What if…? (type, paste, or drop anything)"></textarea>'
+      +'<div class="isx-p-bottom-row">'
+        +'<button class="isx-p-hs-btn" type="button" id="isx-p-header-btn">HEADER</button>'
+        +'<button class="isx-p-hs-btn on" type="button" id="isx-p-subber-btn">SUBBER</button>'
+        +'<button class="isx-p-cast-btn" type="button" id="isx-p-cast-btn" title="Assign PRIMARY once saved">👤</button>'
+      +'</div>'
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
@@ -502,29 +574,52 @@
     document.getElementById('isx-p-close').onclick=_icClosePopup;
     document.getElementById('isx-p-save').onclick=_icCommitIdeaPanel;
     document.getElementById('isx-p-cancel').onclick=_icCancelIdeaEntry;
-    // Rules button removed from here Aug 7, 2026 (Larry) — this slot now
-    // holds the Make-a-Header toggle instead. _icRenderRulesPanel /
-    // openRules() are untouched and still reachable from wherever else
-    // calls them; this card just no longer offers a way in.
-    // MAKE HEADER toggle, Aug 7, 2026 — wires the _icIdeaMode variable
-    // that _icSaveCard already checked but nothing ever set: lets Larry
-    // decide right when typing that this card should be a header,
-    // instead of only deciding after the fact on DETAILS (9716).
+
+    // O IDEA / TASK / NOTES -- one selected at a time.
     (function(){
-      var toggleBtn=document.getElementById('isx-p-header-toggle');
-      function paint(){
-        if(!toggleBtn) return;
-        toggleBtn.classList.toggle('on', _icIdeaMode==='header');
-      }
-      if(toggleBtn){
-        toggleBtn.onclick=function(){
-          _icIdeaMode = (_icIdeaMode==='header') ? 'idea' : 'header';
-          paint();
+      var typeBtns=document.querySelectorAll('.isx-p-type-row .isx-src-btn');
+      typeBtns.forEach(function(b){
+        b.onclick=function(){
+          _icEntryType=b.getAttribute('data-type');
+          typeBtns.forEach(function(x){ x.classList.toggle('on', x===b); });
         };
+      });
+    })();
+
+    // HEADER / SUBBER -- wires the same _icIdeaMode variable _icSaveCard
+    // already checks; SUBBER (adds under the current header) is the
+    // default, matching how this card is opened everywhere today.
+    (function(){
+      var hBtn=document.getElementById('isx-p-header-btn');
+      var sBtn=document.getElementById('isx-p-subber-btn');
+      function paint(){
+        if(hBtn) hBtn.classList.toggle('on', _icIdeaMode==='header');
+        if(sBtn) sBtn.classList.toggle('on', _icIdeaMode!=='header');
       }
+      if(hBtn) hBtn.onclick=function(){ _icIdeaMode='header'; paint(); };
+      if(sBtn) sBtn.onclick=function(){ _icIdeaMode='idea'; paint(); };
       paint();
     })();
+
+    // Cast button -- just arms/disarms _icCastOn here; the actual person
+    // picker only opens once this entry has a saved row (see
+    // _icMaybeOpenCastPicker), since PRIMARY has to attach to something.
+    (function(){
+      var castBtn=document.getElementById('isx-p-cast-btn');
+      if(castBtn) castBtn.onclick=function(){
+        _icCastOn=!_icCastOn;
+        castBtn.classList.toggle('on', _icCastOn);
+      };
+    })();
+
     _icWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
+
+    var subjectInput=document.getElementById('isx-p-subject');
+    if(subjectInput){
+      subjectInput.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){ e.preventDefault(); var ta2=document.getElementById('isx-idea-text'); if(ta2) ta2.focus(); }
+      });
+    }
 
     var ta=document.getElementById('isx-idea-text');
     if(ta){
@@ -698,14 +793,18 @@
 
   // ── PUBLIC INTERFACE ──
   window.IdeaCapture = {
-    // Opens 1170 (Idea), preconditioned to opts.headerId. Any screen can
-    // call this the same way — it never navigates, it just puts the card
-    // on top of whatever's currently showing.
+    // Opens 1170 (the NEW card), preconditioned to opts.headerId. Any
+    // screen can call this the same way — it never navigates, it just
+    // puts the card on top of whatever's currently showing.
+    // opts.projectLabel/opts.topicLabel (Sept 19 2026) — the PROJECT/TOPIC
+    // eyebrow text to show; omit or pass null/'' for Parking Lot ('-').
     open: function(opts){
       opts=opts||{};
       _icHeaderId=opts.headerId||null;
       _icHeaderLabel=opts.headerLabel||'New';
       _icBoardId=opts.boardId||null;
+      _icProjectLabel=opts.projectLabel||'-';
+      _icTopicLabel=opts.topicLabel||'-';
       _icOnSaved=typeof opts.onSaved==='function'?opts.onSaved:null;
       _icOnClosed=typeof opts.onClosed==='function'?opts.onClosed:null;
       _icRenderIdeaPanel();

@@ -480,28 +480,22 @@
   // no positionAnchor hook -- its anchor already sits in the header's
   // normal flex layout (see .bb-logo-anchor above) and needs no
   // per-render repositioning the way Idea/Plan's does.
-  // Sept 19 2026 (Larry, after seeing the new ID Band): "LOGO should start
-  // midway between org / name block and PROJECT. It should have drag and
-  // full resize option." The logo now belongs to the MEMBER (profiles.logo_url
-  // / logo_w / logo_h / logo_dx / logo_dy), not to this board, so it looks
-  // the same on every board. Everything else -- upload + free crop, drag,
-  // resize handle, hover-peek -- is still the shared T2TLogo controller;
-  // this config just points it at the member's profile and at the new spot.
-  // Size range widened (max 90 -> 140, matching the Idea/Plan boards) so
-  // "full resize" actually has room; drag has no limits beyond the header.
   var _bbLogoCfg={
     slotId:'bb-logo-slot', imgId:'bb-logo-img', addBtnId:'bb-logo-add-btn',
     inputId:'bb-logo-input', resizeHandleId:'bb-logo-resize-handle',
     eyebrowTopId:'bb-logo-eyebrow', eyebrowOnLogoId:'bb-logo-eyebrow-onlogo',
-    minSize:IDBand.TOKENS.logo.minSize, maxSize:140, defaultSize:IDBand.TOKENS.logo.defaultSize, minFrameFromCrop:10,
-    uploadPrefix:'bb-logo', subjectLabel:'profile',
+    minSize:IDBand.TOKENS.logo.minSize, maxSize:IDBand.TOKENS.logo.maxSize, defaultSize:IDBand.TOKENS.logo.defaultSize, minFrameFromCrop:10,
+    uploadPrefix:'bb-logo', subjectLabel:'board',
     showToast:_bbShowToast,
-    getRow:function(){ return (T().getMember && T().getMember()) || null; },
+    getRow:function(){ return _bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0]; },
     saveLogo:async function(patch){
-      if(!window.T2TMemberIdentity) throw new Error('Member identity not loaded');
-      await window.T2TMemberIdentity.savePatch(patch, true);
+      var board=_bbLogoCfg.getRow();
+      if(!board) return;
+      var sb=T().sb;
+      var upd=await sb.from('briefing_boards').update(patch).eq('id', board.id);
+      if(upd.error) throw upd.error;
+      Object.keys(patch).forEach(function(k){ board[k]=patch[k]; });
     },
-    positionAnchor:function(){ _bbPositionLogoMidway(); },
     crop:{
       stageMaxW:320, stageMaxH:320, handleColor:'#C9A87C', handleBorderColor:'#fff',
       mount:function(doClose){
@@ -531,31 +525,6 @@
       }
     }
   };
-
-  // Base position for the logo: horizontally midway between the identity
-  // block's right edge and PROJECT's left edge, vertically centered on the
-  // band. Shown only once a logo exists. The saved drag offset (logo_dx /
-  // logo_dy) is applied by T2TLogo as a transform on top of this, so
-  // re-running this never disturbs where the traveler put it.
-  function _bbPositionLogoMidway(){
-    var wrapEl=document.getElementById('bb-logo-wrap');
-    var slot=document.getElementById('bb-logo-slot');
-    var container=document.querySelector('#s-briefing-board .bb-mhead-top');
-    if(!wrapEl || !slot || !container) return;
-    var m=(T().getMember && T().getMember()) || {};
-    if(!m.logo_url){ wrapEl.style.display='none'; return; }
-    wrapEl.style.display='';
-    var cr=container.getBoundingClientRect();
-    if(!cr.width) return;
-    var idn=document.getElementById('bb-idn');
-    var proj=document.getElementById('bb-project-wrap');
-    var idnRight=idn ? idn.getBoundingClientRect().right : cr.left;
-    var projLeft=proj ? proj.getBoundingClientRect().left : (cr.left+cr.width/2);
-    var w=slot.offsetWidth||30, h=slot.offsetHeight||30;
-    var mid=(idnRight+projLeft)/2;
-    wrapEl.style.left=Math.max(0, mid-w/2-cr.left)+'px';
-    wrapEl.style.top=Math.max(0, (cr.height-h)/2)+'px';
-  }
 
   function _bbRenderLogo(){ T2TLogo.render(_bbLogoCfg); }
 
@@ -1315,9 +1284,6 @@
     if(trNow.height && containerRect.height){
       topicWrap.style.top=((containerRect.height-trNow.height)/2)+'px';
     }
-    // Logo sits midway between the identity block and PROJECT, so it can
-    // only be placed once PROJECT's own left edge is final (Sept 19 2026).
-    _bbPositionLogoMidway();
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
   // listener for the same reason (idea-storyboard-9710.js, near
@@ -1369,7 +1335,7 @@
   // file has loaded.
   function _bbRenderTravelerName(){
     if(window.T2TMemberIdentity){
-      window.T2TMemberIdentity.fill({wrap:'bb-idn', org:'bb-idn-org', name:'bb-traveler-name'});
+      window.T2TMemberIdentity.fill({wrap:'bb-idn', org:'bb-idn-org', logo:'bb-idn-logo', name:'bb-traveler-name'});
       return;
     }
     var m=T().getMember && T().getMember();
@@ -1935,10 +1901,12 @@
   // screen: BRIEFING BOARD -> TASKS, CAST -> ROLES (display label only,
   // same reasoning as idea-storyboard-navigation.js's own copy of this
   // list -- value stays the internal name every handler below keys off).
+  // Sept 19 2026 -- Larry: change it back to BRIEFING. Kept in sync with
+  // idea-storyboard-navigation.js's copy of this same list.
   var _bbBoardKinds=[
     {value:'IDEA', label:'IDEAS'},
     {value:'PLAN', label:'PLAN'},
-    {value:'BRIEFING BOARD', label:'TASKS'},
+    {value:'BRIEFING BOARD', label:'BRIEFING'},
     {value:'SHARE', label:'SHARE'},
     {value:'CAST', label:'ROLES'}
   ];

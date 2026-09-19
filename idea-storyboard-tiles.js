@@ -749,10 +749,16 @@
   // know or care which screen called it. Locked July 16, 2026.
   function _sboardOpenQuickCapture(headerId){
     var headerRow=_sboardHeadersById && _sboardHeadersById[headerId];
+    // NEW card, Sept 19 2026 -- PROJECT/TOPIC default to wherever this
+    // was opened from; '-' (Parking Lot) if either isn't known yet.
+    var topicRow=T2TShared.currentTopicId && _sboardAllRowsById && _sboardAllRowsById[T2TShared.currentTopicId];
+    var projectRow=(typeof _sboardCurrentProjectRow==='function')?_sboardCurrentProjectRow():null;
     window.IdeaCapture.open({
       headerId: headerId,
       headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
       boardId: T2TShared.currentTopicId,
+      projectLabel: projectRow ? (projectRow.text_content||null) : null,
+      topicLabel: topicRow ? (topicRow.text_content||null) : null,
       onSaved: async function(row){
         // Sept 13 2026 -- must happen before the render below, not after,
         // so the board that redraws already knows this card belongs to

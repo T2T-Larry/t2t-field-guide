@@ -719,6 +719,28 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      look above rather than inventing a second visual language. */
   .isx-pcard.isx-drop-ready{outline:2px dashed var(--isx-paleblue);outline-offset:4px}
 
+  /* NEW card, Sept 19 2026 (Larry) — PROJECT/TOPIC eyebrow fields (same
+     idea as the ID Band's own PROJECT/TOPIC chips, sized down for this
+     small card: PROJECT is the smallest, TOPIC bigger, SUBJECT the same
+     size as TOPIC), the IDEA/TASK/NOTES type selector, and the
+     HEADER/SUBBER + cast row under the entry field. */
+  .isx-p-project{font-size:calc(9.5px * var(--fg-text-scale,1));text-transform:uppercase;letter-spacing:.6px;
+    color:#7a90a8;text-align:center;margin-bottom:1px}
+  .isx-p-topic{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:var(--isx-navy);
+    text-align:center;margin-bottom:8px}
+  .isx-p-type-row{display:flex;gap:6px;margin-bottom:8px}
+  .isx-p-subject{margin-bottom:8px}
+  .isx-p-subject input{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;text-align:center}
+  .isx-p-bottom-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .isx-p-hs-btn{flex:1;font-size:calc(10px * var(--fg-text-scale,1));padding:7px 4px;border:1.5px solid var(--isx-paleblue);
+    border-radius:8px;background:var(--brand-white);cursor:pointer;color:var(--isx-navy);font-weight:700;letter-spacing:.5px}
+  .isx-p-hs-btn.on{background:var(--isx-navy);color:var(--brand-white);border-color:var(--isx-navy)}
+  .isx-p-cast-btn{flex:0 0 34px;height:32px;border:1.5px dashed var(--isx-paleblue);border-radius:50%;
+    background:var(--brand-white);cursor:pointer;color:var(--isx-navy);font-size:calc(13px * var(--fg-text-scale,1));
+    display:flex;align-items:center;justify-content:center;padding:0}
+  .isx-p-cast-btn.on{background:var(--isx-navy);color:var(--brand-white);border-style:solid}
+  .isx-p-url-preview{font-size:calc(9.5px * var(--fg-text-scale,1));color:#7a90a8;text-align:center;word-break:break-word;margin-top:2px}
+
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
   .isx-tnode{margin:2px 0 2px 14px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--isx-navy);cursor:pointer;padding:2px 4px;border-radius:5px}
   .isx-tnode:hover{background:#dfe8ef}
