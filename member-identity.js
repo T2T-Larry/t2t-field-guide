@@ -69,7 +69,11 @@
         logoEl.style.display = 'none';
       }
     }
-    if(wrap) wrap.classList.toggle('has-org', !!(org || logo));
+    // Sept 19 2026: only the organization name changes the name's size;
+    // the logo no longer sits in this block (it's placed midway between
+    // this block and PROJECT, with its own drag/resize -- see each board's
+    // logo wiring).
+    if(wrap) wrap.classList.toggle('has-org', !!org);
   }
 
   // ---- Saving ---------------------------------------------------
@@ -80,14 +84,19 @@
     if(!u) throw new Error('Not signed in.');
     return u.id;
   }
-  async function saveProfilePatch(patch){
+  // silent: skip the 'identity changed' repaint -- used by the logo's own
+  // drag/resize saves, which have already painted the new frame themselves.
+  async function saveProfilePatch(patch, silent){
     var sb = T().sb;
     var uid = await currentUserId();
     var res = await sb.from('profiles').update(patch).eq('user_id', uid);
     if(res.error) throw res.error;
     var m = member();
-    Object.keys(patch).forEach(function(k){ m[k] = patch[k] || ''; });
-    announce();
+    Object.keys(patch).forEach(function(k){
+      var v = patch[k];
+      m[k] = (v == null) ? (/^logo_(w|h|dx|dy)$/.test(k) ? null : '') : v;
+    });
+    if(!silent) announce();
   }
   async function saveOrgName(value){
     var v = (value || '').trim();
@@ -201,7 +210,8 @@
     closeEditor: close,
     saveOrgName: saveOrgName,
     uploadLogoFile: uploadLogoFile,
-    removeLogo: removeLogo
+    removeLogo: removeLogo,
+    savePatch: saveProfilePatch
   };
 
 })();

@@ -201,14 +201,15 @@
       +'.bb-idn-logo{height:calc(26px * var(--fg-text-scale,1));width:auto;max-width:calc(90px * var(--fg-text-scale,1));object-fit:contain;border-radius:4px;flex-shrink:0}'
       +'.bb-idn .bb-traveler-eyebrow{position:static}'
       +'.bb-idn.has-org .bb-traveler-eyebrow{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1.5px}'
-      // The old per-board logo (top right) is retired from view now that
-      // the member's own logo rides beside the organization name -- left
-      // in the markup, unwired-looking but intact, same "retire in place"
-      // treatment used elsewhere in this header. The row keeps its old
+      // The logo left this row (Sept 19 2026, now midway between the
+      // identity block and PROJECT). The row keeps its old
       // height (eyebrow + 30px frame) so PROJECT/STORYBOARD's bottom-
       // justify against it (_bbPositionIdBandRow) lands where it always did.
       +'.bb-mhead-actions{min-height:calc(30px + 13px * var(--fg-text-scale,1))}'
-      +'.bb-mhead-actions > .bb-mh-fieldgrp{display:none}'
+      // Logo wrap (Sept 19 2026): base position is set by JS
+      // (_bbPositionLogoMidway) midway between the identity block and
+      // PROJECT; the saved drag offset rides on the slot as a transform.
+      +'.bb-logo-wrap{position:absolute;top:0;left:0}'
       // VIEW icon button: lit whenever a person filter is applied.
       +'.bb-icon-btn.bb-view-on{background:var(--bb-accent);color:#fff}'
       // TOPIC hierarchy menu (click TOPIC): taller than the standard

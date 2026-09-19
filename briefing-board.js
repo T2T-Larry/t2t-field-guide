@@ -257,6 +257,7 @@ function T(){ return window.T2T; }
     // name / logo (Utility > My Info, member-identity.js), same pass.
     window.addEventListener('t2t:identity-changed', function(){
       _bbRenderTravelerName();
+      try{ _bbRenderLogo(); }catch(e){}
       try{
         var scr=document.getElementById('s-briefing-board');
         if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();

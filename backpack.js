@@ -182,6 +182,10 @@
         // See member-identity.js.
         _member.org_name         = res.data.org_name          || '';
         _member.logo_url         = res.data.logo_url          || '';
+        _member.logo_w           = res.data.logo_w            || null;
+        _member.logo_h           = res.data.logo_h            || null;
+        _member.logo_dx          = res.data.logo_dx           || 0;
+        _member.logo_dy          = res.data.logo_dy           || 0;
         var nameEl = document.getElementById('jcov-member-name');
         if (nameEl && _member.display_name) nameEl.textContent = _member.display_name.toUpperCase();
         // Sept 13 2026 (Master BB): cache the display name locally so
