@@ -188,6 +188,35 @@
       // VIEW chain (briefing-board-master-nav.js), which no longer
       // measures or moves this element at all.
       +'.bb-traveler-eyebrow{position:absolute;top:0;left:0;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap}'
+      // ID Band identity block, Sept 19 2026 (Larry, ID Band redesign):
+      // organization name (large) with its logo to the right, and the
+      // member's own name (smaller) underneath. Pinned to the header's
+      // true top-left corner exactly like the traveler-name eyebrow was
+      // (position:absolute;top:0;left:0 on .bb-mhead-top, which is the
+      // positioned ancestor). With no organization set the name keeps
+      // its old, larger size so a member without one sees no change.
+      +'.bb-idn{position:absolute;top:0;left:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px}'
+      +'.bb-idn-toprow{display:flex;align-items:center;gap:8px}'
+      +'.bb-idn-org{font-size:calc(22px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;line-height:1.1}'
+      +'.bb-idn-logo{height:calc(26px * var(--fg-text-scale,1));width:auto;max-width:calc(90px * var(--fg-text-scale,1));object-fit:contain;border-radius:4px;flex-shrink:0}'
+      +'.bb-idn .bb-traveler-eyebrow{position:static}'
+      +'.bb-idn.has-org .bb-traveler-eyebrow{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1.5px}'
+      // The old per-board logo (top right) is retired from view now that
+      // the member's own logo rides beside the organization name -- left
+      // in the markup, unwired-looking but intact, same "retire in place"
+      // treatment used elsewhere in this header. The row keeps its old
+      // height (eyebrow + 30px frame) so PROJECT/STORYBOARD's bottom-
+      // justify against it (_bbPositionIdBandRow) lands where it always did.
+      +'.bb-mhead-actions{min-height:calc(30px + 13px * var(--fg-text-scale,1))}'
+      +'.bb-mhead-actions > .bb-mh-fieldgrp{display:none}'
+      // VIEW icon button: lit whenever a person filter is applied.
+      +'.bb-icon-btn.bb-view-on{background:var(--bb-accent);color:#fff}'
+      // TOPIC hierarchy menu (click TOPIC): taller than the standard
+      // dropdown so a whole project tree is readable, current header
+      // highlighted, deeper levels indented.
+      +'#bb-topic-menu{max-height:min(60vh, 420px)}'
+      +'#bb-topic-menu .bb-topic-tree-row{display:flex;align-items:center;gap:6px}'
+      +'#bb-topic-menu .bb-topic-tree-row.active{background:var(--bb-accent);color:#fff}'
       // Logo/artwork, Aug 28 2026 -- Larry: give the Briefing Board the
       // same Logo option the Idea Board already has. Mirrors that
       // board's own upload -> crop -> resize-handle pipeline
@@ -353,7 +382,14 @@
       // same shape as bb-board-trigger -- its own dedicated bb-view-caret
       // button sits right beside it (briefing-board-screens.js) -- so the
       // shared-class arrow is redundant there too. Same one-line fix.
-      +'#bb-board-trigger.bb-cdrop-trigger:after,#bb-view-trigger.bb-cdrop-trigger:after{content:none}'
+      // Sept 19 2026 -- Larry (ID Band redesign): "STORYBOARD dropdown works
+      // well, just like PROJECTS, but has additional unneeded dropdown arrow
+      // beside board name." That extra arrow was this class's built-in
+      // inline one (PROJECT already suppressed its own because its
+      // separate caret button carried the arrow; STORYBOARD never did, so
+      // it showed BOTH). Every ID Band field is now a plain click-to-open
+      // label with no arrow at all, so STORYBOARD joins PROJECT here.
+      +'#bb-board-trigger.bb-cdrop-trigger:after,#bb-view-trigger.bb-cdrop-trigger:after,#bb-boardkind-trigger.bb-cdrop-trigger:after{content:none}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own

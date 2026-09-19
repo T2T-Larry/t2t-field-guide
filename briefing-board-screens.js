@@ -64,7 +64,21 @@
             // bottom-justifying (see _bbPositionIdBandRow's own Sept 16
             // note, briefing-board-master-nav.js). This move finally
             // matches the CSS's already-stated intent instead of fighting it.
-            +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
+            // ID Band identity block, Sept 19 2026 -- Larry: "left upper
+            // corner: now has member name only. What if name is below
+            // organization name in larger letters than member name (which
+            // could be smaller)? Immediately to the right of the org name
+            // would be the LOGO but only if there is one." Org name (large)
+            // + logo sit on the top row; the member's own name (small)
+            // underneath. Org name and logo come from the member's profile
+            // (member-identity.js), hidden entirely when not set, so a
+            // member with neither sees exactly the old name-only corner.
+            // #bb-traveler-name keeps its id so every existing
+            // getElementById('bb-traveler-name') caller still works.
+            +'<div class="bb-idn" id="bb-idn">'
+              +'<div class="bb-idn-toprow"><div class="bb-idn-org" id="bb-idn-org" style="display:none"></div><img class="bb-idn-logo" id="bb-idn-logo" alt="" style="display:none"></div>'
+              +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
+            +'</div>'
             +'<div class="bb-mh-typebox" id="bb-project-wrap">'
               // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
               // of this row (was third) to sit at the header's far left
@@ -99,7 +113,7 @@
               // Sept 13. Traveler-name eyebrow stays above it, unchanged --
               // this is additive, not a replacement; easy to drop back out
               // if Larry wants just the one eyebrow here after all.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch boards"></button><button type="button" class="bb-parent-caret" id="bb-project-caret" title="Choose a board" aria-label="Choose a board">▾</button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch projects or add a new one"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent field retired from the header, Sept 6 2026 --
               // Larry: "the hierarchy is set when a PROJECT is chosen,"
               // folding its "jump to any level above" job into a new
@@ -169,11 +183,16 @@
             // project's own root -- nothing above it to jump to.
             +'<div class="bb-mh-fieldgrp bb-mh-group-topic" id="bb-topic-wrap">'
               +'<div class="bb-cdrop" id="bb-topic-cdrop" style="display:flex;align-items:center;gap:6px">'
-                +'<button type="button" class="bb-topic-caret" id="bb-topic-caret-up" title="Jump to any level above" aria-label="Jump to any level above">▴</button>'
-                +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:default"></button>'
-                +'<button type="button" class="bb-topic-caret" id="bb-topic-caret" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
-                +'<div class="bb-cdrop-menu" id="bb-topic-menu" hidden></div>'
-                +'<div class="bb-cdrop-menu" id="bb-topic-ancestor-menu" hidden></div>'
+                // Sept 19 2026 -- Larry (ID Band redesign): the up and down
+                // arrows on TOPIC are gone ("too cluttered"). Clicking TOPIC
+                // itself now opens the whole project's header hierarchy with
+                // the current header highlighted (bb-topic-menu, filled by
+                // _bbWireTopicTree in briefing-board-master-nav.js). The old
+                // up/down menus (bb-topic-ancestor-menu, and the descend
+                // menu's own markup) are retired in place: their functions
+                // still exist, they just no-op with no arrow to attach to.
+                +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:pointer" title="Click to see this project\'s headers">…</button>'
+                +'<div class="bb-cdrop-menu bb-topic-tree" id="bb-topic-menu" hidden></div>'
               +'</div>'
             +'</div>'
             // Top-center label is a real board-kind dropdown now, Aug 30
@@ -231,7 +250,7 @@
             // group) moved to _bbPositionIdBandRow (briefing-board-master-
             // nav.js, renamed from _bbPositionBoardKindMidway) -- see that
             // function for the full story.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Storyboard</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles">TASKS</button><button type="button" class="bb-parent-caret" id="bb-boardkind-caret" title="Switch to Ideas, Plan, Share, or Roles" aria-label="Switch storyboard type">▾</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Storyboard</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles">TASKS</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the
@@ -269,7 +288,10 @@
             // follows, and bb-mhead-actions goes back to containing just
             // Logo/Return/Utility/Close, which never needed to be
             // positioned against anything of their own.
-            +'<div class="bb-mh-fieldgrp" id="bb-view-wrap"><div class="bb-mh-eyebrow">View</div><div class="bb-cdrop" id="bb-view-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-view-trigger" title="Filter this board to one or more people">All</button><button type="button" class="bb-parent-caret" id="bb-view-caret" title="Filter by person" aria-label="Filter by person">▾</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div></div>'
+            // VIEW moved (Sept 19 2026, Larry): now a single head-icon
+            // button in the upper-right actions row, next to RETURN --
+            // see #bb-view-trigger below. It used to sit here as the last
+            // link in the PROJECT-TOPIC-STORYBOARD-VIEW chain.
             +'<div class="bb-mhead-actions">'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
@@ -301,6 +323,14 @@
               // neighbor, IDBand.jumpToRecorded) already no-ops with a
               // toast when nothing's been recorded, which is the safer
               // failure mode.
+              // VIEW, Sept 19 2026 -- Larry: "Turn VIEW into a single head
+              // icon button and move to right upper corner next to return
+              // button." Same menu, same person-filter behavior as before
+              // (_bbWireViewDropdown); only the trigger changed shape. It
+              // shows as "active" (see .bb-view-on) whenever a person
+              // filter is applied, since the icon no longer spells out
+              // "All" / a name the way the old text button did.
+              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="View: everyone" aria-label="View — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
               +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'

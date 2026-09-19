@@ -81,7 +81,17 @@ in their own file-header comments the next time they're touched).
         danger: !!danger
       };
     }
+    // "My Info" (Sept 19 2026, Larry: "personal info in the Utilities
+    // button") -- the member's own organization name + logo, shown
+    // top-left of every ID Band. Unlike the seven items below, this one
+    // needs no per-screen handler: it always opens the same shared
+    // overlay (member-identity.js), so it appears identically on every
+    // screen's Utility menu without any of them having to pass anything.
+    if (!cfg.myinfo && window.T2TMemberIdentity) {
+      cfg.myinfo = { onClick: function(){ window.T2TMemberIdentity.openEditor(); } };
+    }
     return [
+      item('myinfo',      '&#128100;', 'My Info',      'My Info is not available yet'),
       // Sept 12 2026, Larry: "remove the People screen ... CAST is our
       // source of truth" -- Idea Storyboard/Desktop/Session no longer
       // pass an onClick for this, so it renders disabled with this

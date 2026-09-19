@@ -911,11 +911,61 @@
       return (res.data||[]).filter(function(r){ return !BB_RESERVED_HEADER_NAMES[r.text_content]; });
     }catch(e){ return []; }
   }
-  function _bbWireTopicDropdown(){
-    var trigger=document.getElementById('bb-topic-caret'), menu=document.getElementById('bb-topic-menu');
+  // TOPIC hierarchy menu, Sept 19 2026 -- Larry (ID Band redesign): "What
+  // if click on TOPIC displays the hierarchy of headers for entire
+  // project with highlight on current header in TOPIC position?" This
+  // replaces TOPIC's separate down-arrow (children only) and up-arrow
+  // (ancestors only, retired in place below) with one click on TOPIC
+  // itself that shows the whole project tree at once: the project's root
+  // header at the top, every header beneath it indented by depth, the
+  // header currently in TOPIC highlighted. Click any row to jump there
+  // (same jumpToTopic the old arrows used). Same ideas.cluster_id tree
+  // and same reserved-name exclusion (Parking Lot, MISC, Trash...) the
+  // arrows already read. Capped at 8 levels / 400 headers so a huge
+  // account root (the Master board) can never lock the page up.
+  async function _bbTopicTreeRows(){
+    var curId=_bbCurrentTopicHeaderId;
+    if(!curId) return [];
+    // 1. Climb to this project's own root -- same stop rule as
+    //    _bbTopicAncestorChoices: the root is the header whose parent
+    //    has no parent of its own (that parent is the shared account
+    //    root, not a real level of the project).
+    var rootId=curId, guard=0;
+    while(guard<50){
+      guard++;
+      var info=await _bbFetchHeaderInfo(rootId);
+      if(!info || !info.clusterId) break;
+      var parentInfo=await _bbFetchHeaderInfo(info.clusterId);
+      if(!parentInfo || !parentInfo.clusterId) break;
+      rootId=info.clusterId;
+    }
+    // 2. Walk down level by level, one batched query per level.
+    var sb=T().sb;
+    var rootInfo=await _bbFetchHeaderInfo(rootId);
+    var nodes={}; nodes[rootId]={id:rootId, name:(rootInfo&&rootInfo.name)||'(untitled)', children:[]};
+    var level=[rootId], depth=0, total=1;
+    while(level.length && depth<8 && total<400){
+      var res=await sb.from('ideas').select('id,text_content,cluster_id,sort_order').in('cluster_id',level).eq('content_type','header').order('sort_order',{ascending:true});
+      if(res.error) break;
+      var next=[];
+      (res.data||[]).forEach(function(r){
+        if(BB_RESERVED_HEADER_NAMES[r.text_content] || total>=400 || !nodes[r.cluster_id]) return;
+        var n={id:r.id, name:r.text_content||'(untitled)', children:[]};
+        nodes[r.id]=n; nodes[r.cluster_id].children.push(n); next.push(r.id); total++;
+      });
+      level=next; depth++;
+    }
+    // 3. Flatten depth-first, carrying each row's depth for indenting.
+    var rows=[];
+    (function walk(n,d){ rows.push({id:n.id,name:n.name,depth:d}); n.children.forEach(function(c){ walk(c,d+1); }); })(nodes[rootId],0);
+    return rows;
+  }
+  function _bbWireTopicTree(){
+    var trigger=document.getElementById('bb-topic-hit'), menu=document.getElementById('bb-topic-menu');
     if(!trigger || !menu) return;
     trigger.onclick=async function(e){
       e.stopPropagation();
+      if(!_bbCurrentTopicHeaderId) return; // '(not linked)' -- nothing to show
       var willOpen=menu.hidden;
       _bbCloseAllDropdowns(willOpen?'bb-topic-menu':null);
       if(!willOpen){ menu.hidden=true; return; }
@@ -925,34 +975,35 @@
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';
       menu.style.top=(r.bottom+4)+'px';
-      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.style.minWidth=Math.max(200,r.width)+'px';
       menu.hidden=false;
-      var choices=await _bbTopicChildChoices(_bbCurrentTopicHeaderId);
+      var rows=await _bbTopicTreeRows();
       if(menu.hidden) return; // closed again while this was in flight
       menu.innerHTML='';
-      if(!choices.length){
-        var empty=document.createElement('div');
-        empty.className='bb-cdrop-row';
-        empty.style.cssText='cursor:default;opacity:.6';
-        empty.textContent='No layers beneath this one yet.';
-        menu.appendChild(empty);
-      } else {
-        choices.forEach(function(c){
-          var row=document.createElement('div');
-          row.className='bb-cdrop-row';
-          row.textContent=c.text_content||'(untitled)';
-          row.addEventListener('click', function(ev){
-            ev.stopPropagation();
-            menu.hidden=true;
-            if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(c.id);
-          });
-          menu.appendChild(row);
+      var currentRow=null;
+      rows.forEach(function(h){
+        var row=document.createElement('div');
+        var isCur=String(h.id)===String(_bbCurrentTopicHeaderId);
+        row.className='bb-cdrop-row bb-topic-tree-row'+(isCur?' active':'');
+        row.style.paddingLeft=(10+h.depth*16)+'px';
+        row.textContent=h.name;
+        if(isCur){ currentRow=row; row.style.cursor='default'; }
+        row.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          menu.hidden=true;
+          if(isCur) return;
+          if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(h.id);
         });
-      }
+        menu.appendChild(row);
+      });
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      if(currentRow && currentRow.scrollIntoView) currentRow.scrollIntoView({block:'center'});
     };
   }
+  // Kept under its old name so briefing-board.js's existing wire-up call
+  // keeps working without a matching edit there.
+  function _bbWireTopicDropdown(){ _bbWireTopicTree(); }
 
   // TOPIC's up-arrow, Sept 6 2026 -- ascend counterpart to the descend
   // caret just above (_bbTopicChildChoices/_bbWireTopicDropdown), folding
@@ -1126,7 +1177,7 @@
   // watching its own output; it's re-measured fresh on every pass
   // regardless. Set up once, lazily, the first time real elements exist.
   var _bbIdBandObserverSetUp=false;
-  function _bbSetUpIdBandObserver(projectWrap, topicWrap, viewWrap, actionsEl, container){
+  function _bbSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container){
     if(_bbIdBandObserverSetUp || typeof ResizeObserver==='undefined') return;
     _bbIdBandObserverSetUp=true;
     var pending=false;
@@ -1141,17 +1192,21 @@
         }catch(e){}
       });
     });
-    [projectWrap, topicWrap, viewWrap, actionsEl, container].forEach(function(el){ ro.observe(el); });
+    [projectWrap, topicWrap, idnEl, actionsEl, container].forEach(function(el){ if(el) ro.observe(el); });
   }
   function _bbPositionIdBandRow(){
     var projectWrap=document.getElementById('bb-project-wrap');
     var topicWrap=document.getElementById('bb-topic-wrap');
     var boardkindWrap=document.getElementById('bb-boardkind-wrap');
-    var viewWrap=document.getElementById('bb-view-wrap');
+    // Sept 19 2026 -- VIEW left this chain (now a head icon in the
+    // upper-right actions row), and the top-left identity block (#bb-idn:
+    // organization / logo / member name) joined it as something the chain
+    // must never run underneath.
+    var idnEl=document.getElementById('bb-idn');
     var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
     var container=document.querySelector('#s-briefing-board .bb-mhead-top');
-    if(!projectWrap || !topicWrap || !boardkindWrap || !viewWrap || !actionsEl || !container) return;
-    _bbSetUpIdBandObserver(projectWrap, topicWrap, viewWrap, actionsEl, container);
+    if(!projectWrap || !topicWrap || !boardkindWrap || !actionsEl || !container) return;
+    _bbSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container);
     var containerRect=container.getBoundingClientRect();
     // Guard against a not-yet-laid-out screen -- nothing real to measure
     // yet, leave the left:0/top:0 CSS fallback in place.
@@ -1159,9 +1214,8 @@
 
     var pr=projectWrap.getBoundingClientRect();
     var tr=topicWrap.getBoundingClientRect();
-    var vr=viewWrap.getBoundingClientRect();
     var ar=actionsEl.getBoundingClientRect();
-    if(!pr.width || !tr.width || !vr.width) return;
+    if(!pr.width || !tr.width) return;
 
     // Shrink Board Type's own label to whatever room is actually left
     // once Project, Topic, View, and the three gaps between all four are
@@ -1171,28 +1225,35 @@
     // 24px for the same reason as before: _bbFitBoardKindLabel treats
     // anything <=0 as "don't shrink," which is exactly the overflow this
     // exists to prevent.
-    var available=containerRect.width-pr.width-tr.width-vr.width-(ID_BAND_GAP*4);
+    var available=containerRect.width-pr.width-tr.width-(ID_BAND_GAP*3);
     _bbFitBoardKindLabel(Math.max(24, available));
 
     var br=boardkindWrap.getBoundingClientRect();
     if(!br.width) return;
 
-    var totalWidth=pr.width+ID_BAND_GAP+tr.width+ID_BAND_GAP+br.width+ID_BAND_GAP+vr.width;
+    var totalWidth=pr.width+ID_BAND_GAP+tr.width+ID_BAND_GAP+br.width;
     // Preferred: the whole chain centered on the header's real width
     // ("center on the BB"). Never let it run under Logo/Utility/Close
     // (actionsEl, already pinned to the header's own right edge) or off
     // the container's own left edge -- same min/max clamp shape the old
     // midpoint math used, just applied to the chain's total width.
     var rightLimit=ar.left-ID_BAND_GAP;
+    // Never run under the top-left identity block (organization / logo /
+    // member name) either -- on a wide window the centered chain sits far
+    // to its right and this changes nothing; on a narrow one it nudges the
+    // chain over instead of overlapping the name.
     var leftLimit=containerRect.left;
+    if(idnEl){
+      var idr=idnEl.getBoundingClientRect();
+      if(idr.width) leftLimit=Math.max(leftLimit, idr.right+ID_BAND_GAP);
+    }
     var preferredLeft=containerRect.left+(containerRect.width-totalWidth)/2;
     var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
 
     var x=groupLeft;
     projectWrap.style.left=(x-containerRect.left)+'px'; x+=pr.width+ID_BAND_GAP;
     topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+ID_BAND_GAP;
-    boardkindWrap.style.left=(x-containerRect.left)+'px'; x+=br.width+ID_BAND_GAP;
-    viewWrap.style.left=(x-containerRect.left)+'px';
+    boardkindWrap.style.left=(x-containerRect.left)+'px';
 
     // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
     // bottom-justify with the upper right corner buttons" -- unchanged
@@ -1214,7 +1275,7 @@
     // comment on bb-traveler-name, briefing-board-screens.js), so it no
     // longer moves when PROJECT does.
     if(ar.height){
-      [projectWrap, boardkindWrap, viewWrap].forEach(function(el){
+      [projectWrap, boardkindWrap].forEach(function(el){
         var r=el.getBoundingClientRect();
         if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
       });
@@ -1266,7 +1327,17 @@
   // board's own _sboardRenderMemberName reads (T().getMember(), backed
   // by the same t2t:member-loaded event), just filling in this board's
   // own eyebrow instead of that one's.
+  // Sept 19 2026 (ID Band redesign, Larry): this now paints the whole
+  // top-left identity block -- organization name (large), its logo (only
+  // if one exists), and the member's own name (smaller) underneath --
+  // from the member's profile via the shared member-identity.js, instead
+  // of only the name. Name-only fallback kept for the moment before that
+  // file has loaded.
   function _bbRenderTravelerName(){
+    if(window.T2TMemberIdentity){
+      window.T2TMemberIdentity.fill({wrap:'bb-idn', org:'bb-idn-org', logo:'bb-idn-logo', name:'bb-traveler-name'});
+      return;
+    }
     var m=T().getMember && T().getMember();
     var el=document.getElementById('bb-traveler-name');
     if(el && m && m.display_name) el.textContent=m.display_name.toUpperCase();
@@ -1924,28 +1995,29 @@
   // from, so the trigger label can resolve an assigned-only person's name
   // too (_bbAllRosterRows alone wouldn't know them).
   var _bbViewMenuRowsCache = [];
+  // Sept 19 2026 (ID Band redesign): VIEW is a single head-icon button now
+  // (Larry: "Turn VIEW into a single head icon button"), so there is no
+  // text left to relabel. Instead it lights up (.bb-view-on) whenever a
+  // person filter is applied, and its hover title spells out who is being
+  // shown ("View: everyone" / "View: Bill Fritsch" / "View: 3 people"),
+  // which is exactly what the old "All" / name / "N people" label said.
   function _bbSyncViewTriggerLabel(){
     var trigger=document.getElementById('bb-view-trigger');
     if(!trigger) return;
     var ids=_bbPersonFilterIds||[];
+    trigger.classList.toggle('bb-view-on', ids.length>0);
+    var label;
     if(!ids.length){
-      // Sept 14 2026: was "Team" -- renamed to "All" so this unfiltered
-      // state can never be mistaken for the new Team role (Cast/Team
-      // split, idea-storyboard-people.js), which means something
-      // specific and different (real edit access on a card).
-      trigger.textContent='All';
-      return;
+      // (Sept 14 2026: unfiltered state is "everyone", never "Team" --
+      // Team is now a distinct role, idea-storyboard-people.js.)
+      label='everyone';
+    } else {
+      var pool=(_bbViewMenuRowsCache&&_bbViewMenuRowsCache.length)?_bbViewMenuRowsCache:_bbAllRosterRows();
+      var row=ids.length===1 ? pool.filter(function(m){ return String(m.user_id)===String(ids[0]); })[0] : null;
+      label=ids.length===1 ? ((row&&(row.name||row.email))||'1 person') : ids.length+' people';
     }
-    var pool=(_bbViewMenuRowsCache&&_bbViewMenuRowsCache.length)?_bbViewMenuRowsCache:_bbAllRosterRows();
-    function nameFor(uid){
-      var row=pool.filter(function(m){ return String(m.user_id)===String(uid); })[0];
-      return row?(row.name||row.email):null;
-    }
-    if(ids.length===1){
-      trigger.textContent=nameFor(ids[0])||'1 person';
-      return;
-    }
-    trigger.textContent=ids.length+' people';
+    trigger.title='View: '+label;
+    trigger.setAttribute('aria-label','View — showing '+label);
   }
   // Everyone selectable from VIEW at this level: the board roster
   // (_bbAllRosterRows) plus anyone who has an actual card_roles row on a

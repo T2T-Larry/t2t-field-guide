@@ -253,6 +253,15 @@ function T(){ return window.T2T; }
     // and TOPIC piled on top of it. Same active-screen guard the resize
     // listener and fonts.ready pass already use, so this never fires
     // while some other screen is open.
+    // Sept 19 2026 -- also repaint when the member edits their organization
+    // name / logo (Utility > My Info, member-identity.js), same pass.
+    window.addEventListener('t2t:identity-changed', function(){
+      _bbRenderTravelerName();
+      try{
+        var scr=document.getElementById('s-briefing-board');
+        if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
+      }catch(e){}
+    });
     window.addEventListener('t2t:member-loaded', function(){
       _bbRenderTravelerName();
       try{

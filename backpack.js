@@ -177,6 +177,11 @@
         _member.user_id          = userId;
         _member.display_name     = res.data.display_name      || '';
         _member.briefing_board_id= res.data.briefing_board_id || null;
+        // Sept 19 2026 (ID Band redesign): optional organization name +
+        // logo live on the member, shown top-left of every ID Band.
+        // See member-identity.js.
+        _member.org_name         = res.data.org_name          || '';
+        _member.logo_url         = res.data.logo_url          || '';
         var nameEl = document.getElementById('jcov-member-name');
         if (nameEl && _member.display_name) nameEl.textContent = _member.display_name.toUpperCase();
         // Sept 13 2026 (Master BB): cache the display name locally so

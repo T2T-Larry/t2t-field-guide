@@ -52,7 +52,8 @@
 .si-remember input{width:14px;height:14px;cursor:pointer;accent-color:var(--brand-gold,#C9A87C)}
 </style>
 <script src="supabase-js.js?v=20260913b"></script>
-<script src="settings-menu.js?v=20260912c"></script>
+<script src="settings-menu.js?v=20260919a"></script>
+<script src="member-identity.js?v=20260919a"></script>
 <script src="id-band.js?v=20260915a"></script>
 <script src="header-data.js?v=20260915b"></script>
 <script src="text-fit.js?v=20260915a"></script>
@@ -71,16 +72,16 @@
 <script src="idea-storyboard-9710.js?v=20260912a"></script>
 <script src="session.js?v=20260915a"></script>
 <script src="focus.js?v=20260711b"></script>
-<script src="backpack.js?v=20260913b"></script>
+<script src="backpack.js?v=20260919a"></script>
 <script src="stories.js?v=20260903a"></script>
-<script src="briefing-board-styles.js?v=20260914c"></script>
-<script src="briefing-board-screens.js?v=20260916b"></script>
+<script src="briefing-board-styles.js?v=20260919a"></script>
+<script src="briefing-board-screens.js?v=20260919a"></script>
 <script src="briefing-board-card.js?v=20260916a"></script>
 <script src="briefing-board-signal-flags.js?v=20260909b"></script>
 <script src="briefing-board-master.js?v=20260915b"></script>
-<script src="briefing-board-master-nav.js?v=20260916b"></script>
+<script src="briefing-board-master-nav.js?v=20260919a"></script>
 <script src="briefing-board-ops.js?v=20260916a"></script>
-<script src="briefing-board.js?v=20260915a"></script>
+<script src="briefing-board.js?v=20260919a"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
 <script src="gems.js?v=20260905a"></script>
@@ -148,6 +149,13 @@
       <input class="si-input" style="margin-bottom:10px" type="text" id="su-name" placeholder="your name">
       <label class="si-lbl">Email</label>
       <input class="si-input" style="margin-bottom:10px" type="email" id="su-email" placeholder="your@email.com">
+      <!-- Organization + logo, Sept 19 2026 (ID Band redesign, Larry):
+           both optional; shown top-left of every ID Band. Also editable
+           any time from Utility > My Info. -->
+      <label class="si-lbl">Organization <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <input class="si-input" style="margin-bottom:10px" type="text" id="su-org" placeholder="your organization">
+      <label class="si-lbl">Logo <span style="opacity:.6;font-weight:400">(optional)</span></label>
+      <input class="si-input" style="margin-bottom:10px" type="file" id="su-logo" accept="image/*">
       <label class="si-lbl">Password</label>
       <div class="si-pw-wrap" style="margin-bottom:16px">
         <input class="si-input" style="margin-bottom:0" type="password" id="su-password" placeholder="choose a password">
@@ -998,10 +1006,20 @@
         // trigger on signup, but profiles (display name, briefing
         // board) has no such trigger -- create it here so the desk
         // greets them by name right away instead of "Traveler."
-        try{ await _sb.from('profiles').upsert({user_id:res.data.user.id, display_name:name}); }
+        var suOrg=(document.getElementById('su-org')||{value:''}).value.trim();
+        try{ await _sb.from('profiles').upsert({user_id:res.data.user.id, display_name:name, org_name:suOrg||null}); }
         catch(e){ console.error('T2T: profile create on signup failed', e); }
         await T.loadVisitedFromSupabase();
         await T.loadMemberProfile(res.data.user.id);
+        // Optional logo chosen on the signup form -- uploaded now that
+        // there is a real session. A failure here never blocks signup;
+        // the member can add it later from Utility > My Info.
+        try{
+          var suLogo=document.getElementById('su-logo');
+          if(suLogo && suLogo.files && suLogo.files[0] && window.T2TMemberIdentity){
+            await window.T2TMemberIdentity.uploadLogoFile(suLogo.files[0]);
+          }
+        }catch(e){ console.warn('T2T: signup logo upload skipped', e); }
         T.resumeToLastPageOr('s-cover');
       } else {
         // Email confirmation is required -- no session yet.
