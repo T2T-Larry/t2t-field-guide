@@ -2020,6 +2020,11 @@
             var idx=_sboardPersonFilterIds.indexOf(uid);
             if(t.checked && idx<0) _sboardPersonFilterIds.push(uid);
             if(!t.checked && idx>=0) _sboardPersonFilterIds.splice(idx,1);
+            // Sept 19 2026 -- keeps the VIEW head-icon button (added same
+            // day, idea-storyboard-navigation.js) honest about the filter
+            // when it's set from inside a card's Cast popup instead of
+            // from VIEW itself.
+            if(typeof _sboardSyncViewTriggerLabel==='function') _sboardSyncViewTriggerLabel();
             _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
           }
           return;

@@ -564,6 +564,10 @@
         +'.sc-cdrop-row{padding:'+IDBand.TOKENS.dropdownRow.padding+';font-size:calc('+IDBand.TOKENS.dropdownRow.fontSize+'px * var(--fg-text-scale,1));color:#fff;border-radius:'+IDBand.TOKENS.dropdownRow.radius+'px;cursor:pointer;white-space:nowrap}'
         +'.sc-cdrop-row:hover{background:rgba(255,255,255,.14)}'
         +'.sc-cdrop-row.active{background:rgba(255,255,255,.1);font-weight:700}'
+        // VIEW's checkbox rows, Sept 19 2026 -- same shape as BB's own
+        // .bb-cdrop-row.bb-view-person-row (briefing-board-styles.js).
+        +'.sc-cdrop-row.sc-view-person-row{display:flex;align-items:center;gap:6px}'
+        +'.sc-cdrop-row.sc-view-person-row input[type=checkbox]{margin:0;flex:none}'
         +'.sc-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid rgba(255,255,255,.14)}'
         // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): the
         // person-filter list now shows each Cast member's role and lets
@@ -606,6 +610,11 @@
         +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
         +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
         +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}'
+        // VIEW's "a filter is on" state, Sept 19 2026 -- same idea as BB's
+        // own .bb-icon-btn.bb-view-on (briefing-board-styles.js), solid
+        // accent fill instead of the usual muted/translucent look, so it's
+        // obvious at a glance that the board isn't showing everyone.
+        +'.sc-hdr-btn-muted.sc-view-on{background:#5b9bd5;border-color:#5b9bd5;color:#fff;opacity:1}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'button.sc-hdr-eyebrow{background:none;border:none;padding:0;margin:0 0 3px;cursor:pointer;font-family:inherit;width:auto}'
         +'button.sc-hdr-eyebrow:hover{opacity:.65}'
@@ -941,13 +950,21 @@
       // _sboardRenderMemberName (below) fills in the text.
       +'<div class="sc-traveler-eyebrow" id="sc-traveler-name"></div>'
       +'</div>'
-      // PROJECT -- same click-drills-in / double-click-opens-popup /
-      // dedicated-caret-for-the-header-list behavior Larry already has
-      // here (Sept 2/3 2026 fixes below), just restyled into BB's own
-      // fieldgrp shape (eyebrow + white boxed trigger) and repositioned
-      // by the chain function instead of nesting under the traveler name.
+      // PROJECT -- same click-drills-in / double-click-opens-popup
+      // behavior Larry already has here (Sept 2/3 2026 fixes below), just
+      // restyled into BB's own fieldgrp shape (eyebrow + white boxed
+      // trigger) and repositioned by the chain function instead of
+      // nesting under the traveler name.
+      // Sept 19 2026, Larry: "Delete Drop down arrow to right of PROJECT
+      // FIELD" -- matching BB's own bb-board-trigger, which has never had
+      // a separate caret chip: sc-title-trigger is now PROJECT's only
+      // element. The header-list dropdown that used to live on the caret
+      // (_sboardWireProjectHeaderDropdown) is retired in place, not
+      // deleted -- see its own no-longer-called note at the boot wiring
+      // below -- sc-title-trigger's existing click (drill in) and
+      // dblclick (fast-jump popup) already cover the same ground.
       +'<div id="sc-project-wrap" class="sc-mh-typebox">'
-      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Project</div><div class="sc-cdrop" id="sc-title-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button></div><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div>'
+      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Project</div><div class="sc-cdrop" id="sc-title-cdrop"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div></div>'
       +'</div>'
       // TOPIC -- Sept 19 2026, matching BB's own redesign: the up/down
       // arrow chips are gone ("too cluttered" on BB). Clicking TOPIC
@@ -992,57 +1009,38 @@
       // -- one fewer closing </div> here than this block had before Sept
       // 19 2026, matching that removed wrapper.
       // align-items:flex-end, Sept 6 2026 -- Larry: "LOGO should be to the
-      // left of the Utilities button JUST LIKE on BB." Logo's eyebrow+
-      // frame stack is taller than a plain icon button, same situation
-      // BB solved the same day (bb-mhead-actions, briefing-board.js) by
-      // bottom-justifying the row instead of centering it -- Logo, Utility
-      // and Close now line up along their shared bottom edge here too.
+      // left of the Utilities button JUST LIKE on BB." Logo is gone now
+      // (see below), but the bottom-justified row it needed stays --
+      // VIEW/Return/Utility/Close all line up along their shared bottom
+      // edge the same way.
       +'<div class="sc-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:flex-end">'
         // Storyboard/Session toggle removed here, Aug 9 2026 (Larry): this
         // header is the Idea Storyboard's own, Session-specific chrome
         // stays out of it -- Session gets its own entry point dealt with
         // separately later, not a switch living on this screen.
-        // Logo, Sept 6 2026 -- moved here from its own independently-
-        // positioned wrap near Topic (see that section's own history,
-        // above) so it sits immediately left of Utility, matching where
-        // Logo sits on the Briefing Board (bb-mhead-actions: Logo, then
-        // Utility, then Close). Purely a DOM-order move into this row's
-        // plain flex layout -- the T2TLogo controller doesn't care where
-        // its slot/eyebrow/handle ids live in the page.
-      +'<div id="sc-logo-wrap" style="display:flex;flex-direction:column;align-items:center">'
-      +'<div class="sc-hdr-eyebrow" id="sc-logo-eyebrow">Logo</div>'
-      // Sept 7 2026 fix (Larry: "the alignment is for default (unused)
-      // LOGO only -- once a LOGO is added, it should stay the same size
-      // and location set by the traveler without changing the other two
-      // buttons") -- sc-logo-slot used to be position:relative, sized by
-      // its own inline width/height, and living directly in this
-      // column; because sc-hdr-side's row (below) lines Logo/Utility/
-      // Close up along a shared bottom edge, growing the slot via the
-      // resize handle grew this whole column and dragged Utility/Close
-      // down with it -- the "shifted down" Larry reported. sc-logo-anchor
-      // is new: a fixed 30x30 placeholder that's the only thing the row
-      // actually measures, matching bb-logo-anchor's already-correct
-      // pattern on the Briefing Board (briefing-board.js). sc-logo-slot
-      // itself is now position:absolute inside it, so the resize handle
-      // (and the traveler's own saved logo_w/logo_h) can grow it up to
-      // 90px without ever changing this anchor's box or moving Utility/
-      // Close -- purely a visual overlay, same as Briefing Board already
-      // does.
-      +'<div id="sc-logo-anchor" style="position:relative;width:30px;height:30px;flex-shrink:0">'
-      // visibility:hidden, Sept 8 2026 -- same hard-reset flash fix as
-      // Briefing Board's bb-logo-slot (see that CSS rule's own comment,
-      // briefing-board.js): stays hidden until T2TLogo.render applies
-      // the traveler's real saved position and reveals it, so this slot
-      // is never painted at its untouched corner first.
-      +'<div id="sc-logo-slot" style="position:absolute;top:0;left:0;width:30px;height:30px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;visibility:hidden">'
-      +'<img id="sc-logo-img" src="" alt="Logo" style="display:none;max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">'
-      +'<div class="sc-logo-eyebrow-onlogo" id="sc-logo-eyebrow-onlogo">Logo</div>'
-      +'<button type="button" class="sc-dotted-add-btn" id="sc-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button>'
-      +'<input type="file" id="sc-logo-input" accept="image/*" style="display:none">'
-      +'<div class="sc-logo-resize-handle" id="sc-logo-resize-handle" title="Drag to resize" style="position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:4px;background:#5b9bd5;border:2px solid #0d2440;cursor:nwse-resize;display:none;z-index:3;touch-action:none"></div>'
-      +'</div>'
-      +'</div>'
-      +'</div>'
+        // Logo dropped entirely, Sept 19 2026 (Larry: "Drop LOGO field to
+        // left of return and replace with single head icon button just
+        // like on BB") -- sc-logo-wrap and everything in it (eyebrow,
+        // anchor, slot, image, add button, file input, resize handle) is
+        // gone from this board's chrome. T2TLogo.wire/render calls at boot
+        // and in _sboardUpdateHeaderChrome are left in place: every one of
+        // them starts with a document.getElementById check on an id that
+        // no longer exists and returns immediately, so they're harmless
+        // no-ops rather than something that needs deleting too -- same
+        // "retire in place" treatment as everything else superseded here.
+        //
+        // VIEW, same day -- Larry: "People can be assigned headers on an
+        // IDEA board too," so a person filter belongs here exactly like
+        // BB's own bb-view-trigger (briefing-board-screens.js): a single
+        // 👤 icon button in Logo's old spot, left of Return. Lights up
+        // (.sc-view-on) whenever a person filter is applied -- see
+        // _sboardSyncViewTriggerLabel/_sboardWireViewFilterDropdown,
+        // idea-storyboard-navigation.js -- and reuses the board's own
+        // existing _sboardPersonFilterIds/_sboardRecomputeFilterMatches
+        // state, the same state the Cast popup's checkboxes
+        // (idea-storyboard-people.js) already write to, rather than
+        // building a second, separate filter.
+      +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="View: everyone" aria-label="View — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
         // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump back to
         // the last screen." Same muted-icon family as Utility, mirrors
         // bb-return on the Briefing Board (id-band.js's IDBand.jumpToRecorded
@@ -1091,7 +1089,12 @@
     });
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
-    _sboardWireProjectHeaderDropdown();
+    // _sboardWireProjectHeaderDropdown() no longer wired at boot, Sept 19
+    // 2026 -- its trigger (sc-project-caret) is gone, matching BB's own
+    // bb-board-trigger (a single field, no separate caret). Left defined,
+    // just unreachable, same "retire in place" treatment as the two
+    // functions right below.
+    _sboardWireViewFilterDropdown();
     // _sboardWireParentAncestorDropdown()/_sboardWireTopicChildDropdown()
     // no longer wired at boot, Sept 19 2026 -- TOPIC's up/down arrow chips
     // are gone (matching BB's own Sept 19 ID Band redesign); a single

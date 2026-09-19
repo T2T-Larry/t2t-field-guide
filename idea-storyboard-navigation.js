@@ -581,7 +581,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sc-topic-child-menu','sc-topic-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sc-topic-child-menu','sc-topic-menu','sc-view-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -1895,6 +1895,96 @@
       (res.data||[]).forEach(function(r){ set.add(String(r.card_id)); });
       _sboardFilterMatchCardIds=set;
     }catch(e){ _sboardFilterMatchCardIds=new Set(); }
+  }
+
+  // VIEW head-icon button, Sept 19 2026 -- Larry: "Drop LOGO field to left
+  // of return and replace with single head icon button just like on BB.
+  // People can be assigned headers on an IDEA board too." Same idea as
+  // BB's own bb-view-trigger (_bbSyncViewTriggerLabel/_bbWireViewDropdown,
+  // briefing-board-master-nav.js), scaled to what the Idea Board already
+  // has rather than rebuilt from scratch: the roster comes from
+  // _tmAllRosterRows (idea-storyboard-people.js) -- the same Cast roster
+  // the Call Sheet popup already loads via _tmLoadRoster -- and checking a
+  // row here writes straight into the board's own existing
+  // _sboardPersonFilterIds and calls _sboardRecomputeFilterMatches, the
+  // exact two calls the Cast popup's own checkboxes already make
+  // (idea-storyboard-people.js:2019-2023). Deliberately simpler than BB's
+  // _bbAssignedRosterRows: this doesn't also union in people who only have
+  // a card_roles row without a roster seat -- the board roster (Owner +
+  // Cast) is what "assigned a header" means here, and can be widened later
+  // if that turns out to matter.
+  var _sboardViewMenuRowsCache = [];
+  function _sboardSyncViewTriggerLabel(){
+    var trigger=document.getElementById('sc-view-trigger');
+    if(!trigger) return;
+    var ids=_sboardPersonFilterIds||[];
+    trigger.classList.toggle('sc-view-on', ids.length>0);
+    var label;
+    if(!ids.length){
+      label='everyone';
+    } else {
+      var pool=_sboardViewMenuRowsCache||[];
+      var row=ids.length===1 ? pool.filter(function(m){ return String(m.user_id)===String(ids[0]); })[0] : null;
+      label=ids.length===1 ? ((row&&(row.name||row.email))||'1 person') : ids.length+' people';
+    }
+    trigger.title='View: '+label;
+    trigger.setAttribute('aria-label','View — showing '+label);
+  }
+  function _sboardWireViewFilterDropdown(){
+    var trigger=document.getElementById('sc-view-trigger'), menu=document.getElementById('sc-view-menu');
+    if(!trigger || !menu) return;
+    async function openMenu(){
+      var projectRow=_sboardCurrentProjectRow();
+      if(projectRow) await _tmLoadRoster(projectRow);
+      var rows=projectRow ? _tmAllRosterRows(projectRow) : [];
+      _sboardViewMenuRowsCache=rows;
+      menu.innerHTML='';
+      var allRow=document.createElement('div');
+      allRow.className='sc-cdrop-row'+((!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) ? ' active' : '');
+      allRow.textContent='All';
+      allRow.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.hidden=true;
+        _sboardPersonFilterIds=[];
+        _sboardSyncViewTriggerLabel();
+        _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
+      });
+      menu.appendChild(allRow);
+      rows.forEach(function(m){
+        var checked=!!(_sboardPersonFilterIds && _sboardPersonFilterIds.indexOf(String(m.user_id))>=0);
+        var row=document.createElement('label');
+        row.className='sc-cdrop-row sc-view-person-row';
+        row.innerHTML='<input type="checkbox" class="sc-view-person-chk"'+(checked?' checked':'')+'> <span>'+_esc9710(m.name||m.email||'(unnamed)')+'</span>';
+        var chk=row.querySelector('input');
+        chk.addEventListener('change', function(){
+          var uid=String(m.user_id);
+          _sboardPersonFilterIds=_sboardPersonFilterIds||[];
+          var idx=_sboardPersonFilterIds.indexOf(uid);
+          if(chk.checked && idx<0) _sboardPersonFilterIds.push(uid);
+          if(!chk.checked && idx>=0) _sboardPersonFilterIds.splice(idx,1);
+          allRow.className='sc-cdrop-row'+((!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) ? ' active' : '');
+          _sboardSyncViewTriggerLabel();
+          _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
+        });
+        row.addEventListener('click', function(e){ e.stopPropagation(); });
+        menu.appendChild(row);
+      });
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(120,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    }
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sc-view-menu':null);
+      if(willOpen) openMenu(); else menu.hidden=true;
+    };
+    _sboardSyncViewTriggerLabel();
   }
 
   // Project switcher — added July 12, 2026. PROJECT was previously a

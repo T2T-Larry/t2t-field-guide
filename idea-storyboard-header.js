@@ -521,6 +521,11 @@
     // remain as the same safety net BB keeps for the async causes that
     // land between renders (a font swap, a late-loading member name).
     if(typeof _sboardPositionIdBandRow==='function') _sboardPositionIdBandRow();
+    // VIEW, Sept 19 2026 -- same "call it on every chrome refresh" treatment
+    // as BB gives _bbSyncViewTriggerLabel (briefing-board-master.js), so the
+    // head-icon button's highlight/title stay honest across a board switch,
+    // not just after VIEW's own dropdown is used.
+    if(typeof _sboardSyncViewTriggerLabel==='function') _sboardSyncViewTriggerLabel();
   }
 
   // Aug 18 2026, Larry: "allow Logo to keep same relative distance from
