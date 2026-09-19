@@ -721,24 +721,30 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 
   /* NEW card, Sept 19 2026 (Larry) — PROJECT/TOPIC eyebrow fields (same
      idea as the ID Band's own PROJECT/TOPIC chips, sized down for this
-     small card: PROJECT is the smallest, TOPIC bigger, SUBJECT the same
-     size as TOPIC), the IDEA/TASK/NOTES type selector, and the
-     HEADER/SUBBER + cast row under the entry field. */
+     small card: PROJECT is the smallest, TOPIC bigger), the IDEA/TASK/
+     NOTES type selector, the SUBJECT + cast row, and the HEADER/SUBBER
+     row -- moved above the entry field (Larry, round 2) so the card is
+     already primed for the next entry the moment this one is typed. */
+  .isx-ptitle-black{color:#000}
   .isx-p-project{font-size:calc(9.5px * var(--fg-text-scale,1));text-transform:uppercase;letter-spacing:.6px;
     color:#7a90a8;text-align:center;margin-bottom:1px}
   .isx-p-topic{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;color:var(--isx-navy);
     text-align:center;margin-bottom:8px}
   .isx-p-type-row{display:flex;gap:6px;margin-bottom:8px}
-  .isx-p-subject{margin-bottom:8px}
-  .isx-p-subject input{font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;text-align:center}
-  .isx-p-bottom-row{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .isx-p-subject-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .isx-p-subject-row #isx-p-subject{flex:1;font-size:calc(12px * var(--fg-text-scale,1));font-weight:400;text-align:left}
+  .isx-p-subject-row #isx-p-subject::placeholder{font-size:calc(11px * var(--fg-text-scale,1));font-weight:400;color:#93a4b5}
+  .isx-p-bottom-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
   .isx-p-hs-btn{flex:1;font-size:calc(10px * var(--fg-text-scale,1));padding:7px 4px;border:1.5px solid var(--isx-paleblue);
     border-radius:8px;background:var(--brand-white);cursor:pointer;color:var(--isx-navy);font-weight:700;letter-spacing:.5px}
   .isx-p-hs-btn.on{background:var(--isx-navy);color:var(--brand-white);border-color:var(--isx-navy)}
-  .isx-p-cast-btn{flex:0 0 34px;height:32px;border:1.5px dashed var(--isx-paleblue);border-radius:50%;
-    background:var(--brand-white);cursor:pointer;color:var(--isx-navy);font-size:calc(13px * var(--fg-text-scale,1));
-    display:flex;align-items:center;justify-content:center;padding:0}
-  .isx-p-cast-btn.on{background:var(--isx-navy);color:var(--brand-white);border-style:solid}
+  /* Cast button now sits beside SUBJECT, styled like every other rounded-
+     field button on this card (same shape as isx-src-btn/isx-p-hs-btn)
+     instead of its old standalone dashed circle. */
+  .isx-p-cast-btn{flex:0 0 40px;height:36px;padding:0;border:1.5px solid var(--isx-paleblue);border-radius:8px;
+    background:var(--brand-white);cursor:pointer;color:var(--isx-navy);font-size:calc(14px * var(--fg-text-scale,1));
+    display:flex;align-items:center;justify-content:center}
+  .isx-p-cast-btn.on{background:var(--isx-navy);color:var(--brand-white);border-color:var(--isx-navy)}
   .isx-p-url-preview{font-size:calc(9.5px * var(--fg-text-scale,1));color:#7a90a8;text-align:center;word-break:break-word;margin-top:2px}
 
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
