@@ -1316,21 +1316,15 @@
       var wrap=document.getElementById('bb-d-shared-wrap');
       var sel=document.getElementById('bb-d-shared-board');
       if(!wrap || !sel) return;
-      var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      // Aug 14 2026 -- also require !c._foreign now that a merged
-      // (assigned-to-me) card can be opened from a Personal BB too: this
-      // field only makes sense for a card actually native here, not one
-      // just passing through on its way from someone else's board.
-      if(board && board.board_type==='personal' && !c._foreign){
-        var targets=_bbBoards.filter(function(b){ return b.board_type!=='personal'; });
-        sel.innerHTML='<option value="">Just here</option>'+targets.map(function(b){
-          return '<option value="'+b.id+'">'+_esc(b.name||'Untitled Board')+'</option>';
-        }).join('');
-        sel.value=c.sharedToBoardId||'';
-        wrap.style.display='';
-      } else {
-        wrap.style.display='none';
-      }
+      // "Also show on," retired in place Sept 19 2026 (Master BB card):
+      // Larry wants it off the card entirely. This used to reveal the
+      // field for a card native to a Personal board -- that reveal
+      // branch is gone; the field now always stays hidden (matching
+      // #bb-d-shared-wrap's own now-hard-coded display:none in
+      // briefing-board-screens.js). #bb-d-shared-board's populate/save
+      // logic stays underneath, untouched, in case this is ever wanted
+      // back -- it just never gets shown.
+      wrap.style.display='none';
     })();
     document.getElementById('bb-d-due').value=c.due||'';
     document.getElementById('bb-d-due-time').value=c.dueTime||'';

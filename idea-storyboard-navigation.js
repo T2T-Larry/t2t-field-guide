@@ -832,6 +832,33 @@
           menu.appendChild(row);
         });
       }
+      // (+) Add a new PROJECT, Sept 19 2026 -- carried over from the old
+      // _sboardRenderTitlePicker (retired when this hand-built dropdown
+      // replaced it -- see that function's own now-dead code, above),
+      // which was built on the shared _sboardRenderDropdown component and
+      // got its (+) row for free. This dropdown is hand-built instead
+      // (see this function's own opening comment) so it lost that row
+      // along the way -- Master BB card, do-h: "Not on Idea board." Same
+      // create-then-switch flow as before: prompt for a name, create the
+      // root board, jump straight into it.
+      var addRow=document.createElement('div');
+      addRow.className='sc-cdrop-addrow';
+      var addBtn=document.createElement('button');
+      addBtn.type='button';
+      addBtn.className='sc-dotted-add-btn';
+      addBtn.title='Add a board';
+      addBtn.textContent='+';
+      addBtn.addEventListener('click', async function(ev){
+        ev.stopPropagation();
+        menu.hidden=true;
+        var typeLabel=_sboardTypeLabel(_sboardActiveBoardType());
+        var name=window.prompt('Name for the new '+typeLabel+' board:');
+        if(!name || !name.trim()) return;
+        var newId=await _sboardCreateRootBoard(name.trim(), _sboardActiveBoardType());
+        if(newId) _sboardSwitchToRootBoard(newId);
+      });
+      addRow.appendChild(addBtn);
+      menu.appendChild(addRow);
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';

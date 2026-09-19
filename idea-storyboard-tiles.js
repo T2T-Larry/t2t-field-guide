@@ -589,10 +589,20 @@
       if(raw.indexOf('header:')===0){
         var draggedHeaderId=raw.slice(7);
         if(String(draggedHeaderId)===String(headerRow.id)) return;
-        // No drag gesture nests one Subber under another -- a "bucket"
-        // drop here just reorders (treated as 'after'), same as it did
-        // before this zoning got a middle band.
-        _sboardReorderOrMoveColumnItem(draggedHeaderId, headerRow.id, headerRow.cluster_id||null, side!=='before');
+        // Nesting a Subber/Header under another Subber/Header by drag,
+        // Sept 19 2026 (Master BB card do-h: "Cannot drop a subber or a
+        // header into another header!") -- Larry wants the middle
+        // "bucket" zone to do here exactly what it already does for a
+        // plain card dropped on a header (_sboardMoveCard, the 'else if'
+        // branch just below): file it IN UNDER the target. The Aug 22
+        // 2026 decision this replaces (see the removed comment) had
+        // deliberately kept a dragged Subber/Header to reorder-only, on
+        // the reasoning that nesting was Tab/Shift+Tab/DETAILS-panel-only
+        // -- Larry's since asked for the direct drag gesture too, so the
+        // top/bottom edges still just reorder, but the middle third now
+        // nests, same 3-zone split every other tile on this board uses.
+        if(side==='bucket'){ _sboardMoveCard(draggedHeaderId, headerRow.id); }
+        else{ _sboardReorderOrMoveColumnItem(draggedHeaderId, headerRow.id, headerRow.cluster_id||null, side==='after'); }
       } else if(side==='bucket'){
         _sboardMoveCard(raw, headerRow.id);
       } else {

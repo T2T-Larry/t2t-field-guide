@@ -1110,6 +1110,40 @@
     }catch(e){ return {ok:false,msg:(e&&e.message)||'Could not add them.'}; }
   }
 
+  // Direct PRIMARY assign, Sept 19 2026 -- the NEW card's single-head
+  // (👤) button: Larry wants it to show the same roster the VIEW button
+  // already lists, and clicking a name there to assign that person
+  // PRIMARY right away -- no picker screen, no email typing. This is the
+  // one card_roles insert that skips _csInsertRole's email lookup
+  // entirely (idea-capture.js already has the person's user_id straight
+  // from the roster row) but otherwise mirrors _csSaveRole's own
+  // newRole==='primary' branch: same Stakeholder cascade
+  // (_csApplyAncestorStakeholders), same solo/empty tacit-assignment
+  // backfills, same roster-changed callback. Bridged onto
+  // window.T2TStoryboard below so idea-capture.js (a separate file) can
+  // call it the instant a NEW card finishes saving.
+  async function _csAssignPrimaryDirect(item, cardType, userId){
+    if(!item || !item.id || !userId) return {ok:false, msg:'Nothing to assign PRIMARY to.'};
+    var _sb=T().sb; if(!_sb) return {ok:false, msg:'Not connected.'};
+    try{
+      var meRes=await _sb.auth.getUser();
+      var me=meRes && meRes.data ? meRes.data.user : null;
+      var ins=await _sb.from('card_roles').insert({
+        card_type:cardType||'idea', card_id:item.id, role:'primary',
+        user_id:userId, added_by: me?me.id:null, status:'accepted'
+      });
+      if(ins.error) throw ins.error;
+      await _csApplyAncestorStakeholders(cardType||'idea', item.id, userId);
+      _csItem=item; _csCardType=cardType||'idea';
+      await _csLoadRoles(item);
+      _sboardInvalidateEffPrimary();
+      await _csAutoPrimaryIfSolo();
+      await _csAutoPrimaryIfEmpty();
+      if(_csOnRosterChange) _csOnRosterChange();
+      return {ok:true};
+    }catch(e){ console.warn('NEW card: could not assign PRIMARY directly', e); return {ok:false, msg:(e&&e.message)||'Could not assign PRIMARY.'}; }
+  }
+
   // New adds default to Cast Member -- Session 255, replacing the old
   // per-role add buttons. Click the name afterward to pick a different
   // role; nothing forces Cast Member to stick.

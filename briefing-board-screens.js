@@ -453,6 +453,14 @@
             // permanently visible, just below the divider that closes
             // out this whole section.
             +'<div class="bb-field bb-addition" id="bb-d-add-checklist-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-checklist"><span class="bb-addition-eyebrow">Checklist</span></label><div class="bb-addition-body" id="bb-d-checklist-body" style="display:none"><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div></div>'
+            // "Also show on," retired in place Sept 19 2026 (Master BB
+            // card): Larry wants it off the card entirely. The reveal
+            // logic that used to show this for a card native to a
+            // Personal board is gone too (see openCardDetail in
+            // briefing-board-ops.js) -- left defined here rather than
+            // deleted, matching how the rest of this file retires a
+            // field, with #bb-d-shared-board's own populate/save wiring
+            // staying intact underneath in case it's ever wanted back.
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
             +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine"><span class="bb-addition-eyebrow">Routine</span></label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
               +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
@@ -487,7 +495,13 @@
             // (c.sourceHeaderId) -- Plan/Organization/Share are still
             // Door-Soon placeholders with nothing of their own to be
             // active yet.
-            +'<div class="bb-field bb-addition" id="bb-d-add-related-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-related"><span class="bb-addition-eyebrow">Related Storyboards</span></label><div class="bb-addition-body" id="bb-d-related-body" style="display:none">'
+            // Related Storyboards, retired in place Sept 19 2026 (Master
+            // BB card, same request as "Also show on" just above): Larry
+            // wants it off the card entirely. Left defined rather than
+            // deleted (its BB_ADDITIONS entry, auto-open backfill, and
+            // door-button wiring all stay intact underneath) -- just
+            // hard-hidden so it can't show up or auto-open again.
+            +'<div class="bb-field bb-addition" id="bb-d-add-related-wrap" style="display:none"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-related"><span class="bb-addition-eyebrow">Related Storyboards</span></label><div class="bb-addition-body" id="bb-d-related-body" style="display:none">'
               +'<div id="bb-d-doors-row" class="bb-doors-row">'
                 +'<button class="bb-icon-btn bb-door-btn" id="bb-d-open-header" type="button" title="Idea Board">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M15 14c.2-1 .7-1.7 1.5-2.5C17.7 10.4 18 9.1 18 8a6 6 0 0 0-12 0c0 1.1.3 2.4 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>'+'</button>'
                 +'<button class="bb-icon-btn bb-door-btn" id="bb-d-door-plan" type="button" title="Plan">'+'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M4 20h4v-4h4v-4h4v-4h4"/></svg>'+'</button>'

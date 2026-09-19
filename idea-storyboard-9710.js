@@ -146,6 +146,15 @@
     // for card_type:'briefing_card' instead of duplicating it.
     openCallSheet: openCallSheet,
     closeCallSheet: closeCallSheet,
+    // Sept 19 2026 -- the NEW card's single-head (👤) roster picker: see
+    // _csAssignPrimaryDirect's own comment in idea-storyboard-people.js.
+    assignPrimaryDirect: _csAssignPrimaryDirect,
+    // Same roster the VIEW button reads (_tmLoadRoster/_tmAllRosterRows),
+    // bridged so idea-capture.js can list identical names without
+    // reaching past this file's private roster cache itself.
+    currentProjectRow: _sboardCurrentProjectRow,
+    loadRoster: _tmLoadRoster,
+    allRosterRows: _tmAllRosterRows,
     // Aug 28 2026 -- both re-routed through the tacit-assignment resolver
     // (_sboardEnsureEffectivePrimaryRaw/_sboardEffectivePrimaryUidRaw) so
     // Briefing Board picks up the solo-assignee and climb-to-Header rules

@@ -624,6 +624,16 @@
     }
 
     T().wire('sb-hdr-newh', function(){
+      // Delete the dropdown options once you're creating a new header,
+      // Sept 19 2026 (Master BB card) -- clicking "+ Create new header…"
+      // used to leave the whole Misc/Parking Lot/Purpose/other-headers
+      // list sitting there above the name field, which just cluttered a
+      // screen that's now only about typing one name. Hides that list
+      // (and the Misc pinned row above it) the moment create-mode opens,
+      // same "just the input, nothing else" feel as the standalone New
+      // Header prompt (_sboardOpenAddHeaderPrompt) already has.
+      var vlist=document.getElementById('sb-hdr-vlist'); if(vlist) vlist.style.display='none';
+      var miscPinned=document.getElementById('sb-misc-pinned'); if(miscPinned) miscPinned.style.display='none';
       document.getElementById('sb-newheader-row').style.display='block';
       var nhInput=document.getElementById('sb-newheader-input');
       if(nhInput) setTimeout(function(){ nhInput.focus(); }, 50);
