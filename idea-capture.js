@@ -58,16 +58,17 @@
   var _icProjectLabel='-';      // PROJECT eyebrow -- opts.projectLabel, or '-' (Parking Lot) if none given
   var _icTopicLabel='-';        // TOPIC field -- opts.topicLabel, or '-' (Parking Lot) if none given
   var _icEntryType='idea';      // 'idea' | 'task' | 'note' -- the O IDEA/TASK/NOTES selector
-  // Cast, Sept 19 2026 round 4 -- Larry split the old single toggle into
-  // two buttons: 👤 (single head) opens the same roster the VIEW button
-  // lists and directly assigns PRIMARY to whoever is picked, no extra
-  // screen; 👥 (double head) opens the real Call Sheet in full, same as
-  // the single-button toggle used to. Both still only fire once this
-  // entry has a saved row to attach a card_roles row to -- see
-  // _icMaybeApplyCast (renamed from _icMaybeOpenCastPicker).
-  var _icCastPersonId=null;     // 👤 pick -- user_id to assign PRIMARY to directly
-  var _icCastPersonName='';     // 👤 pick -- label shown on the button once picked
-  var _icCastOn=false;          // 👥 double-head button -- open full Call Sheet once this saves
+  // Cast, Sept 19 2026 round 5 -- Larry: one button only, styled exactly
+  // like the VIEW list at the top of the board (same roster, same dark
+  // .sc-cdrop-menu look), with a (+) at the bottom to add someone not
+  // on it yet. Picking a name assigns PRIMARY directly. The round-4
+  // double-head "open the full Call Sheet" button is gone -- Larry
+  // pointed out that's redundant with the Cast/Call Sheet picker
+  // already on the back of a card. Only fires once this entry has a
+  // saved row to attach a card_roles row to -- see _icMaybeApplyCast
+  // (renamed from _icMaybeOpenCastPicker back in round 4).
+  var _icCastPersonId=null;     // user_id to assign PRIMARY to directly
+  var _icCastPersonName='';     // label shown on the button once picked
   // PROJECT/TOPIC picker, Sept 19 2026 round 3 -- _icProjectId is the
   // real row id behind PROJECT (needed to look up that project's own
   // TOPIC list); picking a PROJECT re-points _icBoardId at that
@@ -265,10 +266,10 @@
       // video sat invisible until the next manual refresh. Grab the
       // callback first, close, then call it.
       var _onSavedCb=_icOnSaved;
-      var wantCastPersonId=_icCastPersonId, wantCastFull=_icCastOn;
+      var wantCastPersonId=_icCastPersonId;
       _icClosePopup();
       if(_onSavedCb) _onSavedCb(row);
-      _icMaybeApplyCast(row, true, wantCastPersonId, wantCastFull);
+      _icMaybeApplyCast(row, true, wantCastPersonId);
     } else {
       var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
       if(errBox){
@@ -296,50 +297,31 @@
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
-    _icProjectLabel='-'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastOn=false; _icCastPersonId=null; _icCastPersonName=''; _icMode='idea';
+    _icProjectLabel='-'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastPersonId=null; _icCastPersonName=''; _icMode='idea';
     var stray=document.getElementById('isx-p-field-menu'); if(stray) stray.remove();
     if(cb) cb();
   }
 
-  // Cast, Sept 19 2026 round 4 -- two doors now instead of one:
-  //   👤 single head -- _icCastPersonId was picked from the same roster
-  //      the VIEW button lists (see the roster-dropdown wiring below).
-  //      Assigns that person PRIMARY directly via T2TStoryboard.
-  //      assignPrimaryDirect, no extra screen -- the point is speed, the
-  //      picking already happened before SAVE.
-  //   👥 double head -- _icCastOn, unchanged from the old single-toggle
-  //      behavior: hands off to the real Cast/Call Sheet picker (idea-
-  //      storyboard-people.js's openCallSheet / BB's own card detail),
-  //      same picker every other card in the app already uses.
-  // Both only fire once the entry has a saved row to attach a card_roles
-  // row to. `keepOpenCard` is true for the link-save path, which already
-  // closed the popup itself before this runs; personIdOverride/
-  // fullOverride let that same path pass in the values it captured
-  // BEFORE closing (which resets _icCastPersonId/_icCastOn), rather than
-  // this function reading state that's already been cleared.
-  function _icMaybeApplyCast(row, keepOpenCard, personIdOverride, fullOverride){
+  // Cast, Sept 19 2026 round 5 -- one button, one job: _icCastPersonId
+  // was picked from the same roster the VIEW button lists (see the
+  // roster-dropdown wiring below). Assigns that person PRIMARY directly
+  // via T2TStoryboard.assignPrimaryDirect, no extra screen -- the
+  // picking already happened before SAVE. (Round 4's second, double-
+  // head button that opened the full Call Sheet is gone -- Larry:
+  // that's already on the back of the card, this button doesn't need
+  // to duplicate it.) Only fires once the entry has a saved row to
+  // attach a card_roles row to. `keepOpenCard` is unused now but kept
+  // in the signature so both call sites below don't need touching
+  // again; personIdOverride lets the link-save path pass in the value
+  // it captured BEFORE _icClosePopup() reset _icCastPersonId.
+  function _icMaybeApplyCast(row, keepOpenCard, personIdOverride){
     var personId = (personIdOverride!==undefined) ? personIdOverride : _icCastPersonId;
-    var wantFull = (fullOverride!==undefined) ? fullOverride : _icCastOn;
-    _icCastPersonId=null; _icCastPersonName=''; _icCastOn=false;
-    if(!row || !row.id) return;
+    _icCastPersonId=null; _icCastPersonName='';
+    if(!row || !row.id || !personId) return;
     var cardType = (_icMode==='bb') ? 'briefing_card' : 'idea';
-    if(personId){
-      if(window.T2TStoryboard && typeof window.T2TStoryboard.assignPrimaryDirect==='function'){
-        window.T2TStoryboard.assignPrimaryDirect(row, cardType, personId)
-          .then(function(res){ if(res && !res.ok) console.warn('NEW card: PRIMARY assign failed', res.msg); });
-      }
-      return;
-    }
-    if(!wantFull) return;
-    if(_icMode==='bb'){
-      // Briefing Board cards assign PRIMARY from their own card detail
-      // overlay, not the idea-side Call Sheet -- same "reuse the real,
-      // already-built picker" call as the idea path above, just BB's own.
-      if(typeof window.openCardDetail==='function') window.openCardDetail(row.id);
-      return;
-    }
-    if(typeof window.openCallSheet==='function'){
-      window.openCallSheet(row, null, 'idea', null, null, null);
+    if(window.T2TStoryboard && typeof window.T2TStoryboard.assignPrimaryDirect==='function'){
+      window.T2TStoryboard.assignPrimaryDirect(row, cardType, personId)
+        .then(function(res){ if(res && !res.ok) console.warn('NEW card: PRIMARY assign failed', res.msg); });
     }
   }
 
@@ -657,6 +639,104 @@
   // shape as every other ID Band dropdown (fixed position, closes on an
   // outside click), just local to this file so PROJECT/TOPIC don't have
   // to reach into briefing-board-master-nav.js's own copy of this idea.
+  // Cast picker, Sept 19 2026 round 5 -- Larry: this needs to look
+  // EXACTLY like the VIEW list at the top of the board (same roster,
+  // same dark dropdown skin), not the plain white PROJECT/TOPIC popup
+  // _icOpenFieldDropdown builds. Reuses the app's own shared
+  // .sc-cdrop-menu/.sc-cdrop-row/.sc-cdrop-addrow/.sc-dotted-add-btn CSS
+  // (defined once, globally, in idea-storyboard-screens.js -- the same
+  // rules VIEW's own dropdown and every PROJECT/TOPIC/ORG NAME picker on
+  // the board already use) rather than duplicating that look here.
+  // Roster comes from the same place VIEW's list does
+  // (T2TStoryboard.currentProjectRow/loadRoster/allRosterRows -- idea-
+  // storyboard-people.js's _tmLoadRoster/_tmAllRosterRows, bridged). The
+  // (+) at the bottom adds an existing T2T member to this project by
+  // email (T2TStoryboard.addMember -- the same add_storyboard_member
+  // call the Team screen's own (+) uses), then refreshes this same open
+  // list in place so the new name is pickable right away.
+  function _icOpenCastDropdown(anchorEl, onPick){
+    var old=document.getElementById('isx-p-cast-menu');
+    if(old) old.remove();
+    var bridge=window.T2TStoryboard;
+    var projRow=(bridge && typeof bridge.currentProjectRow==='function') ? bridge.currentProjectRow() : null;
+    var menu=document.createElement('div');
+    menu.id='isx-p-cast-menu';
+    menu.className='sc-cdrop-menu';
+    document.body.appendChild(menu);
+    function positionMenu(){
+      var r=anchorEl.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    }
+    function renderRows(people, loading){
+      menu.innerHTML='';
+      if(loading){
+        var l=document.createElement('div');
+        l.className='sc-cdrop-row';
+        l.style.cssText='cursor:default;opacity:.6';
+        l.textContent='Loading…';
+        menu.appendChild(l);
+      } else if(!people.length){
+        var empty=document.createElement('div');
+        empty.className='sc-cdrop-row';
+        empty.style.cssText='cursor:default;opacity:.6';
+        empty.textContent=projRow?'No one on this project yet.':'Pick a PROJECT first.';
+        menu.appendChild(empty);
+      } else {
+        people.forEach(function(p){
+          var row=document.createElement('div');
+          row.className='sc-cdrop-row';
+          row.textContent=p.name||p.email||'(unnamed)';
+          row.addEventListener('click', function(ev){
+            ev.stopPropagation();
+            menu.remove();
+            onPick({id:p.user_id, label:p.name||p.email||'(unnamed)'});
+          });
+          menu.appendChild(row);
+        });
+      }
+      if(projRow && bridge && typeof bridge.addMember==='function'){
+        var addRow=document.createElement('div');
+        addRow.className='sc-cdrop-addrow';
+        var addBtn=document.createElement('button');
+        addBtn.type='button';
+        addBtn.className='sc-dotted-add-btn';
+        addBtn.title='Add someone to this project';
+        addBtn.textContent='+';
+        addBtn.addEventListener('click', async function(ev){
+          ev.stopPropagation();
+          var email=window.prompt('Email of the T2T member to add to this project:');
+          if(!email || !email.trim()) return;
+          var res=await bridge.addMember(projRow, email.trim());
+          if(!res.ok){ window.alert(res.msg||'Could not add them.'); return; }
+          await bridge.loadRoster(projRow);
+          renderRows(bridge.allRosterRows(projRow)||[]);
+        });
+        addRow.appendChild(addBtn);
+        menu.appendChild(addRow);
+      }
+      positionMenu();
+    }
+    renderRows([], true);
+    positionMenu();
+    if(projRow && bridge && bridge.loadRoster && bridge.allRosterRows){
+      bridge.loadRoster(projRow).then(function(){
+        renderRows(bridge.allRosterRows(projRow)||[]);
+      });
+    } else {
+      renderRows([]);
+    }
+    setTimeout(function(){
+      document.addEventListener('click', function closeOnce(){
+        var m=document.getElementById('isx-p-cast-menu'); if(m) m.remove();
+        document.removeEventListener('click', closeOnce);
+      }, {once:true});
+    }, 0);
+  }
+
   function _icOpenFieldDropdown(anchorEl, rows, onPick){
     var old=document.getElementById('isx-p-field-menu');
     if(old) old.remove();
@@ -745,7 +825,7 @@
   function _icRenderIdeaPanel(){
     _icIdeaMode='idea';
     _icEntryType='idea';
-    _icCastOn=false; _icCastPersonId=null; _icCastPersonName='';
+    _icCastPersonId=null; _icCastPersonName='';
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
     _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
@@ -760,7 +840,6 @@
       +'<div class="isx-p-subject-row">'
         +'<input type="text" id="isx-p-subject" placeholder="Subject (optional)">'
         +'<button class="isx-p-cast-btn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY">👤</button>'
-        +'<button class="isx-p-cast-btn" type="button" id="isx-p-castfull-btn" title="Open the full Call Sheet once saved">👥</button>'
       +'</div>'
       // HEADER/SUBBER only means something on the Idea Board's own header
       // hierarchy -- a Briefing Board card has no such concept, so this
@@ -806,42 +885,25 @@
       paint();
     })();
 
-    // Cast, Sept 19 2026 round 4 -- 👤 opens the same roster the VIEW
-    // button lists (T2TStoryboard.currentProjectRow/loadRoster/
-    // allRosterRows -- idea-storyboard-people.js's own _tmLoadRoster/
-    // _tmAllRosterRows, bridged) and picking a name there just arms
-    // _icCastPersonId; 👥 just arms/disarms _icCastOn. Neither actually
-    // writes anything yet -- both only fire once this entry has a saved
-    // row to attach a card_roles row to (see _icMaybeApplyCast).
+    // Cast, Sept 19 2026 round 5 -- one button: opens the same roster
+    // the VIEW button lists, styled exactly like VIEW's own dropdown
+    // (see _icOpenCastDropdown), with a (+) at the bottom to add
+    // someone not on the project yet. Picking a name just arms
+    // _icCastPersonId -- doesn't write anything until this entry has a
+    // saved row to attach a card_roles row to (see _icMaybeApplyCast).
     (function(){
       var castBtn=document.getElementById('isx-p-cast-btn');
-      var castFullBtn=document.getElementById('isx-p-castfull-btn');
       function paintCast(){
-        if(castBtn){
-          castBtn.classList.toggle('on', !!_icCastPersonId);
-          castBtn.title=_icCastPersonId ? ('PRIMARY: '+_icCastPersonName+' — click to change') : 'Pick who’s PRIMARY';
-        }
-        if(castFullBtn) castFullBtn.classList.toggle('on', _icCastOn);
+        if(!castBtn) return;
+        castBtn.classList.toggle('on', !!_icCastPersonId);
+        castBtn.title=_icCastPersonId ? ('PRIMARY: '+_icCastPersonName+' — click to change') : 'Pick who’s PRIMARY';
       }
-      if(castBtn) castBtn.onclick=async function(ev){
+      if(castBtn) castBtn.onclick=function(ev){
         ev.stopPropagation();
-        var bridge=window.T2TStoryboard;
-        var projRow=(bridge && typeof bridge.currentProjectRow==='function') ? bridge.currentProjectRow() : null;
-        if(!projRow || !bridge.loadRoster || !bridge.allRosterRows){
-          _icOpenFieldDropdown(castBtn, [], function(){});
-          return;
-        }
-        await bridge.loadRoster(projRow);
-        var people=bridge.allRosterRows(projRow)||[];
-        var rows=people.map(function(p){ return {id:p.user_id, label:p.name||p.email||'(unnamed)'}; });
-        _icOpenFieldDropdown(castBtn, rows, function(picked){
+        _icOpenCastDropdown(castBtn, function(picked){
           _icCastPersonId=picked.id; _icCastPersonName=picked.label;
           paintCast();
         });
-      };
-      if(castFullBtn) castFullBtn.onclick=function(){
-        _icCastOn=!_icCastOn;
-        paintCast();
       };
       paintCast();
     })();

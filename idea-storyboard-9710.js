@@ -151,10 +151,13 @@
     assignPrimaryDirect: _csAssignPrimaryDirect,
     // Same roster the VIEW button reads (_tmLoadRoster/_tmAllRosterRows),
     // bridged so idea-capture.js can list identical names without
-    // reaching past this file's private roster cache itself.
+    // reaching past this file's private roster cache itself. addMember
+    // is the same "type an email, add an existing T2T member to this
+    // project" call the Team screen's own (+) uses.
     currentProjectRow: _sboardCurrentProjectRow,
     loadRoster: _tmLoadRoster,
     allRosterRows: _tmAllRosterRows,
+    addMember: _tmAddMember,
     // Aug 28 2026 -- both re-routed through the tacit-assignment resolver
     // (_sboardEnsureEffectivePrimaryRaw/_sboardEffectivePrimaryUidRaw) so
     // Briefing Board picks up the solo-assignee and climb-to-Header rules
