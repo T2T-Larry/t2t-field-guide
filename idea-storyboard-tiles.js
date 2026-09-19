@@ -517,17 +517,35 @@
     //
     // Sept 2026, Larry: "Long click on Sub-header opens view of
     // sub-header contents. Make single click move that header to
-    // topic?" -- a short click now drills straight in (_sboardDrillInto,
+    // topic?" -- a short click drilled straight in (_sboardDrillInto,
     // same "become the new TOPIC" move dragging this tile onto the
-    // TOPIC box already does), replacing the old plain
-    // select-for-keyboard-shortcuts behavior. Guarded by stackHeld
-    // (set by the hold-timer below) so releasing after a long hold --
-    // which still fires a native 'click' afterward, same as any
-    // mousedown+mouseup pair -- doesn't also drill in right on top
-    // of the peek view that hold just opened.
+    // TOPIC box already does) for a while, replacing the plain
+    // select-for-keyboard-shortcuts behavior every other tile kept.
+    //
+    // Reverted Sept 19 2026 (Larry, testing the new Alt+M move-arm
+    // shortcut: "Alt-M says click a card first but when I click a card
+    // it becomes the TOPIC") -- with a click here always drilling in,
+    // there was no way to select a Subber/Header stack tile at all, so
+    // Alt+M (and Tab/Ctrl+Down/Ctrl+Up, which need the same selection)
+    // could never target one. Single click is back to plain
+    // select-for-keyboard-shortcuts, same as the plain-idea tile and the
+    // open-column "hd" pill already do; drilling in moved to its own
+    // Alt+T shortcut (wireSboardUndoKeyboard) so both actions stay
+    // reachable without either stepping on the other. Guarded by
+    // stackHeld (set by the hold-timer below) so releasing after a long
+    // hold -- which still fires a native 'click' afterward, same as any
+    // mousedown+mouseup pair -- doesn't also select right on top of the
+    // peek view that hold just opened.
     wrap.addEventListener('click', function(e){
       if(stackHeld){ stackHeld=false; return; }
-      _sboardDrillInto(headerRow);
+      if(_sboardSelectedHeaderId===headerRow.id) return;
+      var prevId=_sboardSelectedHeaderId;
+      _sboardSelectedHeaderId=headerRow.id;
+      if(prevId){
+        var prevEl=document.querySelector('[data-header-id="'+CSS.escape(String(prevId))+'"]');
+        if(prevEl) prevEl.classList.remove('sb-kbd-selected');
+      }
+      wrap.classList.add('sb-kbd-selected');
     });
     // Click-and-hold a sub-header to peek at its subber cards, Aug 11 2026
     // (Larry) -- reuses openSbHeaderPeek, the same grid view CLUSTER's

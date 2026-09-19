@@ -476,6 +476,34 @@
         return;
       }
       if(k==='escape' && _sboardMoveArmedId){ e.preventDefault(); _sboardCancelMoveArm('Move canceled.'); return; }
+      // Alt+T, Sept 19 2026 (Larry, right after adding Alt+M: "Alt-M says
+      // click a card first but when I click a card it becomes the TOPIC.
+      // What if Alt-T makes a card the TOPIC?") -- the Subber/Header
+      // stack tile's own single click used to drill in immediately (see
+      // the Sept 2026 history on that click handler in
+      // idea-storyboard-tiles.js), which left no way to just select one,
+      // so Alt+M could never arm it. That click is back to plain select
+      // now; this is its replacement for "make the selected card the
+      // Topic" -- same _sboardDrillInto the click and the drag-onto-
+      // TOPIC-box gesture already use, just reading the same selection
+      // Alt+M/Tab/Ctrl+Down/Ctrl+Up all share instead of firing on click.
+      // Only makes sense for a Header or Subber -- a plain card has no
+      // children to view as a Topic, so that's guarded with a toast
+      // rather than silently making an always-empty board.
+      if(k==='t' && e.altKey){
+        e.preventDefault();
+        if(!_sboardSelectedHeaderId || _sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          _sboardShowToast('Click a header or Subber first, then Alt+T.');
+          return;
+        }
+        var topicRow=_sboardAllRowsById[_sboardSelectedHeaderId];
+        if(!topicRow || topicRow.content_type!=='header'){
+          _sboardShowToast('Only a header or Subber can become the Topic.');
+          return;
+        }
+        _sboardDrillInto(topicRow);
+        return;
+      }
       var mod=e.metaKey||e.ctrlKey;
       if(!mod) return;
       if(k==='z'){ e.preventDefault(); if(e.shiftKey) _sboardRedo(); else _sboardUndo(); return; }
