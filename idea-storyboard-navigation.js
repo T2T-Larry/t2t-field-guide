@@ -581,7 +581,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sc-topic-child-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sc-topic-child-menu','sc-topic-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -989,6 +989,214 @@
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
     };
+  }
+
+  // TOPIC hierarchy menu, Sept 19 2026 -- Larry: "make the Idea Board's
+  // ID Band exactly like BB's." Mirrors BB's own _bbTopicTreeRows/
+  // _bbWireTopicTree (briefing-board-master-nav.js, itself Larry's same-
+  // day "What if click on TOPIC displays the hierarchy of headers for
+  // entire project with highlight on current header in TOPIC position?"),
+  // just synchronous -- the Idea Board already keeps every row cached in
+  // _sboardAllRowsById (BB has to query live, level by level, since it
+  // doesn't keep this board's whole-account cache around; see that
+  // function's own comment), so the whole tree can be walked straight
+  // off the cache with no round trip. Same reserved-name exclusion every
+  // other header list on this board already uses (SBOARD_TOPIC_CHILD_
+  // RESERVED, just above), same on-board sort order (_sboardBySortOrder).
+  // Capped at 8 levels / 400 headers, same guard BB's own version uses,
+  // so a runaway cluster_id cycle can never lock the page up.
+  function _sboardTopicTreeRows(){
+    var curId=T2TShared.currentTopicId;
+    if(!curId || !_sboardAllRowsById[curId]) return [];
+    // 1. Climb to this project's own root -- same stop rule as
+    //    _sboardParentAncestorChoices/BB's own _bbTopicTreeRows: the root
+    //    is the header whose parent has no parent of its own (that
+    //    parent is the shared account root, not a real level of the
+    //    project).
+    var rootId=curId, guard=0;
+    while(guard<50){
+      guard++;
+      var info=_sboardAllRowsById[rootId];
+      if(!info || !info.cluster_id) break;
+      var parentInfo=_sboardAllRowsById[info.cluster_id];
+      if(!parentInfo || !parentInfo.cluster_id) break;
+      rootId=info.cluster_id;
+    }
+    if(!_sboardAllRowsById[rootId]) return [];
+    // 2. Walk the tree depth-first straight off the cache.
+    var rows=[], total=0;
+    (function walk(id, depth){
+      if(depth>8 || total>=400) return;
+      var row=_sboardAllRowsById[id];
+      if(!row) return;
+      rows.push({id:id, name:row.text_content||'(untitled)', depth:depth});
+      total++;
+      var children=Object.keys(_sboardAllRowsById)
+        .map(function(k){ return _sboardAllRowsById[k]; })
+        .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(id) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content]; })
+        .sort(_sboardBySortOrder);
+      children.forEach(function(c){ walk(c.id, depth+1); });
+    })(rootId, 0);
+    return rows;
+  }
+  function _sboardWireTopicTree(){
+    var trigger=document.getElementById('sc-topic-box'), menu=document.getElementById('sc-topic-menu');
+    if(!trigger || !menu) return;
+    // addEventListener, not .onclick -- sc-topic-box already carries its
+    // own triple-click page-number reveal listener (wired separately,
+    // near injectSeaOfIdeasCluster's own end), and this needs to run
+    // alongside it, not replace it.
+    trigger.addEventListener('click', function(e){
+      e.stopPropagation();
+      if(!T2TShared.currentTopicId) return; // root prompt -- nothing to show
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sc-topic-menu':null);
+      if(!willOpen){ menu.hidden=true; return; }
+      var rows=_sboardTopicTreeRows();
+      menu.innerHTML='';
+      var currentRow=null;
+      rows.forEach(function(h){
+        var row=document.createElement('div');
+        var isCur=String(h.id)===String(T2TShared.currentTopicId);
+        row.className='sc-cdrop-row sc-topic-tree-row'+(isCur?' active':'');
+        row.style.paddingLeft=(10+h.depth*16)+'px';
+        row.textContent=h.name;
+        if(isCur){ currentRow=row; row.style.cursor='default'; }
+        row.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          menu.hidden=true;
+          if(!isCur && _sboardAllRowsById[h.id]) _sboardDrillInto(_sboardAllRowsById[h.id]);
+        });
+        menu.appendChild(row);
+      });
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(200,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      if(currentRow && currentRow.scrollIntoView) currentRow.scrollIntoView({block:'center'});
+    });
+  }
+
+  // ID Band row layout, Sept 19 2026 -- Larry: "make the Idea Board's ID
+  // Band exactly like BB's." Mirrors BB's own _bbPositionIdBandRow
+  // (briefing-board-master-nav.js) in full: PROJECT-TOPIC-STORYBOARD as
+  // one left-to-right chain, SC_ID_BAND_GAP apart, centered as a group on
+  // the header -- clamped so it never runs under the identity block on
+  // the left or the Logo/Utility/Close row on the right -- replacing the
+  // old 3-column grid (TOPIC) and fixed top:50%/left:75% position
+  // (STORYBOARD) that used to drift apart on a narrow window or a long
+  // project/topic name. Same "measure the real boxes, clamp against a
+  // hard edge" shape, same ResizeObserver safety net for any future
+  // async width change (a late member name, a font swap), same
+  // document.fonts.ready re-run once real fonts have actually loaded.
+  var SC_ID_BAND_GAP = 10;
+  var _sboardIdBandObserverSetUp=false;
+  function _sboardSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container){
+    if(_sboardIdBandObserverSetUp || typeof ResizeObserver==='undefined') return;
+    _sboardIdBandObserverSetUp=true;
+    var pending=false;
+    var ro=new ResizeObserver(function(){
+      if(pending) return;
+      pending=true;
+      requestAnimationFrame(function(){
+        pending=false;
+        try{
+          var scr=document.getElementById('s-sea-of-ideas-cluster');
+          if(scr && scr.classList.contains('active')) _sboardPositionIdBandRow();
+        }catch(e){}
+      });
+    });
+    [projectWrap, topicWrap, idnEl, actionsEl, container].forEach(function(el){ if(el) ro.observe(el); });
+  }
+  // Shrink STORYBOARD's own label to whatever room is actually left once
+  // Project, Topic, and the two gaps between all three are accounted
+  // for -- same shared FGFitFontSize one-line shrink every other board
+  // title already uses (text-fit.js), mirroring _bbFitBoardKindLabel.
+  function _sboardFitBoardKindLabel(availableWidthPx){
+    var trigger=document.getElementById('sc-board-kind-trigger');
+    if(!trigger || !window.FGFitFontSize) return;
+    trigger.style.fontSize='';
+    if(!availableWidthPx || availableWidthPx<=0) return;
+    var cs=getComputedStyle(trigger);
+    var baseSize=parseFloat(cs.fontSize)||36;
+    var fitted=window.FGFitFontSize(trigger.textContent, availableWidthPx, {
+      base:baseSize, min:Math.max(14, Math.round(baseSize*0.4)), step:0.5,
+      fontFamily:cs.fontFamily, fontWeight:cs.fontWeight, oneLine:true
+    });
+    if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
+  }
+  function _sboardPositionIdBandRow(){
+    var projectWrap=document.getElementById('sc-project-wrap');
+    var topicWrap=document.getElementById('sc-topic-wrap');
+    var boardkindWrap=document.getElementById('sc-boardkind-wrap');
+    var idnEl=document.getElementById('sc-idn');
+    var actionsEl=document.querySelector('#s-sea-of-ideas-cluster .sc-hdr-side');
+    var container=document.getElementById('sc-header-area');
+    if(!projectWrap || !topicWrap || !boardkindWrap || !actionsEl || !container) return;
+    _sboardSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container);
+    var containerRect=container.getBoundingClientRect();
+    // Guard against a not-yet-laid-out screen -- nothing real to measure
+    // yet, leave the CSS fallback (top:0;left:0) in place.
+    if(!containerRect.width) return;
+
+    var pr=projectWrap.getBoundingClientRect();
+    var tr=topicWrap.getBoundingClientRect();
+    var ar=actionsEl.getBoundingClientRect();
+    if(!pr.width || !tr.width) return;
+
+    var available=containerRect.width-pr.width-tr.width-(SC_ID_BAND_GAP*3);
+    _sboardFitBoardKindLabel(Math.max(24, available));
+
+    var br=boardkindWrap.getBoundingClientRect();
+    if(!br.width) return;
+
+    var totalWidth=pr.width+SC_ID_BAND_GAP+tr.width+SC_ID_BAND_GAP+br.width;
+    var rightLimit=ar.left-SC_ID_BAND_GAP;
+    var leftLimit=containerRect.left;
+    if(idnEl){
+      var idr=idnEl.getBoundingClientRect();
+      if(idr.width) leftLimit=Math.max(leftLimit, idr.right+SC_ID_BAND_GAP);
+    }
+    var preferredLeft=containerRect.left+(containerRect.width-totalWidth)/2;
+    var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
+
+    var x=groupLeft;
+    projectWrap.style.left=(x-containerRect.left)+'px'; x+=pr.width+SC_ID_BAND_GAP;
+    topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+SC_ID_BAND_GAP;
+    boardkindWrap.style.left=(x-containerRect.left)+'px';
+
+    // PROJECT and STORYBOARD bottom-justify with the Logo/Utility/Close
+    // row's own real bottom edge; TOPIC centers vertically on the band --
+    // same vertical-alignment rule BB locked in Sept 16 2026 (see that
+    // function's own comment, briefing-board-master-nav.js).
+    if(ar.height){
+      [projectWrap, boardkindWrap].forEach(function(el){
+        var r=el.getBoundingClientRect();
+        if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
+      });
+    }
+    var trNow=topicWrap.getBoundingClientRect();
+    if(trNow.height && containerRect.height){
+      topicWrap.style.top=((containerRect.height-trNow.height)/2)+'px';
+    }
+  }
+  window.addEventListener('resize', function(){
+    try{
+      var scr=document.getElementById('s-sea-of-ideas-cluster');
+      if(scr && scr.classList.contains('active')) _sboardPositionIdBandRow();
+    }catch(e){}
+  });
+  if(window.document && document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){
+      try{
+        var scr=document.getElementById('s-sea-of-ideas-cluster');
+        if(scr && scr.classList.contains('active')) _sboardPositionIdBandRow();
+      }catch(e){}
+    });
   }
 
   // Picking PLAN, Aug 26 2026 (Larry: "duplicate a Project Idea Board, put

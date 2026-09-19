@@ -347,12 +347,25 @@
     // Sept 5 2026: the gold badge itself is retired (hidden, not deleted
     // -- see the header markup above), but #sc-member-name-text still
     // gets filled in here so the badge shows the right name immediately
-    // if it's ever switched back on. The traveler's name now actually
-    // shows via the plain ice-blue #sc-traveler-name eyebrow instead --
-    // filled in alongside it, same source, same case.
+    // if it's ever switched back on.
     var m=(window.T2T && window.T2T.getMember) ? window.T2T.getMember() : null;
     var el=document.getElementById('sc-member-name-text');
     if(el && m && m.display_name) el.textContent=m.display_name.toUpperCase();
+    // ID Band identity block, Sept 19 2026 (Larry: "make the Idea Board's
+    // ID Band exactly like BB's") -- mirrors BB's own _bbRenderTravelerName
+    // (briefing-board-master-nav.js): paints the whole top-left identity
+    // block (organization name + member name) via the shared
+    // member-identity.js, instead of only the name. Logo left out on
+    // purpose -- Larry, same session: "drop LOGO totally for future
+    // iteration" -- so no logo id is passed here even though fill()
+    // supports one. Name-only fallback kept for the moment before
+    // member-identity.js has loaded (or on the couple of phase pages
+    // that don't yet include it -- see index.html vs. believe/dare/
+    // dream/journey.html).
+    if(window.T2TMemberIdentity){
+      window.T2TMemberIdentity.fill({wrap:'sc-idn', org:'sc-idn-org', name:'sc-traveler-name'});
+      return;
+    }
     var travelerEl=document.getElementById('sc-traveler-name');
     if(travelerEl && m && m.display_name) travelerEl.textContent=m.display_name.toUpperCase();
   }
@@ -496,6 +509,18 @@
     // needed -- PROJECT nests under the traveler name in a fixed column
     // now instead of being positioned off Name/Logo's boxes (see the
     // Sept 5 note on sc-project-wrap in the header markup above).
+    // ID Band chain (PROJECT/TOPIC/STORYBOARD), Sept 19 2026 -- called
+    // last, same order BB uses (label text set, THEN the position pass
+    // measures the real boxes -- briefing-board-master.js) so this never
+    // reads a stale width. _sboardUpdateHeaderChrome already runs on
+    // every board render (far more often than BB's own handful of call
+    // sites), so calling it once here -- rather than sprinkling calls
+    // through the data-load path the way BB does -- already covers every
+    // case that matters; the ResizeObserver/resize/fonts.ready hooks in
+    // _sboardPositionIdBandRow's own file (idea-storyboard-navigation.js)
+    // remain as the same safety net BB keeps for the async causes that
+    // land between renders (a font swap, a late-loading member name).
+    if(typeof _sboardPositionIdBandRow==='function') _sboardPositionIdBandRow();
   }
 
   // Aug 18 2026, Larry: "allow Logo to keep same relative distance from

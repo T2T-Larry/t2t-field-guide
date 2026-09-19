@@ -670,6 +670,50 @@
         +'.sc-topic-caret{background:#fff;border:2px solid #000;color:#000;border-radius:8px;padding:0;box-sizing:border-box;width:'+IDBand.TOKENS.topicCaret.width+'px;align-self:stretch;cursor:pointer;opacity:1;font-size:calc('+IDBand.TOKENS.topicCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
         +'.sc-topic-caret:hover{opacity:.75}'
         +'.sc-topic-caret:disabled{opacity:.35;cursor:default}'
+        // ID Band, Sept 19 2026 (Larry: "make the Idea Board's ID Band
+        // exactly like BB's") -- ported wholesale from the Briefing
+        // Board's own Sept 19 2026 ID Band redesign (briefing-board-
+        // styles.js: .bb-idn, .bb-mh-typebox, .bb-mh-fieldgrp, .bb-mh-
+        // group-topic, .bb-mh-eyebrow, .bb-mh-group-center, .bb-mh-field-
+        // trigger, #bb-topic-menu). Same class shapes, this board's own
+        // established ice-blue-on-navy palette instead of BB's light
+        // theme variables. Positioning itself (left/top for each of
+        // these) is set every render by _sboardPositionIdBandRow (idea-
+        // storyboard-navigation.js, mirrors _bbPositionIdBandRow) --
+        // these rules are just the pre-JS fallback plus each piece's own
+        // internal layout.
+        //
+        // Identity block (organization name + member name, pinned to the
+        // header's true top-left corner). Logo intentionally left out --
+        // Larry, same session: "drop LOGO totally for future iteration."
+        +'.sc-idn{position:absolute;top:10px;left:16px;display:flex;flex-direction:column;align-items:flex-start;gap:1px}'
+        +'.sc-idn-toprow{display:flex;align-items:center;gap:8px}'
+        +'.sc-idn-org{font-size:calc(22px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;white-space:nowrap;line-height:1.1}'
+        +'.sc-idn .sc-traveler-eyebrow{margin-bottom:0}'
+        +'.sc-idn.has-org .sc-traveler-eyebrow{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1.5px}'
+        // PROJECT-TOPIC-STORYBOARD chain wraps, all three positioned as
+        // one centered group by _sboardPositionIdBandRow.
+        +'.sc-mh-typebox{position:absolute;top:0;left:0}'
+        +'.sc-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
+        +'.sc-mh-group-topic{position:absolute;top:0;left:0}'
+        +'.sc-mh-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#a9cce3;opacity:.7}'
+        +'.sc-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;position:absolute;top:0;left:0;width:max-content}'
+        // PROJECT/STORYBOARD's shared size (same IDBand.TOKENS.fieldBox
+        // every board reads) -- add/remove this class instead of a fresh
+        // inline style so the two can never quietly drift apart again.
+        +'.sc-mh-field-trigger{font-size:calc('+IDBand.TOKENS.fieldBox.fontSize+'px * var(--fg-text-scale,1));height:'+IDBand.TOKENS.fieldBox.height+'px;max-width:calc('+IDBand.TOKENS.fieldBox.maxWidth+'px * var(--fg-text-scale,1))}'
+        // STORYBOARD (sc-board-kind-trigger) is now a plain click-to-open
+        // label with no arrow at all, matching BB's own #bb-boardkind-
+        // trigger -- its separate sc-board-kind-caret button is gone
+        // (Larry, Sept 19, BB side: "additional unneeded dropdown arrow
+        // beside board name").
+        +'#sc-board-kind-trigger.sc-cdrop-trigger:after{content:none}'
+        // TOPIC hierarchy menu (click TOPIC) -- taller than the standard
+        // dropdown so a whole project tree is readable, current header
+        // highlighted, deeper levels indented. Mirrors #bb-topic-menu.
+        +'#sc-topic-menu{max-height:min(60vh, 420px)}'
+        +'#sc-topic-menu .sc-topic-tree-row{display:flex;align-items:center;gap:6px}'
+        +'#sc-topic-menu .sc-topic-tree-row.active{background:rgba(255,255,255,.1);font-weight:700}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
         // Larry: "the + in a dotted line circle just like every other
         // add. Consistent symbol." Same shape/border/color as the
@@ -878,187 +922,56 @@
       // rather than a second board color, since a board's identity is meant
       // to be one solid color now, not a color pair.
       +'<div id="sc-header-area" style="background:#1a3a5c;padding:10px 16px 4px;margin-bottom:0;position:relative;min-height:70px;border-bottom:1px solid rgba(255,255,255,.15)">'
-      // Header row, Aug 16 2026 -- Larry: "Center TOPIC horizontally. Move
-      // parent to left of topic. Add field to right of topic for logo or
-      // artwork. To right of logo say IDEA in light blue letters." 3-column
-      // grid (1fr auto 1fr): Topic in the middle auto column -- mathematically
-      // centered in the header no matter what either side holds, since both
-      // side tracks are equal 1fr and are otherwise left empty on purpose,
-      // just to hold their share of width so Topic's centering math stays
-      // balanced.
-      //
-      // Sept 6 2026 -- Larry: "Delete PARENT eyebrow and field. UP and DOWN
-      // ARROWS, just like on BB." Matches the Briefing Board's own Sept 6
-      // retirement of its separate Parent field/eyebrow in favor of an
-      // up-arrow directly on TOPIC (see the Sept 6 note on bb-mhead-top in
-      // briefing-board.js) -- the left column that used to hold the Parent
-      // eyebrow/pill is now just the pre-existing page-number reveal
-      // (sc-pagenum, moved down from Parent's old column but otherwise
-      // untouched), and the up-arrow (still id'd sc-parent-caret --
-      // _sboardWireParentAncestorDropdown/_sboardParentAncestorChoices
-      // below are unchanged, just retargeted onto TOPIC's own row) now
-      // sits directly on TOPIC's left, pointing up (▴, matching BB's own
-      // bb-topic-caret-up glyph -- was ▾ before, which never matched what
-      // an "upward" jump actually meant). A new down-arrow
-      // (sc-topic-caret-down) sits on TOPIC's right, mirroring BB's own
-      // descend caret (bb-topic-caret) -- see _sboardTopicChildChoices/
-      // _sboardWireTopicChildDropdown, below, for that new piece. Parent's
-      // own "plain click steps up exactly one level" and its triple-click
-      // page-number reveal both lived on the now-deleted sc-parent-hit;
-      // the plain-click shortcut has no replacement (the up-arrow's
-      // dropdown covers the same job, one extra click), and the
-      // triple-click reveal moved to TOPIC itself (see the wiring below,
-      // near the old sc-parent-hit wiring) so it isn't silently lost.
-      +'<div style="display:grid;grid-template-columns:1fr auto 1fr;column-gap:14px;align-items:start">'
-      +'<div style="display:flex;flex-direction:column;align-items:center;justify-self:end">'
-      +'<div id="sc-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
-      +'</div>'
-      +'<div class="sc-cdrop" id="sc-topic-cdrop" style="display:flex;align-items:center;justify-content:center;gap:6px">'
-      +'<button type="button" class="sc-topic-caret" id="sc-parent-caret" title="Jump to any level above" aria-label="Jump to any level above">▴</button>'
-      // Topic eyebrow deleted, Sept 5 2026, Larry -- Topic's own box is
-      // sized up (see the #sc-topic-box font-size bump below) to stand
-      // out on its own, without a small label crowding it from above.
-      +'<div id="sc-topic-box" data-header-id="__topic__"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div></div>'
-      +'<button type="button" class="sc-topic-caret" id="sc-topic-caret-down" title="Descend into a child layer" aria-label="Descend into a child layer">▾</button>'
-      +'<div class="sc-cdrop-menu" id="sc-parent-menu" hidden></div>'
-      +'<div class="sc-cdrop-menu" id="sc-topic-child-menu" hidden></div>'
-      +'</div>'
-      +'<div></div>'
-      +'</div>'
-      // Logo moved out of here, Sept 6 2026 -- Larry: "LOGO should be to
-      // the left of the Utilities button JUST LIKE on BB." Its markup
-      // (sc-logo-wrap and everything inside it) now lives in sc-hdr-side
-      // below, right before Utility/Close -- see that section for the
-      // full history on Logo's placement (Aug 16 through Sept 5 all
-      // happened while it lived here, independently positioned off
-      // Topic; none of that math is needed any more now that it's a
-      // normal flex item like BB's own Logo always was).
-      //
-      // IDEA label, Aug 16 2026 -- Larry: IDEA should read larger than
-      // Topic and sit half way from Topic to the header's right edge.
-      // Positioned independently of the grid above (percent offsets
-      // against the full header width, header-area is already
-      // position:relative): Topic sits at the header's horizontal center
-      // (50%), so half way from there to the right edge (100%) is 75% --
-      // that's IDEA's position.
-      // Board-kind label -- static per board type. This file (the Idea
-      // Storyboard) always reads IDEA; the not-yet-built Planning
-      // Storyboard gets the same slot/styling reading PLAN. Raised/embossed
-      // look (Larry, same day: "make IDEA look raised") via a light
-      // highlight above + dark shadow below -- classic emboss technique,
-      // no new color needed.
-      // Aug 26 2026, Larry: "make IDEA a drop down choice: IDEA - PLAN -
-      // SHARE - ORG" -- same four workspaces as the door icons on a
-      // Briefing Card's back (Idea Board / Plan / Share / Organization).
-      // Now a real sc-cdrop trigger (same shared menu shell as Type/
-      // Title/View above) instead of a plain label; the emboss text
-      // itself stays exactly as it was, just wrapped in a <button> with
-      // its default chrome stripped so nothing looks different at rest.
-      // This file only reads IDEA, so the trigger's own text never
-      // changes. Aug 30 2026, Larry: replaced with IDEA - PLAN - BRIEFING
-      // BOARD - SHARE - CAST -- BRIEFING BOARD and CAST are real,
-      // already-built destinations (see _sboardWireBoardKindDropdown),
-      // SHARE is still the only placeholder left.
-      // Sept 6 2026 -- stepped down 42px -> 36px to match the Briefing
-      // Board's own board-kind label after ITS Sept 6 shrink (bb-mh in
-      // briefing-board.js, "Briefing Board needs to be on one line...
-      // 42px -> 36px") -- part of "make all ID bands exactly the same
-      // look (other than color)"; this one was the last board-kind
-      // label still at the old size.
-      // Sept 15 2026 -- Larry: PROJECT and STORYBOARD share one look
-      // template (sc-hdr-select box + sc-project-caret arrow), sized
-      // smaller than TOPIC, down-arrow only. Was bare shadow-embossed
-      // text with no box or visible caret; now the same pair PROJECT
-      // already uses (see sc-title-trigger/sc-project-caret above),
-      // just with STORYBOARD's own trigger/menu ids kept so
-      // _sboardWireBoardKindDropdown needs no change. The wrapping div
-      // keeps the same translate(-50%,-50%) anchor -- that centers on
-      // the box regardless of its size, so the new, larger footprint
-      // doesn't shift where it sits.
-      +'<div style="position:absolute;top:50%;left:75%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Tasks, Share, or Roles">IDEAS</button><button type="button" class="sc-project-caret" id="sc-board-kind-caret" title="Switch to Plan, Tasks, Share, or Roles" aria-label="Switch storyboard type">▾</button></div>'
-      +'<div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div>'
-      +'<div style="position:absolute;top:10px;left:16px;z-index:3;display:flex;flex-direction:column;align-items:center">'
-      // Traveler name, Sept 5 2026 -- Larry: "delete the nametag -- don't
-      // totally delete it yet, I don't know why, I just like it. Can it
-      // go somewhere on the website that is retrievable but not in active
-      // use? Put the traveler name in the ice blue above a smaller
-      // PROJECT (so it looks like my projects are below this)." Replaces
-      // the gold nameplate (kept below, hidden not deleted) with the same
-      // plain ice-blue eyebrow every other header field already uses
-      // (Parent/Topic/Logo), via the new .sc-traveler-eyebrow class (see
-      // the CSS rules above, near .sc-hdr-eyebrow) -- twice the standard
-      // size since it's the traveler's own name, not a field label -- and
-      // first in this wrapper's flex column so PROJECT (moved into this
-      // same column, just below) reads as sitting underneath it.
+      // ID Band, Sept 19 2026 (Larry: "make the Idea Board's ID Band
+      // exactly like BB's") -- full rebuild of this header's identity
+      // strip to match the Briefing Board's own Sept 19 2026 ID Band
+      // redesign (briefing-board-screens.js): a top-left identity block
+      // (organization name + member name -- Logo left out, see the CSS
+      // comment above) plus PROJECT-TOPIC-STORYBOARD as one dynamically
+      // centered chain (_sboardPositionIdBandRow, idea-storyboard-
+      // navigation.js -- same measure-and-chain approach as BB's own
+      // _bbPositionIdBandRow), replacing everything this used to be: the
+      // Aug 16 2026 3-column grid, the Sept 6 2026 up/down TOPIC carets
+      // (folded into one click-opens-the-whole-hierarchy gesture, same
+      // as BB's own Sept 19 TOPIC redesign), and STORYBOARD's old fixed
+      // top:50%/left:75% position. sc-pagenum's triple-click reveal
+      // (wired below, unchanged) still lives on #sc-topic-box itself.
+      +'<div class="sc-idn" id="sc-idn">'
+      +'<div class="sc-idn-toprow"><div class="sc-idn-org" id="sc-idn-org" style="display:none"></div></div>'
       // _sboardRenderMemberName (below) fills in the text.
       +'<div class="sc-traveler-eyebrow" id="sc-traveler-name"></div>'
-      // PROJECT, Sept 2 2026 -- fixed "Idea Storyboards" label (see the
-      // one-time click wiring in injectSeaOfIdeasCluster) that opens the
-      // real global-shortcut popup, openProjectSwitcher, on click. This
-      // markup predates that -- the "sc-cdrop"/"sc-cdrop-trigger" classes
-      // and the empty sc-title-menu just below are leftover from when
-      // this button was an inline dropdown (the retired Title picker,
-      // see _sboardRenderTitlePicker); harmless to leave since nothing
-      // renders into sc-title-menu anymore. title text set at wiring
-      // time, not here, since it depends on the new click behavior.
-      //
-      // Sept 3 2026, Larry: "PROJECT is too close to my name -- it should
-      // be half the distance between name and LOGO." Pulled out of the
-      // flex row it started in into its own independently-positioned
-      // block (id'd sc-project-wrap) so _sboardPositionProjectMidwayToLogo
-      // could measure Name's actual right edge and Logo's actual left
-      // edge every render and place PROJECT's own center on the midpoint
-      // between them.
-      //
-      // Sept 5 2026, Larry: moved into the same flex column as the new
-      // traveler-name eyebrow just above, directly underneath it, instead
-      // of being independently positioned by measuring Name and Logo's
-      // boxes every render -- nesting it under Name in one column
-      // sidesteps the crowding problem the midpoint math was trying to
-      // manage, since there's nothing left on that side for it to
-      // collide with. _sboardPositionProjectMidwayToLogo is no longer
-      // called (see _sboardUpdateHeaderChrome and the two other call
-      // sites below) but left in place, not deleted, in case this layout
-      // changes again later. Sized down a step from its Sept 3 treatment
-      // (11px selector text to 9px, 30px control height to 24px) so it
-      // reads as visually smaller than -- and subordinate to -- the
-      // traveler name above it, matching Larry's "it looks like my
-      // projects are below this."
-      +'<div id="sc-project-wrap" style="display:flex;flex-direction:column;align-items:center">'
-      // Sept 5 2026, Larry: "what if we delete PROJECT eyebrow so that
-      // projects list is the field below the Traveler name?" Removed the
-      // "Project" label div that sat above the project selector -- the
-      // selector itself (sc-title-cdrop, just below) is now the first and
-      // only thing in this column, reading directly underneath the
-      // traveler name above with nothing labeling it in between.
-      // Sept 3 2026, Larry: "the dropdown arrow to the right of Idea
-      // Storyboards should show me the Headers (other PROJECTS) as
-      // choices, in the order they appear under the Idea Storyboards
-      // TOPIC -- right now it acts like the Parent field." sc-title-trigger
-      // was one single button carrying both the "Idea Storyboards" label
-      // AND the decorative sc-cdrop-trigger ▾ (see that class's :after
-      // rule below) -- so pressing the arrow did the exact same thing as
-      // pressing the label: drill straight in, no choices shown, same as
-      // sc-parent-hit's own plain click-to-navigate. Split the two apart:
-      // sc-title-trigger keeps its plain "click drills in, double-click
-      // opens the full PROJECT popup" behavior (Larry's own Sept 2 fix,
-      // above), unchanged; the ▾ is now its own real button
-      // (sc-project-caret) with its own job -- see
-      // _sboardWireProjectHeaderDropdown, near _sboardWireBoardKindDropdown
-      // below -- popping sc-title-menu (the same menu element the old,
-      // retired Title picker used to own) open with just this member's
-      // real Headers under Idea Storyboards, in their actual on-board
-      // order, nothing else mixed in.
-      +'<div class="sc-cdrop" id="sc-title-cdrop" style="display:flex;align-items:center;gap:2px">'
-      // Sept 5 2026, Larry: "increase the text size on the PROJECT field
-      // on all boards" -- 9px/24px (the Sept 5 "read as subordinate to
-      // traveler name" sizing) bumped to 14px/30px, and widened to fit.
-      // See bb-board-trigger in briefing-board.js for the same bump.
-      +'<button type="button" class="sc-hdr-select" id="sc-title-trigger" style="font-size:calc(14px * var(--fg-text-scale,1));height:30px;max-width:calc(120px * var(--fg-text-scale,1))"></button>'
-      +'<button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button>'
-      +'<div class="sc-cdrop-menu" id="sc-title-menu" hidden></div>'
+      +'</div>'
+      // PROJECT -- same click-drills-in / double-click-opens-popup /
+      // dedicated-caret-for-the-header-list behavior Larry already has
+      // here (Sept 2/3 2026 fixes below), just restyled into BB's own
+      // fieldgrp shape (eyebrow + white boxed trigger) and repositioned
+      // by the chain function instead of nesting under the traveler name.
+      +'<div id="sc-project-wrap" class="sc-mh-typebox">'
+      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Project</div><div class="sc-cdrop" id="sc-title-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><button type="button" class="sc-project-caret" id="sc-project-caret" title="Choose a project" aria-label="Choose a project" style="height:24px">▾</button></div><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div>'
+      +'</div>'
+      // TOPIC -- Sept 19 2026, matching BB's own redesign: the up/down
+      // arrow chips are gone ("too cluttered" on BB). Clicking TOPIC
+      // itself now opens the whole project's header hierarchy with the
+      // current header highlighted (_sboardWireTopicTree, idea-
+      // storyboard-navigation.js). _sboardParentAncestorChoices/
+      // _sboardWireParentAncestorDropdown and _sboardTopicChildChoices/
+      // _sboardWireTopicChildDropdown (idea-storyboard-navigation.js)
+      // are retired in place, not deleted -- same "leave the old function
+      // working, just nothing left wired to it" treatment BB's own
+      // retired up/down arrows got.
+      +'<div id="sc-topic-wrap" class="sc-mh-group-topic">'
+      +'<div id="sc-pagenum" style="position:absolute;top:-14px;left:0;font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
+      +'<div class="sc-cdrop" id="sc-topic-cdrop">'
+      +'<div id="sc-topic-box" data-header-id="__topic__" title="Click to see this project\'s headers"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div></div>'
+      +'<div class="sc-cdrop-menu sc-topic-tree" id="sc-topic-menu" hidden></div>'
       +'</div>'
       +'</div>'
+      // STORYBOARD (board-kind), Sept 19 2026 -- now a plain click-to-open
+      // label with no arrow at all (sc-board-kind-caret retired, see the
+      // CSS override above), matching BB's own #bb-boardkind-trigger and
+      // fixing the same "two dropdown arrows" complaint Larry raised on
+      // BB's side the same session.
+      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-mh-eyebrow">Storyboard</div><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-cdrop-trigger sc-mh-field-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Tasks, Share, or Roles">IDEAS</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
       // Sept 5 2026, Larry: "delete the nametag -- don't totally delete it
       // yet, I don't know why, I just like it. Can it go somewhere on the
       // website that is retrievable but not in active use?" Retired in
@@ -1073,7 +986,11 @@
       +'<div id="sc-member-name-text" style="color:#4a3418;font-family:\'Playfair Display\',serif;font-weight:700;font-size:calc(17px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;text-shadow:1px 1px 0 rgba(255,240,200,.5)"></div>'
       +'</div>'
       +'</div>'
-      +'</div>'
+      // sc-idn/sc-project-wrap/sc-topic-wrap/sc-boardkind-wrap above are
+      // each self-contained (own open+close), and no longer share a
+      // single flex-column wrapper the way traveler-name/PROJECT used to
+      // -- one fewer closing </div> here than this block had before Sept
+      // 19 2026, matching that removed wrapper.
       // align-items:flex-end, Sept 6 2026 -- Larry: "LOGO should be to the
       // left of the Utilities button JUST LIKE on BB." Logo's eyebrow+
       // frame stack is taller than a plain icon button, same situation
@@ -1175,8 +1092,15 @@
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
     _sboardWireProjectHeaderDropdown();
-    _sboardWireParentAncestorDropdown(); // Sept 5 2026 -- PARENT's own fast-jump arrow, see _sboardWireParentAncestorDropdown's own comment.
-    _sboardWireTopicChildDropdown(); // Sept 6 2026 -- TOPIC's new down-arrow, see that function's own comment.
+    // _sboardWireParentAncestorDropdown()/_sboardWireTopicChildDropdown()
+    // no longer wired at boot, Sept 19 2026 -- TOPIC's up/down arrow chips
+    // are gone (matching BB's own Sept 19 ID Band redesign); a single
+    // click on TOPIC now opens the whole project hierarchy instead (see
+    // _sboardWireTopicTree, idea-storyboard-navigation.js). Both retired
+    // functions are left defined, just unreachable, same "retire in
+    // place" treatment every other superseded ID Band control on this
+    // project gets.
+    _sboardWireTopicTree();
     // PROJECT, Sept 2 2026 -- Larry: "Top Project for each member = IDEA
     // STORYBOARDS. The HEADERS for that board are the PROJECTS plus
     // COLLABORATOR and STAKEHOLDER." Every member has exactly one true
