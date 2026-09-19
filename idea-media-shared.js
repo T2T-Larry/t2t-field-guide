@@ -441,6 +441,26 @@
     var btn=document.getElementById(cfg.addBtnId);
     var handle=document.getElementById(cfg.resizeHandleId);
     var topEyebrow=cfg.eyebrowTopId ? document.getElementById(cfg.eyebrowTopId) : null;
+    var onLogoEyebrow=cfg.eyebrowOnLogoId ? document.getElementById(cfg.eyebrowOnLogoId) : null;
+    // Sept 19 2026, Larry (live, Master BB): "remove the LOGOs from the
+    // ID BAND -- same for ALL boards, including BB." This one shared
+    // controller (Aug 30 2026 note above) is exactly why one change here
+    // turns the Logo feature off everywhere at once instead of needing a
+    // separate deletion per board. Slot/eyebrows collapse to nothing and
+    // reserve no space (display:none, not just hidden) so removing this
+    // can't leave a gap in the ID Band's own layout math; wire() below is
+    // likewise a no-op so there's nothing left to click, drag or upload
+    // to. Left as an early return rather than deleting the rest of this
+    // file's logo code, so turning it back on later (if ever asked for)
+    // is a one-line revert instead of rebuilding the whole controller.
+    if(slot) slot.style.display='none';
+    if(img) img.style.display='none';
+    if(btn) btn.style.display='none';
+    if(handle) handle.style.display='none';
+    if(topEyebrow) topEyebrow.style.display='none';
+    if(onLogoEyebrow) onLogoEyebrow.style.display='none';
+    return;
+    // eslint-disable-next-line no-unreachable -- kept intact, see comment above
     if(!slot) return;
     var row=cfg.getRow();
     var url=row && row.logo_url;
@@ -790,12 +810,10 @@
     // Wires the (+)/image click-to-upload, drag-to-move, and the
     // resize handle once at board setup -- mirrors the old per-board
     // wireLogoUpload functions, now shared.
-    wire: function(cfg){
-      wireUpload(cfg);
-      wireResizeHandle(cfg);
-      wireDrag(cfg);
-      wireHoverPeek(cfg);
-    }
+    // Sept 19 2026, Larry (live, Master BB): Logo removed from the ID
+    // Band on every board (see render() above) -- no-op here too, since
+    // render() already hides every element these would attach to.
+    wire: function(cfg){}
   };
 
 })();

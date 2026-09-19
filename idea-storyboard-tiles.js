@@ -22,7 +22,7 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
-  var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
+  var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0','#ffffff'];
   // PLAN board: cards with no verb in their text get force-pinked at
   // duplicate time, Aug 26 2026 (Larry). Reuses the existing rose swatch
   // above (index 3, '#f8d9e3') rather than a new one-off color, so it

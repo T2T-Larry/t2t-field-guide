@@ -60,14 +60,17 @@
       orgEl.textContent = org;
       orgEl.style.display = org ? '' : 'none';
     }
+    // Sept 19 2026 (later, Larry live on Master BB): "remove the LOGOs
+    // from the ID BAND -- same for ALL boards, including BB." This
+    // identity-block logo is the other Logo besides the per-board one
+    // (see T2TLogo.render, idea-media-shared.js, disabled the same
+    // session) -- always hidden now regardless of whether the member
+    // has one on file, so neither Logo can appear in the ID Band on any
+    // board. logo_url itself is left alone (not cleared) so this is a
+    // display-only change, reversible without asking anyone to re-upload.
     if(logoEl){
-      if(logo){
-        if(logoEl.getAttribute('src') !== logo) logoEl.setAttribute('src', logo);
-        logoEl.style.display = '';
-      } else {
-        logoEl.removeAttribute('src');
-        logoEl.style.display = 'none';
-      }
+      logoEl.removeAttribute('src');
+      logoEl.style.display = 'none';
     }
     // Sept 19 2026: only the organization name changes the name's size;
     // the logo no longer sits in this block (it's placed midway between

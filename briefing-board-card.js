@@ -45,7 +45,7 @@
   // hardcoded here rather than piped through the T2TStoryboard bridge --
   // it's a fixed list, not live state, so a cross-file dependency would
   // just be overhead.
-  var BB_COLOR_PALETTE = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0'];
+  var BB_COLOR_PALETTE = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0','#ffffff'];
 
   // Aug 7 2026 (later) -- Larry: a card he moved didn't land where he
   // put it AND couldn't be put back where it was -- it just vanished.

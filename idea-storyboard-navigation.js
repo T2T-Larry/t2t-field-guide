@@ -66,31 +66,25 @@
   function _sboardGetBoardBg(){
     return T2TData.getBoardTypeColor(_sboardActiveBoardType(), 'idea_bg');
   }
+  // Sept 19 2026, Master BB do-h card: "'What do you want?' ghost keeps
+  // showing up when opening the MASTER idea board. There is NO PROJECT
+  // called that! This needs to be deleted so it cannot accidentally
+  // appear." Root cause: TOPIC's root-level fallback text used to be a
+  // traveler-editable "Shape > Root prompt" field (openRootPromptEditor,
+  // removed below), stored in localStorage and defaulting to "What do
+  // you want?" -- shown right next to PROJECT reading "MASTER", which
+  // reads exactly like a real (but bogus) project/topic name, and could
+  // persist across sessions once typed since it lived in localStorage.
+  // That's the same rendering-artifact ghost Larry already flagged once
+  // (Aug 1 2026, see _ideaOpenBoardResume) -- this was the one remaining
+  // path that could still produce it. The editor and its localStorage
+  // key are removed outright, not just hidden, per "cannot accidentally
+  // appear" -- _sboardGetRootPrompt now always returns the same fixed
+  // 'MASTER' label PROJECT already shows at this exact state, so any
+  // TOPIC/PARENT breadcrumb that falls back to it reads as the real
+  // destination name, never a placeholder question.
   function _sboardGetRootPrompt(){
-    try{ return localStorage.getItem('t2t_seaOfIdeas_rootPrompt')||'What do you want?'; }catch(e){ return 'What do you want?'; }
-  }
-  function _sboardSetRootPrompt(text){
-    try{ localStorage.setItem('t2t_seaOfIdeas_rootPrompt', text||'What do you want?'); }catch(e){}
-  }
-  function openRootPromptEditor(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
-    var cur=_sboardGetRootPrompt();
-    ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div class="sb-card-title">Shape</div>'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Root prompt</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:8px">Shown when no Topic is selected yet.</div>'
-      +'<textarea id="sb-rootprompt-box" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;min-height:50px">'+cur+'</textarea>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-rootprompt-save" style="flex:1">Save</button><button class="sc-ov-btn" id="sb-rootprompt-close" style="flex:1" aria-label="Close">✕</button></div>'
-      +'</div>';
-    ov.classList.add('active');
-    T().wire('sb-rootprompt-save', function(){
-      var val=(document.getElementById('sb-rootprompt-box')||{}).value||'';
-      _sboardSetRootPrompt(val.trim());
-      closeSbDetail();
-      _sboardUpdateHeaderChrome();
-    });
-    T().wire('sb-rootprompt-close', closeSbDetail);
+    return 'MASTER';
   }
   function _sboardApplyBoardBg(){
     var c=_sboardGetBoardBg();

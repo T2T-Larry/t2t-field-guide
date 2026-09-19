@@ -1207,11 +1207,15 @@
     // used to live here -- that was replaced by drag-and-drop onto TOPIC
     // (locked July 27, 2026) and stays that way; this only opens the
     // card, never changes what board is being viewed.
+    // Sept 19 2026: the "Shape > Root prompt" editor this used to open at
+    // MASTER root is gone (see _sboardGetRootPrompt, idea-storyboard-
+    // navigation.js -- Larry: the ghost "What do you want?" text it let
+    // you type needed to be deleted, not just relabeled). There's no real
+    // card at root to open, so double-clicking TOPIC there is now inert,
+    // same as PARENT already is at that level.
     function _sboardOpenTopicCard(){
       if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
         openSbDetail(_sboardAllRowsById[T2TShared.currentTopicId]);
-      } else {
-        openRootPromptEditor();
       }
     }
 
