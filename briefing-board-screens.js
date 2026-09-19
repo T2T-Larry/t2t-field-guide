@@ -76,7 +76,7 @@
             // #bb-traveler-name keeps its id so every existing
             // getElementById('bb-traveler-name') caller still works.
             +'<div class="bb-idn" id="bb-idn">'
-              +'<div class="bb-idn-toprow"><div class="bb-idn-org" id="bb-idn-org" style="display:none"></div></div>'
+              +'<div class="bb-idn-toprow"><div class="bb-idn-org" id="bb-idn-org" style="display:none"></div><img class="bb-idn-logo" id="bb-idn-logo" alt="" style="display:none"></div>'
               +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
             +'</div>'
             +'<div class="bb-mh-typebox" id="bb-project-wrap">'
@@ -250,7 +250,7 @@
             // group) moved to _bbPositionIdBandRow (briefing-board-master-
             // nav.js, renamed from _bbPositionBoardKindMidway) -- see that
             // function for the full story.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Storyboard</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles">TASKS</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Storyboard</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the
@@ -292,15 +292,6 @@
             // button in the upper-right actions row, next to RETURN --
             // see #bb-view-trigger below. It used to sit here as the last
             // link in the PROJECT-TOPIC-STORYBOARD-VIEW chain.
-            // Logo, Sept 19 2026 -- Larry: "LOGO should start midway between
-            // org / name block and PROJECT. It should have drag and full
-            // resize option." Same slot/anchor markup and ids the shared
-            // T2TLogo controller has always wired (upload + crop, drag,
-            // resize handle), now placed in the band itself.
-            // _bbPositionLogoMidway (briefing-board-master-nav.js) sets its
-            // base position; the saved drag offset rides on top as a
-            // transform, exactly as before. Hidden until a logo exists.
-            +'<div class="bb-logo-wrap" id="bb-logo-wrap" style="display:none"><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
             +'<div class="bb-mhead-actions">'
               // Aug 30 2026, Larry: "move everything but Utility and X into
               // the Utility button" -- Reload, Jump-to-menu, History and
@@ -318,9 +309,7 @@
               // plain flex layout (see the shared T2TLogo config comment
               // near injectBriefingBoardStyles), no position math tied to
               // where its wrapper sits in the row.
-              // Logo moved (Sept 19 2026, Larry): it no longer rides in this row --
-              // it starts midway between the identity block (organization /
-              // member name) and PROJECT, see #bb-logo-wrap up in bb-mhead-top.
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow" id="bb-logo-eyebrow">Logo</div><div class="bb-logo-anchor"><div id="bb-logo-slot" class="bb-logo-slot"><img id="bb-logo-img" src="" alt="Logo" style="display:none"><div class="bb-logo-eyebrow-onlogo" id="bb-logo-eyebrow-onlogo">Logo</div><button type="button" class="bb-dotted-add-btn" id="bb-logo-add-btn" title="Add a logo or artwork" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">+</button><input type="file" id="bb-logo-input" accept="image/*" style="display:none"><div class="bb-logo-resize-handle" id="bb-logo-resize-handle" title="Drag to resize"></div></div></div></div>'
               // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump
               // back to the last screen." Same icon-btn family as
               // Utility/Close (bb-icon-btn, already white+frame), placed
