@@ -658,7 +658,16 @@
     var old=document.getElementById('isx-p-cast-menu');
     if(old) old.remove();
     var bridge=window.T2TStoryboard;
-    var projRow=(bridge && typeof bridge.currentProjectRow==='function') ? bridge.currentProjectRow() : null;
+    // Sept 19 2026 fix -- this used to ask the BOARD's ambient "current
+    // project" (bridge.currentProjectRow()), which has nothing to do with
+    // whatever PROJECT the traveler just picked inside this card's own
+    // PROJECT field. Picking a PROJECT here only ever updated _icProjectId/
+    // _icProjectLabel (see _icWireProjectTopicPickers above) -- it never
+    // touched the board's ambient state -- so the cast picker kept asking
+    // the wrong place, over and over, and "Pick a PROJECT first." never
+    // cleared no matter how many times a PROJECT was picked. Build the row
+    // straight from this card's own selection instead.
+    var projRow=_icProjectId ? {id:_icProjectId, text_content:_icProjectLabel} : null;
     var menu=document.createElement('div');
     menu.id='isx-p-cast-menu';
     menu.className='sc-cdrop-menu';
