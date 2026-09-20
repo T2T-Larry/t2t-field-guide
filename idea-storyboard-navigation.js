@@ -1094,6 +1094,36 @@
     })(rootId, 0);
     return rows;
   }
+  // PROJECT PYRAMID, Sept 20 2026 -- Larry: the flat, fully-expanded
+  // list _sboardTopicTreeRows produced (still just above, left as-is
+  // and no longer called) reads fine for one project but is
+  // overwhelming once TOPIC is MASTER, since it flattens every
+  // project's whole tree into one list at once. These two helpers feed
+  // window.TopicPyramid (topic-pyramid.js) instead: the straight climb
+  // of ancestors above the current Topic, and (lazily, one level at a
+  // time as each row's arrow is opened) its descendants below. Both
+  // read off the same already-cached _sboardAllRowsById the old flat
+  // list did -- no extra fetch, any depth, instantly.
+  function _sboardPyramidAncestors(topicId){
+    var chain=[], guard=0;
+    var curRow=topicId?_sboardAllRowsById[topicId]:null;
+    var parentId=curRow?curRow.cluster_id:null;
+    while(parentId && guard<50){
+      guard++;
+      var row=_sboardAllRowsById[parentId];
+      if(!row) break;
+      chain.unshift({id:row.id, name:row.text_content||'(untitled)'});
+      parentId=row.cluster_id;
+    }
+    return chain;
+  }
+  function _sboardPyramidChildren(parentId){
+    return Object.keys(_sboardAllRowsById)
+      .map(function(k){ return _sboardAllRowsById[k]; })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(parentId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content]; })
+      .sort(_sboardBySortOrder)
+      .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)'}; });
+  }
   function _sboardWireTopicTree(){
     var trigger=document.getElementById('sc-topic-box'), menu=document.getElementById('sc-topic-menu');
     if(!trigger || !menu) return;
@@ -1107,24 +1137,18 @@
       var willOpen=menu.hidden;
       _sboardCloseAllDropdowns(willOpen?'sc-topic-menu':null);
       if(!willOpen){ menu.hidden=true; return; }
-      var rows=_sboardTopicTreeRows();
-      menu.innerHTML='';
-      var currentRow=null;
-      rows.forEach(function(h){
-        var row=document.createElement('div');
-        var isCur=String(h.id)===String(T2TShared.currentTopicId);
-        row.className='sc-cdrop-row sc-topic-tree-row'+(isCur?' active':'');
-        row.style.paddingLeft=(10+h.depth*16)+'px';
-        row.textContent=h.name;
-        if(isCur){ currentRow=row; row.style.cursor='default'; }
-        row.addEventListener('click', function(ev){
-          ev.stopPropagation();
-          menu.hidden=true;
-          if(!isCur && _sboardAllRowsById[h.id]) _sboardDrillInto(_sboardAllRowsById[h.id]);
-        });
-        menu.appendChild(row);
-      });
+      var curRow=_sboardAllRowsById[T2TShared.currentTopicId];
+      if(!curRow || !window.TopicPyramid) return;
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      var currentRow=window.TopicPyramid.render(menu, {
+        ancestors:_sboardPyramidAncestors(T2TShared.currentTopicId),
+        current:{id:curRow.id, name:curRow.text_content||'(untitled)'},
+        getChildren:function(id){ return _sboardPyramidChildren(id); },
+        onNavigate:function(id){
+          menu.hidden=true;
+          if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]);
+        }
+      });
       var r=trigger.getBoundingClientRect();
       menu.style.left=r.left+'px';
       menu.style.top=(r.bottom+4)+'px';

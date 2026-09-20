@@ -960,6 +960,29 @@
     (function walk(n,d){ rows.push({id:n.id,name:n.name,depth:d}); n.children.forEach(function(c){ walk(c,d+1); }); })(nodes[rootId],0);
     return rows;
   }
+  // PROJECT PYRAMID, Sept 20 2026 -- Larry: the flat, fully-expanded
+  // list _bbTopicTreeRows produced (still just above, left as-is and
+  // no longer called) reads fine for one project but is overwhelming
+  // once TOPIC is MASTER, since it flattens every project's whole tree
+  // into one list at once. This climbs the same ideas.cluster_id chain
+  // _bbTopicTreeRows already climbed, but feeds window.TopicPyramid
+  // (topic-pyramid.js) instead -- ancestors above the current Topic,
+  // and (lazily, one level at a time) descendants below, reusing
+  // _bbFetchHeaderInfo's own memoized cache so re-opening the popup on
+  // the same Topic costs no extra round trips.
+  async function _bbPyramidAncestors(topicId){
+    var chain=[], guard=0;
+    var info=await _bbFetchHeaderInfo(topicId);
+    var parentId=info?info.clusterId:null;
+    while(parentId && guard<50){
+      guard++;
+      var pinfo=await _bbFetchHeaderInfo(parentId);
+      if(!pinfo) break;
+      chain.unshift({id:parentId, name:pinfo.name});
+      parentId=pinfo.clusterId;
+    }
+    return chain;
+  }
   function _bbWireTopicTree(){
     var trigger=document.getElementById('bb-topic-hit'), menu=document.getElementById('bb-topic-menu');
     if(!trigger || !menu) return;
@@ -977,24 +1000,23 @@
       menu.style.top=(r.bottom+4)+'px';
       menu.style.minWidth=Math.max(200,r.width)+'px';
       menu.hidden=false;
-      var rows=await _bbTopicTreeRows();
-      if(menu.hidden) return; // closed again while this was in flight
-      menu.innerHTML='';
-      var currentRow=null;
-      rows.forEach(function(h){
-        var row=document.createElement('div');
-        var isCur=String(h.id)===String(_bbCurrentTopicHeaderId);
-        row.className='bb-cdrop-row bb-topic-tree-row'+(isCur?' active':'');
-        row.style.paddingLeft=(10+h.depth*16)+'px';
-        row.textContent=h.name;
-        if(isCur){ currentRow=row; row.style.cursor='default'; }
-        row.addEventListener('click', function(ev){
-          ev.stopPropagation();
+      var curInfo=await _bbFetchHeaderInfo(_bbCurrentTopicHeaderId);
+      if(menu.hidden || !curInfo || !window.TopicPyramid) return; // closed again while this was in flight
+      var ancestors=await _bbPyramidAncestors(_bbCurrentTopicHeaderId);
+      if(menu.hidden) return;
+      var curTopicId=_bbCurrentTopicHeaderId;
+      var currentRow=window.TopicPyramid.render(menu, {
+        ancestors:ancestors,
+        current:{id:curTopicId, name:curInfo.name},
+        getChildren:function(id){
+          return _bbTopicChildChoices(id).then(function(rows){
+            return rows.map(function(r){ return {id:r.id, name:r.text_content||'(untitled)'}; });
+          });
+        },
+        onNavigate:function(id){
           menu.hidden=true;
-          if(isCur) return;
-          if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(h.id);
-        });
-        menu.appendChild(row);
+          if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(id);
+        }
       });
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
