@@ -258,65 +258,57 @@
     var days=Math.floor(hrs/24);
     return days+(days===1?' day ago':' days ago');
   }
-  function openRecentMoves(){
-    _bbRenderRecentMoves();
-    var ov=document.getElementById('bb-moves-overlay');
+  // Calendar subscribe panel, Sept 20 2026 -- Larry: replace the clock-face
+  // "Recent Moves" button with a Calendar button (Ctrl/Cmd+Z above already
+  // covers the undo job Recent Moves existed for, so that panel is retired
+  // along with the button; the underlying briefing_card_moves log/purge
+  // machinery is left in place since Ctrl/Cmd+Z's push/undo still uses it).
+  // Builds a webcal:// subscription link for this board's own Calendar
+  // Edge Function (calendar-feed) -- one link, added once in Outlook, Apple
+  // Calendar, or Google Calendar (any app that reads the standard
+  // iCalendar format), and the board's timed cards (due/start date+time)
+  // stay in sync from then on without re-importing anything.
+  var BB_CALENDAR_FEED_HOST = 'jyvvbjxqmxdgsxfcrfdn.supabase.co';
+  function _bbCalendarFeedUrl(scheme){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    if(!board || !board.calendar_token) return null;
+    return scheme+'://'+BB_CALENDAR_FEED_HOST+'/functions/v1/calendar-feed?board='+encodeURIComponent(board.id)+'&token='+encodeURIComponent(board.calendar_token);
+  }
+  function openCalendarPanel(){
+    var ov=document.getElementById('bb-calendar-overlay');
     if(ov) ov.classList.add('active');
-  }
-  function closeRecentMoves(){
-    var ov=document.getElementById('bb-moves-overlay'); if(ov) ov.classList.remove('active');
-  }
-  var _bbMovesCache = [];
-  async function _bbRenderRecentMoves(){
-    var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
-    wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Loading...</div>';
-    var sb=T().sb;
-    if(!sb || !_bbCurrentBoardId){ wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>'; return; }
-    try{
-      var res=await sb.from('briefing_card_moves').select('*').eq('board_id', _bbCurrentBoardId).is('undone_at', null).order('moved_at',{ascending:false}).limit(20);
-      if(res.error) throw res.error;
-      _bbMovesCache = res.data||[];
-    }catch(e){ console.error('Briefing Board: load moves failed', e); _bbMovesCache=[]; }
-    if(!_bbMovesCache.length){
-      wrap.innerHTML='<div style="font-size:calc(12px * var(--fg-text-scale,1));color:#a3907a;text-align:center;padding:16px 0">Nothing in here right now.</div>';
+    var webcalUrl=_bbCalendarFeedUrl('webcal');
+    var httpsUrl=_bbCalendarFeedUrl('https');
+    var linkField=document.getElementById('bb-calendar-link');
+    var subscribeBtn=document.getElementById('bb-calendar-subscribe');
+    var msg=document.getElementById('bb-calendar-msg');
+    if(!webcalUrl){
+      if(msg) msg.textContent='Calendar link isn\u2019t ready for this board yet -- try again in a moment.';
+      if(linkField) linkField.value='';
+      if(subscribeBtn) subscribeBtn.style.display='none';
       return;
     }
-    wrap.innerHTML=_bbMovesCache.map(function(m){
-      return '<div class="bb-mv-item" style="border:0.5px solid #d8cdb8;border-radius:8px;padding:8px;margin-bottom:6px">'
-        +'<div style="font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:2px">'+_esc(m.task||'(untitled)')+'</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#6b5a42;margin-bottom:2px">'+_esc(_bbMoveDesc(m.from_col,m.from_priority))+' \u2192 '+_esc(_bbMoveDesc(m.to_col,m.to_priority))+'</div>'
-        +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">'+_bbMoveAgo(m.moved_at)+'</div>'
-        +'<button class="bb-icon-btn" data-mv-undo="'+_esc(m.id)+'" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:4px 8px">Undo -- put it back</button>'
-      +'</div>';
-    }).join('');
+    if(msg) msg.textContent='';
+    if(linkField) linkField.value=httpsUrl;
+    if(subscribeBtn){ subscribeBtn.style.display=''; subscribeBtn.setAttribute('href', webcalUrl); }
   }
-  async function _bbUndoMove(moveId){
-    var m=_bbMovesCache.filter(function(x){ return x.id===moveId; })[0];
-    if(!m) return;
-    var c=_bbFindCardAnywhere(m.card_id);
-    if(!c){ window.alert('That card is no longer on this board (it may have been trashed).'); return; }
-    var before=_bbSnapshotCard(c);
-    c.col=m.from_col; c.priority=m.from_priority; c.sortOrder=(typeof m.from_sort_order==='number')?m.from_sort_order:c.sortOrder;
-    if(_bbIsDoCol(c.col)) _bbResortDoColumnByPriority(c.col);
-    _bbStampDateEscalationHandled(c);
-    _bbSaveLocal(_bbCardsList());
-    _bbPersistMergedCardById(m.card_id);
-    var sb=T().sb;
-    if(sb){
-      try{ await sb.from('briefing_card_moves').update({undone_at:new Date().toISOString()}).eq('id', moveId); }catch(e){ console.error('Briefing Board: mark move undone failed', e); }
+  function closeCalendarPanel(){
+    var ov=document.getElementById('bb-calendar-overlay'); if(ov) ov.classList.remove('active');
+  }
+  function wireCalendarPanel(){
+    T().wire('bb-calendar-close', closeCalendarPanel);
+    var copyBtn=document.getElementById('bb-calendar-copy');
+    if(copyBtn){
+      copyBtn.addEventListener('click', function(){
+        var linkField=document.getElementById('bb-calendar-link'); if(!linkField || !linkField.value) return;
+        linkField.select();
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(linkField.value).then(function(){ _bbShowToast('Link copied.'); }).catch(function(){});
+        }else{
+          try{ document.execCommand('copy'); _bbShowToast('Link copied.'); }catch(e){}
+        }
+      });
     }
-    // Log the undo itself as a fresh move, so it too can be reverted.
-    _bbLogCardMove(c, before);
-    await _bbRenderRecentMoves();
-    renderBoard();
-  }
-  function wireRecentMoves(){
-    T().wire('bb-moves-close', closeRecentMoves);
-    var wrap=document.getElementById('bb-moves-list'); if(!wrap) return;
-    wrap.addEventListener('click', function(e){
-      var undoId=e.target.getAttribute && e.target.getAttribute('data-mv-undo');
-      if(undoId) _bbUndoMove(undoId);
-    });
   }
   // Rows older than this get cleaned up automatically -- mirrors the
   // Trash retention window (BB_TRASH_RETENTION_DAYS below).
@@ -330,9 +322,10 @@
   }
 
   var TRASH_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
-  // Aug 7 2026 -- the "Recent Moves" icon (a plain clock) that opens
-  // the move-history/undo panel, sitting just to the left of Trash.
-  var MOVES_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>';
+  // Sept 20 2026 -- the Calendar icon, sitting just to the left of Trash,
+  // replacing the old clock-face "Recent Moves" icon (see the Calendar
+  // panel functions below).
+  var CALENDAR_SVG='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B2510" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
 
   var _bbCards = null;
   var _bbTrashPendingId = null;

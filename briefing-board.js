@@ -407,8 +407,8 @@ function T(){ return window.T2T; }
     T().wire('bb-trash-no', closeTrashConfirm);
     wireTrashIcon();
     wireRecentlyDeleted();
-    wireRecentMoves();
-    T().wire('bb-moves', openRecentMoves);
+    wireCalendarPanel();
+    T().wire('bb-calendar', openCalendarPanel);
     wireTopicBar();
     _bbWireBoardKindDropdown();
     _bbWireViewDropdown();

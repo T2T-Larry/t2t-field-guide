@@ -339,7 +339,11 @@
         +'</div>'
         +'<div id="bb-board-wrap"><div id="bb-cols"></div></div>'
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
-        +'<div class="bb-trash" id="bb-moves" title="Recent Moves" style="right:68px">'+MOVES_SVG+'</div>'
+        // Sept 20 2026, Larry: swap the clock-face Recent Moves icon for a
+        // Calendar button -- Ctrl/Cmd+Z (wireBbUndoKeyboard) already covers
+        // the undo job Recent Moves existed for. Opens a subscribe panel
+        // (bb-calendar-overlay) with this board's webcal feed link.
+        +'<div class="bb-trash" id="bb-calendar" title="Calendar" style="right:68px">'+CALENDAR_SVG+'</div>'
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
@@ -626,26 +630,26 @@
       rdOv.addEventListener('click', function(e){ if(e.target===rdOv) closeRecentlyDeleted(); });
       _bbMakeDraggable(rdOv.querySelector('.bb-overlay-card'), rdOv.querySelector('.bb-overlay-head'));
     }
-    // Recent Moves (9366), Aug 7 2026 -- Larry: a card he moved didn't
-    // land where he put it and couldn't be put back, separate from
-    // Trash entirely ("Never put the card into the trash... We need a
-    // safety net for potential errors"). Opened by a plain click on
-    // this icon -- lists the last 20 manual moves on this board
-    // (drag-drop or the H/M/L buttons), newest first, each with an
-    // Undo that puts the card straight back to its prior column,
-    // priority, and position.
-    if(!document.getElementById('bb-moves-overlay')){
-      var mvOv=document.createElement('div');
-      mvOv.id='bb-moves-overlay'; mvOv.className='bb-overlay';
-      mvOv.innerHTML=
+    // Calendar (9366 slot), Sept 20 2026 -- replaces the old Recent Moves
+    // panel (Ctrl/Cmd+Z already covers that job). Shows this board's own
+    // webcal subscription link -- add it once in Outlook, Apple Calendar,
+    // or Google Calendar and the board's timed cards (due/start
+    // date+time) stay in sync from then on.
+    if(!document.getElementById('bb-calendar-overlay')){
+      var calOv=document.createElement('div');
+      calOv.id='bb-calendar-overlay'; calOv.className='bb-overlay';
+      calOv.innerHTML=
          '<div class="bb-overlay-card" style="width:320px">'
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Recent Moves</span><button class="bb-close" id="bb-moves-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Every move you made, with a way back.</div>'
-          +'<div id="bb-moves-list" style="max-height:320px;overflow-y:auto"></div>'
+          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Calendar</span><button class="bb-close" id="bb-calendar-close" aria-label="Close">✕</button></div>'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once in Outlook, Apple Calendar, or Google Calendar -- this board’s timed cards stay in sync from then on.</div>'
+          +'<a id="bb-calendar-subscribe" href="#" style="display:block;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:10px">Subscribe now</a>'
+          +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">Or copy the link:</div>'
+          +'<div style="display:flex;gap:6px;margin-bottom:6px"><input id="bb-calendar-link" type="text" readonly style="flex:1;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 8px;border:0.5px solid #d8cdb8;border-radius:6px;color:#3B2510"><button class="bb-icon-btn" id="bb-calendar-copy" type="button" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 10px">Copy</button></div>'
+          +'<div id="bb-calendar-msg" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b"></div>'
         +'</div>';
-      fg.appendChild(mvOv);
-      mvOv.addEventListener('click', function(e){ if(e.target===mvOv) closeRecentMoves(); });
-      _bbMakeDraggable(mvOv.querySelector('.bb-overlay-card'), mvOv.querySelector('.bb-overlay-head'));
+      fg.appendChild(calOv);
+      calOv.addEventListener('click', function(e){ if(e.target===calOv) closeCalendarPanel(); });
+      _bbMakeDraggable(calOv.querySelector('.bb-overlay-card'), calOv.querySelector('.bb-overlay-head'));
     }
     if(!document.getElementById('bb-settings-overlay')){
       var setOv=document.createElement('div');

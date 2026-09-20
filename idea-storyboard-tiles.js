@@ -22,6 +22,49 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
+  // Fixed Trash can (#sc-trash), Sept 20 2026 -- Larry: "Add Trash can to
+  // lower right corner of Ideas Board... to every board in the future."
+  // Same drag-a-card-onto-the-corner-icon convention Briefing Board and
+  // the Session screen (9711's isx-trash-fixed) already use. A plain card
+  // goes straight to Trash, no confirm -- same posture as Delete/Backspace
+  // already has on this board (idea-storyboard-shared.js) and fully
+  // recoverable with Ctrl/Cmd+Z. A Header/Subber dropped here instead goes
+  // through _sboardConfirmTrashHeader's own real-delete confirm (bigger
+  // blast radius: permanently deletes its nested contents too, no undo) --
+  // same split the sb-trash button inside a card's own DETAILS already
+  // makes.
+  function _sboardWireTrashCan(){
+    var trash=document.getElementById('sc-trash'); if(!trash) return;
+    trash.addEventListener('dragover', function(e){ e.preventDefault(); trash.classList.add('sc-trash-dropready'); });
+    trash.addEventListener('dragleave', function(){ trash.classList.remove('sc-trash-dropready'); });
+    trash.addEventListener('drop', function(e){
+      e.preventDefault();
+      trash.classList.remove('sc-trash-dropready');
+      var raw=e.dataTransfer.getData('text/plain');
+      _sboardHandleTrashDrop(raw);
+    });
+  }
+  async function _sboardHandleTrashDrop(raw){
+    if(!raw || raw==='sb-goup') return;
+    var isHeader=raw.indexOf('header:')===0;
+    var id=isHeader?raw.slice(7):raw;
+    var row=_sboardAllRowsById[id];
+    if(!row) return;
+    if(isHeader){ _sboardConfirmTrashHeader(row); return; }
+    var before={cluster_id:row.cluster_id, sort_order:row.sort_order};
+    try{
+      var targetId=await T2TData.ensureTrashHeader();
+      var _sb=T().sb;
+      var upd=await _sb.from('ideas').update({cluster_id:targetId}).eq('id',id);
+      if(upd.error) throw upd.error;
+      _sboardPatchRow(id, {cluster_id:targetId});
+      var after={cluster_id:targetId, sort_order:before.sort_order};
+      _sboardPushAction({label:'Delete', undo:function(){ return _sboardApplyRowSnapshot(id, before); }, redo:function(){ return _sboardApplyRowSnapshot(id, after); }});
+      renderSeaBoard(true);
+      _sboardShowToast('Trashed — Ctrl/Cmd+Z to undo.');
+    }catch(e){ console.error('Storyboard: trash drop failed', e); _sboardShowToast('Couldn’t trash that — try again.'); }
+  }
+
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0','#ffffff'];
   // PLAN board: cards with no verb in their text get force-pinked at
   // duplicate time, Aug 26 2026 (Larry). Reuses the existing rose swatch

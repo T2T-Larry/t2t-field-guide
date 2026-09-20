@@ -468,6 +468,12 @@
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
+        // Fixed Trash can, Sept 20 2026 -- same 44px circle/bottom-right
+        // spec as Briefing Board's .bb-trash (briefing-board-styles.js)
+        // and Session's .isx-trash-fixed (style.css), so the affordance
+        // reads identically across every board kind on the site.
+        +'.sc-trash{position:absolute;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #1a3a5c;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
+        +'.sc-trash.sc-trash-dropready{outline:2px solid #b8562f;outline-offset:2px}'
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
         +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:calc(10px * var(--fg-text-scale,1))}'
         // Sept 5 2026 -- found the real source of Larry's "still see a
@@ -1074,6 +1080,17 @@
       +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
+      // Fixed Trash can, Sept 20 2026 (Larry: "Add Trash can to lower
+      // right corner of Ideas Board... to every board in the future") --
+      // same 44px circle/bottom-right-corner convention Briefing Board
+      // (.bb-trash) and the Session screen (9711's .isx-trash-fixed)
+      // already use, now on Idea/Plan too (both storyboard kinds render
+      // through this one shared screen). Sibling of #sc-board-wrap inside
+      // .sw, same reasoning as Briefing Board's own comment on .bb-trash:
+      // pinned to the screen itself so it never scrolls off with the
+      // board content. Drop handling in _sboardWireTrashCan
+      // (idea-storyboard-tiles.js).
+      +'<div class="sc-trash" id="sc-trash" title="Trash"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>'
       +'</div></div>';
     fg.appendChild(div.firstChild);
     // These live as direct children of fg-root, NOT inside the Storyboard's
@@ -1105,6 +1122,7 @@
     T().wire('sc-return', function(){
       if(!IDBand.jumpToRecorded()) _sboardShowToast('Nothing to return to yet');
     });
+    _sboardWireTrashCan();
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
     // _sboardWireProjectHeaderDropdown(), Sept 19 2026 -- re-pointed at
