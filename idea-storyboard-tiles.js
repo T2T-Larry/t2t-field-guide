@@ -713,7 +713,12 @@
     // vertically centered it against the *tallest column* (i.e. down by
     // the subbers) instead of sitting level with the header cards
     // themselves. Fixed July 16, 2026.
-    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:flex-start;margin-top:'+Math.max(0,(height-36)/2)+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#5b9bd5;font-size:calc(18px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
+    // Sept 20 2026, Larry: the + disappeared inside its circle once the
+    // Idea Storyboard's own default background became blue sky (#5b9bd5,
+    // same hex this + used for its own fill) -- + now matches the dashed
+    // circle's own border color instead, so it stays visible on any
+    // board background, not just the old flat navy.
+    tile.style.cssText='flex-shrink:0;width:36px;height:36px;align-self:flex-start;margin-top:'+Math.max(0,(height-36)/2)+'px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #a9cce3;border-radius:50%;color:#a9cce3;font-size:calc(18px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.9;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){ e.stopPropagation(); _sboardOpenAddHeaderPrompt(); });
     return tile;
@@ -838,7 +843,10 @@
     var tile=document.createElement('button');
     tile.className='sc-add-subber-tile';
     tile.title='Add a new card here';
-    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#5b9bd5;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.7;transition:opacity .15s,background .15s';
+    // Sept 20 2026, Larry: same fix as _sboardMakeAddHeaderTile above --
+    // + now matches its own dashed circle's border color rather than the
+    // board's #5b9bd5 blue-sky fill, so it no longer disappears into it.
+    tile.style.cssText='flex-shrink:0;width:30px;height:30px;margin:2px 0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed #cfe4f2;border-radius:50%;color:#cfe4f2;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;cursor:pointer;opacity:.9;transition:opacity .15s,background .15s';
     tile.textContent='+';
     tile.addEventListener('click', function(e){
       e.stopPropagation();

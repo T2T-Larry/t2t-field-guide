@@ -592,12 +592,22 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      injectSeaOfIdeasCluster in idea-storyboard-9710.js), defined here too
      so 9711's gear button looks right even opened before 9710 has ever
      been visited. Added July 17, 2026 when 9711's 🎨 Recolor button moved
-     behind this Options menu, mirroring 9710's own consolidation. */
-  .sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;
-    border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;
+     behind this Options menu, mirroring 9710's own consolidation.
+     Sept 20 2026, Larry (Parking Lot): "all buttons on all ID BANDS
+     should have white backgrounds, like on BB's ID BAND" -- this static
+     copy (loaded on every page, before any screen's own JS ever runs)
+     still had the old near-transparent "muted" look that idea-storyboard-
+     screens.js's own injected .sc-hdr-btn-muted rule (Sept 20 2026,
+     white bg/navy frame, matching IDBand.TOKENS.iconBtn) already moved
+     past for 9710 -- 9711's static markup (dream.html/index.html
+     #isx-gear-btn) was still reading this stale rule with nothing to
+     override it. Brought up to the same white/framed look so every ID
+     Band button matches BB's regardless of which screen loads first. */
+  .sc-hdr-btn-muted{background:#fff;border:1.5px solid #1a3a5c;color:#1a3a5c;
+    border-radius:6px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;
     cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;
-    opacity:.85;transition:background .15s,opacity .15s}
-  .sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}
+    transition:background .15s}
+  .sc-hdr-btn-muted:hover{background:#eef2f6}
   .sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}
 
   /* VIEW — top-right of both 1010 and 9711's own header band. Larry,

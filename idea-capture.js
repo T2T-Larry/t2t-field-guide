@@ -55,7 +55,12 @@
   var _icInputPendingLink=null; // {url, title, thumb}
 
   // ── NEW card fields, Sept 19 2026 (Larry's "NEW CARD" spec) ──
-  var _icProjectLabel='-';      // PROJECT eyebrow -- opts.projectLabel, or '-' (Parking Lot) if none given
+  // Sept 20 2026, Larry: the top project level is always MASTER, never a
+  // '-' -- a caller with no real project row underneath it (the true
+  // account-wide root, above every project) is still MASTER, not "no
+  // project". '-' now means Parking Lot only in the TOPIC field, which
+  // legitimately can be project-less.
+  var _icProjectLabel='MASTER'; // PROJECT eyebrow -- opts.projectLabel, or 'MASTER' if none given
   var _icTopicLabel='-';        // TOPIC field -- opts.topicLabel, or '-' (Parking Lot) if none given
   var _icEntryType='idea';      // 'idea' | 'task' | 'note' -- the O IDEA/TASK/NOTES selector
   // Cast, Sept 19 2026 round 5 -- Larry: one button only, styled exactly
@@ -1209,7 +1214,9 @@
     // screen can call this the same way — it never navigates, it just
     // puts the card on top of whatever's currently showing.
     // opts.projectLabel/opts.topicLabel (Sept 19 2026) — the PROJECT/TOPIC
-    // eyebrow text to show; omit or pass null/'' for Parking Lot ('-').
+    // eyebrow text to show; PROJECT omitted or null/'' falls back to
+    // 'MASTER' (Sept 20 2026 -- top project level is always MASTER, never
+    // '-'), TOPIC omitted or null/'' falls back to '-' (Parking Lot).
     // opts.projectId (round 3) — the real row id behind projectLabel, so
     // the PROJECT/TOPIC fields can be repicked from inside the card; a
     // caller that omits it just means those fields render read-only.
@@ -1220,7 +1227,7 @@
       _icHeaderId=opts.headerId||null;
       _icHeaderLabel=opts.headerLabel||'New';
       _icBoardId=opts.boardId||null;
-      _icProjectLabel=opts.projectLabel||'-';
+      _icProjectLabel=opts.projectLabel||'MASTER';
       _icTopicLabel=opts.topicLabel||'-';
       _icProjectId=opts.projectId||null;
       _icMode=opts.mode==='bb'?'bb':'idea';
