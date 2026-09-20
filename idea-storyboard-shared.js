@@ -106,13 +106,33 @@
   // VIEW-by-person filter state -- Aug 9 2026, upgraded to multi-select
   // Session 255 (Larry: check one or more people, board narrows to any
   // of their assignments in any role -- Stakeholder included). Empty
-  // array = everyone (default). Resets whenever the current project
-  // changes, same as BB resetting its own VIEW filter on a board switch.
+  // array = everyone (default).
+  // Sept 20 2026, Larry (Master BB): a member's VIEW choice used to be
+  // lost the moment they left this screen and came back -- e.g. a trip
+  // out to a Phase page and back (goPhase/backpack.js does a real
+  // location.href navigation, which reloads this whole script and
+  // re-runs this line) silently dropped whoever was checked, with no
+  // action from the member. Reset should only ever be the member's own
+  // choice (clicking "All" in the VIEW menu), never an incidental side
+  // effect of navigating around the app. Persisted to sessionStorage --
+  // survives any reload within this browser tab/session, clears itself
+  // when the tab closes, and never leaks to another traveler's session.
+  // See _sboardPersistViewFilter (same file) and its call sites in
+  // idea-storyboard-navigation.js and idea-storyboard-people.js.
+  var _sboardPersonFilterIds = (function(){
+    try{
+      var raw=sessionStorage.getItem('sboardViewFilterIds');
+      if(raw){ var arr=JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+    }catch(e){}
+    return [];
+  })();
+  function _sboardPersistViewFilter(){
+    try{ sessionStorage.setItem('sboardViewFilterIds', JSON.stringify(_sboardPersonFilterIds||[])); }catch(e){}
+  }
   // _sboardFilterMatchCardIds is the resolved Set of card ids the current
   // checked people show up in, any role; null means "not resolved yet"
   // (kept separate from "no filter set" so a render mid-fetch doesn't
   // flash the unfiltered board).
-  var _sboardPersonFilterIds = [];
   var _sboardFilterMatchCardIds = null;
   var _sboardAllRowsById = {};
   var _sboardVisibleHeaders = [];
@@ -502,6 +522,83 @@
           return;
         }
         _sboardDrillInto(topicRow);
+        return;
+      }
+      // Alt+H / Alt+S, Sept 20 2026 (Master BB, Larry: "shortcut to view
+      // card as Header or Topic... Alt-T = Topic, Alt-H = Header, Alt-S =
+      // Subber"). Same selection/guard shape as Alt+T just above -- these
+      // are its two siblings, rounding VIEW out to all three tiers a card
+      // can be looked at: zoomed all the way in (Topic, Alt+T), one notch
+      // out (Header, Alt+H), or nested back in its own Header (Subber,
+      // Alt+S). None of these move a card -- Tab/Shift+Tab already own
+      // actually restructuring the hierarchy; these only change which
+      // tier the selection is being VIEWED at, same as Ctrl+Up/Page Up
+      // already do, just landing on a named, predictable tier instead of
+      // that gesture's "climb exactly one, whatever that lands on" rule.
+      //
+      // Alt+H reuses _sboardDrillUpFrom as-is (idea-storyboard-header.js)
+      // -- for a nested Subber it climbs its own Header into view as the
+      // Topic, which is exactly "now showing as a Header" from the
+      // selected card's point of view. A card that's already top-level
+      // has no shallower Header tier to land on, so this just says so
+      // rather than silently promoting it all the way to Topic (that's
+      // what Alt+T is for).
+      if(k==='h' && e.altKey){
+        e.preventDefault();
+        if(!_sboardSelectedHeaderId || _sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          _sboardShowToast('Click a header or Subber first, then Alt+H.');
+          return;
+        }
+        var hRow=_sboardAllRowsById[_sboardSelectedHeaderId];
+        if(!hRow || hRow.content_type!=='header'){
+          _sboardShowToast('Only a header or Subber can be viewed as a Header.');
+          return;
+        }
+        if(String(hRow.cluster_id)===String(T2TShared.currentTopicId)){
+          _sboardShowToast('Already viewing this as a Header — Alt+T makes it the Topic instead.');
+          return;
+        }
+        _sboardDrillUpFrom(hRow);
+        return;
+      }
+      // Alt+S is Alt+H's mirror: only meaningful for a top-level Header (a
+      // nested Subber is already being viewed as one, nothing to do). It
+      // climbs the BOARD's own Topic up one level -- same move
+      // _sboardGoUpOneLevel does for the PARENT breadcrumb -- so the
+      // selected Header now nests inside its own Header tile on the new,
+      // shallower Topic, i.e. renders as a Subber. Inlined rather than
+      // calling _sboardGoUpOneLevel directly because that helper clears
+      // the selection first (right for a plain PARENT click, wrong here --
+      // the whole point is to keep this same card selected, now one tier
+      // further out, the same "stay selected through the climb" contract
+      // _sboardDrillUpFrom already keeps for Alt+H/Ctrl+Up).
+      if(k==='s' && e.altKey){
+        e.preventDefault();
+        if(!_sboardSelectedHeaderId || _sboardSelectedHeaderId===_SBOARD_TOPIC_SENTINEL){
+          _sboardShowToast('Click a header or Subber first, then Alt+S.');
+          return;
+        }
+        var sRow=_sboardAllRowsById[_sboardSelectedHeaderId];
+        if(!sRow || sRow.content_type!=='header'){
+          _sboardShowToast('Only a header or Subber can be viewed as a Subber.');
+          return;
+        }
+        if(String(sRow.cluster_id)!==String(T2TShared.currentTopicId)){
+          _sboardShowToast('Already viewing this as a Subber.');
+          return;
+        }
+        if(!_sboardCanGoUpFromTopic()){
+          _sboardShowToast('Already at the top of this board — no Header above to nest it under.');
+          return;
+        }
+        var curTopicRow=_sboardAllRowsById[T2TShared.currentTopicId];
+        var grandparentId=curTopicRow?(curTopicRow.cluster_id||null):null;
+        var keepSelId=sRow.id;
+        T2TShared.currentTopicId=grandparentId;
+        T2TShared.filter=grandparentId;
+        _sboardPersistLastTopic(grandparentId);
+        _sboardSelectedHeaderId=keepSelId;
+        _sboardSpinWhile(renderSeaBoard());
         return;
       }
       var mod=e.metaKey||e.ctrlKey;

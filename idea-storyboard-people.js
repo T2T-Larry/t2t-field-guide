@@ -2054,6 +2054,7 @@
             var idx=_sboardPersonFilterIds.indexOf(uid);
             if(t.checked && idx<0) _sboardPersonFilterIds.push(uid);
             if(!t.checked && idx>=0) _sboardPersonFilterIds.splice(idx,1);
+            if(typeof _sboardPersistViewFilter==='function') _sboardPersistViewFilter();
             // Sept 19 2026 -- keeps the VIEW head-icon button (added same
             // day, idea-storyboard-navigation.js) honest about the filter
             // when it's set from inside a card's Cast popup instead of

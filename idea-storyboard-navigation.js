@@ -2025,6 +2025,7 @@
         e.stopPropagation();
         menu.hidden=true;
         _sboardPersonFilterIds=[];
+        _sboardPersistViewFilter();
         _sboardSyncViewTriggerLabel();
         _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
       });
@@ -2041,6 +2042,7 @@
           var idx=_sboardPersonFilterIds.indexOf(uid);
           if(chk.checked && idx<0) _sboardPersonFilterIds.push(uid);
           if(!chk.checked && idx>=0) _sboardPersonFilterIds.splice(idx,1);
+          _sboardPersistViewFilter();
           allRow.className='sc-cdrop-row'+((!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) ? ' active' : '');
           _sboardSyncViewTriggerLabel();
           _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
