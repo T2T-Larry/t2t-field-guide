@@ -63,6 +63,29 @@
   // Promise.all in idea-storyboard-screens.js) and read synchronously
   // here afterward, same latency-hiding shape as the hidden-Types cache
   // just below in this file.
+  // Sept 20 2026, Larry (Master BB do-m card, with the full list of
+  // wanted board-variety defaults in the notes: Idea=blue sky,
+  // Task=cream, Plan=light brown, Share=yellow, Journey=light green,
+  // Dare=pink, Cast=light orange). That list is a different axis than
+  // the board_type_color store above -- board_type there is the
+  // ownership category (Personal/Client/Departmental/...), not which
+  // BOARD VARIETY this is, and there's no existing per-variety color
+  // mechanism to hang Share/Journey/Dare/Cast off yet (those aren't
+  // board_type_color surfaces, and Journey/Dare are whole separate
+  // pages, not a board kind this picker touches at all -- that's real
+  // new design, not a color swap, and shouldn't be guessed at blind).
+  // What IS a real, already-distinguished pair right here: IDEA vs
+  // PLAN (_sboardIsPlanBoard, shared global, idea-storyboard-shared.js)
+  // -- until now both fell back to the same navy default the moment no
+  // custom color was picked. Given a distinct out-of-the-box default
+  // for each, matching Larry's list, ahead of any custom pick.
+  // Task/Briefing Board already lands close to "cream" via its own
+  // default theme ('gold', bg #FDF6E8 -- briefing-board-ops.js THEMES).
+  // Share/Journey/Dare/Cast intentionally left alone -- see the do-m
+  // card's notes for what's still open there.
+  function _sboardDefaultBoardBg(){
+    return _sboardIsPlanBoard ? '#c9a876' /* light brown, "down to earth" */ : '#5b9bd5' /* blue sky */;
+  }
   function _sboardGetBoardBg(){
     return T2TData.getBoardTypeColor(_sboardActiveBoardType(), 'idea_bg');
   }
@@ -96,9 +119,11 @@
     // separate purple (#3a2564) default just on the header, clashing with
     // whatever the board itself was showing. Larry, August 1 2026: "make
     // the header panel part of the storyboard color... drop the purple
-    // band." Both default to navy together now; picking a custom
-    // Storyboard background recolors both the same way, same as before.
-    var bg=c||'#1a3a5c';
+    // band." Both default together now; picking a custom Storyboard
+    // background recolors both the same way, same as before. Default
+    // itself changed Sept 20 2026 -- was one flat navy for every board;
+    // now Idea/Plan get their own defaults (_sboardDefaultBoardBg above).
+    var bg=c||_sboardDefaultBoardBg();
     if(w) w.style.background=bg;
     if(areaEl) areaEl.style.background=bg;
     if(clusterEl) clusterEl.style.background=c||'';
@@ -122,7 +147,7 @@
     var swHTML=_sboardBoardBgPalette.map(function(p){
       return '<button class="sb-bg-swatch" data-c="'+p.c+'" title="'+p.n+'" style="width:36px;height:36px;border-radius:8px;background:'+p.c+';border:1.5px solid #cfe4f2;cursor:pointer;margin:3px"></button>';
     }).join('');
-    var cur=_sboardGetBoardBg()||'#1a3a5c';
+    var cur=_sboardGetBoardBg()||_sboardDefaultBoardBg();
     var typeLabelForBg=_sboardTypeLabel(_sboardActiveBoardType());
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">Storyboard background</div>'

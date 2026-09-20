@@ -2019,16 +2019,18 @@
         var hd=document.createElement('button');
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'')+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
-        // Floor dropped 10->8, Aug 21 2026 -- taller HEADER_H above should
-        // handle nearly everything at a normal size now; this lower floor
-        // is just the last-resort backstop for a genuinely long name, so
-        // it can still shrink a little further before word-break kicks in.
-        // Sept 8 2026, Larry: "DREAM PHASE should display on one line" --
-        // top-level phase/project column tiles now shrink text as far as
-        // it takes to stay on one line (like Briefing Board's own
-        // labels), instead of accepting a 2-line wrap once the height
-        // budget allowed it. oneLine:true, see text-fit.js.
-        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(8*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, true);
+        // Sept 20 2026, Larry (Master BB do-h card: "Allow headers to
+        // occupy 2 lines with larger type size") -- reverses the Sept 8
+        // 2026 "DREAM PHASE should display on one line" decision above.
+        // That oneLine:true forced a long name (e.g. two/three words) to
+        // keep shrinking all the way down to the 8px floor just to avoid
+        // ever wrapping -- Larry now wants the opposite trade: a 2-line
+        // wrap is fine, so the type can stay bigger. oneLine dropped
+        // (text-fit.js's normal per-word-width + height-budget check
+        // takes over, same as every other tile on this board), and the
+        // floor raised 8->12 so even a name that does need to shrink
+        // still lands at a readable size rather than the old backstop.
+        var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, false);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         hd.textContent=name;
         // Purpose used to have its own separate corner-flip editor; as of
