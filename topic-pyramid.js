@@ -90,14 +90,16 @@
     check.setAttribute('aria-hidden','true');
     row.appendChild(check);
 
-    var arrow=document.createElement('span');
-    arrow.className='tp-arrow tp-none'; // shown/armed below only for rows that may have children
-    row.appendChild(arrow);
-
     var label=document.createElement('span');
     label.className='tp-label';
     label.textContent=node.name||'(untitled)';
     row.appendChild(label);
+
+    // Sept 20 2026 -- Larry: arrow goes after the name, not before it
+    // (checkbox, name, then arrow) -- matches the order he pictured.
+    var arrow=document.createElement('span');
+    arrow.className='tp-arrow tp-none'; // shown/armed below only for rows that may have children
+    row.appendChild(arrow);
 
     if(isCurrent){
       row.title=node.name||'';
