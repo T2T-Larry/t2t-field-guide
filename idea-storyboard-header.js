@@ -363,7 +363,12 @@
     // that don't yet include it -- see index.html vs. believe/dare/
     // dream/journey.html).
     if(window.T2TMemberIdentity){
-      window.T2TMemberIdentity.fill({wrap:'sc-idn', org:'sc-idn-org', name:'sc-traveler-name'});
+      // Sept 20 2026, Larry: "MASTER lists can have NO org as they include
+      // all orgs associated with a member including a personal projects."
+      // _sboardIsAtMasterRoot (set by _sboardRenderProjectLabel, just below)
+      // is the same atRoot check PROJECT already keys its own MASTER label
+      // off of, so this stays in lockstep with wherever MASTER is showing.
+      window.T2TMemberIdentity.fill({wrap:'sc-idn', org:'sc-idn-org', name:'sc-traveler-name'}, {hideOrg:_sboardIsAtMasterRoot});
       return;
     }
     var travelerEl=document.getElementById('sc-traveler-name');
@@ -388,11 +393,16 @@
   // surfacing the retired internal name. PARENT (below) got the same
   // treatment the same day, so nothing on this screen still shows that
   // name.
+  // Sept 20 2026 -- read by _sboardRenderMemberName's hideOrg check (above).
+  // Set here rather than computed independently there, so "is this MASTER"
+  // has exactly one definition on this screen.
+  var _sboardIsAtMasterRoot=false;
   function _sboardRenderProjectLabel(topicRow){
     var titleTrigger=document.getElementById('sc-title-trigger');
     if(!titleTrigger) return;
     var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
     var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
+    _sboardIsAtMasterRoot=atRoot;
     if(atRoot){
       // Sept 7 2026, Larry: PROJECT reads MASTER at root (not PROJECTS --
       // that duplicated TOPIC's own root label, which stays PROJECTS).
@@ -403,6 +413,11 @@
       titleTrigger.textContent=projRow.text_content||'(untitled)';
       titleTrigger.title='Click to open '+(projRow.text_content||'this project')+'; double-click for the fast-jump list';
     }
+    // _sboardRenderMemberName already ran earlier in this same chrome
+    // refresh (_sboardUpdateHeaderChrome calls it before this function),
+    // using the PREVIOUS topic's _sboardIsAtMasterRoot value -- repaint now
+    // that it's current, rather than reordering that call site.
+    _sboardRenderMemberName();
   }
 
   function _sboardUpdateHeaderChrome(){

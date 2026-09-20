@@ -880,18 +880,26 @@
   // describing.
   function _bbSyncMasterSubtitle(isMaster){
     var sub=document.getElementById('bb-mh-subtitle');
-    if(!sub) return;
-    // Sept 8 2026 -- a single-board traveler's root (PROJECTS/MASTER)
-    // shows every task unfiltered now (_bbProjectFilterCards, driven by
-    // _bbProjectFilter()), not a depth-capped walk, so its own
-    // subtitle says so instead of citing a depth number that no longer
-    // applies to it.
-    var isAccountRoot = isMaster && _bbSingleBoardMode() && !_bbProjectFilter();
-    sub.textContent = !isMaster
-      ? 'A control and communication tool.'
-      : isAccountRoot
-        ? 'Master Briefing Board — every task, every project, unfiltered.'
-        : 'Master Briefing Board — every layer below, up to '+_bbMasterRollupDepth()+' deep.';
+    if(sub){
+      // Sept 8 2026 -- a single-board traveler's root (PROJECTS/MASTER)
+      // shows every task unfiltered now (_bbProjectFilterCards, driven by
+      // _bbProjectFilter()), not a depth-capped walk, so its own
+      // subtitle says so instead of citing a depth number that no longer
+      // applies to it.
+      var isAccountRoot = isMaster && _bbSingleBoardMode() && !_bbProjectFilter();
+      sub.textContent = !isMaster
+        ? 'A control and communication tool.'
+        : isAccountRoot
+          ? 'Master Briefing Board — every task, every project, unfiltered.'
+          : 'Master Briefing Board — every layer below, up to '+_bbMasterRollupDepth()+' deep.';
+    }
+    // Sept 20 2026 -- _bbRenderTravelerName's own hideOrg check reads
+    // _bbCurrentTopicIsRoot, which this function's caller (_bbRenderTopicField)
+    // only just finished setting; _bbRenderTravelerName itself already ran
+    // earlier in the same chrome refresh (with the PREVIOUS board's value),
+    // so it's repainted again here, right where isMaster becomes current,
+    // rather than reordering every call site above.
+    _bbRenderTravelerName();
   }
   // Children of the current TOPIC, Sept 5 2026 -- same reserved-name
   // exclusion and sort order as the Idea Board's own
@@ -1357,7 +1365,13 @@
   // file has loaded.
   function _bbRenderTravelerName(){
     if(window.T2TMemberIdentity){
-      window.T2TMemberIdentity.fill({wrap:'bb-idn', org:'bb-idn-org', logo:'bb-idn-logo', name:'bb-traveler-name'});
+      // Sept 20 2026, Larry: "MASTER lists can have NO org as they include
+      // all orgs associated with a member including a personal projects."
+      // _bbCurrentTopicIsRoot (set by _bbRenderTopicField, just below) is
+      // the same flag PROJECT/TOPIC already key MASTER's label off of, so
+      // reusing it here keeps this in lockstep with wherever MASTER is
+      // showing rather than tracking it separately.
+      window.T2TMemberIdentity.fill({wrap:'bb-idn', org:'bb-idn-org', logo:'bb-idn-logo', name:'bb-traveler-name'}, {hideOrg:_bbCurrentTopicIsRoot});
       return;
     }
     var m=T().getMember && T().getMember();

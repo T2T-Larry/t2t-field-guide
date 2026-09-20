@@ -46,14 +46,21 @@
   // shows above it only if one is set; logo shows right of the org
   // name only if one is set. With no org name, a logo (if any) simply
   // sits beside the member name so it is never orphaned.
-  function fill(ids){
+  // opts.hideOrg (Larry, Sept 20 2026): a MASTER list spans every org
+  // (and any personal boards) the member belongs to, so no single org
+  // name applies there -- callers standing at MASTER root pass
+  // hideOrg:true to blank the org line regardless of what's on the
+  // member's profile. The profile field itself is untouched; this is
+  // display-only, same treatment the Logo hide got below.
+  function fill(ids, opts){
     ids = ids || {};
+    opts = opts || {};
     var m = member();
     var wrap = ids.wrap && document.getElementById(ids.wrap);
     var orgEl = ids.org && document.getElementById(ids.org);
     var logoEl = ids.logo && document.getElementById(ids.logo);
     var nameEl = ids.name && document.getElementById(ids.name);
-    var org = (m.org_name || '').trim();
+    var org = opts.hideOrg ? '' : (m.org_name || '').trim();
     var logo = (m.logo_url || '').trim();
     if(nameEl && m.display_name) nameEl.textContent = m.display_name.toUpperCase();
     if(orgEl){
