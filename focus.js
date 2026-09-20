@@ -138,6 +138,7 @@
       var addRow=document.createElement('div');
       addRow.style.cssText='display:flex;gap:6px;padding:8px 4px 2px;border-top:'+(options.length?'1px solid #e4e0d8;':'none;')+'margin-top:'+(options.length?'4px':'0');
       var input=document.createElement('input');
+      input.autocomplete='off'; // same Chrome-autofill fix as the other header-name inputs (Sept 20 2026)
       input.placeholder='+ New '+label.toLowerCase();
       input.style.cssText='flex:1;font-family:sans-serif;font-size:13px;border:1.5px solid #b0a898;border-radius:6px;padding:6px 8px';
       var addBtn=document.createElement('button');

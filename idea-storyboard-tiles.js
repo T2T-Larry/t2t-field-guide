@@ -706,12 +706,19 @@
   }
 
   function _sboardOpenAddHeaderPrompt(){
+    // Sept 20 2026 (Larry: "clicking on the header name drops a useless
+    // set of options") -- not app code, Chrome's own form-field autofill.
+    // This input keeps the same id across every use and had no
+    // autocomplete attribute, so Chrome falls back to keying its "field
+    // history" off the id and offers every header name ever typed here
+    // as a suggestion dropdown -- exactly backwards when the whole point
+    // is typing a brand-new name. autocomplete="off" stops it.
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center;position:relative">'
       +'<button class="sc-ov-btn" id="sb-addheader-close" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1">✕</button>'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">New header</div>'
-      +'<input id="sb-addheader-input" type="text" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
+      +'<input id="sb-addheader-input" type="text" autocomplete="off" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
       +'<div id="sb-addheader-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addheader-go" style="flex:1">Create</button></div>'
       +'</div>';
