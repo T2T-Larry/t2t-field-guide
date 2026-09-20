@@ -407,7 +407,8 @@
       // line instead of the plain single-line text the class assumes.
       +'.bb-cdrop-row.bb-view-person-row{display:flex;align-items:center;gap:6px}'
       +'.bb-cdrop-row.bb-view-person-row input[type=checkbox]{margin:0;flex:none}'
-      +'.bb-view-person-tag{opacity:.6;font-size:.85em;font-weight:400}'
+      // .bb-view-person-tag ("• task only" label) dropped Sept 20 2026 --
+      // see briefing-board-master-nav.js's VIEW row build for why.
       +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
       // VIEW dropdown roles + inline add, Aug 13 2026 (Larry): same
       // change as the Idea Board's own sc-view-row/-addform -- the

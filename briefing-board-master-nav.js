@@ -2086,7 +2086,13 @@
       teamRow.addEventListener('click', function(e){
         e.stopPropagation();
         menu.hidden=true;
-        _bbPersonFilterIds=[];
+        // In-place clear (.length=0), not a reassignment -- shared with
+        // the Idea/Plan Storyboard's own name for this same array (Sept
+        // 20 2026 unification, briefing-board-master.js) -- a plain
+        // "=[]" would swap this LOCAL name onto a new array and quietly
+        // break the sync.
+        _bbPersonFilterIds.length=0;
+        _bbPersistViewFilter();
         _bbSourceFilter=null;
         _bbSyncViewTriggerLabel();
         _bbRecomputeFilterMatches().then(renderBoard);
@@ -2096,7 +2102,15 @@
         var checked=_bbPersonFilterIds && _bbPersonFilterIds.indexOf(String(m.user_id))>=0;
         var row=document.createElement('label');
         row.className='bb-cdrop-row bb-view-person-row';
-        row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(checked?' checked':'')+'> <span>'+_esc(m.name||m.email||'(unnamed)')+(m.assignedOnly?' <span class="bb-view-person-tag" title="Has a task here, not on this board’s roster">• task only</span>':'')+'</span>';
+        // "• task only" tag dropped, Sept 20 2026 (Larry, Master BB:
+        // "list only the names... Call Sheet can ID roles and contact
+        // info") -- VIEW just needs a name to check, not a status label;
+        // anyone in this list already has a real task at this level
+        // (that's how _bbAssignedRosterRows put them here), and the Call
+        // Sheet (👥) is the one place that spells out roles/contact
+        // detail. m.assignedOnly itself is untouched -- still exactly
+        // how this list decides who to include, just no longer shown.
+        row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(checked?' checked':'')+'> <span>'+_esc(m.name||m.email||'(unnamed)')+'</span>';
         var chk=row.querySelector('input');
         chk.addEventListener('change', function(){
           _bbCastFilterChange(m.user_id, chk.checked);
