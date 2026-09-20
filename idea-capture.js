@@ -175,9 +175,18 @@
         // is a structural choice (this becomes a bucket other cards file
         // under), not a content flavor, same precedence the old
         // Make-this-a-Header toggle already had.
+        //
+        // Sept 20 2026: TASK and NOTES no longer reach this function at
+        // all -- _icCommitIdeaPanel now diverts them to the Briefing
+        // Board (_icSaveBBCard) and the Notebook (_icSaveNotebookCard)
+        // respectively before this is ever called, using this same
+        // HEADER-wins check. So contentType here only ever needs
+        // 'image', 'header', or plain 'text' -- the ideas table's
+        // content_type column was never widened to allow 'task'/'note'
+        // (see content_type_check) and doesn't need to be, now that
+        // neither value is ever written to it.
         var contentType = imageUrl ? 'image' : 'text';
         if(!imageUrl && (_icIdeaMode==='header' || _icIsAutoHeaderText(rawText))) contentType='header';
-        else if(!imageUrl) contentType = (_icEntryType==='task') ? 'task' : (_icEntryType==='note') ? 'note' : 'text';
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: contentType,
@@ -314,11 +323,11 @@
   // in the signature so both call sites below don't need touching
   // again; personIdOverride lets the link-save path pass in the value
   // it captured BEFORE _icClosePopup() reset _icCastPersonId.
-  function _icMaybeApplyCast(row, keepOpenCard, personIdOverride){
+  function _icMaybeApplyCast(row, keepOpenCard, personIdOverride, cardTypeOverride){
     var personId = (personIdOverride!==undefined) ? personIdOverride : _icCastPersonId;
     _icCastPersonId=null; _icCastPersonName='';
     if(!row || !row.id || !personId) return;
-    var cardType = (_icMode==='bb') ? 'briefing_card' : 'idea';
+    var cardType = cardTypeOverride || ((_icMode==='bb') ? 'briefing_card' : 'idea');
     if(window.T2TStoryboard && typeof window.T2TStoryboard.assignPrimaryDirect==='function'){
       window.T2TStoryboard.assignPrimaryDirect(row, cardType, personId)
         .then(function(res){ if(res && !res.ok) console.warn('NEW card: PRIMARY assign failed', res.msg); });
@@ -364,9 +373,68 @@
     }
     if(typeof renderBoard==='function') renderBoard();
     var row={id:newCardId};
-    if(_icOnSaved) _icOnSaved(row);
-    _icMaybeApplyCast(row);
-    _icResetIdeaPanelForNext(false);
+    // Only the Briefing Board's own NEW door passes an onSaved that
+    // expects a BB card back (today it passes none at all -- see
+    // openAddCard). A save diverted here from another screen's NEW
+    // button (Sept 20 2026: TASK entries) carries THAT screen's own
+    // onSaved, built to add an *ideas*-table row to its own board --
+    // calling it with this synthetic {id} would add a broken tile
+    // there for a card that doesn't belong on that board at all, so
+    // it's skipped whenever this save wasn't opened as a genuine 'bb'
+    // card to begin with.
+    if(_icMode==='bb' && _icOnSaved) _icOnSaved(row);
+    _icMaybeApplyCast(row, false, undefined, 'briefing_card');
+    _icResetIdeaPanelForNext(false, 'Sent to Briefing Board');
+  }
+
+  // Notebook save path, Sept 20 2026 -- Larry, asked where NOTES should
+  // go: "Where is the Notebook data kept? That is where this info
+  // goes." journal_notes is that table -- the exact same one
+  // notebook-open.js's own save and backpack.js's saveEntryToSupabase
+  // already write to (user_id, note_text, topic, page_context,
+  // entry_date, created_at -- see notebook-open.js's file header for
+  // the shared shape). This is a fresh insert every time, same as
+  // backpack.js's own quick-save -- multiple NOTES cards saved the same
+  // day become multiple rows, same as writing them by hand straight
+  // into the Notebook would, and they show up in the Notebook's own
+  // history list next time it's opened. No card_roles concept exists
+  // for a journal note, so unlike _icSaveBBCard this doesn't touch
+  // Cast/PRIMARY at all -- just clears whatever was armed so a stray
+  // pick doesn't leak into the next card.
+  async function _icSaveNotebookCard(){
+    var ta=document.getElementById('isx-idea-text');
+    var rawText=(ta?ta.value:'').trim();
+    if(!rawText) return;
+    var text=_icComposeText(rawText);
+    var savedOk=false, saveErr=null;
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user){ saveErr='Not signed in.'; }
+      else{
+        var now=new Date();
+        var dateStr=now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+        var ins=await _sb.from('journal_notes').insert({
+          user_id:user.id, note_text:text, topic:null,
+          page_context:'Idea Board', entry_date:dateStr, created_at:now.toISOString()
+        });
+        if(ins.error){ saveErr=ins.error.message||String(ins.error); console.error('_icSaveNotebookCard insert error:', ins.error); }
+        else savedOk=true;
+      }
+    }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_icSaveNotebookCard exception:', e); }
+
+    if(savedOk){
+      _icCastPersonId=null; _icCastPersonName='';
+      _icResetIdeaPanelForNext(false, 'Sent to Notebook');
+    } else {
+      var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
+      if(errBox){
+        var errEl=document.createElement('div');
+        errEl.style.cssText='color:#A32D2D;font-size:11px;text-align:center;margin-top:6px';
+        errEl.textContent='Save failed: '+(saveErr||'unknown error');
+        errBox.appendChild(errEl);
+      }
+    }
   }
 
   // RULE: every screen reveals its OWN number on triple-click — never a
@@ -421,7 +489,7 @@
   // single one breaks that rhythm. Header saves get the same treatment,
   // plus a visible confirmation, since a header row never renders as a
   // board tile and would otherwise look like nothing happened.
-  function _icResetIdeaPanelForNext(wasHeader){
+  function _icResetIdeaPanelForNext(wasHeader, flashText){
     var ta=document.getElementById('isx-idea-text');
     if(!ta){
       _icClosePopup();
@@ -441,7 +509,10 @@
       var flash=document.createElement('div');
       flash.className='isx-save-flash';
       flash.style.cssText='color:#2f7a4f;font-size:11px;text-align:center;margin-top:4px';
-      flash.textContent = wasHeader ? 'Header added \u2014 add ideas here \u2193' : 'Saved \u2014 keep going';
+      // flashText lets a caller name a different destination (Sept 20
+      // 2026: a TASK save routed to the Briefing Board) -- defaults to
+      // the plain same-board confirmation otherwise.
+      flash.textContent = flashText || (wasHeader ? 'Header added \u2014 add ideas here \u2193' : 'Saved \u2014 keep going');
       card.appendChild(flash);
       setTimeout(function(){ if(flash && flash.parentNode) flash.parentNode.removeChild(flash); }, 2200);
     }
@@ -581,12 +652,38 @@
     // comment) -- a pending image/link is a dead end there rather than
     // silently mis-saving, so it stops here with a plain explanation
     // instead of reaching the ideas-table-only save paths below.
-    if(_icMode==='bb'){
+    //
+    // Sept 20 2026, Larry: "At any moment a person might think of an
+    // idea or a task -- items should move to the appropriate board
+    // immediately." So TASK now routes to the Briefing Board through
+    // the same _icSaveBBCard door the BB screen's own NEW button uses
+    // (Sept 19), no matter which screen's NEW button this card was
+    // opened from -- not only when _icMode is already 'bb'. NOTES
+    // routes the same way to the Notebook (journal_notes -- Larry:
+    // "That is where this info goes"), via the new _icSaveNotebookCard
+    // below. HEADER still wins over either -- a header is a structural
+    // bucket on the Idea board's own hierarchy, never a BB card or a
+    // Notebook page -- matching HEADER's existing precedence over
+    // IDEA/TASK/NOTES in _icSaveCard, auto-detected header text
+    // (trailing : or ?) included, same as that precedence already
+    // checks.
+    var _icCommitRawText=(function(){ var t=document.getElementById('isx-idea-text'); return t?t.value:''; })();
+    var _icCommitIsHeader = (_icIdeaMode==='header') || (!_icInputPendingImageFile && _icIsAutoHeaderText(_icCommitRawText));
+    var wantsBB = (_icMode==='bb') || (_icEntryType==='task' && !_icCommitIsHeader);
+    if(wantsBB){
       if(_icInputPendingImageFile || _icInputPendingLink){
         _icShowFormatBoundaryMessage('Briefing Board cards are text-only for now — type it in as text instead.');
         return;
       }
       _icSaveBBCard();
+      return;
+    }
+    if(_icEntryType==='note' && !_icCommitIsHeader){
+      if(_icInputPendingImageFile || _icInputPendingLink){
+        _icShowFormatBoundaryMessage('Notebook cards are text-only for now — type it in as text instead.');
+        return;
+      }
+      _icSaveNotebookCard();
       return;
     }
     if(_icInputPendingImageFile){
