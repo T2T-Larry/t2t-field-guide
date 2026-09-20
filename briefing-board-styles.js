@@ -535,7 +535,12 @@
       // positions VIEW as the last link in the PROJECT-TOPIC-STORYBOARD-
       // VIEW chain rather than off Board Type's own midpoint math.
       +'#bb-view-wrap{position:absolute;top:0;left:0}'
-      +'.bb-icon-btn{width:30px;height:30px;border-radius:6px;background:#fff;border:1.5px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
+      // Sept 20 2026 -- now reads size/radius from IDBand.TOKENS.iconBtn
+      // (the shared ID Band icon-row token) instead of its own hard-coded
+      // numbers, since this is the canonical look every board's VIEW/
+      // RETURN/GEAR/CLOSE row is meant to match (background/border stay
+      // board-specific -- white bg + this board's own accent frame).
+      +'.bb-icon-btn{width:'+IDBand.TOKENS.iconBtn.size+'px;height:'+IDBand.TOKENS.iconBtn.size+'px;border-radius:'+IDBand.TOKENS.iconBtn.radius+'px;background:#fff;border:'+IDBand.TOKENS.iconBtn.borderWidth+'px solid var(--bb-accent);display:flex;align-items:center;justify-content:center;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;color:var(--bb-ink);padding:0}'
       // Dashed-circle (+) everywhere, Aug 13 2026 (Larry: "on all boards
       // (+) should be surrounded by a dotted line for consistency") --
       // same modifier pattern as .bb-key-add over .bb-key-btn: keep the

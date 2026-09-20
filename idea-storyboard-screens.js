@@ -468,12 +468,6 @@
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
-        // Fixed Trash can, Sept 20 2026 -- same 44px circle/bottom-right
-        // spec as Briefing Board's .bb-trash (briefing-board-styles.js)
-        // and Session's .isx-trash-fixed (style.css), so the affordance
-        // reads identically across every board kind on the site.
-        +'.sc-trash{position:absolute;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #1a3a5c;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80}'
-        +'.sc-trash.sc-trash-dropready{outline:2px solid #b8562f;outline-offset:2px}'
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
         +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:calc(10px * var(--fg-text-scale,1))}'
         // Sept 5 2026 -- found the real source of Larry's "still see a
@@ -613,20 +607,28 @@
         +'.sb-people-call{border-style:solid;border-color:#5b9bd5;color:#5b9bd5}'
         +'.sb-people-call:hover{background:rgba(255,255,255,.1);border-color:#fff;color:#fff}'
         +'.sc-hdr-frame{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:0 12px;box-sizing:border-box;height:30px}'
-        +'.sc-hdr-btn-muted{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:0 12px;height:30px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;opacity:.85;transition:background .15s,opacity .15s}'
-        +'.sc-hdr-btn-muted:hover{background:rgba(255,255,255,.14);opacity:1}'
-        +'.sc-hdr-btn-icon{padding:0;width:30px;font-size:calc(14px * var(--fg-text-scale,1))}'
-        // VIEW, Sept 19 2026 -- Larry: "Can head icon be gray to be more
-        // visible?" The usual sc-hdr-btn-muted look (near-transparent
-        // white on navy) read too faint for a button that's meant to be
-        // found at a glance -- solid gray instead, same idea as Return/
-        // Utility's frame but filled in rather than just outlined.
-        +'#sc-view-trigger{background:#9aa5b1;border-color:#9aa5b1;opacity:1}'
-        +'#sc-view-trigger:hover{background:#aab4bf}'
-        // VIEW's "a filter is on" state -- same idea as BB's own
-        // .bb-icon-btn.bb-view-on (briefing-board-styles.js), solid accent
-        // fill instead of gray, so it's obvious at a glance both that VIEW
-        // exists and that the board isn't showing everyone right now.
+        // Sept 20 2026, Larry: "ID BAND buttons need white backgrounds.
+        // Same for ALL boards now and in future" -- this used to be a
+        // near-transparent "muted" look (readable on BB's own top band,
+        // not on the Idea Board's own), which is exactly why VIEW below
+        // had needed its own one-off solid-gray override just to stay
+        // visible. Brought up to IDBand.TOKENS.iconBtn -- BB's own
+        // .bb-icon-btn white-bg/framed look, now the shared source for
+        // this row on every board -- so VIEW/RETURN/GEAR/CLOSE match BB
+        // exactly (only the frame color stays this board's own navy).
+        // No opacity here (unlike the old muted look) -- same reasoning
+        // as dropping the pure-white check in the comment above: a
+        // partly-transparent white over the board's own color isn't a
+        // white background, it's white blended with whatever's behind
+        // it, which is the exact drift this pass is closing.
+        +'.sc-hdr-btn-muted{background:#fff;border:'+IDBand.TOKENS.iconBtn.borderWidth+'px solid #1a3a5c;color:#1a3a5c;border-radius:'+IDBand.TOKENS.iconBtn.radius+'px;padding:0 12px;height:'+IDBand.TOKENS.iconBtn.size+'px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.03em;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;justify-content:center;transition:background .15s}'
+        +'.sc-hdr-btn-muted:hover{background:#eef2f6}'
+        +'.sc-hdr-btn-icon{padding:0;width:'+IDBand.TOKENS.iconBtn.size+'px;font-size:calc(14px * var(--fg-text-scale,1))}'
+        // VIEW's one-off gray override is gone now that the shared white
+        // look is itself visible against the Idea Board's own top band --
+        // it just needed the same white/framed treatment as its siblings,
+        // not a special color. Its "a filter is on" state stays exactly
+        // as it was (a real state to show, not a background-color fix).
         +'#sc-view-trigger.sc-view-on{background:#5b9bd5;border-color:#5b9bd5;color:#fff}'
         +'.sc-hdr-frame .sc-hdr-eyebrow{color:rgba(169,204,227,.6)}'
         +'button.sc-hdr-eyebrow{background:none;border:none;padding:0;margin:0 0 3px;cursor:pointer;font-family:inherit;width:auto}'
@@ -1074,23 +1076,17 @@
         // reading like a third b-sc-* variant of the same old confusion.
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-return" title="Return to previous screen">↩︎</button>'
         +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-gear" title="Utility">⚙️</button>'
-        +'<button class="sc-ov-btn" id="b-sc-close" title="Return">✕</button>'
+        // Sept 20 2026 -- was .sc-ov-btn, the generic overlay-popup button
+        // class (pill-shaped, auto-width -- built for Save/Cancel rows
+        // elsewhere in this file), not this row's own icon-button family.
+        // That's why Close sat differently shaped from its three
+        // siblings; matches them now (same class VIEW/RETURN/GEAR use).
+        +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-close" title="Return">✕</button>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
       +'<div id="sc-board-wrap"></div>'
-      // Fixed Trash can, Sept 20 2026 (Larry: "Add Trash can to lower
-      // right corner of Ideas Board... to every board in the future") --
-      // same 44px circle/bottom-right-corner convention Briefing Board
-      // (.bb-trash) and the Session screen (9711's .isx-trash-fixed)
-      // already use, now on Idea/Plan too (both storyboard kinds render
-      // through this one shared screen). Sibling of #sc-board-wrap inside
-      // .sw, same reasoning as Briefing Board's own comment on .bb-trash:
-      // pinned to the screen itself so it never scrolls off with the
-      // board content. Drop handling in _sboardWireTrashCan
-      // (idea-storyboard-tiles.js).
-      +'<div class="sc-trash" id="sc-trash" title="Trash"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg></div>'
       +'</div></div>';
     fg.appendChild(div.firstChild);
     // These live as direct children of fg-root, NOT inside the Storyboard's
@@ -1122,7 +1118,6 @@
     T().wire('sc-return', function(){
       if(!IDBand.jumpToRecorded()) _sboardShowToast('Nothing to return to yet');
     });
-    _sboardWireTrashCan();
     T2TLogo.wire(_sboardLogoCfg);
     _sboardWireBoardKindDropdown();
     // _sboardWireProjectHeaderDropdown(), Sept 19 2026 -- re-pointed at

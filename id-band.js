@@ -88,7 +88,20 @@
       // and Board Type are the same size" actually means; 30 here was
       // this token's first pass, written before anything read it.
       fieldBox: { fontSize:14, height:30, maxWidth:120, radius:8, padding:'2px 12px', lineHeight:1.15 },
-      fieldCaret: { width:24, glyphSize:14 }
+      fieldCaret: { width:24, glyphSize:14 },
+
+      // The VIEW/RETURN/GEAR/CLOSE icon row riding the far right of
+      // every ID Band (bb-icon-btn / sc-hdr-btn-muted+sc-hdr-btn-icon).
+      // Sept 20 2026, Larry: "ID BAND buttons need white backgrounds.
+      // Same for ALL boards now and in future" -- Briefing Board's own
+      // .bb-icon-btn (white bg, 30x30, 6px radius, board-accent frame)
+      // was already right; the Idea Board's version had drifted to a
+      // near-transparent "muted" look (readable on BB's own top band,
+      // not on the Idea Board's) plus a solid-gray one-off for VIEW.
+      // Both are brought up to this token now, and it's the one place
+      // a future Plan/Share board's own icon row should read from
+      // instead of hand-copying either board's numbers again.
+      iconBtn: { size:30, radius:6, borderWidth:1.5 }
     }
   };
 
