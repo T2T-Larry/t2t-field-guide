@@ -719,8 +719,14 @@
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         if(c.color) el.style.background=c.color;
-        // Corner badge, Session 234 (Aug 21) -- 👥's ★ primary doer is
-        // the one and only source (same as the Idea Card's own badge).
+        // Corner badge, Session 234 (Aug 21) -- 👥's Cast is the one and
+        // only source (same as the Idea Card's own badge). Sept 21 2026,
+        // Larry: switched from the ★ Primary Doer star to the PRIMARY
+        // role (accountable person) as the signal this badge reads --
+        // see the comment above _sboardFetchRoleSummaries in
+        // idea-storyboard-people.js for the full reasoning. The ★ star
+        // is still a real, separate marker on the Call Sheet; it just no
+        // longer drives this particular badge.
         // cardPrimaryUidRaw returns undefined before this pass's
         // ensureCardPrimaryRaw fetch lands (reads as "nothing yet" until
         // then -- next re-render fills it in), null once fetched with

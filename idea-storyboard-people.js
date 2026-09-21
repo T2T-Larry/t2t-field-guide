@@ -144,6 +144,24 @@
   // row) -- reduced to {starred: uid|null, people: [uid,...]} per card so
   // the "exactly one" / "nobody" / "ambiguous" cases below can tell apart
   // without a second round trip for the common cases.
+  //
+  // Sept 21 2026, Larry (Master BB, "Voice Input" card): the front-of-card
+  // badge/"starred" signal below now reads role==='primary' (the
+  // accountable person -- "PRIMARY is the person responsible... the
+  // first person identified"), not card_roles.is_primary (the ★ Primary
+  // Doer star, "a job assigned by the PRIMARY"). Those two were
+  // deliberately split Sept 12 2026 so they could differ (a card can have
+  // an accountable PRIMARY and a separate ★ Doer actually executing), but
+  // the card-front badge itself was still wired to the star -- this
+  // flips it to read PRIMARY instead, per Larry's explicit call. The ★
+  // star itself is untouched everywhere else (roster list "★ DOER" tag,
+  // toggle button, Call Sheet) -- still a real, separate marker, it just
+  // no longer drives the front-of-card initials. role='primary' already
+  // carries the same "at most one per card" guarantee is_primary used to
+  // (see _csSaveRole/_csPriorPrimaryToStakeholder), so every downstream
+  // "exactly one / nobody / ambiguous" case below, and the climb-to-
+  // parent-project fallback, keeps working unchanged -- just fed a
+  // different definition of "who's starred."
   async function _sboardFetchRoleSummaries(cardType, ids){
     var out={};
     (ids||[]).forEach(function(id){ out[id]={starred:null, people:[], roles:{}}; });
@@ -172,7 +190,7 @@
         if(!res.error && res.data){
           res.data.forEach(function(r){
             var bucket=out[r.card_id]; if(!bucket) return;
-            if(r.is_primary) bucket.starred=r.user_id;
+            if(r.role==='primary') bucket.starred=r.user_id;
             if(bucket.people.indexOf(r.user_id)===-1){ bucket.people.push(r.user_id); bucket.roles[r.user_id]=r.role; }
           });
         }
