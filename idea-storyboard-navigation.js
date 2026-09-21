@@ -194,9 +194,27 @@
   // container, not itself self-scoped) -- climbing to true root would
   // now overshoot past the actual project and return Idea Storyboards
   // itself for everything, which is what this guards against.
+  // Sept 21 2026, Larry: "MASTER should never show as a PROJECT unless
+  // TOPIC = PROJECTS." CAST and SHARE (and any other structural header
+  // pinned directly under MASTER, like FIELD GUIDE) were never given
+  // their own self-scoping the way a real project root is -- their
+  // topic_scope_id points at the shared MASTER root, not at themselves
+  // -- so the old self-scoped-only stop condition climbed straight
+  // past them and didn't stop until it reached MASTER itself, which is
+  // exactly the true root and made PROJECT read MASTER for anything
+  // nested under one of these headers (CAST showed PROJECT=MASTER
+  // instead of PROJECT=SHARE, its real direct parent). Now also stops
+  // the moment the climb reaches a row whose own parent (cluster_id) IS
+  // the MASTER root -- that row is a direct child of MASTER, so it's
+  // the right thing to show as PROJECT whether or not it happens to be
+  // self-scoped, same as SHARE being CAST's answer here. Self-scoped
+  // real projects (Field Guide, T2T, etc.) are unaffected -- they still
+  // stop immediately at their own root, before this check is ever
+  // reached.
   function _sboardProjectRowFor(row){
     var cur=row, guard=0;
     while(cur && !(cur.topic_scope_id && String(cur.topic_scope_id)===String(cur.id)) && cur.cluster_id && guard<25){
+      if(_sboardIdeaStoryboardsRootId && String(cur.cluster_id)===String(_sboardIdeaStoryboardsRootId)) break;
       var parent=_sboardAllRowsById[cur.cluster_id];
       if(!parent) break;
       cur=parent; guard++;
