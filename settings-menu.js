@@ -90,8 +90,18 @@ in their own file-header comments the next time they're touched).
     if (!cfg.myinfo && window.T2TMemberIdentity) {
       cfg.myinfo = { onClick: function(){ window.T2TMemberIdentity.openEditor(); } };
     }
+    // "Shortcuts List" (Sept 21 2026, Larry: "Add SHORTCUTS LIST to
+    // Utilities button containing all shortcuts currently in use on
+    // website") -- same self-populating pattern as My Info just above:
+    // a plain reference card (shortcuts-list.js), no board or screen
+    // state involved, so every caller gets it automatically without
+    // passing anything.
+    if (!cfg.shortcuts && window.T2TShortcutsList) {
+      cfg.shortcuts = { onClick: function(){ window.T2TShortcutsList.open(); } };
+    }
     return [
       item('myinfo',      '&#128100;', 'My Info',      'My Info is not available yet'),
+      item('shortcuts',   '&#8984;',   'Shortcuts List', 'Shortcuts List is not available yet'),
       // Sept 12 2026, Larry: "remove the People screen ... CAST is our
       // source of truth" -- Idea Storyboard/Desktop/Session no longer
       // pass an onClick for this, so it renders disabled with this
