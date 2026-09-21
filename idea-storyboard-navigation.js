@@ -1297,7 +1297,20 @@
       if(existing.data && existing.data.length){
         var freshExisting=await _sb.from('ideas').select('*').eq('id', existing.data[0].id).maybeSingle();
         if(freshExisting.error) throw freshExisting.error;
-        if(freshExisting.data) _sboardDrillInto(freshExisting.data);
+        // Sept 21 2026 fix -- Larry: "Selected Website project, then Plan
+        // but topic changed to PROJECTS as did the project?? Should have
+        // been Website Plan." Root cause: this row is fetched straight
+        // from Supabase and was never written into _sboardAllRowsById
+        // (the account-wide cache _sboardProjectRowFor/chrome-render climb
+        // off), so the very next chrome refresh couldn't find it, fell
+        // into the "unknown topic" branch of _sboardUpdateHeaderChrome,
+        // and showed the root-level MASTER/PROJECTS labels instead of the
+        // Plan board's own project. _sboardJumpToProjectKind already does
+        // this caching correctly (line ~1430) -- same fix, applied here.
+        if(freshExisting.data){
+          _sboardAllRowsById[freshExisting.data.id]=freshExisting.data;
+          _sboardDrillInto(freshExisting.data);
+        }
         return;
       }
       // Aug 27 2026, Larry: first time building a Plan board for a project,
@@ -1337,6 +1350,11 @@
       _sboardShowToast('Building your Plan board…');
       try{
         var newRoot=await _sboardDuplicateProjectAsPlan(ideaRow);
+        // Sept 21 2026 fix -- see the matching comment in
+        // _sboardOpenOrCreatePlanBoard above: a brand-new row has to be
+        // cached before drilling into it, or the chrome can't find it and
+        // falls back to the root-level MASTER/PROJECTS labels.
+        _sboardAllRowsById[newRoot.id]=newRoot;
         _sboardDrillInto(newRoot);
       }catch(err){
         _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
@@ -1347,6 +1365,7 @@
       _sboardShowToast('Building your Plan board…');
       try{
         var newRoot=await _sboardCreateBlankPlanBoard(ideaRow);
+        _sboardAllRowsById[newRoot.id]=newRoot;
         _sboardDrillInto(newRoot);
       }catch(err){
         _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));

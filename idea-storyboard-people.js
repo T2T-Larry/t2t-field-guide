@@ -1221,6 +1221,13 @@
       _sboardInvalidateEffPrimary();
       await _csAutoPrimaryIfSolo();
       await _csAutoPrimaryIfEmpty();
+      // Sept 21 2026 fix -- same async-gap fix as _csTogglePrimaryDoer
+      // just above: re-resolve THIS card's effective primary before
+      // handing off to the render callback, so a role change that alters
+      // who the card-front badge should show (e.g. picking PRIMARY when
+      // nobody's starred yet) doesn't depend on a fetch racing the very
+      // next paint.
+      await _sboardEnsureEffectivePrimaryRaw(_csCardType||'idea', [_csItem.id]);
       _csRefreshUI();
       if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update their role.'; errEl.style.display='block'; } }
@@ -1351,6 +1358,19 @@
       // star off, that's a real choice to leave the card blank, and rule
       // 1 shouldn't immediately fight it back on.
       _sboardInvalidateEffPrimary();
+      // Sept 21 2026 fix -- Larry (Master BB): "Changed PRIMARY on a card
+      // but the initials did not change on the front of the card." Root
+      // cause: the line above wipes the cache, then _csOnRosterChange()
+      // (renderBoard/renderSeaBoard) reads it back on THIS SAME tick --
+      // before the async re-fetch it kicks off has any chance to land --
+      // so the very next paint shows a blank badge instead of the new
+      // star holder's initials, and nothing forces a second repaint if
+      // that follow-up fetch happens to no-op or race against another one
+      // already in flight. Eagerly re-resolving (and warming the new
+      // holder's initials) for THIS card before handing off to
+      // _csOnRosterChange guarantees the next render already has the
+      // right answer in cache, no async gap to fall through.
+      await _sboardEnsureEffectivePrimaryRaw(_csCardType||'idea', [_csItem.id]);
       if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
   }

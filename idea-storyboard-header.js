@@ -296,13 +296,46 @@
     // nested header doesn't land on top of a card that already holds
     // that same position number.
     var newOrder=(_sboardColumnOrderByParent[prevId]||[]).length;
+    // Sept 21 2026 fix -- Larry (Master BB): "Always able to turn header
+    // into subber with all of its subbers remaining subbers." This used
+    // to move only the selected header itself; its own children were left
+    // pointing at `id` unchanged, which put them a 3rd level deep from the
+    // new top -- past what this board renders as tiles at all (see the
+    // comment above _sboardHeaderIsTopLevel), so they silently vanished
+    // from view rather than being deleted. Larry's call: re-parent those
+    // children onto the SAME new parent (prevId) as the demoted header,
+    // landing them as its new siblings so they stay visible, rather than
+    // nesting them a level deeper than this board can draw.
+    var kidIds=(_sboardColumnOrderByParent[id]||[]).slice();
+    var kidBefore={};
+    kidIds.forEach(function(kid){ kidBefore[kid]=_sboardSnapshotRow(kid); });
     try{
       var upd=await _sb.from('ideas').update({cluster_id:prevId, sort_order:newOrder}).eq('id',id);
       if(upd.error) throw upd.error;
       _sboardPatchRow(id, {cluster_id:prevId, sort_order:newOrder});
+      var kidAfter={};
+      for(var ki=0; ki<kidIds.length; ki++){
+        var kid=kidIds[ki];
+        var kidOrder=newOrder+1+ki;
+        var kidUpd=await _sb.from('ideas').update({cluster_id:prevId, sort_order:kidOrder}).eq('id',kid);
+        if(kidUpd.error) throw kidUpd.error;
+        _sboardPatchRow(kid, {cluster_id:prevId, sort_order:kidOrder});
+        kidAfter[kid]=_sboardSnapshotRow(kid);
+      }
       var after=_sboardSnapshotRow(id);
-      _sboardPushAction({label:'Nest header', undo:function(){ return _sboardApplyRowSnapshot(id, before); }, redo:function(){ return _sboardApplyRowSnapshot(id, after); }});
-      if(statusEl){ statusEl.textContent='Nested under “'+(prevRow.text_content||'that header')+'”.'; statusEl.classList.remove('err'); }
+      _sboardPushAction({label:'Nest header', undo:async function(){
+        await _sboardApplyRowSnapshot(id, before);
+        for(var uk in kidBefore){ await _sboardApplyRowSnapshot(uk, kidBefore[uk]); }
+      }, redo:async function(){
+        await _sboardApplyRowSnapshot(id, after);
+        for(var rk in kidAfter){ await _sboardApplyRowSnapshot(rk, kidAfter[rk]); }
+      }});
+      if(statusEl){
+        statusEl.textContent = kidIds.length
+          ? 'Nested under “'+(prevRow.text_content||'that header')+'” — its '+kidIds.length+' subber'+(kidIds.length===1?'':'s')+' moved with it.'
+          : 'Nested under “'+(prevRow.text_content||'that header')+'”.';
+        statusEl.classList.remove('err');
+      }
       renderSeaBoard(true);
     }catch(err){ fail('Couldn’t nest that header: '+err.message); }
   }

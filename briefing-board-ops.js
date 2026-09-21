@@ -640,7 +640,19 @@
     // person-mode match.
     if(window.T2TStoryboard && T2TStoryboard.ensureCardPrimaryRaw){
       var _bbPrimaryIds=cards.map(function(c){ return c.id; }).filter(Boolean);
-      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
+      // Sept 21 2026 fix -- this call was missing its 3rd argument
+      // (sourceHeaderIdByCardId), which the tacit-assignment climb needs
+      // for any card_type other than 'idea' (see
+      // _sboardEnsureEffectivePrimaryRaw's own comment: "ignored... for
+      // cardType 'idea', which climbs its own rows directly" -- meaning
+      // every OTHER cardType, including 'briefing_card', needs it
+      // supplied). Without it, a Briefing Card with nobody starred and no
+      // one directly on its own Cast just silently resolved to nobody,
+      // instead of climbing to whichever header it came from to inherit
+      // that header's Primary/Doer, same as the Idea Board already does.
+      var _bbSourceHeaderIdByCardId={};
+      cards.forEach(function(c){ if(c.sourceHeaderId) _bbSourceHeaderIdByCardId[c.id]=c.sourceHeaderId; });
+      T2TStoryboard.ensureCardPrimaryRaw('briefing_card', _bbPrimaryIds, _bbSourceHeaderIdByCardId).then(function(fetchedSomething){ if(fetchedSomething) renderBoard(); });
     }
     COLUMNS.forEach(function(cd){
       var col=document.createElement('div');
