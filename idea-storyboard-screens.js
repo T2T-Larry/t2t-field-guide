@@ -736,8 +736,20 @@
         // dropdown so a whole project tree is readable, current header
         // highlighted, deeper levels indented. Mirrors #bb-topic-menu.
         +'#sc-topic-menu{max-height:min(60vh, 420px)}'
-        +'#sc-topic-menu .sc-topic-tree-row{display:flex;align-items:center;gap:6px}'
-        +'#sc-topic-menu .sc-topic-tree-row.active{background:rgba(255,255,255,.1);font-weight:700}'
+        // Sept 21 2026 fix -- Larry: TOPIC's tree was unreadable, black
+        // text on this menu's dark navy background. These two rules
+        // targeted .sc-topic-tree-row/.active, the OLD flat-list TOPIC
+        // menu's classes from before topic-pyramid.js replaced it on
+        // Sept 20 -- that swap never carried the dark-background
+        // override over to the pyramid's own row classes (.tp-row/
+        // .tp-current), which topic-pyramid.js deliberately leaves
+        // colorless since it's shared, board-agnostic code (BB mounts
+        // it on its own light dropdown, where inherited black is
+        // already right). Scoped here instead of touching that shared
+        // file, same as the dead rules they replace.
+        +'#sc-topic-menu .tp-row{color:#fff}'
+        +'#sc-topic-menu .tp-row:hover{background:rgba(255,255,255,.08)}'
+        +'#sc-topic-menu .tp-current{background:rgba(255,255,255,.16)}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
         // Larry: "the + in a dotted line circle just like every other
         // add. Consistent symbol." Same shape/border/color as the
