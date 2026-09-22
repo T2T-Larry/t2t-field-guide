@@ -254,7 +254,26 @@ document.addEventListener('DOMContentLoaded', function(){
   T.wire('s-journey-align-yellow', function(){ T.nav('s-journey-align'); });
   T.wire('s-journey-align-red', function(){ T.nav('s-journey-hub'); });
 
-    T.nav('s-journey-phase', false);
+  // Sept 22 2026 fix -- Larry: "Reset now opens desktop instead of last
+  // open board... it has always worked before, what changed today?"
+  // Root cause, found live: this landing line was an UNCONDITIONAL
+  // T.nav('s-journey-phase', false) -- every single load of this file,
+  // including a plain page reload, forced Journey's own title screen and
+  // (nav() always records the screen it lands on) overwrote the saved
+  // "last screen" with it too. index.html has real resume logic
+  // (resumeToLastPageOr, wired to the sign-in flow) for exactly this
+  // reason; this file, and Believe/Dare/Dream's matching landing lines,
+  // never got it, so Reset (a plain reload of whichever page you're on)
+  // only ever resumed correctly when that page happened to be
+  // index.html. Briefing Board lives in this file (Journey phase), so
+  // this is almost certainly what broke it -- probably always broken
+  // this way, just never hit until a reason (today's Calendar work) had
+  // Larry reloading from inside Briefing Board over and over. Swapping
+  // in the same resumeToLastPageOr this file's own T already exposes
+  // fixes every screen on this page, not just Briefing Board, and
+  // matches index.html's proven behavior instead of adding a second,
+  // divergent way of doing the same thing.
+  T.resumeToLastPageOr('s-journey-phase');
 });
 </script>
 </body>

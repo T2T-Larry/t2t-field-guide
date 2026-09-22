@@ -2250,7 +2250,16 @@ document.addEventListener('DOMContentLoaded', function(){
     else T.nav('s-sea-of-ideas-cluster');
   });
 
-    T.nav('s-dream', false);
+  // Sept 22 2026 fix -- same fix as journey.html's matching line (see
+  // its comment there for the full root-cause writeup): this was an
+  // unconditional T.nav('s-dream', false) on every load, stomping
+  // whatever screen should have been resumed on a plain reload. Swapped
+  // for the same resumeToLastPageOr index.html already uses, so Reset
+  // works the same way on every phase page. resumeToLastPageOr already
+  // has its own special-case handling for landing back on the Idea
+  // Storyboard (s-sea-of-ideas-cluster) via T2TMedia.openBoardResume
+  // instead of a bare nav(), same guard as the click handler just above.
+  T.resumeToLastPageOr('s-dream');
 });
 </script>
 </body>
