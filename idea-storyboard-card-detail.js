@@ -207,8 +207,12 @@
 
     var topRowHTML='<div class="sb-eyebrow-row">'
       + '<div class="sb-eyebrow-col">'
-      + '<div class="sb-hdr-eyebrow2">Parent</div>'
-      + '<button class="sb-view-frame" id="sb-move-btn" type="button">'+curHeaderLabel+'</button>'
+      // PARENT -> MOVE, Sept 22 2026 -- Larry: "Move button could replace
+      // the PARENT field on Idea card." Still shows where the card lives
+      // now; tapping opens the project pyramid (openMoveAnywherePicker),
+      // already opened down to this spot.
+      + '<div class="sb-hdr-eyebrow2">Move</div>'
+      + '<button class="sb-view-frame" id="sb-move-btn" type="button" title="Where this card lives — tap to move it anywhere (Alt+M)">'+curHeaderLabel+' ▾</button>'
       + '</div>'
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
       + '<div class="sb-eyebrow-col">'
@@ -227,36 +231,11 @@
     // card_roles.is_primary, which is what the corner badge and the Team
     // filter read now (see _sboardEnsureCardPrimary / _csSetPrimary).
 
-    var headerListHTML='<div class="sb-inline-field" id="sb-move-panel" style="display:none">'
-      + '<div class="sb-hdr-eyebrow2">Move to a different Header</div>'
-      + '<div class="sb-hdr-vitem'+(isMisc?' current':'')+'" id="sb-misc-pinned" style="border:0.5px solid #D3D1C7;border-radius:8px;margin-bottom:6px;font-weight:600">'+(isMisc?'📦 Misc ✓ — tap to move out':'📦 Misc (project archive)')+'</div>'
-      + '<div class="sb-hdr-vlist" id="sb-hdr-vlist">'
-      + '<div class="sb-hdr-vitem'+(isInLocalNewAdditions?' current':'')+'" data-hid="'+localNewAdditionsTarget+'">Parking Lot</div>'
-      + (_effPurposeId?('<div class="sb-hdr-vitem'+(String(item.cluster_id||'')===String(_effPurposeId)?' current':'')+'" data-hid="'+_effPurposeId+'">Purpose</div>'):'')
-      + _sboardVisibleHeaders.filter(function(h){ return String(h.id)!==String(item.id) && h.text_content!=='NEW' && h.text_content!=='Parking Lot' && !(_effNewAdditionsId && String(h.id)===String(_effNewAdditionsId)); })
-          .map(function(h){ var cur=(item.cluster_id && String(h.id)===String(item.cluster_id))?' current':''; return '<div class="sb-hdr-vitem'+cur+'" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>'; }).join('')
-      + '<div class="sb-hdr-vitem newh" id="sb-hdr-newh">+ Create new header…</div>'
-      + '</div>'
-      + '<div class="sb-inline-field" id="sb-newheader-row" style="display:none"><input id="sb-newheader-input" type="text" autocomplete="off" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
-      + '<div style="display:flex;gap:6px;margin-top:6px">'
-      + '<button class="sc-ov-btn" id="sb-hdr-othertopic" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">📍 Different Topic…</button>'
-      + '<button class="sc-ov-btn" id="sb-hdr-otherproj" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">🔀 Different Project…</button>'
-      + '</div>'
-      // MOVE anywhere, Sept 22 2026 (Master BB DOING card, HH) -- Larry:
-      // moving a card was two separate, narrower tools (Different Topic
-      // stays inside the current project; Different Project only lands
-      // you at that project's own top level, nothing nested) -- neither
-      // one reaches an arbitrary topic buried in a different project in
-      // one step. This third option reuses window.TopicPyramid, the same
-      // expandable pyramid widget the TOPIC eyebrow already opens when
-      // it's rooted at MASTER (every project flattened into one
-      // lazily-expanding tree) -- here rooted the same way every time, so
-      // any project and any topic at any depth is reachable by expanding
-      // down to it and tapping its name, exactly like TOPIC's own gesture.
-      + '<div style="margin-top:6px">'
-      + '<button class="sc-ov-btn" id="sb-hdr-anywhere" style="width:100%;font-size:calc(10px * var(--fg-text-scale,1))">🗺️ Anywhere (any project, any topic)…</button>'
-      + '</div>'
-      + '</div>';
+    // The old move panel (headers on this board, Misc, + new header,
+    // Different Topic, Different Project, Anywhere) was retired Sept 22
+    // 2026 when the PARENT field became MOVE -- everything it offered now
+    // lives in the one project pyramid (openMoveAnywherePicker below).
+    var headerListHTML='';
 
     // Body: always the same fixed size and shape, whether it holds an image
     // or a single word. Images get an editable caption/title underneath —
@@ -366,12 +345,6 @@
       + '<button class="sb-blue-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Utility">⚙️</button>'
-      // MOVE, Sept 22 2026 -- Larry: "MOVE button: back of cards. opens
-      // project pyramid ... clicking on project level sends current card
-      // there." Opens the same project pyramid as the "Anywhere" option
-      // (openMoveAnywherePicker); tap any project or topic to send the
-      // card straight there. Alt+M on a selected card opens this too.
-      + '<button class="sb-blue-btn" id="sb-move-btn" title="Move this card to any project or topic (Alt+M)" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.06em">MOVE</button>'
       + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
@@ -466,13 +439,6 @@
       imgPreview.title='Double-click to zoom in';
       imgPreview.addEventListener('dblclick', function(){ _sbOpenImageLightbox(imgPreview.src); });
     }
-
-    // MOVE — single entry point. Reveals the same header/topic/project
-    // pickers that used to sit always-partly-visible on the card.
-    T().wire('sb-move-btn', function(){
-      var panel=document.getElementById('sb-move-panel');
-      if(panel) panel.style.display=(panel.style.display==='none')?'block':'none';
-    });
 
     // ORDER nudge -- up/down arrows, Aug 11 2026 (Larry). Swaps this card
     // with its immediate same-type sibling (one step, same shape as a
@@ -572,117 +538,6 @@
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
-    // Header list: tap to reassign immediately
-    Array.prototype.forEach.call(document.querySelectorAll('.sb-hdr-vitem[data-hid]'), function(row){
-      row.addEventListener('click', async function(){
-        var newCluster=row.getAttribute('data-hid')||null;
-        if(String(newCluster||'')===String(item.cluster_id||'')) return;
-        try{
-          var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id).select();
-          if(upd.error) throw upd.error;
-          item.cluster_id=newCluster;
-          closeSbDetail();
-          renderSeaBoard(true);
-        }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-      });
-    });
-    async function openMoveToProjectPicker(){
-      var ov2=document.getElementById('sb-detail-overlay');
-      if(!ov2) return;
-      var boards=(await T2TData.topLevelBoards()).slice().sort(function(a,b){
-        return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
-      });
-      var rows=boards.filter(function(b){ return String(b.id)!==String(item.id); }).map(function(b){
-        return '<div class="sb-hdr-vitem" data-pid="'+b.id+'">'+(b.text_content||'(untitled)')+'</div>';
-      }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other projects yet.</div>';
-      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+(item.text_content||'(untitled)')+'"</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Moves this card — and everything nested underneath it — into the top level of the project you pick.</div>'
-        +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-        +'<button class="sc-ov-btn" id="sb-moveproj-cancel" style="width:100%">Cancel</button>'
-        +'</div>';
-      ov2.classList.add('active');
-      Array.prototype.forEach.call(ov2.querySelectorAll('.sb-hdr-vitem[data-pid]'), function(row){
-        row.addEventListener('click', async function(){
-          var pid=row.getAttribute('data-pid');
-          try{
-            var upd=await _sb.from('ideas').update({cluster_id:pid}).eq('id',item.id).select();
-            if(upd.error) throw upd.error;
-            item.cluster_id=pid;
-            closeSbDetail();
-            var landing=boards.find(function(b){ return String(b.id)===String(pid); });
-            if(landing) _sboardDrillInto(landing);
-          }catch(err){ console.error(err); }
-        });
-      });
-      T().wire('sb-moveproj-cancel', function(){ openSbDetail(item); });
-    }
-
-    // Different Topic — added July 12, 2026. Broader reach than the Header
-    // picker above (which only lists what's already visible in the current
-    // local view): searches every header anywhere in the current project,
-    // at any depth, so you can move a card straight to a Topic you aren't
-    // currently standing near, without having to navigate there first.
-    async function openMoveToTopicPicker(){
-      var ov2=document.getElementById('sb-detail-overlay');
-      if(!ov2) return;
-      // Card-details sweep, July 19, 2026: this used to search
-      // _sboardHeadersById/_sboardAllRowsById, both 9710-only caches that
-      // sit empty all session if 9710's own board never rendered -- opening
-      // this picker from 9711 always showed "No other topics in this
-      // project yet.", even when there were plenty. Fetches its own live,
-      // screen-agnostic header list instead (same pattern already used by
-      // openMoveToProjectPicker just above), so this works regardless of
-      // which screen opened DETAILS.
-      var reserved=['Trash','MISC','Purpose','NEW','New Additions','Parking Lot'];
-      var topicIdForProject=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : T2TShared.currentTopicId;
-      var candidates=[];
-      if(topicIdForProject && window.T2TData && window.T2TData.ancestorChain && window.T2TData.fetchAllHeaders && window.T2TData.headerDescendants){
-        try{
-          var chain=await window.T2TData.ancestorChain(topicIdForProject);
-          var projectId=chain.length?chain[0].id:null;
-          if(projectId){
-            var allHeadersLive=await window.T2TData.fetchAllHeaders();
-            candidates=window.T2TData.headerDescendants(allHeadersLive, projectId)
-              .filter(function(h){ return String(h.id)!==String(item.id) && reserved.indexOf(h.text_content)===-1; });
-          }
-        }catch(e){ console.warn('openMoveToTopicPicker project lookup failed:', e); }
-      }
-      candidates=candidates.slice().sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
-      var rows=candidates.map(function(h){
-        return '<div class="sb-hdr-vitem" data-hid="'+h.id+'">'+(h.text_content||'(untitled)')+'</div>';
-      }).join('') || '<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;padding:8px 0">No other topics in this project yet.</div>';
-      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Move under a different Topic</div>'
-        +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:240px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-        +'<button class="sc-ov-btn" id="sb-movetopic-cancel" style="width:100%">Cancel</button>'
-        +'</div>';
-      ov2.classList.add('active');
-      Array.prototype.forEach.call(ov2.querySelectorAll('.sb-hdr-vitem[data-hid]'), function(row){
-        row.addEventListener('click', async function(){
-          var hid=row.getAttribute('data-hid');
-          // Card-details sweep, July 19, 2026: landing now comes from the
-          // live candidates list above (was _sboardHeadersById, same stale
-          // 9710-only cache this whole picker just got fixed away from).
-          var landing=candidates.find(function(c){ return String(c.id)===String(hid); });
-          try{
-            var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
-            if(upd.error) throw upd.error;
-            item.cluster_id=hid;
-            closeSbDetail();
-            // Note (found during this sweep, not fixed): _sboardDrillInto
-            // navigates 9710's own board (sets T2TShared.currentTopicId).
-            // From 9711 this refreshes the board you're still standing on
-            // rather than following the card to its new Topic -- lower
-            // priority, same posture as the isMisc/isTrashed item already
-            // deferred July 18.
-            if(landing) _sboardDrillInto(landing);
-          }catch(err){ console.error(err); }
-        });
-      });
-      T().wire('sb-movetopic-cancel', function(){ openSbDetail(item); });
-    }
-
     // Move Anywhere, Sept 22 2026 (Master BB DOING card, HH priority) --
     // Larry: "need to be able to move card to new location (vs change
     // the view). Use project pyramid like on TOPIC card to choose
@@ -701,7 +556,10 @@
     async function openMoveAnywherePicker(){
       var ov2=document.getElementById('sb-detail-overlay');
       if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
-      var ANYWHERE_RESERVED=['Trash','MISC','Purpose','NEW','New Additions','Parking Lot','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
+      // Parking Lot / NEW / Purpose / MISC are real places a card can go (the
+      // old move panel offered them), so they stay in the list; only the
+      // system buckets that aren't destinations are hidden.
+      var ANYWHERE_RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
       var ROOT_ID='__anywhere_root__';
       function nodeFrom(h){ return {id:h.id, name:h.text_content||h.text||'(untitled)'}; }
       function getChildren(id){
@@ -714,30 +572,86 @@
           return kids.filter(function(h){ return ANYWHERE_RESERVED.indexOf(h.text_content)===-1 && String(h.id)!==String(item.id); }).map(nodeFrom);
         });
       }
+      // Sept 22 2026 (PARENT became MOVE) -- the pyramid now opens already
+      // expanded down to where this card lives (expandPath), with that
+      // spot marked "here" (hereId), so nearby headers are one tap away
+      // and every other project is still one expand away. Misc and
+      // "+ New header" (the two things the old move panel had that the
+      // pyramid didn't) sit underneath it.
+      var _sbTopicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+(item.text_content||'(untitled)')+'"</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Expand a project below and tap any topic to move this card straight there.</div>'
-        +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:280px;overflow-y:auto;margin-bottom:10px"></div>'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+_sboardEsc(item.text_content||'(untitled)')+'"</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Tap any project or topic to move this card there. ▸ opens a level.</div>'
+        +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:300px;overflow-y:auto;margin-bottom:8px"></div>'
+        +'<div style="display:flex;gap:6px;margin-bottom:6px">'
+        +  '<button class="sc-ov-btn" id="sb-anywhere-misc" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isMisc?'📦 Take out of Misc':'📦 Send to Misc')+'</button>'
+        +  (_sbTopicForNew ? '<button class="sc-ov-btn" id="sb-anywhere-newh" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">+ New header here</button>' : '')
+        +'</div>'
+        +'<div id="sb-newheader-row" style="display:none;margin-bottom:6px"><input id="sb-newheader-input" type="text" autocomplete="off" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
         +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov2.classList.add('active');
+      // Path from the top down to this card's current spot. Walked with a
+      // plain lookup per level (no owner filter, so a shared project works
+      // too); stops at the MASTER root, which the pyramid shows as "All
+      // Projects".
+      var path=[];
+      try{
+        var cur=item.cluster_id, guard=0;
+        while(cur && guard<30){
+          guard++;
+          var known=_sboardAllRowsById[cur];
+          var rowP=known ? {id:known.id, cluster_id:known.cluster_id} : null;
+          if(!rowP){
+            var rr=await _sb.from('ideas').select('id,cluster_id').eq('id',cur).maybeSingle();
+            if(rr.error || !rr.data) break;
+            rowP=rr.data;
+          }
+          if(!rowP.cluster_id) break; // that's the MASTER root itself
+          path.unshift(String(rowP.id));
+          cur=rowP.cluster_id;
+        }
+      }catch(e){}
       var menuEl=document.getElementById('sb-anywhere-pyramid');
       window.TopicPyramid.render(menuEl, {
         ancestors: [],
         current: {id:ROOT_ID, name:'All Projects'},
         getChildren: getChildren,
+        expandPath: path,
+        hereId: item.cluster_id ? String(item.cluster_id) : null,
         onNavigate: async function(hid){
           if(hid===ROOT_ID) return; // "All Projects" itself isn't a place a card can live
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
+          var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
           try{
             var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
             if(upd.error) throw upd.error;
             item.cluster_id=hid;
+            _sboardPatchRow(item.id, {cluster_id:hid});
+            (function(){
+              var itemId=item.id, after={cluster_id:hid, sort_order:before.sort_order};
+              _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
+            })();
+            _sbMoveFromBoard=false;
             closeSbDetail();
             renderSeaBoard(true);
+            _sboardShowToast('Moved — Ctrl/Cmd+Z to undo.');
           }catch(err){ console.error(err); }
         }
       });
+      T().wire('sb-anywhere-misc', function(){ _sbMoveFromBoard=false; _sbSendToMisc(); });
+      T().wire('sb-anywhere-newh', function(){
+        var row=document.getElementById('sb-newheader-row'); if(!row) return;
+        row.style.display='block';
+        var nh=document.getElementById('sb-newheader-input'); if(nh) setTimeout(function(){ nh.focus(); }, 50);
+      });
+      T().wire('sb-newheader-go', function(){ _sbNewHeaderGo(_sbTopicForNew); });
+      (function(){
+        var nhInput=document.getElementById('sb-newheader-input');
+        if(nhInput) nhInput.addEventListener('keydown', function(e){
+          if(e.key==='Enter'){ e.preventDefault(); _sbNewHeaderGo(_sbTopicForNew); }
+        });
+      })();
       T().wire('sb-anywhere-cancel', function(){
         // Opened with Alt+M from the board: Cancel goes back to the board,
         // not to the card's back.
@@ -746,61 +660,35 @@
       });
     }
 
-    T().wire('sb-hdr-newh', function(){
-      // Delete the dropdown options once you're creating a new header,
-      // Sept 19 2026 (Master BB card) -- clicking "+ Create new header…"
-      // used to leave the whole Misc/Parking Lot/Purpose/other-headers
-      // list sitting there above the name field, which just cluttered a
-      // screen that's now only about typing one name. Hides that list
-      // (and the Misc pinned row above it) the moment create-mode opens,
-      // same "just the input, nothing else" feel as the standalone New
-      // Header prompt (_sboardOpenAddHeaderPrompt) already has.
-      var vlist=document.getElementById('sb-hdr-vlist'); if(vlist) vlist.style.display='none';
-      var miscPinned=document.getElementById('sb-misc-pinned'); if(miscPinned) miscPinned.style.display='none';
-      document.getElementById('sb-newheader-row').style.display='block';
-      var nhInput=document.getElementById('sb-newheader-input');
-      if(nhInput) setTimeout(function(){ nhInput.focus(); }, 50);
-    });
-    T().wire('sb-hdr-othertopic', openMoveToTopicPicker);
-    T().wire('sb-hdr-otherproj', openMoveToProjectPicker);
-    T().wire('sb-hdr-anywhere', openMoveAnywherePicker);
     T().wire('sb-move-btn', openMoveAnywherePicker);
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
     // then asks for the move picker straight away.
     if(_sbOpenMoveOnOpen){ _sbOpenMoveOnOpen=false; openMoveAnywherePicker(); }
-    // Aug 7 2026 -- same ENTER + no-feedback-on-Save fix as the standalone
-    // New Header prompt above (_sboardOpenAddHeaderPrompt), applied here
-    // too since this is the other place a header gets created and Larry's
-    // two DOING cards didn't say which screen he'd hit it on.
-    var newHeaderGoBtn=document.getElementById('sb-newheader-go');
-    async function _sbNewHeaderGo(){
+    // "+ New header here" (inside the MOVE pyramid): creates a header on
+    // the board being viewed and moves this card into it. Same ENTER +
+    // Saving… feedback as the standalone New Header prompt.
+    async function _sbNewHeaderGo(parentId){
+      var goBtn=document.getElementById('sb-newheader-go');
       var name=(document.getElementById('sb-newheader-input')||{}).value||'';
       name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
-      if(newHeaderGoBtn){ newHeaderGoBtn.disabled=true; newHeaderGoBtn.textContent='Saving...'; }
+      if(goBtn){ goBtn.disabled=true; goBtn.textContent='Saving...'; }
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var parentId=T2TShared.filter||null;
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw new Error(ins.error.message);
         _sboardAddRow(ins.data);
         var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.cluster_id=ins.data.id;
+        _sboardPatchRow(item.id, {cluster_id:ins.data.id});
+        _sbMoveFromBoard=false;
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){
-        if(statusBox) statusBox.textContent=err.message;
-        if(newHeaderGoBtn){ newHeaderGoBtn.disabled=false; newHeaderGoBtn.textContent='Create & move here'; }
+        if(goBtn){ goBtn.disabled=false; goBtn.textContent=(err&&err.message)||'Try again'; }
       }
     }
-    T().wire('sb-newheader-go', _sbNewHeaderGo);
-    (function(){
-      var nhInput=document.getElementById('sb-newheader-input');
-      if(nhInput) nhInput.addEventListener('keydown', function(e){
-        if(e.key==='Enter'){ e.preventDefault(); _sbNewHeaderGo(); }
-      });
-    })();
 
     // Text editing (auto-promotes to header if punctuation says so)
     var textDisplay=document.getElementById('sb-text-display');
@@ -1125,7 +1013,8 @@
       });
     })();
 
-    T().wire('sb-misc-pinned', async function(){
+    // Send to Misc -- offered at the bottom of the MOVE pyramid.
+    async function _sbSendToMisc(){
       try{
         // Card-details sweep, July 19, 2026: T2TShared.currentTopicId is
         // 9710-only (never set by 9711's own navigation) -- use 9711's
@@ -1139,7 +1028,7 @@
         closeSbDetail();
         renderSeaBoard(true);
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
-    });
+    }
 
     async function _sbDoTrash(){
       if(isHeaderType){ closeSbDetail(); _sboardConfirmTrashHeader(item); return; }

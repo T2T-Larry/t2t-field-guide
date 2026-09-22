@@ -61,7 +61,9 @@
       +'.tp-current .tp-label{cursor:default;font-weight:700}'
       +'.tp-current{background:rgba(0,0,0,.08);font-weight:700}'
       +'.tp-children{margin:0}'
-      +'.tp-loading{opacity:.6;font-style:italic;padding:3px 6px 3px 26px}';
+      +'.tp-loading{opacity:.6;font-style:italic;padding:3px 6px 3px 26px}'
+      +'.tp-here{background:rgba(26,58,92,.10);border-radius:4px}'
+      +'.tp-here .tp-label{font-weight:700}';
     var style=document.createElement('style');
     style.id='tp-pyramid-styles';
     style.textContent=css;
@@ -101,6 +103,14 @@
     arrow.className='tp-arrow tp-none'; // shown/armed below only for rows that may have children
     row.appendChild(arrow);
 
+    // hereId (optional, Sept 22 2026 -- the Idea card's MOVE picker):
+    // marks the row a card currently lives in, so it reads "you are here"
+    // inside a tree that's otherwise all destinations.
+    if(opts.hereId && String(node.id)===String(opts.hereId)){
+      row.classList.add('tp-here');
+      label.textContent=(node.name||'(untitled)')+'  ✓ here';
+      setTimeout(function(){ try{ row.scrollIntoView({block:'nearest'}); }catch(e){} }, 0);
+    }
     if(isCurrent){
       row.title=node.name||'';
     } else {
@@ -143,6 +153,7 @@
             var built=_tpMakeRow(kid, depth+1, indentPx+14, false, opts);
             childWrap.appendChild(built.row);
             _tpWireExpand(built.arrow, built.row, kid, depth+1, indentPx+14, opts);
+            _tpAutoExpand(built.arrow, kid, opts);
           });
         }, function(){
           childWrap.innerHTML='<div class="tp-loading">Couldn\'t load — try again.</div>';
@@ -153,6 +164,16 @@
       arrowEl.textContent=expanded?'▾':'▸';
       if(childWrap) childWrap.style.display=expanded?'':'none';
     });
+  }
+
+  // expandPath (optional, Sept 22 2026): ids to open automatically on
+  // the way down, top level first -- lets a caller open the tree already
+  // unfolded to one spot (the Idea card MOVE picker opens at the card's
+  // own location). Each level opens once its parent's children arrive.
+  function _tpAutoExpand(arrowEl, node, opts){
+    if(!opts.expandPath || opts.expandPath.indexOf(String(node.id))===-1) return;
+    // The arrow may have been cloned away (no children); only click a live one.
+    if(arrowEl && arrowEl.isConnected && !arrowEl.classList.contains('tp-none')) arrowEl.click();
   }
 
   // opts = {
@@ -188,6 +209,7 @@
         var built=_tpMakeRow(kid, curDepth+1, 14, false, opts);
         menuEl.appendChild(built.row);
         _tpWireExpand(built.arrow, built.row, kid, curDepth+1, 14, opts);
+        _tpAutoExpand(built.arrow, kid, opts);
       });
     }, function(){
       loadingRow.textContent='Couldn\'t load — try again.';
