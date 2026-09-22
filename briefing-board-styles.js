@@ -640,6 +640,18 @@
       +'.bb-card .bb-date{font-family:"Caveat",cursive;font-size:calc(13px * var(--fg-text-scale,1));color:#6b4a2e}'
       +'.bb-card .bb-dot{width:16px;height:16px;border-radius:50%;font-size:calc(8px * var(--fg-text-scale,1));color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--bb-body-font);flex-shrink:0}'
       +'.bb-card .bb-task{color:var(--bb-ink);margin:2px 0 5px;word-break:break-word}'
+      // SUBJECT on the card front, Sept 22 2026 -- headline under the
+      // PROJECT eyebrow; task text reads as the body beneath it.
+      +'.bb-card .bb-card-subject{color:var(--bb-ink);font-weight:700;margin:2px 0 3px;word-break:break-word;line-height:1.25}'
+      +'.bb-card .bb-card-subject + .bb-task{margin-top:0}'
+      // Show-on-face Yes/No pill (card back, under Task)
+      +'.bb-front-toggle-row{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));color:var(--bb-sub)}'
+      +'.bb-front-toggle{display:inline-flex;border:1.5px solid var(--bb-accent);border-radius:14px;overflow:hidden}'
+      +'.bb-front-toggle button{border:0;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit;background:#fff;color:var(--bb-ink)}'
+      +'.bb-front-toggle button + button{border-left:1.5px solid var(--bb-accent)}'
+      +'.bb-front-toggle button.on{background:var(--bb-accent);color:#fff}'
+      +'.bb-front-toggle-row.bb-disabled{opacity:.45;pointer-events:none}'
+      +'.bb-front-toggle-note{font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:3px;opacity:.8}'
       +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;align-items:flex-end;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
       // Date stack, Sept 2026 (Larry: "Move all date references to the

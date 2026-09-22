@@ -311,7 +311,7 @@
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
-    _icProjectLabel='-'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastPersonId=null; _icCastPersonName=''; _icMode='idea';
+    _icProjectLabel='MASTER'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastPersonId=null; _icCastPersonName=''; _icMode='idea';
     var stray=document.getElementById('isx-p-field-menu'); if(stray) stray.remove();
     if(cb) cb();
   }
@@ -351,7 +351,13 @@
     var ta=document.getElementById('isx-idea-text');
     var rawText=(ta?ta.value:'').trim();
     if(!rawText) return;
-    var text=_icComposeText(rawText);
+    // SUBJECT gets its own column on briefing_cards now (Sept 22 2026) --
+    // it rides the card front as a headline under the PROJECT eyebrow,
+    // so it's kept separate here instead of folded into the task text
+    // the way _icComposeText still does for Idea-board entries.
+    var text=rawText;
+    var _icSubjEl=document.getElementById('isx-p-subject');
+    var subject=_icSubjEl?_icSubjEl.value.trim():'';
     if(typeof _bbCardsList!=='function' || typeof _bbSaveLocal!=='function' || typeof _bbUUID!=='function'){
       console.error('NEW card (BB): Briefing Board save functions are not loaded on this page.');
       return;
@@ -362,7 +368,7 @@
     var newCardId=_bbUUID();
     var projectHeaderId=_icBoardId||null;
     cards.push({id:newCardId, col:'new', sortOrder:maxOrder+1, assigned:(typeof _bbToday==='function'?_bbToday():''),
-      task:text, person:(typeof _bbCurrentBoardDefaultAssignee==='function'?_bbCurrentBoardDefaultAssignee():''),
+      task:text, subject:subject, person:(typeof _bbCurrentBoardDefaultAssignee==='function'?_bbCurrentBoardDefaultAssignee():''),
       due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false,
       reviewedBy:(typeof REVIEWERS!=='undefined'?REVIEWERS[0]:''), archived:false, projectHeaderId:projectHeaderId});
     var sync=_bbSaveLocal(cards);
@@ -990,8 +996,16 @@
     _icInputPendingLink=null;
     _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
       +'<div class="isx-ptitle isx-ptitle-black" style="text-align:center;margin:0 0 4px">NEW</div>'
-      +'<div class="isx-p-project" id="isx-p-project"><span id="isx-p-project-txt">'+_icEsc(_icProjectLabel)+'</span> <span class="isx-p-caret">▾</span></div>'
-      +'<div class="isx-p-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel)+'</span> <span class="isx-p-caret">▾</span></div>'
+      // ID-Band look, Sept 22 2026 (Larry) -- PROJECT and TOPIC sit side
+      // by side as framed white fields with small eyebrows above them,
+      // the same shape as the board's own ID Band, instead of stacked
+      // plain text. Same ids, so the pickers wired below are unchanged.
+      +'<div class="isx-p-idband">'
+        +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Project</div>'
+          +'<div class="isx-p-project isx-p-idfield" id="isx-p-project"><span id="isx-p-project-txt">'+_icEsc(_icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
+        +'<div class="isx-p-idgrp isx-p-idgrp-topic"><div class="isx-p-eyebrow">Topic</div>'
+          +'<div class="isx-p-topic isx-p-idfield" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
+      +'</div>'
       +'<div class="isx-p-type-row">'
         +'<button class="isx-src-btn'+(_icEntryType==='idea'?' on':'')+'" type="button" data-type="idea">IDEA</button>'
         +'<button class="isx-src-btn'+(_icEntryType==='task'?' on':'')+'" type="button" data-type="task">TASK</button>'

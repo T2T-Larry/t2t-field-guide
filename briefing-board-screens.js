@@ -480,7 +480,20 @@
             // into its own checkbox that block was down to one static
             // line, not worth a whole section for. Same id (bb-d-added),
             // same value, just riding quietly on the Task label instead.
-            +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea></div>'
+            // SUBJECT, Sept 22 2026 (Larry) -- the card's optional
+            // headline, shown on the card front right under the PROJECT
+            // eyebrow. The Yes/No under Task decides whether the Task
+            // text also shows on the front; it only has a say once a
+            // SUBJECT exists (no SUBJECT = Task always shows, so a card
+            // is never blank). Same Yes/No pill as the Idea Card's own
+            // Priority "Show on face of card".
+            +'<div class="bb-field"><label>Subject</label><input type="text" id="bb-d-subject" placeholder="Optional headline for the front of the card"></div>'
+            +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea>'
+              +'<div class="bb-front-toggle-row" id="bb-d-contents-front-row"><span>Show on face of card</span>'
+                +'<div class="bb-front-toggle" id="bb-d-contents-front"><button type="button" data-front="1">Yes</button><button type="button" data-front="0">No</button></div>'
+              +'</div>'
+              +'<div class="bb-front-toggle-note" id="bb-d-contents-front-note">Add a Subject to choose — without one, the task always shows.</div>'
+            +'</div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
               +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'

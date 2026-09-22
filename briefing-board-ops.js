@@ -847,12 +847,23 @@
         var topicEyebrowText = (c.topicLabel||'').trim()
           || (c.projectHeaderId && _bbProjectNameById[c.projectHeaderId])
           || (c._foreign ? '' : _bbHomeBoardName);
-        var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==String(c.task||'').trim().toLowerCase())
+        // SUBJECT, Sept 22 2026 (Larry) -- the card's optional headline
+        // rides right under the PROJECT eyebrow. The task text below it
+        // follows the card's own "Show on face of card" choice, but only
+        // once there IS a SUBJECT -- no SUBJECT means the task always
+        // shows, so a card face is never blank.
+        var _bbSubject=String(c.subject||'').trim();
+        var _bbShowTask=!_bbSubject || !c.hideContentsFront;
+        var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
+        var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==_bbHeadline)
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
+        var subjectHTML = _bbSubject ? ('<div class="bb-card-subject">'+_esc(_bbSubject)+'</div>') : '';
+        var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
         el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+routineBadge+priBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
-          +'<div class="bb-task">'+_esc(c.task)+'</div>'
+          +subjectHTML
+          +taskHTML
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-date-stack">'+dateStackHTML+'</span></div>'
           +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '');
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
@@ -1278,6 +1289,23 @@
     }
   }
 
+  // Paints the card back's "Show on face of card" Yes/No for the task
+  // text. Only live once the card has a SUBJECT (read from the field as
+  // typed, not just what's saved) -- with no SUBJECT the task always
+  // shows on the front, so the pill greys out and the note explains why.
+  function _bbPaintContentsFront(c){
+    var subjEl=document.getElementById('bb-d-subject');
+    var hasSubject=!!((subjEl?subjEl.value:c.subject)||'').trim();
+    var row=document.getElementById('bb-d-contents-front-row');
+    var note=document.getElementById('bb-d-contents-front-note');
+    if(row) row.classList.toggle('bb-disabled', !hasSubject);
+    if(note) note.style.display=hasSubject?'none':'';
+    var showing=!hasSubject || !c.hideContentsFront;
+    var tog=document.getElementById('bb-d-contents-front');
+    if(tog) Array.prototype.forEach.call(tog.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', (b.getAttribute('data-front')==='1')===showing);
+    });
+  }
   function openCardDetail(id){
     _bbOpenCardId=id;
     // Aug 14 2026 fix -- see _bbFindCardAnywhere above: this used to only
@@ -1322,6 +1350,28 @@
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
+    // SUBJECT + contents-on-front, Sept 22 2026 -- see briefing-board-screens.js.
+    (function(){
+      var subjEl=document.getElementById('bb-d-subject');
+      if(subjEl){
+        subjEl.value=c.subject||'';
+        subjEl.oninput=function(){ _bbPaintContentsFront(c); };
+      }
+      var tog=document.getElementById('bb-d-contents-front');
+      if(tog) Array.prototype.forEach.call(tog.querySelectorAll('button'), function(b){
+        b.onclick=function(e){
+          e.stopPropagation();
+          var hide=b.getAttribute('data-front')!=='1';
+          if(hide===!!c.hideContentsFront) return;
+          c.hideContentsFront=hide;
+          _bbPaintContentsFront(c);
+          _bbSaveLocal(_bbCardsList());
+          _bbPersistMergedCardById(c.id);
+          renderBoard();
+        };
+      });
+      _bbPaintContentsFront(c);
+    })();
     _bbRenderColorSwatches(c);
     // Color row starts collapsed on every open -- Gear (bb-d-gear) toggles
     // it, same as the Idea Card's Appearance gear.
@@ -1398,6 +1448,7 @@
     var c=_bbFindCardAnywhere(_bbOpenCardId);
     if(c){
       c.task=document.getElementById('bb-d-task').value;
+      (function(){ var se=document.getElementById('bb-d-subject'); if(se) c.subject=se.value.trim(); })();
       c.situation=document.getElementById('bb-d-situation').value;
       // c.person (Assigned to) no longer has a field on this screen --
       // retired Session 234, see the comment above _bbInitials. It's

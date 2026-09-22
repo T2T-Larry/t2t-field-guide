@@ -153,7 +153,7 @@
   // (sharedToBoardId) is deliberately left out -- it triggers a mirrored
   // card on another board (_bbHandleSharedTagChange) and safely undoing
   // that side effect is its own separate piece of work.
-  var BB_DETAIL_FIELDS = ['task','situation','person','due','dueTime','startDate','startTime','routineFreq','routineCustom','budget','notes','reviewedBy','growNote','linkUrl','linkTitle','linkThumb'];
+  var BB_DETAIL_FIELDS = ['subject','task','situation','person','due','dueTime','startDate','startTime','routineFreq','routineCustom','budget','notes','reviewedBy','growNote','linkUrl','linkTitle','linkThumb'];
   // Additions, Aug 27 2026 (Larry: "all additions = checkboxes which
   // open when checked and stay open when active") -- Checklist, Due
   // Date, Routine, Budget, Notes, Links each get their own checkbox
@@ -904,6 +904,12 @@
     return {
       id: c.id, board_id: boardId, col: c.col,
       task: c.task||'', person: c.person||null, reviewed_by: c.reviewedBy||null,
+      // SUBJECT + contents-on-front, Sept 22 2026 (Larry) -- SUBJECT is the
+      // card's optional headline, shown on the front right under the
+      // PROJECT eyebrow; hide_contents_front lets a card with a SUBJECT
+      // show just that headline (contents always show when there's no
+      // SUBJECT -- a card is never blank on its face).
+      subject: (c.subject||'').trim()||null, hide_contents_front: !!c.hideContentsFront,
       due_date: _bbToISODate(c.due), start_date: _bbToISODate(c.startDate), completed_date: _bbToISODate(c.completedDate),
       due_time: c.dueTime||null, start_time: c.startTime||null,
       is_routine: !!c.routine, routine_freq: c.routineFreq||null, routine_custom: c.routineCustom||null,
@@ -931,6 +937,7 @@
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
+      subject: row.subject||'', hideContentsFront: !!row.hide_contents_front,
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
       dueTime: row.due_time||'', startTime: row.start_time||'',
       routine: !!row.is_routine, routineFreq: row.routine_freq||'', routineCustom: row.routine_custom||'',
