@@ -641,9 +641,19 @@
       calOv.innerHTML=
          '<div class="bb-overlay-card" style="width:320px">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Calendar</span><button class="bb-close" id="bb-calendar-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once in Outlook, Apple Calendar, or Google Calendar -- this board’s timed cards stay in sync from then on.</div>'
-          +'<a id="bb-calendar-subscribe" href="#" style="display:block;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:10px">Subscribe now</a>'
-          +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">Or copy the link:</div>'
+          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once and this board’s timed cards stay in sync from then on.</div>'
+          // Sept 22 2026, Larry: the single "Subscribe now" button handed
+          // a bare webcal:// link to the browser, which had no way to know
+          // which app should get it -- so it threw up a generic OS chooser
+          // (Larry saw "Outlook classic" as one of the options and had no
+          // way to know what that even was). Three named buttons, each
+          // built for that service's own add-by-URL page, skip that
+          // chooser entirely -- one tap does the right thing.
+          +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Choose your calendar:</div>'
+          +'<a id="bb-calendar-google" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Google Calendar</a>'
+          +'<a id="bb-calendar-outlook" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Outlook</a>'
+          +'<a id="bb-calendar-apple" href="#" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:10px">Apple Calendar</a>'
+          +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">Use a different app? Copy the link and add it manually:</div>'
           // Sept 22 2026, Larry: reported the panel as "jumbled up with
           // words on top of others" -- reproduced at a larger accessibility
           // text-size setting: the link input and Copy button used to sit

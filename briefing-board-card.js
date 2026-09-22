@@ -286,17 +286,53 @@
     var webcalUrl=_bbCalendarFeedUrl('webcal');
     var httpsUrl=_bbCalendarFeedUrl('https');
     var linkField=document.getElementById('bb-calendar-link');
-    var subscribeBtn=document.getElementById('bb-calendar-subscribe');
+    var googleBtn=document.getElementById('bb-calendar-google');
+    var outlookBtn=document.getElementById('bb-calendar-outlook');
+    var appleBtn=document.getElementById('bb-calendar-apple');
     var msg=document.getElementById('bb-calendar-msg');
+    var allBtns=[googleBtn,outlookBtn,appleBtn];
     if(!webcalUrl){
       if(msg) msg.textContent='Calendar link isn\u2019t ready for this board yet -- try again in a moment.';
       if(linkField) linkField.value='';
-      if(subscribeBtn) subscribeBtn.style.display='none';
+      allBtns.forEach(function(b){ if(b) b.style.display='none'; });
       return;
     }
     if(msg) msg.textContent='';
     if(linkField) linkField.value=httpsUrl;
-    if(subscribeBtn){ subscribeBtn.style.display=''; subscribeBtn.setAttribute('href', webcalUrl); }
+    // Sept 22 2026, Larry: a single "Subscribe now" button handed a bare
+    // webcal:// link to the browser with no way to say which app should
+    // get it, so the browser threw up its own generic app chooser (this
+    // is also where the earlier "sits over Or copy the link" overlap bug
+    // lived -- style.display was being cleared instead of restored on
+    // this one button; moot now that there isn't a single button doing
+    // double duty). Three named buttons, each pointed at that service's
+    // own add-by-URL page, skip the chooser entirely:
+    //  - Google Calendar's /r?cid= page takes the https feed URL directly
+    //    and shows its own "Add this calendar?" confirmation.
+    //  - Outlook's web calendar (outlook.office.com, which also carries
+    //    personal outlook.com/live.com accounts through the same sign-in)
+    //    has the same kind of add-by-URL page at /calendar/addfromweb.
+    //  - Apple Calendar has no such web page, but unlike Windows (which
+    //    has to ask "classic or new Outlook"), macOS/iOS never have more
+    //    than one app registered for webcal:// -- so the direct link
+    //    still opens cleanly there with no chooser.
+    // display:block is set explicitly each time (not left to the HTML
+    // default) so none of these three can regress the way the old single
+    // button did.
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var calName=encodeURIComponent((board&&board.name)?board.name+' \u2014 T2T Field Guide':'T2T Field Guide');
+    if(googleBtn){
+      googleBtn.style.display='block';
+      googleBtn.setAttribute('href','https://calendar.google.com/calendar/r?cid='+encodeURIComponent(httpsUrl));
+    }
+    if(outlookBtn){
+      outlookBtn.style.display='block';
+      outlookBtn.setAttribute('href','https://outlook.office.com/calendar/addfromweb?url='+encodeURIComponent(httpsUrl)+'&name='+calName);
+    }
+    if(appleBtn){
+      appleBtn.style.display='block';
+      appleBtn.setAttribute('href',webcalUrl);
+    }
   }
   function closeCalendarPanel(){
     var ov=document.getElementById('bb-calendar-overlay'); if(ov) ov.classList.remove('active');
