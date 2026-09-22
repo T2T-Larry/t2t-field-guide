@@ -487,7 +487,7 @@
             // SUBJECT exists (no SUBJECT = Task always shows, so a card
             // is never blank). Same Yes/No pill as the Idea Card's own
             // Priority "Show on face of card".
-            +'<div class="bb-field"><label>Subject</label><input type="text" id="bb-d-subject" placeholder="Optional headline for the front of the card"></div>'
+            +'<div class="bb-field"><label>Subject</label><input type="text" id="bb-d-subject" autocomplete="off" placeholder="Optional headline for the front of the card"></div>'
             +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea>'
               +'<div class="bb-front-toggle-row" id="bb-d-contents-front-row"><span>Show on face of card</span>'
                 +'<div class="bb-front-toggle" id="bb-d-contents-front"><button type="button" data-front="1">Yes</button><button type="button" data-front="0">No</button></div>'

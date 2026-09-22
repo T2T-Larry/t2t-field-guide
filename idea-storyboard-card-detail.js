@@ -310,7 +310,7 @@
       // contents always show, so a card face is never blank.
       + '<div class="sb-subject-field" style="text-align:left;margin:0 0 10px">'
       +   '<div class="sb-hdr-eyebrow2" style="margin:0 0 5px;text-align:left">Subject</div>'
-      +   '<input type="text" id="sb-subject-input" placeholder="Optional headline for the front of the card" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:#2C2C2A">'
+      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline for the front of the card" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:#2C2C2A">'
       +   '<div id="sb-contents-front-row" style="display:flex;align-items:center;gap:8px;margin-top:6px">'
       +     '<span style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">Show contents on face of card</span>'
       +     '<div id="sb-contents-front" style="display:inline-flex;border:1.5px solid #B4B2A9;border-radius:14px;overflow:hidden">'

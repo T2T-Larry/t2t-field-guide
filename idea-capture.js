@@ -1021,7 +1021,7 @@
         +'<button class="isx-src-btn'+(_icEntryType==='note'?' on':'')+'" type="button" data-type="note">NOTES</button>'
       +'</div>'
       +'<div class="isx-p-subject-row">'
-        +'<input type="text" id="isx-p-subject" placeholder="Subject (optional)">'
+        +'<input type="text" id="isx-p-subject" autocomplete="off" autocorrect="off" spellcheck="true" placeholder="Subject (optional)">'
         +'<button class="isx-p-cast-btn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY">👤</button>'
       +'</div>'
       // HEADER/SUBBER only means something on the Idea Board's own header
