@@ -358,7 +358,36 @@
       }
       tile.classList.add('sb-kbd-selected');
     });
-    if((item.content_type==='image'||item.content_type==='link') && item.image_url){
+    // SUBJECT + contents on face, Sept 22 2026 (Larry) -- a card with a
+    // SUBJECT shows it as a bold headline; its contents (text, picture,
+    // or link) follow underneath unless the card's own "Show contents on
+    // face of card" is No. No SUBJECT = contents always show, exactly as
+    // before, so a card face is never blank.
+    var _stSubject=String(item.subject||'').trim();
+    var _stShowContents=!_stSubject || !item.hide_contents_front;
+    var _stMultNow=(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1);
+    var _stBase=Math.round((height>=60?17:14)*2/3*_stMultNow);
+    if(_stSubject && !_stShowContents){
+      var sOnly=document.createElement('p');
+      sOnly.className='sc-tile-subject';
+      sOnly.textContent=_stSubject;
+      sOnly.style.cssText='margin:0;font-weight:700;word-break:break-word;font-size:'+_sboardFitFontSize(_stSubject, _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, height-12, 1.2)+'px';
+      tile.appendChild(sOnly);
+    } else if(_stSubject && item.content_type!=='image' && item.content_type!=='link'){
+      // Text card: headline takes the top ~40%, the text the rest.
+      var sHead=document.createElement('p');
+      sHead.className='sc-tile-subject';
+      sHead.textContent=_stSubject;
+      var sHeadH=Math.max(12, Math.round((height-12)*0.4));
+      sHead.style.cssText='margin:0 0 2px;font-weight:700;word-break:break-word;line-height:1.2;font-size:'+_sboardFitFontSize(_stSubject, _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, sHeadH, 1.2)+'px';
+      tile.appendChild(sHead);
+      var sBody=document.createElement('p');
+      var sBodyText=item.text_content||'';
+      sBody.textContent=sBodyText;
+      var sBodyBase=Math.round(_stBase*0.8);
+      sBody.style.cssText='margin:0;word-break:break-word;overflow:hidden;opacity:.85;font-size:'+_sboardFitFontSize(sBodyText, sBodyBase, Math.max(6,Math.round(sBodyBase*0.4)), width-16, Math.max(10,(height-12)-sHeadH), 1.25)+'px;max-height:'+Math.max(10,(height-12)-sHeadH)+'px';
+      tile.appendChild(sBody);
+    } else if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
       if(item.content_type==='link'){
         var badge=document.createElement('div');
@@ -371,15 +400,18 @@
       // saved, just never shown on the tile face -- only the picture
       // rendered. Skipped for link cards, which already caption
       // themselves with the parsed link title below.
-      if(item.content_type==='image' && item.text_content){
+      // SUBJECT (Sept 22 2026) rides the caption slot when there is one,
+      // on image AND link picture cards, ahead of the typed caption.
+      if(_stSubject || (item.content_type==='image' && item.text_content)){
         var cap=document.createElement('div');
         cap.className='sc-tile-caption';
-        cap.textContent=item.text_content;
+        if(_stSubject) cap.style.fontWeight='700';
+        cap.textContent=_stSubject || item.text_content;
         tile.appendChild(cap);
       }
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
-      var lpText='\ud83d\udd17 '+T2TMedia.parseText(item.text_content).title;
+      var lpText='\ud83d\udd17 '+(_stSubject || T2TMedia.parseText(item.text_content).title);
       lp.textContent=lpText;
       var lpBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
       // Floor lowered Aug 21 2026 (Larry: long words like "Appreciation"
@@ -389,7 +421,7 @@
       // than it should have. Letting it shrink further first keeps the
       // word intact and readable at a smaller size, which is what Larry
       // asked for over splitting it.
-      lp.style.cssText='margin:0;word-break:break-word;font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(6,Math.round(lpBase*0.4)), width-16, height-12, 1.25)+'px';
+      lp.style.cssText='margin:0;word-break:break-word;'+(_stSubject?'font-weight:700;':'')+'font-size:'+_sboardFitFontSize(lpText, lpBase, Math.max(6,Math.round(lpBase*0.4)), width-16, height-12, 1.25)+'px';
       tile.appendChild(lp);
     } else {
       var p=document.createElement('p');

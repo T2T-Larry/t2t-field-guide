@@ -192,9 +192,17 @@
         // neither value is ever written to it.
         var contentType = imageUrl ? 'image' : 'text';
         if(!imageUrl && (_icIdeaMode==='header' || _icIsAutoHeaderText(rawText))) contentType='header';
+        // SUBJECT has its own column on ideas now (Sept 22 2026) -- it
+        // rides the card face as a bold headline with the contents
+        // optional underneath (see idea-storyboard-tiles.js). Headers
+        // keep the old folded-in text: a header's text IS its name.
+        var _icSubjEl2=document.getElementById('isx-p-subject');
+        var _icSubject=(contentType!=='header' && _icSubjEl2) ? _icSubjEl2.value.trim() : '';
+        if(contentType!=='header') text=rawText;
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: contentType,
+          subject: _icSubject||null,
           text_content: text||null,
           image_url: imageUrl||null,
           cluster_id: headerId||null,
@@ -260,6 +268,7 @@
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type:'link',
+          subject: subject||null,
           text_content: JSON.stringify({url:url, title:finalTitle}),
           image_url: thumb||null,
           cluster_id: headerId||null,

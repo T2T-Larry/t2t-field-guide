@@ -302,6 +302,24 @@
       + apexTag
       + topRowHTML
       + headerListHTML
+      // SUBJECT + contents on face, Sept 22 2026 (Larry: "Idea Board
+      // should have the same Subject with optional content on face" --
+      // same as the Briefing Card). SUBJECT is the card's optional
+      // headline on its front; the Yes/No decides whether the card's
+      // contents (text, picture, or link) also show there. No SUBJECT =
+      // contents always show, so a card face is never blank.
+      + '<div class="sb-subject-field" style="text-align:left;margin:0 0 10px">'
+      +   '<div class="sb-hdr-eyebrow2" style="margin:0 0 5px;text-align:left">Subject</div>'
+      +   '<input type="text" id="sb-subject-input" placeholder="Optional headline for the front of the card" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:#2C2C2A">'
+      +   '<div id="sb-contents-front-row" style="display:flex;align-items:center;gap:8px;margin-top:6px">'
+      +     '<span style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">Show contents on face of card</span>'
+      +     '<div id="sb-contents-front" style="display:inline-flex;border:1.5px solid #B4B2A9;border-radius:14px;overflow:hidden">'
+      +       '<button type="button" data-front="1" style="border:0;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">Yes</button>'
+      +       '<button type="button" data-front="0" style="border:0;border-left:1.5px solid #B4B2A9;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">No</button>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div id="sb-contents-front-note" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-top:3px">Add a Subject to choose — without one, the contents always show.</div>'
+      + '</div>'
       + bodyHTML
       // Additions, Aug 27 2026 (Larry: "very similar to BRIEFING CARD but
       // no PRIORITY and no DATES and no BUDGET... IDEA - NOTES - LINKS -
@@ -805,6 +823,59 @@
     // editing, notes, contact info and print in one place. The card's own
     // back stays open underneath; closing the popup just reveals it again
     // (see closeCallSheet), so there's no navigation to unwind here.
+    // SUBJECT + "Show contents on face of card" -- Sept 22 2026. See the
+    // HTML comment on .sb-subject-field above. Saved straight to this
+    // card's own ideas row (subject / hide_contents_front), with undo,
+    // the same way the Priority block just below saves.
+    (function(){
+      var input=document.getElementById('sb-subject-input');
+      if(!input) return;
+      async function saveSubjectFields(fields, before){
+        try{
+          var upd=await _sb.from('ideas').update(fields).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          for(var k in fields) item[k]=fields[k];
+          _sboardPatchRow(item.id, fields);
+          (function(){
+            var itemId=item.id, after=fields;
+            _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
+          })();
+          paintFront();
+          renderSeaBoard(true);
+        }catch(err){ if(statusBox) statusBox.textContent='Could not save subject: '+err.message; }
+      }
+      function paintFront(){
+        var hasSubject=!!input.value.trim();
+        var row=document.getElementById('sb-contents-front-row');
+        var note=document.getElementById('sb-contents-front-note');
+        if(row){ row.style.opacity=hasSubject?'1':'.45'; row.style.pointerEvents=hasSubject?'':'none'; }
+        if(note) note.style.display=hasSubject?'none':'';
+        var showing=!hasSubject || !item.hide_contents_front;
+        Array.prototype.forEach.call(document.querySelectorAll('#sb-contents-front button'), function(b){
+          var on=(b.getAttribute('data-front')==='1')===showing;
+          b.style.background=on?'#1a3a5c':'#fff';
+          b.style.color=on?'#fff':'#2C2C2A';
+        });
+      }
+      function commitSubject(){
+        var val=input.value.trim();
+        if(val===(item.subject||'')) return;
+        saveSubjectFields({subject:val||null}, {subject:item.subject||null});
+      }
+      input.addEventListener('input', paintFront);
+      input.addEventListener('blur', commitSubject);
+      input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); input.blur(); } });
+      Array.prototype.forEach.call(document.querySelectorAll('#sb-contents-front button'), function(b){
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          var hide=b.getAttribute('data-front')!=='1';
+          if(hide===!!item.hide_contents_front) return;
+          saveSubjectFields({hide_contents_front:hide}, {hide_contents_front:!!item.hide_contents_front});
+        });
+      });
+      paintFront();
+    })();
+
     // Priority buttons + "Show on front" -- Sept 22 2026. See the HTML
     // comment on .sb-pri-field above.
     (function(){
