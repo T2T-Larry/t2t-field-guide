@@ -583,7 +583,9 @@
   }
 
   function init(){
-    window.SZLegacyFixes.runAll();
+    // drawer-legacy-fixes.js removed Sept 22 2026 -- its five one-time
+    // patches ran their course (self-documented removal date passed,
+    // empty patch log) -- this call went with it.
     buildDeskWatermark();
     window.SZDrawerSystem.buildNavBar();
     window.SZDrawerSystem.buildRightDrawer();
