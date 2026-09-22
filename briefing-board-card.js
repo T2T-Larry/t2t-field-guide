@@ -276,7 +276,13 @@
   }
   function openCalendarPanel(){
     var ov=document.getElementById('bb-calendar-overlay');
-    if(ov) ov.classList.add('active');
+    // Sept 22 2026: every other draggable overlay resets to its centered
+    // position before showing (_bbResetCardPosition), so a traveler who
+    // drags the panel elsewhere gets it back centered next time. This one
+    // was missing that call -- once dragged, it would keep reopening
+    // wherever it was left, which could visually crowd it against other
+    // on-screen text near the edge of the board.
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
     var webcalUrl=_bbCalendarFeedUrl('webcal');
     var httpsUrl=_bbCalendarFeedUrl('https');
     var linkField=document.getElementById('bb-calendar-link');

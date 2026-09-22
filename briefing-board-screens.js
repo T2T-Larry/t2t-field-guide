@@ -644,7 +644,17 @@
           +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once in Outlook, Apple Calendar, or Google Calendar -- this board’s timed cards stay in sync from then on.</div>'
           +'<a id="bb-calendar-subscribe" href="#" style="display:block;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:10px">Subscribe now</a>'
           +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">Or copy the link:</div>'
-          +'<div style="display:flex;gap:6px;margin-bottom:6px"><input id="bb-calendar-link" type="text" readonly style="flex:1;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 8px;border:0.5px solid #d8cdb8;border-radius:6px;color:#3B2510"><button class="bb-icon-btn" id="bb-calendar-copy" type="button" style="width:auto;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 10px">Copy</button></div>'
+          // Sept 22 2026, Larry: reported the panel as "jumbled up with
+          // words on top of others" -- reproduced at a larger accessibility
+          // text-size setting: the link input and Copy button used to sit
+          // side by side in a flex row, and at bigger text sizes that row
+          // no longer fit the card, so the Copy button got squeezed and
+          // clipped off the edge. Stacking them (each full-width, own line)
+          // instead of side-by-side means there's no row width left to
+          // overflow, at any text-size setting -- a robust fix rather than
+          // a size-specific patch.
+          +'<input id="bb-calendar-link" type="text" readonly style="display:block;width:100%;box-sizing:border-box;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 8px;border:0.5px solid #d8cdb8;border-radius:6px;color:#3B2510;margin-bottom:6px">'
+          +'<button class="bb-icon-btn" id="bb-calendar-copy" type="button" style="display:block;width:100%;box-sizing:border-box;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 10px;margin-bottom:6px">Copy</button>'
           +'<div id="bb-calendar-msg" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b"></div>'
         +'</div>';
       fg.appendChild(calOv);
