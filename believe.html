@@ -58,7 +58,7 @@
 <script src="briefing-board.js?v=20260922a"></script>
 <script src="tmap.js?v=20260729b"></script>
 <script src="dmap.js?v=20260714a"></script>
-<script src="idea-capture.js?v=20260920c"></script>
+<script src="idea-capture.js?v=20260922a"></script>
 <script src="notebook-open.js?v=20260729g"></script>
 <script src="idea-media-shared.js?v=20260919a"></script>
 <script src="idea-storyboard-screens.js?v=20260921a"></script>
@@ -305,6 +305,14 @@
   </div>
 </div>
 
+<!-- Global capture-card overlay -- covers whatever screen is currently
+     active, so 1170 (NEW card) can be opened without navigating away
+     first. This page was missing this div entirely (index.html/dream.html
+     got it July 16 2026; this page never did), which silently broke every
+     NEW card click here -- Larry: "not on idea board. not on BB." Sept 22
+     2026 fix -- matches index.html's placement, direct child of #fg-root,
+     just before the wrapper closes. -->
+<div id="isx-popup-layer"></div>
 </div><!-- /.fg -->
 <div id="nb-layer"></div>
 

@@ -935,7 +935,13 @@
   }
   function _icRenderIdeaPanel(){
     _icIdeaMode='idea';
-    _icEntryType='idea';
+    // NEW card should default to whatever card type matches the board
+    // it was opened from, not always IDEA -- Sept 22 2026, Larry: on the
+    // Briefing Board this should default to TASK. 'bb' mode means this
+    // card was opened from the Briefing Board (openAddCard), so TASK is
+    // the sensible starting selection there; every other opener (Idea
+    // Storyboard, etc.) keeps the previous IDEA default.
+    _icEntryType=(_icMode==='bb')?'task':'idea';
     _icCastPersonId=null; _icCastPersonName='';
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
@@ -944,9 +950,9 @@
       +'<div class="isx-p-project" id="isx-p-project"><span id="isx-p-project-txt">'+_icEsc(_icProjectLabel)+'</span> <span class="isx-p-caret">▾</span></div>'
       +'<div class="isx-p-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel)+'</span> <span class="isx-p-caret">▾</span></div>'
       +'<div class="isx-p-type-row">'
-        +'<button class="isx-src-btn on" type="button" data-type="idea">IDEA</button>'
-        +'<button class="isx-src-btn" type="button" data-type="task">TASK</button>'
-        +'<button class="isx-src-btn" type="button" data-type="note">NOTES</button>'
+        +'<button class="isx-src-btn'+(_icEntryType==='idea'?' on':'')+'" type="button" data-type="idea">IDEA</button>'
+        +'<button class="isx-src-btn'+(_icEntryType==='task'?' on':'')+'" type="button" data-type="task">TASK</button>'
+        +'<button class="isx-src-btn'+(_icEntryType==='note'?' on':'')+'" type="button" data-type="note">NOTES</button>'
       +'</div>'
       +'<div class="isx-p-subject-row">'
         +'<input type="text" id="isx-p-subject" placeholder="Subject (optional)">'
