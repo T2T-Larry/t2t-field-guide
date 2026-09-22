@@ -1054,9 +1054,10 @@
       if(_bbOpenCardId!==c.id) return;
       menu.innerHTML='';
       rows.forEach(function(m){
+        var isSel=currentUid && String(currentUid)===String(m.user_id);
         var row=document.createElement('div');
-        row.className='bb-cdrop-row'+(currentUid && String(currentUid)===String(m.user_id) ? ' active' : '');
-        row.textContent=m.name||m.email||'(unnamed)';
+        row.className='bb-cdrop-row'+(isSel ? ' active' : '');
+        row.innerHTML='<span class="bb-cdrop-check">'+(isSel?'✓':'')+'</span>'+_esc(m.name||m.email||'(unnamed)');
         row.addEventListener('click', async function(e){
           e.stopPropagation();
           menu.hidden=true;

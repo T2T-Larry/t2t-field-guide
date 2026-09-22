@@ -775,10 +775,20 @@
     // add-by-email row -- membership on that roster is the board's
     // Sharing manager's job, not this popup's.
     if(_icMode==='bb'){
+      // Sept 22 2026 -- Larry: "It is not the same on the new card. It
+      // should be the same as on the back of an existing BB card." Was
+      // using its own separate sc-cdrop-menu/sc-cdrop-row look (the Idea/
+      // Plan popup family's skin); now built exactly like the back-of-
+      // card PRIMARY picker (_bbRenderCardPrimaryField, briefing-board-
+      // master.js) -- same bb-cdrop-row/bb-cdrop-menu classes, same
+      // _bbSyncMenuTheme board-accent skin, same checkmark in front of
+      // whichever name is currently picked (here, _icCastPersonId -- this
+      // card hasn't saved yet, so there's no card_roles row to read back).
       var bbMenu=document.createElement('div');
       bbMenu.id='isx-p-cast-menu';
-      bbMenu.className='sc-cdrop-menu';
+      bbMenu.className='bb-cdrop-menu';
       document.body.appendChild(bbMenu);
+      if(typeof _bbSyncMenuTheme==='function') _bbSyncMenuTheme(bbMenu);
       function positionBbMenu(){
         var r=anchorEl.getBoundingClientRect();
         bbMenu.style.left=r.left+'px';
@@ -791,21 +801,22 @@
         bbMenu.innerHTML='';
         if(loading){
           var l=document.createElement('div');
-          l.className='sc-cdrop-row';
+          l.className='bb-cdrop-row';
           l.style.cssText='cursor:default;opacity:.6';
           l.textContent='Loading…';
           bbMenu.appendChild(l);
         } else if(!rows.length){
           var bbEmpty=document.createElement('div');
-          bbEmpty.className='sc-cdrop-row';
+          bbEmpty.className='bb-cdrop-row';
           bbEmpty.style.cssText='cursor:default;opacity:.6';
           bbEmpty.textContent='No one on this board yet.';
           bbMenu.appendChild(bbEmpty);
         } else {
           rows.forEach(function(p){
+            var isSel=_icCastPersonId && String(_icCastPersonId)===String(p.user_id);
             var row=document.createElement('div');
-            row.className='sc-cdrop-row';
-            row.textContent=p.name||p.email||'(unnamed)';
+            row.className='bb-cdrop-row'+(isSel?' active':'');
+            row.innerHTML='<span class="bb-cdrop-check">'+(isSel?'✓':'')+'</span>'+_icEsc(p.name||p.email||'(unnamed)');
             row.addEventListener('click', function(ev){
               ev.stopPropagation();
               bbMenu.remove();

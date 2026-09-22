@@ -407,6 +407,11 @@
       // line instead of the plain single-line text the class assumes.
       +'.bb-cdrop-row.bb-view-person-row{display:flex;align-items:center;gap:6px}'
       +'.bb-cdrop-row.bb-view-person-row input[type=checkbox]{margin:0;flex:none}'
+      // PRIMARY picker's checkmark, Sept 22 2026 -- Larry: "Put a check
+      // mark in front of the selected name." A fixed-width leading slot
+      // (empty for every other row) so the name text itself doesn't jump
+      // left/right depending on which row currently holds the mark.
+      +'.bb-cdrop-check{display:inline-block;width:14px;color:var(--bb-accent);font-weight:700}'
       // .bb-view-person-tag ("• task only" label) dropped Sept 20 2026 --
       // see briefing-board-master-nav.js's VIEW row build for why.
       +'.bb-cdrop-addrow{display:flex;justify-content:center;gap:10px;padding:6px 0 2px;margin-top:2px;border-top:1px solid var(--bb-bg)}'
