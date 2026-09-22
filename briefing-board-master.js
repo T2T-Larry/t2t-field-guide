@@ -591,6 +591,13 @@
     // won't come back next reload).
     _bbPurgeOldTrash(boardId);
     _bbPurgeOldMoves(boardId);
+    // Sept 22 2026, Larry: the quick Calendar icon should open straight to
+    // viewing whichever calendar this traveler already picked for this
+    // board, not ask again -- which means that answer needs to already be
+    // in hand (_bbCalendarSelectionCache) by the time someone clicks,
+    // not looked up only after the click. Fire-and-forget, same pattern
+    // as the trash/moves sweeps just above.
+    if(typeof _bbLoadCalendarSelection==='function') _bbLoadCalendarSelection(boardId);
 
     // One-time migration, July 21, 2026 (evening): the first time Field
     // Guide BB is opened empty after named multi-board storage shipped,

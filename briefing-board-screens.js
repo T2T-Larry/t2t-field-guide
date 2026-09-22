@@ -341,9 +341,15 @@
         +'<div class="bb-trash" id="bb-trash" title="Trash">'+TRASH_SVG+'</div>'
         // Sept 20 2026, Larry: swap the clock-face Recent Moves icon for a
         // Calendar button -- Ctrl/Cmd+Z (wireBbUndoKeyboard) already covers
-        // the undo job Recent Moves existed for. Opens a subscribe panel
-        // (bb-calendar-overlay) with this board's webcal feed link.
-        +'<div class="bb-trash" id="bb-calendar" title="Calendar" style="right:68px">'+CALENDAR_SVG+'</div>'
+        // the undo job Recent Moves existed for.
+        // Sept 22 2026, Larry: once a traveler has already picked a
+        // calendar for this board, this icon should open straight to
+        // *viewing* it instead of showing the add-a-calendar panel again
+        // (_bbCalendarIconClick in briefing-board-card.js decides which).
+        // The small dot badges on once a selection is on record
+        // (_bbUpdateCalendarBadge), so there's a visible sign at a glance
+        // that this board is already connected.
+        +'<div class="bb-trash" id="bb-calendar" title="Calendar" style="right:68px">'+CALENDAR_SVG+'<span id="bb-calendar-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#2e7d4f;border:1.5px solid #FFFDF7"></span></div>'
       +'</div>';
     while(div.firstChild) fg.appendChild(div.firstChild);
 
@@ -641,15 +647,26 @@
       calOv.innerHTML=
          '<div class="bb-overlay-card" style="width:320px">'
           +'<div class="bb-overlay-head"><span class="bb-overlay-title">Calendar</span><button class="bb-close" id="bb-calendar-close" aria-label="Close">✕</button></div>'
-          +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once and this board’s timed cards stay in sync from then on.</div>'
+          // Sept 22 2026, Larry: this panel now does double duty -- it's
+          // the Utilities > Calendar screen (always shows the full
+          // picker, so a second or third calendar can always be added,
+          // there's no limit) AND it's what the quick bottom-right icon
+          // falls back to the first time, before anything's been picked
+          // yet. bb-calendar-status carries whichever line fits: the
+          // plain intro when nothing's on record yet, or "X added on
+          // DATE" once _bbLoadCalendarSelection has an answer -- filled
+          // in by openCalendarPanel, not hard-coded here.
+          +'<div id="bb-calendar-status" style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once and this board’s timed cards stay in sync from then on.</div>'
           // Sept 22 2026, Larry: the single "Subscribe now" button handed
           // a bare webcal:// link to the browser, which had no way to know
           // which app should get it -- so it threw up a generic OS chooser
           // (Larry saw "Outlook classic" as one of the options and had no
           // way to know what that even was). Three named buttons, each
           // built for that service's own add-by-URL page, skip that
-          // chooser entirely -- one tap does the right thing.
-          +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Choose your calendar:</div>'
+          // chooser entirely -- one tap does the right thing. No limit on
+          // how many of the three a traveler picks -- clicking any of
+          // them just records it as the one the quick icon should open.
+          +'<div id="bb-calendar-choose-label" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Choose your calendar:</div>'
           +'<a id="bb-calendar-google" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Google Calendar</a>'
           +'<a id="bb-calendar-outlook" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Outlook</a>'
           +'<a id="bb-calendar-apple" href="#" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:10px">Apple Calendar</a>'
@@ -665,6 +682,24 @@
           // a size-specific patch.
           +'<input id="bb-calendar-link" type="text" readonly style="display:block;width:100%;box-sizing:border-box;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 8px;border:0.5px solid #d8cdb8;border-radius:6px;color:#3B2510;margin-bottom:6px">'
           +'<button class="bb-icon-btn" id="bb-calendar-copy" type="button" style="display:block;width:100%;box-sizing:border-box;height:auto;font-size:calc(11px * var(--fg-text-scale,1));padding:6px 10px;margin-bottom:6px">Copy</button>'
+          // Sept 22 2026, Larry: wanted travelers to know updates aren't
+          // instant, so a newly-added due date doesn't read as "the sync
+          // is broken" if it hasn't shown up in Outlook/Google/Apple yet.
+          +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;font-style:italic;text-align:center;margin-bottom:10px">Calendars only update every few hours, not instantly.</div>'
+          // Sept 22 2026, Larry: "Include in Utilities how to delete a
+          // calendar" -- Field Guide has no way to reach into a
+          // traveler's own Outlook/Google/Apple account and remove
+          // something for them, so the honest answer is a short set of
+          // steps for each, not a button. Kept compact (one line per
+          // service) rather than a full walkthrough.
+          +'<div style="border-top:1px solid #e9dfc9;padding-top:8px;margin-bottom:6px">'
+            +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">Don’t want it anymore? Remove it from within that app:</div>'
+            +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;line-height:1.5">'
+              +'<b>Google Calendar:</b> under "Other calendars" in the left list, hover the calendar’s name, click the &#8942;, then Unsubscribe.<br>'
+              +'<b>Outlook:</b> right-click the calendar in your list on the left, then Remove.<br>'
+              +'<b>Apple Calendar:</b> select the calendar in the sidebar, then Edit &rarr; Delete Calendar (or right-click it &rarr; Delete).'
+            +'</div>'
+          +'</div>'
           +'<div id="bb-calendar-msg" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b"></div>'
         +'</div>';
       fg.appendChild(calOv);

@@ -408,7 +408,12 @@ function T(){ return window.T2T; }
     wireTrashIcon();
     wireRecentlyDeleted();
     wireCalendarPanel();
-    T().wire('bb-calendar', openCalendarPanel);
+    // Sept 22 2026, Larry: the icon should open straight to VIEWING the
+    // calendar already picked for this board, and only fall back to the
+    // add-a-calendar panel the first time, before anything's on record
+    // (_bbCalendarIconClick, briefing-board-card.js) -- adding a second
+    // one or removing one stays a Utilities > Calendar job.
+    T().wire('bb-calendar', _bbCalendarIconClick);
     wireTopicBar();
     _bbWireBoardKindDropdown();
     _bbWireViewDropdown();

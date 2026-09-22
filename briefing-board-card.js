@@ -274,6 +274,74 @@
     if(!board || !board.calendar_token) return null;
     return scheme+'://'+BB_CALENDAR_FEED_HOST+'/functions/v1/calendar-feed?board='+encodeURIComponent(board.id)+'&token='+encodeURIComponent(board.calendar_token);
   }
+  // Sept 22 2026, Larry: "should the button reflect we have subscribed?
+  // Should there be an option to change subscriptions?" -- calendar_
+  // selections (board_id, user_id) on file tracks the last service THIS
+  // traveler picked for THIS board (RLS-scoped to auth.uid(), same
+  // pattern as visited_pages/journal_notes/gems). It's a record of which
+  // button they clicked, not real confirmation they finished adding it
+  // in that app -- there's no way for this site to see into Outlook/
+  // Google/Apple and check. _bbSwitchToBoard (briefing-board-master.js)
+  // kicks this load off as soon as a board opens, so it's already
+  // answered -- not still loading -- by the time the icon could be
+  // clicked.
+  var _bbCalendarSelectionCache={}; // boardId -> {service,added_at} | null | undefined(not yet asked)
+  var CALENDAR_SERVICE_LABEL={google:'Google Calendar', outlook:'Outlook', apple:'Apple Calendar'};
+  async function _bbLoadCalendarSelection(boardId){
+    if(!boardId) return null;
+    var sb=T().sb; if(!sb){ _bbCalendarSelectionCache[boardId]=null; return null; }
+    var uid=await _bbCurrentUserId();
+    if(!uid){ _bbCalendarSelectionCache[boardId]=null; return null; }
+    try{
+      var res=await sb.from('calendar_selections').select('service,added_at').eq('board_id',boardId).eq('user_id',uid).maybeSingle();
+      var sel=(res&&res.data)?res.data:null;
+      _bbCalendarSelectionCache[boardId]=sel;
+      if(boardId===_bbCurrentBoardId) _bbUpdateCalendarBadge(sel);
+      return sel;
+    }catch(e){ _bbCalendarSelectionCache[boardId]=null; return null; }
+  }
+  async function _bbSaveCalendarSelection(boardId, service){
+    var sb=T().sb; if(!sb || !boardId) return;
+    var uid=await _bbCurrentUserId(); if(!uid) return;
+    var addedAt=new Date().toISOString();
+    try{
+      await sb.from('calendar_selections').upsert(
+        {board_id:boardId, user_id:uid, service:service, added_at:addedAt},
+        {onConflict:'board_id,user_id'}
+      );
+      _bbCalendarSelectionCache[boardId]={service:service, added_at:addedAt};
+      if(boardId===_bbCurrentBoardId) _bbUpdateCalendarBadge(_bbCalendarSelectionCache[boardId]);
+    }catch(e){ console.error('Briefing Board: could not save calendar selection', e); }
+  }
+  // "View my calendar" destinations -- each service's own calendar page,
+  // not the add-by-URL page (that's openCalendarPanel below). Apple has
+  // no universal web calendar of its own the way Google/Outlook do;
+  // iCloud.com's is the closest same-idea fallback for anyone on a PC
+  // rather than a Mac/iPhone where Calendar is just an app already.
+  function _bbCalendarViewUrl(service){
+    if(service==='google') return 'https://calendar.google.com/calendar/r';
+    if(service==='outlook') return 'https://outlook.office.com/calendar/view/month';
+    if(service==='apple') return 'https://www.icloud.com/calendar/';
+    return null;
+  }
+  function _bbUpdateCalendarBadge(sel){
+    var badge=document.getElementById('bb-calendar-badge');
+    if(badge) badge.style.display=(sel&&sel.service)?'block':'none';
+  }
+  // Sept 22 2026, Larry: the quick icon should skip straight to viewing
+  // the calendar already picked for this board, and only fall back to
+  // the add-a-calendar panel the first time, before anything's on
+  // record. Adding a second (or third) calendar, or removing one, stays
+  // a Utilities > Calendar job (openCalendarPanel, wired there too) --
+  // this click handler is only ever the icon's own shortcut.
+  function _bbCalendarIconClick(){
+    var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
+    if(sel && sel.service){
+      var viewUrl=_bbCalendarViewUrl(sel.service);
+      if(viewUrl){ window.open(viewUrl, '_blank', 'noopener'); return; }
+    }
+    openCalendarPanel();
+  }
   function openCalendarPanel(){
     var ov=document.getElementById('bb-calendar-overlay');
     // Sept 22 2026: every other draggable overlay resets to its centered
@@ -290,7 +358,22 @@
     var outlookBtn=document.getElementById('bb-calendar-outlook');
     var appleBtn=document.getElementById('bb-calendar-apple');
     var msg=document.getElementById('bb-calendar-msg');
+    var statusEl=document.getElementById('bb-calendar-status');
+    var chooseLabel=document.getElementById('bb-calendar-choose-label');
     var allBtns=[googleBtn,outlookBtn,appleBtn];
+    // Sept 22 2026, Larry: status-aware wording -- reachable both from the
+    // quick icon (only when nothing's picked yet) and from Utilities >
+    // Calendar (always), so this same panel has to read right either way.
+    var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
+    if(sel && sel.service){
+      var addedDate='';
+      try{ addedDate=new Date(sel.added_at).toLocaleDateString('en-US',{month:'numeric',day:'numeric'}); }catch(e){}
+      if(statusEl) statusEl.textContent=CALENDAR_SERVICE_LABEL[sel.service]+' added'+(addedDate?' on '+addedDate:'')+'. Add another below, or use the icon on the board to open it.';
+      if(chooseLabel) chooseLabel.textContent='Add another calendar:';
+    }else{
+      if(statusEl) statusEl.textContent='Subscribe once and this board\u2019s timed cards stay in sync from then on.';
+      if(chooseLabel) chooseLabel.textContent='Choose your calendar:';
+    }
     if(!webcalUrl){
       if(msg) msg.textContent='Calendar link isn\u2019t ready for this board yet -- try again in a moment.';
       if(linkField) linkField.value='';
@@ -351,6 +434,17 @@
         }
       });
     }
+    // Sept 22 2026, Larry: record which service a traveler picked, so the
+    // quick icon knows what to open next time and Utilities > Calendar
+    // can show "X added". This just records the click -- it doesn't wait
+    // for or confirm that Google/Outlook/Apple actually finished adding
+    // it on their end, since this site has no way to see that. Each
+    // button keeps its own href/target doing the real navigation; this
+    // only piggybacks a save alongside it, never blocks it.
+    ['google','outlook','apple'].forEach(function(service){
+      var btn=document.getElementById('bb-calendar-'+service);
+      if(btn) btn.addEventListener('click', function(){ _bbSaveCalendarSelection(_bbCurrentBoardId, service); });
+    });
   }
   // Rows older than this get cleaned up automatically -- mirrors the
   // Trash retention window (BB_TRASH_RETENTION_DAYS below).

@@ -1475,6 +1475,10 @@
         reload:      { onClick: function(){ closeSettings(); T().resetAndReturn(); } },
         menu:        { onClick: function(){ closeSettings(); T().goMG(); } },
         history:     { onClick: function(){ closeSettings(); openHX(); } },
+        // Sept 22 2026, Larry: Calendar's add/remove home -- same panel
+        // the quick bottom-right icon falls back to before anything's
+        // picked yet (openCalendarPanel, briefing-board-card.js).
+        calendar:    { onClick: function(){ closeSettings(); openCalendarPanel(); } },
         signout:     { onClick: function(){ window.T2TSettingsMenu.confirmSignOut(closeSettings); } }
       }, { idPrefix: 'bb-settings-go-', btnClass: 'bb-flag-btn', includeHeading: false, wrapClass: 'bb-field' });
       body.innerHTML = built.html;

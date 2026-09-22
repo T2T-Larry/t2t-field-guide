@@ -113,6 +113,14 @@ in their own file-header comments the next time they're touched).
       item('reload',      '&#128260;', 'Reload',       null),
       item('menu',        '&#128269;', 'Jump to Menu', null),
       item('history',     '&#128337;', 'History',      'Board history — open a Briefing Board to use this'),
+      // Sept 22 2026, Larry: the quick bottom-right icon on the board
+      // itself is now just a shortcut to VIEW whichever calendar's
+      // already picked -- this is where the actual add/remove happens
+      // (same panel as the icon falls back to the first time, before
+      // anything's on record). Board-scoped like History just above, so
+      // it's disabled with an explanation everywhere except the Briefing
+      // Board, which passes its own onClick.
+      item('calendar',    '&#128197;', 'Calendar',     'Calendar — open a Briefing Board to use this'),
       item('signout',     '&#128682;', 'Sign Out',     null, true)
     ];
   }
