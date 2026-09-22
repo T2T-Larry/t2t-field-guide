@@ -1289,6 +1289,7 @@
     _bbDetailBeforeSnapshot=_bbSnapshotCardDetail(c);
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
     _bbRenderCardProjectField(c);
+    _bbRenderCardPrimaryField(c);
     document.getElementById('bb-d-situation').value=c.situation||'';
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';

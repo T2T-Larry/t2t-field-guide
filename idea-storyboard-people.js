@@ -1140,26 +1140,61 @@
   // backfills, same roster-changed callback. Bridged onto
   // window.T2TStoryboard below so idea-capture.js (a separate file) can
   // call it the instant a NEW card finishes saving.
+  // Sept 22 2026 fix -- Larry, Master BB: confirmed (again) that PRIMARY
+  // here always means the accountability role (role='primary' --
+  // "responsible for making it happen"), never the separate ★ Primary
+  // Doer/is_primary star; the Doer is a later, separate pick the PRIMARY
+  // person makes. This function was built Sept 19 for the brand-new-card
+  // popup only, where a blind insert was safe -- a card that doesn't
+  // exist yet can't already have a PRIMARY to collide with. Reused as-is
+  // on an EXISTING card (the back-of-card head icon below), it would
+  // leave two role='primary' rows on the same card at once whenever
+  // someone other than the current PRIMARY got picked -- the same "at
+  // most one" invariant _csSaveRole's own pick-Primary branch already
+  // protects (_csPriorPrimaryToStakeholder), just missing here. Now does
+  // the same: demotes whoever else holds PRIMARY on this card to
+  // Stakeholder first, and updates the chosen person's own existing row
+  // in place instead of inserting a second one if they're already on the
+  // card in some other role.
   async function _csAssignPrimaryDirect(item, cardType, userId){
     if(!item || !item.id || !userId) return {ok:false, msg:'Nothing to assign PRIMARY to.'};
     var _sb=T().sb; if(!_sb) return {ok:false, msg:'Not connected.'};
     try{
-      var meRes=await _sb.auth.getUser();
-      var me=meRes && meRes.data ? meRes.data.user : null;
-      var ins=await _sb.from('card_roles').insert({
-        card_type:cardType||'idea', card_id:item.id, role:'primary',
-        user_id:userId, added_by: me?me.id:null, status:'accepted'
-      });
-      if(ins.error) throw ins.error;
-      await _csApplyAncestorStakeholders(cardType||'idea', item.id, userId);
-      _csItem=item; _csCardType=cardType||'idea';
+      var ct=cardType||'idea';
+      var existing=await _sb.from('card_roles').select('id').eq('card_type',ct).eq('card_id',item.id).eq('user_id',userId).maybeSingle();
+      var existingId=(existing.data && existing.data.id) || null;
+      // Demote every OTHER PRIMARY on this card to Stakeholder (never
+      // deletes -- same as _csPriorPrimaryToStakeholder/Aug 29 2026:
+      // "PRIMARY is by definition a STAKEHOLDER").
+      var priorRes=await _sb.from('card_roles').select('id').eq('card_type',ct).eq('card_id',item.id).eq('role','primary');
+      var priorRows=(!priorRes.error && priorRes.data) ? priorRes.data : [];
+      for(var i=0;i<priorRows.length;i++){
+        if(existingId && String(priorRows[i].id)===String(existingId)) continue;
+        await _sb.from('card_roles').update({role:'stakeholder', is_key:true}).eq('id', priorRows[i].id);
+      }
+      if(existingId){
+        var upd=await _sb.from('card_roles').update({role:'primary', status:'accepted'}).eq('id', existingId);
+        if(upd.error) throw upd.error;
+      } else {
+        var meRes=await _sb.auth.getUser();
+        var me=meRes && meRes.data ? meRes.data.user : null;
+        var ins=await _sb.from('card_roles').insert({
+          card_type:ct, card_id:item.id, role:'primary',
+          user_id:userId, added_by: me?me.id:null, status:'accepted'
+        });
+        if(ins.error) throw ins.error;
+      }
+      await _csApplyAncestorStakeholders(ct, item.id, userId);
+      _csItem=item; _csCardType=ct;
       await _csLoadRoles(item);
       _sboardInvalidateEffPrimary();
+      delete _sboardCardPrimaryCache[_sboardCpKey(ct, item.id)];
       await _csAutoPrimaryIfSolo();
       await _csAutoPrimaryIfEmpty();
+      await _sboardEnsureEffectivePrimaryRaw(ct, [item.id]);
       if(_csOnRosterChange) _csOnRosterChange();
       return {ok:true};
-    }catch(e){ console.warn('NEW card: could not assign PRIMARY directly', e); return {ok:false, msg:(e&&e.message)||'Could not assign PRIMARY.'}; }
+    }catch(e){ console.warn('Could not assign PRIMARY directly', e); return {ok:false, msg:(e&&e.message)||'Could not assign PRIMARY.'}; }
   }
 
   // New adds default to Cast Member -- Session 255, replacing the old

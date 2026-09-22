@@ -59,7 +59,7 @@
     // dropdown opened, but not otherwise. Adding it, plus the new
     // bb-topic-ancestor-menu (TOPIC's up-arrow, today), so both close
     // the same way every other dropdown here already does.
-    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-view-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu','bb-d-project-menu'].forEach(function(id){
+    ['bb-type-menu','bb-org-name-menu','bb-board-menu','bb-boardkind-menu','bb-view-menu','bb-parent-menu','bb-topic-menu','bb-topic-ancestor-menu','bb-d-project-menu','bb-d-primary-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;

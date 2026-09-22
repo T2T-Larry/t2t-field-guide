@@ -456,7 +456,24 @@
             // above task on back of BB card") -- which project a card
             // belongs to reads as the more important fact to confirm
             // first, before the task text itself.
-            +'<div class="bb-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which project this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div></div>'
+            // PRIMARY head icon, Sept 22 2026 -- Larry, Master BB: "Add
+            // cast selection head to BB card just like on BB cast view but
+            // this selects PRIMARY... beside and after PROJECT." Same
+            // single head-icon (👤) shape as the MASTER view's own Cast/
+            // VIEW button (bb-view-trigger) -- same board roster, same
+            // dark dropdown skin, lights up (.bb-view-on) once someone
+            // holds PRIMARY -- but single-select, and picking a name
+            // assigns that person PRIMARY (card_roles.role='primary',
+            // accountability -- confirmed again this session: NOT the
+            // separate ★ Primary Doer/is_primary star, which is a later,
+            // separate pick the PRIMARY person makes) straight away
+            // instead of filtering the board. Wired in
+            // _bbRenderCardPrimaryField (briefing-board-master.js),
+            // called from openCardDetail alongside the Project field.
+            +'<div class="bb-field"><label>Project</label><div style="display:flex;align-items:center;gap:8px">'
+              +'<div class="bb-cdrop" style="flex:1 1 auto;min-width:0"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which project this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
+              +'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'
+            +'</div></div>'
             // Added-date, Aug 27 2026 (Larry: "What if the date added is
             // quietly after the TASK Eyebrow?") -- the standalone "Dates"
             // block (below) used to hold this, but once Start Date moved

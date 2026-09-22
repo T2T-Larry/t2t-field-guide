@@ -1018,6 +1018,93 @@
     }, 'Add a project');
   }
 
+  // PRIMARY head icon, Sept 22 2026 -- see the HTML comment on this field
+  // (briefing-board-screens.js) for the "why." Deliberately its own
+  // single-select wiring rather than a reuse of _bbRenderDropdown just
+  // above: this stays a plain 👤 icon (never replaced with the picked
+  // name, the way _bbRenderDropdown always overwrites its trigger's own
+  // text) so it reads as the same compact head-icon button as MASTER
+  // view's own Cast/VIEW trigger, not a text field. Mirrors
+  // _bbWireViewDropdown's shape (briefing-board-master-nav.js) -- same
+  // roster source, same dark dropdown skin, same open/position/theme
+  // pattern -- but single-select (picking a name assigns PRIMARY and
+  // closes immediately, no checkboxes) and reads/writes this one card's
+  // own PRIMARY instead of the board-wide VIEW filter.
+  async function _bbRenderCardPrimaryField(c){
+    var trigger=document.getElementById('bb-d-primary-trigger'), menu=document.getElementById('bb-d-primary-menu');
+    if(!trigger || !menu) return;
+    var sb=T().sb;
+    var currentUid=null;
+    if(sb){
+      try{
+        var res=await sb.from('card_roles').select('user_id').eq('card_type','briefing_card').eq('card_id', c.id).eq('role','primary').maybeSingle();
+        if(!res.error && res.data) currentUid=res.data.user_id;
+      }catch(e){ console.error('Briefing Board: could not load current PRIMARY', e); }
+    }
+    if(_bbOpenCardId!==c.id) return; // a different card opened while this was loading
+    await _bbPaintPrimaryTrigger(trigger, currentUid);
+
+    async function openMenu(){
+      if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
+      if(_bbOpenCardId!==c.id) return;
+      // Same list source as MASTER view's own Cast/VIEW dropdown
+      // (_bbWireViewDropdown) -- roster plus anyone with a real card_roles
+      // row at this level who never got added to the board roster itself.
+      var rows=typeof _bbAssignedRosterRows==='function' ? await _bbAssignedRosterRows() : (typeof _bbAllRosterRows==='function' ? _bbAllRosterRows() : []);
+      if(_bbOpenCardId!==c.id) return;
+      menu.innerHTML='';
+      rows.forEach(function(m){
+        var row=document.createElement('div');
+        row.className='bb-cdrop-row'+(currentUid && String(currentUid)===String(m.user_id) ? ' active' : '');
+        row.textContent=m.name||m.email||'(unnamed)';
+        row.addEventListener('click', async function(e){
+          e.stopPropagation();
+          menu.hidden=true;
+          if(!window.T2TStoryboard || typeof window.T2TStoryboard.assignPrimaryDirect!=='function') return;
+          var res=await window.T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', m.user_id);
+          if(!res || !res.ok){ _bbShowToast((res&&res.msg)||'Could not assign PRIMARY.'); return; }
+          currentUid=m.user_id;
+          await _bbPaintPrimaryTrigger(trigger, currentUid);
+          renderBoard();
+        });
+        menu.appendChild(row);
+      });
+      if(menu.parentElement!==document.body) document.body.appendChild(menu);
+      _bbSyncMenuTheme(menu);
+      var r=trigger.getBoundingClientRect();
+      menu.style.left=r.left+'px';
+      menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(140,r.width)+'px';
+      menu.hidden=false;
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+    }
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _bbCloseAllDropdowns(willOpen?'bb-d-primary-menu':null);
+      if(willOpen) openMenu(); else menu.hidden=true;
+    };
+  }
+  // Shared between the initial paint and the post-pick repaint above --
+  // resolves currentUid to a display name off the board roster (falling
+  // back to a bare fetch if this traveler isn't on the roster proper,
+  // same reasoning _bbAssignedRosterRows already uses for VIEW).
+  async function _bbPaintPrimaryTrigger(trigger, uid){
+    var name=null;
+    if(uid){
+      var rows=typeof _bbAllRosterRows==='function' ? _bbAllRosterRows() : [];
+      var row=rows.filter(function(m){ return String(m.user_id)===String(uid); })[0];
+      name=row ? (row.name||row.email) : null;
+      if(!name){
+        try{ var pool=await _bbFetchAllMembers(); var m2=(pool||[]).filter(function(p){ return String(p.user_id)===String(uid); })[0]; if(m2) name=m2.name||m2.email; }catch(e){}
+      }
+    }
+    trigger.classList.toggle('bb-view-on', !!uid);
+    trigger.title='PRIMARY: '+(name||(uid?'(unnamed)':'unassigned'));
+    trigger.setAttribute('aria-label','PRIMARY — '+(name||'unassigned')+' — click to change');
+  }
+
   async function _bbInitBoardsAndData(){
     var uid=await _bbCurrentUserId();
     // _bbRenderLogo() added to every early-exit branch below, Sept 8
