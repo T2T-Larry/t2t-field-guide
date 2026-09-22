@@ -657,6 +657,27 @@
           // DATE" once _bbLoadCalendarSelection has an answer -- filled
           // in by openCalendarPanel, not hard-coded here.
           +'<div id="bb-calendar-status" style="font-size:calc(11px * var(--fg-text-scale,1));color:#7A5C3A;font-style:italic;margin-bottom:10px">Subscribe once and this board’s timed cards stay in sync from then on.</div>'
+          // Sept 22 2026, Larry: "What if the projects are for different
+          // clients? ... we might not want them to see other client
+          // dates" -- Field Guide is one board per member with PROJECT
+          // as just a filter tag on each card, so a plain board-wide
+          // link includes every project. This row only shows up when
+          // you've navigated into a specific project (openCalendarPanel
+          // hides it entirely at the MASTER/root level, since there's
+          // nothing narrower to scope to there) and lets you choose a
+          // link that's limited to that one project's own cards --
+          // safe to hand to that project's client without exposing
+          // anyone else's dates. Defaults to the narrower option
+          // whenever it's offered, on the idea that opening this panel
+          // from inside a specific project signals that's the one you
+          // mean to share.
+          +'<div id="bb-calendar-scope-row" style="display:none;margin-bottom:10px">'
+            +'<div style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">What should this link include?</div>'
+            +'<div style="display:flex;gap:6px">'
+              +'<button type="button" id="bb-calendar-scope-project" class="bb-icon-btn" style="flex:1;height:auto;padding:6px 4px;font-size:calc(10px * var(--fg-text-scale,1))">Just this project</button>'
+              +'<button type="button" id="bb-calendar-scope-all" class="bb-icon-btn" style="flex:1;height:auto;padding:6px 4px;font-size:calc(10px * var(--fg-text-scale,1))">All projects</button>'
+            +'</div>'
+          +'</div>'
           // Sept 22 2026, Larry: the single "Subscribe now" button handed
           // a bare webcal:// link to the browser, which had no way to know
           // which app should get it -- so it threw up a generic OS chooser

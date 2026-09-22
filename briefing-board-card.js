@@ -342,40 +342,41 @@
     }
     openCalendarPanel();
   }
-  function openCalendarPanel(){
-    var ov=document.getElementById('bb-calendar-overlay');
-    // Sept 22 2026: every other draggable overlay resets to its centered
-    // position before showing (_bbResetCardPosition), so a traveler who
-    // drags the panel elsewhere gets it back centered next time. This one
-    // was missing that call -- once dragged, it would keep reopening
-    // wherever it was left, which could visually crowd it against other
-    // on-screen text near the edge of the board.
-    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
-    var webcalUrl=_bbCalendarFeedUrl('webcal');
-    var httpsUrl=_bbCalendarFeedUrl('https');
+  // Sept 22 2026, Larry: per-project scoped links (client-safe sharing) --
+  // see the matching Sept 22 comment on the calendar-feed Edge Function
+  // for the security shape. project_calendar_tokens (board_id,
+  // project_header_id, token) is generated the first time it's needed,
+  // not pre-created for every project up front -- most projects will
+  // never be individually shared, so there's no reason to mint a token
+  // for each one on the off chance.
+  async function _bbGetOrCreateProjectCalendarToken(boardId, projectId){
+    var sb=T().sb; if(!sb || !boardId || !projectId) return null;
+    try{
+      var sel=await sb.from('project_calendar_tokens').select('token').eq('board_id',boardId).eq('project_header_id',projectId).maybeSingle();
+      if(!sel.error && sel.data && sel.data.token) return sel.data.token;
+      var ins=await sb.from('project_calendar_tokens').insert({board_id:boardId, project_header_id:projectId}).select('token').maybeSingle();
+      if(!ins.error && ins.data) return ins.data.token;
+    }catch(e){ console.error('Briefing Board: could not get/create this project\'s calendar token', e); }
+    return null;
+  }
+  function _bbProjectCalendarFeedUrl(scheme, boardId, projectId, token){
+    if(!boardId || !projectId || !token) return null;
+    return scheme+'://'+BB_CALENDAR_FEED_HOST+'/functions/v1/calendar-feed?board='+encodeURIComponent(boardId)+'&project='+encodeURIComponent(projectId)+'&token='+encodeURIComponent(token);
+  }
+  // Fills the three service buttons + copy-link field from whichever
+  // webcal/https pair is currently in scope (whole board, or one
+  // project) -- pulled out of openCalendarPanel so the "All projects" /
+  // "Just this project" toggle can call it again on switch, instead of
+  // duplicating this block.
+  function _bbApplyCalendarLinks(webcalUrl, httpsUrl, calNameRaw){
     var linkField=document.getElementById('bb-calendar-link');
     var googleBtn=document.getElementById('bb-calendar-google');
     var outlookBtn=document.getElementById('bb-calendar-outlook');
     var appleBtn=document.getElementById('bb-calendar-apple');
     var msg=document.getElementById('bb-calendar-msg');
-    var statusEl=document.getElementById('bb-calendar-status');
-    var chooseLabel=document.getElementById('bb-calendar-choose-label');
     var allBtns=[googleBtn,outlookBtn,appleBtn];
-    // Sept 22 2026, Larry: status-aware wording -- reachable both from the
-    // quick icon (only when nothing's picked yet) and from Utilities >
-    // Calendar (always), so this same panel has to read right either way.
-    var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
-    if(sel && sel.service){
-      var addedDate='';
-      try{ addedDate=new Date(sel.added_at).toLocaleDateString('en-US',{month:'numeric',day:'numeric'}); }catch(e){}
-      if(statusEl) statusEl.textContent=CALENDAR_SERVICE_LABEL[sel.service]+' added'+(addedDate?' on '+addedDate:'')+'. Add another below, or use the icon on the board to open it.';
-      if(chooseLabel) chooseLabel.textContent='Add another calendar:';
-    }else{
-      if(statusEl) statusEl.textContent='Subscribe once and this board\u2019s timed cards stay in sync from then on.';
-      if(chooseLabel) chooseLabel.textContent='Choose your calendar:';
-    }
     if(!webcalUrl){
-      if(msg) msg.textContent='Calendar link isn\u2019t ready for this board yet -- try again in a moment.';
+      if(msg) msg.textContent='Calendar link isn\u2019t ready yet -- try again in a moment.';
       if(linkField) linkField.value='';
       allBtns.forEach(function(b){ if(b) b.style.display='none'; });
       return;
@@ -402,8 +403,7 @@
     // display:block is set explicitly each time (not left to the HTML
     // default) so none of these three can regress the way the old single
     // button did.
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    var calName=encodeURIComponent((board&&board.name)?board.name+' \u2014 T2T Field Guide':'T2T Field Guide');
+    var calName=encodeURIComponent(calNameRaw||'T2T Field Guide');
     if(googleBtn){
       googleBtn.style.display='block';
       googleBtn.setAttribute('href','https://calendar.google.com/calendar/r?cid='+encodeURIComponent(httpsUrl));
@@ -415,6 +415,76 @@
     if(appleBtn){
       appleBtn.style.display='block';
       appleBtn.setAttribute('href',webcalUrl);
+    }
+  }
+  var _bbCalendarScopeMode='all'; // 'all' | 'project' -- which link the buttons currently point at
+  function openCalendarPanel(){
+    var ov=document.getElementById('bb-calendar-overlay');
+    // Sept 22 2026: every other draggable overlay resets to its centered
+    // position before showing (_bbResetCardPosition), so a traveler who
+    // drags the panel elsewhere gets it back centered next time. This one
+    // was missing that call -- once dragged, it would keep reopening
+    // wherever it was left, which could visually crowd it against other
+    // on-screen text near the edge of the board.
+    if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
+    var statusEl=document.getElementById('bb-calendar-status');
+    var chooseLabel=document.getElementById('bb-calendar-choose-label');
+    var scopeRow=document.getElementById('bb-calendar-scope-row');
+    var scopeProjectBtn=document.getElementById('bb-calendar-scope-project');
+    var scopeAllBtn=document.getElementById('bb-calendar-scope-all');
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var boardCalName=(board&&board.name)?board.name+' \u2014 T2T Field Guide':'T2T Field Guide';
+    // Sept 22 2026, Larry: status-aware wording -- reachable both from the
+    // quick icon (only when nothing's picked yet) and from Utilities >
+    // Calendar (always), so this same panel has to read right either way.
+    var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
+    if(sel && sel.service){
+      var addedDate='';
+      try{ addedDate=new Date(sel.added_at).toLocaleDateString('en-US',{month:'numeric',day:'numeric'}); }catch(e){}
+      if(statusEl) statusEl.textContent=CALENDAR_SERVICE_LABEL[sel.service]+' added'+(addedDate?' on '+addedDate:'')+'. Add another below, or use the icon on the board to open it.';
+      if(chooseLabel) chooseLabel.textContent='Add another calendar:';
+    }else{
+      if(statusEl) statusEl.textContent='Subscribe once and this board\u2019s timed cards stay in sync from then on.';
+      if(chooseLabel) chooseLabel.textContent='Choose your calendar:';
+    }
+    var boardId=_bbCurrentBoardId;
+    var projectId=(typeof _bbProjectFilter==='function') ? _bbProjectFilter() : null;
+    function paintScopeButtons(mode){
+      [ [scopeProjectBtn,'project'], [scopeAllBtn,'all'] ].forEach(function(pair){
+        var btn=pair[0]; if(!btn) return;
+        var active=(pair[1]===mode);
+        btn.style.background=active?'#3B2510':'#fff';
+        btn.style.color=active?'#fff':'#3B2510';
+      });
+    }
+    function showAllScope(){
+      _bbCalendarScopeMode='all';
+      paintScopeButtons('all');
+      _bbApplyCalendarLinks(_bbCalendarFeedUrl('webcal'), _bbCalendarFeedUrl('https'), boardCalName);
+    }
+    function showProjectScope(){
+      _bbCalendarScopeMode='project';
+      paintScopeButtons('project');
+      var msg=document.getElementById('bb-calendar-msg');
+      if(msg) msg.textContent='Preparing this project\u2019s link\u2026';
+      _bbGetOrCreateProjectCalendarToken(boardId, projectId).then(function(token){
+        if(boardId!==_bbCurrentBoardId || projectId!==((typeof _bbProjectFilter==='function')?_bbProjectFilter():null)) return; // stale -- moved on before this resolved
+        var pWebcal=_bbProjectCalendarFeedUrl('webcal', boardId, projectId, token);
+        var pHttps=_bbProjectCalendarFeedUrl('https', boardId, projectId, token);
+        _bbFetchHeaderInfo(projectId).then(function(info){
+          var pName=(info&&info.name)?info.name:'This project';
+          _bbApplyCalendarLinks(pWebcal, pHttps, pName+' \u2014 T2T Field Guide');
+        });
+      });
+    }
+    if(projectId){
+      if(scopeRow) scopeRow.style.display='block';
+      T().wire('bb-calendar-scope-all', showAllScope);
+      T().wire('bb-calendar-scope-project', showProjectScope);
+      showProjectScope(); // default to the narrower link when a project's in view
+    }else{
+      if(scopeRow) scopeRow.style.display='none';
+      showAllScope();
     }
   }
   function closeCalendarPanel(){
