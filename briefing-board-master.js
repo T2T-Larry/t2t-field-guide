@@ -1028,8 +1028,9 @@
   // _bbWireViewDropdown's shape (briefing-board-master-nav.js) -- same
   // roster source, same dark dropdown skin, same open/position/theme
   // pattern -- but single-select (picking a name assigns PRIMARY and
-  // closes immediately, no checkboxes) and reads/writes this one card's
-  // own PRIMARY instead of the board-wide VIEW filter.
+  // closes immediately) and reads/writes this one card's own PRIMARY
+  // instead of the board-wide VIEW filter. (List itself moved into the
+  // shared _bbOpenCastPickMenu later on Sept 22 -- see openMenu below.)
   async function _bbRenderCardPrimaryField(c){
     var trigger=document.getElementById('bb-d-primary-trigger'), menu=document.getElementById('bb-d-primary-menu');
     if(!trigger || !menu) return;
@@ -1044,41 +1045,23 @@
     if(_bbOpenCardId!==c.id) return; // a different card opened while this was loading
     await _bbPaintPrimaryTrigger(trigger, currentUid);
 
-    async function openMenu(){
-      if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
-      if(_bbOpenCardId!==c.id) return;
-      // Same list source as MASTER view's own Cast/VIEW dropdown
-      // (_bbWireViewDropdown) -- roster plus anyone with a real card_roles
-      // row at this level who never got added to the board roster itself.
-      var rows=typeof _bbAssignedRosterRows==='function' ? await _bbAssignedRosterRows() : (typeof _bbAllRosterRows==='function' ? _bbAllRosterRows() : []);
-      if(_bbOpenCardId!==c.id) return;
-      menu.innerHTML='';
-      rows.forEach(function(m){
-        var isSel=currentUid && String(currentUid)===String(m.user_id);
-        var row=document.createElement('div');
-        row.className='bb-cdrop-row'+(isSel ? ' active' : '');
-        row.innerHTML='<span class="bb-cdrop-check">'+(isSel?'✓':'')+'</span>'+_esc(m.name||m.email||'(unnamed)');
-        row.addEventListener('click', async function(e){
-          e.stopPropagation();
-          menu.hidden=true;
+    // Sept 22 2026 (later) -- now opens the one shared CAST PICK list
+    // (_bbOpenCastPickMenu, briefing-board-master-nav.js), the same one
+    // the New Card popup uses: VIEW's exact look, everyone on any card,
+    // plus a (+) to find any T2T member. See that function for the why.
+    function openMenu(){
+      _bbOpenCastPickMenu(menu, trigger, {
+        selectedUid: currentUid,
+        onPick: async function(person){
+          if(_bbOpenCardId!==c.id) return;
           if(!window.T2TStoryboard || typeof window.T2TStoryboard.assignPrimaryDirect!=='function') return;
-          var res=await window.T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', m.user_id);
+          var res=await window.T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', person.user_id);
           if(!res || !res.ok){ _bbShowToast((res&&res.msg)||'Could not assign PRIMARY.'); return; }
-          currentUid=m.user_id;
+          currentUid=person.user_id;
           await _bbPaintPrimaryTrigger(trigger, currentUid);
           renderBoard();
-        });
-        menu.appendChild(row);
+        }
       });
-      if(menu.parentElement!==document.body) document.body.appendChild(menu);
-      _bbSyncMenuTheme(menu);
-      var r=trigger.getBoundingClientRect();
-      menu.style.left=r.left+'px';
-      menu.style.top=(r.bottom+4)+'px';
-      menu.style.minWidth=Math.max(140,r.width)+'px';
-      menu.hidden=false;
-      var mr=menu.getBoundingClientRect();
-      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
     }
     trigger.onclick=function(e){
       e.stopPropagation();

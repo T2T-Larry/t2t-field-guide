@@ -775,77 +775,33 @@
     // add-by-email row -- membership on that roster is the board's
     // Sharing manager's job, not this popup's.
     if(_icMode==='bb'){
-      // Sept 22 2026 -- Larry: "It is not the same on the new card. It
-      // should be the same as on the back of an existing BB card." Was
-      // using its own separate sc-cdrop-menu/sc-cdrop-row look (the Idea/
-      // Plan popup family's skin); now built exactly like the back-of-
-      // card PRIMARY picker (_bbRenderCardPrimaryField, briefing-board-
-      // master.js) -- same bb-cdrop-row/bb-cdrop-menu classes, same
-      // _bbSyncMenuTheme board-accent skin, same checkmark in front of
-      // whichever name is currently picked (here, _icCastPersonId -- this
-      // card hasn't saved yet, so there's no card_roles row to read back).
-      var bbMenu=document.createElement('div');
-      bbMenu.id='isx-p-cast-menu';
-      bbMenu.className='bb-cdrop-menu';
-      document.body.appendChild(bbMenu);
-      if(typeof _bbSyncMenuTheme==='function') _bbSyncMenuTheme(bbMenu);
-      function positionBbMenu(){
-        var r=anchorEl.getBoundingClientRect();
-        bbMenu.style.left=r.left+'px';
-        bbMenu.style.top=(r.bottom+4)+'px';
-        bbMenu.style.minWidth=Math.max(140,r.width)+'px';
-        var mr=bbMenu.getBoundingClientRect();
-        if(mr.right>window.innerWidth-8) bbMenu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      // Sept 22 2026 (later) -- Larry, Master BB DOING: "Cast selector on
+      // new card must look exactly like cast view dropdown on BB. Concept
+      // is to include everyone who is currently on some card...and have
+      // option to add name." Now opens the one shared CAST PICK list
+      // (_bbOpenCastPickMenu, briefing-board-master-nav.js) -- the same
+      // list the back-of-card PRIMARY head icon opens, so the two can't
+      // drift apart again. VIEW's exact look (checkbox rows, dark board
+      // skin), everyone who holds a role on any card, and a (+) that
+      // finds any T2T member. Nothing is written until this entry saves
+      // (see _icMaybeApplyCast) -- the pick is just armed here.
+      if(typeof _bbOpenCastPickMenu==='function'){
+        var bbMenu=document.createElement('div');
+        bbMenu.id='isx-p-cast-menu';
+        document.body.appendChild(bbMenu);
+        _bbOpenCastPickMenu(bbMenu, anchorEl, {
+          selectedUid:_icCastPersonId,
+          onPick:function(person){ onPick({id:person.user_id, label:person.name}); },
+          onClear:function(){ onPick({id:null, label:''}); },
+          onClose:function(){ bbMenu.remove(); }
+        });
+        setTimeout(function(){
+          document.addEventListener('click', function closeBbOnce(){
+            var m=document.getElementById('isx-p-cast-menu'); if(m) m.remove();
+          }, {once:true});
+        }, 0);
+        return;
       }
-      function renderBbRows(rows, loading){
-        bbMenu.innerHTML='';
-        if(loading){
-          var l=document.createElement('div');
-          l.className='bb-cdrop-row';
-          l.style.cssText='cursor:default;opacity:.6';
-          l.textContent='Loading…';
-          bbMenu.appendChild(l);
-        } else if(!rows.length){
-          var bbEmpty=document.createElement('div');
-          bbEmpty.className='bb-cdrop-row';
-          bbEmpty.style.cssText='cursor:default;opacity:.6';
-          bbEmpty.textContent='No one on this board yet.';
-          bbMenu.appendChild(bbEmpty);
-        } else {
-          rows.forEach(function(p){
-            var isSel=_icCastPersonId && String(_icCastPersonId)===String(p.user_id);
-            var row=document.createElement('div');
-            row.className='bb-cdrop-row'+(isSel?' active':'');
-            row.innerHTML='<span class="bb-cdrop-check">'+(isSel?'✓':'')+'</span>'+_icEsc(p.name||p.email||'(unnamed)');
-            row.addEventListener('click', function(ev){
-              ev.stopPropagation();
-              bbMenu.remove();
-              onPick({id:p.user_id, label:p.name||p.email||'(unnamed)'});
-            });
-            bbMenu.appendChild(row);
-          });
-        }
-        positionBbMenu();
-      }
-      renderBbRows([], true);
-      positionBbMenu();
-      // Same pattern as _bbRenderAddCardAssignField (briefing-board-ops.js)
-      // -- always reload the roster fresh rather than trusting whatever's
-      // still sitting in _bbRosterCache from earlier in the session, since
-      // this popup can open before anything else on the page has ever
-      // loaded it.
-      (async function(){
-        if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
-        if(!document.body.contains(bbMenu)) return;
-        renderBbRows((typeof _bbAllRosterRows==='function') ? _bbAllRosterRows() : []);
-      })();
-      setTimeout(function(){
-        document.addEventListener('click', function closeBbOnce(){
-          var m=document.getElementById('isx-p-cast-menu'); if(m) m.remove();
-          document.removeEventListener('click', closeBbOnce);
-        }, {once:true});
-      }, 0);
-      return;
     }
     // Sept 19 2026 fix -- this used to ask the BOARD's ambient "current
     // project" (bridge.currentProjectRow()), which has nothing to do with

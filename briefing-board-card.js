@@ -1898,10 +1898,30 @@
     row.innerHTML = BB_COLOR_PALETTE.map(function(clr){
       var active=(c.color===clr)?' bb-swatch-active':'';
       return '<button type="button" class="bb-swatch'+active+'" data-c="'+_esc(clr)+'" style="background:'+_esc(clr)+'" title="Card color"></button>';
-    }).join('');
+    }).join('')
+    // Color wheel, Sept 22 2026 -- Larry, Master BB (do-l): "What if we
+    // could choose from a color wheel to set a new card color?" Rainbow
+    // swatch at the end of the row opens the browser's own full color
+    // picker; the chosen color saves through the same path as a preset
+    // (applyColor below). Wears the selection ring when the card's color
+    // isn't one of the presets.
+    + (function(){
+        var custom=c.color && BB_COLOR_PALETTE.indexOf(c.color)<0;
+        var val=/^#[0-9a-f]{6}$/i.test(c.color||'') ? c.color : '#ffffff';
+        return '<label class="bb-swatch'+(custom?' bb-swatch-active':'')+'" title="Pick any color" style="position:relative;display:inline-block;overflow:hidden;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)">'
+          +'<input type="color" id="bb-d-color-wheel" value="'+val+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0">'
+          +'</label>';
+      })();
+    var wheel=document.getElementById('bb-d-color-wheel');
+    if(wheel){
+      wheel.addEventListener('click', function(e){ e.stopPropagation(); });
+      wheel.addEventListener('change', function(){ applyColor(wheel.value); });
+    }
     row.onclick=function(e){
-      var btn=e.target.closest('.bb-swatch'); if(!btn) return;
-      var clr=btn.getAttribute('data-c');
+      var btn=e.target.closest('button.bb-swatch'); if(!btn) return;
+      applyColor(btn.getAttribute('data-c'));
+    };
+    function applyColor(clr){
       if(clr===c.color) return;
       var before=c.color;
       c.color=clr;
@@ -1909,7 +1929,7 @@
       _bbRenderColorSwatches(c);
       renderBoard();
       _bbPushAction({label:'Edit', undo:function(){ _bbApplyColor(c.id, before); }, redo:function(){ _bbApplyColor(c.id, clr); }});
-    };
+    }
   }
 
   // Bottom action row (Lock is wired separately, wireLockButton), Session

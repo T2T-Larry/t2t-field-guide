@@ -81,6 +81,17 @@
       var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
       return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
     }).join('');
+    // Color wheel, Sept 22 2026 -- Larry, Master BB (do-l): "What if we
+    // could choose from a color wheel to set a new card color?" One more
+    // round swatch at the end of the row, painted as a rainbow; clicking
+    // it opens the browser's own full color picker. A color picked there
+    // saves exactly like a preset swatch (same handler below). When the
+    // card already has a color that isn't one of the presets, the wheel
+    // itself wears the selection ring so it's clear where it came from.
+    var _sbCustomColor = item.color && _sboardColorPalette.indexOf(item.color)<0;
+    swatches += '<label class="sb-swatch-wheel" title="Pick any color" style="position:relative;width:26px;height:26px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);border:1px solid #cfe4f2;cursor:pointer;display:inline-block;overflow:hidden;'+(_sbCustomColor?'box-shadow:0 0 0 2px #1a3a5c;':'')+'">'
+      + '<input type="color" id="sb-color-wheel" value="'+(/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#d6eaf8')+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0">'
+      + '</label>';
 
     // PARENT / TOPIC eyebrows — computed exactly the way the board's own
     // chrome computes them, so the SHAPING card always agrees with the board.
@@ -301,6 +312,23 @@
       // _sboardHeartsHTML) -- just wrapped in Signal Flags' own checkbox
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
+      // Priority, Sept 22 2026 -- Larry, Master BB (DOING): "ADD H-M-L
+      // priorities like on BB to the back of the Idea cards with option
+      // to show on front of cards." Same three buttons, same 3-click
+      // cycles (H->HH->off, M->MH->off, L->ML->off) and same colors as
+      // the Briefing Card's own Priority row -- PRIORITY_BASE/
+      // _bbNextPriority/PRI_COLOR all come straight from
+      // briefing-board-ops.js so the two can never disagree. "Show on
+      // front" is this card's own switch (ideas.hide_priority_front).
+      // Always visible (not a checkbox-gated Addition) -- matches where
+      // Priority sits on the Briefing Card: first thing on the back.
+      + '<div class="sb-pri-field" style="display:flex;align-items:center;gap:6px;margin:4px 0 8px">'
+      +   '<span class="sb-hdr-eyebrow2" style="margin:0">Priority</span>'
+      +   '<div id="sb-pri-btns" style="display:flex;gap:4px;flex:1">'
+      +     ['H','M','L'].map(function(p){ return '<button type="button" class="sb-pri-btn" data-pri-base="'+p+'" style="flex:1;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;padding:4px 2px;border-radius:5px;border:1px solid #B4B2A9;background:#fff;color:#2C2C2A;cursor:pointer">'+p+'</button>'; }).join('')
+      +   '</div>'
+      +   '<label title="Show the priority badge on the front of this card" style="display:flex;align-items:center;gap:3px;font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sb-pri-front"'+(item.hide_priority_front?'':' checked')+' style="margin:0">Show on front</label>'
+      + '</div>'
       + '<div class="sb-addition" id="sb-add-notes-wrap"><label class="sb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Notes</span></label><div class="sb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1))">'+(item.notes||'')+'</textarea></div></div>'
       + '<div class="sb-addition" id="sb-add-links-wrap"><label class="sb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Links</span></label><div class="sb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div style="display:flex;gap:6px">'
@@ -861,6 +889,56 @@
     // editing, notes, contact info and print in one place. The card's own
     // back stays open underneath; closing the popup just reveals it again
     // (see closeCallSheet), so there's no navigation to unwind here.
+    // Priority buttons + "Show on front" -- Sept 22 2026. See the HTML
+    // comment on .sb-pri-field above.
+    (function(){
+      var PRI_BASE_LOCAL={H:'H',HH:'H',M:'M',MH:'M',L:'L',ML:'L'};
+      function nextPri(cur, base){
+        if(typeof _bbNextPriority==='function') return _bbNextPriority(cur, base);
+        var seq={H:['H','HH',''],M:['M','MH',''],L:['L','ML','']}[base];
+        var idx=PRI_BASE_LOCAL[cur]===base ? seq.indexOf(cur) : -1;
+        return idx===-1 ? seq[0] : seq[(idx+1)%seq.length];
+      }
+      function paint(){
+        var pri=item.priority||'';
+        Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-btns .sb-pri-btn'), function(b){
+          var base=b.getAttribute('data-pri-base');
+          var active=!!pri && PRI_BASE_LOCAL[pri]===base;
+          b.textContent=active?pri:base;
+          b.style.background=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '#fff';
+          b.style.borderColor=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '#B4B2A9';
+          b.style.color=active && typeof PRI_TEXT!=='undefined' ? PRI_TEXT[pri] : '#2C2C2A';
+        });
+      }
+      async function saveFields(fields, before){
+        try{
+          var upd=await _sb.from('ideas').update(fields).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          for(var k in fields) item[k]=fields[k];
+          _sboardPatchRow(item.id, fields);
+          (function(){
+            var itemId=item.id, after=fields;
+            _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
+          })();
+          paint();
+          renderSeaBoard(true);
+        }catch(err){ if(statusBox) statusBox.textContent='Could not save priority: '+err.message; }
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-btns .sb-pri-btn'), function(b){
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          var before={priority:item.priority||''};
+          saveFields({priority:nextPri(item.priority||'', b.getAttribute('data-pri-base'))}, before);
+        });
+      });
+      var frontChk=document.getElementById('sb-pri-front');
+      if(frontChk) frontChk.addEventListener('change', function(){
+        var before={hide_priority_front:!!item.hide_priority_front};
+        saveFields({hide_priority_front:!frontChk.checked}, before);
+      });
+      paint();
+    })();
+
     T().wire('sb-people-btn', function(e){
       e.stopPropagation();
       openCallSheet(item, null, 'idea');
@@ -1077,8 +1155,15 @@
       row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
     });
     Array.prototype.forEach.call(document.querySelectorAll('.sb-swatch'), function(btn){
-      btn.addEventListener('click', async function(){
-        var c=btn.getAttribute('data-c');
+      btn.addEventListener('click', function(){ _sbApplyCardColor(btn.getAttribute('data-c')); });
+    });
+    // Color wheel (Sept 22 2026) -- same save path as a preset swatch.
+    (function(){
+      var wheel=document.getElementById('sb-color-wheel');
+      if(wheel) wheel.addEventListener('change', function(){ _sbApplyCardColor(wheel.value); });
+    })();
+    async function _sbApplyCardColor(c){
+      {
         var beforeColor=item.color;
         try{
           var upd=await _sb.from('ideas').update({color:c}).eq('id',item.id);
@@ -1098,8 +1183,8 @@
           var patchedInPlace = window.T2TStoryboard && T2TStoryboard.isxPatchColor && T2TStoryboard.isxPatchColor(item.id, c);
           if(!patchedInPlace) renderSeaBoard(true);
         }catch(err){ if(statusBox) statusBox.textContent='Color needs the color Supabase column: '+err.message; }
-      });
-    });
+      }
+    }
 
     T().wire('sb-close', closeSbDetail);
   }

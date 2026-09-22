@@ -1137,7 +1137,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1366,7 +1366,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1430,6 +1430,7 @@
     // initials cache/lookup lives in 9710's closure, this just borrows
     // it.
     if(window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
+    if(window.T2TStoryboard && T2TStoryboard.priorityBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.priorityBadgeHTML(row));
     // Bottom-left signal cluster: Signal Flags (Aug 3 2026, Larry:
     // "This option could be in every gear? Anywhere a traveler makes a
     // note or adds an idea") + Video/Link (Aug 11 2026) + Notes (added
@@ -1491,6 +1492,7 @@
     // badge as plain cards.
     var isxStackFront=t.querySelector('.isx-stack-front');
     if(isxStackFront && window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
+    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.priorityBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.priorityBadgeHTML(row));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- Aug 15 2026
     // (Lock/Flags; Larry: "is the LOCK not just another FLAG?"), Aug 22
     // 2026 (Notes -- missed here the same way it was missed on 9710's own
@@ -1856,7 +1858,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){

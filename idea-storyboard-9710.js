@@ -131,6 +131,7 @@
     openKeyLibraryManager: _sboardOpenKeyLibraryManager,
     keyDotsHTML: _sboardKeyDotsHTML,
     assignedBadgeHTML: _sboardAssignedBadgeHTML,
+    priorityBadgeHTML: _sboardPriorityBadgeHTML,
     linkBadgeHTML: _sboardLinkBadgeHTML,
     lockBadgeHTML: _sboardLockBadgeHTML,
     signalRowHTML: _sboardSignalRowHTML,

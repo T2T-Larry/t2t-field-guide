@@ -363,6 +363,23 @@
     if(!m) return ''; // not fetched yet this pass -- next re-render (see _sboardEnsureCardPrimary/_sboardEnsureAssignedInitials) fills it in
     return '<div class="sb-person-badge" title="'+_sboardEsc(m.name||'')+'">'+_sboardEsc(m.initials||'')+'</div>';
   }
+  // Priority badge, Sept 22 2026 -- Larry, Master BB (DOING): "ADD
+  // H-M-L priorities like on BB to the back of the Idea cards with
+  // option to show on front of cards." Same values, same colors as the
+  // Briefing Board's own badge -- reads PRI_COLOR/PRI_TEXT straight from
+  // briefing-board-ops.js (loaded on every page, shared global scope) so
+  // there's exactly one place those colors are defined. Top-left corner:
+  // the one spot on an Idea tile nothing else claims (on PLAN boards the
+  // step number sits there, so the badge steps right of it -- see
+  // .sb-pri-badge.sb-pri-after-order). ideas.hide_priority_front is the
+  // per-card "show on front" switch on the back of the card.
+  function _sboardPriorityBadgeHTML(item){
+    if(!item || !item.priority || item.hide_priority_front) return '';
+    var bg=(typeof PRI_COLOR!=='undefined' && PRI_COLOR[item.priority]) || '#9c8b73';
+    var fg=(typeof PRI_TEXT!=='undefined' && PRI_TEXT[item.priority]) || '#fff';
+    var cls='sb-pri-badge'+((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)?' sb-pri-after-order':'');
+    return '<span class="'+cls+'" title="Priority '+_sboardEsc(item.priority)+'" style="background:'+bg+';color:'+fg+'">'+_sboardEsc(item.priority)+'</span>';
+  }
   function _sboardNotesBadgeHTML(item){
     if(!item || !item.notes || !item.notes.trim()) return '';
     return '<div class="sb-notes-badge" title="Has notes">✏️</div>';
