@@ -206,8 +206,27 @@
   // query, same reasoning as idea-storyboard-9710.js's
   // _sboardRecomputeFilterMatches -- "any role" can't be read off a
   // primary-doer-only cache).
-  var _bbSourceFilter = null; // null = no filter; else {mode:'person', uids:[...]}
-  var _bbPersonFilterIds = [];
+  // Sept 22 2026, Larry (Master BB do-m card): checking a name in Cast/VIEW
+  // used to be lost the instant renderBoard ran again or the traveler left
+  // and came back -- there was never anywhere for it to live except this
+  // one in-memory array, and nothing ever wrote it back out. Fixed the same
+  // way the Idea/Plan Storyboard's identical filter was fixed Sept 20 2026
+  // (see _sboardPersonFilterIds, idea-storyboard-shared.js): restore from
+  // sessionStorage on load, persist on every change via _bbPersistViewFilter
+  // below. Survives any reload within this tab/session, clears itself when
+  // the tab closes, never leaks to another traveler's session. Resetting is
+  // now only ever the member's own choice (the VIEW menu's "All" row).
+  var _bbPersonFilterIds = (function(){
+    try{
+      var raw=sessionStorage.getItem('bbViewFilterIds');
+      if(raw){ var arr=JSON.parse(raw); if(Array.isArray(arr)) return arr; }
+    }catch(e){}
+    return [];
+  })();
+  var _bbSourceFilter = _bbPersonFilterIds.length ? {mode:'person', uids:_bbPersonFilterIds.slice()} : null; // null = no filter; else {mode:'person', uids:[...]}
+  function _bbPersistViewFilter(){
+    try{ sessionStorage.setItem('bbViewFilterIds', JSON.stringify(_bbPersonFilterIds||[])); }catch(e){}
+  }
   var _bbFilterMatchCardIds = null;
   async function _bbRecomputeFilterMatches(){
     if(!_bbPersonFilterIds || !_bbPersonFilterIds.length){ _bbFilterMatchCardIds=null; return; }
@@ -225,6 +244,7 @@
     if(checked && idx<0) _bbPersonFilterIds.push(uid);
     if(!checked && idx>=0) _bbPersonFilterIds.splice(idx,1);
     _bbSourceFilter = _bbPersonFilterIds.length ? {mode:'person', uids:_bbPersonFilterIds.slice()} : null;
+    _bbPersistViewFilter();
     // Keep the VIEW dropdown's own label in sync -- Sept 13 2026, the
     // VIEW dropdown and this Cast popup now both read/write the exact
     // same _bbPersonFilterIds, so a change made from either one has to
@@ -647,6 +667,11 @@
           _bbPositionIdBandRow();
           await _bbLoadMasterRollupCards();
           await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
+          // Sept 22 2026 -- a restored (sessionStorage) person filter needs
+          // its match set resolved before this first render, or the checked
+          // names would show checked while the board itself still displays
+          // everyone until the next toggle.
+          if(_bbPersonFilterIds && _bbPersonFilterIds.length) await _bbRecomputeFilterMatches();
           renderBoard();
           return;
         }catch(e){ console.error('Briefing Board: legacy migration failed', e); }
@@ -668,6 +693,9 @@
     _bbPositionIdBandRow();
     await _bbLoadMasterRollupCards();
     await _bbLoadKeyLinkCounts(_bbCards.map(function(c){ return c.id; }));
+    // Sept 22 2026 -- same reasoning as the migration branch above: resolve
+    // a restored person filter's match set before the first render.
+    if(_bbPersonFilterIds && _bbPersonFilterIds.length) await _bbRecomputeFilterMatches();
     await _bbLoadForeignCardsForPersonalBoard(board);
     await _bbLoadSharedInCardsForProjectBoard(board);
     renderBoard();

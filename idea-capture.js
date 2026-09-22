@@ -760,6 +760,82 @@
     var old=document.getElementById('isx-p-cast-menu');
     if(old) old.remove();
     var bridge=window.T2TStoryboard;
+    // Sept 22 2026 fix -- Larry, Master BB do-m: "Tried to add you to a
+    // new BB card but no options were available. It wanted an email for
+    // new person... The new card should always offer EXACTLY the same as
+    // the MASTER view cast button." A Briefing Board card has no Idea/Plan
+    // PROJECT underneath it (this NEW-card popup's own PROJECT field is
+    // for tagging, not a real storyboard row), so the branch below --
+    // asking the storyboard bridge for a project's roster, "Pick a
+    // PROJECT first" when there isn't one, "+" to add-by-email -- never
+    // had anything to show for a BB card and fell straight to that empty/
+    // email-prompt state every time. BB mode now reads the exact same
+    // board-wide roster the MASTER view's own Cast/VIEW dropdown reads
+    // (_bbAllRosterRows, briefing-board-master-nav.js) instead, with no
+    // add-by-email row -- membership on that roster is the board's
+    // Sharing manager's job, not this popup's.
+    if(_icMode==='bb'){
+      var bbMenu=document.createElement('div');
+      bbMenu.id='isx-p-cast-menu';
+      bbMenu.className='sc-cdrop-menu';
+      document.body.appendChild(bbMenu);
+      function positionBbMenu(){
+        var r=anchorEl.getBoundingClientRect();
+        bbMenu.style.left=r.left+'px';
+        bbMenu.style.top=(r.bottom+4)+'px';
+        bbMenu.style.minWidth=Math.max(140,r.width)+'px';
+        var mr=bbMenu.getBoundingClientRect();
+        if(mr.right>window.innerWidth-8) bbMenu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      }
+      function renderBbRows(rows, loading){
+        bbMenu.innerHTML='';
+        if(loading){
+          var l=document.createElement('div');
+          l.className='sc-cdrop-row';
+          l.style.cssText='cursor:default;opacity:.6';
+          l.textContent='Loading…';
+          bbMenu.appendChild(l);
+        } else if(!rows.length){
+          var bbEmpty=document.createElement('div');
+          bbEmpty.className='sc-cdrop-row';
+          bbEmpty.style.cssText='cursor:default;opacity:.6';
+          bbEmpty.textContent='No one on this board yet.';
+          bbMenu.appendChild(bbEmpty);
+        } else {
+          rows.forEach(function(p){
+            var row=document.createElement('div');
+            row.className='sc-cdrop-row';
+            row.textContent=p.name||p.email||'(unnamed)';
+            row.addEventListener('click', function(ev){
+              ev.stopPropagation();
+              bbMenu.remove();
+              onPick({id:p.user_id, label:p.name||p.email||'(unnamed)'});
+            });
+            bbMenu.appendChild(row);
+          });
+        }
+        positionBbMenu();
+      }
+      renderBbRows([], true);
+      positionBbMenu();
+      // Same pattern as _bbRenderAddCardAssignField (briefing-board-ops.js)
+      // -- always reload the roster fresh rather than trusting whatever's
+      // still sitting in _bbRosterCache from earlier in the session, since
+      // this popup can open before anything else on the page has ever
+      // loaded it.
+      (async function(){
+        if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
+        if(!document.body.contains(bbMenu)) return;
+        renderBbRows((typeof _bbAllRosterRows==='function') ? _bbAllRosterRows() : []);
+      })();
+      setTimeout(function(){
+        document.addEventListener('click', function closeBbOnce(){
+          var m=document.getElementById('isx-p-cast-menu'); if(m) m.remove();
+          document.removeEventListener('click', closeBbOnce);
+        }, {once:true});
+      }, 0);
+      return;
+    }
     // Sept 19 2026 fix -- this used to ask the BOARD's ambient "current
     // project" (bridge.currentProjectRow()), which has nothing to do with
     // whatever PROJECT the traveler just picked inside this card's own
