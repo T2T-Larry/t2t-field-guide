@@ -349,7 +349,12 @@
       var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
       if(sel && sel.service){
         var viewUrl=_bbCalendarViewUrl(sel.service);
-        if(viewUrl){ window.open(viewUrl, '_blank', 'noopener'); return; }
+        // Sept 22 2026, Larry: reported a new browser tab piling up every
+        // time, even with the calendar already open in one -- a named
+        // target ("t2t-calendar", shared with the panel's Google/Outlook
+        // buttons in briefing-board-screens.js) makes the browser reuse
+        // that same tab instead of opening a fresh one each click.
+        if(viewUrl){ window.open(viewUrl, 't2t-calendar', 'noopener'); return; }
       }
     }
     openCalendarPanel();

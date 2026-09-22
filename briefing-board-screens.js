@@ -687,9 +687,19 @@
           // chooser entirely -- one tap does the right thing. No limit on
           // how many of the three a traveler picks -- clicking any of
           // them just records it as the one the quick icon should open.
+          // Sept 22 2026, Larry: reported that opening the calendar picker
+          // kept stacking up a new browser tab every time, even when the
+          // calendar was already open in one -- target="_blank" always
+          // opens a brand-new tab. Naming the target ("t2t-calendar",
+          // shared by both buttons here and by the icon's quick-view jump
+          // in briefing-board-card.js) makes the browser reuse that same
+          // tab on every later click instead of piling up new ones. This
+          // doesn't change Google's/Outlook's own account-picker or
+          // sign-in prompt on that page -- that part is those services'
+          // own login screen, outside anything this site controls.
           +'<div id="bb-calendar-choose-label" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Choose your calendar:</div>'
-          +'<a id="bb-calendar-google" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Google Calendar</a>'
-          +'<a id="bb-calendar-outlook" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Outlook</a>'
+          +'<a id="bb-calendar-google" href="#" target="t2t-calendar" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Google Calendar</a>'
+          +'<a id="bb-calendar-outlook" href="#" target="t2t-calendar" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Outlook</a>'
           +'<a id="bb-calendar-apple" href="#" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:10px">Apple Calendar</a>'
           +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px">Use a different app? Copy the link and add it manually:</div>'
           // Sept 22 2026, Larry: reported the panel as "jumbled up with
