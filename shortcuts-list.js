@@ -41,7 +41,7 @@
         { keys: '↑  or  Page Up  or  Ctrl/Cmd + ↑', does: 'Step the view out one level' },
         { keys: '↓  or  Page Down  or  Ctrl/Cmd + ↓', does: 'Step the view in one level' },
         { keys: 'Delete  or  Backspace', does: 'Send the selected card to Trash' },
-        { keys: 'Alt + M', does: 'Arm the selected card to move — click where it goes, or press Alt+M / Esc again to cancel' },
+        { keys: 'Alt + M', does: 'Move the selected card — opens the project pyramid; tap any project or topic to send it there' },
         { keys: 'Alt + T', does: 'Make the selected header or Subber the Topic' },
         { keys: 'Alt + H', does: 'View the selected card as a Header' },
         { keys: 'Alt + S', does: 'View the selected card as a Subber' },

@@ -480,6 +480,12 @@
       // whole handler already uses (Tab/Page/Arrow/Delete above). Pressed
       // again while already armed, or Escape at any time while armed,
       // cancels instead of re-arming -- see _sboardCancelMoveArm.
+      // Alt+M, reworked Sept 22 2026 (Larry: "ALT-M might also do the
+      // same [as the MOVE button] from even the front of the card") --
+      // opens the MOVE project pyramid for the selected card, so it can
+      // go to any project or topic, not just somewhere on this board.
+      // (Replaces the Sept 19 "arm, then click where it goes" version,
+      // which could only reach cards already on screen.)
       if(k==='m' && e.altKey){
         e.preventDefault();
         if(_sboardMoveArmedId){ _sboardCancelMoveArm('Move canceled.'); return; }
@@ -487,12 +493,9 @@
           _sboardShowToast('Click a card first, then Alt+M to move it.');
           return;
         }
-        _sboardMoveArmedId=_sboardSelectedHeaderId;
-        var armEl=document.querySelector('[data-header-id="'+CSS.escape(String(_sboardMoveArmedId))+'"]');
-        if(armEl) armEl.classList.add('sb-move-armed');
-        document.body.classList.add('sb-move-arming');
-        document.addEventListener('click', _sboardMoveArmClickHandler, true);
-        _sboardShowToast('Move armed — click a card to drop it in. Esc to cancel.');
+        var mvRow=_sboardAllRowsById[_sboardSelectedHeaderId];
+        if(!mvRow){ _sboardShowToast('Couldn’t find that card — try clicking it again.'); return; }
+        _sboardOpenMoveFor(mvRow);
         return;
       }
       if(k==='escape' && _sboardMoveArmedId){ e.preventDefault(); _sboardCancelMoveArm('Move canceled.'); return; }

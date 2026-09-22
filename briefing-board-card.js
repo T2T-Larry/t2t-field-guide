@@ -1084,7 +1084,11 @@
       return '<div class="bb-checklist-row">'
         +'<button type="button" class="bb-checklist-check bb-checklist-'+st+'" data-id="'+_esc(it.id)+'" title="'+st+' — click to advance">'+CL_GLYPH[st]+'</button>'
         +'<span class="bb-checklist-text'+(st==='done'?' bb-checklist-done':'')+'">'+_esc(it.text)+'</span>'
-        +'<button type="button" class="bb-checklist-assignee'+(hasAssignee?' bb-checklist-assignee-set':'')+'" data-id="'+_esc(it.id)+'" title="'+(hasAssignee?_bbChecklistAssigneeName(it.assigneeId):'Assign to...')+'">'+_esc(initials)+'</button>'
+        // Sept 22 2026 -- Larry, Master BB: "Change 'O' to head icon to
+        // select Cast PRIMARY just like on New card." Unassigned now shows
+        // a real 👤 head (was a blank circle); once someone is picked it
+        // shows their initials, same as before.
+        +'<button type="button" class="bb-checklist-assignee'+(hasAssignee?' bb-checklist-assignee-set':'')+'" data-id="'+_esc(it.id)+'" title="'+(hasAssignee?_esc(_bbChecklistAssigneeName(it.assigneeId)):'Assign to…')+'">'+(hasAssignee?_esc(initials):'👤')+'</button>'
         +'<button class="bb-checklist-remove" data-id="'+_esc(it.id)+'" title="Remove">&#10005;</button>'
         +'</div>';
     }).join('');
@@ -1143,10 +1147,18 @@
   // "who is this for" pickers on the board agree on the same name list.
   // Falls back to a blank/"(unassigned)" rather than throwing if the
   // roster hasn't loaded yet -- the button itself always renders either way.
+  // _bbClNameCache (Sept 22 2026): the shared Cast picker can hand back
+  // someone who isn't on this board's roster (anyone on any card, or any
+  // T2T member via its (+)), so remember the name it picked, and fall
+  // back to the all-members list, before giving up with "(unknown)".
+  var _bbClNameCache={};
   function _bbChecklistAssigneeName(uid){
     if(!uid) return '';
     var row=(typeof _bbAllRosterRows==='function'?_bbAllRosterRows():[]).filter(function(m){ return String(m.user_id)===String(uid); })[0];
-    return row?(row.name||row.email||'(unnamed)'):'(unknown)';
+    if(row) return row.name||row.email||'(unnamed)';
+    if(_bbClNameCache[uid]) return _bbClNameCache[uid];
+    var m=(typeof _bbAllMembersCache!=='undefined' && _bbAllMembersCache ? _bbAllMembersCache : []).filter(function(p){ return String(p.user_id)===String(uid); })[0];
+    return m ? (m.name||m.email) : '(unknown)';
   }
   function _bbChecklistAssigneeInitials(uid){
     var name=_bbChecklistAssigneeName(uid);
@@ -1163,41 +1175,35 @@
   function _bbClAssigneeMenuOutsideClick(e){
     if(_bbClAssigneeMenuEl && !_bbClAssigneeMenuEl.contains(e.target)) _bbCloseChecklistAssigneeMenu();
   }
+  // Sept 22 2026 -- now opens the one shared CAST PICK list
+  // (_bbOpenCastPickMenu, briefing-board-master-nav.js), the same list
+  // the New Card 👤 and the back-of-card PRIMARY 👤 open: VIEW's look,
+  // everyone on any card, (+) to find any T2T member. Unchecking the
+  // checked name clears the assignment.
   async function _bbOpenChecklistAssigneeMenu(itemId, anchorBtn){
     _bbCloseChecklistAssigneeMenu();
-    if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
-    // Anchor button (and the card overlay it lives on) may have closed
-    // or re-rendered while the roster was loading -- bail rather than
-    // popping a menu that points at nothing.
-    if(!document.body.contains(anchorBtn)) return;
     var it=_bbChecklistCache.filter(function(x){ return x.id===itemId; })[0];
     if(!it) return;
+    // No bb-cl-assignee-menu class any more: that old skin restyled the
+    // rows, and this list has to look exactly like VIEW (the shared
+    // picker adds bb-cdrop-menu itself).
     var menu=document.createElement('div');
-    menu.className='bb-cl-assignee-menu';
-    var rows=[{user_id:'', name:'Unassigned'}].concat(typeof _bbAllRosterRows==='function'?_bbAllRosterRows():[]);
-    menu.innerHTML=rows.map(function(m){
-      var isActive=(String(m.user_id||'')===String(it.assigneeId||''));
-      return '<div class="bb-cdrop-row'+(isActive?' active':'')+'" data-uid="'+_esc(String(m.user_id||''))+'">'+_esc(m.name||m.email||'(unnamed)')+'</div>';
-    }).join('');
     document.body.appendChild(menu);
-    _bbSyncMenuTheme(menu);
-    var r=anchorBtn.getBoundingClientRect();
-    menu.style.left=Math.max(8, r.left-100)+'px';
-    menu.style.top=(r.bottom+4)+'px';
-    var mr=menu.getBoundingClientRect();
-    if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-    menu.querySelectorAll('.bb-cdrop-row').forEach(function(row){
-      row.addEventListener('click', function(e){
-        e.stopPropagation();
-        var uid=row.getAttribute('data-uid')||null;
-        it.assigneeId=uid||null;
-        _bbCloseChecklistAssigneeMenu();
-        if(_bbOpenCardId) _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
-        _bbRenderChecklist();
-      });
-    });
     _bbClAssigneeMenuEl=menu;
+    function save(uid, name){
+      if(uid && name) _bbClNameCache[uid]=name;
+      it.assigneeId=uid||null;
+      _bbCloseChecklistAssigneeMenu();
+      if(_bbOpenCardId) _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
+      _bbRenderChecklist();
+    }
     setTimeout(function(){ document.addEventListener('mousedown', _bbClAssigneeMenuOutsideClick, true); }, 0);
+    await _bbOpenCastPickMenu(menu, anchorBtn, {
+      selectedUid: it.assigneeId,
+      onPick: function(p){ save(p.user_id, p.name); },
+      onClear: function(){ save(null); },
+      onClose: function(){ _bbCloseChecklistAssigneeMenu(); }
+    });
   }
   // Small calendar popup for the date fields (Due date / Start date),
   // Aug 7 2026 -- Larry: pick from a calendar instead of typing
@@ -1893,32 +1899,46 @@
   // overlay is a permanent DOM node reused across cards, never rebuilt
   // from scratch, so the selected-swatch highlight has to be redrawn
   // per-card the same way _bbHighlightPriority/_bbUpdateReviewUI are).
+  // Sept 22 2026 -- Larry: the rainbow circle now changes the circles
+  // themselves ("custom select colors ... to change colors in circles").
+  // Tap rainbow -> edit mode; tap a circle -> pick its new color; tap
+  // rainbow again when done. Palette is the traveler's own, shared with
+  // Idea cards (CardPalette, idea-storyboard-tiles.js). Normal mode is
+  // unchanged: tapping a circle colors this card.
+  var _bbPaletteEditing=false;
   function _bbRenderColorSwatches(c){
     var row=document.getElementById('bb-d-color-row'); if(!row) return;
-    row.innerHTML = BB_COLOR_PALETTE.map(function(clr){
-      var active=(c.color===clr)?' bb-swatch-active':'';
-      return '<button type="button" class="bb-swatch'+active+'" data-c="'+_esc(clr)+'" style="background:'+_esc(clr)+'" title="Card color"></button>';
+    if(_bbRenderColorSwatches._cardId!==c.id){ _bbPaletteEditing=false; _bbRenderColorSwatches._cardId=c.id; }
+    if(window.CardPalette && !_bbRenderColorSwatches._loading){
+      _bbRenderColorSwatches._loading=true;
+      CardPalette.load().then(function(){ var cc=_bbFindCardAnywhere(_bbOpenCardId); if(cc) _bbRenderColorSwatches(cc); });
+    }
+    row.innerHTML = BB_COLOR_PALETTE.map(function(clr, i){
+      var active=(!_bbPaletteEditing && c.color===clr)?' bb-swatch-active':'';
+      return '<button type="button" class="bb-swatch'+active+'" data-i="'+i+'" data-c="'+_esc(clr)+'" style="background:'+_esc(clr)+(_bbPaletteEditing?';outline:2px dashed var(--bb-accent);outline-offset:2px':'')+'" title="'+(_bbPaletteEditing?'Change this color':'Card color')+'"></button>';
     }).join('')
-    // Color wheel, Sept 22 2026 -- Larry, Master BB (do-l): "What if we
-    // could choose from a color wheel to set a new card color?" Rainbow
-    // swatch at the end of the row opens the browser's own full color
-    // picker; the chosen color saves through the same path as a preset
-    // (applyColor below). Wears the selection ring when the card's color
-    // isn't one of the presets.
-    + (function(){
-        var custom=c.color && BB_COLOR_PALETTE.indexOf(c.color)<0;
-        var val=/^#[0-9a-f]{6}$/i.test(c.color||'') ? c.color : '#ffffff';
-        return '<label class="bb-swatch'+(custom?' bb-swatch-active':'')+'" title="Pick any color" style="position:relative;display:inline-block;overflow:hidden;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)">'
-          +'<input type="color" id="bb-d-color-wheel" value="'+val+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0">'
-          +'</label>';
-      })();
-    var wheel=document.getElementById('bb-d-color-wheel');
-    if(wheel){
-      wheel.addEventListener('click', function(e){ e.stopPropagation(); });
-      wheel.addEventListener('change', function(){ applyColor(wheel.value); });
+    + '<button type="button" class="bb-swatch bb-palette-edit'+(_bbPaletteEditing?' bb-swatch-active':'')+'" title="Change these colors" style="background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)"></button>'
+    + '<input type="color" id="bb-d-palette-input" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0">'
+    + (_bbPaletteEditing ? '<div style="flex-basis:100%;font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);text-align:center">Tap a circle to change its color. Tap the rainbow when done.</div>' : '');
+    var inp=document.getElementById('bb-d-palette-input');
+    if(inp){
+      inp.addEventListener('click', function(e){ e.stopPropagation(); });
+      inp.addEventListener('change', async function(){
+        var i=+inp.getAttribute('data-i'); if(isNaN(i) || !window.CardPalette) return;
+        await CardPalette.setColor(i, inp.value);
+        _bbRenderColorSwatches(c);
+        renderBoard();
+      });
     }
     row.onclick=function(e){
       var btn=e.target.closest('button.bb-swatch'); if(!btn) return;
+      if(btn.classList.contains('bb-palette-edit')){ _bbPaletteEditing=!_bbPaletteEditing; _bbRenderColorSwatches(c); return; }
+      if(_bbPaletteEditing){
+        inp.value=btn.getAttribute('data-c');
+        inp.setAttribute('data-i', btn.getAttribute('data-i'));
+        inp.click();
+        return;
+      }
       applyColor(btn.getAttribute('data-c'));
     };
     function applyColor(clr){

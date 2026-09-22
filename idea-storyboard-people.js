@@ -35,7 +35,10 @@
     var _sb=T().sb;
     if(!_sb){ missing.forEach(function(uid){ delete _sboardAssignedFetchInFlight[uid]; }); return false; }
     try{
-      var res=await _sb.from('members').select('user_id,name,initials').in('user_id', missing);
+      // CAST Phase 2 (Sept 22 2026): people_by_ids covers members AND
+      // Cast people (non-members), so a non-member's initials show on
+      // the card front the same way a member's do.
+      var res=await _sb.rpc('people_by_ids', {p_ids: missing});
       if(!res.error && res.data){
         res.data.forEach(function(m){ _sboardAssignedCache[m.user_id]={name:m.name||'', initials:(m.initials||'').toUpperCase()}; });
       }
@@ -432,7 +435,10 @@
     var box=document.getElementById(targetId||'tm-add-suggest'); if(!box) return;
     var already={}; _tmAllRosterRows(projectRow).forEach(function(r){ already[r.user_id]=true; });
     var q=String(query||'').trim().toLowerCase();
-    var pool=(_tmAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
+    // is_member!==false: project access (the roster) is for real T2T
+    // logins only -- a Cast person (CAST Phase 2) can be on cards but
+    // can't be given access to a project until they join.
+    var pool=(_tmAllMembersCache||[]).filter(function(m){ return !already[m.user_id] && m.is_member!==false; });
     var matches = q ? pool.filter(function(m){
       return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
     }) : pool;
@@ -846,16 +852,22 @@
     var matches = q ? pool.filter(function(m){
       return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
     }) : pool;
-    if(!matches.length){
-      box.innerHTML='<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone’s already on this card.')+'</div>';
-    } else {
-      box.innerHTML=matches.map(function(m){
-        return '<div class="tm-add-suggest-row" data-email="'+_esc9710(m.email||'')+'">'
-          +'<div class="tm-add-suggest-name">'+_esc9710(m.name||m.email||'')+'</div>'
-          +'<div class="tm-add-suggest-email">'+_esc9710(m.email||'')+'</div>'
-        +'</div>';
-      }).join('');
+    // CAST Phase 2 (Sept 22 2026): rows carry data-uid (a non-member may
+    // have no email), and a typed name nobody matches exactly can be
+    // added as a new Cast person -- "not important if person is a member
+    // yet" (Larry).
+    var typed=String(query||'').trim();
+    var exact=typed && pool.concat((_tmAllMembersCache||[])).some(function(m){ return String(m.name||'').toLowerCase()===typed.toLowerCase(); });
+    var html=matches.map(function(m){
+      return '<div class="tm-add-suggest-row" data-uid="'+_esc9710(m.user_id||'')+'" data-email="'+_esc9710(m.email||'')+'">'
+        +'<div class="tm-add-suggest-name">'+_esc9710(m.name||m.email||'')+(m.is_member===false?' <span style="opacity:.6;font-size:.85em">(not a member yet)</span>':'')+'</div>'
+        +(m.email?'<div class="tm-add-suggest-email">'+_esc9710(m.email)+'</div>':'')
+      +'</div>';
+    }).join('');
+    if(typed && !exact){
+      html+='<div class="tm-add-suggest-row" data-newname="'+_esc9710(typed)+'"><div class="tm-add-suggest-name">+ Add “'+_esc9710(typed)+'”</div><div class="tm-add-suggest-email">new person — not a T2T member yet</div></div>';
     }
+    box.innerHTML = html || '<div class="tm-add-suggest-empty">'+(pool.length?'No one matches that.':'Everyone’s already on this card.')+'</div>';
     box.style.display='block';
   }
 
@@ -878,11 +890,31 @@
   // fetch doesn't show stale state; briefing-board.js's _csItem is
   // already a live reference into its own cards array (see
   // _bbFindCardAnywhere), so mutating it directly here is enough there.
+  // Sept 22 2026 -- Larry: "Call Sheet says toggle on for initials on
+  // front but they are not there." The board-wide switch (Utility ->
+  // Preferences -> Initials, ideas.hide_all_initials on the project root)
+  // was OFF, and it overrides every card -- but the per-card toggle had
+  // no idea and kept saying ON. Now the per-card toggle shows the real
+  // (effective) state, says why when the whole board is off, and picking
+  // ON turns the board-wide switch back on too, since ON plainly means
+  // "show them".
+  function _csBoardInitialsOff(){
+    if(_csCardType==='briefing_card') return false;
+    var pr=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
+    return !!(pr && pr.hide_all_initials);
+  }
+  function _csInitialsNoteHTML(){
+    return _csBoardInitialsOff()
+      ? '<div class="cs-initials-boardoff" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin:-4px 0 8px;text-align:left">Initials are turned OFF for this whole board (Utility → Preferences). Pick ON to turn them back on.</div>'
+      : '';
+  }
   async function _csSetHideBadge(hidden){
     if(!_csItem) return;
     var _sb=T().sb; if(!_sb) return;
     var table = (_csCardType==='briefing_card') ? 'briefing_cards' : 'ideas';
     try{
+      if(!hidden && _csBoardInitialsOff()) await _sboardSetHideAllInitials(false);
+      Array.prototype.forEach.call(document.querySelectorAll('.cs-initials-boardoff'), function(n){ if(!_csBoardInitialsOff()) n.remove(); });
       var upd=await _sb.from(table).update({hide_primary_badge:hidden}).eq('id', _csItem.id);
       if(upd.error) return;
       // Both spellings: idea-storyboard-9710.js reads raw snake_case
@@ -1097,10 +1129,46 @@
     }catch(e){}
   }
 
-  async function _csInsertRole(role, email, isBoardMember){
-    if(!email || !_csItem) return {ok:false,msg:'Type a name or email.'};
-    var match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.email||'').toLowerCase()===String(email).toLowerCase(); })[0];
-    if(!match) return {ok:false,msg:'No T2T member found with that email.'};
+  // CAST Phase 2 (Sept 22 2026) -- create a Cast person (not a T2T
+  // member yet) by name. Their id is used on cards exactly where a
+  // member's login id would go; if they later join with the same email,
+  // the database moves their card roles to the real login automatically
+  // (link_cast_person_on_join). Pushed straight into both people caches
+  // (Idea side _tmAllMembersCache, Briefing side _bbAllMembersCache) and
+  // the initials cache, so the new name shows everywhere right away.
+  async function _castAddPerson(name, email){
+    name=String(name||'').trim();
+    if(!name) return {ok:false,msg:'Type a name.'};
+    var _sb=T().sb; if(!_sb) return {ok:false,msg:'Not connected.'};
+    try{
+      var ins=await _sb.from('cast_people').insert({name:name, email:(email&&String(email).trim())||null}).select('id,name,email,phone').single();
+      if(ins.error) throw ins.error;
+      var parts=name.split(/\s+/);
+      var initials=(parts.length>1 ? parts[0][0]+parts[parts.length-1][0] : name.slice(0,2)).toUpperCase();
+      var person={user_id:ins.data.id, name:ins.data.name, email:ins.data.email||'', phone:ins.data.phone||'', initials:initials, is_member:false};
+      if(_tmAllMembersCache) _tmAllMembersCache.push(person);
+      if(typeof _bbAllMembersCache!=='undefined' && _bbAllMembersCache) _bbAllMembersCache.push(person);
+      _sboardAssignedCache[person.user_id]={name:person.name, initials:initials};
+      return {ok:true, person:person};
+    }catch(e){ return {ok:false, msg:(e&&e.message)||'Could not add that person.'}; }
+  }
+  // CAST Phase 2 (Sept 22 2026): `who` is an email (old callers), or an
+  // object {uid} for a picked row, or {newName} to create a brand-new
+  // Cast person (non-member) first.
+  async function _csInsertRole(role, who, isBoardMember){
+    if(!who || !_csItem) return {ok:false,msg:'Type a name or email.'};
+    var match=null;
+    if(typeof who==='object' && who.newName){
+      var made=await _castAddPerson(who.newName);
+      if(!made.ok) return made;
+      match=made.person;
+    } else if(typeof who==='object' && who.uid){
+      match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.user_id)===String(who.uid); })[0];
+    } else {
+      match=(_tmAllMembersCache||[]).filter(function(m){ return String(m.email||'').toLowerCase()===String(who).toLowerCase(); })[0]
+        || (_tmAllMembersCache||[]).filter(function(m){ return String(m.name||'').toLowerCase()===String(who).toLowerCase(); })[0];
+    }
+    if(!match) return {ok:false,msg:'No one found by that name or email. Pick “+ Add” to add them as a new person.'};
     var _sb=T().sb; if(!_sb) return {ok:false,msg:'Not connected.'};
     try{
       var meRes=await _sb.auth.getUser();
@@ -1312,6 +1380,18 @@
     if(!uid) return;
     var _sb=T().sb; if(!_sb) return;
     try{
+      // CAST Phase 2 (Sept 22 2026): a Cast person (not a member yet)
+      // keeps their contact info on their own cast_people row. Adding an
+      // email here is also what lets their cards move over to their real
+      // login automatically once they join with that same email.
+      var who=_csMemberLookup(uid);
+      if(who && who.is_member===false){
+        var patch={}; if(phone!==undefined) patch.phone=phone; if(email!==undefined) patch.email=email;
+        var cres=await _sb.from('cast_people').update(patch).eq('id', uid);
+        if(cres.error) throw cres.error;
+        for(var k in patch) who[k]=patch[k];
+        return;
+      }
       var res=await _sb.rpc('update_member_contact', {p_user_id:uid, p_phone:(phone===undefined?null:phone), p_email:(email===undefined?null:email)});
       if(res.error) throw res.error;
       await _tmFetchAllMembers();
@@ -1589,14 +1669,16 @@
     _sbPeopleAddIsBoardMember=false;
 
     var isIdea=(cardType==='idea');
+    var _sbBoardOffNow=_csBoardInitialsOff();
     menu.innerHTML='<div id="sb-people-list"></div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;padding:4px 2px;border-top:1px solid #e4ded0">'
         +'<span>Initials on front</span>'
         +'<div class="sb-gear-tabs" id="sb-people-hide-badge-toggle" style="margin-bottom:0;width:auto;min-width:88px">'
-          +'<button type="button" class="sb-gear-tab'+(item.hide_primary_badge?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
-          +'<button type="button" class="sb-gear-tab'+(item.hide_primary_badge?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
+          +'<button type="button" class="sb-gear-tab'+((item.hide_primary_badge||_sbBoardOffNow)?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+((item.hide_primary_badge||_sbBoardOffNow)?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
         +'</div>'
       +'</div>'
+      +_csInitialsNoteHTML()
       +'<div class="sc-cdrop-addrow">'
         +'<button type="button" class="sc-dotted-add-btn" id="sb-people-add-btn" title="Add someone">+</button>'
         +(isIdea?'<button type="button" class="sc-dotted-add-btn sb-people-call" id="sb-people-call-btn" title="Open the full Call Sheet">☎️</button>':'')
@@ -1705,7 +1787,8 @@
     }
     if(suggBox) suggBox.addEventListener('click', function(e){
       var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
-      _sbPeopleConfirmAdd(row.getAttribute('data-email'));
+      var nn2=row.getAttribute('data-newname'), uid2=row.getAttribute('data-uid');
+      _sbPeopleConfirmAdd(nn2 ? {newName:nn2} : (uid2 ? {uid:uid2} : row.getAttribute('data-email')));
     });
     if(confirmBtn) confirmBtn.addEventListener('click', function(){ _sbPeopleConfirmAdd(emailInput?emailInput.value.trim():''); });
     if(callBtn) callBtn.addEventListener('click', function(){
@@ -2023,10 +2106,11 @@
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(11px * var(--fg-text-scale,1));color:#5b5b56;margin:2px 0 8px">'
         +'<span>Initials on front</span>'
         +'<div class="sb-gear-tabs" id="cs-hide-badge-toggle" style="margin-bottom:0;width:auto;min-width:88px">'
-          +'<button type="button" class="sb-gear-tab'+(_csHideBadgeNow?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
-          +'<button type="button" class="sb-gear-tab'+(_csHideBadgeNow?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
+          +'<button type="button" class="sb-gear-tab'+((_csHideBadgeNow||_csBoardInitialsOff())?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+((_csHideBadgeNow||_csBoardInitialsOff())?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
         +'</div>'
       +'</div>'
+      +_csInitialsNoteHTML()
       +'<div id="cs-rows-all"></div>'
       + _csRenderAddRow()
       +'<div id="cs-error" style="font-size:calc(11px * var(--fg-text-scale,1));color:#b8562f;margin:4px 0;display:none"></div>'
@@ -2096,7 +2180,8 @@
       var addSuggest=document.getElementById('cs-add-suggest');
       if(addSuggest) addSuggest.addEventListener('click', function(e){
         var row=e.target.closest('.tm-add-suggest-row'); if(!row) return;
-        _csConfirmAdd(row.getAttribute('data-email'));
+        var nn=row.getAttribute('data-newname'), uid=row.getAttribute('data-uid');
+        _csConfirmAdd(nn ? {newName:nn} : (uid ? {uid:uid} : row.getAttribute('data-email')));
       });
 
       body.addEventListener('click', function(e){

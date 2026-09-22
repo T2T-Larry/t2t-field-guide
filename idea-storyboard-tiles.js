@@ -66,6 +66,47 @@
   }
 
   var _sboardColorPalette = ['#d6eaf8','#d9f2e6','#fdf3d0','#f8d9e3','#e6d9f2','#fbe3d0','#d0f2ec','#f0ebe0','#ffffff'];
+  // Traveler's own color circles, Sept 22 2026 -- Larry, Master BB:
+  // "What if color wheel allows traveler to custom select colors ... to
+  // change colors in circles?" One palette per traveler (profiles.
+  // card_palette), shared by Idea cards and Briefing Cards. Loaded once
+  // per session; replaces the circles IN PLACE in both lists
+  // (_sboardColorPalette here, BB_COLOR_PALETTE in briefing-board-card.js)
+  // so every existing color row -- card backs, header pickers -- picks it
+  // up without anything else changing. Cards already colored keep their
+  // color; changing a circle only changes what that circle offers next.
+  var CardPalette = window.CardPalette = (function(){
+    var DEFAULTS=_sboardColorPalette.slice();
+    var loaded=null;
+    function apply(list){
+      [_sboardColorPalette, (typeof BB_COLOR_PALETTE!=='undefined'?BB_COLOR_PALETTE:null)].forEach(function(arr){
+        if(!arr) return;
+        for(var i=0;i<DEFAULTS.length;i++) arr[i]=(list && /^#[0-9a-f]{6}$/i.test(list[i]||'')) ? list[i].toLowerCase() : DEFAULTS[i];
+      });
+    }
+    async function me(){ var sb=T().sb; if(!sb) return null; try{ var r=await sb.auth.getUser(); return r&&r.data?r.data.user:null; }catch(e){ return null; } }
+    function load(){
+      if(loaded) return loaded;
+      loaded=(async function(){
+        var u=await me(); if(!u) return;
+        try{
+          var res=await T().sb.from('profiles').select('card_palette').eq('user_id',u.id).maybeSingle();
+          if(!res.error && res.data && Array.isArray(res.data.card_palette)) apply(res.data.card_palette);
+        }catch(e){}
+      })();
+      return loaded;
+    }
+    async function setColor(i, hex){
+      _sboardColorPalette[i]=hex.toLowerCase();
+      apply(_sboardColorPalette.slice());
+      var u=await me(); if(!u) return {ok:false};
+      try{
+        var res=await T().sb.from('profiles').update({card_palette:_sboardColorPalette.slice()}).eq('user_id',u.id);
+        return {ok:!res.error};
+      }catch(e){ return {ok:false}; }
+    }
+    return {load:load, setColor:setColor, defaults:DEFAULTS};
+  })();
   // PLAN board: cards with no verb in their text get force-pinked at
   // duplicate time, Aug 26 2026 (Larry). Reuses the existing rose swatch
   // above (index 3, '#f8d9e3') rather than a new one-off color, so it

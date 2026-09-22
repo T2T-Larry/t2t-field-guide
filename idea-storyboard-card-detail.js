@@ -22,6 +22,14 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
+  // Alt+M (Sept 22 2026) -- open the MOVE pyramid for a card straight
+  // from the board. See the Alt+M handler in idea-storyboard-shared.js.
+  var _sbOpenMoveOnOpen=false, _sbMoveFromBoard=false;
+  function _sboardOpenMoveFor(item){
+    if(!item) return;
+    _sbOpenMoveOnOpen=true; _sbMoveFromBoard=true;
+    openSbDetail(item);
+  }
   function openSbDetail(item){
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
@@ -77,21 +85,20 @@
     // a separate button). TOPIC is always reachable — any card can become
     // the viewed board.
     var apexTag=(isHeaderType && !item.cluster_id)?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
-    var swatches=_sboardColorPalette.map(function(c){
+    var swatches=_sboardColorPalette.map(function(c, i){
       var sel=(item.color===c)?'box-shadow:0 0 0 2px #1a3a5c;' : '';
-      return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
+      return '<button class="sb-swatch" data-i="'+i+'" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer;'+sel+'"></button>';
     }).join('');
-    // Color wheel, Sept 22 2026 -- Larry, Master BB (do-l): "What if we
-    // could choose from a color wheel to set a new card color?" One more
-    // round swatch at the end of the row, painted as a rainbow; clicking
-    // it opens the browser's own full color picker. A color picked there
-    // saves exactly like a preset swatch (same handler below). When the
-    // card already has a color that isn't one of the presets, the wheel
-    // itself wears the selection ring so it's clear where it came from.
-    var _sbCustomColor = item.color && _sboardColorPalette.indexOf(item.color)<0;
-    swatches += '<label class="sb-swatch-wheel" title="Pick any color" style="position:relative;width:26px;height:26px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);border:1px solid #cfe4f2;cursor:pointer;display:inline-block;overflow:hidden;'+(_sbCustomColor?'box-shadow:0 0 0 2px #1a3a5c;':'')+'">'
-      + '<input type="color" id="sb-color-wheel" value="'+(/^#[0-9a-f]{6}$/i.test(item.color||'')?item.color:'#d6eaf8')+'" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0">'
-      + '</label>';
+    // Color wheel = "change these circles", Sept 22 2026 -- Larry: "What
+    // if color wheel allows traveler to custom select colors ... to
+    // change colors in circles?" Tap the rainbow circle to start; tap
+    // any circle to pick a new color for it; tap the rainbow again when
+    // done. Saved for this traveler (CardPalette, idea-storyboard-
+    // tiles.js), shared with Briefing Cards. Picking a circle in normal
+    // mode still just colors this card.
+    swatches += '<button type="button" id="sb-palette-edit" class="sb-swatch-wheel" title="Change these colors" style="width:26px;height:26px;border-radius:50%;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);border:1px solid #cfe4f2;cursor:pointer;padding:0"></button>'
+      + '<input type="color" id="sb-palette-input" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0">'
+      + '<div id="sb-palette-hint" style="display:none;width:100%;font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:center;margin-top:2px">Tap a circle to change its color. Tap the rainbow when done.</div>';
 
     // PARENT / TOPIC eyebrows — computed exactly the way the board's own
     // chrome computes them, so the SHAPING card always agrees with the board.
@@ -291,6 +298,28 @@
       + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
       + '</div>'
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
+      // Priority, Sept 22 2026 -- Larry, Master BB (DOING): "The BB cards
+      // have priority options at the top of the cards. Make Idea cards
+      // exactly the same. Below the HML choice, add yes / no toggle to
+      // show on face of card." Same spot as the Briefing Card (first thing
+      // under the card's title bar), same layout (PRIORITY label over three
+      // full-width H / M / L buttons), same 3-click cycles (H->HH->off,
+      // M->MH->off, L->ML->off) and colors -- _bbNextPriority/PRI_COLOR
+      // come straight from briefing-board-ops.js so the two never disagree.
+      // Yes/No = ideas.hide_priority_front (No hides the tag on the face).
+      + '<div class="sb-pri-field" style="text-align:left;margin:0 0 12px">'
+      +   '<div class="sb-hdr-eyebrow2" style="margin:0 0 5px;text-align:left">Priority</div>'
+      +   '<div id="sb-pri-btns" style="display:flex;gap:6px">'
+      +     ['H','M','L'].map(function(p){ return '<button type="button" class="sb-pri-btn" data-pri-base="'+p+'" style="flex:1;height:36px;font-size:calc(14px * var(--fg-text-scale,1));font-weight:600;border-radius:4px;border:1.5px solid #B4B2A9;background:#fff;color:#2C2C2A;cursor:pointer;font-family:inherit">'+p+'</button>'; }).join('')
+      +   '</div>'
+      +   '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">'
+      +     '<span style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">Show on face of card</span>'
+      +     '<div id="sb-pri-front" style="display:inline-flex;border:1.5px solid #B4B2A9;border-radius:14px;overflow:hidden">'
+      +       '<button type="button" data-front="1" style="border:0;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">Yes</button>'
+      +       '<button type="button" data-front="0" style="border:0;border-left:1.5px solid #B4B2A9;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">No</button>'
+      +     '</div>'
+      +   '</div>'
+      + '</div>'
       + apexTag
       + topRowHTML
       + headerListHTML
@@ -312,23 +341,6 @@
       // _sboardHeartsHTML) -- just wrapped in Signal Flags' own checkbox
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
-      // Priority, Sept 22 2026 -- Larry, Master BB (DOING): "ADD H-M-L
-      // priorities like on BB to the back of the Idea cards with option
-      // to show on front of cards." Same three buttons, same 3-click
-      // cycles (H->HH->off, M->MH->off, L->ML->off) and same colors as
-      // the Briefing Card's own Priority row -- PRIORITY_BASE/
-      // _bbNextPriority/PRI_COLOR all come straight from
-      // briefing-board-ops.js so the two can never disagree. "Show on
-      // front" is this card's own switch (ideas.hide_priority_front).
-      // Always visible (not a checkbox-gated Addition) -- matches where
-      // Priority sits on the Briefing Card: first thing on the back.
-      + '<div class="sb-pri-field" style="display:flex;align-items:center;gap:6px;margin:4px 0 8px">'
-      +   '<span class="sb-hdr-eyebrow2" style="margin:0">Priority</span>'
-      +   '<div id="sb-pri-btns" style="display:flex;gap:4px;flex:1">'
-      +     ['H','M','L'].map(function(p){ return '<button type="button" class="sb-pri-btn" data-pri-base="'+p+'" style="flex:1;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;padding:4px 2px;border-radius:5px;border:1px solid #B4B2A9;background:#fff;color:#2C2C2A;cursor:pointer">'+p+'</button>'; }).join('')
-      +   '</div>'
-      +   '<label title="Show the priority badge on the front of this card" style="display:flex;align-items:center;gap:3px;font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;cursor:pointer;white-space:nowrap"><input type="checkbox" id="sb-pri-front"'+(item.hide_priority_front?'':' checked')+' style="margin:0">Show on front</label>'
-      + '</div>'
       + '<div class="sb-addition" id="sb-add-notes-wrap"><label class="sb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Notes</span></label><div class="sb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1))">'+(item.notes||'')+'</textarea></div></div>'
       + '<div class="sb-addition" id="sb-add-links-wrap"><label class="sb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Links</span></label><div class="sb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div style="display:flex;gap:6px">'
@@ -354,6 +366,12 @@
       + '<button class="sb-blue-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="sb-blue-btn" id="sb-gear" title="Utility">⚙️</button>'
+      // MOVE, Sept 22 2026 -- Larry: "MOVE button: back of cards. opens
+      // project pyramid ... clicking on project level sends current card
+      // there." Opens the same project pyramid as the "Anywhere" option
+      // (openMoveAnywherePicker); tap any project or topic to send the
+      // card straight there. Alt+M on a selected card opens this too.
+      + '<button class="sb-blue-btn" id="sb-move-btn" title="Move this card to any project or topic (Alt+M)" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.06em">MOVE</button>'
       + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
       + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
@@ -709,6 +727,7 @@
         current: {id:ROOT_ID, name:'All Projects'},
         getChildren: getChildren,
         onNavigate: async function(hid){
+          if(hid===ROOT_ID) return; // "All Projects" itself isn't a place a card can live
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
           try{
             var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
@@ -719,7 +738,12 @@
           }catch(err){ console.error(err); }
         }
       });
-      T().wire('sb-anywhere-cancel', function(){ openSbDetail(item); });
+      T().wire('sb-anywhere-cancel', function(){
+        // Opened with Alt+M from the board: Cancel goes back to the board,
+        // not to the card's back.
+        if(_sbMoveFromBoard){ _sbMoveFromBoard=false; closeSbDetail(); return; }
+        openSbDetail(item);
+      });
     }
 
     T().wire('sb-hdr-newh', function(){
@@ -740,6 +764,10 @@
     T().wire('sb-hdr-othertopic', openMoveToTopicPicker);
     T().wire('sb-hdr-otherproj', openMoveToProjectPicker);
     T().wire('sb-hdr-anywhere', openMoveAnywherePicker);
+    T().wire('sb-move-btn', openMoveAnywherePicker);
+    // Alt+M from the board (idea-storyboard-shared.js) opens the card and
+    // then asks for the move picker straight away.
+    if(_sbOpenMoveOnOpen){ _sbOpenMoveOnOpen=false; openMoveAnywherePicker(); }
     // Aug 7 2026 -- same ENTER + no-feedback-on-Save fix as the standalone
     // New Header prompt above (_sboardOpenAddHeaderPrompt), applied here
     // too since this is the other place a header gets created and Larry's
@@ -931,12 +959,25 @@
           saveFields({priority:nextPri(item.priority||'', b.getAttribute('data-pri-base'))}, before);
         });
       });
-      var frontChk=document.getElementById('sb-pri-front');
-      if(frontChk) frontChk.addEventListener('change', function(){
-        var before={hide_priority_front:!!item.hide_priority_front};
-        saveFields({hide_priority_front:!frontChk.checked}, before);
+      function paintFront(){
+        var hidden=!!item.hide_priority_front;
+        Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-front button'), function(b){
+          var on=(b.getAttribute('data-front')==='1')!==hidden;
+          b.style.background=on?'#1a3a5c':'#fff';
+          b.style.color=on?'#fff':'#2C2C2A';
+        });
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-front button'), function(b){
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          var hide=b.getAttribute('data-front')!=='1';
+          if(hide===!!item.hide_priority_front) return;
+          var before={hide_priority_front:!!item.hide_priority_front};
+          saveFields({hide_priority_front:hide}, before).then(paintFront);
+        });
       });
       paint();
+      paintFront();
     })();
 
     T().wire('sb-people-btn', function(e){
@@ -1154,13 +1195,42 @@
       var row=document.getElementById('sb-swatch-row');
       row.style.display=(row.style.display==='none'||!row.style.display)?'flex':'none';
     });
+    // Palette edit mode (Sept 22 2026) -- see the swatches comment above.
+    var _sbPaletteEditing=false;
+    function _sbRepaintSwatches(){
+      Array.prototype.forEach.call(document.querySelectorAll('#sb-swatch-row .sb-swatch'), function(btn){
+        var i=+btn.getAttribute('data-i'), c=_sboardColorPalette[i];
+        btn.setAttribute('data-c', c);
+        btn.style.background=c;
+        btn.style.boxShadow=(!_sbPaletteEditing && item.color===c)?'0 0 0 2px #1a3a5c':'';
+        btn.style.outline=_sbPaletteEditing?'2px dashed #a3907a':'';
+        btn.style.outlineOffset='2px';
+      });
+      var ed=document.getElementById('sb-palette-edit'); if(ed) ed.style.boxShadow=_sbPaletteEditing?'0 0 0 2px #1a3a5c':'';
+      var hint=document.getElementById('sb-palette-hint'); if(hint) hint.style.display=_sbPaletteEditing?'block':'none';
+    }
+    if(window.CardPalette) CardPalette.load().then(_sbRepaintSwatches);
     Array.prototype.forEach.call(document.querySelectorAll('.sb-swatch'), function(btn){
-      btn.addEventListener('click', function(){ _sbApplyCardColor(btn.getAttribute('data-c')); });
+      btn.addEventListener('click', function(){
+        if(_sbPaletteEditing){
+          var inp=document.getElementById('sb-palette-input'); if(!inp) return;
+          inp.value=btn.getAttribute('data-c');
+          inp.setAttribute('data-i', btn.getAttribute('data-i'));
+          inp.click();
+          return;
+        }
+        _sbApplyCardColor(btn.getAttribute('data-c'));
+      });
     });
-    // Color wheel (Sept 22 2026) -- same save path as a preset swatch.
+    T().wire('sb-palette-edit', function(e){ if(e) e.stopPropagation(); _sbPaletteEditing=!_sbPaletteEditing; _sbRepaintSwatches(); });
     (function(){
-      var wheel=document.getElementById('sb-color-wheel');
-      if(wheel) wheel.addEventListener('change', function(){ _sbApplyCardColor(wheel.value); });
+      var inp=document.getElementById('sb-palette-input');
+      if(inp) inp.addEventListener('change', async function(){
+        var i=+inp.getAttribute('data-i');
+        if(isNaN(i) || !window.CardPalette) return;
+        await CardPalette.setColor(i, inp.value);
+        _sbRepaintSwatches();
+      });
     })();
     async function _sbApplyCardColor(c){
       {

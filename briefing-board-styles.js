@@ -780,8 +780,11 @@
       // stays visually level. Plain outline/grey when unassigned, filled
       // accent + white initials once someone's picked -- same at-a-glance
       // language as a "primary" card_roles dot elsewhere on the board.
-      +'.bb-checklist-assignee{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0;box-sizing:border-box;border-radius:50%;border:1.5px solid var(--bb-sub);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(8px * var(--fg-text-scale,1));line-height:1;color:var(--bb-sub);font-weight:600}'
-      +'.bb-checklist-assignee.bb-checklist-assignee-set{border-color:var(--bb-accent);background:var(--bb-accent);color:#fff}'
+      // Sept 22 2026: unassigned shows a 👤 head now (was an empty circle),
+      // so the circle border is dropped for that state; 18px so the head
+      // reads at a glance. Assigned keeps the filled accent circle + initials.
+      +'.bb-checklist-assignee{flex:0 0 auto;width:18px;height:18px;margin:0;padding:0;box-sizing:border-box;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--fg-text-scale,1));line-height:1;color:var(--bb-sub);font-weight:600}'
+      +'.bb-checklist-assignee.bb-checklist-assignee-set{border:1.5px solid var(--bb-accent);background:var(--bb-accent);color:#fff;font-size:calc(8px * var(--fg-text-scale,1))}'
       +'.bb-cl-assignee-menu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:4px;min-width:120px;max-height:220px;overflow-y:auto}'
       +'.bb-cl-assignee-menu .bb-cdrop-row{padding:5px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-family:var(--bb-body-font);color:var(--bb-ink);cursor:pointer;border-radius:4px;white-space:nowrap}'
       +'.bb-cl-assignee-menu .bb-cdrop-row:hover{background:rgba(0,0,0,.06)}'

@@ -1639,7 +1639,9 @@
     var box=document.getElementById(targetId||'bb-team-add-suggest'); if(!box) return;
     var already={}; _bbAllRosterRows().forEach(function(r){ already[r.user_id]=true; });
     var q=String(query||'').trim().toLowerCase();
-    var pool=(_bbAllMembersCache||[]).filter(function(m){ return !already[m.user_id]; });
+    // Board access is for T2T logins only (CAST Phase 2 people can be on
+    // cards but can't be given board access until they join).
+    var pool=(_bbAllMembersCache||[]).filter(function(m){ return !already[m.user_id] && m.is_member!==false; });
     var matches = q ? pool.filter(function(m){
       return (m.name||'').toLowerCase().indexOf(q)>=0 || (m.email||'').toLowerCase().indexOf(q)>=0;
     }) : pool;
@@ -2303,23 +2305,35 @@
           if(!q) return !listed[String(p.user_id)];
           return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.email||'').toLowerCase().indexOf(q)>=0;
         });
-        if(!matches.length){
-          box.innerHTML=q
-            ? '<div class="tm-add-suggest-empty">“'+_esc(input.value.trim())+'” isn’t a T2T member yet. Non-members can be picked once CAST Phase 2 is built.</div>'
-            : '<div class="tm-add-suggest-empty">Everyone’s already listed above.</div>';
-        } else {
-          box.innerHTML=matches.map(function(p){
-            return '<div class="tm-add-suggest-row" data-uid="'+_esc(p.user_id)+'">'
-              +'<div class="tm-add-suggest-name">'+_esc(p.name||p.email||'')+'</div>'
-              +(p.email?'<div class="tm-add-suggest-email">'+_esc(p.email)+'</div>':'')
-            +'</div>';
-          }).join('');
+        // CAST Phase 2 (Sept 22 2026): a typed name with no exact match
+        // gets a "+ Add" row -- creates a Cast person (not a member yet)
+        // and picks them, same as picking anyone else.
+        var typed=input.value.trim();
+        var exact=typed && (pool||[]).some(function(p){ return String(p.name||'').toLowerCase()===typed.toLowerCase(); });
+        var html=matches.map(function(p){
+          return '<div class="tm-add-suggest-row" data-uid="'+_esc(p.user_id)+'">'
+            +'<div class="tm-add-suggest-name">'+_esc(p.name||p.email||'')+(p.is_member===false?' <span style="opacity:.6;font-size:.85em">(not a member yet)</span>':'')+'</div>'
+            +(p.email?'<div class="tm-add-suggest-email">'+_esc(p.email)+'</div>':'')
+          +'</div>';
+        }).join('');
+        if(typed && !exact){
+          html+='<div class="tm-add-suggest-row" data-newname="'+_esc(typed)+'"><div class="tm-add-suggest-name">+ Add “'+_esc(typed)+'”</div><div class="tm-add-suggest-email">new person — not a T2T member yet</div></div>';
         }
+        box.innerHTML = html || '<div class="tm-add-suggest-empty">Everyone’s already listed above.</div>';
         box.style.display='block';
         position();
       }
-      box.addEventListener('click', function(e){
+      box.addEventListener('click', async function(e){
         var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
+        var newName=r.getAttribute('data-newname');
+        if(newName){
+          if(typeof _castAddPerson!=='function') return;
+          var made=await _castAddPerson(newName);
+          if(!made.ok){ box.innerHTML='<div class="tm-add-suggest-empty">'+_esc(made.msg)+'</div>'; return; }
+          close();
+          opts.onPick && opts.onPick({user_id:made.person.user_id, name:made.person.name});
+          return;
+        }
         var uid=r.getAttribute('data-uid');
         var p=(pool||[]).filter(function(x){ return String(x.user_id)===String(uid); })[0];
         close();

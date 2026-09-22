@@ -286,7 +286,7 @@
         // Priority badge (Sept 22 2026) -- same pill as the Briefing
         // Board's .bb-pri-badge, scaled to this board's smaller tile.
         // Top-left; steps right of the PLAN board's step number.
-        +'.sb-pri-badge{position:absolute;top:2px;left:3px;font-size:calc(8px * var(--fg-text-scale,1));line-height:1.3;font-weight:700;font-family:sans-serif;padding:0 3px;border-radius:3px;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
+        +'.sb-pri-badge{position:absolute;top:3px;left:3px;font-size:calc(10px * var(--fg-text-scale,1));line-height:1.35;font-weight:700;font-family:sans-serif;padding:1px 5px;border-radius:4px;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
         +'.sb-pri-badge.sb-pri-after-order{left:24px}'
         +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:calc(7px * var(--fg-text-scale,1));font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         // Notes badge (Larry, Aug 11 2026: "pencil as signal flag on the
