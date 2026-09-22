@@ -334,19 +334,22 @@
   // record. Adding a second (or third) calendar, or removing one, stays
   // a Utilities > Calendar job (openCalendarPanel, wired there too) --
   // this click handler is only ever the icon's own shortcut.
+  //
+  // Sept 22 2026, Larry (same session, second pass): "there should be a
+  // simple question of just this project or all projects. Everything
+  // else is a Utilities issue." With a project in view AND a service
+  // already on record, this no longer opens the full panel (which is
+  // where "landing on the Utilities screen" confusion came from) -- it
+  // shows only the scope question (_bbShowCalendarScopeChoice) and jumps
+  // straight into that service once answered. The full panel is now only
+  // reached from the icon on the one occasion it has no choice but to:
+  // no project in view has never needed a scope question either, and no
+  // service on record yet means there's nothing to jump to regardless of
+  // scope -- both still need Utilities' full picker at least once.
   function _bbCalendarIconClick(){
-    // Sept 22 2026, Larry: reported landing on a Google sign-in page with
-    // no "what should this link include" choice while inside a specific
-    // project -- the quick-jump below predates project-scoped links and
-    // only knows "has ANY calendar been added to this board," not "has
-    // THIS project's own link been set up," so it was jumping straight to
-    // Google's general calendar page even when a project was in view. A
-    // board-wide badge doesn't mean anything reliable at the project
-    // level, so once a project's in view there's a real choice to make
-    // again every time -- show the panel instead of guessing.
     var projectId=(typeof _bbProjectFilter==='function') ? _bbProjectFilter() : null;
+    var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
     if(!projectId){
-      var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
       if(sel && sel.service){
         var viewUrl=_bbCalendarViewUrl(sel.service);
         // Sept 22 2026, Larry: reported a new browser tab piling up every
@@ -356,8 +359,11 @@
         // that same tab instead of opening a fresh one each click.
         if(viewUrl){ window.open(viewUrl, 't2t-calendar', 'noopener'); return; }
       }
+      openCalendarPanel();
+      return;
     }
-    openCalendarPanel();
+    if(sel && sel.service){ _bbShowCalendarScopeChoice(sel.service); return; }
+    openCalendarPanel(); // first-time setup for this board -- still needs a real service picker once
   }
   // Sept 22 2026, Larry: per-project scoped links (client-safe sharing) --
   // see the matching Sept 22 comment on the calendar-feed Edge Function
@@ -379,6 +385,19 @@
   function _bbProjectCalendarFeedUrl(scheme, boardId, projectId, token){
     if(!boardId || !projectId || !token) return null;
     return scheme+'://'+BB_CALENDAR_FEED_HOST+'/functions/v1/calendar-feed?board='+encodeURIComponent(boardId)+'&project='+encodeURIComponent(projectId)+'&token='+encodeURIComponent(token);
+  }
+  // Sept 22 2026 -- pulled out of _bbApplyCalendarLinks so
+  // _bbShowCalendarScopeChoice (the quick icon's minimal scope-only
+  // prompt, below) can build the one URL it actually needs without going
+  // through the full service-button panel. One formula per service, used
+  // by both the panel's three named buttons and the icon's direct jump.
+  function _bbServiceAddUrl(service, httpsUrl, webcalUrl, calNameRaw){
+    if(!httpsUrl || !webcalUrl) return null;
+    var calName=encodeURIComponent(calNameRaw||'T2T Field Guide');
+    if(service==='google') return 'https://calendar.google.com/calendar/r?cid='+encodeURIComponent(httpsUrl);
+    if(service==='outlook') return 'https://outlook.office.com/calendar/addfromweb?url='+encodeURIComponent(httpsUrl)+'&name='+calName;
+    if(service==='apple') return webcalUrl;
+    return null;
   }
   // Fills the three service buttons + copy-link field from whichever
   // webcal/https pair is currently in scope (whole board, or one
@@ -420,22 +439,114 @@
     // display:block is set explicitly each time (not left to the HTML
     // default) so none of these three can regress the way the old single
     // button did.
-    var calName=encodeURIComponent(calNameRaw||'T2T Field Guide');
     if(googleBtn){
       googleBtn.style.display='block';
-      googleBtn.setAttribute('href','https://calendar.google.com/calendar/r?cid='+encodeURIComponent(httpsUrl));
+      googleBtn.setAttribute('href',_bbServiceAddUrl('google',httpsUrl,webcalUrl,calNameRaw));
     }
     if(outlookBtn){
       outlookBtn.style.display='block';
-      outlookBtn.setAttribute('href','https://outlook.office.com/calendar/addfromweb?url='+encodeURIComponent(httpsUrl)+'&name='+calName);
+      outlookBtn.setAttribute('href',_bbServiceAddUrl('outlook',httpsUrl,webcalUrl,calNameRaw));
     }
     if(appleBtn){
       appleBtn.style.display='block';
-      appleBtn.setAttribute('href',webcalUrl);
+      appleBtn.setAttribute('href',_bbServiceAddUrl('apple',httpsUrl,webcalUrl,calNameRaw));
     }
   }
   var _bbCalendarScopeMode='all'; // 'all' | 'project' -- which link the buttons currently point at
+  // Sept 22 2026, Larry: "there should be a simple question of just this
+  // project or all projects. Everything else is a Utilities issue" --
+  // the scope buttons (Just this project / All projects) are now shared
+  // between two different jobs: the full Utilities panel (pick a scope,
+  // THEN pick/re-pick a service, copy a link, etc.) and the quick icon's
+  // minimal prompt (scope only, then jump straight into the service
+  // that's already on record). 'panel' | 'quick' picks which one a click
+  // on either button actually does right now.
+  //
+  // Wired ONCE below (wireCalendarPanel, called once at board init) into
+  // the dispatcher functions rather than re-wired every time the panel
+  // opens -- openCalendarPanel used to call T().wire on these same two
+  // buttons on every single open, which only ever ADDS a listener
+  // (backpack.js's wire() is a bare addEventListener), so a traveler who
+  // opened Utilities > Calendar three times in one visit had three
+  // showProjectScope() calls firing on the next click. Harmless when the
+  // panel version always did the same thing regardless of how many times
+  // it ran, but the quick version below only makes sense running once
+  // (it opens a browser tab) -- so this is fixed properly here rather
+  // than inherited.
+  var _bbCalendarScopeUIMode = 'panel';
+  var _bbCalendarQuickService = null; // set by _bbShowCalendarScopeChoice right before it shows the prompt
+  function _bbPaintScopeButtons(mode){
+    var scopeProjectBtn=document.getElementById('bb-calendar-scope-project');
+    var scopeAllBtn=document.getElementById('bb-calendar-scope-all');
+    [ [scopeProjectBtn,'project'], [scopeAllBtn,'all'] ].forEach(function(pair){
+      var btn=pair[0]; if(!btn) return;
+      var active=(pair[1]===mode);
+      btn.style.background=active?'#3B2510':'#fff';
+      btn.style.color=active?'#fff':'#3B2510';
+    });
+  }
+  // The full-panel behavior (Utilities > Calendar, and the icon's first-
+  // ever use before any service is on record): switching scope re-fills
+  // the three service buttons + copy-link field so a traveler can still
+  // pick/re-pick a service for that scope.
+  function _bbApplyAllScope(){
+    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+    var boardCalName=(board&&board.name)?board.name+' \u2014 T2T Field Guide':'T2T Field Guide';
+    _bbCalendarScopeMode='all';
+    _bbPaintScopeButtons('all');
+    _bbApplyCalendarLinks(_bbCalendarFeedUrl('webcal'), _bbCalendarFeedUrl('https'), boardCalName);
+  }
+  function _bbApplyProjectScope(){
+    var boardId=_bbCurrentBoardId;
+    var projectId=(typeof _bbProjectFilter==='function') ? _bbProjectFilter() : null;
+    _bbCalendarScopeMode='project';
+    _bbPaintScopeButtons('project');
+    if(!projectId) return;
+    var msg=document.getElementById('bb-calendar-msg');
+    if(msg) msg.textContent='Preparing this project\u2019s link\u2026';
+    _bbGetOrCreateProjectCalendarToken(boardId, projectId).then(function(token){
+      if(boardId!==_bbCurrentBoardId || projectId!==((typeof _bbProjectFilter==='function')?_bbProjectFilter():null)) return; // stale -- moved on before this resolved
+      var pWebcal=_bbProjectCalendarFeedUrl('webcal', boardId, projectId, token);
+      var pHttps=_bbProjectCalendarFeedUrl('https', boardId, projectId, token);
+      _bbFetchHeaderInfo(projectId).then(function(info){
+        var pName=(info&&info.name)?info.name:'This project';
+        _bbApplyCalendarLinks(pWebcal, pHttps, pName+' \u2014 T2T Field Guide');
+      });
+    });
+  }
+  // The quick-icon behavior: scope is the ONLY question -- picking one
+  // jumps straight into whichever service is already on record for this
+  // board, for that scope, and closes the panel. No service picker, no
+  // copy-link field, no delete instructions -- those stay a Utilities job.
+  function _bbQuickJumpForScope(scopeMode){
+    var boardId=_bbCurrentBoardId;
+    var projectId=(typeof _bbProjectFilter==='function') ? _bbProjectFilter() : null;
+    var service=_bbCalendarQuickService;
+    closeCalendarPanel();
+    if(!service || !boardId) return;
+    if(scopeMode==='all'){
+      var url=_bbServiceAddUrl(service, _bbCalendarFeedUrl('https'), _bbCalendarFeedUrl('webcal'));
+      if(url) window.open(url, 't2t-calendar', 'noopener');
+      return;
+    }
+    if(!projectId) return;
+    _bbGetOrCreateProjectCalendarToken(boardId, projectId).then(function(token){
+      var pHttps=_bbProjectCalendarFeedUrl('https', boardId, projectId, token);
+      var pWebcal=_bbProjectCalendarFeedUrl('webcal', boardId, projectId, token);
+      var purl=_bbServiceAddUrl(service, pHttps, pWebcal);
+      if(purl) window.open(purl, 't2t-calendar', 'noopener');
+    });
+  }
+  function _bbHandleScopeAll(){
+    if(_bbCalendarScopeUIMode==='quick'){ _bbQuickJumpForScope('all'); return; }
+    _bbApplyAllScope();
+  }
+  function _bbHandleScopeProject(){
+    if(_bbCalendarScopeUIMode==='quick'){ _bbQuickJumpForScope('project'); return; }
+    _bbApplyProjectScope();
+  }
   function openCalendarPanel(){
+    _bbCalendarScopeUIMode='panel';
     var ov=document.getElementById('bb-calendar-overlay');
     // Sept 22 2026: every other draggable overlay resets to its centered
     // position before showing (_bbResetCardPosition), so a traveler who
@@ -447,10 +558,8 @@
     var statusEl=document.getElementById('bb-calendar-status');
     var chooseLabel=document.getElementById('bb-calendar-choose-label');
     var scopeRow=document.getElementById('bb-calendar-scope-row');
-    var scopeProjectBtn=document.getElementById('bb-calendar-scope-project');
-    var scopeAllBtn=document.getElementById('bb-calendar-scope-all');
-    var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-    var boardCalName=(board&&board.name)?board.name+' \u2014 T2T Field Guide':'T2T Field Guide';
+    var manage=document.getElementById('bb-calendar-manage');
+    if(manage) manage.style.display='';
     // Sept 22 2026, Larry: status-aware wording -- reachable both from the
     // quick icon (only when nothing's picked yet) and from Utilities >
     // Calendar (always), so this same panel has to read right either way.
@@ -464,51 +573,48 @@
       if(statusEl) statusEl.textContent='Subscribe once and this board\u2019s timed cards stay in sync from then on.';
       if(chooseLabel) chooseLabel.textContent='Choose your calendar:';
     }
-    var boardId=_bbCurrentBoardId;
     var projectId=(typeof _bbProjectFilter==='function') ? _bbProjectFilter() : null;
-    function paintScopeButtons(mode){
-      [ [scopeProjectBtn,'project'], [scopeAllBtn,'all'] ].forEach(function(pair){
-        var btn=pair[0]; if(!btn) return;
-        var active=(pair[1]===mode);
-        btn.style.background=active?'#3B2510':'#fff';
-        btn.style.color=active?'#fff':'#3B2510';
-      });
-    }
-    function showAllScope(){
-      _bbCalendarScopeMode='all';
-      paintScopeButtons('all');
-      _bbApplyCalendarLinks(_bbCalendarFeedUrl('webcal'), _bbCalendarFeedUrl('https'), boardCalName);
-    }
-    function showProjectScope(){
-      _bbCalendarScopeMode='project';
-      paintScopeButtons('project');
-      var msg=document.getElementById('bb-calendar-msg');
-      if(msg) msg.textContent='Preparing this project\u2019s link\u2026';
-      _bbGetOrCreateProjectCalendarToken(boardId, projectId).then(function(token){
-        if(boardId!==_bbCurrentBoardId || projectId!==((typeof _bbProjectFilter==='function')?_bbProjectFilter():null)) return; // stale -- moved on before this resolved
-        var pWebcal=_bbProjectCalendarFeedUrl('webcal', boardId, projectId, token);
-        var pHttps=_bbProjectCalendarFeedUrl('https', boardId, projectId, token);
-        _bbFetchHeaderInfo(projectId).then(function(info){
-          var pName=(info&&info.name)?info.name:'This project';
-          _bbApplyCalendarLinks(pWebcal, pHttps, pName+' \u2014 T2T Field Guide');
-        });
-      });
-    }
     if(projectId){
       if(scopeRow) scopeRow.style.display='block';
-      T().wire('bb-calendar-scope-all', showAllScope);
-      T().wire('bb-calendar-scope-project', showProjectScope);
-      showProjectScope(); // default to the narrower link when a project's in view
+      _bbApplyProjectScope(); // default to the narrower link when a project's in view
     }else{
       if(scopeRow) scopeRow.style.display='none';
-      showAllScope();
+      _bbApplyAllScope();
     }
+  }
+  // Sept 22 2026, Larry: the simple version of the calendar question --
+  // only ever reached from the board icon, only once a service is
+  // already on record for this board, and only while a project is in
+  // view (the no-project quick-jump above needs no scope question at
+  // all). Reuses the same overlay/scope-row Utilities uses, but hides
+  // everything else in it (service picker, copy link, removal steps) so
+  // this reads as one small question, not the management screen.
+  function _bbShowCalendarScopeChoice(service){
+    var ov=document.getElementById('bb-calendar-overlay');
+    if(!ov){ openCalendarPanel(); return; } // not built yet -- shouldn't happen, fail safe to the full panel
+    _bbResetCardPosition(ov.querySelector('.bb-overlay-card'));
+    ov.classList.add('active');
+    var statusEl=document.getElementById('bb-calendar-status');
+    var scopeRow=document.getElementById('bb-calendar-scope-row');
+    var manage=document.getElementById('bb-calendar-manage');
+    if(statusEl) statusEl.textContent='Open your '+(CALENDAR_SERVICE_LABEL[service]||'calendar')+' for:';
+    if(manage) manage.style.display='none';
+    if(scopeRow) scopeRow.style.display='block';
+    _bbCalendarScopeUIMode='quick';
+    _bbCalendarQuickService=service;
+    _bbPaintScopeButtons(null); // neither pre-selected -- a real choice every time, not defaulted
   }
   function closeCalendarPanel(){
     var ov=document.getElementById('bb-calendar-overlay'); if(ov) ov.classList.remove('active');
+    _bbCalendarScopeUIMode='panel'; // safety net if the panel's dismissed (\u2715, click-outside) mid-quick-choice
   }
   function wireCalendarPanel(){
     T().wire('bb-calendar-close', closeCalendarPanel);
+    // Wired once here, not per-open -- see the block comment above
+    // _bbCalendarScopeUIMode for why. Both buttons dispatch on whichever
+    // mode is current at click time.
+    T().wire('bb-calendar-scope-all', _bbHandleScopeAll);
+    T().wire('bb-calendar-scope-project', _bbHandleScopeProject);
     var copyBtn=document.getElementById('bb-calendar-copy');
     if(copyBtn){
       copyBtn.addEventListener('click', function(){

@@ -40,6 +40,27 @@
     if(document.getElementById('s-briefing-board')) return;
     injectBriefingBoardStyles();
 
+    // Sept 22 2026 fix -- Larry: "Reset now opens desktop instead of last
+    // open screen," on Briefing Board specifically, right after today's
+    // Calendar rebuild landed. Root cause: these three registrations used
+    // to run at the BOTTOM of this function, after ~900 lines of DOM-
+    // building for every overlay this screen owns (Settings, Team,
+    // Calendar, etc.) -- so any runtime error anywhere in that DOM-
+    // building code (a bad new overlay being the obvious suspect today)
+    // would throw before ever reaching them, leaving 's-briefing-board'
+    // permanently unregistered for the rest of that page load. Reload's
+    // resumeToLastPageOr (backpack.js) still finds the right page NUMBER
+    // in localStorage from days ago, but with no registration this session
+    // it can't turn that number back into a screen id, and silently falls
+    // back to Desktop -- exactly the symptom, and exactly why it had
+    // "always worked" until whatever broke today. Moving registration up
+    // here, before any of the DOM-building that follows can fail, means a
+    // future bug in one of this screen's overlays can no longer take
+    // Reset down with it -- the long-term fix, not just today's patch.
+    T().registerPageNum('s-briefing-board', '4010'); /* Larry, Aug 8 2026: renumbered off 9350 into the Journey phase sequence, mirroring ISB's July 29 move from 9710 to 1010 -- see Journey's 4810 Tools Crib link in Design Notes */
+    T().registerUtilScreen('s-briefing-board');
+    T().registerCtx('s-briefing-board', 'Briefing Board');
+
     var div=document.createElement('div');
     div.innerHTML=
        '<div class="sc" id="s-briefing-board">'
@@ -697,6 +718,17 @@
           // doesn't change Google's/Outlook's own account-picker or
           // sign-in prompt on that page -- that part is those services'
           // own login screen, outside anything this site controls.
+          // Sept 22 2026, Larry: "there should be a simple question of just
+          // this project or all projects. Everything else is a Utilities
+          // issue" -- the icon on the board should ask ONLY the scope
+          // question and then act, once a service is already on record;
+          // choosing a service, copying the link, and removal steps stay a
+          // Utilities > Calendar job. Wrapped in one id so
+          // _bbShowCalendarScopeChoice (briefing-board-card.js) can hide
+          // this whole block for that quick-icon case with one toggle,
+          // instead of hiding each piece separately -- and so nothing here
+          // has to move or be duplicated to serve both jobs.
+          +'<div id="bb-calendar-manage">'
           +'<div id="bb-calendar-choose-label" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:6px">Choose your calendar:</div>'
           +'<a id="bb-calendar-google" href="#" target="t2t-calendar" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Google Calendar</a>'
           +'<a id="bb-calendar-outlook" href="#" target="t2t-calendar" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;font-size:calc(12px * var(--fg-text-scale,1));padding:8px 10px;background:#3B2510;color:#fff;border-radius:8px;text-decoration:none;margin-bottom:8px">Outlook</a>'
@@ -731,6 +763,7 @@
               +'<b>Apple Calendar:</b> select the calendar in the sidebar, then Edit &rarr; Delete Calendar (or right-click it &rarr; Delete).'
             +'</div>'
           +'</div>'
+          +'</div>' // close bb-calendar-manage
           +'<div id="bb-calendar-msg" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3372b"></div>'
         +'</div>';
       fg.appendChild(calOv);
@@ -976,10 +1009,6 @@
       lcOv.innerHTML='<div class="bb-overlay-card" style="width:380px;max-width:92vw"></div>';
       fg.appendChild(lcOv);
     }
-    T().registerPageNum('s-briefing-board', '4010'); /* Larry, Aug 8 2026: renumbered off 9350 into the Journey phase sequence, mirroring ISB's July 29 move from 9710 to 1010 -- see Journey's 4810 Tools Crib link in Design Notes */
-    T().registerUtilScreen('s-briefing-board');
-    T().registerCtx('s-briefing-board', 'Briefing Board');
-
     // Appearance restores immediately with whatever's cached so far
     // (font is a real tab-wide preference; theme is per board_type, see
     // briefing-board-ops.js -- this just paints the 'gold' default the

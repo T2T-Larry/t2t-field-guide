@@ -141,4 +141,36 @@
     return false;
   };
 
+  // isAccountRoot, Sept 22 2026 -- Larry, after the MASTER-mislabel bug
+  // report: "Does it have its own files? Do we have duplicate files?"
+  // This file already stopped the visual numbers (fontSize, radius, etc.)
+  // from being hand-copied per board; the MASTER/root TEST itself was
+  // never brought in here though, so it had quietly drifted the same way
+  // those numbers used to. Briefing Board's own copy called any row with
+  // no parent "root" -- which also matches a real top-level project like
+  // "Share" that simply has no parent of its own -- so it showed MASTER
+  // for Share too. The Idea Board's copy already did this the safe way:
+  // compare the row's actual id against the real, fetched root id, not
+  // just "does it have a parent." One shared function now, so Plan and
+  // Share (still to be built) read the same rule instead of a third
+  // hand-typed copy, and so a future fix here reaches every board at once.
+  //
+  // row: {id, cluster_id} for whatever header/project is currently in
+  // view -- null/undefined if nothing's resolved yet.
+  // rootId: the board's own already-fetched account-root id (each board
+  // still fetches this itself, via T2TData.ensureIdeaStoryboardsRoot --
+  // that part was always identical and isn't what drifted).
+  window.IDBand.isAccountRoot = function(row, rootId){
+    // Nothing to compare yet -- both boards already treated this as "root"
+    // (nothing narrower to show), so that stays the shared behavior.
+    if(!row) return true;
+    // Root id itself never resolved (a failed fetch) -- degrade to the
+    // old pre-migration "has no parent" test rather than guessing either
+    // way. Documented original rationale (briefing-board-master.js,
+    // _bbIsProjectRoot): "a failed fetch shouldn't mark every real
+    // project as a nested layer" -- kept here as the one shared fallback.
+    if(!rootId) return !row.cluster_id;
+    return String(row.id)===String(rootId);
+  };
+
 })();

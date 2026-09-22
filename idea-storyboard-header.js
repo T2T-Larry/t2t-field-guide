@@ -434,7 +434,14 @@
     var titleTrigger=document.getElementById('sc-title-trigger');
     if(!titleTrigger) return;
     var projRow=topicRow?_sboardProjectRowFor(topicRow):null;
-    var atRoot=!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId);
+    // Sept 22 2026 -- now reads the one shared root test (id-band.js's
+    // IDBand.isAccountRoot) instead of its own hand-typed copy, so this
+    // and Briefing Board's own PROJECT label can never drift apart again
+    // the way they just did. Falls back to the old inline test only if
+    // id-band.js somehow isn't loaded.
+    var atRoot = window.IDBand
+      ? IDBand.isAccountRoot(projRow, _sboardIdeaStoryboardsRootId)
+      : (!projRow || !_sboardIdeaStoryboardsRootId || String(projRow.id)===String(_sboardIdeaStoryboardsRootId));
     _sboardIsAtMasterRoot=atRoot;
     if(atRoot){
       // Sept 7 2026, Larry: PROJECT reads MASTER at root (not PROJECTS --

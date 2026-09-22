@@ -850,7 +850,21 @@
       var sb=T().sb;
       var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
       if(res.error || !res.data){ hit.textContent=board.name||'(untitled)'; _bbFitTopicText(); return; }
-      _bbCurrentTopicIsRoot = !res.data.cluster_id;
+      // Sept 22 2026 fix -- Larry: "BB topic is Share but project has
+      // shifted to MASTER" (a top-level project with no parent of its own,
+      // like Share, was being mistaken for the true account root just
+      // because both have no cluster_id). Then, same session: "Does it
+      // have its own files? Do we have duplicate files?" -- it did: this
+      // board and the Idea Board each hand-carried their own copy of the
+      // root test, and this one had quietly drifted from the Idea Board's
+      // safer version (which compares the row's actual id against the
+      // real root id, not just "does it have a parent"). Both boards now
+      // call the one shared test in id-band.js (IDBand.isAccountRoot)
+      // instead, so they can't drift apart again -- falls back to the old
+      // inline version only if id-band.js somehow isn't loaded.
+      _bbCurrentTopicIsRoot = window.IDBand
+        ? IDBand.isAccountRoot({id:headerId, cluster_id:res.data.cluster_id}, _bbIdeaStoryboardsRootId)
+        : (_bbIdeaStoryboardsRootId ? (String(headerId)===String(_bbIdeaStoryboardsRootId)) : !res.data.cluster_id);
       hit.textContent = res.data.text_content || board.name || '(untitled)';
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
