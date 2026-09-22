@@ -224,6 +224,20 @@
       + '<button class="sc-ov-btn" id="sb-hdr-othertopic" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">📍 Different Topic…</button>'
       + '<button class="sc-ov-btn" id="sb-hdr-otherproj" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">🔀 Different Project…</button>'
       + '</div>'
+      // MOVE anywhere, Sept 22 2026 (Master BB DOING card, HH) -- Larry:
+      // moving a card was two separate, narrower tools (Different Topic
+      // stays inside the current project; Different Project only lands
+      // you at that project's own top level, nothing nested) -- neither
+      // one reaches an arbitrary topic buried in a different project in
+      // one step. This third option reuses window.TopicPyramid, the same
+      // expandable pyramid widget the TOPIC eyebrow already opens when
+      // it's rooted at MASTER (every project flattened into one
+      // lazily-expanding tree) -- here rooted the same way every time, so
+      // any project and any topic at any depth is reachable by expanding
+      // down to it and tapping its name, exactly like TOPIC's own gesture.
+      + '<div style="margin-top:6px">'
+      + '<button class="sc-ov-btn" id="sb-hdr-anywhere" style="width:100%;font-size:calc(10px * var(--fg-text-scale,1))">🗺️ Anywhere (any project, any topic)…</button>'
+      + '</div>'
       + '</div>';
 
     // Body: always the same fixed size and shape, whether it holds an image
@@ -623,6 +637,63 @@
       T().wire('sb-movetopic-cancel', function(){ openSbDetail(item); });
     }
 
+    // Move Anywhere, Sept 22 2026 (Master BB DOING card, HH priority) --
+    // Larry: "need to be able to move card to new location (vs change
+    // the view). Use project pyramid like on TOPIC card to choose
+    // location anywhere." Different Topic (above) only searches the
+    // current project; Different Project (above) only lands at that
+    // project's own top level, never nested. This is the one-step
+    // version: rooted at a virtual "All Projects" node exactly the way
+    // TOPIC's own pyramid behaves once TOPIC is set to MASTER (its
+    // children are every real project; from there each row's own arrow
+    // lazily fetches ITS children, any depth, same window.TopicPyramid
+    // widget topic-pyramid.js already renders for TOPIC) -- so any
+    // project and any topic inside it is reachable by expanding down to
+    // it and tapping its name. onNavigate here does the actual move
+    // (writes cluster_id) instead of just changing what's on screen,
+    // which is TOPIC's own onNavigate job.
+    async function openMoveAnywherePicker(){
+      var ov2=document.getElementById('sb-detail-overlay');
+      if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
+      var ANYWHERE_RESERVED=['Trash','MISC','Purpose','NEW','New Additions','Parking Lot','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
+      var ROOT_ID='__anywhere_root__';
+      function nodeFrom(h){ return {id:h.id, name:h.text_content||h.text||'(untitled)'}; }
+      function getChildren(id){
+        if(id===ROOT_ID){
+          return T2TData.topLevelBoards().then(function(boards){
+            return boards.filter(function(b){ return String(b.id)!==String(item.id); }).map(nodeFrom);
+          });
+        }
+        return T2TData.childHeaders(id).then(function(kids){
+          return kids.filter(function(h){ return ANYWHERE_RESERVED.indexOf(h.text_content)===-1 && String(h.id)!==String(item.id); }).map(nodeFrom);
+        });
+      }
+      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+(item.text_content||'(untitled)')+'"</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Expand a project below and tap any topic to move this card straight there.</div>'
+        +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:280px;overflow-y:auto;margin-bottom:10px"></div>'
+        +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
+        +'</div>';
+      ov2.classList.add('active');
+      var menuEl=document.getElementById('sb-anywhere-pyramid');
+      window.TopicPyramid.render(menuEl, {
+        ancestors: [],
+        current: {id:ROOT_ID, name:'All Projects'},
+        getChildren: getChildren,
+        onNavigate: async function(hid){
+          if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
+          try{
+            var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
+            if(upd.error) throw upd.error;
+            item.cluster_id=hid;
+            closeSbDetail();
+            renderSeaBoard(true);
+          }catch(err){ console.error(err); }
+        }
+      });
+      T().wire('sb-anywhere-cancel', function(){ openSbDetail(item); });
+    }
+
     T().wire('sb-hdr-newh', function(){
       // Delete the dropdown options once you're creating a new header,
       // Sept 19 2026 (Master BB card) -- clicking "+ Create new header…"
@@ -640,6 +711,7 @@
     });
     T().wire('sb-hdr-othertopic', openMoveToTopicPicker);
     T().wire('sb-hdr-otherproj', openMoveToProjectPicker);
+    T().wire('sb-hdr-anywhere', openMoveAnywherePicker);
     // Aug 7 2026 -- same ENTER + no-feedback-on-Save fix as the standalone
     // New Header prompt above (_sboardOpenAddHeaderPrompt), applied here
     // too since this is the other place a header gets created and Larry's
