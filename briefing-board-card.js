@@ -335,10 +335,22 @@
   // a Utilities > Calendar job (openCalendarPanel, wired there too) --
   // this click handler is only ever the icon's own shortcut.
   function _bbCalendarIconClick(){
-    var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
-    if(sel && sel.service){
-      var viewUrl=_bbCalendarViewUrl(sel.service);
-      if(viewUrl){ window.open(viewUrl, '_blank', 'noopener'); return; }
+    // Sept 22 2026, Larry: reported landing on a Google sign-in page with
+    // no "what should this link include" choice while inside a specific
+    // project -- the quick-jump below predates project-scoped links and
+    // only knows "has ANY calendar been added to this board," not "has
+    // THIS project's own link been set up," so it was jumping straight to
+    // Google's general calendar page even when a project was in view. A
+    // board-wide badge doesn't mean anything reliable at the project
+    // level, so once a project's in view there's a real choice to make
+    // again every time -- show the panel instead of guessing.
+    var projectId=(typeof _bbProjectFilter==='function') ? _bbProjectFilter() : null;
+    if(!projectId){
+      var sel=_bbCalendarSelectionCache[_bbCurrentBoardId];
+      if(sel && sel.service){
+        var viewUrl=_bbCalendarViewUrl(sel.service);
+        if(viewUrl){ window.open(viewUrl, '_blank', 'noopener'); return; }
+      }
     }
     openCalendarPanel();
   }
