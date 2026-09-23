@@ -44,6 +44,22 @@
    (T2TStoryboard.assignPrimaryDirect) so the old PRIMARY stays on as a
    🔑 Key Stakeholder and the chain above is added, same as everywhere.
 
+   Round 3, same day. Larry: "If no one has been assigned, isn't the
+   PRIMARY person from the next higher level the automatic PRIMARY on
+   the level below until he or she changes that?" Yes -- the boards'
+   own rule. An empty level now shows that inherited PRIMARY ("↑ Name",
+   lighter) instead of a warning. "I really like the triangle with the
+   ! in it" -- ⚠ now means "needs a decision": a level with people but
+   no PRIMARY picked, the top of a branch nobody owns, or a person at
+   capacity. The count at the top is tappable and opens those levels.
+   One shared lookup decides all of it (public.primary_status, via
+   T2TPrimaryStatus in topic-pyramid.js) so this screen and every
+   Pyramid agree.
+
+   Solo rule, same day: the first person added to an empty level is its
+   PRIMARY (the boards' existing rule), and a level's only person shows
+   as PRIMARY.
+
    Self-contained (own IIFE, own styles). Uses window.T2T.sb,
    T2TPriority, T2TLoad, _bbCastFirstNames and _bbOpenCastPickMenu
    when loaded. Exposes window.CastRoster.open(topicId).
@@ -84,6 +100,10 @@
       +'.cr-lname{cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       +'.cr-lead{font-size:.82em;color:#5b5b56;white-space:nowrap}'
       +'.cr-nolead{font-size:.78em;color:#8a4b00;background:#fbe9c8;border-radius:4px;padding:0 5px;white-space:nowrap}'
+      +'.cr-inherit{font-size:.8em;color:#8a877e;font-style:italic;white-space:nowrap}'
+      +'.cr-alert.cr-tap{cursor:pointer}.cr-alert.cr-tap:hover{filter:brightness(.96)}'
+      +'.cr-level.cr-flash{animation:crflash 1.6s ease-out}'
+      +'@keyframes crflash{0%{background:#fbe0a8}100%{background:transparent}}'
       +'.cr-count{font-size:.78em;color:#8a877e;white-space:nowrap}'
       +'.cr-prihit{cursor:pointer;display:inline-flex;align-items:center}'
       +'.cr-pri-empty{font-size:9px;line-height:14px;padding:0 4px;border:1px dashed #b4b2a9;border-radius:4px;color:#8a877e}'
@@ -142,7 +162,8 @@
       +'.crp-p{margin:1px 0}'
       +'.crp-t{font-style:italic;color:#333}'
       +'.crp-r{color:#555}'
-      +'.crp-none{color:#8a4b00;font-weight:700}';
+      +'.crp-none{color:#8a4b00;font-weight:700}'
+      +'.crp-inh{color:#777;font-style:italic}';
     var st=document.createElement('style'); st.id='cr-styles'; st.textContent=css;
     document.head.appendChild(st);
   }
@@ -170,6 +191,11 @@
     });
     order.forEach(function(lv){
       if(lv.rel>0 && lv.parentId && levels[lv.parentId]) levels[lv.parentId].kids.push(lv);
+      // Solo rule (Larry, Sept 23 2026: "the first person assigned is
+      // PRIMARY unless changed" -- the boards' _csAutoPrimaryIfSolo): the
+      // only person on a level's own Cast is its PRIMARY.
+      var own=lv.people.filter(function(x){ return x.onLevelCard; });
+      if(own.length===1 && !own[0].levelPrimary) own[0].levelPrimary=true;
       _nameAndSortPeople(lv.people);
     });
     order.forEach(function(lv){
@@ -177,8 +203,7 @@
       lv.kids=_pri().sort(lv.kids, function(k){ return k.priority; });   // highest priority first
     });
     var ancestors=order.filter(function(l){ return l.rel<0; }).sort(function(a,b){ return a.rel-b.rel; });
-    var openLevels=order.filter(function(l){ return l.rel>=0 && !l.people.some(function(p){ return p.levelPrimary; }); });
-    return {levels:levels, current:levels[String(topicId)]||null, ancestors:ancestors, noPrimary:openLevels.length};
+    return {levels:levels, order:order, current:levels[String(topicId)]||null, ancestors:ancestors};
   }
 
   // A person's rank at a level: the level's own PRIMARY first, then
@@ -223,6 +248,19 @@
     return '';
   }
   function _leadOf(lv){ return lv.people.filter(function(x){ return x.levelPrimary; })[0]||null; }
+  // What a level's PRIMARY situation is (public.primary_status):
+  //   own -> "· Name"; inherited -> "↑ Name" (lighter);
+  //   warn -> ⚠ Needs a PRIMARY; blocked / quiet unowned -> nothing.
+  // Falls back to "own PRIMARY or ⚠" if the lookup didn't come back.
+  function _status(lv){
+    if(lv.pstatus) return lv.pstatus;
+    return _leadOf(lv) ? {status:'own'} : {status:'needs', warn:true};
+  }
+  function _firstName(full){
+    var n=String(full||'').trim().split(/\s+/)[0]||'';
+    return n.charAt(0).toUpperCase()+n.slice(1);
+  }
+  function _warnLevels(){ return _state ? _state.order.filter(function(l){ return _status(l).warn; }) : []; }
 
   // ---------- screen ----------
   var _state=null, _topicId=null;
@@ -279,14 +317,48 @@
     _state=_shape(res.data||[], _topicId, loads||{});
     if(!_state.current){ body.innerHTML='<div class="cr-msg">Nothing to show here yet.</div>'; return; }
     if(first) _openPeople[_state.current.id]=true;
-    var slot=document.getElementById('cr-alert-slot');
-    if(slot) slot.innerHTML=_state.noPrimary
-      ? '<div class="cr-alert">⚠ '+_state.noPrimary+' level'+(_state.noPrimary===1?' has':'s have')+' no PRIMARY yet</div>' : '';
+    if(window.T2TPrimaryStatus){
+      if(!first) window.T2TPrimaryStatus.invalidate();
+      try{
+        var smap=await window.T2TPrimaryStatus.fetch(_state.order.map(function(l){ return l.id; }));
+        _state.order.forEach(function(l){ if(smap[l.id]) l.pstatus=smap[l.id]; });
+      }catch(e){}
+    }
+    _paintAlert();
     var scroller=document.getElementById('cr-card'), keep=scroller?scroller.scrollTop:0;
     _render(body, first);
     if(!first && scroller) scroller.scrollTop=keep;
     var pb=document.getElementById('cr-print-btn');
     if(pb){ pb.disabled=false; pb.onclick=_printOrgChart; }
+  }
+
+  // "⚠ 2 need a PRIMARY" -- tap it to open those levels (and the path
+  // down to them) and flash them.
+  function _paintAlert(){
+    var slot=document.getElementById('cr-alert-slot'); if(!slot) return;
+    var w=_warnLevels();
+    slot.innerHTML='';
+    if(!w.length) return;
+    var a=document.createElement('div');
+    a.className='cr-alert cr-tap';
+    a.textContent='⚠ '+w.length+' need'+(w.length===1?'s':'')+' a PRIMARY — tap to show';
+    a.title=w.map(function(l){ return l.name; }).join(' · ');
+    a.addEventListener('click', function(){
+      w.forEach(function(l){
+        _openPeople[l.id]=true;
+        var p=_state.levels[l.parentId];
+        while(p && p.rel>=0 && p.id!==_state.current.id){ _openKids[p.id]=true; p=_state.levels[p.parentId]; }
+      });
+      var body=document.getElementById('cr-body');
+      _render(body, false);
+      var first=null;
+      w.forEach(function(l){
+        var el=body.querySelector('.cr-level[data-lid="'+l.id+'"]');
+        if(el){ el.classList.remove('cr-flash'); void el.offsetWidth; el.classList.add('cr-flash'); if(!first) first=el; }
+      });
+      if(first && first.scrollIntoView) first.scrollIntoView({block:'center', behavior:'smooth'});
+    });
+    slot.appendChild(a);
   }
 
   function close(){
@@ -319,14 +391,19 @@
     var wrap=document.createElement('div');
     var row=document.createElement('div');
     row.className='cr-level'+(isCurrent?' cr-current':'');
+    row.setAttribute('data-lid', lv.id);
     row.style.paddingLeft=(6+indent)+'px';
     row.style.fontSize='calc('+_fontPx(depth)+'px * var(--fg-text-scale,1))';
-    var lead=_leadOf(lv);
+    var lead=_leadOf(lv), st=_status(lv), leadHTML='';
+    if(lead) leadHTML='<span class="cr-lead">· '+_esc(lead.shortName)+'</span>';
+    else if(st.status==='inherited' && st.primary_name)
+      leadHTML='<span class="cr-inherit" title="No one assigned here yet, so '+_esc(st.primary_name)+' (PRIMARY above) is responsible until they hand it to someone">↑ '+_esc(_firstName(st.primary_name))+'</span>';
+    else if(st.warn)
+      leadHTML='<span class="cr-nolead" title="'+(st.status==='needs'?'People are on this level but no one is PRIMARY yet — pick one':'No one is responsible for this branch yet')+'">⚠ Needs a PRIMARY</span>';
     var priHTML=_pri().badgeHTML(lv.priority) || (lv.canEdit ? '<span class="cr-pri-empty" title="Set priority">H/M/L</span>' : '');
     row.innerHTML=(priHTML?'<span class="cr-prihit cr-pophost">'+priHTML+'</span>':'')
       +'<span class="cr-lname" title="Show or hide the people on '+_esc(lv.name)+'">'+_esc(lv.name)+'</span>'
-      +(lead ? '<span class="cr-lead">· '+_esc(lead.shortName)+'</span>'
-             : (lv.rel>=0 ? '<span class="cr-nolead" title="No one is responsible for this level yet">No PRIMARY</span>' : ''))
+      +leadHTML
       +'<span class="cr-count">('+lv.people.length+')</span>'
       +'<span class="cr-arrow'+((lv.rel>=0 && lv.kids.length && !isCurrent)?'':' cr-none')+'">'+(_openKids[lv.id]?'▾':'▸')+'</span>';
     wrap.appendChild(row);
@@ -516,6 +593,13 @@
         var sb=_sb();
         var exists=lv.people.some(function(x){ return String(x.userId)===String(person.user_id) && x.onLevelCard; });
         if(exists){ _flash((person.name||'They')+' is already on '+lv.name+'.'); return; }
+        // First person on an empty level becomes its PRIMARY -- through the
+        // boards' own hand-off, so the chain above lands as 🔑 Key too.
+        if(!lv.people.some(function(x){ return x.onLevelCard; })){
+          _openPeople[lv.id]=true;
+          await _makePrimary(lv, person.user_id, person.fromAbove);
+          return;
+        }
         var me=null; try{ var u=await sb.auth.getUser(); me=u&&u.data&&u.data.user?u.data.user.id:null; }catch(e){}
         // New adds are Cast (the no-edit floor, same as every other
         // add since Sept 14 2026) -- tap their name after to change it.
@@ -537,10 +621,11 @@
   function _printOrgChart(){
     var pr=document.getElementById('cr-print'); if(!pr || !_state) return;
     function box(lv, isCur){
-      var lead=_leadOf(lv), open=(lv.rel>=0 && !lead);
+      var lead=_leadOf(lv), st=_status(lv), open=!lead && !!st.warn;
       var h='<div class="crp-box'+(isCur?' crp-cur':'')+(open?' crp-open':'')+'"><div class="crp-lv">'+(_pri().badgeHTML(lv.priority)?_pri().badgeHTML(lv.priority)+' ':'')+_esc(lv.name)+'</div>';
-      if(open) h+='<div class="crp-p crp-none">⚠ No PRIMARY</div>';
-      if(!lv.people.length && !open) h+='<div class="crp-p crp-r">—</div>';
+      if(open) h+='<div class="crp-p crp-none">⚠ Needs a PRIMARY</div>';
+      else if(!lead && st.status==='inherited' && st.primary_name) h+='<div class="crp-p crp-inh">↑ '+_esc(st.primary_name)+' (PRIMARY above)</div>';
+      if(!lv.people.length && !open && !(st.status==='inherited' && st.primary_name)) h+='<div class="crp-p crp-r">—</div>';
       lv.people.forEach(function(p){
         var tags=_tags(p);
         h+='<div class="crp-p'+(p.levelPrimary?' crp-lead':'')+'">'+_esc(p.name)
@@ -565,8 +650,8 @@
     var d=new Date();
     pr.innerHTML='<div class="crp-h">CAST ROSTER — '+_esc(_state.current.name)+'</div>'
       +'<div class="crp-sub">Organization Chart · '+_esc(d.toLocaleDateString())
-      +(_state.noPrimary?' · '+_state.noPrimary+' level'+(_state.noPrimary===1?'':'s')+' with no PRIMARY':'')
-      +' · Number beside a PRIMARY = projects they lead (amber at '+_load().limit+'+) · Contact details are on the Call Sheet.</div>'
+      +(_warnLevels().length?' · ⚠ '+_warnLevels().length+' need'+(_warnLevels().length===1?'s':'')+' a PRIMARY':'')
+      +' · Number beside a PRIMARY = projects they lead (⚠ amber at '+_load().limit+'+) · ↑ = PRIMARY carried down from above · Contact details are on the Call Sheet.</div>'
       +html+closeTags;
     document.body.classList.add('cr-printing');
     function done(){ document.body.classList.remove('cr-printing'); window.removeEventListener('afterprint', done); }

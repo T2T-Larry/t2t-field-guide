@@ -125,7 +125,9 @@
   // can handle more but it is good to think about capacity. This number
   // ... should be across all usages." The number beside a person is how
   // many projects they're PRIMARY on (public.primary_load); at 5 or more
-  // it turns amber. Shared by this list and the Cast Roster.
+  // it turns amber, with the ⚠ (Sept 23 2026 -- Larry: "I really like the
+  // triangle with the ! in it" -- ⚠ means "this needs a decision").
+  // Shared by this list and the Cast Roster.
   window.T2TLoad = window.T2TLoad || (function(){
     var LIMIT=5, cache=null, at=0, inflight=null;
     function fetchAll(force){
@@ -143,7 +145,7 @@
       n=n||0; if(!n) return '';
       var over=n>=LIMIT;
       return '<span class="t2t-load" title="PRIMARY on '+n+' project'+(n===1?'':'s')+(over?' — at capacity (5+)':'')+'" style="display:inline-block;min-width:14px;padding:0 4px;border-radius:7px;font-size:9px;line-height:14px;font-weight:700;text-align:center;vertical-align:middle;'
-        +(over?'background:#e8a33a;color:#3b2200':'background:rgba(0,0,0,.08);color:#5b5b56')+'">'+n+'</span>';
+        +(over?'background:#e8a33a;color:#3b2200':'background:rgba(0,0,0,.08);color:#5b5b56')+'">'+(over?'⚠ ':'')+n+'</span>';
     }
     return {limit:LIMIT, fetch:fetchAll, badgeHTML:badgeHTML, invalidate:function(){ cache=null; }};
   })();
@@ -224,6 +226,7 @@
         if(chk.checked){
           close();
           window.T2TLoad.invalidate();   // their PRIMARY count may change
+          if(window.T2TPrimaryStatus) window.T2TPrimaryStatus.invalidate();   // ⚠ may clear
           opts.onPick && opts.onPick({user_id:m.user_id, name:m.name||m.email||'(unnamed)', fromAbove:fromAbove && !isSel});
         } else if(opts.onClear){
           close();

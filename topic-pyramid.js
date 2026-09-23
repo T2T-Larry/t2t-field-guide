@@ -75,6 +75,47 @@
   };
   window.T2TPriority=T2TPriority;
 
+  // NEEDS A PRIMARY, Sept 23 2026 -- Larry: "If no one has been assigned,
+  // isn't the PRIMARY person from the next higher level the automatic
+  // PRIMARY on the level below?" (yes -- the boards' own rule) and "I
+  // really like the triangle with the ! in it." ⚠ = this needs a decision:
+  // a level with people on it but no PRIMARY picked, or the top of a
+  // branch nobody owns. An empty level quietly inherits the PRIMARY above
+  // and gets no ⚠. One shared lookup (public.primary_status) so the
+  // Pyramid and the Cast Roster always agree. The only Supabase call in
+  // this file -- skipped silently if there's no connection.
+  var T2TPrimaryStatus=(function(){
+    var cache={}, at={};
+    function fetch(ids){
+      var sb=window.T2T && window.T2T.sb;
+      ids=(ids||[]).map(String).filter(function(id){ return id && id.indexOf('__')!==0; });
+      var now=Date.now(), need=ids.filter(function(id){ return !cache[id] || now-at[id]>30000; });
+      if(!sb || !need.length) return Promise.resolve(cache);
+      return Promise.resolve(sb.rpc('primary_status', {p_ids:need})).then(function(res){
+        ((res&&res.data)||[]).forEach(function(r){ cache[String(r.level_id)]=r; at[String(r.level_id)]=now; });
+        return cache;
+      }, function(){ return cache; });
+    }
+    return {fetch:fetch, invalidate:function(){ cache={}; at={}; }};
+  })();
+  window.T2TPrimaryStatus=T2TPrimaryStatus;
+  function _tpDecorate(rows){
+    if(!rows.length) return;
+    T2TPrimaryStatus.fetch(rows.map(function(r){ return r.getAttribute('data-tp-id'); })).then(function(map){
+      rows.forEach(function(row){
+        var st=map[row.getAttribute('data-tp-id')];
+        if(!st || !st.warn || row.querySelector('.tp-warn')) return;
+        var w=document.createElement('span');
+        w.className='tp-warn';
+        w.textContent='⚠';
+        w.title=st.status==='needs' ? 'Needs a PRIMARY — people are on it but no one is responsible yet' : 'No one is responsible for this branch yet';
+        w.style.cssText='flex:none;color:#c77a00;font-size:.9em';
+        var arrow=row.querySelector('.tp-arrow');
+        row.insertBefore(w, arrow);
+      });
+    });
+  }
+
   function _tpFontSize(depth){
     return Math.max(FLOOR_PX, BASE_PX - depth * STEP_PX);
   }
@@ -108,6 +149,7 @@
   function _tpMakeRow(node, depth, indentPx, isCurrent, opts){
     var row=document.createElement('div');
     row.className='tp-row'+(isCurrent?' tp-current':'');
+    if(node.id!=null) row.setAttribute('data-tp-id', String(node.id));
     row.style.paddingLeft=(6+indentPx)+'px';
     row.style.fontSize='calc('+_tpFontSize(depth)+'px * var(--fg-text-scale,1))';
 
@@ -189,12 +231,15 @@
             return;
           }
           kids=T2TPriority.sort(kids, function(k){ return k.priority; });
+          var made=[];
           kids.forEach(function(kid){
             var built=_tpMakeRow(kid, depth+1, indentPx+14, false, opts);
             childWrap.appendChild(built.row);
+            made.push(built.row);
             _tpWireExpand(built.arrow, built.row, kid, depth+1, indentPx+14, opts);
             _tpAutoExpand(built.arrow, kid, opts);
           });
+          _tpDecorate(made);
         }, function(){
           childWrap.innerHTML='<div class="tp-loading">Couldn\'t load — try again.</div>';
         });
@@ -239,6 +284,7 @@
     var curDepth=(opts.ancestors||[]).length;
     var curBuilt=_tpMakeRow(opts.current, curDepth, 0, true, opts);
     menuEl.appendChild(curBuilt.row);
+    var topRows=Array.prototype.slice.call(menuEl.querySelectorAll('.tp-row'));
 
     var loadingRow=document.createElement('div');
     loadingRow.className='tp-loading';
@@ -251,11 +297,14 @@
       kids.forEach(function(kid){
         var built=_tpMakeRow(kid, curDepth+1, 14, false, opts);
         menuEl.appendChild(built.row);
+        topRows.push(built.row);
         _tpWireExpand(built.arrow, built.row, kid, curDepth+1, 14, opts);
         _tpAutoExpand(built.arrow, kid, opts);
       });
+      _tpDecorate(topRows);
     }, function(){
       loadingRow.textContent='Couldn\'t load — try again.';
+      _tpDecorate(topRows);
     });
 
     return curBuilt.row; // for the caller's own scrollIntoView, same as the old flat list
