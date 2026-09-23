@@ -710,8 +710,14 @@
           // but CAST-the-board-choice now means the real Cast, same
           // source of truth as everywhere else.
           var castRow=_sboardCurrentProjectRow();
-          if(!castRow){ _sboardShowToast('Open a project first.'); return; }
-          _csOpenProjectRoster(castRow);
+          // Sept 23 2026 -- Larry: the Cast Roster is the Project Pyramid
+          // with people on it, opened at the current TOPIC
+          // (cast-roster.js). Same screen as the Briefing Board's CAST.
+          // The flat Project Cast Roster below stays as a fallback.
+          var castTopic=T2TShared.currentTopicId || (castRow ? castRow.id : null);
+          if(!castTopic){ _sboardShowToast('Open a project first.'); return; }
+          if(window.CastRoster){ window.CastRoster.open(castTopic); return; }
+          if(castRow) _csOpenProjectRoster(castRow);
           return;
         }
         if(k.soon) _sboardShowToast(k.soon);

@@ -1980,7 +1980,14 @@
         e.stopPropagation();
         menu.hidden=true;
         if(k.value==='BRIEFING BOARD') return;
-        if(k.value==='CAST'){ openTeamRoster(); return; }
+        // Sept 23 2026 -- CAST opens the Cast Roster (the Project Pyramid
+        // with people on it, cast-roster.js) at this board's TOPIC -- the
+        // same screen the Idea Board's CAST opens. The older team list
+        // stays as a fallback.
+        if(k.value==='CAST'){
+          if(window.CastRoster && _bbCurrentTopicHeaderId){ window.CastRoster.open(_bbCurrentTopicHeaderId); return; }
+          openTeamRoster(); return;
+        }
         if(k.value==='SHARE'){ _bbShowToast('Share Storyboard coming soon'); return; }
         if(k.value==='IDEA' || k.value==='PLAN'){
           var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
