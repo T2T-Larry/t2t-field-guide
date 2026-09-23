@@ -858,7 +858,9 @@
     // read that directly instead of climbing a board link that no
     // longer means anything.
     if(_bbSingleBoardMode()){
-      if(!c.projectHeaderId) return {value:null, pendingHeaderId:null, fallbackName:null};
+      // No project = MASTER (Sept 22 2026), shown as the pinned MASTER
+      // entry rather than a blank field.
+      if(!c.projectHeaderId) return {value:_bbIdeaStoryboardsRootId?('hdr:'+_bbIdeaStoryboardsRootId):null, pendingHeaderId:null, fallbackName:_bbIdeaStoryboardsRootId?'MASTER':null};
       return {value:'hdr:'+c.projectHeaderId, pendingHeaderId:null, fallbackName:_bbProjectNameById[c.projectHeaderId]||null};
     }
     if(c.sourceHeaderId){
@@ -1051,11 +1053,12 @@
     // plus a (+) to find any T2T member. See that function for the why.
     function openMenu(){
       _bbOpenCastPickMenu(menu, trigger, {
+        level: c.projectHeaderId||null,   // project-level Cast, Sept 23 2026
         selectedUid: currentUid,
         onPick: async function(person){
           if(_bbOpenCardId!==c.id) return;
           if(!window.T2TStoryboard || typeof window.T2TStoryboard.assignPrimaryDirect!=='function') return;
-          var res=await window.T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', person.user_id);
+          var res=await window.T2TStoryboard.assignPrimaryDirect(c, 'briefing_card', person.user_id, {fromAbove:!!person.fromAbove});
           if(!res || !res.ok){ _bbShowToast((res&&res.msg)||'Could not assign PRIMARY.'); return; }
           currentUid=person.user_id;
           await _bbPaintPrimaryTrigger(trigger, currentUid);

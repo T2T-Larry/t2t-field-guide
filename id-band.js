@@ -160,6 +160,25 @@
   // rootId: the board's own already-fetched account-root id (each board
   // still fetches this itself, via T2TData.ensureIdeaStoryboardsRoot --
   // that part was always identical and isn't what drifted).
+  // PROJECT naming rule, Sept 22 2026 -- Larry: "PROJECTS is never a
+  // project. MASTER is the highest project. Parking Lot is never a
+  // project." PROJECTS is only the internal name of the account-root
+  // row (and of the one shared MASTER Briefing Board); Parking Lot is a
+  // bucket inside a project, never a project itself. So anywhere a
+  // PROJECT is NAMED (eyebrows, PROJECT fields, pickers), those names --
+  // or no project at all, or the account root itself -- read MASTER.
+  // One shared rule so every board reads it the same way.
+  window.IDBand.isNonProjectName = function(name){
+    var n=String(name==null?'':name).trim().toLowerCase();
+    return n==='projects' || n==='parking lot' || n==='-' || n==='\u2013' || n==='master';
+  };
+  window.IDBand.projectLabel = function(name, id, rootId){
+    if(id && rootId && String(id)===String(rootId)) return 'MASTER';
+    var n=String(name==null?'':name).trim();
+    if(!n || window.IDBand.isNonProjectName(n)) return 'MASTER';
+    return n;
+  };
+
   window.IDBand.isAccountRoot = function(row, rootId){
     // Nothing to compare yet -- both boards already treated this as "root"
     // (nothing narrower to show), so that stays the shared behavior.

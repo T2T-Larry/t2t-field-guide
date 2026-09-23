@@ -319,6 +319,7 @@
     realProjects=realProjects.slice().sort(function(a,b){
       return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
     });
+    realProjects=realProjects.filter(function(h){ return !(window.IDBand && IDBand.isNonProjectName(h.text_content)) && h.id!==_bbIdeaStoryboardsRootId; });
     var opts=realProjects.map(function(h){ return {value:'hdr:'+h.id, label:h.text_content||'(untitled)'}; });
     // MASTER, pinned first, Sept 6 2026 -- Larry: "What used to be Idea
     // Storyboards is now PROJECTS and should top the projects list..."
@@ -333,7 +334,10 @@
     // board-specific name. TOPIC (bb-topic-hit) still reads PROJECTS at
     // this same root, same as the Idea Board.
     if(_bbIdeaStoryboardsRootId) opts.unshift({value:'hdr:'+_bbIdeaStoryboardsRootId, label:'MASTER'});
-    var personalBoards=_bbBoards.filter(function(b){ return !b.storyboard_project_id; });
+    // Sept 22 2026 -- a board named PROJECTS is the shared MASTER board
+    // itself, never a project of its own (MASTER, pinned above, already
+    // is that entry); same for anything named Parking Lot.
+    var personalBoards=_bbBoards.filter(function(b){ return !b.storyboard_project_id && !(window.IDBand && IDBand.isNonProjectName(b.name)); });
     personalBoards.forEach(function(b){ opts.push({value:'brd:'+b.id, label:b.name||'Untitled Board'}); });
     // Adopted children ride along too, Aug 16 2026 -- Larry: opening
     // T2T should list Field Guide and Professional History as its
@@ -2169,189 +2173,9 @@
     if(caret) caret.onclick=toggle;
   }
 
-  // CAST PICK list -- Sept 22 2026, Larry, Master BB (DOING): "Cast
-  // selector on new card must look exactly like cast view dropdown on
-  // BB. Concept is to include everyone who is currently on some card...
-  // and have option to add name." One shared picker, used by BOTH the
-  // New Card popup (idea-capture.js, BB mode) and the back-of-card
-  // PRIMARY head icon (_bbRenderCardPrimaryField, briefing-board-
-  // master.js) -- those two were already told to match each other
-  // earlier today, so building one picker keeps them from drifting
-  // apart again.
-  //
-  // Looks exactly like VIEW (_bbWireViewDropdown above): same dark
-  // bb-cdrop-menu skin, same checkbox-plus-name rows
-  // (bb-view-person-row). Single-select, though -- checking a name picks
-  // that person and closes the list.
-  //
-  // Who's listed: the board roster PLUS everyone who currently holds a
-  // role on ANY card this traveler can see (every card_roles row RLS
-  // lets them read, Idea or Briefing, any level) -- wider than VIEW's
-  // own list, which is deliberately scoped to cards visible at this
-  // level because VIEW filters the board. A picker for a brand-new card
-  // needs the whole cast, not just whoever happens to be on this level.
-  //
-  // The dashed (+) at the bottom opens an inline search of every T2T
-  // member (list_members_for_picker, same source the Cast/Team screens'
-  // own (+) uses). Picking a result picks that person. A typed name that
-  // isn't a member yet can't be saved as PRIMARY today -- card_roles
-  // only accepts real logins until CAST Phase 2 (Master BB, do-l) moves
-  // it onto a cast list that can hold anyone -- so the form says so
-  // plainly instead of silently dropping the name.
-  async function _bbCastPickRows(){
-    var rows=(typeof _bbAllRosterRows==='function') ? _bbAllRosterRows().slice() : [];
-    var have={}; rows.forEach(function(r){ have[String(r.user_id)]=true; });
-    var sb=T().sb; if(!sb) return rows;
-    try{
-      var res=await sb.from('card_roles').select('user_id');
-      var extraIds=[], seen={};
-      (res.data||[]).forEach(function(r){
-        var uid=String(r.user_id);
-        if(have[uid] || seen[uid]) return;
-        seen[uid]=true; extraIds.push(uid);
-      });
-      if(!extraIds.length) return rows;
-      var pool=await _bbFetchAllMembers();
-      var extras=extraIds.map(function(uid){
-        var m=(pool||[]).filter(function(p){ return String(p.user_id)===uid; })[0];
-        return {user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', assignedOnly:true};
-      }).filter(function(r){ return r.name; });
-      extras.sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); });
-      return rows.concat(extras);
-    }catch(e){ return rows; }
-  }
-  // menu: the element to fill (caller owns creating/removing it).
-  // anchorEl: the 👤 button it hangs under.
-  // opts.selectedUid: whoever is currently picked (checked row).
-  // opts.onPick(person): person = {user_id, name}.
-  // opts.onClear(): optional -- unchecking the picked row clears the
-  //   pick. Without it, the picked row just stays checked (the back of
-  //   an existing card can change PRIMARY here, not remove it).
-  async function _bbOpenCastPickMenu(menu, anchorEl, opts){
-    opts=opts||{};
-    if(menu.parentElement!==document.body) document.body.appendChild(menu);
-    menu.classList.add('bb-cdrop-menu');
-    _bbSyncMenuTheme(menu);
-    // Clicks inside the list (checkboxes, the add form's input) must not
-    // reach the page-level "click anywhere closes every dropdown" listener.
-    menu.onclick=function(e){ e.stopPropagation(); };
-    function position(){
-      var r=anchorEl.getBoundingClientRect();
-      menu.style.left=r.left+'px';
-      menu.style.top=(r.bottom+4)+'px';
-      menu.style.minWidth=Math.max(160,r.width)+'px';
-      var mr=menu.getBoundingClientRect();
-      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      if(mr.bottom>window.innerHeight-8) menu.style.top=Math.max(8,r.top-4-mr.height)+'px';
-    }
-    function close(){ menu.hidden=true; if(opts.onClose) opts.onClose(); }
-    menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
-    menu.hidden=false;
-    position();
-    if(typeof _bbLoadRoster==='function'){ try{ await _bbLoadRoster(); }catch(e){} }
-    var rows=await _bbCastPickRows();
-    if(menu.hidden) return; // closed while loading
-    var selected=opts.selectedUid ? String(opts.selectedUid) : null;
-    menu.innerHTML='';
-    if(!rows.length){
-      var empty=document.createElement('div');
-      empty.className='bb-cdrop-row';
-      empty.style.cssText='cursor:default;opacity:.6';
-      empty.textContent='No one on a card yet.';
-      menu.appendChild(empty);
-    }
-    rows.forEach(function(m){
-      var isSel=selected && selected===String(m.user_id);
-      var row=document.createElement('label');
-      row.className='bb-cdrop-row bb-view-person-row';
-      row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(isSel?' checked':'')+'> <span>'+_esc(m.name||m.email||'(unnamed)')+'</span>';
-      var chk=row.querySelector('input');
-      chk.addEventListener('change', function(){
-        if(chk.checked){
-          close();
-          opts.onPick && opts.onPick({user_id:m.user_id, name:m.name||m.email||'(unnamed)'});
-        } else if(opts.onClear){
-          close();
-          opts.onClear();
-        } else {
-          chk.checked=true;
-        }
-      });
-      menu.appendChild(row);
-    });
-    // Add a name -- dashed (+), same button every other BB dropdown uses.
-    var addRow=document.createElement('div');
-    addRow.className='bb-cdrop-addrow';
-    var addBtn=document.createElement('button');
-    addBtn.type='button';
-    addBtn.className='bb-dotted-add-btn';
-    addBtn.title='Add a name';
-    addBtn.textContent='+';
-    addRow.appendChild(addBtn);
-    menu.appendChild(addRow);
-    addBtn.addEventListener('click', async function(){
-      addRow.remove();
-      var form=document.createElement('div');
-      form.className='bb-view-addform';
-      form.innerHTML='<input type="text" placeholder="Type a name or email…" autocomplete="off"><div class="tm-add-suggest" style="display:none"></div>';
-      menu.appendChild(form);
-      var input=form.querySelector('input'), box=form.querySelector('.tm-add-suggest');
-      var listed={}; rows.forEach(function(r){ listed[String(r.user_id)]=true; });
-      var pool=await _bbFetchAllMembers();
-      function renderSuggest(){
-        var q=input.value.trim().toLowerCase();
-        var matches=(pool||[]).filter(function(p){
-          if(!p.user_id) return false;
-          if(!q) return !listed[String(p.user_id)];
-          return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.email||'').toLowerCase().indexOf(q)>=0;
-        });
-        // CAST Phase 2 (Sept 22 2026): a typed name with no exact match
-        // gets a "+ Add" row -- creates a Cast person (not a member yet)
-        // and picks them, same as picking anyone else.
-        var typed=input.value.trim();
-        var exact=typed && (pool||[]).some(function(p){ return String(p.name||'').toLowerCase()===typed.toLowerCase(); });
-        var html=matches.map(function(p){
-          return '<div class="tm-add-suggest-row" data-uid="'+_esc(p.user_id)+'">'
-            +'<div class="tm-add-suggest-name">'+_esc(p.name||p.email||'')+(p.is_member===false?' <span style="opacity:.6;font-size:.85em">(not a member yet)</span>':'')+'</div>'
-            +(p.email?'<div class="tm-add-suggest-email">'+_esc(p.email)+'</div>':'')
-          +'</div>';
-        }).join('');
-        if(typed && !exact){
-          html+='<div class="tm-add-suggest-row" data-newname="'+_esc(typed)+'"><div class="tm-add-suggest-name">+ Add “'+_esc(typed)+'”</div><div class="tm-add-suggest-email">new person — not a T2T member yet</div></div>';
-        }
-        box.innerHTML = html || '<div class="tm-add-suggest-empty">Everyone’s already listed above.</div>';
-        box.style.display='block';
-        position();
-      }
-      box.addEventListener('click', async function(e){
-        var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
-        var newName=r.getAttribute('data-newname');
-        if(newName){
-          if(typeof _castAddPerson!=='function') return;
-          var made=await _castAddPerson(newName);
-          if(!made.ok){ box.innerHTML='<div class="tm-add-suggest-empty">'+_esc(made.msg)+'</div>'; return; }
-          close();
-          opts.onPick && opts.onPick({user_id:made.person.user_id, name:made.person.name});
-          return;
-        }
-        var uid=r.getAttribute('data-uid');
-        var p=(pool||[]).filter(function(x){ return String(x.user_id)===String(uid); })[0];
-        close();
-        opts.onPick && opts.onPick({user_id:uid, name:p?(p.name||p.email):'(unnamed)'});
-      });
-      input.addEventListener('input', renderSuggest);
-      input.addEventListener('keydown', function(e){
-        if(e.key==='Escape'){ e.stopPropagation(); close(); }
-        if(e.key==='Enter'){
-          e.preventDefault();
-          var first=box.querySelector('.tm-add-suggest-row'); if(first) first.click();
-        }
-      });
-      renderSuggest();
-      input.focus();
-    });
-    position();
-  }
+  // CAST PICK list moved to cast-pick-list.js, Sept 23 2026 (project-level
+  // Cast). Same shared page scope -- _bbOpenCastPickMenu is still called
+  // by its plain name from every file that used it.
 
   function wireTopicBar(){
     // Type/Title dropdowns wire themselves fresh on every render now

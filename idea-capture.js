@@ -73,6 +73,7 @@
   // saved row to attach a card_roles row to -- see _icMaybeApplyCast
   // (renamed from _icMaybeOpenCastPicker back in round 4).
   var _icCastPersonId=null;     // user_id to assign PRIMARY to directly
+  var _icCastFromAbove=false;   // picked from the level above -> gold ★ thread (Sept 23 2026)
   var _icCastPersonName='';     // label shown on the button once picked
   // PROJECT/TOPIC picker, Sept 19 2026 round 3 -- _icProjectId is the
   // real row id behind PROJECT (needed to look up that project's own
@@ -289,9 +290,10 @@
       // video sat invisible until the next manual refresh. Grab the
       // callback first, close, then call it.
       var _onSavedCb=_icOnSaved;
-      var wantCastPersonId=_icCastPersonId;
+      var wantCastPersonId=_icCastPersonId, wantCastFromAbove=_icCastFromAbove;
       _icClosePopup();
       if(_onSavedCb) _onSavedCb(row);
+      _icCastFromAbove=wantCastFromAbove;
       _icMaybeApplyCast(row, true, wantCastPersonId);
     } else {
       var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
@@ -320,7 +322,7 @@
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
-    _icProjectLabel='MASTER'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastPersonId=null; _icCastPersonName=''; _icMode='idea';
+    _icProjectLabel='MASTER'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false; _icMode='idea';
     var stray=document.getElementById('isx-p-field-menu'); if(stray) stray.remove();
     if(cb) cb();
   }
@@ -339,11 +341,12 @@
   // it captured BEFORE _icClosePopup() reset _icCastPersonId.
   function _icMaybeApplyCast(row, keepOpenCard, personIdOverride, cardTypeOverride){
     var personId = (personIdOverride!==undefined) ? personIdOverride : _icCastPersonId;
-    _icCastPersonId=null; _icCastPersonName='';
+    var fromAbove=_icCastFromAbove;
+    _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false;
     if(!row || !row.id || !personId) return;
     var cardType = cardTypeOverride || ((_icMode==='bb') ? 'briefing_card' : 'idea');
     if(window.T2TStoryboard && typeof window.T2TStoryboard.assignPrimaryDirect==='function'){
-      window.T2TStoryboard.assignPrimaryDirect(row, cardType, personId)
+      window.T2TStoryboard.assignPrimaryDirect(row, cardType, personId, {fromAbove:fromAbove})
         .then(function(res){ if(res && !res.ok) console.warn('NEW card: PRIMARY assign failed', res.msg); });
     }
   }
@@ -444,7 +447,7 @@
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_icSaveNotebookCard exception:', e); }
 
     if(savedOk){
-      _icCastPersonId=null; _icCastPersonName='';
+      _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false;
       _icResetIdeaPanelForNext(false, 'Sent to Notebook');
     } else {
       var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
@@ -789,7 +792,14 @@
     // (_bbAllRosterRows, briefing-board-master-nav.js) instead, with no
     // add-by-email row -- membership on that roster is the board's
     // Sharing manager's job, not this popup's.
-    if(_icMode==='bb'){
+    // Sept 23 2026 -- Larry: "buttons with single head display a common
+    // list of potential PRIMARY assignees... Cast options are project
+    // level." Both modes (Idea and BB) now open the one shared list,
+    // scoped to the level this new card is going into: TOPIC if one is
+    // picked, else PROJECT, else MASTER (_icBoardId -- the same id the
+    // save writes as the card's home). The older Idea-only project-roster
+    // list below stays only as a fallback if the shared list isn't loaded.
+    {
       // Sept 22 2026 (later) -- Larry, Master BB DOING: "Cast selector on
       // new card must look exactly like cast view dropdown on BB. Concept
       // is to include everyone who is currently on some card...and have
@@ -805,8 +815,9 @@
         bbMenu.id='isx-p-cast-menu';
         document.body.appendChild(bbMenu);
         _bbOpenCastPickMenu(bbMenu, anchorEl, {
+          level:_icBoardId||null,
           selectedUid:_icCastPersonId,
-          onPick:function(person){ onPick({id:person.user_id, label:person.name}); },
+          onPick:function(person){ onPick({id:person.user_id, label:person.name, fromAbove:!!person.fromAbove}); },
           onClear:function(){ onPick({id:null, label:''}); },
           onClose:function(){ bbMenu.remove(); }
         });
@@ -967,10 +978,16 @@
       // Parking Lot, Sept 19 2026 -- Larry: "if location is undecided,"
       // PROJECT needs its own '-' option too, same meaning '-' already
       // has on TOPIC -- files nowhere in particular until reassigned.
-      var rows=[{id:null, label:'– (Parking Lot)'}].concat(
-        roots.map(function(r){ return {id:r.id, label:r.text_content||'(untitled)'}; }));
+      // Sept 22 2026 -- Larry: "PROJECTS is never a project. MASTER is
+      // the highest project. Parking Lot is never a project." The '-'
+      // (Parking Lot) PROJECT option is now MASTER (same no-project-id
+      // meaning underneath), and any root row carrying one of those
+      // non-project names is left off the list.
+      var rows=[{id:null, label:'MASTER'}].concat(
+        roots.filter(function(r){ return !(window.IDBand && IDBand.isNonProjectName(r.text_content)); })
+          .map(function(r){ return {id:r.id, label:r.text_content||'(untitled)'}; }));
       _icOpenFieldDropdown(projEl, rows, function(picked){
-        _icProjectId=picked.id; _icProjectLabel=picked.id?picked.label:'-';
+        _icProjectId=picked.id; _icProjectLabel=picked.id?picked.label:'MASTER';
         _icBoardId=picked.id; _icHeaderId=null; _icTopicLabel='-';
         var pt=document.getElementById('isx-p-project-txt'); if(pt) pt.textContent=_icEsc(_icProjectLabel);
         var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=_icEsc(_icTopicLabel);
@@ -1000,7 +1017,7 @@
     // the sensible starting selection there; every other opener (Idea
     // Storyboard, etc.) keeps the previous IDEA default.
     _icEntryType=(_icMode==='bb')?'task':'idea';
-    _icCastPersonId=null; _icCastPersonName='';
+    _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false;
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
     _icOpenPopup('<div class="isx-pcard'+(_icMode==='bb'?' isx-pcard-bb':'')+'" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
@@ -1084,7 +1101,7 @@
       if(castBtn) castBtn.onclick=function(ev){
         ev.stopPropagation();
         _icOpenCastDropdown(castBtn, function(picked){
-          _icCastPersonId=picked.id; _icCastPersonName=picked.label;
+          _icCastPersonId=picked.id; _icCastPersonName=picked.label; _icCastFromAbove=!!picked.fromAbove;
           paintCast();
         });
       };
@@ -1299,7 +1316,7 @@
       _icHeaderId=opts.headerId||null;
       _icHeaderLabel=opts.headerLabel||'New';
       _icBoardId=opts.boardId||null;
-      _icProjectLabel=opts.projectLabel||'MASTER';
+      _icProjectLabel=window.IDBand ? IDBand.projectLabel(opts.projectLabel) : (opts.projectLabel||'MASTER');
       _icTopicLabel=opts.topicLabel||'-';
       _icProjectId=opts.projectId||null;
       _icMode=opts.mode==='bb'?'bb':'idea';

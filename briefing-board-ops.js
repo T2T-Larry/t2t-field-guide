@@ -755,7 +755,9 @@
         // the Idea Card's own badge-render function, so the per-card switch
         // on the assignment screen actually suppresses this corner badge.
         var dotHTML = (c.hidePrimaryBadge || !_bbPrimaryInfo) ? '' : ('<span class="bb-dot" style="background:#9c8b73" title="'+_esc(_bbPrimaryInfo.name||'')+'">'+_esc(_bbPrimaryInfo.initials||'')+'</span>');
-        var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(c._homeBoardName)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(c._homeBoardName)+'</span>') : '';
+        // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
+        var _bbHomeLbl = (window.IDBand && IDBand.isNonProjectName(c._homeBoardName)) ? 'MASTER' : (c._homeBoardName||'');
+        var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         var routineBadge = c.routine ? '<span class="bb-routine-badge" title="Routine card">🔄</span>' : '';
         // Lock badge moved into the bottom-left signal cluster, Aug 15
@@ -844,9 +846,20 @@
         // (via projectHeaderId, resolved through _bbProjectNameById)
         // first; only a card with no project assigned at all falls
         // through to the shared board's name now.
-        var topicEyebrowText = (c.topicLabel||'').trim()
-          || (c.projectHeaderId && _bbProjectNameById[c.projectHeaderId])
-          || (c._foreign ? '' : _bbHomeBoardName);
+        // Sept 22 2026 -- Larry: "PROJECTS is never a project. MASTER is
+        // the highest project. Parking Lot is never a project." The last
+        // fallback used to be the shared board's own name (PROJECTS), and
+        // a card tagged to the account root read that root's internal
+        // name (also PROJECTS). Both now read MASTER, via the one shared
+        // IDBand.projectLabel rule; a topicLabel that is itself one of
+        // those non-project names falls through to the project instead.
+        var _bbTopicLbl=(c.topicLabel||'').trim();
+        if(window.IDBand && IDBand.isNonProjectName(_bbTopicLbl)) _bbTopicLbl='';
+        var _bbRootIdForLbl=(typeof _bbIdeaStoryboardsRootId!=='undefined')?_bbIdeaStoryboardsRootId:null;
+        var _bbProjLbl = c.projectHeaderId
+          ? (window.IDBand ? IDBand.projectLabel(_bbProjectNameById[c.projectHeaderId], c.projectHeaderId, _bbRootIdForLbl) : (_bbProjectNameById[c.projectHeaderId]||''))
+          : (c._foreign ? '' : 'MASTER');
+        var topicEyebrowText = _bbTopicLbl || _bbProjLbl;
         // SUBJECT, Sept 22 2026 (Larry) -- the card's optional headline
         // rides right under the PROJECT eyebrow. The task text below it
         // follows the card's own "Show on face of card" choice, but only

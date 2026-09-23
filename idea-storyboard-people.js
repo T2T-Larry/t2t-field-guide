@@ -714,7 +714,15 @@
     try{
       var res=await _sb.from('card_roles').select('*').eq('card_type',_csCardType||'idea').eq('card_id', item.id);
       _csRoles = (!res.error && res.data) ? res.data : [];
+      if(!_csMyUid){ var meR=await _sb.auth.getUser(); _csMyUid=(meR&&meR.data&&meR.data.user)?meR.data.user.id:null; }
     }catch(e){ _csRoles=[]; }
+  }
+  // Signed-in traveler's id, for "is this me?" checks on the Call Sheet
+  // (Sept 23 2026 -- only a card's PRIMARY sees the pass-down switch).
+  var _csMyUid=null;
+  function _csIAmPrimaryHere(){
+    if(!_csMyUid) return false;
+    return (_csRoles||[]).some(function(r){ return r.role==='primary' && String(r.user_id)===String(_csMyUid); });
   }
 
   function _csRowsForRole(role){
@@ -790,6 +798,13 @@
           return '<label><input type="radio" name="cs-role-'+_esc9710(r.id)+'" class="cs-r-role" data-rowid="'+_esc9710(r.id)+'" value="'+role+'"'+(r.role===role?' checked':'')+'> '+CS_ROLE_SYM[role]+' '+CS_ROLE_LABEL[role]+'</label>';
         }).join('')
       + (r.role==='stakeholder' ? '<label><input type="checkbox" class="cs-key-chk" data-rowid="'+_esc9710(r.id)+'"'+(r.is_key?' checked':'')+'> 🔑 Key Stakeholder — can directly interfere with progress</label>' : '')
+      // Pass down, Sept 23 2026 -- Larry: Stakeholders are common threads
+      // through the levels, and which ones to share below is "the
+      // PRIMARY's choice. The PRIMARY knows all the stakeholders but does
+      // not need to share that with everyone." On by default; only this
+      // card's PRIMARY sees the switch. Off = this Stakeholder isn't
+      // offered in the Cast list on the levels below.
+      + ((r.role==='stakeholder' && _csIAmPrimaryHere()) ? '<label><input type="checkbox" class="cs-passdown-chk" data-rowid="'+_esc9710(r.id)+'"'+(r.pass_down!==false?' checked':'')+'> ⬇ Show on the levels below</label>' : '')
     +'</div>';
     // Session 255, Larry: "every Stakeholder has expectations...
     // boundaries" -- reuses this same Notes spot rather than a separate
@@ -1241,7 +1256,12 @@
   // Stakeholder first, and updates the chosen person's own existing row
   // in place instead of inserting a second one if they're already on the
   // card in some other role.
-  async function _csAssignPrimaryDirect(item, cardType, userId){
+  // opts.fromAbove (Sept 23 2026, project-level Cast): the person was
+  // picked from the team one level up, or passed down as a Stakeholder --
+  // mark their PRIMARY row with the gold ★ "carried over from the parent"
+  // (is_parent_connection) so the thread between levels shows.
+  async function _csAssignPrimaryDirect(item, cardType, userId, opts){
+    opts=opts||{};
     if(!item || !item.id || !userId) return {ok:false, msg:'Nothing to assign PRIMARY to.'};
     var _sb=T().sb; if(!_sb) return {ok:false, msg:'Not connected.'};
     try{
@@ -1258,14 +1278,17 @@
         await _sb.from('card_roles').update({role:'stakeholder', is_key:true}).eq('id', priorRows[i].id);
       }
       if(existingId){
-        var upd=await _sb.from('card_roles').update({role:'primary', status:'accepted'}).eq('id', existingId);
+        var updFields={role:'primary', status:'accepted'};
+        if(opts.fromAbove) updFields.is_parent_connection=true;
+        var upd=await _sb.from('card_roles').update(updFields).eq('id', existingId);
         if(upd.error) throw upd.error;
       } else {
         var meRes=await _sb.auth.getUser();
         var me=meRes && meRes.data ? meRes.data.user : null;
         var ins=await _sb.from('card_roles').insert({
           card_type:ct, card_id:item.id, role:'primary',
-          user_id:userId, added_by: me?me.id:null, status:'accepted'
+          user_id:userId, added_by: me?me.id:null, status:'accepted',
+          is_parent_connection: !!opts.fromAbove
         });
         if(ins.error) throw ins.error;
       }
@@ -1446,6 +1469,17 @@
   // cannot have just one and not the others and they cannot be simply
   // stakeholders (politics)." Nothing to change here -- confirming for
   // the record.
+  async function _csSetPassDown(rowId, on){
+    if(!rowId) return;
+    var _sb=T().sb; if(!_sb) return;
+    try{
+      var res=await _sb.rpc('set_stakeholder_pass_down', {p_role_id: rowId, p_on: !!on});
+      if(res.error) throw res.error;
+      await _csLoadRoles(_csItem);
+      _csRefreshUI();
+    }catch(e){ var errEl=document.getElementById('cs-error'); if(errEl){ errEl.textContent=(e&&e.message)||'Could not update them.'; errEl.style.display='block'; } }
+  }
+
   async function _csToggleKey(rowId){
     if(!rowId) return;
     var row=(_csRoles||[]).filter(function(r){ return String(r.id)===String(rowId); })[0];
@@ -2217,6 +2251,7 @@
         if(t.classList.contains('cs-desires-input')){ _csSaveDesires(t.getAttribute('data-rowid'), t.value); return; }
         if(t.classList.contains('cs-r-role')){ _csSaveRole(t.getAttribute('data-rowid'), t.value); return; }
         if(t.classList.contains('cs-key-chk')){ _csToggleKey(t.getAttribute('data-rowid')); return; }
+        if(t.classList.contains('cs-passdown-chk')){ _csSetPassDown(t.getAttribute('data-rowid'), t.checked); return; }
         if(t.classList.contains('cs-filter-chk')){
           var uid=String(t.getAttribute('data-uid'));
           if(onFilterChange){

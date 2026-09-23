@@ -870,6 +870,8 @@
     var notesEl=document.getElementById('bb-d-notes');
     var notesVal=((notesEl?notesEl.value:c.notes)||'').trim();
     var projectLabel=(c.projectHeaderId && window._bbProjectNameById && _bbProjectNameById[c.projectHeaderId]) || c.topicLabel || '';
+    // PROJECTS / Parking Lot are never projects (Sept 22 2026) -- MASTER.
+    if(window.IDBand) projectLabel=IDBand.projectLabel(projectLabel, c.projectHeaderId, (typeof _bbIdeaStoryboardsRootId!=='undefined')?_bbIdeaStoryboardsRootId:null);
     var descParts=[];
     if(projectLabel) descParts.push('Project: '+projectLabel);
     if(notesVal) descParts.push(notesVal);
@@ -1205,7 +1207,11 @@
       _bbRenderChecklist();
     }
     setTimeout(function(){ document.addEventListener('mousedown', _bbClAssigneeMenuOutsideClick, true); }, 0);
+    // Project-level Cast (Sept 23 2026): the list is this card's own
+    // project level.
+    var _clCard=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null;
     await _bbOpenCastPickMenu(menu, anchorBtn, {
+      level: _clCard ? (_clCard.projectHeaderId||null) : null,
       selectedUid: it.assigneeId,
       onPick: function(p){ save(p.user_id, p.name); },
       onClear: function(){ save(null); },
