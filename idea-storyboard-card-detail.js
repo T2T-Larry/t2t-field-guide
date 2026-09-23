@@ -271,56 +271,59 @@
     var addLinksOpen=(item.adds_links!=null?!!item.adds_links:!!item.link_url);
     var addRelatedOpen=(item.adds_related!=null?!!item.adds_related:!!item.track_on_briefing_board);
     var addFlagsOpen=(item.adds_flags!=null?!!item.adds_flags:(heartCount>0||hasKeys));
-    ov.innerHTML='<div class="sc-overlay-card sb-shape-card sb-details-card" style="text-align:center;background:#F5F1E8;position:relative">'
-      + '<div id="sb-details-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:grab">'
-      + '<span id="sb-details-eyebrow" style="font-size:calc(11px * var(--fg-text-scale,1));font-weight:500;letter-spacing:0.08em;color:#2C2C2A;cursor:default">IDEA CARD</span>'
-      + '<button id="sb-close" aria-label="Close" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:6px;background:#fff;border:1px solid #B4B2A9;cursor:pointer;font-size:calc(13px * var(--fg-text-scale,1));color:#2C2C2A">✕</button>'
+    // ONE CARD BACK, Sept 23 2026 -- Larry: "merge the backs of the Idea
+    // cards and the BB Task cards for a similar look with unique items
+    // only visible on appropriate cards and a simple color to signify
+    // where we are. Light blue for ideas and keep BB as is." The Idea
+    // Card's back now wears the Briefing Card's own building blocks
+    // (bb-overlay-card / bb-overlay-head / bb-field / bb-front-toggle /
+    // bb-pri-btn / bb-addition / bb-action-row, from
+    // briefing-board-styles.js) -- same shapes, same order, same fonts.
+    // The only thing that changes is the color, via .fg-cardback-idea
+    // (card-back-style.js), which re-points the BB color variables at
+    // light blue for this card only. Idea-only items (Move / View /
+    // Order, the picture/text/link contents, hearts) stay here only;
+    // BB-only items (dates, budget, checklist, reviewed by) stay on BB.
+    if(typeof injectBriefingBoardStyles==='function') injectBriefingBoardStyles();
+    if(window.FGCardBack) FGCardBack.inject();
+    ov.innerHTML='<div class="sc-overlay-card sb-details-card bb-overlay-card fg-cardback-idea" style="position:relative">'
+      + '<div id="sb-details-head" class="bb-overlay-head">'
+      + '<span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Idea Card</span>'
+      + '<button id="sb-close" class="bb-close" aria-label="Close">✕</button>'
       + '</div>'
-      + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#a3907a;height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
+      + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:var(--bb-sub);height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
       // Priority, Sept 22 2026 -- Larry, Master BB (DOING): "The BB cards
       // have priority options at the top of the cards. Make Idea cards
       // exactly the same. Below the HML choice, add yes / no toggle to
-      // show on face of card." Same spot as the Briefing Card (first thing
-      // under the card's title bar), same layout (PRIORITY label over three
-      // full-width H / M / L buttons), same 3-click cycles (H->HH->off,
+      // show on face of card." Same 3-click cycles (H->HH->off,
       // M->MH->off, L->ML->off) and colors -- _bbNextPriority/PRI_COLOR
       // come straight from briefing-board-ops.js so the two never disagree.
       // Yes/No = ideas.hide_priority_front (No hides the tag on the face).
-      + '<div class="sb-pri-field" style="text-align:left;margin:0 0 12px">'
-      +   '<div class="sb-hdr-eyebrow2" style="margin:0 0 5px;text-align:left">Priority</div>'
-      +   '<div id="sb-pri-btns" style="display:flex;gap:6px">'
-      +     ['H','M','L'].map(function(p){ return '<button type="button" class="sb-pri-btn" data-pri-base="'+p+'" style="flex:1;height:36px;font-size:calc(14px * var(--fg-text-scale,1));font-weight:600;border-radius:4px;border:1.5px solid #B4B2A9;background:#fff;color:#2C2C2A;cursor:pointer;font-family:inherit">'+p+'</button>'; }).join('')
+      + '<div class="bb-field sb-pri-field"><label>Priority</label>'
+      +   '<div id="sb-pri-btns" class="bb-priorities">'
+      +     ['H','M','L'].map(function(p){ return '<button type="button" class="bb-pri-btn sb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
       +   '</div>'
-      +   '<div style="display:flex;align-items:center;gap:8px;margin-top:6px">'
-      +     '<span style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">Show on face of card</span>'
-      +     '<div id="sb-pri-front" style="display:inline-flex;border:1.5px solid #B4B2A9;border-radius:14px;overflow:hidden">'
-      +       '<button type="button" data-front="1" style="border:0;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">Yes</button>'
-      +       '<button type="button" data-front="0" style="border:0;border-left:1.5px solid #B4B2A9;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">No</button>'
-      +     '</div>'
-      +   '</div>'
+      +   '<label class="bb-front-check" id="sb-pri-front-row"><input type="checkbox" id="sb-pri-front"><span>Show on front</span></label>'
       + '</div>'
       + apexTag
       + topRowHTML
       + headerListHTML
       // SUBJECT + contents on face, Sept 22 2026 (Larry: "Idea Board
       // should have the same Subject with optional content on face" --
-      // same as the Briefing Card). SUBJECT is the card's optional
-      // headline on its front; the Yes/No decides whether the card's
-      // contents (text, picture, or link) also show there. No SUBJECT =
-      // contents always show, so a card face is never blank.
-      + '<div class="sb-subject-field" style="text-align:left;margin:0 0 10px">'
-      +   '<div class="sb-hdr-eyebrow2" style="margin:0 0 5px;text-align:left">Subject</div>'
-      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline for the front of the card" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));font-weight:600;color:#2C2C2A">'
-      +   '<div id="sb-contents-front-row" style="display:flex;align-items:center;gap:8px;margin-top:6px">'
-      +     '<span style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040">Show contents on face of card</span>'
-      +     '<div id="sb-contents-front" style="display:inline-flex;border:1.5px solid #B4B2A9;border-radius:14px;overflow:hidden">'
-      +       '<button type="button" data-front="1" style="border:0;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">Yes</button>'
-      +       '<button type="button" data-front="0" style="border:0;border-left:1.5px solid #B4B2A9;padding:3px 12px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:600;cursor:pointer;font-family:inherit">No</button>'
-      +     '</div>'
-      +   '</div>'
-      +   '<div id="sb-contents-front-note" style="font-size:calc(10px * var(--fg-text-scale,1));color:#a3907a;margin-top:3px">Add a Subject to choose — without one, the contents always show.</div>'
+      // same as the Briefing Card). Laid out exactly like the Briefing
+      // Card as of Sept 23 2026: SUBJECT field, then the card's contents
+      // (where BB has Task), with the "Show on face of card" Yes/No right
+      // under the contents. No SUBJECT = contents always show, so a card
+      // face is never blank.
+      + '<div class="bb-field sb-subject-field"><label>Subject</label>'
+      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline for the front of the card" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
       + '</div>'
+      + '<div class="bb-field sb-contents-field"><label>Contents</label>'
       + bodyHTML
+      // "Show on front" checkbox, Sept 23 2026 -- replaces the Yes/No
+      // pill; same quiet lower-right checkbox as the Briefing Card.
+      +   '<label class="bb-front-check" id="sb-contents-front-row"><input type="checkbox" id="sb-contents-front"><span>Show on front</span></label>'
+      + '</div>'
       // Additions, Aug 27 2026 (Larry: "very similar to BRIEFING CARD but
       // no PRIORITY and no DATES and no BUDGET... IDEA - NOTES - LINKS -
       // RELATED STORYBOARDS - SIGNAL FLAGS, especially option for
@@ -338,33 +341,33 @@
       // _sboardHeartsHTML) -- just wrapped in Signal Flags' own checkbox
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
-      + '<div class="sb-addition" id="sb-add-notes-wrap"><label class="sb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Notes</span></label><div class="sb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…" style="width:100%;box-sizing:border-box;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1))">'+(item.notes||'')+'</textarea></div></div>'
-      + '<div class="sb-addition" id="sb-add-links-wrap"><label class="sb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Links</span></label><div class="sb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
-      + '<div style="display:flex;gap:6px">'
-      + '<input id="sb-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link…" value="'+_sboardEsc(item.link_url||'')+'" style="flex:1;box-sizing:border-box;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));background:#fff">'
-      + '<button id="sb-link-clear" type="button" title="Remove" style="width:28px;height:28px;flex-shrink:0;border-radius:6px;background:#fff;border:0.5px solid #B4B2A9;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1))">✕</button>'
+      + '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>'
+      + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">Links</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
+      + '<div class="bb-link-row">'
+      + '<input id="sb-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link…" value="'+_sboardEsc(item.link_url||'')+'">'
+      + '<button id="sb-link-clear" class="bb-icon-btn" type="button" title="Remove">✕</button>'
       + '</div>'
-      + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:#2C2C2A">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(item.link_title||item.link_url||'')+'</div>'
+      + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:var(--bb-ink)">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(item.link_title||item.link_url||'')+'</div>'
       + '</div></div>'
-      + (isTopRowHeader ? ('<div class="sb-addition" id="sb-add-related-wrap"><label class="sb-addition-label" for="sb-add-related"><input type="checkbox" id="sb-add-related"'+(addRelatedOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Related Storyboards</span></label><div class="sb-addition-body" id="sb-related-body" style="display:'+(addRelatedOpen?'':'none')+'"><div class="sb-blue-row-sm">'
+      + (isTopRowHeader ? ('<div class="bb-field bb-addition" id="sb-add-related-wrap"><label class="bb-addition-label" for="sb-add-related"><input type="checkbox" id="sb-add-related"'+(addRelatedOpen?' checked':'')+'><span class="bb-addition-eyebrow">Related Storyboards</span></label><div class="bb-addition-body" id="sb-related-body" style="display:'+(addRelatedOpen?'':'none')+'"><div class="sb-blue-row-sm">'
         + '<button class="sb-blue-btn-sm" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌 Unassign from Briefing Board':'📋 Assign to Briefing Board')+'</button>'
         + (item.track_on_briefing_board ? '<button class="sb-blue-btn-sm" id="sb-bb-open" title="Open Briefing Card (new tab)">🧭 Open Briefing Card</button>' : '')
       + '</div></div></div>') : '')
-      + '<div class="sb-addition" id="sb-add-flags-wrap"><label class="sb-addition-label" for="sb-add-flags"><input type="checkbox" id="sb-add-flags"'+(addFlagsOpen?' checked':'')+'><span class="sb-hdr-eyebrow2">Signal Flags</span></label><div class="sb-addition-body" id="sb-flags-body" style="display:'+(addFlagsOpen?'':'none')+'"><div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
-      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:0.5px solid #B4B2A9;border-radius:8px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#2C2C2A">'
+      + '<div class="bb-field bb-addition" id="sb-add-flags-wrap"><label class="bb-addition-label" for="sb-add-flags"><input type="checkbox" id="sb-add-flags"'+(addFlagsOpen?' checked':'')+'><span class="bb-addition-eyebrow">Signal Flags</span></label><div class="bb-addition-body" id="sb-flags-body" style="display:'+(addFlagsOpen?'':'none')+'"><div class="sb-below-content-row" id="sb-flags-row" style="margin:0">'
+      + '<button id="sb-heart" class="sb-heart-pill" aria-label="Tap to add a heart, hold to remove one" style="font-size:calc(12px * var(--fg-text-scale,1));padding:5px 9px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:4px;display:flex;align-items:center;gap:4px;cursor:pointer;color:var(--bb-ink)">'
       + '<span style="color:#D4537E;font-size:calc(13px * var(--fg-text-scale,1))">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
       + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
       + '</div></div></div>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
-      + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:#a3907a;margin-bottom:4px;min-height:11px"></div>'
+      + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
-      + '<div class="sb-blue-row">'
-      + '<button class="sb-blue-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing':'Lock — read-only text, still drag to move')+'">'+(item.locked?'🔒':'🔓')+'</button>'
-      + '<button class="sb-blue-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
+      + '<div class="bb-doors-row bb-action-row">'
+      + '<button class="bb-icon-btn" id="sb-lock" title="'+(item.locked?'Unlock — allow editing':'Lock — read-only text, still drag to move')+'">'+(item.locked?'🔒':'🔓')+'</button>'
+      + '<button class="bb-icon-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
-      + '<button class="sb-blue-btn" id="sb-gear" title="Utility">⚙️</button>'
-      + (isHeaderType ? '<button class="sb-blue-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
-      + '<button class="sb-blue-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
+      + '<button class="bb-icon-btn" id="sb-gear" title="Utility">⚙️</button>'
+      + (isHeaderType ? '<button class="bb-icon-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
+      + '<button class="bb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       // sb-trash-overlay ("Moose poop?" confirm) — renumbered 9718 → 1221
       // (Aug 19, 2026, Larry): the Moose Poop step of the Dream-phase
@@ -846,16 +849,8 @@
       }
       function paintFront(){
         var hasSubject=!!input.value.trim();
-        var row=document.getElementById('sb-contents-front-row');
-        var note=document.getElementById('sb-contents-front-note');
-        if(row){ row.style.opacity=hasSubject?'1':'.45'; row.style.pointerEvents=hasSubject?'':'none'; }
-        if(note) note.style.display=hasSubject?'none':'';
         var showing=!hasSubject || !item.hide_contents_front;
-        Array.prototype.forEach.call(document.querySelectorAll('#sb-contents-front button'), function(b){
-          var on=(b.getAttribute('data-front')==='1')===showing;
-          b.style.background=on?'#1a3a5c':'#fff';
-          b.style.color=on?'#fff':'#2C2C2A';
-        });
+        if(window.FGFrontCheck) FGFrontCheck.paint(document.getElementById('sb-contents-front-row'), document.getElementById('sb-contents-front'), showing, hasSubject, 'contents');
       }
       function commitSubject(){
         var val=input.value.trim();
@@ -865,14 +860,15 @@
       input.addEventListener('input', paintFront);
       input.addEventListener('blur', commitSubject);
       input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); input.blur(); } });
-      Array.prototype.forEach.call(document.querySelectorAll('#sb-contents-front button'), function(b){
-        b.addEventListener('click', function(e){
+      (function(){
+        var cb=document.getElementById('sb-contents-front');
+        if(cb) cb.addEventListener('change', function(e){
           e.stopPropagation();
-          var hide=b.getAttribute('data-front')!=='1';
+          var hide=!cb.checked;
           if(hide===!!item.hide_contents_front) return;
           saveSubjectFields({hide_contents_front:hide}, {hide_contents_front:!!item.hide_contents_front});
         });
-      });
+      })();
       paintFront();
     })();
 
@@ -892,9 +888,11 @@
           var base=b.getAttribute('data-pri-base');
           var active=!!pri && PRI_BASE_LOCAL[pri]===base;
           b.textContent=active?pri:base;
-          b.style.background=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '#fff';
-          b.style.borderColor=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '#B4B2A9';
-          b.style.color=active && typeof PRI_TEXT!=='undefined' ? PRI_TEXT[pri] : '#2C2C2A';
+          // Inactive = cleared, so the shared Briefing Card button look
+          // (and this card's light-blue edge) shows through.
+          b.style.background=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '';
+          b.style.borderColor=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '';
+          b.style.color=active && typeof PRI_TEXT!=='undefined' ? PRI_TEXT[pri] : '';
         });
       }
       async function saveFields(fields, before){
@@ -920,21 +918,18 @@
       });
       function paintFront(){
         var hidden=!!item.hide_priority_front;
-        Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-front button'), function(b){
-          var on=(b.getAttribute('data-front')==='1')!==hidden;
-          b.style.background=on?'#1a3a5c':'#fff';
-          b.style.color=on?'#fff':'#2C2C2A';
-        });
+        if(window.FGFrontCheck) FGFrontCheck.paint(document.getElementById('sb-pri-front-row'), document.getElementById('sb-pri-front'), !hidden, true);
       }
-      Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-front button'), function(b){
-        b.addEventListener('click', function(e){
+      (function(){
+        var cb=document.getElementById('sb-pri-front');
+        if(cb) cb.addEventListener('change', function(e){
           e.stopPropagation();
-          var hide=b.getAttribute('data-front')!=='1';
+          var hide=!cb.checked;
           if(hide===!!item.hide_priority_front) return;
           var before={hide_priority_front:!!item.hide_priority_front};
           saveFields({hide_priority_front:hide}, before).then(paintFront);
         });
-      });
+      })();
       paint();
       paintFront();
     })();

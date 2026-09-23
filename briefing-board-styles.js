@@ -651,6 +651,17 @@
       +'.bb-front-toggle button + button{border-left:1.5px solid var(--bb-accent)}'
       +'.bb-front-toggle button.on{background:var(--bb-accent);color:#fff}'
       +'.bb-front-toggle-row.bb-disabled{opacity:.45;pointer-events:none}'
+      // "Show on front" checkbox, Sept 23 2026 (Larry: "needs to be there
+      // but not obvious") -- small, muted, sentence case, tucked in the
+      // lower right of the feature it controls. Shared by the Briefing
+      // Card and the Idea Card (which re-colors it light blue through
+      // the same --bb-* variables). Replaces the Yes/No pill above.
+      +'.bb-front-check,.bb-field .bb-front-check{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin:4px 0 0;font-size:calc(10px * var(--fg-text-scale,1));letter-spacing:0;text-transform:none;color:var(--bb-sub);opacity:.65;cursor:pointer;user-select:none;font-family:var(--bb-body-font)}'
+      +'.bb-front-check:hover{opacity:1}'
+      +'.bb-front-check input,.bb-field .bb-front-check input{width:11px;height:11px;flex:0 0 auto;margin:0;padding:0;border:0;min-height:0;cursor:pointer;accent-color:var(--bb-accent)}'
+      +'.bb-front-check span{white-space:nowrap}'
+      +'.bb-front-check.bb-disabled,.bb-field .bb-front-check.bb-disabled{opacity:.3;cursor:default}'
+      +'.bb-front-check.bb-disabled input{cursor:default}'
       +'.bb-front-toggle-note{font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:3px;opacity:.8}'
       +'.bb-card-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);margin:1px 0 2px}'
       +'.bb-card .bb-bottom{display:flex;justify-content:space-between;align-items:flex-end;font-family:"Caveat",cursive;font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);min-height:12px}'
@@ -947,3 +958,20 @@
       +'.bb-hx-landing-btn{margin-bottom:12px}';
     document.head.appendChild(style);
   }
+
+  // "Show on front" checkbox painter, Sept 23 2026 -- one helper for
+  // both card backs (Briefing Card + Idea Card) so they always behave
+  // the same. needsSubject=false for features (like Priority) that don't
+  // depend on a SUBJECT.
+  var FGFrontCheck = {
+    paint: function(row, cb, showing, enabled, what){
+      if(!cb) return;
+      cb.checked=!!showing;
+      cb.disabled=!enabled;
+      if(row){
+        row.classList.toggle('bb-disabled', !enabled);
+        row.title = enabled ? 'Show this on the front of the card' : ('Add a Subject to choose — without one, the '+(what||'contents')+' always shows');
+      }
+    }
+  };
+  window.FGFrontCheck = FGFrontCheck;

@@ -1137,7 +1137,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front,subject,hide_contents_front')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1366,7 +1366,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front,subject,hide_contents_front')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1409,16 +1409,30 @@
     t.style.left=Math.round(pos.x)+'px'; t.style.top=Math.round(pos.y)+'px';
     t._isxPos=pos;
     var linkUrl=null;
-    if(row.content_type==='image'){
-      t.innerHTML='<img src="'+row.image_url+'" style="height:52px">';
-    } else if(row.content_type==='link'){
+    // SUBJECT + "Show contents on face of card", Sept 23 2026 -- Larry,
+    // Master BB: "Subject / Contents optional did not work on Idea Board
+    // yet... I want it to work just like on BB. Consistency." Same rule
+    // as the Briefing Card and the Storyboard tiles: a SUBJECT shows as
+    // a bold headline; the card's contents follow underneath unless its
+    // "Show on face of card" is No. No SUBJECT = contents always show.
+    var isxSubject=String(row.subject||'').trim();
+    var isxShowContents=!isxSubject || !row.hide_contents_front;
+    var isxSubjectHTML=isxSubject ? '<div class="isx-tile-subject" style="font-weight:700;line-height:1.2;word-break:break-word">'+String(isxSubject).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>' : '';
+    if(row.content_type==='link'){
       var parsed=T2TMedia.parseText(row.text_content);
       linkUrl=parsed.url;
       t.classList.add('isx-link-tile');
+    }
+    if(!isxShowContents){
+      t.innerHTML=isxSubjectHTML;
+    } else if(row.content_type==='image'){
+      t.innerHTML='<img src="'+row.image_url+'" style="height:52px">'+isxSubjectHTML;
+    } else if(row.content_type==='link'){
       t.innerHTML=(row.image_url?'<img src="'+row.image_url+'" style="height:52px">':'')
+        +isxSubjectHTML
         +'<div>\ud83d\udd17 '+(parsed.title||parsed.url)+'</div>';
     } else {
-      t.innerHTML='<div>'+(row.text_content||'')+'</div>';
+      t.innerHTML=isxSubjectHTML+'<div'+(isxSubject?' style="opacity:.85"':'')+'>'+(row.text_content||'')+'</div>';
     }
     // Same SHAPING card the Storyboard uses — full-size image view, heart,
     // notes, lock — so a card behaves identically on both screens. Used to
@@ -1858,7 +1872,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,priority,hide_priority_front,subject,hide_contents_front').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
