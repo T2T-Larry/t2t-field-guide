@@ -932,7 +932,7 @@
     if(!headerId) return [];
     var sb=T().sb;
     try{
-      var res=await sb.from('ideas').select('id,text_content,sort_order').eq('cluster_id',headerId).eq('content_type','header').order('sort_order',{ascending:true});
+      var res=await sb.from('ideas').select('id,text_content,sort_order,priority').eq('cluster_id',headerId).eq('content_type','header').order('sort_order',{ascending:true});
       if(res.error) return [];
       return (res.data||[]).filter(function(r){ return !BB_RESERVED_HEADER_NAMES[r.text_content]; });
     }catch(e){ return []; }
@@ -1004,7 +1004,7 @@
       guard++;
       var pinfo=await _bbFetchHeaderInfo(parentId);
       if(!pinfo) break;
-      chain.unshift({id:parentId, name:pinfo.name});
+      chain.unshift({id:parentId, name:pinfo.name, priority:pinfo.priority||''});
       parentId=pinfo.clusterId;
     }
     return chain;
@@ -1033,10 +1033,10 @@
       var curTopicId=_bbCurrentTopicHeaderId;
       var currentRow=window.TopicPyramid.render(menu, {
         ancestors:ancestors,
-        current:{id:curTopicId, name:curInfo.name},
+        current:{id:curTopicId, name:curInfo.name, priority:curInfo.priority||''},
         getChildren:function(id){
           return _bbTopicChildChoices(id).then(function(rows){
-            return rows.map(function(r){ return {id:r.id, name:r.text_content||'(untitled)'}; });
+            return rows.map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
           });
         },
         onNavigate:function(id){

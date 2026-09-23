@@ -44,6 +44,37 @@
   var FLOOR_PX = 10.5;   // never shrink past this
   var BASE_PX = 15;      // root-of-pyramid font size
 
+  // PRIORITY, Sept 23 2026 -- Larry: H/M/L priority "should be across all
+  // usages." One shared helper every screen uses (this Pyramid, the Cast
+  // Roster, its Org Chart): same six values and colors the cards already
+  // use (briefing-board-ops.js PRI_COLOR), highest first, and projects
+  // with a priority listed ahead of those without, keeping their own
+  // order inside each step.
+  var PRI_RANK={HH:0,H:1,MH:2,M:3,ML:4,L:5};
+  var PRI_BG={HH:'#7a0000', H:'#c0272a', MH:'#1f5c1f', M:'#3F8F3F', ML:'#b8ddb0', L:'#eeddaa'};
+  var PRI_FG={HH:'#fff', H:'#fff', MH:'#fff', M:'#fff', ML:'#1f3a1a', L:'#3B2510'};
+  var T2TPriority={
+    rank:function(p){ return (p && PRI_RANK[p]!=null) ? PRI_RANK[p] : 9; },
+    colors:function(p){ return {bg:PRI_BG[p]||'#9c8b73', fg:PRI_FG[p]||'#fff'}; },
+    badgeHTML:function(p){
+      if(!p || PRI_RANK[p]==null) return '';
+      return '<span class="t2t-pri" title="Priority '+p+'" style="background:'+PRI_BG[p]+';color:'+PRI_FG[p]+'">'+p+'</span>';
+    },
+    // Stable: equal priorities keep the order they came in.
+    sort:function(list, getP){
+      return list.map(function(x,i){ return {x:x,i:i}; }).sort(function(a,b){
+        return (T2TPriority.rank(getP(a.x))-T2TPriority.rank(getP(b.x))) || (a.i-b.i);
+      }).map(function(o){ return o.x; });
+    },
+    ensureStyles:function(){
+      if(document.getElementById('t2t-pri-styles')) return;
+      var st=document.createElement('style'); st.id='t2t-pri-styles';
+      st.textContent='.t2t-pri{flex:none;display:inline-block;min-width:14px;padding:0 4px;border-radius:4px;font-size:9px;line-height:14px;font-weight:700;text-align:center;letter-spacing:.02em;vertical-align:middle}';
+      document.head.appendChild(st);
+    }
+  };
+  window.T2TPriority=T2TPriority;
+
   function _tpFontSize(depth){
     return Math.max(FLOOR_PX, BASE_PX - depth * STEP_PX);
   }
@@ -97,6 +128,14 @@
     label.textContent=node.name||'(untitled)';
     row.appendChild(label);
 
+    // Priority badge (Sept 23 2026) -- shows when the level has one.
+    if(node.priority && T2TPriority.badgeHTML(node.priority)){
+      T2TPriority.ensureStyles();
+      var pri=document.createElement('span');
+      pri.innerHTML=T2TPriority.badgeHTML(node.priority);
+      row.appendChild(pri.firstChild);
+    }
+
     // Sept 20 2026 -- Larry: arrow goes after the name, not before it
     // (checkbox, name, then arrow) -- matches the order he pictured.
     var arrow=document.createElement('span');
@@ -149,6 +188,7 @@
             arrowEl.replaceWith(arrowEl.cloneNode(true)); // drop the click handler, nothing to open
             return;
           }
+          kids=T2TPriority.sort(kids, function(k){ return k.priority; });
           kids.forEach(function(kid){
             var built=_tpMakeRow(kid, depth+1, indentPx+14, false, opts);
             childWrap.appendChild(built.row);
@@ -176,6 +216,8 @@
     if(arrowEl && arrowEl.isConnected && !arrowEl.classList.contains('tp-none')) arrowEl.click();
   }
 
+  // Every {id,name} may also carry priority ('HH'..'L') -- Sept 23 2026:
+  // shown as a badge, and children are listed highest priority first.
   // opts = {
   //   ancestors: [{id,name}, ...]  -- root..parent order, current excluded
   //   current: {id,name},
@@ -205,7 +247,8 @@
 
     Promise.resolve(opts.getChildren(opts.current.id)).then(function(kids){
       loadingRow.remove();
-      (kids||[]).forEach(function(kid){
+      kids=T2TPriority.sort(kids||[], function(k){ return k.priority; });
+      kids.forEach(function(kid){
         var built=_tpMakeRow(kid, curDepth+1, 14, false, opts);
         menuEl.appendChild(built.row);
         _tpWireExpand(built.arrow, built.row, kid, curDepth+1, 14, opts);

@@ -764,9 +764,9 @@
     if(_bbHeaderInfoById[headerId]) return _bbHeaderInfoById[headerId];
     var sb=T().sb; if(!sb) return null;
     try{
-      var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
+      var res=await sb.from('ideas').select('id,cluster_id,text_content,priority').eq('id',headerId).maybeSingle();
       if(res.error || !res.data) return null;
-      var info={clusterId:res.data.cluster_id||null, name:res.data.text_content||'(untitled)'};
+      var info={clusterId:res.data.cluster_id||null, name:res.data.text_content||'(untitled)', priority:res.data.priority||''};
       _bbHeaderInfoById[headerId]=info;
       _bbRootHeaderIdSet[headerId]=_bbIsProjectRoot(info.clusterId);
       return info;

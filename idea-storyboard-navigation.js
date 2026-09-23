@@ -1138,7 +1138,7 @@
       guard++;
       var row=_sboardAllRowsById[parentId];
       if(!row) break;
-      chain.unshift({id:row.id, name:row.text_content||'(untitled)'});
+      chain.unshift({id:row.id, name:row.text_content||'(untitled)', priority:row.priority||''});
       parentId=row.cluster_id;
     }
     return chain;
@@ -1148,7 +1148,7 @@
       .map(function(k){ return _sboardAllRowsById[k]; })
       .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(parentId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content]; })
       .sort(_sboardBySortOrder)
-      .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)'}; });
+      .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
   }
   function _sboardWireTopicTree(){
     var trigger=document.getElementById('sc-topic-box'), menu=document.getElementById('sc-topic-menu');
@@ -1168,7 +1168,7 @@
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var currentRow=window.TopicPyramid.render(menu, {
         ancestors:_sboardPyramidAncestors(T2TShared.currentTopicId),
-        current:{id:curRow.id, name:curRow.text_content||'(untitled)'},
+        current:{id:curRow.id, name:curRow.text_content||'(untitled)', priority:curRow.priority||''},
         getChildren:function(id){ return _sboardPyramidChildren(id); },
         onNavigate:function(id){
           menu.hidden=true;

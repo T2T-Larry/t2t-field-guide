@@ -120,6 +120,34 @@
   // opts.onClear(): optional -- unchecking the picked row clears the
   //   pick. Without it, the picked row just stays checked (the back of
   //   an existing card can change PRIMARY here, not remove it).
+  // CAPACITY, Sept 23 2026 -- Larry: "There is a potential for biting off
+  // more than one can chew" ... "I like the 5 amber. Some people and AI
+  // can handle more but it is good to think about capacity. This number
+  // ... should be across all usages." The number beside a person is how
+  // many projects they're PRIMARY on (public.primary_load); at 5 or more
+  // it turns amber. Shared by this list and the Cast Roster.
+  window.T2TLoad = window.T2TLoad || (function(){
+    var LIMIT=5, cache=null, at=0, inflight=null;
+    function fetchAll(force){
+      if(!force && cache && (Date.now()-at)<60000) return Promise.resolve(cache);
+      if(inflight) return inflight;
+      var sb=window.T2T && window.T2T.sb;
+      if(!sb) return Promise.resolve(cache||{});
+      inflight=Promise.resolve(sb.rpc('primary_load')).then(function(res){
+        var m={}; ((res&&res.data)||[]).forEach(function(r){ m[String(r.user_id)]=r.n; });
+        cache=m; at=Date.now(); inflight=null; return m;
+      }, function(){ inflight=null; return cache||{}; });
+      return inflight;
+    }
+    function badgeHTML(n){
+      n=n||0; if(!n) return '';
+      var over=n>=LIMIT;
+      return '<span class="t2t-load" title="PRIMARY on '+n+' project'+(n===1?'':'s')+(over?' — at capacity (5+)':'')+'" style="display:inline-block;min-width:14px;padding:0 4px;border-radius:7px;font-size:9px;line-height:14px;font-weight:700;text-align:center;vertical-align:middle;'
+        +(over?'background:#e8a33a;color:#3b2200':'background:rgba(0,0,0,.08);color:#5b5b56')+'">'+n+'</span>';
+    }
+    return {limit:LIMIT, fetch:fetchAll, badgeHTML:badgeHTML, invalidate:function(){ cache=null; }};
+  })();
+
   async function _bbOpenCastPickMenu(menu, anchorEl, opts){
     opts=opts||{};
     // The Idea Board can open this before the Briefing Board screen has
@@ -144,7 +172,9 @@
     menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
     menu.hidden=false;
     position();
+    var loadP=window.T2TLoad.fetch();
     var rows=await _bbCastPickRows(opts.level||null);
+    var loads=await loadP;
     if(menu.hidden) return; // closed while loading
     var selected=opts.selectedUid ? String(opts.selectedUid) : null;
     // Whoever's already picked always shows (checked), even if they
@@ -187,11 +217,13 @@
       row.title=m.name+(m.source==='above'?' — from the team one level up':(m.source==='stakeholder'?' — Stakeholder from higher up':''));
       row.setAttribute('data-find', (String(m.name||'')+' '+String(m.email||'')).toLowerCase());
       row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(isSel?' checked':'')+'> <span>'+_esc(m.shortName)+'</span>'
-        +(fromAbove?' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>':'');
+        +(fromAbove?' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>':'')
+        +' '+window.T2TLoad.badgeHTML(loads[String(m.user_id)]);
       var chk=row.querySelector('input');
       chk.addEventListener('change', function(){
         if(chk.checked){
           close();
+          window.T2TLoad.invalidate();   // their PRIMARY count may change
           opts.onPick && opts.onPick({user_id:m.user_id, name:m.name||m.email||'(unnamed)', fromAbove:fromAbove && !isSel});
         } else if(opts.onClear){
           close();
