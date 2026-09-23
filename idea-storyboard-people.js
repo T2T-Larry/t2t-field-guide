@@ -1137,7 +1137,11 @@
       }
       if(!toAdd.length) return;
       for(var i=0;i<toAdd.length;i++){
-        try{ await _sb.from('card_roles').insert({card_type:cardType, card_id:cardId, role:'stakeholder', user_id:toAdd[i]}); }catch(e){}
+        // 🔑 Key, Sept 23 2026 -- Larry: "there is the chain!" The PRIMARY
+        // of every level above is accountable for everything under it, so
+        // they land here as a KEY Stakeholder, the same way a replaced
+        // PRIMARY already stays on as 🔑 Key.
+        try{ await _sb.from('card_roles').insert({card_type:cardType, card_id:cardId, role:'stakeholder', is_key:true, user_id:toAdd[i]}); }catch(e){}
       }
       await _sboardEnsureMemberInitials(toAdd);
       if(_csItem && String(cardId)===String(_csItem.id)) await _csLoadRoles(_csItem);
