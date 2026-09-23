@@ -820,22 +820,71 @@
       ? '<div class="tm-notes-row cs-notes-row cs-survey-row" id="cs-needs-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">NEEDS:</span><input type="text" class="tm-notes-input cs-needs-input" data-rowid="'+_esc9710(r.id)+'" placeholder="What do they need to succeed here?" value="'+_esc9710(r.needs||'')+'"></div>'
         +'<div class="tm-notes-row cs-notes-row cs-survey-row" id="cs-desires-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">DESIRES:</span><input type="text" class="tm-notes-input cs-desires-input" data-rowid="'+_esc9710(r.id)+'" placeholder="What would they love to see happen?" value="'+_esc9710(r.desires||'')+'"></div>'
       : '';
-    return '<div class="tm-row">'
-      +'<div class="tm-sym">'+filterChk+'</div>'
-      +'<div class="tm-body">'
-        +'<div class="tm-name">'+primaryMark+star+'<span class="cs-name-click" data-rowid="'+_esc9710(r.id)+'" style="cursor:pointer">'+_esc9710(name)+'</span> <span class="cs-role-tag">· '+CS_ROLE_LABEL[r.role]+'</span>'+pencil+' <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
-        +'<div class="tm-contact">✉ <input type="text" class="cs-contact-input cs-contact-email" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(email)+'" placeholder="email"> &nbsp; ☎ <input type="text" class="cs-contact-input cs-contact-phone" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(phone)+'" placeholder="phone"></div>'
+    // Sept 23 2026, Larry: Call Sheet as a TABLE -- names down the left,
+    // the Cast Info card's components across the top (Cast Idea Board →
+    // CAST → Cast Info). Same controls as before, just laid out in cells,
+    // so every click/change handler in openCallSheet keeps working as-is.
+    // Columns with no data behind them yet show a dash here and print
+    // blank (room to write by hand) -- see CS_TABLE_COLS.
+    var dash='<span class="cs-td-soon">—</span>';
+    return '<tr class="cs-tr">'
+      +'<td class="cs-td cs-td-name">'
+        +'<div class="cs-td-nameline">'+filterChk+' '+primaryMark+star+'<span class="cs-name-click" data-rowid="'+_esc9710(r.id)+'" style="cursor:pointer;font-weight:600">'+_esc9710(name)+'</span> <span class="cs-remove-x" data-rowid="'+_esc9710(r.id)+'" title="Remove">✕</span></div>'
+        +panel
+      +'</td>'
+      +'<td class="cs-td">'+CS_ROLE_SYM[r.role]+' '+CS_ROLE_LABEL[r.role]+(r.is_key?' <b style="color:#b8562f">🔑</b>':'')+'</td>'
+      +'<td class="cs-td"><input type="text" class="cs-contact-input cs-contact-phone" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(phone)+'" placeholder="phone"></td>'
+      +'<td class="cs-td"><input type="text" class="cs-contact-input cs-contact-email" data-uid="'+_esc9710(r.user_id)+'" value="'+_esc9710(email)+'" placeholder="email"></td>'
+      +'<td class="cs-td">'+dash+'</td>'
+      +'<td class="cs-td">'+dash+'</td>'
+      +'<td class="cs-td cs-td-notes">'+pencil
         +'<div class="tm-notes-row cs-notes-row" id="cs-nr-'+_esc9710(r.id)+'" style="display:'+(hasNotes?'flex':'none')+'"><span class="tm-notes-lbl">'+notesLbl+'</span><input type="text" class="tm-notes-input cs-notes-input" data-rowid="'+_esc9710(r.id)+'" placeholder="'+_esc9710(notesPh)+'" value="'+_esc9710(r.notes||'')+'"></div>'
         +surveyRows
-        +panel
-      +'</div>'
-    +'</div>';
+      +'</td>'
+      +'<td class="cs-td">'+dash+'</td>'
+      +'<td class="cs-td">'+dash+'</td>'
+      +'<td class="cs-td">'+dash+'</td>'
+    +'</tr>';
   }
+
+  // Column headers, in order, taken from the Cast Info card on the Cast
+  // Idea Board. has:false = nothing stored for it yet (dash on screen,
+  // blank on paper).
+  var CS_TABLE_COLS = [
+    {label:'Cast Member', has:true},
+    {label:'Role(s)', has:true},
+    {label:'Phone', has:true},
+    {label:'Email', has:true},
+    {label:'Location', has:false},
+    {label:'Time Zone', has:false},
+    {label:'Notes', has:true},
+    {label:'NEWS', has:false},
+    {label:'Projects', has:false},
+    {label:'Pro’s & Grow’s', has:false}
+  ];
+  var CS_TABLE_CSS = '<style>'
+    +'.cs-tablewrap{overflow-x:auto;margin:4px 0 6px;border:1px solid #d9d2c3;border-radius:8px;background:#fff}'
+    +'.cs-table{border-collapse:collapse;width:100%;min-width:900px;font-size:calc(11px * var(--fg-text-scale,1));color:#2C2C2A;text-align:left}'
+    +'.cs-table th{position:sticky;top:0;background:#1a3a5c;color:#fff;font-weight:600;letter-spacing:0.04em;padding:6px 8px;white-space:nowrap;font-size:calc(10px * var(--fg-text-scale,1))}'
+    +'.cs-table th.cs-th-soon{background:#5a6f86}'
+    +'.cs-td{padding:5px 8px;border-top:1px solid #efe9dc;vertical-align:top}'
+    +'.cs-tr:nth-child(even) .cs-td{background:#faf7f0}'
+    +'.cs-td-name{white-space:nowrap;position:sticky;left:0;background:#fff;z-index:1}'
+    +'.cs-tr:nth-child(even) .cs-td-name{background:#faf7f0}'
+    +'.cs-td .cs-contact-input{width:100%;min-width:90px;box-sizing:border-box}'
+    +'.cs-td-notes{min-width:160px}'
+    +'.cs-td-notes .tm-notes-row{margin-top:3px}'
+    +'.cs-td-soon{color:#b9ad98}'
+    +'.cs-td-name .tm-rolepanel{white-space:normal;min-width:220px}'
+    +'</style>';
 
   function _csRenderFlatRoster(){
     var wrap=document.getElementById('cs-rows-all'); if(!wrap) return;
     var rows=_csAllRolesFlat();
-    wrap.innerHTML = rows.length ? rows.map(_csRenderRow).join('') : '<div class="cs-empty-role">Nobody yet</div>';
+    var head='<tr>'+CS_TABLE_COLS.map(function(c){ return '<th'+(c.has?'':' class="cs-th-soon" title="Not stored yet -- coming soon"')+'>'+c.label+'</th>'; }).join('')+'</tr>';
+    wrap.innerHTML = CS_TABLE_CSS + (rows.length
+      ? '<div class="cs-tablewrap"><table class="cs-table"><thead>'+head+'</thead><tbody>'+rows.map(_csRenderRow).join('')+'</tbody></table></div>'
+      : '<div class="cs-empty-role">Nobody yet</div>');
   }
 
   // Single add tile, Session 255 -- used to be one (+) per role box
@@ -1923,6 +1972,43 @@
     +'</div>';
   }
 
+  // Sept 23 2026 -- printed Call Sheet is the same table as the screen:
+  // names down the left, Cast Info components across the top. Columns
+  // with nothing stored yet print blank so they can be filled in by hand.
+  function _csPrintTableHTML(){
+    var css='<style>'
+      +'.cs-pt{width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:10.5px;color:#1a3a5c;margin-top:8px}'
+      +'.cs-pt th{background:#1a3a5c;color:#fff;text-align:left;padding:6px 6px;font-size:9.5px;letter-spacing:0.05em;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      +'.cs-pt td{border:1px solid #d9d2c3;padding:6px 6px;vertical-align:top;min-height:22px}'
+      +'.cs-pt td.cs-pt-name{font-weight:700;white-space:nowrap}'
+      +'.cs-pt .cs-pr-notes{margin-top:0}'
+      +'.cs-pt tr{page-break-inside:avoid}'
+      +'</style>';
+    var head='<tr>'+CS_TABLE_COLS.map(function(c){ return '<th>'+c.label+'</th>'; }).join('')+'</tr>';
+    var rows=_csAllRolesFlat();
+    var body=rows.map(function(r){
+      var m=_csMemberLookup(r.user_id);
+      var name=m?(m.name||m.email||'(unknown)'):'(unknown)';
+      var tags=(r.is_primary?'<span class="cs-pr-keytag">★ DOER</span>':'')+(r.is_key?'<span class="cs-pr-keytag">KEY</span>':'')+(r.is_parent_connection?'<span class="cs-pr-star">★</span>':'');
+      var isSt=r.role==='stakeholder';
+      var notes=(r.notes?('<div>'+(isSt?'Expectations/boundaries: ':'')+_esc9710(r.notes)+'</div>'):'')
+        +((isSt&&r.needs)?('<div>Needs: '+_esc9710(r.needs)+'</div>'):'')
+        +((isSt&&r.desires)?('<div>Desires: '+_esc9710(r.desires)+'</div>'):'');
+      return '<tr>'
+        +'<td class="cs-pt-name">'+tags+_esc9710(name)+'</td>'
+        +'<td>'+_esc9710(CS_ROLE_LABEL[r.role]||r.role)+'</td>'
+        +'<td>'+_esc9710(m&&m.phone||'')+'</td>'
+        +'<td>'+_esc9710(m&&m.email||'')+'</td>'
+        +'<td></td><td></td>'
+        +'<td>'+notes+'</td>'
+        +'<td></td><td></td><td></td>'
+      +'</tr>';
+    }).join('');
+    // a few blank lines at the bottom for anyone added by hand
+    for(var i=0;i<3;i++){ body+='<tr>'+CS_TABLE_COLS.map(function(){ return '<td>&nbsp;</td>'; }).join('')+'</tr>'; }
+    return css+'<table class="cs-pt"><thead>'+head+'</thead><tbody>'+body+'</tbody></table>';
+  }
+
   async function _csBuildPrintDoc(){
     // Sept 14 2026, Larry: "classic call sheet" -- PROJECT and TASK as
     // their own labeled lines on the printed page too, matching the
@@ -1940,7 +2026,7 @@
       +'</div>'
       +'<div class="cs-pr-field"><span class="cs-pr-field-label">PROJECT</span>'+_esc9710(parts.project||'—')+'</div>'
       +'<div class="cs-pr-field"><span class="cs-pr-field-label">TASK</span>'+_esc9710(parts.task||'(untitled)')+'</div>'
-      +CS_PRINT_GROUPS.map(_csPrintGroupHTML).join('')
+      +_csPrintTableHTML()
       +'<div class="cs-pr-footer"><span>T2T Field Guide — Call Sheet</span><span>Generated '+today+'</span></div>';
   }
 
@@ -1949,7 +2035,7 @@
       var styleId='cs-print-page-style';
       var old=document.getElementById(styleId); if(old) old.remove();
       var st=document.createElement('style'); st.id=styleId;
-      st.textContent='@page{size:portrait;margin:0.6in}';
+      st.textContent='@page{size:landscape;margin:0.4in}';
       document.head.appendChild(st);
       document.body.classList.add('cs-printing');
       var cleaned=false;
@@ -2109,7 +2195,7 @@
       // 255 -- that class only exists on pages that load this file's own
       // stylesheet; this popup needs to look right on Briefing Board
       // pages too, reached only through the T2TStoryboard bridge.
-      ovEl.innerHTML='<div id="cs-callsheet-card" style="text-align:center;background:#F5F1E8;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,0.3);max-height:88vh;overflow-y:auto;width:min(400px,100%);position:relative;box-sizing:border-box"></div>';
+      ovEl.innerHTML='<div id="cs-callsheet-card" style="text-align:center;background:#F5F1E8;border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,0.3);max-height:88vh;overflow-y:auto;width:min(1100px,100%);position:relative;box-sizing:border-box"></div>';
       document.body.appendChild(ovEl);
       ovEl.addEventListener('click', function(e){ if(e.target===ovEl) closeCallSheet(); });
     }
