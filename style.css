@@ -727,6 +727,15 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      dashed-outline cue while an external drag (an image file, a link
      dragged from a browser tab) hovers over it, echoing the .isx-dropzone
      look above rather than inventing a second visual language. */
+  /* NEW card, Briefing Board colors -- Sept 23 2026 (Larry: "BB New
+     card is now light blue. Change to colors compatible with BB, like
+     back of BB card"). Same popup as the Idea NEW card; opened from the
+     Briefing Board it re-points the popup's color variables at the
+     Briefing Card's tan so color always says where you are: light blue
+     = Ideas, tan = Briefing Board. */
+  .isx-pcard.isx-pcard-bb{--isx-navy:#7A5C3A;--isx-lightblue:#FFFDF7;--isx-paleblue:#C9A87C;--brand-blue-gray:#7A5C3A;border-top:6px solid #C9A87C}
+  .isx-pcard.isx-pcard-bb .isx-save:hover{background:#3B2510}
+  .isx-pcard.isx-pcard-bb .isx-cancel:hover{background:rgba(201,168,124,.18)}
   .isx-pcard.isx-drop-ready{outline:2px dashed var(--isx-paleblue);outline-offset:4px}
 
   /* NEW card, Sept 19 2026 (Larry) — PROJECT/TOPIC eyebrow fields (same

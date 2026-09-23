@@ -1003,8 +1003,8 @@
     _icCastPersonId=null; _icCastPersonName='';
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
-    _icOpenPopup('<div class="isx-pcard" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
-      +'<div class="isx-ptitle isx-ptitle-black" style="text-align:center;margin:0 0 4px">NEW</div>'
+    _icOpenPopup('<div class="isx-pcard'+(_icMode==='bb'?' isx-pcard-bb':'')+'" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
+      +'<div class="isx-ptitle isx-ptitle-black" style="text-align:center;margin:0 0 4px">'+(_icMode==='bb'?'NEW TASK':'NEW')+'</div>'
       // ID-Band look, Sept 22 2026 (Larry) -- PROJECT and TOPIC sit side
       // by side as framed white fields with small eyebrows above them,
       // the same shape as the board's own ID Band, instead of stacked

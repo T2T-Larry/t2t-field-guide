@@ -660,7 +660,7 @@
       col.setAttribute('data-col', cd.key);
       col.innerHTML='<div class="bb-col-head">'+cd.label+'</div>'
         +'<div class="bb-col-cards" data-col="'+cd.key+'"></div>'
-        +(cd.key==='new' ? '<div class="bb-add-tile" id="bb-add-tile">+ new card</div>' : '');
+        +(cd.key==='new' ? '<div class="bb-add-tile" id="bb-add-tile">+ new task</div>' : '');
       wrap.appendChild(col);
     });
     // Lasso bulk-move target, Sept 2026 -- while 1+ cards are lasso-
