@@ -650,12 +650,14 @@
   // much bigger, purely backstage change with no visible upside.
   // Sept 19 2026 -- Larry: change BRIEFING BOARD's display label back
   // from TASKS to BRIEFING (BB for short). CAST stays ROLES.
+  // Sept 23 2026 -- Larry: "change Roles to Cast on storyboard dropdown."
+  // ROLES -> CAST, matching the locked name for the one list of people.
   var _sboardBoardKinds=[
     {value:'IDEA', label:'IDEAS', soon:null},
     {value:'PLAN', label:'PLAN', soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING', soon:null},
     {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
-    {value:'CAST', label:'ROLES', soon:null}
+    {value:'CAST', label:'CAST', soon:null}
   ];
   function _sboardWireBoardKindDropdown(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');

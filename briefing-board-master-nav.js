@@ -1959,12 +1959,14 @@
   // list -- value stays the internal name every handler below keys off).
   // Sept 19 2026 -- Larry: change it back to BRIEFING. Kept in sync with
   // idea-storyboard-navigation.js's copy of this same list.
+  // Sept 23 2026 -- Larry: "change Roles to Cast on storyboard dropdown."
+  // ROLES -> CAST, matching the locked name for the one list of people.
   var _bbBoardKinds=[
     {value:'IDEA', label:'IDEAS'},
     {value:'PLAN', label:'PLAN'},
     {value:'BRIEFING BOARD', label:'BRIEFING'},
     {value:'SHARE', label:'SHARE'},
-    {value:'CAST', label:'ROLES'}
+    {value:'CAST', label:'CAST'}
   ];
   function _bbWireBoardKindDropdown(){
     var trigger=document.getElementById('bb-boardkind-trigger'), menu=document.getElementById('bb-boardkind-menu');
