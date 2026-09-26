@@ -832,20 +832,53 @@
   // cluster_id up the ideas/header tree from whichever id it's given).
   // headerId here is _bbCurrentTopicHeaderId, BB's own equivalent of the
   // Idea Board's T2TShared.currentTopicId.
+  //
+  // Sept 26 2026 (later), Larry, live on the site: this used to paint its
+  // own name+eyebrow+logo box (bb-card-org), which sat right next to
+  // bb-idn's own traveler-identity org -- when a TOPIC had its own org
+  // set, that read as the org showing twice. Now it paints #bb-idn-org
+  // (shared with the traveler-identity org T2TMemberIdentity.fill sets)
+  // and #bb-card-org-eyebrow, directly under it, above the traveler name
+  // -- same fix, same reasoning as the Idea Board's own
+  // _sboardRenderOrgDisplay (idea-storyboard-navigation.js). This must be
+  // called LAST, after _bbRenderTravelerName has run for this same
+  // refresh (see the call sites in _bbRenderTopicField below), so it has
+  // final say over #bb-idn-org: a TOPIC-level org overwrites whatever the
+  // traveler-identity fill just wrote there; no TOPIC-level org leaves
+  // that line exactly as fill() set it (unchanged single-org behavior --
+  // this is what stops the org from showing twice).
   function _bbRenderOrgDisplay(headerId){
     var wrap=document.getElementById('bb-card-org'); if(!wrap) return;
+    var idn=document.getElementById('bb-idn');
+    var idnOrgEl=document.getElementById('bb-idn-org');
+    var descEl=document.getElementById('bb-card-org-eyebrow');
+    var logoWrap=document.getElementById('bb-card-org-logo-wrap');
+    var logoImg=document.getElementById('bb-card-org-logo');
     var resolved=(headerId && typeof _orgResolveForRow==='function') ? _orgResolveForRow(headerId) : null;
     if(!resolved || (!resolved.name && !resolved.logoUrl && !resolved.eyebrow)){
+      // No TOPIC-level override -- leave #bb-idn-org exactly as the
+      // traveler-identity fill (member-identity.js) already set it; just
+      // hide the descriptor line and the logo box, both of which only
+      // ever belong to a TOPIC-level org.
+      if(descEl){ descEl.style.display='none'; descEl.textContent=''; }
       wrap.style.display='none';
       return;
     }
-    wrap.style.display='flex';
-    var eyebrowEl=document.getElementById('bb-card-org-eyebrow');
-    var nameEl=document.getElementById('bb-card-org-name');
-    var logoWrap=document.getElementById('bb-card-org-logo-wrap');
-    var logoImg=document.getElementById('bb-card-org-logo');
-    if(eyebrowEl) eyebrowEl.textContent=resolved.eyebrow||'';
-    if(nameEl) nameEl.textContent=resolved.name||'';
+    if(idnOrgEl){
+      idnOrgEl.textContent=resolved.name||'';
+      idnOrgEl.style.display=resolved.name?'':'none';
+    }
+    if(descEl){
+      descEl.textContent=resolved.eyebrow||'';
+      descEl.style.display=resolved.eyebrow?'':'none';
+    }
+    // has-org sizes the traveler name/eyebrow smaller (see .bb-idn.has-org
+    // .bb-traveler-eyebrow, briefing-board-styles.js) -- fill() already
+    // toggled this off the TRAVELER's own org_name, so re-toggle it here
+    // too in case the TOPIC has an org the traveler's own profile doesn't.
+    if(idn) idn.classList.toggle('has-org', !!(resolved.name));
+    // The old combined box now holds only the logo.
+    wrap.style.display=resolved.logoUrl?'flex':'none';
     if(logoWrap) logoWrap.style.display=resolved.logoUrl?'flex':'none';
     if(logoImg) logoImg.src=resolved.logoUrl||'';
   }
@@ -861,11 +894,6 @@
     // fixed value off the board row every time.
     var headerId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : board.storyboard_project_id;
     _bbCurrentTopicHeaderId=headerId;
-    // Per-card/inherited Organization, Sept 26 2026 -- see
-    // idea-storyboard-navigation.js's _orgResolveForRow (shared global
-    // scope, same page) for the walk-up-the-tree resolution; this just
-    // paints BB's own masthead copy of the same display.
-    if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
     _bbCurrentTopicIsRoot=false;
     if(!headerId){
       // A personal/org board that was never tied to an Idea project --
@@ -876,12 +904,25 @@
       _bbSyncMasterSubtitle(false);
       _bbSyncTopicUpCaret(true); // nothing to climb from here either
       _bbFitTopicText();
+      // Per-card/inherited Organization, Sept 26 2026 -- see
+      // idea-storyboard-navigation.js's _orgResolveForRow (shared global
+      // scope, same page) for the walk-up-the-tree resolution; this just
+      // paints BB's own masthead copy of the same display. Called LAST,
+      // after _bbSyncMasterSubtitle above (which repaints the traveler-
+      // identity block) -- see the Sept 26 (later) note on
+      // _bbRenderOrgDisplay itself for why the order matters.
+      if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
       return;
     }
     try{
       var sb=T().sb;
       var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
-      if(res.error || !res.data){ hit.textContent=board.name||'(untitled)'; _bbFitTopicText(); return; }
+      if(res.error || !res.data){
+        hit.textContent=board.name||'(untitled)';
+        _bbFitTopicText();
+        if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
+        return;
+      }
       // Sept 22 2026 fix -- Larry: "BB topic is Share but project has
       // shifted to MASTER" (a top-level project with no parent of its own,
       // like Share, was being mistaken for the true account root just
@@ -903,10 +944,20 @@
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
       _bbFitTopicText();
+      // Per-card/inherited Organization, Sept 26 2026 (later) -- moved
+      // here, LAST, from a single call at the top of this function. It
+      // used to run before _bbSyncMasterSubtitle (above) had even
+      // refreshed the traveler-identity block (_bbRenderTravelerName),
+      // so a TOPIC-level org and the traveler's own identity org could
+      // both land on screen at once ("org shown twice"). Running last
+      // lets it have final say over #bb-idn-org -- see the note on
+      // _bbRenderOrgDisplay itself.
+      if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
     }catch(e){
       console.warn('Briefing Board: could not load TOPIC field', e);
       hit.textContent=board.name||'(untitled)';
       _bbFitTopicText();
+      if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
     }
   }
   // Sept 6 2026 -- goes inert (same treatment Parent's own hit-box used

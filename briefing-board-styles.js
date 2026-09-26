@@ -203,17 +203,25 @@
       +'.bb-idn-toprow{display:flex;align-items:center;gap:8px}'
       +'.bb-idn-org{font-size:calc(22px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;line-height:1.1}'
       +'.bb-idn-logo{height:calc(26px * var(--fg-text-scale,1));width:auto;max-width:calc(90px * var(--fg-text-scale,1));object-fit:contain;border-radius:4px;flex-shrink:0}'
-      // bb-card-org, Sept 26 2026 -- same starting-guess caveat as the
-      // Idea Board's sc-card-org (idea-storyboard-screens.js): positioned
-      // right after bb-idn, not measured against its real rendered width.
-      // Larry, adjust on the live site if it overlaps or sits too far
-      // right.
-      +'.bb-card-org{position:absolute;top:10px;left:230px;display:flex;align-items:center;gap:6px;max-width:180px}'
+      // bb-card-org, Sept 26 2026 (later) -- now a LOGO-ONLY box, same fix
+      // as the Idea Board's sc-card-org (idea-storyboard-screens.js): the
+      // TOPIC's resolved org name + descriptor used to render here too,
+      // right next to bb-idn's own traveler-identity org, which read as
+      // the org showing twice on the live site. That text moved up into
+      // bb-idn (reuses #bb-idn-org for the name, #bb-card-org-eyebrow
+      // directly under it for the descriptor) -- see _bbRenderOrgDisplay,
+      // briefing-board-master-nav.js. Position kept exactly where it was:
+      // Larry, "current position of the org/descriptor is perfect for the
+      // logo if there is one."
+      +'.bb-card-org{position:absolute;top:10px;left:230px}'
       +'#bb-card-org-logo-wrap{width:28px;height:28px;flex-shrink:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}'
       +'#bb-card-org-logo{max-width:100%;max-height:100%;object-fit:contain;display:block}'
-      +'.bb-card-org-text{min-width:0;overflow:hidden}'
-      +'.bb-card-org-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      +'.bb-card-org-name{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}'
+      // Descriptor, relocated into bb-idn directly under whichever org
+      // name #bb-idn-org is showing -- "descriptor goes under the org."
+      // Same look as before, just repositioned; a hair of top margin so
+      // it doesn't crowd the org name above it (bb-idn's own flex gap is
+      // only 1px).
+      +'.bb-idn .bb-card-org-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;margin-top:1px}'
       +'.bb-idn .bb-traveler-eyebrow{position:static}'
       +'.bb-idn.has-org .bb-traveler-eyebrow{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1.5px}'
       // The logo left this row (Sept 19 2026, now midway between the

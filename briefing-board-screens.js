@@ -96,23 +96,31 @@
             // member with neither sees exactly the old name-only corner.
             // #bb-traveler-name keeps its id so every existing
             // getElementById('bb-traveler-name') caller still works.
+            // Sept 26 2026 (later), Larry, live on the site: same "org
+            // shown twice" fix as the Idea Board -- sc-idn-org's BB
+            // equivalent, #bb-idn-org, now doubles as both the traveler's
+            // own identity org AND the TOPIC's own resolved org (whichever
+            // is current takes priority; see _bbRenderOrgDisplay,
+            // briefing-board-master-nav.js, which now runs LAST so it has
+            // final say over #bb-idn-org after the traveler-identity fill
+            // runs). The descriptor (bb-card-org-eyebrow) sits directly
+            // under whichever org name is showing, above the traveler
+            // name -- "descriptor goes under the org."
             +'<div class="bb-idn" id="bb-idn">'
               +'<div class="bb-idn-toprow"><div class="bb-idn-org" id="bb-idn-org" style="display:none"></div><img class="bb-idn-logo" id="bb-idn-logo" alt="" style="display:none"></div>'
+              +'<div class="bb-card-org-eyebrow" id="bb-card-org-eyebrow" style="display:none"></div>'
               +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
             +'</div>'
-            // Per-card/inherited Organization, Sept 26 2026 -- BB's own
-            // copy of the Idea Board's sc-card-org (idea-storyboard-
-            // screens.js); same idea, same resolver
-            // (_orgResolveForRow/idea-storyboard-navigation.js), painted
-            // by _bbRenderOrgDisplay (briefing-board-master-nav.js).
-            // Distinct from bb-idn-org just above, which is the
-            // TRAVELER's own personal identity, not a card's.
+            // Per-card/inherited Organization's LOGO, Sept 26 2026 (later)
+            // -- the org NAME + descriptor text moved up into bb-idn above
+            // (this box used to carry all three together, which is what
+            // caused the "org shown twice" duplicate). Larry: "current
+            // position of the org/descriptor is perfect for the logo if
+            // there is one" -- so this box keeps its original spot and
+            // now holds only the logo, shown only when the resolved TOPIC
+            // actually has a logo_url.
             +'<div class="bb-card-org" id="bb-card-org" style="display:none">'
             +'<div id="bb-card-org-logo-wrap"><img id="bb-card-org-logo" alt=""></div>'
-            +'<div class="bb-card-org-text">'
-            +'<div class="bb-card-org-eyebrow" id="bb-card-org-eyebrow"></div>'
-            +'<div class="bb-card-org-name" id="bb-card-org-name"></div>'
-            +'</div>'
             +'</div>'
             +'<div class="bb-mh-typebox" id="bb-project-wrap">'
               // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
