@@ -286,22 +286,81 @@
     var d=_bbParseDue(c.due);
     return d ? _bbDaysUntil(d) : Infinity;
   }
-  // Routine due-date rollover, Sept 26 2026 -- given a card's current
-  // DUE string and its routineFreq, returns the next occurrence in the
-  // same "M/D" shape _bbToday()/the DUE field already use. Daily/
-  // weekly/monthly are fixed intervals off the CURRENT due date (so a
-  // weekly Saturday card stays on Saturdays); Custom is free text with
-  // no computable interval, so this returns null and the due date is
-  // left for Larry to set by hand, same as Custom already requires
-  // everywhere else it appears.
-  function _bbAdvanceRoutineDue(dueStr, freq){
+  // Routine DAY, Sept 26 2026 (Larry: "CADENCE, DAY and TIME in 3
+  // fields... what about the next DUE DATE which should be automatic")
+  // -- a routine card no longer gets a hand-typed due date at all;
+  // CADENCE+DAY compute it. Weekly's DAY is a weekday index (0=Sun..
+  // 6=Sat); Monthly's is a day-of-month (1-31, clamped to short
+  // months). These two helpers find the concrete calendar date each
+  // one currently points to.
+  function _bbNextWeekdayOnOrAfter(fromDate, weekday){
+    var d=new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+    var diff=(weekday - d.getDay() + 7) % 7;
+    d.setDate(d.getDate()+diff);
+    return d;
+  }
+  function _bbNextMonthlyOnOrAfter(fromDate, dayOfMonth){
+    var y=fromDate.getFullYear(), m=fromDate.getMonth();
+    var lastDayThis=new Date(y, m+1, 0).getDate();
+    var candidate=new Date(y, m, Math.min(dayOfMonth, lastDayThis));
+    if(candidate < new Date(y, m, fromDate.getDate())){
+      var lastDayNext=new Date(y, m+2, 0).getDate();
+      candidate=new Date(y, m+1, Math.min(dayOfMonth, lastDayNext));
+    }
+    return candidate;
+  }
+  // Sets a routine card's initial DUE the moment CADENCE/DAY/TIME are
+  // picked -- "on or after today" (today counts, so picking today's
+  // weekday doesn't jump a week ahead). Custom has no fixed interval to
+  // compute, so this returns null and Larry's free-text field is all
+  // there is for that cadence, same as everywhere else Custom shows up.
+  function _bbComputeRoutineDue(freq, day){
+    var today=new Date();
+    if(freq==='weekly'){
+      var wd=parseInt(day,10); if(isNaN(wd)) return null;
+      var d=_bbNextWeekdayOnOrAfter(today, wd);
+      return (d.getMonth()+1)+'/'+d.getDate();
+    }
+    if(freq==='monthly'){
+      var dom=parseInt(day,10); if(isNaN(dom)) return null;
+      var d=_bbNextMonthlyOnOrAfter(today, dom);
+      return (d.getMonth()+1)+'/'+d.getDate();
+    }
+    if(freq==='daily') return (today.getMonth()+1)+'/'+today.getDate();
+    return null;
+  }
+  // Routine due-date rollover on Complete, Sept 26 2026 -- given a
+  // card's current DUE string, routineFreq, and routineDay, returns the
+  // next occurrence in the same "M/D" shape the DUE field already uses.
+  // Computed from DAY (not just "+7 days from the old due date") so
+  // changing DAY between cycles is respected the very next time it
+  // rolls over, rather than silently staying on the old weekday/day-of-
+  // month. Custom is free text with no computable interval, so this
+  // returns null and the due date is left for Larry to set by hand,
+  // matching Larry's confirmed rule: the date holds still (stays
+  // overdue/escalated) until Complete is actually clicked, and only
+  // refreshes to the next due date at that point -- never on its own
+  // just because the old one passed.
+  function _bbAdvanceRoutineDue(dueStr, freq, day){
     var d=_bbParseDue(dueStr);
     if(!d) d=new Date();
-    if(freq==='daily') d.setDate(d.getDate()+1);
-    else if(freq==='weekly') d.setDate(d.getDate()+7);
-    else if(freq==='monthly') d.setMonth(d.getMonth()+1);
-    else return null;
-    return (d.getMonth()+1)+'/'+d.getDate();
+    if(freq==='daily'){
+      d.setDate(d.getDate()+1);
+      return (d.getMonth()+1)+'/'+d.getDate();
+    }
+    if(freq==='weekly'){
+      var wd=parseInt(day,10); if(isNaN(wd)) wd=d.getDay();
+      var from=new Date(d.getFullYear(), d.getMonth(), d.getDate()+1); // strictly after the cycle just completed
+      var next=_bbNextWeekdayOnOrAfter(from, wd);
+      return (next.getMonth()+1)+'/'+next.getDate();
+    }
+    if(freq==='monthly'){
+      var dom=parseInt(day,10); if(isNaN(dom)) dom=d.getDate();
+      var nextMonth=new Date(d.getFullYear(), d.getMonth()+1, 1);
+      var next2=_bbNextMonthlyOnOrAfter(nextMonth, dom);
+      return (next2.getMonth()+1)+'/'+next2.getDate();
+    }
+    return null;
   }
 
   // Overdue pink-face signal, Aug 15 2026, Larry: "pink faced card" for
@@ -1430,8 +1489,14 @@
     document.getElementById('bb-d-start').value=c.startDate||'';
     document.getElementById('bb-d-start-time').value=c.startTime||'';
     document.getElementById('bb-d-routine').value=c.routineFreq||'';
+    (function(){
+      var dw=document.getElementById('bb-d-routine-day-weekly'); if(dw) dw.value=(c.routineFreq==='weekly'&&c.routineDay!=='')?c.routineDay:'6';
+      var dm=document.getElementById('bb-d-routine-day-monthly'); if(dm) dm.value=(c.routineFreq==='monthly'&&c.routineDay)?c.routineDay:'';
+      var tm=document.getElementById('bb-d-routine-time'); if(tm) tm.value=c.dueTime||'';
+    })();
     document.getElementById('bb-d-routine-custom').value=c.routineCustom||'';
-    document.getElementById('bb-d-routine-custom').style.display=(c.routineFreq==='custom')?'':'none';
+    _bbSyncRoutineFieldVisibility(c.routineFreq||'');
+    _bbRenderRoutineNextDue(c);
     var _bbDetailCardR=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCardR) _bbDetailCardR.classList.toggle('bb-routine-active', !!c.routine);
     document.getElementById('bb-d-budget').value=c.budget||'';
@@ -1485,10 +1550,21 @@
       // left untouched here (never cleared) purely as the legacy
       // fallback source for any card nobody's starred a 👥 primary
       // doer on yet.
-      c.due=document.getElementById('bb-d-due').value;
-      c.dueTime=document.getElementById('bb-d-due-time').value;
-      c.startDate=document.getElementById('bb-d-start').value;
-      c.startTime=document.getElementById('bb-d-start-time').value;
+      // Sept 26 2026 -- a routine card's DUE/dueTime are computed live by
+      // its own CADENCE/DAY/TIME controls (wireRoutineControls), not
+      // typed into the (now hidden) Due Date addition fields below, so
+      // reading those blindly on every close would stomp the computed
+      // value back to whatever was last showing in that hidden field.
+      // Same for Start Date -- "does not apply" to a routine card, so
+      // its field is skipped rather than blindly re-saved over.
+      if(c.routine){
+        var rt=document.getElementById('bb-d-routine-time'); if(rt) c.dueTime=rt.value;
+      } else {
+        c.due=document.getElementById('bb-d-due').value;
+        c.dueTime=document.getElementById('bb-d-due-time').value;
+        c.startDate=document.getElementById('bb-d-start').value;
+        c.startTime=document.getElementById('bb-d-start-time').value;
+      }
       c.routineFreq=document.getElementById('bb-d-routine').value;
       c.routineCustom=document.getElementById('bb-d-routine-custom').value;
       c.budget=document.getElementById('bb-d-budget').value;

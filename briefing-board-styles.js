@@ -923,6 +923,10 @@
       +'.bb-date-row input[type=text]{flex:1.4;min-width:0}'
       +'.bb-date-row input.bb-date-time{width:60px;flex:none;min-width:0}'
       +'.bb-date-row select.bb-routine-select{flex:none;width:92px;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
+      // Routine's own DAY-of-month field, Sept 26 2026 -- same box look
+      // as the weekday select just above (bb-routine-select), sized
+      // narrower since it's a 1-31 number, not a 3-letter day name.
+      +'.bb-date-row input.bb-routine-day-num{flex:none;width:56px;min-width:0;font-family:var(--bb-body-font);font-size:calc(12px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 4px;background:#fff;color:var(--bb-ink)}'
       +'.bb-datepicker-pop{position:fixed;z-index:10001;width:220px;background:#fff;border:1.5px solid var(--bb-accent);border-radius:8px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-family:var(--bb-body-font)}'
       +'.bb-dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}'
       +'.bb-dp-label{font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink)}'

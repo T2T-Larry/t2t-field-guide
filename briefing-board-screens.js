@@ -525,9 +525,26 @@
             // field, with #bb-d-shared-board's own populate/save wiring
             // staying intact underneath in case it's ever wanted back.
             +'<div class="bb-field" id="bb-d-shared-wrap" style="display:none"><label>Also show on</label><select id="bb-d-shared-board"><option value="">Just here</option></select></div>'
+            // Routine, redesigned Sept 26 2026 (Larry: "CADENCE, DAY and
+            // TIME in 3 fields horizontally on one line" -- and Start
+            // Date "does not apply" to a routine card, so its own DUE
+            // DATE is now computed from CADENCE+DAY, not hand-typed).
+            // Day is two different controls sharing one slot in the row
+            // (weekday picker for Weekly, day-of-month for Monthly),
+            // shown/hidden by cadence the same way the Custom text field
+            // already was. Next-due readout underneath is read-only --
+            // confirms what CADENCE+DAY+TIME actually computed to, since
+            // there's no longer a manual date field on this card to look
+            // at directly.
             +'<div class="bb-field bb-addition" id="bb-d-add-routine-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-routine"><span class="bb-addition-eyebrow">Routine</span></label><div class="bb-addition-body" id="bb-d-routine-body" style="display:none">'
-              +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
+              +'<div class="bb-date-row">'
+                +'<select id="bb-d-routine" class="bb-routine-select"><option value="">&mdash;&mdash;&mdash;</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="custom">Custom</option></select>'
+                +'<select id="bb-d-routine-day-weekly" class="bb-routine-select" style="display:none"><option value="0">Sun</option><option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option></select>'
+                +'<input id="bb-d-routine-day-monthly" type="number" min="1" max="31" step="1" class="bb-routine-day-num" placeholder="Day" style="display:none">'
+                +'<input id="bb-d-routine-time" type="text" class="bb-date-time" placeholder="Time" style="display:none">'
+              +'</div>'
               +'<input id="bb-d-routine-custom" type="text" class="bb-routine-custom" placeholder="e.g. Last Friday, EOB" style="display:none;margin-top:4px">'
+              +'<div class="bb-mt" id="bb-d-routine-next" style="display:none;margin-top:4px"></div>'
             +'</div></div>'
             // Start Date, Aug 27 2026 (Larry: "Add checkbox for START
             // DATE which can be preset or automatic when card is moved

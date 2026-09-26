@@ -915,6 +915,7 @@
       due_date: _bbToISODate(c.due), start_date: _bbToISODate(c.startDate), completed_date: _bbToISODate(c.completedDate),
       due_time: c.dueTime||null, start_time: c.startTime||null,
       is_routine: !!c.routine, routine_freq: c.routineFreq||null, routine_custom: c.routineCustom||null,
+      routine_day: c.routineDay||null,
       budget: c.budget||null, notes: c.notes||null, priority: c.priority||'',
       verified: !!c.verified, pro: !!c.pro, grow: !!c.grow, grow_note: c.growNote||null,
       archived: !!c.archived,
@@ -943,6 +944,7 @@
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
       dueTime: row.due_time||'', startTime: row.start_time||'',
       routine: !!row.is_routine, routineFreq: row.routine_freq||'', routineCustom: row.routine_custom||'',
+      routineDay: row.routine_day||'',
       budget: row.budget||'', notes: row.notes||'', keys: [row.key_slot_1||null, row.key_slot_2||null, row.key_slot_3||null],
       priority: row.priority||'', verified: !!row.verified, pro: !!row.pro, grow: !!row.grow,
       growNote: row.grow_note||'', reviewedBy: row.reviewed_by||REVIEWERS[0], archived: !!row.archived,
@@ -2149,11 +2151,56 @@
             c.routine=true;
             if(card) card.classList.add('bb-routine-active');
           }
+          // Keeps Start Date/Due Date's own rows in sync too -- they're
+          // hard-hidden while this card is actually routine (see
+          // _bbSyncRoutineFieldVisibility) and must reappear the instant
+          // it isn't, not just stay hidden because Routine remembered an
+          // old cadence.
+          if(typeof _bbSyncRoutineFieldVisibility==='function') _bbSyncRoutineFieldVisibility(c.routine?c.routineFreq:'');
+          if(typeof _bbRenderRoutineNextDue==='function') _bbRenderRoutineNextDue(c);
         }
         _bbSaveLocal(_bbCardsList());
         renderBoard();
       });
     });
+  }
+  // Routine field layout, Sept 26 2026 (Larry: "CADENCE, DAY and TIME in
+  // 3 fields horizontally on one line," Start Date "does not apply,"
+  // and the next DUE DATE "should be automatic") -- Routine now computes
+  // its own due date from CADENCE+DAY instead of Larry hand-typing one
+  // in a separate Due Date field, so Start Date and Due Date's own
+  // addition rows are hard-hidden on a routine card (same non-
+  // destructive hide-the-wrap pattern already used for Related
+  // Storyboards elsewhere in this file -- the fields/data underneath
+  // are untouched, just not shown). DAY is two controls sharing one
+  // slot in the row (weekday picker for Weekly, day-of-month for
+  // Monthly); only the one matching the current cadence is shown, same
+  // idea as the existing Custom-text toggle.
+  function _bbSyncRoutineFieldVisibility(freq){
+    var dayWeekly=document.getElementById('bb-d-routine-day-weekly');
+    var dayMonthly=document.getElementById('bb-d-routine-day-monthly');
+    var time=document.getElementById('bb-d-routine-time');
+    var custom=document.getElementById('bb-d-routine-custom');
+    if(dayWeekly) dayWeekly.style.display=(freq==='weekly')?'':'none';
+    if(dayMonthly) dayMonthly.style.display=(freq==='monthly')?'':'none';
+    if(time) time.style.display=(freq==='daily'||freq==='weekly'||freq==='monthly')?'':'none';
+    if(custom) custom.style.display=(freq==='custom')?'':'none';
+    var startWrap=document.getElementById('bb-d-add-start-wrap');
+    var dueWrap=document.getElementById('bb-d-add-due-wrap');
+    var isRoutine=!!freq;
+    if(startWrap) startWrap.style.display=isRoutine?'none':'';
+    if(dueWrap) dueWrap.style.display=isRoutine?'none':'';
+  }
+  function _bbRenderRoutineNextDue(c){
+    var el=document.getElementById('bb-d-routine-next');
+    if(!el) return;
+    if(c.routine && c.due){
+      el.style.display='';
+      el.textContent='Next due: '+c.due+(c.dueTime?(', '+c.dueTime):'');
+    } else {
+      el.style.display='none';
+      el.textContent='';
+    }
   }
   // Header toggle button removed Aug 27 2026 -- c.routine is now set
   // only as a side effect of picking a frequency below (still the same
@@ -2162,26 +2209,75 @@
   // flip it on its own).
   function wireRoutineControls(){
     var sel=document.getElementById('bb-d-routine');
+    var dayWeekly=document.getElementById('bb-d-routine-day-weekly');
+    var dayMonthly=document.getElementById('bb-d-routine-day-monthly');
+    var time=document.getElementById('bb-d-routine-time');
+    var custom=document.getElementById('bb-d-routine-custom');
+    // Recomputes DUE from whatever CADENCE+DAY are currently set, the
+    // moment either one changes -- this is what makes DUE "automatic"
+    // for a routine card. Only touches DUE while actively editing these
+    // fields; once set, DUE holds still (even past due) until Complete
+    // rolls it forward -- see _bbCompleteRoutineCycle.
+    function recomputeDue(c){
+      var day = (c.routineFreq==='weekly') ? (dayWeekly?dayWeekly.value:'')
+              : (c.routineFreq==='monthly') ? (dayMonthly?dayMonthly.value:'') : '';
+      c.routineDay=day;
+      var nextDue=_bbComputeRoutineDue(c.routineFreq, day);
+      if(nextDue!=null) c.due=nextDue;
+      _bbRenderRoutineNextDue(c);
+    }
     if(sel) sel.addEventListener('change', function(){
       var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.routineFreq=sel.value;
-      var custom=document.getElementById('bb-d-routine-custom');
-      if(custom) custom.style.display = (sel.value==='custom') ? '' : 'none';
+      _bbSyncRoutineFieldVisibility(sel.value);
       var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
       if(sel.value){
         c.routine=true;
         if(card) card.classList.add('bb-routine-active');
+        // Weekly/Monthly need a DAY before a due date can be computed --
+        // default one in rather than leaving DUE blank until Larry also
+        // touches the day field. Saturday is this app's own running
+        // example (the Weekly Code Review routine), so it's the default
+        // for a fresh Weekly pick; Monthly defaults to the 1st.
+        if(sel.value==='weekly' && dayWeekly && !dayWeekly.value) dayWeekly.value='6';
+        if(sel.value==='monthly' && dayMonthly && !dayMonthly.value) dayMonthly.value='1';
+        recomputeDue(c);
       } else {
         // Picking the blank "———" option is the other way to cancel the
         // recurrence, symmetric with unchecking the ROUTINE addition box.
         c.routine=false;
         if(card) card.classList.remove('bb-routine-active');
+        _bbRenderRoutineNextDue(c);
       }
       _bbSaveLocal(_bbCardsList());
       renderBoard();
     });
-    var custom=document.getElementById('bb-d-routine-custom');
+    if(dayWeekly) dayWeekly.addEventListener('change', function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c || c.routineFreq!=='weekly') return;
+      recomputeDue(c);
+      _bbSaveLocal(_bbCardsList());
+    });
+    if(dayMonthly) dayMonthly.addEventListener('change', function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c || c.routineFreq!=='monthly') return;
+      // Clamp typed value into 1-31 -- a stray 0 or 45 would otherwise
+      // sail straight into the date math above.
+      var v=parseInt(dayMonthly.value,10);
+      if(isNaN(v)) v=1;
+      v=Math.max(1, Math.min(31, v));
+      dayMonthly.value=v;
+      recomputeDue(c);
+      _bbSaveLocal(_bbCardsList());
+    });
+    if(time) time.addEventListener('change', function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c) return;
+      c.dueTime=time.value;
+      _bbRenderRoutineNextDue(c);
+      _bbSaveLocal(_bbCardsList());
+    });
     if(custom) custom.addEventListener('change', function(){
       var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
@@ -2189,6 +2285,7 @@
       _bbSaveLocal(_bbCardsList());
     });
   }
+
   // Routine Complete-cycle, Sept 26 2026 (Larry, discussing the Weekly
   // Code Review routine card) -- a ROUTINE card's second Complete click
   // must never send it to the Archive the normal way: the recurring task
@@ -2222,7 +2319,7 @@
     c.startEscalatedFor='';
     c.overdueFlashShownFor='';
     c.startOverdueFlashShownFor='';
-    var nextDue=_bbAdvanceRoutineDue(c.due, c.routineFreq);
+    var nextDue=_bbAdvanceRoutineDue(c.due, c.routineFreq, c.routineDay);
     if(nextDue) c.due=nextDue;
     _bbResortDoColumnByPriority('do-l');
     _bbSaveLocal(_bbCardsList());
