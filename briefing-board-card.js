@@ -2128,13 +2128,27 @@
         // Sept 26 2026, Larry: unchecking ROUTINE is how a traveler cancels
         // the recurrence -- this must actually turn c.routine off (not just
         // hide the frequency picker), so Complete goes back to the normal
-        // archive path and the front-tile ROUTINE line / back-tile tint
-        // disappear immediately. routineFreq/routineCustom are left alone
-        // (not cleared) so re-checking it later remembers the old cadence.
-        if(a.flag==='addRoutine' && !cb.checked){
-          c.routine=false;
-          var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
-          if(card) card.classList.remove('bb-routine-active');
+        // archive path and the back-tile tint disappears immediately.
+        // routineFreq/routineCustom are left alone (not cleared) so
+        // re-checking it later remembers the old cadence.
+        //
+        // Re-checking it is the reverse, and needs its own restore: the
+        // frequency <select> only sets c.routine=true from its OWN change
+        // event, which won't fire again here just because the box is
+        // visible again and the select still shows the same value it had
+        // before (Larry: "I just reclicked ROUTINE but it did not
+        // reappear on the card") -- so if a cadence is already on record,
+        // restore c.routine here too instead of leaving it false until
+        // the dropdown value actually changes.
+        var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+        if(a.flag==='addRoutine'){
+          if(!cb.checked){
+            c.routine=false;
+            if(card) card.classList.remove('bb-routine-active');
+          } else if(c.routineFreq){
+            c.routine=true;
+            if(card) card.classList.add('bb-routine-active');
+          }
         }
         _bbSaveLocal(_bbCardsList());
         renderBoard();
