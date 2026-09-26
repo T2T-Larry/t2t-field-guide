@@ -2217,13 +2217,19 @@
     // moment either one changes -- this is what makes DUE "automatic"
     // for a routine card. Only touches DUE while actively editing these
     // fields; once set, DUE holds still (even past due) until Complete
-    // rolls it forward -- see _bbCompleteRoutineCycle.
+    // rolls it forward -- see _bbCompleteRoutineCycle. Also mirrors the
+    // result into the (hidden) Due Date addition's own inputs -- Add to
+    // Calendar (_bbAddToCalendar) reads those DOM fields directly rather
+    // than c.due, so without this it would build an event off whatever
+    // was showing when the card was opened, not the freshly computed one.
     function recomputeDue(c){
       var day = (c.routineFreq==='weekly') ? (dayWeekly?dayWeekly.value:'')
               : (c.routineFreq==='monthly') ? (dayMonthly?dayMonthly.value:'') : '';
       c.routineDay=day;
       var nextDue=_bbComputeRoutineDue(c.routineFreq, day);
       if(nextDue!=null) c.due=nextDue;
+      var dueEl=document.getElementById('bb-d-due'); if(dueEl) dueEl.value=c.due||'';
+      var dueTimeEl=document.getElementById('bb-d-due-time'); if(dueTimeEl) dueTimeEl.value=c.dueTime||'';
       _bbRenderRoutineNextDue(c);
     }
     if(sel) sel.addEventListener('change', function(){
@@ -2275,6 +2281,7 @@
       var c=_bbFindCardAnywhere(_bbOpenCardId);
       if(!c) return;
       c.dueTime=time.value;
+      var dueTimeEl=document.getElementById('bb-d-due-time'); if(dueTimeEl) dueTimeEl.value=c.dueTime||'';
       _bbRenderRoutineNextDue(c);
       _bbSaveLocal(_bbCardsList());
     });
