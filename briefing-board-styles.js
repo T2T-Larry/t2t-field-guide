@@ -932,7 +932,7 @@
       +'.bb-dp-day.bb-dp-today{border:1.5px solid var(--bb-accent);font-weight:700}'
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
-      +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;color:#4a7a95;font-weight:600}'
       +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
       // pointer-events:auto here, Aug 11 2026 -- same fix as
       // .bb-key-badge-wrap: the wrapping .bb-key-badges container it

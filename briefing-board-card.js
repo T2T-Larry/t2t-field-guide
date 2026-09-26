@@ -1848,6 +1848,17 @@
         closeCardDetail();
         return;
       }
+      if(c.routine){
+        // Close first so any pending field edits (including a hand-typed
+        // DUE date) are captured and saved the normal way -- then reset
+        // it for its next cycle rather than archiving. Order matters:
+        // closeCardDetail() re-reads the DUE/routine fields straight off
+        // the form, so it must run before _bbCompleteRoutineCycle rolls
+        // the due date forward, or the rollover would be overwritten.
+        closeCardDetail();
+        _bbCompleteRoutineCycle(c);
+        return;
+      }
       c.verified=true;
       c.archived=true;
       _bbSaveLocal(_bbCardsList());
@@ -2114,7 +2125,19 @@
         c[a.flag]=cb.checked;
         var body=document.getElementById(a.body);
         if(body) body.style.display=cb.checked?'':'none';
+        // Sept 26 2026, Larry: unchecking ROUTINE is how a traveler cancels
+        // the recurrence -- this must actually turn c.routine off (not just
+        // hide the frequency picker), so Complete goes back to the normal
+        // archive path and the front-tile ROUTINE line / back-tile tint
+        // disappear immediately. routineFreq/routineCustom are left alone
+        // (not cleared) so re-checking it later remembers the old cadence.
+        if(a.flag==='addRoutine' && !cb.checked){
+          c.routine=false;
+          var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
+          if(card) card.classList.remove('bb-routine-active');
+        }
         _bbSaveLocal(_bbCardsList());
+        renderBoard();
       });
     });
   }
@@ -2131,10 +2154,15 @@
       c.routineFreq=sel.value;
       var custom=document.getElementById('bb-d-routine-custom');
       if(custom) custom.style.display = (sel.value==='custom') ? '' : 'none';
+      var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
       if(sel.value){
         c.routine=true;
-        var card=document.querySelector('#bb-detail-overlay .bb-overlay-card');
         if(card) card.classList.add('bb-routine-active');
+      } else {
+        // Picking the blank "———" option is the other way to cancel the
+        // recurrence, symmetric with unchecking the ROUTINE addition box.
+        c.routine=false;
+        if(card) card.classList.remove('bb-routine-active');
       }
       _bbSaveLocal(_bbCardsList());
       renderBoard();
@@ -2146,6 +2174,52 @@
       c.routineCustom=custom.value;
       _bbSaveLocal(_bbCardsList());
     });
+  }
+  // Routine Complete-cycle, Sept 26 2026 (Larry, discussing the Weekly
+  // Code Review routine card) -- a ROUTINE card's second Complete click
+  // must never send it to the Archive the normal way: the recurring task
+  // isn't finished, it's just done for this cycle. Instead it: sheds any
+  // Signal Flag picked up this cycle (a routine card starts each new
+  // cycle unflagged, same as a fresh Parking Lot item); resets to L DO;
+  // rolls its DUE date forward to the next occurrence via
+  // _bbAdvanceRoutineDue (briefing-board-ops.js) -- Custom cadence can't
+  // be computed, so the due date is left for Larry to set by hand, same
+  // as Custom already requires everywhere else it shows up; and clears
+  // the escalation "already handled" stamps so the existing Preferences
+  // due-warning engine (_bbAutoEscalateDates) treats the new due date as
+  // fresh and bumps it back to H on its own -- no separate escalation
+  // mechanism needed just for routine cards.
+  async function _bbCompleteRoutineCycle(c){
+    var before=_bbSnapshotCard(c);
+    var removedKeys=(c.keys||[]).filter(function(k){ return k; });
+    c.keys=[];
+    c.priority='L';
+    c.col='do-l';
+    // Matches the established "leaving Done" reset used elsewhere
+    // (briefing-board-ops.js/-master.js: wasCol==='done' && col!=='done'
+    // clears completedDate/verified/pro/grow) -- a routine card leaving
+    // Done for its next cycle is the same transition, so it gets the
+    // same reset.
+    c.completedDate='';
+    c.verified=false;
+    c.pro=false;
+    c.grow=false;
+    c.dueEscalatedFor='';
+    c.startEscalatedFor='';
+    c.overdueFlashShownFor='';
+    c.startOverdueFlashShownFor='';
+    var nextDue=_bbAdvanceRoutineDue(c.due, c.routineFreq);
+    if(nextDue) c.due=nextDue;
+    _bbResortDoColumnByPriority('do-l');
+    _bbSaveLocal(_bbCardsList());
+    _bbLogCardMove(c, before);
+    renderBoard();
+    if(removedKeys.length){
+      await _bbPersistCardKeysNow(c);
+      for(var i=0;i<removedKeys.length;i++){ await _bbSyncKeyLinks(removedKeys[i]); }
+      await _bbLoadKeyLinkCounts(_bbCardsList().map(function(x){ return x.id; }));
+      renderBoard();
+    }
   }
   function _bbApplyRemoteCard(evt, row, oldRow){
     var boardId = row ? row.board_id : (oldRow ? oldRow.board_id : null);
