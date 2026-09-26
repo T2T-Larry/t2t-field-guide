@@ -869,7 +869,9 @@
       _bbCurrentTopicIsRoot = window.IDBand
         ? IDBand.isAccountRoot({id:headerId, cluster_id:res.data.cluster_id}, _bbIdeaStoryboardsRootId)
         : (_bbIdeaStoryboardsRootId ? (String(headerId)===String(_bbIdeaStoryboardsRootId)) : !res.data.cluster_id);
-      hit.textContent = res.data.text_content || board.name || '(untitled)';
+      hit.textContent = window.IDBand
+        ? IDBand.topicLabel(res.data.text_content, headerId, _bbIdeaStoryboardsRootId)
+        : (res.data.text_content || board.name || '(untitled)');
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
       _bbFitTopicText();

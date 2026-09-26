@@ -473,7 +473,11 @@
     // Root Topic never changes — "What do you want?" stays permanent regardless of depth.
     if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
       var topicRow=_sboardAllRowsById[T2TShared.currentTopicId];
-      if(topicText){ topicText.textContent=topicRow.text_content||'(untitled)'; }
+      if(topicText){
+        topicText.textContent = window.IDBand
+          ? IDBand.topicLabel(topicRow.text_content, topicRow.id, _sboardIdeaStoryboardsRootId)
+          : (topicRow.text_content||'(untitled)');
+      }
       if(topicBox){ topicBox.style.background=topicRow.color||''; }
       if(topicBadge){
         // Signal flags (lock/flags/notes/link), Aug 22 2026 -- Larry: "it

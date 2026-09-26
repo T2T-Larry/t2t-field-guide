@@ -179,6 +179,23 @@
     return n;
   };
 
+  // TOPIC label, Sept 26 2026 -- Larry: "PROJECTS carries a competitive
+  // connotation with PM apps... change it to TOPICS." The account-root
+  // row's stored text_content stays the internal name 'PROJECTS' (every
+  // reserved-word check across the codebase -- RESERVED_HEADERS,
+  // isNonProjectName, the various EXCLUDE/ANYWHERE_RESERVED lists --
+  // keys off that literal string, same as PROJECT already keeps 'MASTER'
+  // display-only rather than renaming the row). So this mirrors
+  // projectLabel exactly: display-only override at the one spot TOPIC is
+  // rendered, real name untouched underneath. Anywhere TOPIC shows the
+  // account root, it now reads TOPICS instead of the raw stored name.
+  window.IDBand.topicLabel = function(name, id, rootId){
+    if(id && rootId && String(id)===String(rootId)) return 'TOPICS';
+    var n=String(name==null?'':name).trim();
+    if(!n) return 'TOPICS';
+    return n;
+  };
+
   window.IDBand.isAccountRoot = function(row, rootId){
     // Nothing to compare yet -- both boards already treated this as "root"
     // (nothing narrower to show), so that stays the shared behavior.
