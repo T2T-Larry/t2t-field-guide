@@ -461,6 +461,10 @@
   }
 
   function _sboardUpdateHeaderChrome(){
+    // Per-card/inherited Organization, Sept 26 2026 -- repaints the
+    // sc-card-org masthead block for whichever TOPIC this chrome update
+    // is about to show (idea-storyboard-navigation.js).
+    if(typeof _sboardRenderOrgDisplay==='function') _sboardRenderOrgDisplay();
     var topicBox=document.getElementById('sc-topic-box');
     var topicText=document.getElementById('sc-topic-text');
     var topicBadge=document.getElementById('sc-topic-badge');
@@ -1930,7 +1934,16 @@
     {flag:'adds_notes', cb:'sb-add-notes', body:'sb-notes-body'},
     {flag:'adds_links', cb:'sb-add-links', body:'sb-links-body'},
     {flag:'adds_related', cb:'sb-add-related', body:'sb-related-body'},
-    {flag:'adds_flags', cb:'sb-add-flags', body:'sb-flags-body'}
+    {flag:'adds_flags', cb:'sb-add-flags', body:'sb-flags-body'},
+    // Organization, Sept 26 2026 -- adds_org doubles as both "is this
+    // section open" (the shared behavior every other adds_* flag has)
+    // AND "does this card override its inherited org" (see
+    // _orgResolveForCard, idea-storyboard-card-detail.js) -- unlike the
+    // other four, unchecking this one isn't just cosmetic, it's the
+    // actual signal that this card should go back to inheriting from its
+    // nearest ancestor. That's still a plain boolean flip on this card's
+    // own row either way, so the shared wiring below covers it as-is.
+    {flag:'adds_org', cb:'sb-add-org', body:'sb-org-body'}
   ];
   function wireIcAdditionToggles(item, statusBox){
     var _sb=T().sb;

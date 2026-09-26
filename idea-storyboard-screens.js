@@ -720,6 +720,20 @@
         +'.sc-idn-org{font-size:calc(22px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;white-space:nowrap;line-height:1.1}'
         +'.sc-idn .sc-traveler-eyebrow{margin-bottom:0}'
         +'.sc-idn.has-org .sc-traveler-eyebrow{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1.5px}'
+        // sc-card-org, Sept 26 2026 -- positioned right after sc-idn
+        // (which sits absolute top:10/left:16 and is typically ~140-220px
+        // wide), between the traveler name block and the centered
+        // PROJECT/TOPIC/STORYBOARD chain. Left offset is a reasonable
+        // starting guess, not measured against sc-idn's real rendered
+        // width -- Larry, adjust this on the live site if it overlaps or
+        // sits too far right; _sboardPositionIdBandRow doesn't know about
+        // this box yet.
+        +'.sc-card-org{position:absolute;top:10px;left:230px;display:flex;align-items:center;gap:6px;max-width:180px}'
+        +'#sc-card-org-logo-wrap{width:28px;height:28px;flex-shrink:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}'
+        +'#sc-card-org-logo{max-width:100%;max-height:100%;object-fit:contain;display:block}'
+        +'.sc-card-org-text{min-width:0;overflow:hidden}'
+        +'.sc-card-org-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:#a9cce3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        +'.sc-card-org-name{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}'
         // PROJECT-TOPIC-STORYBOARD chain wraps, all three positioned as
         // one centered group by _sboardPositionIdBandRow.
         +'.sc-mh-typebox{position:absolute;top:0;left:0}'
@@ -803,6 +817,14 @@
         +'.sb-view-wrap{display:inline-block;text-align:center;position:relative}'
         +'.sb-view-frame{background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:5px 14px;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;cursor:pointer}'
         +'.sb-view-frame:active{transform:scale(0.96)}'
+        // sb-move-frame, Sept 26 2026 -- Larry: "MOVE field is 2 lines.
+        // Can we make it one line consistent with other fields on that
+        // line?" MOVE (unlike View's fixed Header/Subber or Order's
+        // fixed "N of M") shows curHeaderLabel, which can run long enough
+        // to wrap the button onto a second line inside its fixed-width
+        // eyebrow column. Truncates with an ellipsis instead -- full name
+        // is still in the button's title tooltip.
+        +'.sb-move-frame{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}'
         +'.sb-view-menu{position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #cfe4f2;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.22);padding:4px;display:none;z-index:20;white-space:nowrap}'
         +'.sb-view-menu.open{display:block}'
         +'.sb-view-menu-item{font-family:\'Playfair Display\',serif;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;padding:6px 12px;border-radius:6px;cursor:pointer}'
@@ -997,6 +1019,24 @@
       +'<div class="sc-idn-toprow"><div class="sc-idn-org" id="sc-idn-org" style="display:none"></div></div>'
       // _sboardRenderMemberName (below) fills in the text.
       +'<div class="sc-traveler-eyebrow" id="sc-traveler-name"></div>'
+      +'</div>'
+      // Per-card/inherited Organization display, Sept 26 2026 -- Larry:
+      // "LOGO is always to the right of the org/traveler name block and
+      // between the name block and the TOPIC/board block." Distinct from
+      // sc-idn-org just above (that's the TRAVELER's own personal/member
+      // identity, T2TMemberIdentity.fill, profiles.org_name) -- this is
+      // whichever TOPIC is currently on screen's own resolved
+      // org/eyebrow/logo (adds_org/org_name/org_eyebrow/logo_url,
+      // inherited down the header tree -- see _orgResolveForRow /
+      // _sboardRenderOrgDisplay, idea-storyboard-navigation.js). Hidden
+      // entirely (display:none) whenever nothing in the chain has
+      // adds_org set, so it takes no space on boards that don't use it.
+      +'<div class="sc-card-org" id="sc-card-org" style="display:none">'
+      +'<div id="sc-card-org-logo-wrap"><img id="sc-card-org-logo" alt=""></div>'
+      +'<div class="sc-card-org-text">'
+      +'<div class="sc-card-org-eyebrow" id="sc-card-org-eyebrow"></div>'
+      +'<div class="sc-card-org-name" id="sc-card-org-name"></div>'
+      +'</div>'
       +'</div>'
       // PROJECT -- same click-drills-in / double-click-opens-popup
       // behavior Larry already has here (Sept 2/3 2026 fixes below), just

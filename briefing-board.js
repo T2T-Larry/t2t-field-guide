@@ -393,6 +393,7 @@ function T(){ return window.T2T; }
     wireRoutineControls();
     wireLinkField();
     wireAdditionToggles();
+    wireOrgAddition();
     wireKeyBuilder();
     wireKeyPicker();
     wireKeyLibManager();

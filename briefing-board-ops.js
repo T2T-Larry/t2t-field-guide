@@ -1479,6 +1479,20 @@
       };
       _bbPaintContentsFront(c);
     })();
+    // Organization, Sept 26 2026 -- init only; the actual save wiring is
+    // boot-level (wireOrgAddition, briefing-board-card.js).
+    (function(){
+      var open=!!c.addOrg;
+      var cb=document.getElementById('bb-d-add-org'); if(cb) cb.checked=open;
+      var body=document.getElementById('bb-d-org-body'); if(body) body.style.display=open?'':'none';
+      var eyebrowEl=document.getElementById('bb-d-org-eyebrow'); if(eyebrowEl) eyebrowEl.value=c.orgEyebrow||'';
+      var nameEl=document.getElementById('bb-d-org-name'); if(nameEl) nameEl.value=c.orgName||'';
+      var logoSlot=document.getElementById('bb-d-org-logo-slot');
+      if(logoSlot) logoSlot.innerHTML = c.logoUrl
+        ? '<img id="bb-d-org-logo-img" src="'+_esc(c.logoUrl)+'" style="max-width:100%;max-height:100%;object-fit:contain">'
+        : '<span id="bb-d-org-logo-plus" style="font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)">+</span>';
+      var orgStatus=document.getElementById('bb-d-org-status'); if(orgStatus) orgStatus.textContent='';
+    })();
     _bbRenderColorSwatches(c);
     // Color row starts collapsed on every open -- Gear (bb-d-gear) toggles
     // it, same as the Idea Card's Appearance gear.

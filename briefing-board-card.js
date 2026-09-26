@@ -929,6 +929,13 @@
       adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
       adds_start: !!c.addStart, adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
       adds_related: !!c.addRelated, adds_flags: !!c.addFlags,
+      // Organization, Sept 26 2026 -- see the Idea Card's own matching
+      // fields (idea-storyboard-card-detail.js) for the inheritance
+      // model (adds_org marks the nearest override; everything below it
+      // that hasn't set its own reads this one, live).
+      adds_org: !!c.addOrg, org_name: c.orgName||null, org_eyebrow: c.orgEyebrow||null,
+      logo_url: c.logoUrl||null, logo_w: c.logoW||null, logo_h: c.logoH||null,
+      logo_dx: c.logoDx||null, logo_dy: c.logoDy||null,
       sort_order: (typeof c.sortOrder==='number') ? c.sortOrder : null,
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
@@ -960,6 +967,9 @@
       addChecklist: !!row.adds_checklist, addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
       addStart: !!row.adds_start, addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
       addRelated: !!row.adds_related, addFlags: !!row.adds_flags,
+      addOrg: !!row.adds_org, orgName: row.org_name||'', orgEyebrow: row.org_eyebrow||'',
+      logoUrl: row.logo_url||'', logoW: row.logo_w||null, logoH: row.logo_h||null,
+      logoDx: row.logo_dx||null, logoDy: row.logo_dy||null,
       sortOrder: (typeof row.sort_order==='number') ? row.sort_order : null,
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
@@ -2111,6 +2121,76 @@
       fileInput.value=''; // allow re-picking the same file later
       if(f) _bbUploadLinkFile(f);
     });
+  }
+  // Organization, Sept 26 2026 -- mirrors the Idea Card's own org fields
+  // (idea-storyboard-card-detail.js): checkbox saves immediately (same
+  // as every other BB_ADDITIONS flag), but eyebrow/name save on blur and
+  // the logo is a plain upload-and-replace, rather than waiting for the
+  // bundled close-card save the way Task/Situation/Subject do -- an
+  // inheriting field should never sit typed-but-unsaved. Boot-wired once
+  // (like wireBbDetailActions), reads _bbOpenCardId fresh in every
+  // handler rather than being re-wired per card-open.
+  function wireOrgAddition(){
+    var cb=document.getElementById('bb-d-add-org');
+    var eyebrowInput=document.getElementById('bb-d-org-eyebrow');
+    var nameInput=document.getElementById('bb-d-org-name');
+    var logoSlot=document.getElementById('bb-d-org-logo-slot');
+    var logoInput=document.getElementById('bb-d-org-logo-input');
+    var orgStatus=document.getElementById('bb-d-org-status');
+    function currentCard(){ return _bbFindCardAnywhere(_bbOpenCardId); }
+    async function persist(c){
+      _bbSaveLocal(_bbCardsList());
+      await _bbPersistMergedCardById(c.id);
+    }
+    if(cb) cb.addEventListener('change', function(){
+      var c=currentCard(); if(!c) return;
+      c.addOrg=cb.checked;
+      var body=document.getElementById('bb-d-org-body');
+      if(body) body.style.display=cb.checked?'':'none';
+      persist(c);
+    });
+    if(eyebrowInput) eyebrowInput.addEventListener('blur', function(){
+      var c=currentCard(); if(!c) return;
+      var val=eyebrowInput.value.trim();
+      if(val===(c.orgEyebrow||'')) return;
+      c.orgEyebrow=val;
+      persist(c);
+    });
+    if(nameInput) nameInput.addEventListener('blur', function(){
+      var c=currentCard(); if(!c) return;
+      var val=nameInput.value.trim();
+      if(val===(c.orgName||'')) return;
+      c.orgName=val;
+      persist(c);
+    });
+    [eyebrowInput,nameInput].forEach(function(inp){
+      if(!inp) return;
+      inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
+    });
+    if(logoSlot && logoInput){
+      logoSlot.addEventListener('click', function(){ logoInput.click(); });
+      logoInput.addEventListener('change', async function(){
+        var c=currentCard(); if(!c) return;
+        var file=logoInput.files && logoInput.files[0]; logoInput.value=''; if(!file) return;
+        if(orgStatus) orgStatus.textContent='Uploading…';
+        try{
+          var sb=T().sb;
+          var toUpload=await window.T2TMedia.compressImageFile(file);
+          var user=(await sb.auth.getUser()).data.user;
+          if(!user) throw new Error('Not signed in.');
+          var path=user.id+'/org-logo-'+c.id+'-'+Date.now()+'.png';
+          var up=await sb.storage.from('sea-of-ideas').upload(path, toUpload);
+          if(up.error) throw up.error;
+          var pub=sb.storage.from('sea-of-ideas').getPublicUrl(path);
+          var url=pub.data && pub.data.publicUrl;
+          if(!url) throw new Error('No public URL returned.');
+          c.logoUrl=url;
+          await persist(c);
+          logoSlot.innerHTML='<img id="bb-d-org-logo-img" src="'+_esc(url)+'" style="max-width:100%;max-height:100%;object-fit:contain">';
+          if(orgStatus) orgStatus.textContent='';
+        }catch(err){ if(orgStatus) orgStatus.textContent='Logo upload failed: '+err.message; }
+      });
+    }
   }
   // Additions, Aug 27 2026 -- checking a box opens its section and
   // saves immediately (matching the routine-card 🔄 toggle just below,

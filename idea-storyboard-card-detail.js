@@ -212,7 +212,12 @@
       // now; tapping opens the project pyramid (openMoveAnywherePicker),
       // already opened down to this spot.
       + '<div class="sb-hdr-eyebrow2">Move</div>'
-      + '<button class="sb-view-frame" id="sb-move-btn" type="button" title="Where this card lives — tap to move it anywhere (Alt+M)">'+curHeaderLabel+' ▾</button>'
+      // Sept 26 2026 -- sb-move-frame (idea-storyboard-screens.js) keeps
+      // this button one line tall (ellipsis instead of wrap) even when
+      // curHeaderLabel is long, matching the fixed one-line height of the
+      // View and Order columns beside it (Larry: "MOVE field is 2 lines
+      // ... make it one line consistent with other fields on that line").
+      + '<button class="sb-view-frame sb-move-frame" id="sb-move-btn" type="button" title="Where this card lives — tap to move it anywhere (Alt+M) — '+_sboardEsc(curHeaderLabel)+'">'+curHeaderLabel+' ▾</button>'
       + '</div>'
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
       + '<div class="sb-eyebrow-col">'
@@ -271,6 +276,8 @@
     var addLinksOpen=(item.adds_links!=null?!!item.adds_links:!!item.link_url);
     var addRelatedOpen=(item.adds_related!=null?!!item.adds_related:!!item.track_on_briefing_board);
     var addFlagsOpen=(item.adds_flags!=null?!!item.adds_flags:(heartCount>0||hasKeys));
+    // Organization, Sept 26 2026 -- see the sb-add-org markup below.
+    var addOrgOpen=!!item.adds_org;
     // ONE CARD BACK, Sept 23 2026 -- Larry: "merge the backs of the Idea
     // cards and the BB Task cards for a similar look with unique items
     // only visible on appropriate cards and a simple color to signify
@@ -315,9 +322,18 @@
       // (where BB has Task), with the "Show on face of card" Yes/No right
       // under the contents. No SUBJECT = contents always show, so a card
       // face is never blank.
-      + '<div class="bb-field sb-subject-field"><label>Subject</label>'
-      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline for the front of the card" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
-      + '</div>'
+      // PRIMARY head icon, Sept 26 2026 -- Larry: same single-head 👤
+      // button as the Briefing Card's own back-of-card PRIMARY
+      // (bb-d-primary-trigger, briefing-board-master.js), same line as
+      // SUBJECT, right after it. Reuses the one shared CAST PICK list
+      // (_bbOpenCastPickMenu, cast-pick-list.js) and the card-type-
+      // agnostic T2TStoryboard.assignPrimaryDirect (defaults to 'idea')
+      // -- see _sbRenderCardPrimaryField below, wired the same way
+      // _bbRenderCardPrimaryField wires the Briefing Card's.
+      + '<div class="bb-field sb-subject-field"><label>Subject</label><div style="display:flex;align-items:center;gap:8px">'
+      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline for the front of the card" style="flex:1 1 auto;min-width:0" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
+      +   '<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div>'
+      + '</div></div>'
       + '<div class="bb-field sb-contents-field"><label>Contents</label>'
       + bodyHTML
       // "Show on front" checkbox, Sept 23 2026 -- replaces the Yes/No
@@ -358,6 +374,27 @@
       + '<span style="color:#D4537E;font-size:calc(13px * var(--fg-text-scale,1))">❤</span><span id="sb-heart-count">'+heartCount+'</span></button>'
       + '<span id="sb-keys-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></span>'
       + '</div></div></div>'
+      // Organization, Sept 26 2026 -- Larry: an org name + eyebrow
+      // descriptor ("A Shine Partner") + small logo, sitting right under
+      // Signal Flags. Unchecked = fully inherited from the nearest
+      // ancestor card that HAS checked this (Link, not Copy -- live, not
+      // a snapshot; see _orgResolveForCard below); checking it makes
+      // THIS card the new source for everything under it that hasn't
+      // overridden. Replaces the old flat, non-inheriting project-level
+      // Organization Name picker (sc-org-name-trigger/ideas.org_name) --
+      // org_name/logo_url/logo_w/logo_h are the same columns that picker
+      // used, just given real per-card, inheritable meaning now.
+      + '<div class="bb-field bb-addition" id="sb-add-org-wrap"><label class="bb-addition-label" for="sb-add-org"><input type="checkbox" id="sb-add-org"'+(addOrgOpen?' checked':'')+'><span class="bb-addition-eyebrow">Organization</span></label><div class="bb-addition-body" id="sb-org-body" style="display:'+(addOrgOpen?'':'none')+'">'
+      +   '<input type="text" id="sb-org-eyebrow-input" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box;margin-bottom:6px" value="'+_sboardEsc(item.org_eyebrow||'')+'">'
+      +   '<div style="display:flex;align-items:center;gap:8px">'
+      +     '<input type="text" id="sb-org-name-input" autocomplete="off" placeholder="Organization name" style="flex:1 1 auto;min-width:0" value="'+_sboardEsc(item.org_name||'')+'">'
+      +     '<div id="sb-org-logo-slot" title="Tap to upload a logo" style="flex-shrink:0;width:36px;height:36px;border:1px solid #cfe4f2;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff">'
+      +       (item.logo_url ? '<img id="sb-org-logo-img" src="'+_sboardEsc(item.logo_url)+'" style="max-width:100%;max-height:100%;object-fit:contain">' : '<span id="sb-org-logo-plus" style="font-size:calc(16px * var(--fg-text-scale,1));color:#a3907a">+</span>')
+      +     '</div>'
+      +     '<input type="file" id="sb-org-logo-input" accept="image/*" style="display:none">'
+      +   '</div>'
+      +   '<div id="sb-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
+      + '</div></div>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
@@ -366,7 +403,6 @@
       + '<button class="bb-icon-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="bb-icon-btn" id="sb-gear" title="Utility">⚙️</button>'
-      + (isHeaderType ? '<button class="bb-icon-btn" id="sb-topic-btn" style="display:none">🎭</button>' : '')
       + '<button class="bb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       // sb-trash-overlay ("Moose poop?" confirm) — renumbered 9718 → 1221
@@ -414,40 +450,30 @@
 
     var statusBox=document.getElementById('sb-note-status');
 
-    // Fractal Casting entry point (Aug 9 2026) -- shown only for headers,
-    // and only once we know whether this one's already a TOPIC (offer its
-    // Cast/Guests) or this viewer is the current Owner of whatever's
-    // directly above it (offer to delegate it into a new one). Async
-    // because both need a roster/user lookup that can't finish before
-    // ov.innerHTML above already landed -- same pattern as Person
-    // Assigned just above.
-    if(isHeaderType){
-      (function(){
-        var btn=document.getElementById('sb-topic-btn'); if(!btn) return;
-        var effRowsById=(isOn9711 && _isxDetailCtx && _isxDetailCtx.rowsById) ? _isxDetailCtx.rowsById : _sboardAllRowsById;
-        (async function(){
-          if(item.topic_owner_user_id){
-            // Sept 12 2026, Larry: "remove the People screen" -- Guests
-            // retired, CAST is the one door in now. Opens the Call Sheet
-            // directly instead of the old (now-empty) People/Guests menu.
-            btn.title='Cast for this TOPIC';
-            btn.style.display='';
-            btn.onclick=function(){ openCallSheet(item, function(){ closeSbDetail(); openSbDetail(item); }, 'idea'); };
-            return;
-          }
-          var me=null; try{ me=(await _sb.auth.getUser()).data.user; }catch(e){}
-          var myId=me?me.id:null; if(!myId) return;
-          var scopeRow=item.topic_scope_id?effRowsById[item.topic_scope_id]:null;
-          var isScopeOwner=!!scopeRow && (scopeRow.topic_owner_user_id?scopeRow.topic_owner_user_id===myId:scopeRow.user_id===myId);
-          if(isScopeOwner){
-            btn.title='Make this a TOPIC';
-            btn.textContent='\uD83C\uDF31';
-            btn.style.display='';
-            btn.onclick=function(){ _sboardOpenDelegateTopicPicker(item, scopeRow); };
-          }
-        })();
-      })();
-    }
+    // PRIMARY head icon, Sept 26 2026 -- see the HTML comment on the
+    // SUBJECT field above for the "why." Mirrors _bbRenderCardPrimaryField
+    // (briefing-board-master.js) as closely as possible: same shared CAST
+    // PICK list (_bbOpenCastPickMenu, cast-pick-list.js), same paint
+    // helper (_bbPaintPrimaryTrigger), same card-type-agnostic
+    // T2TStoryboard.assignPrimaryDirect (defaults to 'idea'). Scoped by
+    // this card's own PROJECT (_sboardCurrentProjectRow -- the same
+    // ambient project lookup the New Card popup already uses for its own
+    // Cast picker, idea-storyboard-tiles.js), not a per-card stored
+    // project id -- the Idea Board doesn't have one, and BB's own
+    // PROJECT field is likewise the board's ambient ID Band answer, not
+    // stored per card either.
+    _sbRenderCardPrimaryField(item);
+
+    // Fractal Casting entry point (Aug 9 2026 -- Sept 26 2026: removed).
+    // Used to render a "sprout" (Make this a TOPIC) / mask (Cast for
+    // this TOPIC) button here (sb-topic-btn), right before Trash in the
+    // bottom row. Larry, Sept 26 2026: "delete sprout icon button. leave
+    // four buttons across bottom of screen" -- the row is now
+    // lock/people/gear/trash. Promotion to TOPIC still works the same as
+    // it always has via Alt+T / dragging a card onto the TOPIC box
+    // (_sboardDrillInto); a header that's already a delegated TOPIC is
+    // still reachable through the people button (sb-people-btn), which
+    // opens the same Call Sheet this button used to open directly.
 
     // Double-click-to-zoom lightbox — Locked July 13, 2026. The DETAILS
     // back is already the larger view of an image; some images (a
@@ -636,12 +662,12 @@
       var menuEl=document.getElementById('sb-anywhere-pyramid');
       window.TopicPyramid.render(menuEl, {
         ancestors: [],
-        current: {id:ROOT_ID, name:'All Projects'},
+        current: {id:ROOT_ID, name:'All Topics'},
         getChildren: getChildren,
         expandPath: path,
         hereId: item.cluster_id ? String(item.cluster_id) : null,
         onNavigate: async function(hid){
-          if(hid===ROOT_ID) return; // "All Projects" itself isn't a place a card can live
+          if(hid===ROOT_ID) return; // "All Topics" itself isn't a place a card can live
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
           var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
           try{
@@ -870,6 +896,68 @@
         });
       })();
       paintFront();
+    })();
+
+    // Organization fields -- Sept 26 2026. Same save-on-blur shape as
+    // SUBJECT just above (org_name/org_eyebrow straight onto this card's
+    // own ideas row), plus a plain upload-and-replace for the logo (no
+    // crop/resize/drag -- deliberately simpler than the old retired
+    // T2TLogo interaction; Larry can ask for that back on top of this if
+    // wanted). Any successful save re-renders the ID Band's org display
+    // (_sboardRenderOrgDisplay, idea-storyboard-navigation.js) so a Link
+    // change is visible immediately if this card is (or is an ancestor
+    // of) whatever TOPIC is currently on screen.
+    (function(){
+      var eyebrowInput=document.getElementById('sb-org-eyebrow-input');
+      var nameInput=document.getElementById('sb-org-name-input');
+      var logoSlot=document.getElementById('sb-org-logo-slot');
+      var logoInput=document.getElementById('sb-org-logo-input');
+      var orgStatus=document.getElementById('sb-org-status');
+      if(!eyebrowInput && !nameInput && !logoSlot) return;
+      async function saveOrgFields(fields){
+        try{
+          var upd=await _sb.from('ideas').update(fields).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          for(var k in fields) item[k]=fields[k];
+          _sboardPatchRow(item.id, fields);
+          if(typeof _sboardRenderOrgDisplay==='function') _sboardRenderOrgDisplay();
+        }catch(err){ if(orgStatus) orgStatus.textContent='Could not save: '+err.message; }
+      }
+      if(eyebrowInput) eyebrowInput.addEventListener('blur', function(){
+        var val=eyebrowInput.value.trim();
+        if(val===(item.org_eyebrow||'')) return;
+        saveOrgFields({org_eyebrow:val||null});
+      });
+      if(nameInput) nameInput.addEventListener('blur', function(){
+        var val=nameInput.value.trim();
+        if(val===(item.org_name||'')) return;
+        saveOrgFields({org_name:val||null});
+      });
+      [eyebrowInput,nameInput].forEach(function(inp){
+        if(!inp) return;
+        inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
+      });
+      if(logoSlot && logoInput){
+        logoSlot.addEventListener('click', function(){ logoInput.click(); });
+        logoInput.addEventListener('change', async function(){
+          var file=logoInput.files && logoInput.files[0]; if(!file) return;
+          if(orgStatus) orgStatus.textContent='Uploading…';
+          try{
+            var toUpload=await window.T2TMedia.compressImageFile(file);
+            var user=(await _sb.auth.getUser()).data.user;
+            if(!user) throw new Error('Not signed in.');
+            var path=user.id+'/org-logo-'+item.id+'-'+Date.now()+'.png';
+            var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
+            if(up.error) throw up.error;
+            var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+            var url=pub.data && pub.data.publicUrl;
+            if(!url) throw new Error('No public URL returned.');
+            await saveOrgFields({logo_url:url});
+            logoSlot.innerHTML='<img id="sb-org-logo-img" src="'+_sboardEsc(url)+'" style="max-width:100%;max-height:100%;object-fit:contain">';
+            if(orgStatus) orgStatus.textContent='';
+          }catch(err){ if(orgStatus) orgStatus.textContent='Logo upload failed: '+err.message; }
+        });
+      }
     })();
 
     // Priority buttons + "Show on front" -- Sept 22 2026. See the HTML
@@ -1213,6 +1301,53 @@
 
     T().wire('sb-close', closeSbDetail);
   }
+
+  // PRIMARY head icon on the Idea card back, Sept 26 2026 -- Larry: "BB
+  // had PRIMARY single head button. Add this to Idea card back on same
+  // line as SUBJECT." Deliberately mirrors _bbRenderCardPrimaryField
+  // (briefing-board-master.js) line for line, rather than a shared
+  // helper both call -- the two already read/write the same
+  // card_roles table and the same shared CAST PICK list/paint helper,
+  // only the card_type ('idea' vs 'briefing_card') and the field it
+  // sits beside (SUBJECT vs PROJECT) differ.
+  async function _sbRenderCardPrimaryField(item){
+    var trigger=document.getElementById('sb-primary-trigger'), menu=document.getElementById('sb-primary-menu');
+    if(!trigger || !menu) return;
+    var sb=T().sb;
+    var currentUid=null;
+    if(sb){
+      try{
+        var res=await sb.from('card_roles').select('user_id').eq('card_type','idea').eq('card_id', item.id).eq('role','primary').maybeSingle();
+        if(!res.error && res.data) currentUid=res.data.user_id;
+      }catch(e){ console.error('Idea card: could not load current PRIMARY', e); }
+    }
+    if(_sboardActiveId!==item.id) return; // a different card opened while this was loading
+    await _bbPaintPrimaryTrigger(trigger, currentUid);
+
+    function openMenu(){
+      var projectRow=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
+      _bbOpenCastPickMenu(menu, trigger, {
+        level: projectRow ? projectRow.id : null,   // project-level Cast, same ambient lookup the New Card popup uses
+        selectedUid: currentUid,
+        onPick: async function(person){
+          if(_sboardActiveId!==item.id) return;
+          if(!window.T2TStoryboard || typeof window.T2TStoryboard.assignPrimaryDirect!=='function') return;
+          var res=await window.T2TStoryboard.assignPrimaryDirect(item, 'idea', person.user_id, {fromAbove:!!person.fromAbove});
+          if(!res || !res.ok){ _sboardShowToast((res&&res.msg)||'Could not assign PRIMARY.'); return; }
+          currentUid=person.user_id;
+          await _bbPaintPrimaryTrigger(trigger, currentUid);
+          renderSeaBoard(true);
+        }
+      });
+    }
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      var willOpen=menu.hidden;
+      _sboardCloseAllDropdowns(willOpen?'sb-primary-menu':null);
+      if(willOpen) openMenu(); else menu.hidden=true;
+    };
+  }
+
   // Traveler color-options shortcut -- opens the normal DETAILS back but
   // auto-expands the swatch row so a double-click lands directly on color
   // choices instead of requiring an extra tap on the Appearance gear.

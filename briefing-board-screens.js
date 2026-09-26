@@ -100,6 +100,20 @@
               +'<div class="bb-idn-toprow"><div class="bb-idn-org" id="bb-idn-org" style="display:none"></div><img class="bb-idn-logo" id="bb-idn-logo" alt="" style="display:none"></div>'
               +'<div class="bb-traveler-eyebrow" id="bb-traveler-name"></div>'
             +'</div>'
+            // Per-card/inherited Organization, Sept 26 2026 -- BB's own
+            // copy of the Idea Board's sc-card-org (idea-storyboard-
+            // screens.js); same idea, same resolver
+            // (_orgResolveForRow/idea-storyboard-navigation.js), painted
+            // by _bbRenderOrgDisplay (briefing-board-master-nav.js).
+            // Distinct from bb-idn-org just above, which is the
+            // TRAVELER's own personal identity, not a card's.
+            +'<div class="bb-card-org" id="bb-card-org" style="display:none">'
+            +'<div id="bb-card-org-logo-wrap"><img id="bb-card-org-logo" alt=""></div>'
+            +'<div class="bb-card-org-text">'
+            +'<div class="bb-card-org-eyebrow" id="bb-card-org-eyebrow"></div>'
+            +'<div class="bb-card-org-name" id="bb-card-org-name"></div>'
+            +'</div>'
+            +'</div>'
             +'<div class="bb-mh-typebox" id="bb-project-wrap">'
               // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
               // of this row (was third) to sit at the header's far left
@@ -599,6 +613,22 @@
             // logic -- "active" is decided once, at load, exactly like
             // Notes/Budget/etc. above.
             +'<div class="bb-field bb-addition" id="bb-d-add-flags-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-flags"><span class="bb-addition-eyebrow">Signal Flags</span></label><div class="bb-addition-body" id="bb-d-flags-body" style="display:none"><div class="bb-key-row" id="bb-d-key-row"></div></div></div>'
+            // Organization, Sept 26 2026 -- same field/inheritance shape
+            // as the Idea Card's own (idea-storyboard-card-detail.js):
+            // eyebrow descriptor + org name + small logo, Link-inherited
+            // down the header tree from the nearest card with this box
+            // checked. Wired in wireOrgAddition (briefing-board-card.js),
+            // not the bundled BB_ADDITIONS pattern -- text/logo save
+            // immediately (like the Idea Card), not on card-close.
+            +'<div class="bb-field bb-addition" id="bb-d-add-org-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-org"><span class="bb-addition-eyebrow">Organization</span></label><div class="bb-addition-body" id="bb-d-org-body" style="display:none">'
+            +   '<input type="text" id="bb-d-org-eyebrow" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box;margin-bottom:6px">'
+            +   '<div style="display:flex;align-items:center;gap:8px">'
+            +     '<input type="text" id="bb-d-org-name" autocomplete="off" placeholder="Organization name" style="flex:1 1 auto;min-width:0">'
+            +     '<div id="bb-d-org-logo-slot" title="Tap to upload a logo" style="flex-shrink:0;width:36px;height:36px;border:1.5px solid var(--bb-accent);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff"><span id="bb-d-org-logo-plus" style="font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)">+</span></div>'
+            +     '<input type="file" id="bb-d-org-logo-input" accept="image/*" style="display:none">'
+            +   '</div>'
+            +   '<div id="bb-d-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
+            + '</div></div>'
             // Divider, Aug 27 2026 -- now sits directly above Reviewed
             // by (the last item that isn't itself a checkbox), so the
             // whole run of additions -- Checklist through Signal Flags

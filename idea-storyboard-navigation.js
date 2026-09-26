@@ -618,7 +618,7 @@
   // Shared by both Type and Title below; closeAll() also lives here so
   // opening one closes the other, and a page click anywhere closes both.
   function _sboardCloseAllDropdowns(exceptMenuId){
-    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sc-topic-child-menu','sc-topic-menu','sc-view-menu','sb-people-menu','bb-people-menu'].forEach(function(id){
+    ['sc-type-menu','sc-org-name-menu','sc-title-menu','sc-board-kind-menu','sc-parent-menu','sc-topic-child-menu','sc-topic-menu','sc-view-menu','sb-people-menu','bb-people-menu','sb-primary-menu'].forEach(function(id){
       if(id===exceptMenuId) return;
       var m=document.getElementById(id);
       if(m) m.hidden=true;
@@ -1761,6 +1761,50 @@
       var upd=await _sb.from('ideas').update({org_name:trimmed||null}).eq('id', match.id);
       if(upd.error) console.error('Idea Board: could not save Organization name', upd.error);
     }catch(e){ console.error('Idea Board: could not save Organization name', e); }
+  }
+
+  // Per-card/inherited Organization, Sept 26 2026 -- replaces the flat,
+  // non-inheriting picker just above (_sboardRenderOrgName/
+  // _sboardSaveOrgName -- already dead code today, retired from the
+  // visible chrome before this, so nothing to migrate). Walks UP the
+  // header tree from a given row, starting at the row itself, until it
+  // finds one with adds_org checked -- that's the nearest override, Link-
+  // style (every render re-walks live; nothing is copied down). Returns
+  // null when nothing in the chain (up to the project root) has ever
+  // checked Organization.
+  function _orgResolveForRow(rowId){
+    var cur=rowId, guard=0;
+    while(cur && guard<60){
+      guard++;
+      var row=_sboardAllRowsById[cur]; if(!row) break;
+      if(row.adds_org) return {name:row.org_name||'', eyebrow:row.org_eyebrow||'', logoUrl:row.logo_url||''};
+      cur=row.cluster_id;
+    }
+    return null;
+  }
+  // Paints the ID Band's sc-card-org block (idea-storyboard-screens.js)
+  // for whichever TOPIC is currently on screen. Called after any
+  // Organization-field save on a card back (idea-storyboard-card-
+  // detail.js) and wherever the board's own chrome already re-renders on
+  // a topic/project change (see call sites of _sboardRenderOrgName just
+  // above -- this runs alongside those, not instead of them).
+  function _sboardRenderOrgDisplay(){
+    var wrap=document.getElementById('sc-card-org'); if(!wrap) return;
+    var topicId=T2TShared.currentTopicId||null;
+    var resolved=topicId ? _orgResolveForRow(topicId) : null;
+    if(!resolved || (!resolved.name && !resolved.logoUrl && !resolved.eyebrow)){
+      wrap.style.display='none';
+      return;
+    }
+    wrap.style.display='flex';
+    var eyebrowEl=document.getElementById('sc-card-org-eyebrow');
+    var nameEl=document.getElementById('sc-card-org-name');
+    var logoWrap=document.getElementById('sc-card-org-logo-wrap');
+    var logoImg=document.getElementById('sc-card-org-logo');
+    if(eyebrowEl) eyebrowEl.textContent=resolved.eyebrow||'';
+    if(nameEl) nameEl.textContent=resolved.name||'';
+    if(logoWrap) logoWrap.style.display=resolved.logoUrl?'flex':'none';
+    if(logoImg) logoImg.src=resolved.logoUrl||'';
   }
 
   // Sept 13 2026 -- belt-and-suspenders alongside the _sboardLoadMyRoots

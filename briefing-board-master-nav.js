@@ -826,6 +826,29 @@
   // renderBoard's Master rollup (_bbMasterRollupCardsIfAny) below.
   var _bbCurrentTopicHeaderId = null;
   var _bbCurrentTopicIsRoot = false;
+  // Per-card/inherited Organization, Sept 26 2026 -- BB's own thin
+  // wrapper around the shared resolver (_orgResolveForRow,
+  // idea-storyboard-navigation.js -- same global page scope, walks
+  // cluster_id up the ideas/header tree from whichever id it's given).
+  // headerId here is _bbCurrentTopicHeaderId, BB's own equivalent of the
+  // Idea Board's T2TShared.currentTopicId.
+  function _bbRenderOrgDisplay(headerId){
+    var wrap=document.getElementById('bb-card-org'); if(!wrap) return;
+    var resolved=(headerId && typeof _orgResolveForRow==='function') ? _orgResolveForRow(headerId) : null;
+    if(!resolved || (!resolved.name && !resolved.logoUrl && !resolved.eyebrow)){
+      wrap.style.display='none';
+      return;
+    }
+    wrap.style.display='flex';
+    var eyebrowEl=document.getElementById('bb-card-org-eyebrow');
+    var nameEl=document.getElementById('bb-card-org-name');
+    var logoWrap=document.getElementById('bb-card-org-logo-wrap');
+    var logoImg=document.getElementById('bb-card-org-logo');
+    if(eyebrowEl) eyebrowEl.textContent=resolved.eyebrow||'';
+    if(nameEl) nameEl.textContent=resolved.name||'';
+    if(logoWrap) logoWrap.style.display=resolved.logoUrl?'flex':'none';
+    if(logoImg) logoImg.src=resolved.logoUrl||'';
+  }
   async function _bbRenderTopicField(){
     var hit=document.getElementById('bb-topic-hit');
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
@@ -838,6 +861,11 @@
     // fixed value off the board row every time.
     var headerId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : board.storyboard_project_id;
     _bbCurrentTopicHeaderId=headerId;
+    // Per-card/inherited Organization, Sept 26 2026 -- see
+    // idea-storyboard-navigation.js's _orgResolveForRow (shared global
+    // scope, same page) for the walk-up-the-tree resolution; this just
+    // paints BB's own masthead copy of the same display.
+    if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
     _bbCurrentTopicIsRoot=false;
     if(!headerId){
       // A personal/org board that was never tied to an Idea project --
