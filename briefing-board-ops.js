@@ -837,11 +837,11 @@
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine
-        // icon and the (Weekly)") -- the underlying c.routine flag, the
-        // frequency, the Complete reset-instead-of-archive behavior, and
-        // the back-of-card border tint (.bb-routine-active) all stay;
-        // there just isn't a front-face badge for it any more.
-        var routineLineHTML = '';
+        // icon and the (Weekly)"), then added back a few minutes later,
+        // simpler (Larry: "ROUTINE needs to appear on the front above
+        // the date") -- plain word, no icon, no cadence in parens this
+        // time, sitting at the top of the date stack, right above DUE.
+        var routineLineHTML = c.routine ? '<div class="bb-date-line bb-routine-badge">ROUTINE</div>' : '';
         // Lock badge moved into the bottom-left signal cluster, Aug 15
         // 2026 (Larry: "is the LOCK not just another FLAG?") -- was up
         // top with priority/routine/date; now reads as one more signal
