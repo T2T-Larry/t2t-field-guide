@@ -134,7 +134,7 @@
               // Sept 13. Traveler-name eyebrow stays above it, unchanged --
               // this is additive, not a replacement; easy to drop back out
               // if Larry wants just the one eyebrow here after all.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Project</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch projects or add a new one"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
+              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Topic</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch projects or add a new one"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
               // Parent field retired from the header, Sept 6 2026 --
               // Larry: "the hierarchy is set when a PROJECT is chosen,"
               // folding its "jump to any level above" job into a new
@@ -271,7 +271,7 @@
             // group) moved to _bbPositionIdBandRow (briefing-board-master-
             // nav.js, renamed from _bbPositionBoardKindMidway) -- see that
             // function for the full story.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Storyboard</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Ideas, Plan, Share, or Roles">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Board</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Blue Sky, Pathfinder, Storyboard, or Cast">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the

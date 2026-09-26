@@ -160,15 +160,19 @@
       // positioning.
       +'.bb-mh-group-topic{position:absolute;top:0;left:0}'
       // Diminished, Sept 15 2026 -- Larry, live-site: "make ALL eyebrow
-      // size to diminish its importance." These three (Project/
-      // Storyboard/View, all added or resized this same session) were
+      // size to diminish its importance." These three (Topic/
+      // Board/View, all added or resized this same session) were
       // reading as loud as a real field label instead of a quiet hint
       // above one -- weight dropped from bold to normal, letter-spacing
       // and size trimmed, opacity added on top of the already-muted
       // --bb-sub color. Does NOT touch .bb-traveler-eyebrow -- that one
       // carries the traveler's actual name, not a field hint, and Larry
       // didn't ask for it to shrink.
-      +'.bb-mh-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));font-weight:400;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub);opacity:.7}'
+      // Sept 26 2026 -- Larry: the muted tan-on-opacity read too faint
+      // on the cream ID Band background; fixed dark gray at full opacity
+      // instead of the theme's --bb-sub so it stays legible regardless
+      // of which BB_THEME_VARS palette is active.
+      +'.bb-mh-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#4a4a4a;opacity:1}'
       // Traveler name, Sept 5 2026 -- Larry: "every board now and in the
       // future" should carry the same PROJECT and PARENT fields the
       // Idea/Plan header does, starting here. Mirrors the plain eyebrow
@@ -932,7 +936,7 @@
       +'.bb-dp-day.bb-dp-today{border:1.5px solid var(--bb-accent);font-weight:700}'
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
-      +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;color:#4a7a95;font-weight:600}'
+      +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
       +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
       // pointer-events:auto here, Aug 11 2026 -- same fix as
       // .bb-key-badge-wrap: the wrapping .bb-key-badges container it

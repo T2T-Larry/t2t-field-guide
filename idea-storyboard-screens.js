@@ -725,7 +725,12 @@
         +'.sc-mh-typebox{position:absolute;top:0;left:0}'
         +'.sc-mh-fieldgrp{display:flex;flex-direction:column;gap:3px;align-items:center}'
         +'.sc-mh-group-topic{position:absolute;top:0;left:0}'
-        +'.sc-mh-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#a9cce3;opacity:.7}'
+        // Sept 26 2026 -- Larry: eyebrow read too faint (same "more
+        // visible" fix as BB's own .bb-mh-eyebrow). BB went fixed dark
+        // gray, but this header's own background is dark navy (#1a3a5c)
+        // -- dark gray would disappear here, so this one goes a light
+        // gray at full opacity instead, same muted-but-legible intent.
+        +'.sc-mh-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#d5d5d5;opacity:1}'
         +'.sc-mh-group-center{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;position:absolute;top:0;left:0;width:max-content}'
         // PROJECT/STORYBOARD's shared size (same IDBand.TOKENS.fieldBox
         // every board reads) -- add/remove this class instead of a fresh
@@ -1007,7 +1012,7 @@
       // below -- sc-title-trigger's existing click (drill in) and
       // dblclick (fast-jump popup) already cover the same ground.
       +'<div id="sc-project-wrap" class="sc-mh-typebox">'
-      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Project</div><div class="sc-cdrop" id="sc-title-cdrop"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div></div>'
+      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Topic</div><div class="sc-cdrop" id="sc-title-cdrop"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div></div>'
       +'</div>'
       // TOPIC -- Sept 19 2026, matching BB's own redesign: the up/down
       // arrow chips are gone ("too cluttered" on BB). Clicking TOPIC
@@ -1031,7 +1036,7 @@
       // CSS override above), matching BB's own #bb-boardkind-trigger and
       // fixing the same "two dropdown arrows" complaint Larry raised on
       // BB's side the same session.
-      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-mh-eyebrow">Storyboard</div><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-cdrop-trigger sc-mh-field-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Tasks, Share, or Roles">IDEAS</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
+      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-mh-eyebrow">Board</div><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-cdrop-trigger sc-mh-field-trigger" id="sc-board-kind-trigger" title="Switch to Pathfinder, Storyboard, or Cast">BLUE SKY</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
       // Sept 5 2026, Larry: "delete the nametag -- don't totally delete it
       // yet, I don't know why, I just like it. Can it go somewhere on the
       // website that is retrievable but not in active use?" Retired in

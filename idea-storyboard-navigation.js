@@ -652,11 +652,17 @@
   // from TASKS to BRIEFING (BB for short). CAST stays ROLES.
   // Sept 23 2026 -- Larry: "change Roles to Cast on storyboard dropdown."
   // ROLES -> CAST, matching the locked name for the one list of people.
+  // Sept 26 2026 -- Larry: rename the board-kind labels -- IDEAS -> BLUE
+  // SKY, PLAN -> PATHFINDER, SHARE -> STORYBOARD (freed up by PROJECT/
+  // STORYBOARD's own eyebrow rename to TOPIC/BOARD the same session).
+  // value stays the internal name every handler below keys off; only
+  // label (the displayed word) changes. Kept in sync with briefing-
+  // board-master-nav.js's own copy of this list.
   var _sboardBoardKinds=[
-    {value:'IDEA', label:'IDEAS', soon:null},
-    {value:'PLAN', label:'PLAN', soon:null},
+    {value:'IDEA', label:'BLUE SKY', soon:null},
+    {value:'PLAN', label:'PATHFINDER', soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING', soon:null},
-    {value:'SHARE', label:'SHARE', soon:'Share Storyboard coming soon'},
+    {value:'SHARE', label:'STORYBOARD', soon:'Storyboard coming soon'},
     {value:'CAST', label:'CAST', soon:null}
   ];
   function _sboardWireBoardKindDropdown(){
@@ -765,8 +771,9 @@
     var kindNow=_sboardIsPlanBoard?'PLAN':'IDEA';
     // Sept 6 2026, Larry: "change IDEA to IDEAS" -- kindNow stays 'IDEA'
     // internally (matches storyboard_kind and every k.value comparison
-    // above), only the displayed word changes.
-    if(trigger) trigger.textContent=(kindNow==='IDEA'?'IDEAS':kindNow);
+    // above), only the displayed word changes. Sept 26 2026 -- IDEAS ->
+    // BLUE SKY, PLAN -> PATHFINDER (kept in sync with _sboardBoardKinds).
+    if(trigger) trigger.textContent=(kindNow==='IDEA'?'BLUE SKY':(kindNow==='PLAN'?'PATHFINDER':kindNow));
     if(menu){
       Array.prototype.forEach.call(menu.querySelectorAll('.sc-cdrop-row[data-kind]'), function(row){
         row.classList.toggle('active', row.getAttribute('data-kind')===kindNow);

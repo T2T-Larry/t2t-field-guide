@@ -1961,11 +1961,16 @@
   // idea-storyboard-navigation.js's copy of this same list.
   // Sept 23 2026 -- Larry: "change Roles to Cast on storyboard dropdown."
   // ROLES -> CAST, matching the locked name for the one list of people.
+  // Sept 26 2026 -- Larry: rename the board-kind labels -- IDEAS -> BLUE
+  // SKY, PLAN -> PATHFINDER, SHARE -> STORYBOARD (freed up by PROJECT/
+  // STORYBOARD's own eyebrow rename to TOPIC/BOARD the same session).
+  // value stays the internal name every handler below keys off; only
+  // label (the displayed word) changes.
   var _bbBoardKinds=[
-    {value:'IDEA', label:'IDEAS'},
-    {value:'PLAN', label:'PLAN'},
+    {value:'IDEA', label:'BLUE SKY'},
+    {value:'PLAN', label:'PATHFINDER'},
     {value:'BRIEFING BOARD', label:'BRIEFING'},
-    {value:'SHARE', label:'SHARE'},
+    {value:'SHARE', label:'STORYBOARD'},
     {value:'CAST', label:'CAST'}
   ];
   function _bbWireBoardKindDropdown(){
@@ -1988,7 +1993,7 @@
           if(window.CastRoster && _bbCurrentTopicHeaderId){ window.CastRoster.open(_bbCurrentTopicHeaderId); return; }
           openTeamRoster(); return;
         }
-        if(k.value==='SHARE'){ _bbShowToast('Share Storyboard coming soon'); return; }
+        if(k.value==='SHARE'){ _bbShowToast('Storyboard coming soon'); return; }
         if(k.value==='IDEA' || k.value==='PLAN'){
           var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
           // Sept 8 2026 fix -- one-board model, same reasoning as
