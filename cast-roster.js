@@ -63,6 +63,17 @@
    Self-contained (own IIFE, own styles). Uses window.T2T.sb,
    T2TPriority, T2TLoad, _bbCastFirstNames and _bbOpenCastPickMenu
    when loaded. Exposes window.CastRoster.open(topicId).
+
+   Sept 26 2026 (Master BB "CAST Storyboard" card, first pass): added a
+   Board View -- the current level and its direct children as classic
+   cards (like a hand of Briefing Cards) instead of the tree list. Any
+   empty role slot shows as a dashed, tappable blank ("fill in the
+   blank") rather than a warning. Toggle button swaps with the old tree
+   (now called Pyramid View); Board is the default. Ancestors above the
+   current level still collapse to a breadcrumb line, same straight-
+   climb rule as before. Everything underneath (data shape, add/change/
+   remove people, priority, PRIMARY hand-off, print) is shared with the
+   Pyramid unchanged -- this only adds a second way to look at it.
    ============================================================ */
 
 (function(){
@@ -163,7 +174,31 @@
       +'.crp-t{font-style:italic;color:#333}'
       +'.crp-r{color:#555}'
       +'.crp-none{color:#8a4b00;font-weight:700}'
-      +'.crp-inh{color:#777;font-style:italic}';
+      +'.crp-inh{color:#777;font-style:italic}'
+      // Board view -- classic card grid, fill-in-the-blank style
+      +'.cr-board-crumbs{font-size:.8em;color:#8a877e;padding:2px 4px 8px}'
+      +'.cr-board-grid{display:flex;flex-wrap:wrap;gap:10px;padding:2px}'
+      +'.cr-bcard{width:210px;flex:none;background:#fff;border:1px solid #d8d4c8;border-radius:10px;padding:8px;box-sizing:border-box;box-shadow:0 1px 3px rgba(0,0,0,.06)}'
+      +'.cr-bcard-cur{border-color:#1A3A5C;border-width:2px}'
+      +'.cr-bcard-blank{border-style:dashed;background:#fbfaf6}'
+      +'.cr-bhead{display:flex;align-items:center;gap:6px;border-bottom:1px solid #eee6d6;padding-bottom:5px;margin-bottom:5px}'
+      +'.cr-bname{font-weight:700;font-size:calc(12px * var(--fg-text-scale,1));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'.cr-bpri{cursor:pointer}'
+      +'.cr-bbody{display:flex;flex-direction:column;gap:3px}'
+      +'.cr-brow{display:flex;align-items:baseline;gap:5px;font-size:calc(11.5px * var(--fg-text-scale,1));padding:2px 3px;border-radius:5px}'
+      +'.cr-brow-primary{font-weight:600}'
+      +'.cr-blabel{flex:none;font-size:.78em;letter-spacing:.04em;color:#8a877e;text-transform:uppercase;min-width:52px}'
+      +'.cr-blabel-role{min-width:0}'
+      +'.cr-bval{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'.cr-bval.cr-editable{cursor:pointer;text-decoration:underline dotted rgba(0,0,0,.25);text-underline-offset:3px}'
+      +'.cr-bval.cr-nolead{color:#8a4b00}'
+      +'.cr-bval.cr-inherit{color:#8a877e;font-style:italic}'
+      +'.cr-bblank{cursor:pointer;color:#8a877e}'
+      +'.cr-bblank:hover{background:rgba(0,0,0,.05)}'
+      +'.cr-bfill{border:1px dashed #b4b2a9;border-radius:5px;padding:0 6px;font-style:italic}'
+      +'.cr-badd{justify-content:center;margin-top:2px}'
+      +'.cr-badd .cr-bfill{border-style:solid;border-color:transparent}'
+      +'.cr-bempty{font-size:.85em;color:#8a877e;padding:2px 3px}';
     var st=document.createElement('style'); st.id='cr-styles'; st.textContent=css;
     document.head.appendChild(st);
   }
@@ -265,6 +300,7 @@
   // ---------- screen ----------
   var _state=null, _topicId=null;
   var _openPeople={}, _openKids={};   // remembered across refreshes
+  var _viewMode='board';   // 'board' (classic fill-in-the-blank cards) or 'pyramid' (tree)
 
   function _ensureOverlay(){
     if(document.getElementById('cr-overlay')) return;
@@ -292,13 +328,20 @@
     _topicId=topicId;
     var ov=document.getElementById('cr-overlay'), card=document.getElementById('cr-card');
     card.innerHTML='<div class="cr-head"><span class="cr-title">👥 CAST ROSTER</span>'
+      +'<button class="cr-btn" id="cr-view-toggle"></button>'
       +'<button class="cr-btn" id="cr-print-btn" title="Print as an Organization Chart" disabled>🖨 Org Chart</button>'
       +'<button class="cr-btn" id="cr-close" aria-label="Close">✕</button></div>'
-      +'<div class="cr-sub">Tap a level to see its people. The arrow opens the levels beneath. The number beside a name is how many projects they\'re PRIMARY on (amber at '+_load().limit+'+).</div>'
+      +'<div class="cr-sub" id="cr-sub"></div>'
       +'<div id="cr-alert-slot"></div>'
       +'<div id="cr-body"><div class="cr-msg">Loading…</div></div>';
     ov.style.display='flex';
     document.getElementById('cr-close').onclick=close;
+    _paintSub();
+    document.getElementById('cr-view-toggle').onclick=function(){
+      _viewMode=(_viewMode==='board')?'pyramid':'board';
+      _paintSub();
+      _render(document.getElementById('cr-body'), false);
+    };
     await _reload(true);
   }
 
@@ -367,7 +410,23 @@
     if(ov) ov.style.display='none';
   }
 
+  // Toggle button + helper line swap with the view; kept in one place so
+  // both stay honest about which mode is showing.
+  function _paintSub(){
+    var btn=document.getElementById('cr-view-toggle'), sub=document.getElementById('cr-sub');
+    if(btn) btn.textContent=(_viewMode==='board')?'🔺 Pyramid View':'📋 Board View';
+    if(!sub) return;
+    sub.textContent=(_viewMode==='board')
+      ? 'A card for the current level and each level below it. Dashed lines are blank — tap to fill them in.'
+      : 'Tap a level to see its people. The arrow opens the levels beneath. The number beside a name is how many projects they\'re PRIMARY on (amber at '+_load().limit+'+).';
+  }
+
   function _render(body, first){
+    if(_viewMode==='board') _renderBoard(body, first);
+    else _renderPyramid(body, first);
+  }
+
+  function _renderPyramid(body, first){
     body.innerHTML='';
     var depth=0;
     _state.ancestors.forEach(function(lv){
@@ -382,6 +441,91 @@
       var cur=body.querySelector('.cr-current');
       if(cur && cur.scrollIntoView) setTimeout(function(){ try{ cur.scrollIntoView({block:'nearest'}); }catch(e){} }, 0);
     }
+  }
+
+  // Classic board: the current level and its direct children as cards,
+  // laid out like a hand of Briefing Cards. Ancestors collapse to a
+  // breadcrumb (same straight-climb rule as the Pyramid). Every role
+  // slot with nobody in it shows as a dashed, tappable blank instead of
+  // a warning -- "fill in the blank" rather than "something's wrong."
+  function _renderBoard(body, first){
+    body.innerHTML='';
+    if(_state.ancestors.length){
+      var bc=document.createElement('div');
+      bc.className='cr-board-crumbs';
+      bc.textContent=_state.ancestors.map(function(a){ return a.name; }).join(' › ');
+      body.appendChild(bc);
+    }
+    var grid=document.createElement('div');
+    grid.className='cr-board-grid';
+    grid.appendChild(_boardCard(_state.current, true));
+    _state.current.kids.forEach(function(kid){ grid.appendChild(_boardCard(kid, false)); });
+    body.appendChild(grid);
+  }
+
+  function _boardCard(lv, isCurrent){
+    var card=document.createElement('div');
+    card.className='cr-bcard'+(isCurrent?' cr-bcard-cur':'')+(!lv.people.length?' cr-bcard-blank':'');
+    card.setAttribute('data-lid', lv.id);
+
+    var priHTML=_pri().badgeHTML(lv.priority);
+    var priSlot=lv.canEdit
+      ? '<span class="cr-bpri cr-pophost">'+(priHTML||'<span class="cr-pri-empty" title="Set priority">H/M/L</span>')+'</span>'
+      : (priHTML||'');
+    var head=document.createElement('div');
+    head.className='cr-bhead';
+    head.innerHTML=priSlot+'<span class="cr-bname" title="'+_esc(lv.name)+'">'+_esc(lv.name)+'</span>';
+    card.appendChild(head);
+    var priEl=head.querySelector('.cr-bpri');
+    if(priEl && lv.canEdit) priEl.addEventListener('click', function(e){ e.stopPropagation(); _priorityPop(priEl, lv); });
+
+    var body=document.createElement('div');
+    body.className='cr-bbody';
+
+    var lead=_leadOf(lv), st=_status(lv);
+    var leadRow=document.createElement('div');
+    leadRow.className='cr-brow cr-brow-primary';
+    if(lead){
+      leadRow.innerHTML='<span class="cr-blabel">Primary</span><span class="cr-bval">'+_esc(lead.shortName)+'</span>';
+    } else if(st.status==='inherited' && st.primary_name){
+      leadRow.innerHTML='<span class="cr-blabel">Primary</span><span class="cr-bval cr-inherit">↑ '+_esc(_firstName(st.primary_name))+'</span>';
+    } else if(lv.canEdit){
+      leadRow.classList.add('cr-bblank');
+      leadRow.innerHTML='<span class="cr-blabel">Primary</span><span class="cr-bfill">— fill in —</span>';
+      leadRow.title='Tap to add a PRIMARY';
+      leadRow.addEventListener('click', function(){ _addPerson(leadRow, lv); });
+    } else {
+      leadRow.innerHTML='<span class="cr-blabel">Primary</span><span class="cr-bval cr-nolead">⚠ none yet</span>';
+    }
+    body.appendChild(leadRow);
+
+    lv.people.filter(function(p){ return !p.levelPrimary; }).forEach(function(p){
+      var r=document.createElement('div');
+      r.className='cr-brow';
+      var tags=_tags(p);
+      r.innerHTML='<span class="cr-blabel cr-blabel-role" title="'+_esc(tags||'Cast')+'">'+_esc(tags||'Cast')+'</span>'
+        +'<span class="cr-bval'+(lv.canEdit?' cr-editable cr-pophost':'')+'">'+_esc(p.shortName)+'</span>';
+      if(lv.canEdit){
+        var val=r.querySelector('.cr-bval');
+        val.title='Change '+p.shortName+'\'s role on '+lv.name;
+        val.addEventListener('click', function(e){ e.stopPropagation(); _personPop(val, lv, p); });
+      }
+      body.appendChild(r);
+    });
+
+    if(lv.canEdit){
+      var add=document.createElement('div');
+      add.className='cr-brow cr-bblank cr-badd';
+      add.innerHTML='<span class="cr-bfill">+ add someone</span>';
+      add.addEventListener('click', function(){ _addPerson(add, lv); });
+      body.appendChild(add);
+    } else if(!lv.people.length){
+      var em=document.createElement('div'); em.className='cr-brow cr-bempty'; em.textContent='No one on this level yet.';
+      body.appendChild(em);
+    }
+
+    card.appendChild(body);
+    return card;
   }
 
   // One level: its row, its people (open or hidden), and its children
