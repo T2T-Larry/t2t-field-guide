@@ -776,15 +776,13 @@
         var _bbHomeLbl = (window.IDBand && IDBand.isNonProjectName(c._homeBoardName)) ? 'MASTER' : (c._homeBoardName||'');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
-        // ROUTINE line, Sept 26 2026 (Larry: "Where should ROUTINE appear
-        // on a routine card? Above the DUE DATE?") -- moved out of the
-        // top badge row (where it was just a bare 🔄 icon) into its own
-        // line at the top of the date stack, naming the cadence so the
-        // card reads as a recurring commitment at a glance, not just a
-        // one-off flag.
-        var _bbRoutineFreqLabel = c.routineFreq==='custom' ? (c.routineCustom||'Custom')
-          : ({daily:'Daily', weekly:'Weekly', monthly:'Monthly'}[c.routineFreq]||'');
-        var routineLineHTML = c.routine ? ('<div class="bb-date-line bb-routine-badge" title="Routine card — Complete resets it for its next cycle instead of archiving">&#128257; ROUTINE'+(_bbRoutineFreqLabel?(' ('+_esc(_bbRoutineFreqLabel)+')'):'')+'</div>') : '';
+        // ROUTINE front-face indicator, added Sept 26 2026, removed same
+        // day (Larry: "in the interest of simplicity, delete the routine
+        // icon and the (Weekly)") -- the underlying c.routine flag, the
+        // frequency, the Complete reset-instead-of-archive behavior, and
+        // the back-of-card border tint (.bb-routine-active) all stay;
+        // there just isn't a front-face badge for it any more.
+        var routineLineHTML = '';
         // Lock badge moved into the bottom-left signal cluster, Aug 15
         // 2026 (Larry: "is the LOCK not just another FLAG?") -- was up
         // top with priority/routine/date; now reads as one more signal
