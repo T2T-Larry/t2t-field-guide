@@ -391,8 +391,18 @@
   // missed START only means anything while the card genuinely hasn't
   // started yet; once it's in Doing it has started, late or not, so
   // there's nothing left to flag.
+  //
+  // Routine exemption, Sept 26 2026 (Larry: "Date started and Start due
+  // no longer apply" once a card is ROUTINE) -- a routine card computes
+  // its own DUE from CADENCE+DAY and has no Start Date concept at all
+  // (see _bbSyncRoutineFieldVisibility hard-hiding the Start Date/Due
+  // Date addition rows in the editor); any startDate value still sitting
+  // on the row from before it became routine is leftover, non-destructive
+  // data (same "hide, don't clear" pattern as everywhere else Additions
+  // work), so it must never drive pink-facing or priority escalation
+  // here, or the card-face display below.
   function _bbIsStartOverdue(c){
-    if(!c || c.archived || c.trashedAt) return false;
+    if(!c || c.archived || c.trashedAt || c.routine) return false;
     if(!_bbIsDoCol(c.col)) return false;
     var d=_bbParseDue(c.startDate);
     if(!d) return false;
@@ -522,7 +532,11 @@
       // it's still in Do at all -- Due Date's HH bump can fire from
       // Doing too, and a card sitting in Doing doesn't jump back into
       // a Do column just because its priority changed).
-      if(_bbIsDoCol(c.col) && c.startDate && c.startEscalatedFor!==c.startDate){
+      // Routine exemption, Sept 26 2026 -- see _bbIsStartOverdue above;
+      // Start Date doesn't apply to a routine card, so it must not push
+      // one to H either (this is what put the Weekly Code Review card
+      // in H with a stale 9/24 Start Date instead of sitting in L).
+      if(!c.routine && _bbIsDoCol(c.col) && c.startDate && c.startEscalatedFor!==c.startDate){
         var sd=_bbParseDue(c.startDate);
         if(sd && _bbDaysUntil(sd)<=startWarn){
           var curRank=PRI_ORDER.hasOwnProperty(c.priority) ? PRI_ORDER[c.priority] : 7;
@@ -870,9 +884,13 @@
         // together in bb-date-stack, right below the budget line,
         // stacked in that same order (only whichever ones actually
         // apply to this card render at all).
+        // Routine exemption, Sept 26 2026 -- Start Date/START DUE never
+        // show on a routine card's face, even if a startDate value is
+        // still sitting on the row from before it became routine (see
+        // _bbIsStartOverdue above for the matching escalation fix).
         var dateStackHTML = ''
           + routineLineHTML
-          + (c.startDate ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
+          + (c.startDate && !c.routine ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
           + (_bbStartIsOverdue ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
           + (c.due ? ('<div class="bb-date-line bb-due">DUE: '+_esc(c.due)+'</div>') : '')
           + (c.col==='done' && c.completedDate ? ('<div class="bb-date-line bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '');
