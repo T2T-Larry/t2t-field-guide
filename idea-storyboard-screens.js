@@ -720,20 +720,22 @@
         +'.sc-idn-org{font-size:calc(22px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;white-space:nowrap;line-height:1.1}'
         +'.sc-idn .sc-traveler-eyebrow{margin-bottom:0}'
         +'.sc-idn.has-org .sc-traveler-eyebrow{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1.5px}'
-        // sc-card-org, Sept 26 2026 -- positioned right after sc-idn
-        // (which sits absolute top:10/left:16 and is typically ~140-220px
-        // wide), between the traveler name block and the centered
-        // PROJECT/TOPIC/STORYBOARD chain. Left offset is a reasonable
-        // starting guess, not measured against sc-idn's real rendered
-        // width -- Larry, adjust this on the live site if it overlaps or
-        // sits too far right; _sboardPositionIdBandRow doesn't know about
-        // this box yet.
-        +'.sc-card-org{position:absolute;top:10px;left:230px;display:flex;align-items:center;gap:6px;max-width:180px}'
+        // sc-card-org, Sept 26 2026 (later) -- now a LOGO-ONLY box. It
+        // used to also carry the TOPIC's resolved org name + descriptor
+        // (see idea-storyboard-screens.js markup above), which sat right
+        // next to sc-idn's own traveler-identity org and read as the org
+        // showing twice; that text moved up into sc-idn. Position kept
+        // exactly where it was -- Larry: "current position of the org/
+        // descriptor is perfect for the logo if there is one."
+        +'.sc-card-org{position:absolute;top:10px;left:230px}'
         +'#sc-card-org-logo-wrap{width:28px;height:28px;flex-shrink:0;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center}'
         +'#sc-card-org-logo{max-width:100%;max-height:100%;object-fit:contain;display:block}'
-        +'.sc-card-org-text{min-width:0;overflow:hidden}'
-        +'.sc-card-org-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:#a9cce3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-        +'.sc-card-org-name{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}'
+        // sc-card-org-eyebrow (the descriptor) now lives inside sc-idn,
+        // directly under whichever org name sc-idn-org is showing --
+        // "descriptor goes under the org." Same look as before, just
+        // relocated; add a hair of top margin so it doesn't crowd the
+        // org name above it (sc-idn's own flex gap is only 1px).
+        +'.sc-idn .sc-card-org-eyebrow{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1.5px;text-transform:uppercase;color:#a9cce3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;margin-top:1px}'
         // PROJECT-TOPIC-STORYBOARD chain wraps, all three positioned as
         // one centered group by _sboardPositionIdBandRow.
         +'.sc-mh-typebox{position:absolute;top:0;left:0}'
@@ -1015,28 +1017,36 @@
       // as BB's own Sept 19 TOPIC redesign), and STORYBOARD's old fixed
       // top:50%/left:75% position. sc-pagenum's triple-click reveal
       // (wired below, unchanged) still lives on #sc-topic-box itself.
+      // Sept 26 2026 (later), Larry, live on the Blue Sky board: the
+      // per-card/inherited Organization (below) was floating in its own
+      // box mid-header, right next to this block -- when a TOPIC had one
+      // set, its org name sat beside the traveler's own identity org,
+      // reading as "org shown twice." Fix: sc-idn-org now doubles as
+      // BOTH slots -- the TOPIC's own resolved org (when the chain has
+      // one) takes priority and overwrites whatever the traveler-identity
+      // fill wrote here, since _sboardRenderOrgDisplay runs LAST in
+      // _sboardUpdateHeaderChrome now (idea-storyboard-header.js) and
+      // otherwise leaves this line exactly as fill() set it (no card-
+      // level org = old single-org-line behavior, unchanged). The
+      // descriptor (sc-card-org-eyebrow) sits directly under whichever
+      // org name is showing, above the traveler name -- "descriptor goes
+      // under the org." See _sboardRenderOrgDisplay, idea-storyboard-
+      // navigation.js.
       +'<div class="sc-idn" id="sc-idn">'
       +'<div class="sc-idn-toprow"><div class="sc-idn-org" id="sc-idn-org" style="display:none"></div></div>'
+      +'<div class="sc-card-org-eyebrow" id="sc-card-org-eyebrow" style="display:none"></div>'
       // _sboardRenderMemberName (below) fills in the text.
       +'<div class="sc-traveler-eyebrow" id="sc-traveler-name"></div>'
       +'</div>'
-      // Per-card/inherited Organization display, Sept 26 2026 -- Larry:
-      // "LOGO is always to the right of the org/traveler name block and
-      // between the name block and the TOPIC/board block." Distinct from
-      // sc-idn-org just above (that's the TRAVELER's own personal/member
-      // identity, T2TMemberIdentity.fill, profiles.org_name) -- this is
-      // whichever TOPIC is currently on screen's own resolved
-      // org/eyebrow/logo (adds_org/org_name/org_eyebrow/logo_url,
-      // inherited down the header tree -- see _orgResolveForRow /
-      // _sboardRenderOrgDisplay, idea-storyboard-navigation.js). Hidden
-      // entirely (display:none) whenever nothing in the chain has
-      // adds_org set, so it takes no space on boards that don't use it.
+      // Per-card/inherited Organization's LOGO, Sept 26 2026 (later) --
+      // the org NAME + descriptor text moved up into sc-idn above (this
+      // box used to carry all three together, which is what caused the
+      // "org shown twice" duplicate). Larry: "current position of the
+      // org/descriptor is perfect for the logo if there is one" -- so
+      // this box keeps its original spot and now holds only the logo,
+      // shown only when the resolved TOPIC actually has a logo_url.
       +'<div class="sc-card-org" id="sc-card-org" style="display:none">'
       +'<div id="sc-card-org-logo-wrap"><img id="sc-card-org-logo" alt=""></div>'
-      +'<div class="sc-card-org-text">'
-      +'<div class="sc-card-org-eyebrow" id="sc-card-org-eyebrow"></div>'
-      +'<div class="sc-card-org-name" id="sc-card-org-name"></div>'
-      +'</div>'
       +'</div>'
       // PROJECT -- same click-drills-in / double-click-opens-popup
       // behavior Larry already has here (Sept 2/3 2026 fixes below), just

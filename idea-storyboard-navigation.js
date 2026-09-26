@@ -1782,27 +1782,53 @@
     }
     return null;
   }
-  // Paints the ID Band's sc-card-org block (idea-storyboard-screens.js)
-  // for whichever TOPIC is currently on screen. Called after any
-  // Organization-field save on a card back (idea-storyboard-card-
-  // detail.js) and wherever the board's own chrome already re-renders on
-  // a topic/project change (see call sites of _sboardRenderOrgName just
-  // above -- this runs alongside those, not instead of them).
+  // Paints the TOPIC's own resolved Organization for whichever TOPIC is
+  // currently on screen: org name + descriptor now live in sc-idn itself
+  // (idea-storyboard-screens.js) -- #sc-idn-org (shared with the
+  // traveler-identity org T2TMemberIdentity.fill sets) and
+  // #sc-card-org-eyebrow, directly under it, above the traveler name.
+  // #sc-card-org (top:10/left:230, its old combined spot) now holds only
+  // the logo. Called after any Organization-field save on a card back
+  // (idea-storyboard-card-detail.js) and, LAST, at the end of every
+  // _sboardUpdateHeaderChrome refresh (idea-storyboard-header.js) --
+  // last on purpose, so it has final say over #sc-idn-org: a TOPIC-level
+  // org overwrites whatever the traveler-identity fill just wrote there;
+  // no TOPIC-level org leaves that single line exactly as fill() set it
+  // (unchanged single-org behavior -- this is what stops the org from
+  // showing twice).
   function _sboardRenderOrgDisplay(){
     var wrap=document.getElementById('sc-card-org'); if(!wrap) return;
+    var idn=document.getElementById('sc-idn');
+    var idnOrgEl=document.getElementById('sc-idn-org');
+    var descEl=document.getElementById('sc-card-org-eyebrow');
+    var logoWrap=document.getElementById('sc-card-org-logo-wrap');
+    var logoImg=document.getElementById('sc-card-org-logo');
     var topicId=T2TShared.currentTopicId||null;
     var resolved=topicId ? _orgResolveForRow(topicId) : null;
     if(!resolved || (!resolved.name && !resolved.logoUrl && !resolved.eyebrow)){
+      // No TOPIC-level override -- leave #sc-idn-org exactly as the
+      // traveler-identity fill (member-identity.js) already set it; just
+      // hide the descriptor line and the logo box, both of which only
+      // ever belong to a TOPIC-level org.
+      if(descEl){ descEl.style.display='none'; descEl.textContent=''; }
       wrap.style.display='none';
       return;
     }
-    wrap.style.display='flex';
-    var eyebrowEl=document.getElementById('sc-card-org-eyebrow');
-    var nameEl=document.getElementById('sc-card-org-name');
-    var logoWrap=document.getElementById('sc-card-org-logo-wrap');
-    var logoImg=document.getElementById('sc-card-org-logo');
-    if(eyebrowEl) eyebrowEl.textContent=resolved.eyebrow||'';
-    if(nameEl) nameEl.textContent=resolved.name||'';
+    if(idnOrgEl){
+      idnOrgEl.textContent=resolved.name||'';
+      idnOrgEl.style.display=resolved.name?'':'none';
+    }
+    if(descEl){
+      descEl.textContent=resolved.eyebrow||'';
+      descEl.style.display=resolved.eyebrow?'':'none';
+    }
+    // has-org sizes the traveler name/eyebrow smaller (see .sc-idn.has-org
+    // .sc-traveler-eyebrow, idea-storyboard-screens.js) -- fill() already
+    // toggled this off the TRAVELER's own org_name, so re-toggle it here
+    // too in case the TOPIC has an org the traveler's own profile doesn't.
+    if(idn) idn.classList.toggle('has-org', !!(resolved.name));
+    // The old combined box now holds only the logo.
+    wrap.style.display=resolved.logoUrl?'flex':'none';
     if(logoWrap) logoWrap.style.display=resolved.logoUrl?'flex':'none';
     if(logoImg) logoImg.src=resolved.logoUrl||'';
   }

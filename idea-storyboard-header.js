@@ -461,10 +461,6 @@
   }
 
   function _sboardUpdateHeaderChrome(){
-    // Per-card/inherited Organization, Sept 26 2026 -- repaints the
-    // sc-card-org masthead block for whichever TOPIC this chrome update
-    // is about to show (idea-storyboard-navigation.js).
-    if(typeof _sboardRenderOrgDisplay==='function') _sboardRenderOrgDisplay();
     var topicBox=document.getElementById('sc-topic-box');
     var topicText=document.getElementById('sc-topic-text');
     var topicBadge=document.getElementById('sc-topic-badge');
@@ -590,6 +586,18 @@
     // head-icon button's highlight/title stay honest across a board switch,
     // not just after VIEW's own dropdown is used.
     if(typeof _sboardSyncViewTriggerLabel==='function') _sboardSyncViewTriggerLabel();
+    // Per-card/inherited Organization, Sept 26 2026 (later) -- repaints
+    // sc-idn-org/sc-card-org-eyebrow (name + descriptor, above the
+    // traveler name) and sc-card-org (logo only) for whichever TOPIC
+    // this chrome update is about to show (idea-storyboard-navigation.
+    // js). Moved here, LAST in this function -- it used to run first,
+    // before _sboardRenderMemberName (above) had even filled #sc-idn-org
+    // with the traveler's own identity org, so a TOPIC-level org and the
+    // traveler's org could both end up on screen at once ("org shown
+    // twice"). Running last lets it have final, and correct, say over
+    // #sc-idn-org: overwrite it when the TOPIC has its own resolved org,
+    // otherwise leave whatever the traveler-identity fill already set.
+    if(typeof _sboardRenderOrgDisplay==='function') _sboardRenderOrgDisplay();
   }
 
   // Aug 18 2026, Larry: "allow Logo to keep same relative distance from
