@@ -1752,6 +1752,13 @@
           +'<button type="button" class="sb-gear-tab'+(_sbAllInitialsHidden?' active':'')+'" data-hide="1" style="padding:5px 8px">OFF</button>'
         +'</div>'
       +'</div>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
+        +'<span>&#128065; Subject-only view<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:400">Every board, just for you -- each card\'s own Show-contents choice comes back when you turn this off</span></span>'
+        +'<div class="sb-gear-tabs" id="sb-prefs-subjectonly-toggle" style="margin-bottom:0;width:auto;min-width:88px;flex-shrink:0">'
+          +'<button type="button" class="sb-gear-tab'+(_sboardIsSubjectOnlyView()?' active':'')+'" data-on="1" style="padding:5px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+(_sboardIsSubjectOnlyView()?'':' active')+'" data-on="0" style="padding:5px 8px">OFF</button>'
+        +'</div>'
+      +'</div>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
@@ -1779,6 +1786,14 @@
       var hide=(btn.getAttribute('data-hide')==='1');
       initialsToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
       _sboardSetHideAllInitials(hide);
+    });
+    var subjOnlyToggle=document.getElementById('sb-prefs-subjectonly-toggle');
+    if(subjOnlyToggle) subjOnlyToggle.addEventListener('click', function(e){
+      var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
+      var on=(btn.getAttribute('data-on')==='1');
+      subjOnlyToggle.querySelectorAll('.sb-gear-tab').forEach(function(b){ b.classList.toggle('active', b===btn); });
+      _sboardSetSubjectOnlyView(on);
+      if(typeof renderSeaBoard==='function') renderSeaBoard(true);
     });
     T().wire('sb-preferences-close', _sboardOpenGearMenu);
   }

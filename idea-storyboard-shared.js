@@ -27,6 +27,26 @@
   var _sboardPurposeId = null;
   var _sboardNewAdditionsId = null;
   var _sboardActiveId = null;
+  // Universal Subject-only view, Sept 27 2026 -- Master BB card "Add
+  // universal subject only view option to board Utility button." A
+  // traveler-side viewing preference (localStorage, not a DB field), so
+  // it's the same on/off switch no matter which board is open --
+  // Storyboard, Session, or Briefing Board (see idea-storyboard-tiles.js,
+  // session.js, briefing-board-ops.js, all read this same flag). Distinct
+  // from the per-card "Show contents on face" Yes/No (hide_contents_front,
+  // Sept 22 2026 design lock): that stays a per-card choice with its own
+  // saved value; this is a temporary board-wide OVERRIDE for scanning --
+  // turning it off returns every card to whatever its own per-card
+  // setting already was, nothing is lost.
+  var _sboardSubjectOnlyView = (function(){
+    try { return localStorage.getItem('t2t-subject-only-view')==='1'; } catch(e){ return false; }
+  })();
+  function _sboardIsSubjectOnlyView(){ return _sboardSubjectOnlyView; }
+  function _sboardSetSubjectOnlyView(on){
+    _sboardSubjectOnlyView = !!on;
+    try { localStorage.setItem('t2t-subject-only-view', _sboardSubjectOnlyView?'1':'0'); } catch(e){}
+  }
+
   // Idea Storyboards role-based shortcuts (Sept 2 2026) -- resolved once
   // per real render (see renderSeaBoard) and read again on a cache-only
   // patch render of the SAME Topic so the strip doesn't flicker away

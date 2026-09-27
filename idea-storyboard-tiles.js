@@ -364,7 +364,9 @@
     // face of card" is No. No SUBJECT = contents always show, exactly as
     // before, so a card face is never blank.
     var _stSubject=String(item.subject||'').trim();
-    var _stShowContents=!_stSubject || !item.hide_contents_front;
+    // Sept 27 2026 -- universal Subject-only view (Utility button)
+    // overrides each card's own per-card "Show contents" choice while on.
+    var _stShowContents=!_stSubject || (!item.hide_contents_front && !_sboardIsSubjectOnlyView());
     var _stMultNow=(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1);
     var _stBase=Math.round((height>=60?17:14)*2/3*_stMultNow);
     if(_stSubject && !_stShowContents){

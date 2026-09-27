@@ -967,7 +967,10 @@
         // once there IS a SUBJECT -- no SUBJECT means the task always
         // shows, so a card face is never blank.
         var _bbSubject=String(c.subject||'').trim();
-        var _bbShowTask=!_bbSubject || !c.hideContentsFront;
+        // Sept 27 2026 -- universal Subject-only view (Utility button)
+        // overrides each card's own per-card "Show contents" choice while
+        // on. Shared flag with Storyboard/Session -- idea-storyboard-shared.js.
+        var _bbShowTask=!_bbSubject || (!c.hideContentsFront && !_sboardIsSubjectOnlyView());
         var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==_bbHeadline)
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
@@ -1739,6 +1742,13 @@
         +'</div>'
         +'<div class="bb-field"><label>Signal Flags</label>'
           +'<button class="bb-flag-btn" id="bb-open-keylib" style="width:100%">&#128681; Manage Signal Flags</button>'
+        +'</div>'
+        +'<div class="bb-field"><label>&#128065; Subject-only view</label>'
+          +'<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:6px">Every board, just for you -- each card\'s own Show-contents choice comes back when you turn this off.</div>'
+          +'<div class="bb-flags">'
+            +'<button class="bb-flag-btn" data-subj-on="1" style="flex:1">ON</button>'
+            +'<button class="bb-flag-btn" data-subj-on="0" style="flex:1">OFF</button>'
+          +'</div>'
         +'</div>';
       var sw=document.getElementById('bb-start-warn-days'); if(sw) sw.value=_bbStartWarnDays();
       var dw=document.getElementById('bb-due-warn-days'); if(dw) dw.value=_bbDueWarnDays();
@@ -1749,6 +1759,16 @@
         _bbSetMasterRollupDepth(mrd.value); mrd.value=_bbMasterRollupDepth();
         if(_bbCurrentTopicIsRoot) _bbLoadMasterRollupCards().then(function(){ _bbSyncMasterSubtitle(true); renderBoard(); });
       });
+      // Sept 27 2026 -- universal Subject-only view (shared with
+      // Storyboard/Session, idea-storyboard-shared.js).
+      var subjBtns=document.querySelectorAll('#bb-settings-body [data-subj-on]');
+      subjBtns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute('data-subj-on')==='1')===_sboardIsSubjectOnlyView()); });
+      subjBtns.forEach(function(b){ b.addEventListener('click', function(){
+        var on=(b.getAttribute('data-subj-on')==='1');
+        _sboardSetSubjectOnlyView(on);
+        subjBtns.forEach(function(bb){ bb.classList.toggle('bb-flag-active', bb===b); });
+        renderBoard();
+      }); });
       T().wire('bb-open-keylib', function(){ closeSettings(); openKeyLibManager(); });
     }
   }
