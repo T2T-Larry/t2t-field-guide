@@ -658,11 +658,16 @@
   // value stays the internal name every handler below keys off; only
   // label (the displayed word) changes. Kept in sync with briefing-
   // board-master-nav.js's own copy of this list.
+  // Sept 27 2026 -- Larry: 'STORY BOARD' (two words, spelled out) names
+  // the new story-development concept (Audience/Creative Intent/Drafts/
+  // CASE, not yet built); lowercase 'storyboard' stays the existing
+  // generic idea-column/cluster mechanism, unchanged. 'STORY' is the
+  // short dropdown label for the new concept.
   var _sboardBoardKinds=[
     {value:'IDEA', label:'BLUE SKY', soon:null},
     {value:'PLAN', label:'PATHFINDER', soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING', soon:null},
-    {value:'SHARE', label:'STORYBOARD', soon:'Storyboard coming soon'},
+    {value:'SHARE', label:'STORY', soon:'STORY BOARD coming soon'},
     {value:'CAST', label:'CAST', soon:null}
   ];
   function _sboardWireBoardKindDropdown(){

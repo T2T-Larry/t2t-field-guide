@@ -1970,11 +1970,17 @@
   // STORYBOARD's own eyebrow rename to TOPIC/BOARD the same session).
   // value stays the internal name every handler below keys off; only
   // label (the displayed word) changes.
+  // Sept 27 2026 -- Larry: 'STORY BOARD' (two words, spelled out) names
+  // the new story-development concept (Audience/Creative Intent/Drafts/
+  // CASE, not yet built); lowercase 'storyboard' stays the existing
+  // generic idea-column/cluster mechanism, unchanged. 'STORY' is the
+  // short dropdown label for the new concept -- kept in sync with
+  // idea-storyboard-navigation.js's own copy of this list.
   var _bbBoardKinds=[
     {value:'IDEA', label:'BLUE SKY'},
     {value:'PLAN', label:'PATHFINDER'},
     {value:'BRIEFING BOARD', label:'BRIEFING'},
-    {value:'SHARE', label:'STORYBOARD'},
+    {value:'SHARE', label:'STORY'},
     {value:'CAST', label:'CAST'}
   ];
   function _bbWireBoardKindDropdown(){
@@ -1997,7 +2003,7 @@
           if(window.CastRoster && _bbCurrentTopicHeaderId){ window.CastRoster.open(_bbCurrentTopicHeaderId); return; }
           openTeamRoster(); return;
         }
-        if(k.value==='SHARE'){ _bbShowToast('Storyboard coming soon'); return; }
+        if(k.value==='SHARE'){ _bbShowToast('STORY BOARD coming soon'); return; }
         if(k.value==='IDEA' || k.value==='PLAN'){
           var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
           // Sept 8 2026 fix -- one-board model, same reasoning as
