@@ -375,18 +375,32 @@
       tile.appendChild(sOnly);
     } else if(_stSubject && item.content_type!=='image' && item.content_type!=='link'){
       // Text card: headline takes the top ~40%, the text the rest.
+      // Sept 27 2026 fix (Larry: subject displaying vertically down the
+      // left side, e.g. BLUE SKY CONCEPTS "Dress Code") -- .sc-tile.text
+      // is `display:flex` with no flex-direction, i.e. a ROW. Every other
+      // branch here only ever gives the tile ONE child, so that row never
+      // shows up. This is the one branch with TWO children (headline +
+      // body) appended straight to the tile -- the row squeezed them
+      // side by side, crushing the headline into a sliver and wrapping it
+      // character-by-character. Wrapping both in one block-level div (a
+      // single flex item, stacking normally inside it) restores the
+      // intended top/bottom layout without touching the shared class
+      // every other tile still relies on for its centering.
+      var sWrap=document.createElement('div');
+      sWrap.style.cssText='width:100%;min-width:0';
       var sHead=document.createElement('p');
       sHead.className='sc-tile-subject';
       sHead.textContent=_stSubject;
       var sHeadH=Math.max(12, Math.round((height-12)*0.4));
       sHead.style.cssText='margin:0 0 2px;font-weight:700;word-break:break-word;line-height:1.2;font-size:'+_sboardFitFontSize(_stSubject, _stBase, Math.max(6,Math.round(_stBase*0.4)), width-16, sHeadH, 1.2)+'px';
-      tile.appendChild(sHead);
+      sWrap.appendChild(sHead);
       var sBody=document.createElement('p');
       var sBodyText=item.text_content||'';
       sBody.textContent=sBodyText;
       var sBodyBase=Math.round(_stBase*0.8);
       sBody.style.cssText='margin:0;word-break:break-word;overflow:hidden;opacity:.85;font-size:'+_sboardFitFontSize(sBodyText, sBodyBase, Math.max(6,Math.round(sBodyBase*0.4)), width-16, Math.max(10,(height-12)-sHeadH), 1.25)+'px;max-height:'+Math.max(10,(height-12)-sHeadH)+'px';
-      tile.appendChild(sBody);
+      sWrap.appendChild(sBody);
+      tile.appendChild(sWrap);
     } else if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
       if(item.content_type==='link'){
