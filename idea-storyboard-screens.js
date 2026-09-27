@@ -253,6 +253,15 @@
         +'.sc-glow{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(91,155,213,0.22),transparent 70%);pointer-events:none;z-index:5}'
         +'.sc-pill{position:absolute;z-index:15;transform:translate(-50%,-50%);background:#5b9bd5;color:#fff;border:none;padding:5px 10px;border-radius:14px;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;box-shadow:0 3px 8px rgba(26,58,92,0.2);cursor:pointer;white-space:nowrap;max-width:calc(150px * var(--fg-text-scale,1));overflow:hidden;text-overflow:ellipsis}'
         +'.sc-pill.named{background:#fff;color:#1a3a5c;border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        // Apex frame, Sept 27 2026 -- Larry: MASTER-level headers (no
+        // cluster_id, i.e. project roots/top-level Topics) are the apex of
+        // each Topic, so they get a visual frame. Same gold (#c9a87c) as
+        // the existing "Top Level" apexTag in _sboardHeaderQuickMenu
+        // (idea-storyboard-header.js), for visual consistency. An outline
+        // (not another box-shadow) so it never fights the .named border
+        // above or the .has-children double-shadow below -- it just sits
+        // outside both.
+        +'.sc-pill.apex-topic{outline:3px solid #c9a87c;outline-offset:3px}'
         // Order # badge -- Larry, Aug 3 2026: "small, no bigger that Notes
         // field" (.sb-notes-pill below is 12px; this is smaller still).
         // Moved to the upper-left corner (Larry, Aug 3 2026) so the number
@@ -2112,7 +2121,10 @@
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('button');
-        hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'')+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
+        // MASTER-level = a project root (no cluster_id) -- same isProjectRoot
+        // test _sboardHeaderQuickMenu already uses for its "Top Level" tag,
+        // so this can't drift out of sync with that definition. Sept 27 2026.
+        hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'')+(!headerRow.cluster_id?' apex-topic':'')+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
         // Sept 20 2026, Larry (Master BB do-h card: "Allow headers to
         // occupy 2 lines with larger type size") -- reverses the Sept 8
