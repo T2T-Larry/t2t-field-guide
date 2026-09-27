@@ -217,4 +217,148 @@
     return String(row.id)===String(rootId);
   };
 
+  // ============================================================
+  // Shared ID Band ROW LAYOUT, Sept 27 2026 -- Larry, after noticing BB
+  // and the Idea Board's ID Bands had drifted apart again (the PROJECT-
+  // field retirement shipped to BB but not to the Idea Board): "When a
+  // change is made to the ID BAND, it should apply to all boards... can
+  // we consolidate codes?"
+  //
+  // This is the second kind of drift this file exists to stop -- the
+  // first (TOKENS, topicLabel/projectLabel/isAccountRoot, above) covered
+  // the numbers and naming rules; this covers the actual pixel-geometry
+  // functions (position the chain, shrink the STORYBOARD label to fit,
+  // watch for resizes) that BB and the Idea Board had each hand-copied
+  // into their own file -- _bbPositionIdBandRow/_bbFitBoardKindLabel/
+  // _bbSetUpIdBandObserver (briefing-board-master-nav.js) and
+  // _sboardPositionIdBandRow/_sboardFitBoardKindLabel/_sboardSetUp-
+  // IdBandObserver (idea-storyboard-navigation.js) were byte-for-byte
+  // the same math under different variable names. One board's Sept 27
+  // simplification (three fields down to two) updated its own copy and
+  // silently left the other's three-field version in place -- exactly
+  // the "change one, forget the other" failure this file's own opening
+  // comment already warned about.
+  //
+  // Each board keeps its own small wrapper function under its own old
+  // name (_bbPositionIdBandRow, _sboardPositionIdBandRow, ...) -- every
+  // existing call site across both boards' files keeps working
+  // unchanged -- but the wrapper's BODY now just hands its own DOM
+  // elements to the one shared implementation below. A future geometry
+  // fix (or a third board's Plan/Share ID Band) changes it here once,
+  // for everyone, instead of needing the same hand-copy-and-hope
+  // treatment a third time.
+
+  // Generic shrink-to-fit for a board-kind-style label. Resets to the
+  // stylesheet's natural size first so this never ratchets smaller
+  // across repeated calls, then only shrinks -- never grows past what
+  // the stylesheet already sets. Reuses window.FGFitFontSize
+  // (text-fit.js), the same one-line shrink every board title uses.
+  window.IDBand.fitLabelToWidth = function(triggerId, availableWidthPx, defaultBaseSize){
+    var trigger=document.getElementById(triggerId);
+    if(!trigger || !window.FGFitFontSize) return;
+    trigger.style.fontSize='';
+    if(!availableWidthPx || availableWidthPx<=0) return;
+    var cs=getComputedStyle(trigger);
+    var baseSize=parseFloat(cs.fontSize)||defaultBaseSize||36;
+    var fitted=window.FGFitFontSize(trigger.textContent, availableWidthPx, {
+      base:baseSize, min:Math.max(14, Math.round(baseSize*0.4)), step:0.5,
+      fontFamily:cs.fontFamily, fontWeight:cs.fontWeight, oneLine:true
+    });
+    if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
+  };
+
+  // Positions a left-to-right chain of ID Band fields (cfg.fields, real
+  // elements already resolved by the caller -- not ids, since BB finds
+  // its container by class/querySelector while the Idea Board's has an
+  // id, and forcing one lookup style on both boards would be exactly
+  // the kind of "make the boards identical" overreach Larry's own
+  // board-should-look-unique note (Sept 27 2026, t2t-field-guide memory)
+  // warns against; only the MATH is shared here, never the markup or
+  // colors) as one group, centered on cfg.container, clamped so it
+  // never runs under cfg.actionsEl (Logo/Utility/Close, pinned to the
+  // header's right edge) or past cfg.idnEl (the top-left identity
+  // block) on the left. Every field vertical-centers on the container --
+  // the shape both boards converged on once each board's own PROJECT-
+  // style field was retired and TOPIC/STORYBOARD became a plain matched
+  // pair (no more of the old center/bottom-justify split that existed
+  // only to reconcile TOPIC's bigger box against a smaller PROJECT).
+  //
+  // cfg: {container, actionsEl, idnEl, gap, fields:[el,...],
+  //       fitLabelId, fitBaseSize}
+  // fitLabelId (optional): id of the LAST field's own label trigger,
+  // shrunk to whatever width is left once every other field's real
+  // width is accounted for -- same "measure the fixed boxes first, fit
+  // the flexible one into what's left" order both boards always used.
+  // Returns false (nothing moved) when an element hasn't laid out yet
+  // -- same not-ready guard both boards' own versions already had.
+  window.IDBand.positionRow = function(cfg){
+    var gap=cfg.gap||10;
+    var container=cfg.container, actionsEl=cfg.actionsEl, idnEl=cfg.idnEl;
+    var wraps=cfg.fields||[];
+    if(!container || !actionsEl || !wraps.length || wraps.some(function(w){return !w;})) return false;
+
+    var containerRect=container.getBoundingClientRect();
+    if(!containerRect.width) return false;
+
+    var rects=wraps.map(function(w){ return w.getBoundingClientRect(); });
+    for(var i=0;i<rects.length-(cfg.fitLabelId?1:0);i++){ if(!rects[i].width) return false; }
+
+    if(cfg.fitLabelId){
+      var fixedWidth=0;
+      for(var j=0;j<rects.length-1;j++) fixedWidth+=rects[j].width;
+      var available=containerRect.width-fixedWidth-(gap*rects.length);
+      window.IDBand.fitLabelToWidth(cfg.fitLabelId, Math.max(24, available), cfg.fitBaseSize);
+      rects[rects.length-1]=wraps[wraps.length-1].getBoundingClientRect();
+    }
+    if(!rects[rects.length-1].width) return false;
+
+    var totalWidth=0;
+    rects.forEach(function(r,i){ totalWidth+=r.width; if(i<rects.length-1) totalWidth+=gap; });
+
+    var rightLimit=actionsEl.getBoundingClientRect().left-gap;
+    var leftLimit=containerRect.left;
+    if(idnEl){
+      var idr=idnEl.getBoundingClientRect();
+      if(idr.width) leftLimit=Math.max(leftLimit, idr.right+gap);
+    }
+    var preferredLeft=containerRect.left+(containerRect.width-totalWidth)/2;
+    var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
+
+    var x=groupLeft;
+    wraps.forEach(function(w,i){
+      w.style.left=(x-containerRect.left)+'px';
+      x+=rects[i].width+gap;
+    });
+    wraps.forEach(function(w){
+      var r=w.getBoundingClientRect();
+      if(r.height && containerRect.height) w.style.top=((containerRect.height-r.height)/2)+'px';
+    });
+    return true;
+  };
+
+  // ResizeObserver wiring shared the same way -- both boards had hand-
+  // copied this too. Keyed by screenId (not a single shared boolean) so
+  // BB's own setup and the Idea Board's own setup don't stomp on each
+  // other the one time both screens have ever been built in the same
+  // page load. positionFn is the board's OWN wrapper (so it still reads
+  // that board's own current DOM ids, not a hard-coded shared one).
+  var _idBandObserverSetUp={};
+  window.IDBand.observeRow = function(screenId, positionFn, els){
+    if(_idBandObserverSetUp[screenId] || typeof ResizeObserver==='undefined') return;
+    _idBandObserverSetUp[screenId]=true;
+    var pending=false;
+    var ro=new ResizeObserver(function(){
+      if(pending) return;
+      pending=true;
+      requestAnimationFrame(function(){
+        pending=false;
+        try{
+          var scr=document.getElementById(screenId);
+          if(scr && scr.classList.contains('active')) positionFn();
+        }catch(e){}
+      });
+    });
+    els.forEach(function(el){ if(el) ro.observe(el); });
+  };
+
 })();

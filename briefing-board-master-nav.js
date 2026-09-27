@@ -1246,18 +1246,13 @@
   // Resets to the natural CSS size first so this never ratchets smaller
   // across repeated calls, then only shrinks -- never grows past what the
   // stylesheet already sets.
+  // Sept 27 2026 -- body now delegates to the shared implementation
+  // (id-band.js, IDBand.fitLabelToWidth) instead of its own hand-copied
+  // math; see that file's own comment for why. Kept as its own named
+  // function so every existing caller in this file (_bbPositionIdBandRow,
+  // below) is untouched.
   function _bbFitBoardKindLabel(availableWidthPx){
-    var trigger=document.getElementById('bb-boardkind-trigger');
-    if(!trigger || !window.FGFitFontSize) return;
-    trigger.style.fontSize='';
-    if(!availableWidthPx || availableWidthPx<=0) return;
-    var cs=getComputedStyle(trigger);
-    var baseSize=parseFloat(cs.fontSize)||42;
-    var fitted=window.FGFitFontSize(trigger.textContent, availableWidthPx, {
-      base:baseSize, min:Math.max(14, Math.round(baseSize*0.4)), step:0.5,
-      fontFamily:cs.fontFamily, fontWeight:cs.fontWeight, oneLine:true
-    });
-    if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
+    window.IDBand.fitLabelToWidth('bb-boardkind-trigger', availableWidthPx, 42);
   }
   // TOPIC's own shrink-to-fit, Sept 15 2026 -- Larry (Master BB session
   // with Bill): a long TOPIC title was cutting off with "..." instead of
@@ -1305,23 +1300,10 @@
   // resizes it (_bbFitBoardKindLabel), so observing it would just be
   // watching its own output; it's re-measured fresh on every pass
   // regardless. Set up once, lazily, the first time real elements exist.
-  var _bbIdBandObserverSetUp=false;
+  // Sept 27 2026 -- body now delegates to the shared implementation
+  // (id-band.js, IDBand.observeRow); see that file's own comment.
   function _bbSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container){
-    if(_bbIdBandObserverSetUp || typeof ResizeObserver==='undefined') return;
-    _bbIdBandObserverSetUp=true;
-    var pending=false;
-    var ro=new ResizeObserver(function(){
-      if(pending) return;
-      pending=true;
-      requestAnimationFrame(function(){
-        pending=false;
-        try{
-          var scr=document.getElementById('s-briefing-board');
-          if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
-        }catch(e){}
-      });
-    });
-    [topicWrap, idnEl, actionsEl, container].forEach(function(el){ if(el) ro.observe(el); });
+    window.IDBand.observeRow('s-briefing-board', _bbPositionIdBandRow, [topicWrap, idnEl, actionsEl, container]);
   }
   // Rewritten Sept 27 2026 -- PROJECT (the old TOPIC-field/board-switcher,
   // bb-project-wrap) is retired, so this is now a two-item chain (TOPIC,
@@ -1331,6 +1313,13 @@
   // a header name, same clamp-against-the-hard-edges shape every version
   // of this function has used since Sept 6, just with one fewer chain
   // link to add up.
+  //
+  // Same day, later -- body now delegates the actual geometry to the
+  // shared implementation (id-band.js, IDBand.positionRow) instead of its
+  // own hand-copied math, so this and the Idea Board's own mirror
+  // (_sboardPositionIdBandRow, idea-storyboard-navigation.js) can't drift
+  // apart the way they just did. This wrapper's only job now is finding
+  // BB's own DOM elements and handing them over.
   function _bbPositionIdBandRow(){
     var topicWrap=document.getElementById('bb-topic-wrap');
     var boardkindWrap=document.getElementById('bb-boardkind-wrap');
@@ -1343,58 +1332,9 @@
     var container=document.querySelector('#s-briefing-board .bb-mhead-top');
     if(!topicWrap || !boardkindWrap || !actionsEl || !container) return;
     _bbSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container);
-    var containerRect=container.getBoundingClientRect();
-    // Guard against a not-yet-laid-out screen -- nothing real to measure
-    // yet, leave the left:0/top:0 CSS fallback in place.
-    if(!containerRect.width) return;
-
-    var tr=topicWrap.getBoundingClientRect();
-    var ar=actionsEl.getBoundingClientRect();
-    if(!tr.width) return;
-
-    // Shrink Board Type's own label to whatever room is actually left
-    // once Topic and its one gap are accounted for -- same "measure the
-    // real boxes before fitting" order the Sept 13 2026 version used.
-    // Floored at 24px for the same reason as before: _bbFitBoardKindLabel
-    // treats anything <=0 as "don't shrink," which is exactly the
-    // overflow this exists to prevent.
-    var available=containerRect.width-tr.width-(ID_BAND_GAP*2);
-    _bbFitBoardKindLabel(Math.max(24, available));
-
-    var br=boardkindWrap.getBoundingClientRect();
-    if(!br.width) return;
-
-    var totalWidth=tr.width+ID_BAND_GAP+br.width;
-    // Preferred: the whole chain centered on the header's real width
-    // ("center on the BB"). Never let it run under Logo/Utility/Close
-    // (actionsEl, already pinned to the header's own right edge) or off
-    // the container's own left edge -- same min/max clamp shape the old
-    // midpoint math used, just applied to the chain's total width.
-    var rightLimit=ar.left-ID_BAND_GAP;
-    // Never run under the top-left identity block (organization / logo /
-    // member name) either -- on a wide window the centered chain sits far
-    // to its right and this changes nothing; on a narrow one it nudges the
-    // chain over instead of overlapping the name.
-    var leftLimit=containerRect.left;
-    if(idnEl){
-      var idr=idnEl.getBoundingClientRect();
-      if(idr.width) leftLimit=Math.max(leftLimit, idr.right+ID_BAND_GAP);
-    }
-    var preferredLeft=containerRect.left+(containerRect.width-totalWidth)/2;
-    var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
-
-    var x=groupLeft;
-    topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+ID_BAND_GAP;
-    boardkindWrap.style.left=(x-containerRect.left)+'px';
-
-    // Both now vertical-center on the band, Sept 27 2026 -- TOPIC and
-    // Board Type are a matched pair (same box, same font) now that
-    // PROJECT is gone, so the old center/bottom-justify split (kept only
-    // to reconcile TOPIC's bigger box against PROJECT/STORYBOARD's
-    // smaller one) no longer applies to either.
-    [topicWrap, boardkindWrap].forEach(function(el){
-      var r=el.getBoundingClientRect();
-      if(r.height && containerRect.height) el.style.top=((containerRect.height-r.height)/2)+'px';
+    window.IDBand.positionRow({
+      container:container, actionsEl:actionsEl, idnEl:idnEl, gap:ID_BAND_GAP,
+      fields:[topicWrap, boardkindWrap], fitLabelId:'bb-boardkind-trigger', fitBaseSize:42
     });
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize

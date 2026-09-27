@@ -339,7 +339,14 @@
         // now white everywhere, matching Briefing Board's bb-topic-hit
         // (which was already white); only the frame/text color is this
         // board's own identity now.
-        +'#sc-topic-box{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        // Sept 27 2026 -- #sc-board-kind-trigger folded into this same
+        // rule (mirrors BB's own combined ".bb-topic-hit,.bb-boardkind-
+        // hit" selector, briefing-board-styles.js): now that PROJECT is
+        // retired below (sc-project-wrap), STORYBOARD is TOPIC's only
+        // remaining partner and gets sized/framed identically instead of
+        // its old small PROJECT-matched chip -- one rule, so the two
+        // can't drift apart in size the way PROJECT/STORYBOARD used to.
+        +'#sc-topic-box,#sc-board-kind-trigger{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -1048,20 +1055,17 @@
       +'<div class="sc-card-org" id="sc-card-org" style="display:none">'
       +'<div id="sc-card-org-logo-wrap"><img id="sc-card-org-logo" alt=""></div>'
       +'</div>'
-      // PROJECT -- same click-drills-in / double-click-opens-popup
-      // behavior Larry already has here (Sept 2/3 2026 fixes below), just
-      // restyled into BB's own fieldgrp shape (eyebrow + white boxed
-      // trigger) and repositioned by the chain function instead of
-      // nesting under the traveler name.
-      // Sept 19 2026, Larry: "Delete Drop down arrow to right of PROJECT
-      // FIELD" -- matching BB's own bb-board-trigger, which has never had
-      // a separate caret chip: sc-title-trigger is now PROJECT's only
-      // element. The header-list dropdown that used to live on the caret
-      // (_sboardWireProjectHeaderDropdown) is retired in place, not
-      // deleted -- see its own no-longer-called note at the boot wiring
-      // below -- sc-title-trigger's existing click (drill in) and
-      // dblclick (fast-jump popup) already cover the same ground.
-      +'<div id="sc-project-wrap" class="sc-mh-typebox">'
+      // TOPIC field (the separate PROJECT switcher that used to sit here)
+      // retired Sept 27 2026 to mirror BB's own ID Band simplification
+      // (bb-project-wrap, briefing-board-screens.js) the same day: pure
+      // navigation duplication now that TOPIC's own pyramid (sc-topic-box,
+      // below) already climbs to MASTER and lists the same top-level
+      // Topics as children. Same "retire in place, don't delete" as
+      // everything else this file has retired -- _sboardWireProjectPicker/
+      // _sboardRenderProjectField (wherever they live) are left exactly as
+      // they were, just with no sc-title-trigger visible for them to
+      // update; harmless no-ops, same as BB's own _bbRenderBoardPicker.
+      +'<div id="sc-project-wrap" class="sc-mh-typebox" style="display:none">'
       +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Topic</div><div class="sc-cdrop" id="sc-title-cdrop"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div></div>'
       +'</div>'
       // TOPIC -- Sept 19 2026, matching BB's own redesign: the up/down
@@ -1086,7 +1090,13 @@
       // CSS override above), matching BB's own #bb-boardkind-trigger and
       // fixing the same "two dropdown arrows" complaint Larry raised on
       // BB's side the same session.
-      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-mh-eyebrow">Board</div><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-hdr-select sc-cdrop-trigger sc-mh-field-trigger" id="sc-board-kind-trigger" title="Switch to Pathfinder, Storyboard, or Cast">BLUE SKY</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
+      // Sept 27 2026 -- "Board" eyebrow dropped and sc-hdr-select/sc-mh-
+      // field-trigger classes removed, matching BB's own same-day change
+      // (bb-boardkind-hit is TOPIC's own class under a second name): this
+      // button now reads the shared #sc-topic-box,#sc-board-kind-trigger
+      // CSS rule above instead, so it can't drift out of size sync with
+      // TOPIC the way the old small chip drifted from PROJECT's.
+      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Pathfinder, Storyboard, or Cast">BLUE SKY</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
       // Sept 5 2026, Larry: "delete the nametag -- don't totally delete it
       // yet, I don't know why, I just like it. Can it go somewhere on the
       // website that is retrievable but not in active use?" Retired in

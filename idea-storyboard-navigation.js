@@ -1195,107 +1195,42 @@
 
   // ID Band row layout, Sept 19 2026 -- Larry: "make the Idea Board's ID
   // Band exactly like BB's." Mirrors BB's own _bbPositionIdBandRow
-  // (briefing-board-master-nav.js) in full: PROJECT-TOPIC-STORYBOARD as
-  // one left-to-right chain, SC_ID_BAND_GAP apart, centered as a group on
-  // the header -- clamped so it never runs under the identity block on
-  // the left or the Logo/Utility/Close row on the right -- replacing the
-  // old 3-column grid (TOPIC) and fixed top:50%/left:75% position
-  // (STORYBOARD) that used to drift apart on a narrow window or a long
-  // project/topic name. Same "measure the real boxes, clamp against a
-  // hard edge" shape, same ResizeObserver safety net for any future
-  // async width change (a late member name, a font swap), same
-  // document.fonts.ready re-run once real fonts have actually loaded.
+  // (briefing-board-master-nav.js).
+  //
+  // Sept 27 2026 -- PROJECT (sc-project-wrap) retired to match BB's own
+  // same-day simplification (see the markup comment where it's hidden,
+  // idea-storyboard-screens.js), so this is now a two-item chain (TOPIC,
+  // STORYBOARD) same as BB's. And the geometry itself now delegates to
+  // the shared implementation (id-band.js, IDBand.positionRow/
+  // fitLabelToWidth/observeRow) instead of its own hand-copied math --
+  // this and BB's own version had drifted apart once already (BB's Sept
+  // 27 fix landed here days late, exactly the "change one, forget the
+  // other" failure id-band.js's own opening comment warned about) --
+  // Larry: "can we consolidate codes?" These wrapper functions keep their
+  // old names (every existing call site below and in idea-storyboard-
+  // header.js is untouched) and just hand this board's own DOM elements
+  // to the shared functions.
   var SC_ID_BAND_GAP = 10;
-  var _sboardIdBandObserverSetUp=false;
-  function _sboardSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container){
-    if(_sboardIdBandObserverSetUp || typeof ResizeObserver==='undefined') return;
-    _sboardIdBandObserverSetUp=true;
-    var pending=false;
-    var ro=new ResizeObserver(function(){
-      if(pending) return;
-      pending=true;
-      requestAnimationFrame(function(){
-        pending=false;
-        try{
-          var scr=document.getElementById('s-sea-of-ideas-cluster');
-          if(scr && scr.classList.contains('active')) _sboardPositionIdBandRow();
-        }catch(e){}
-      });
-    });
-    [projectWrap, topicWrap, idnEl, actionsEl, container].forEach(function(el){ if(el) ro.observe(el); });
+  function _sboardSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container){
+    window.IDBand.observeRow('s-sea-of-ideas-cluster', _sboardPositionIdBandRow, [topicWrap, idnEl, actionsEl, container]);
   }
-  // Shrink STORYBOARD's own label to whatever room is actually left once
-  // Project, Topic, and the two gaps between all three are accounted
-  // for -- same shared FGFitFontSize one-line shrink every other board
-  // title already uses (text-fit.js), mirroring _bbFitBoardKindLabel.
   function _sboardFitBoardKindLabel(availableWidthPx){
-    var trigger=document.getElementById('sc-board-kind-trigger');
-    if(!trigger || !window.FGFitFontSize) return;
-    trigger.style.fontSize='';
-    if(!availableWidthPx || availableWidthPx<=0) return;
-    var cs=getComputedStyle(trigger);
-    var baseSize=parseFloat(cs.fontSize)||36;
-    var fitted=window.FGFitFontSize(trigger.textContent, availableWidthPx, {
-      base:baseSize, min:Math.max(14, Math.round(baseSize*0.4)), step:0.5,
-      fontFamily:cs.fontFamily, fontWeight:cs.fontWeight, oneLine:true
-    });
-    if(fitted<baseSize) trigger.style.fontSize=fitted+'px';
+    window.IDBand.fitLabelToWidth('sc-board-kind-trigger', availableWidthPx, 36);
   }
   function _sboardPositionIdBandRow(){
-    var projectWrap=document.getElementById('sc-project-wrap');
     var topicWrap=document.getElementById('sc-topic-wrap');
     var boardkindWrap=document.getElementById('sc-boardkind-wrap');
     var idnEl=document.getElementById('sc-idn');
     var actionsEl=document.querySelector('#s-sea-of-ideas-cluster .sc-hdr-side');
     var container=document.getElementById('sc-header-area');
-    if(!projectWrap || !topicWrap || !boardkindWrap || !actionsEl || !container) return;
-    _sboardSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container);
-    var containerRect=container.getBoundingClientRect();
-    // Guard against a not-yet-laid-out screen -- nothing real to measure
-    // yet, leave the CSS fallback (top:0;left:0) in place.
-    if(!containerRect.width) return;
-
-    var pr=projectWrap.getBoundingClientRect();
-    var tr=topicWrap.getBoundingClientRect();
-    var ar=actionsEl.getBoundingClientRect();
-    if(!pr.width || !tr.width) return;
-
-    var available=containerRect.width-pr.width-tr.width-(SC_ID_BAND_GAP*3);
-    _sboardFitBoardKindLabel(Math.max(24, available));
-
-    var br=boardkindWrap.getBoundingClientRect();
-    if(!br.width) return;
-
-    var totalWidth=pr.width+SC_ID_BAND_GAP+tr.width+SC_ID_BAND_GAP+br.width;
-    var rightLimit=ar.left-SC_ID_BAND_GAP;
-    var leftLimit=containerRect.left;
-    if(idnEl){
-      var idr=idnEl.getBoundingClientRect();
-      if(idr.width) leftLimit=Math.max(leftLimit, idr.right+SC_ID_BAND_GAP);
-    }
-    var preferredLeft=containerRect.left+(containerRect.width-totalWidth)/2;
-    var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
-
-    var x=groupLeft;
-    projectWrap.style.left=(x-containerRect.left)+'px'; x+=pr.width+SC_ID_BAND_GAP;
-    topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+SC_ID_BAND_GAP;
-    boardkindWrap.style.left=(x-containerRect.left)+'px';
-
-    // PROJECT and STORYBOARD bottom-justify with the Logo/Utility/Close
-    // row's own real bottom edge; TOPIC centers vertically on the band --
-    // same vertical-alignment rule BB locked in Sept 16 2026 (see that
-    // function's own comment, briefing-board-master-nav.js).
-    if(ar.height){
-      [projectWrap, boardkindWrap].forEach(function(el){
-        var r=el.getBoundingClientRect();
-        if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
-      });
-    }
-    var trNow=topicWrap.getBoundingClientRect();
-    if(trNow.height && containerRect.height){
-      topicWrap.style.top=((containerRect.height-trNow.height)/2)+'px';
-    }
+    if(!topicWrap || !boardkindWrap || !actionsEl || !container) return;
+    _sboardSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container);
+    window.IDBand.positionRow({
+      container:container, actionsEl:actionsEl, idnEl:idnEl, gap:SC_ID_BAND_GAP,
+      fields:[topicWrap, boardkindWrap], fitLabelId:'sc-board-kind-trigger', fitBaseSize:36
+    });
   }
+
   window.addEventListener('resize', function(){
     try{
       var scr=document.getElementById('s-sea-of-ideas-cluster');
