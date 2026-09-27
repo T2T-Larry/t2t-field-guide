@@ -122,65 +122,33 @@
             +'<div class="bb-card-org" id="bb-card-org" style="display:none">'
             +'<div id="bb-card-org-logo-wrap"><img id="bb-card-org-logo" alt=""></div>'
             +'</div>'
-            +'<div class="bb-mh-typebox" id="bb-project-wrap">'
-              // Traveler name + PROJECT, Sept 5 2026 -- moved to the FRONT
-              // of this row (was third) to sit at the header's far left
-              // corner, matching where the Idea Board keeps its own
-              // traveler-name/PROJECT column. "Project" eyebrow label
-              // dropped -- Idea Board dropped its own the same day so the
-              // board-switcher itself reads as the only thing in this
-              // column, directly under the traveler's name. bb-project-caret
-              // added so this field gets the Idea Board's exact two-piece
-              // shape (label button, then its own arrow) -- wired in
-              // _bbRenderBoardPicker, right after that function's existing
-              // _bbRenderDropdown call, to open the same board-switch menu
-              // the label itself already opens. _bbRenderTravelerName
-              // (below) fills in the traveler-name text. Its markup moved
-              // out to a sibling of this box Sept 16 2026 -- see the note
-              // just above -- but stays wired the same way (plain
-              // getElementById('bb-traveler-name')), so nothing else here
-              // changes.
-              // Sept 5 2026, Larry: "increase the text size on the PROJECT
-              // field on all boards" -- matches sc-title-trigger's own
-              // bump in idea-storyboard-9710.js (9px/24px -> 14px/30px).
-              // That 14px/30px/120px sizing now comes from the shared
-              // .bb-mh-field-trigger class (briefing-board-styles.js,
-              // reading IDBand.TOKENS.fieldBox) instead of this button's
-              // own inline style, so PROJECT/STORYBOARD/VIEW can never
-              // drift out of sync again -- see the Sept 15 2026 note on
-              // bb-boardkind-trigger below for the "why now" (Larry: board
-              // type wasn't actually matching PROJECT's size).
-              // "Project" eyebrow, Sept 15 2026 -- Larry asked this back
-              // (it was dropped Sept 5, see the note above) so this field
-              // reads the same eyebrow-then-box shape as VIEW just added
-              // Sept 13. Traveler-name eyebrow stays above it, unchanged --
-              // this is additive, not a replacement; easy to drop back out
-              // if Larry wants just the one eyebrow here after all.
-              +'<div class="bb-mh-fieldgrp"><div class="bb-mh-eyebrow">Topic</div><div class="bb-cdrop" id="bb-board-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-board-trigger" title="Double-click to rename; click to switch projects or add a new one"></button><div class="bb-cdrop-menu" id="bb-board-menu" hidden></div></div></div>'
-              // Parent field retired from the header, Sept 6 2026 --
-              // Larry: "the hierarchy is set when a PROJECT is chosen,"
-              // folding its "jump to any level above" job into a new
-              // up-arrow on TOPIC itself (bb-topic-caret-up, see the
-              // TOPIC markup just below) instead of a separate eyebrow
-              // and field over here. Same "retire in place, don't
-              // delete" treatment already used on TYPE/ORG NAME right
-              // below this comment: _bbRenderParentField and
-              // _bbWireParentAncestorDropdown are both left exactly as
-              // they were and still get called every render (they no-op
-              // the moment bb-parent-hit/bb-parent-caret don't resolve
-              // in the DOM, same as those two already do) -- nothing to
-              // rebuild if this ever needs to come back.
-              //
-              // TYPE and ORG NAME (Client/Department/Partner categorization)
-              // retired from the visible chrome, Sept 5 2026 -- Larry: BB's
-              // header should look exactly like the Idea Board's, which has
-              // no equivalent field. Left as real, working code -- just no
-              // longer rendered here -- rather than deleted: _bbRenderOrgName,
-              // _bbRenderTypePicker and friends still run fine with no
-              // bb-type-trigger/bb-org-name-trigger in the DOM (_bbRenderDropdown
-              // no-ops when its trigger/menu ids don't resolve), so this is
-              // reversible by putting the fieldgrp back, nothing to rebuild.
-            +'</div>'
+            // TOPIC field (the separate PROJECT/board switcher that used
+            // to sit here, labeled "Topic" eyebrow -- bb-project-wrap /
+            // bb-board-trigger) retired Sept 27 2026 -- Larry: simplify the
+            // ID Band from three items down to two. It was pure navigation
+            // duplication: TOPIC's own pyramid (bb-topic-hit, below) already
+            // climbs all the way to MASTER, and expanding MASTER's children
+            // there shows the exact same top-level list this field did.
+            // Adding/removing a top-level Topic no longer needs a dedicated
+            // control either (Larry: once you're standing at MASTER, that's
+            // just the ordinary add/delete-a-header flow every other level
+            // already has). Same "retire in place, don't delete" treatment
+            // as TYPE/ORG NAME below: _bbRenderBoardPicker/_bbProjectPicker-
+            // Options (briefing-board-master-nav.js) are left exactly as
+            // they were -- the latter is still used by the per-card Project
+            // field, and the former just no-ops now with no bb-board-trigger/
+            // bb-board-menu in the DOM, same as _bbRenderParentField already
+            // does for PARENT.
+            //
+            // TYPE and ORG NAME (Client/Department/Partner categorization)
+            // retired from the visible chrome, Sept 5 2026 -- Larry: BB's
+            // header should look exactly like the Idea Board's, which has
+            // no equivalent field. Left as real, working code -- just no
+            // longer rendered here -- rather than deleted: _bbRenderOrgName,
+            // _bbRenderTypePicker and friends still run fine with no
+            // bb-type-trigger/bb-org-name-trigger in the DOM (_bbRenderDropdown
+            // no-ops when its trigger/menu ids don't resolve), so this is
+            // reversible by putting the fieldgrp back, nothing to rebuild.
             // TOPIC, Sept 5 2026 -- Larry: "Need TOPIC just like Idea
             // Board. What if it is exactly the same? If Field Guide is
             // open on the Idea Board, then the BB is set to the Field
@@ -264,36 +232,27 @@
             // getElementById('bb-mh-subtitle') comes back null, so
             // nothing to rebuild if this ever needs to come back; just
             // put the div back with its old id.
-            // Sept 15 2026 -- Larry: PROJECT and STORYBOARD share one
-            // look template (same as bb-board-trigger/bb-project-caret),
-            // sized smaller than TOPIC, down-arrow only. Was bare .bb-mh
-            // embossed text with no visible box or caret; now the same
-            // bb-hdr-select-box + bb-parent-caret pair as PROJECT, just
-            // with the STORYBOARD dropdown's own trigger/menu ids kept.
-            // bb-mh-group-center's centering (left:50%+translateX(-50%))
-            // re-measures the box every render, so the new, wider footprint
-            // doesn't need any position math changed here.
+            // Sept 15 2026 -- PROJECT and STORYBOARD used to share one
+            // small look template, sized smaller than TOPIC (superseded
+            // below). bb-mh-group-center's centering (left:50%+
+            // translateX(-50%)) re-measures the box every render, so a
+            // wider footprint never needs any position math changed here.
             //
-            // Sept 15 2026, round two -- Larry: this still wasn't actually
-            // matching PROJECT ("same size type and boldness"). The inline
-            // font-family/letter-spacing above was left over from when this
-            // was still the bare .bb-mh title text and never got the same
-            // 14px/30px/120px sizing PROJECT's own bb-board-trigger got on
-            // Sept 5 -- dropped in favor of the new shared
-            // .bb-mh-field-trigger class (briefing-board-styles.js) both
-            // buttons now carry, so they truly can't drift apart again.
-            // "Storyboard" eyebrow added above the box to match VIEW's own
-            // eyebrow-then-box shape (same request as PROJECT's, above).
-            // bb-mh-group-center's own gap tightened 10px->3px the same day
-            // to match .bb-mh-fieldgrp's eyebrow-to-box spacing now that
-            // this box has a real eyebrow sitting on top of it (that 10px
-            // was sized for the old, now-gone tagline, not for this).
-            // Positioning itself (left/top, plus the matching TOPIC-side
-            // gap for PROJECT and TOPIC-STORYBOARD-VIEW as one centered
-            // group) moved to _bbPositionIdBandRow (briefing-board-master-
-            // nav.js, renamed from _bbPositionBoardKindMidway) -- see that
-            // function for the full story.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-mh-eyebrow">Board</div><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-hdr-select bb-cdrop-trigger bb-mh-field-trigger" id="bb-boardkind-trigger" title="Switch to Blue Sky, Pathfinder, Storyboard, or Cast">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            // Sept 27 2026 -- Larry: with PROJECT/the old TOPIC-field
+            // gone (see the retired bb-project-wrap note above), STORYBOARD
+            // is now the only thing left beside TOPIC, so it's resized to
+            // match TOPIC exactly rather than staying the small PROJECT-
+            // matched chip it was sized for. "Board" eyebrow dropped to
+            // match TOPIC's own plain (eyebrow-less) look, so the two read
+            // as one matched pair. bb-boardkind-hit is TOPIC's own
+            // .bb-topic-hit rule under a second name (briefing-board-
+            // styles.js) rather than a hand-copied duplicate -- same box,
+            // same font, same border, so it can't drift out of size sync
+            // with TOPIC the way the old small chip drifted from PROJECT's.
+            // Positioning (left/top, plus the TOPIC-STORYBOARD gap as one
+            // centered pair) is _bbPositionIdBandRow (briefing-board-
+            // master-nav.js) -- see that function for the full story.
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-boardkind-hit bb-cdrop-trigger" id="bb-boardkind-trigger" style="cursor:pointer" title="Switch to Blue Sky, Pathfinder, Storyboard, or Cast">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the

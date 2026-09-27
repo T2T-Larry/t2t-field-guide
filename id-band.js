@@ -187,13 +187,35 @@
   // keys off that literal string, same as PROJECT already keeps 'MASTER'
   // display-only rather than renaming the row). So this mirrors
   // projectLabel exactly: display-only override at the one spot TOPIC is
-  // rendered, real name untouched underneath. Anywhere TOPIC shows the
-  // account root, it now reads TOPICS instead of the raw stored name.
+  // rendered, real name untouched underneath.
+  //
+  // Sept 27 2026 -- Larry, one day later: "TOPICS" itself retired now too
+  // -- "delete the use of TOPIC except in the generic sense." The
+  // separate TOPIC-field/PROJECT switcher this label used to share the
+  // ID Band with is gone (see the retired bb-project-wrap note,
+  // briefing-board-screens.js); the account root's identity moved onto
+  // Board Type instead ("MASTER BRIEFING", "MASTER BLUE SKY", "MASTER
+  // CAST" -- see masterPrefixed below) rather than TOPIC showing text of
+  // its own here. TOPIC returns empty at the root now -- each board hides
+  // its own TOPIC chip whenever this comes back empty, rather than
+  // showing a labelled-but-blank box.
   window.IDBand.topicLabel = function(name, id, rootId){
-    if(id && rootId && String(id)===String(rootId)) return 'TOPICS';
+    if(id && rootId && String(id)===String(rootId)) return '';
     var n=String(name==null?'':name).trim();
-    if(!n) return 'TOPICS';
+    if(!n || window.IDBand.isNonProjectName(n)) return '';
     return n;
+  };
+
+  // MASTER-prefixed Board Type, Sept 27 2026 -- Larry: "MASTER BRIEFING,
+  // MASTER BLUE SKY, MASTER CAST" -- once TOPIC is standing at the
+  // account root (isRoot true, same test as topicLabel/isAccountRoot
+  // above), Board Type's own plain kind label ("BRIEFING", "BLUE SKY",
+  // "CAST"...) gets "MASTER " stuck on the front instead of TOPIC
+  // showing "MASTER" in a box of its own. One shared spot so both boards
+  // format this the same way and can't drift apart on spacing/casing.
+  window.IDBand.masterPrefixed = function(kindLabel, isRoot){
+    var k=String(kindLabel==null?'':kindLabel).trim();
+    return isRoot ? ('MASTER '+k) : k;
   };
 
   window.IDBand.isAccountRoot = function(row, rootId){

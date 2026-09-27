@@ -904,6 +904,7 @@
       _bbSyncMasterSubtitle(false);
       _bbSyncTopicUpCaret(true); // nothing to climb from here either
       _bbFitTopicText();
+      _bbSyncTopicWrapVisibility();
       // Per-card/inherited Organization, Sept 26 2026 -- see
       // idea-storyboard-navigation.js's _orgResolveForRow (shared global
       // scope, same page) for the walk-up-the-tree resolution; this just
@@ -920,6 +921,7 @@
       if(res.error || !res.data){
         hit.textContent=board.name||'(untitled)';
         _bbFitTopicText();
+        _bbSyncTopicWrapVisibility();
         if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
         return;
       }
@@ -944,6 +946,7 @@
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
       _bbFitTopicText();
+      _bbSyncTopicWrapVisibility();
       // Per-card/inherited Organization, Sept 26 2026 (later) -- moved
       // here, LAST, from a single call at the top of this function. It
       // used to run before _bbSyncMasterSubtitle (above) had even
@@ -957,6 +960,7 @@
       console.warn('Briefing Board: could not load TOPIC field', e);
       hit.textContent=board.name||'(untitled)';
       _bbFitTopicText();
+      _bbSyncTopicWrapVisibility();
       if(typeof _bbRenderOrgDisplay==='function') _bbRenderOrgDisplay(headerId);
     }
   }
@@ -977,7 +981,23 @@
   // stays the plain, permanent "Topic" the Idea Board itself uses, and
   // the Master distinction lives next to the title it's actually
   // describing.
+  // This screen's own plain Board Type label, before any MASTER prefix --
+  // always "BRIEFING" here (the Briefing Board screen); mirrors whatever
+  // idea-storyboard-screens.js's own board-kind-trigger reads for its
+  // screen ("BLUE SKY", etc.). Sept 27 2026, part of the MASTER-prefix
+  // change below.
+  var BB_BOARDKIND_BASE_LABEL = 'BRIEFING';
   function _bbSyncMasterSubtitle(isMaster){
+    // MASTER-prefixed Board Type, Sept 27 2026 -- Larry: "MASTER BRIEFING,
+    // MASTER BLUE SKY, MASTER CAST." TOPIC no longer shows "MASTER" in a
+    // box of its own (see IDBand.topicLabel/_bbRenderTopicField's own
+    // topicWrap hide-when-blank change) -- that identity moves onto Board
+    // Type instead, via the one shared IDBand.masterPrefixed helper so
+    // both boards format it the same way.
+    var kindTrigger=document.getElementById('bb-boardkind-trigger');
+    if(kindTrigger) kindTrigger.textContent = window.IDBand
+      ? IDBand.masterPrefixed(BB_BOARDKIND_BASE_LABEL, isMaster)
+      : (isMaster ? 'MASTER '+BB_BOARDKIND_BASE_LABEL : BB_BOARDKIND_BASE_LABEL);
     var sub=document.getElementById('bb-mh-subtitle');
     if(sub){
       // Sept 8 2026 -- a single-board traveler's root (PROJECTS/MASTER)
@@ -1270,6 +1290,17 @@
     var hit=document.getElementById('bb-topic-hit');
     if(hit && window.FGFitBoxTextOneLine) window.FGFitBoxTextOneLine(hit, hit);
   }
+  // TOPIC box hide-when-blank, Sept 27 2026 -- topicLabel now returns ''
+  // at the account root (MASTER moved onto Board Type instead, see
+  // _bbSyncMasterSubtitle) -- rather than showing an empty bordered chip
+  // next to "MASTER BRIEFING", the whole box is hidden there and Board
+  // Type centers alone. _bbPositionIdBandRow reads this same display
+  // check to decide whether to budget room for TOPIC at all.
+  function _bbSyncTopicWrapVisibility(){
+    var wrap=document.getElementById('bb-topic-wrap'), hit=document.getElementById('bb-topic-hit');
+    if(!wrap || !hit) return;
+    wrap.style.display = hit.textContent ? '' : 'none';
+  }
   // Shared gap between every link in the PROJECT-TOPIC-STORYBOARD-VIEW
   // chain below, Sept 15 2026 -- matches .bb-mhead-top's old grid
   // `gap:10px` (PROJECT to TOPIC), so TOPIC-to-STORYBOARD and
@@ -1306,7 +1337,7 @@
   // watching its own output; it's re-measured fresh on every pass
   // regardless. Set up once, lazily, the first time real elements exist.
   var _bbIdBandObserverSetUp=false;
-  function _bbSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container){
+  function _bbSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container){
     if(_bbIdBandObserverSetUp || typeof ResizeObserver==='undefined') return;
     _bbIdBandObserverSetUp=true;
     var pending=false;
@@ -1321,10 +1352,20 @@
         }catch(e){}
       });
     });
-    [projectWrap, topicWrap, idnEl, actionsEl, container].forEach(function(el){ if(el) ro.observe(el); });
+    [topicWrap, idnEl, actionsEl, container].forEach(function(el){ if(el) ro.observe(el); });
   }
+  // Rewritten Sept 27 2026 -- PROJECT (the old TOPIC-field/board-switcher,
+  // bb-project-wrap) is retired, so this is now a two-item chain (TOPIC,
+  // STORYBOARD/Board Type) instead of PROJECT-TOPIC-STORYBOARD. TOPIC
+  // itself can also be entirely hidden now (topicWrap.style.display==
+  // 'none', set by _bbSyncTopicWrapVisibility whenever TOPIC is standing
+  // at MASTER and has nothing of its own left to show -- Board Type
+  // carries "MASTER BRIEFING" instead), so this measures/positions TOPIC
+  // only when it's actually showing, and centers Board Type alone
+  // otherwise -- same clamp-against-the-hard-edges shape every version of
+  // this function has used since Sept 6, just with one fewer chain link
+  // (two, or one) to add up.
   function _bbPositionIdBandRow(){
-    var projectWrap=document.getElementById('bb-project-wrap');
     var topicWrap=document.getElementById('bb-topic-wrap');
     var boardkindWrap=document.getElementById('bb-boardkind-wrap');
     // Sept 19 2026 -- VIEW left this chain (now a head icon in the
@@ -1334,33 +1375,33 @@
     var idnEl=document.getElementById('bb-idn');
     var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
     var container=document.querySelector('#s-briefing-board .bb-mhead-top');
-    if(!projectWrap || !topicWrap || !boardkindWrap || !actionsEl || !container) return;
-    _bbSetUpIdBandObserver(projectWrap, topicWrap, idnEl, actionsEl, container);
+    if(!topicWrap || !boardkindWrap || !actionsEl || !container) return;
+    _bbSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container);
     var containerRect=container.getBoundingClientRect();
     // Guard against a not-yet-laid-out screen -- nothing real to measure
     // yet, leave the left:0/top:0 CSS fallback in place.
     if(!containerRect.width) return;
 
-    var pr=projectWrap.getBoundingClientRect();
-    var tr=topicWrap.getBoundingClientRect();
+    var topicShown = topicWrap.style.display!=='none';
+    var tr = topicWrap.getBoundingClientRect();
     var ar=actionsEl.getBoundingClientRect();
-    if(!pr.width || !tr.width) return;
+    if(topicShown && !tr.width) return; // topic claims to be visible but hasn't laid out yet
 
     // Shrink Board Type's own label to whatever room is actually left
-    // once Project, Topic, View, and the three gaps between all four are
-    // accounted for -- same "measure the real boxes before fitting"
-    // order the Sept 13 2026 version used, just budgeted against the
-    // whole chain now instead of only the Topic-to-Logo gap. Floored at
-    // 24px for the same reason as before: _bbFitBoardKindLabel treats
-    // anything <=0 as "don't shrink," which is exactly the overflow this
-    // exists to prevent.
-    var available=containerRect.width-pr.width-tr.width-(ID_BAND_GAP*3);
+    // once Topic and its one gap are accounted for -- same "measure the
+    // real boxes before fitting" order the Sept 13 2026 version used.
+    // Floored at 24px for the same reason as before: _bbFitBoardKindLabel
+    // treats anything <=0 as "don't shrink," which is exactly the
+    // overflow this exists to prevent.
+    var available = topicShown
+      ? containerRect.width-tr.width-(ID_BAND_GAP*2)
+      : containerRect.width-(ID_BAND_GAP*2);
     _bbFitBoardKindLabel(Math.max(24, available));
 
     var br=boardkindWrap.getBoundingClientRect();
     if(!br.width) return;
 
-    var totalWidth=pr.width+ID_BAND_GAP+tr.width+ID_BAND_GAP+br.width;
+    var totalWidth = topicShown ? (tr.width+ID_BAND_GAP+br.width) : br.width;
     // Preferred: the whole chain centered on the header's real width
     // ("center on the BB"). Never let it run under Logo/Utility/Close
     // (actionsEl, already pinned to the header's own right edge) or off
@@ -1380,39 +1421,19 @@
     var groupLeft=Math.min(Math.max(preferredLeft, leftLimit), Math.max(leftLimit, rightLimit-totalWidth));
 
     var x=groupLeft;
-    projectWrap.style.left=(x-containerRect.left)+'px'; x+=pr.width+ID_BAND_GAP;
-    topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+ID_BAND_GAP;
+    if(topicShown){ topicWrap.style.left=(x-containerRect.left)+'px'; x+=tr.width+ID_BAND_GAP; }
     boardkindWrap.style.left=(x-containerRect.left)+'px';
 
-    // Sept 6 2026, Larry: "lower Briefing Board on the BB ID band to
-    // bottom-justify with the upper right corner buttons" -- unchanged
-    // rule, now applied to PROJECT/STORYBOARD/VIEW so they share one
-    // bottom edge with Logo/Utility/Close. actionsEl's real bottom edge
-    // isn't a constant pixel value (Logo's eyebrow+frame stack is taller
-    // than a plain bb-icon-btn), so this reads it live rather than
-    // guessing.
-    //
-    // TOPIC is the one exception now, Sept 16 2026 (Larry, live-site
-    // third look: TOPIC should center vertically on the band, PROJECT
-    // should bottom-justify with the other buttons after all). This
-    // flips the Sept 15 version of this same rule, which had PROJECT as
-    // the lone center-vertical exception and TOPIC bottom-justifying
-    // with STORYBOARD/VIEW -- swapped in place, same shape. The
-    // traveler-name eyebrow that PROJECT's own center-justify used to
-    // protect is no longer PROJECT's problem either way: it moved out to
-    // its own fixed top-left-corner position Sept 16 (see the markup
-    // comment on bb-traveler-name, briefing-board-screens.js), so it no
-    // longer moves when PROJECT does.
-    if(ar.height){
-      [projectWrap, boardkindWrap].forEach(function(el){
-        var r=el.getBoundingClientRect();
-        if(r.height) el.style.top=(ar.bottom-r.height-containerRect.top)+'px';
-      });
-    }
-    var trNow=topicWrap.getBoundingClientRect();
-    if(trNow.height && containerRect.height){
-      topicWrap.style.top=((containerRect.height-trNow.height)/2)+'px';
-    }
+    // Both now vertical-center on the band, Sept 27 2026 -- TOPIC and
+    // Board Type are a matched pair (same box, same font) now that
+    // PROJECT is gone, so the old center/bottom-justify split (kept only
+    // to reconcile TOPIC's bigger box against PROJECT/STORYBOARD's
+    // smaller one) no longer applies to either.
+    [topicWrap, boardkindWrap].forEach(function(el){
+      if(el===topicWrap && !topicShown) return;
+      var r=el.getBoundingClientRect();
+      if(r.height && containerRect.height) el.style.top=((containerRect.height-r.height)/2)+'px';
+    });
   }
   // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
   // listener for the same reason (idea-storyboard-9710.js, near

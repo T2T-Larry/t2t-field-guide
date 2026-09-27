@@ -412,8 +412,10 @@
       // inline one (PROJECT already suppressed its own because its
       // separate caret button carried the arrow; STORYBOARD never did, so
       // it showed BOTH). Every ID Band field is now a plain click-to-open
-      // label with no arrow at all, so STORYBOARD joins PROJECT here.
-      +'#bb-board-trigger.bb-cdrop-trigger:after,#bb-view-trigger.bb-cdrop-trigger:after,#bb-boardkind-trigger.bb-cdrop-trigger:after{content:none}'
+      // label with no arrow at all.
+      // bb-board-trigger dropped Sept 27 2026 -- PROJECT/the old TOPIC-
+      // field is retired, nothing left with that id.
+      +'#bb-view-trigger.bb-cdrop-trigger:after,#bb-boardkind-trigger.bb-cdrop-trigger:after{content:none}'
       // position:fixed + moved to <body> on open (see _bbRenderDropdown),
       // Aug 13 2026 -- same fix as the Idea Board's sc-cdrop-menu: nested
       // inside the header band, the menu was trapped in that band's own
@@ -515,7 +517,14 @@
       // flat text like the title, since Idea Board's own TOPIC box
       // (#sc-topic-box, idea-storyboard-9710.js) is a bordered box too --
       // this is that same idea sized for BB's header.
-      +'.bb-topic-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));line-height:'+IDBand.TOKENS.topicBox.lineHeight+';cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      // Sept 27 2026 -- shared with .bb-boardkind-hit (briefing-board-
+      // screens.js's bb-boardkind-trigger) now too: PROJECT is gone and
+      // Board Type is TOPIC's matched pair, same box/font/border, read
+      // off this one rule instead of a hand-copied second one that could
+      // drift out of size sync the way the old small PROJECT/STORYBOARD
+      // chip already had drifted once (Sept 15 2026 notes, elsewhere in
+      // this file).
+      +'.bb-topic-hit,.bb-boardkind-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));line-height:'+IDBand.TOKENS.topicBox.lineHeight+';cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
       +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:'+IDBand.TOKENS.topicCaret.width+'px;align-self:stretch;cursor:pointer;font-size:calc('+IDBand.TOKENS.topicCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-topic-caret:hover{opacity:.75}'
       // Sept 6 2026 -- the new up-arrow (bb-topic-caret-up, shares this
