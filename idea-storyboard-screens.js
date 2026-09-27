@@ -257,13 +257,12 @@
         // top-level Topics, direct children of the hidden PROJECTS_ROOT
         // row -- see the _isApexTopic note on renderGroup's hd, below) are
         // the apex of each Topic, so they get a visual frame. Larry's
-        // correction (same day, after seeing gold + a 3px gap live):
-        // dark blue instead of gold, and a slight visible edge rather
-        // than flush -- so navy to match the .named border color, with
-        // just a 1px gap instead of 3px. An outline (not another
-        // box-shadow) so it never fights the .named border above or the
-        // .has-children double-shadow below -- it just sits outside both.
-        +'.sc-pill.apex-topic{outline:3px solid #1a3a5c;outline-offset:1px}'
+        // 2nd correction (same day, after +1px outside was still outside
+        // and too faint against the .named border): the frame goes
+        // INSIDE the card now, with a negative offset big enough that
+        // the card's own 2px navy border stays clearly visible as its
+        // own ring around it, not merged into one thick edge.
+        +'.sc-pill.apex-topic{outline:3px solid #1a3a5c;outline-offset:-6px}'
         // Order # badge -- Larry, Aug 3 2026: "small, no bigger that Notes
         // field" (.sb-notes-pill below is 12px; this is smaller still).
         // Moved to the upper-left corner (Larry, Aug 3 2026) so the number
