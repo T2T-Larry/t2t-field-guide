@@ -41,6 +41,7 @@
   var _ddParentHeaderId=null;
   var _ddOnDone=null;
   var _ddGroups=null;   // [{name, fragments:[text,...]}, ...] — working review state
+  var _ddLastPastedText=''; // so Back (from review) can restore the paste box
 
   var STOPWORDS = {
     'the':1,'a':1,'an':1,'and':1,'or':1,'but':1,'of':1,'to':1,'in':1,'on':1,
@@ -180,7 +181,7 @@
     layer.innerHTML = '<div class="dd-card">'
       +'<div class="dd-title">Decompose a document</div>'
       +'<div class="dd-sub">Paste a transcript, meeting notes, or highlights. Each sentence becomes its own card, grouped into proposed headers you can rename or fix before saving.</div>'
-      +'<textarea class="dd-textarea" id="dd-input" placeholder="Paste raw text here…"></textarea>'
+      +'<textarea class="dd-textarea" id="dd-input" placeholder="Paste raw text here…">'+_ddEsc(_ddLastPastedText)+'</textarea>'
       +'<div class="dd-row">'
         +'<button class="dd-btn" id="dd-cancel">Cancel</button>'
         +'<button class="dd-btn dd-btn-primary" id="dd-next">Decompose →</button>'
@@ -191,6 +192,7 @@
     T().wire('dd-next', function(){
       var raw=(document.getElementById('dd-input')||{}).value||'';
       if(!raw.trim()) return;
+      _ddLastPastedText=raw;
       _ddGroups=_ddBuildGroups(raw);
       _ddRenderReview();
     });
@@ -296,7 +298,7 @@
   function _ddClose(){
     var layer=document.getElementById('dd-overlay');
     if(layer){ layer.classList.remove('active'); layer.innerHTML=''; }
-    _ddParentHeaderId=null; _ddOnDone=null; _ddGroups=null;
+    _ddParentHeaderId=null; _ddOnDone=null; _ddGroups=null; _ddLastPastedText='';
   }
 
   function open(opts){
@@ -306,7 +308,18 @@
     _ddParentHeaderId=opts.parentHeaderId;
     _ddOnDone=opts.onDone||null;
     _ddGroups=null;
-    _ddRenderPaste();
+    if(opts.initialText && opts.initialText.trim()){
+      // Sept 27 2026 -- reached from the Idea card's own "Split it into
+      // cards instead?" banner (idea-capture.js), which already has the
+      // pasted text in hand: skip straight to the review screen instead
+      // of making the traveler paste it again into an empty box here.
+      _ddLastPastedText=opts.initialText;
+      _ddGroups=_ddBuildGroups(opts.initialText);
+      _ddRenderReview();
+    } else {
+      _ddLastPastedText='';
+      _ddRenderPaste();
+    }
   }
 
   window.DocDecomp = { open:open };

@@ -606,6 +606,19 @@
     return /^https?:\/\/\S+$/i.test((text||'').trim());
   }
 
+  // Sept 27 2026 -- Larry: "why can't we paste a document into the new
+  // card content area?" Cheap heuristic, not a real parse: long enough,
+  // AND either real paragraph breaks or several sentences, that it's
+  // more plausibly a document than a single short idea. Only decides
+  // whether to show the offer banner -- the traveler still chooses.
+  function _icLooksLikeDocument(text){
+    var t=(text||'').trim();
+    if(t.length<220) return false;
+    var hasParagraphs = /\n\s*\n/.test(t);
+    var sentenceCount = (t.match(/[.!?](?=\s|$)/g)||[]).length;
+    return hasParagraphs || sentenceCount>=3;
+  }
+
   // Unified drop zone, Sept 2026 — the card already accepted a pasted
   // image or a pasted bare URL (Ctrl/Cmd+V, above); this is the same two
   // outcomes reached by dragging instead of pasting, plus the one new
@@ -1056,6 +1069,10 @@
         +'</div>')
       +'<div id="isx-paste-preview" style="display:none"></div>'
       +'<textarea id="isx-idea-text" placeholder="Type, paste, or drop anything…"></textarea>'
+      +'<div id="isx-doc-banner" style="display:none;font-size:11px;color:#1a3a5c;background:#eaf3fb;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;margin:-4px 0 6px;text-align:center">'
+        +'That looks like a whole document. '
+        +'<button type="button" id="isx-doc-decompose" style="border:none;background:none;color:#1a3a5c;font-weight:700;text-decoration:underline;cursor:pointer;padding:0">Split it into cards instead?</button>'
+      +'</div>'
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
@@ -1160,8 +1177,41 @@
         if(text && _icIsBareUrl(text)){
           e.preventDefault();
           _icShowPendingLink(text.trim());
+          return;
         }
+        // Sept 27 2026, Larry: "why can't we paste a document into the
+        // new card content area?" -- until now, plain text just landed
+        // here as one card's literal content, same as a short idea.
+        // Doesn't preventDefault -- the paste still lands normally, this
+        // only offers the smarter route alongside it, so nothing breaks
+        // for someone who really did just paste a short idea that
+        // happens to cross the threshold.
+        var banner=document.getElementById('isx-doc-banner');
+        if(banner) banner.style.display = (text && _icLooksLikeDocument(text)) ? 'block' : 'none';
       });
+      ta.addEventListener('input', function(){
+        var banner=document.getElementById('isx-doc-banner');
+        if(banner && banner.style.display!=='none' && !_icLooksLikeDocument(ta.value)) banner.style.display='none';
+      });
+    }
+    var decomposeBtn=document.getElementById('isx-doc-decompose');
+    if(decomposeBtn){
+      decomposeBtn.onclick=function(){
+        var ta2=document.getElementById('isx-idea-text');
+        var text=ta2 ? ta2.value : '';
+        if(!text.trim() || !window.DocDecomp) return;
+        var targetHeaderId=_icHeaderId;
+        _icClosePopup();
+        window.DocDecomp.open({
+          parentHeaderId: targetHeaderId,
+          initialText: text,
+          // false, not true -- renderSeaBoard's arg is fromCache; these
+          // rows were just written straight to Supabase, bypassing the
+          // local board cache, so this needs a real refetch (same as the
+          // gear-menu entry point in idea-storyboard-header.js).
+          onDone: function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(false); }
+        });
+      };
     }
 
     // Unified drop zone — the whole card is the target, not just the
