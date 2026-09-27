@@ -356,7 +356,12 @@
         // remaining partner and gets sized/framed identically instead of
         // its old small PROJECT-matched chip -- one rule, so the two
         // can't drift apart in size the way PROJECT/STORYBOARD used to.
-        +'#sc-topic-box,#sc-board-kind-trigger{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:0 3px 10px rgba(0,0,0,0.28)}'
+        // box-shadow now reads IDBand.TOKENS.topicBox.boxShadow (id-band.js)
+        // instead of its own hardcoded value -- Sept 27 2026, Larry liked
+        // this "glow" and asked for it on every board, so it moved into
+        // the shared token BB's own rule now reads too, rather than
+        // staying a value only this board happened to already have.
+        +'#sc-topic-box,#sc-board-kind-trigger{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:'+IDBand.TOKENS.topicBox.boxShadow+'}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -1090,7 +1095,19 @@
       // retired up/down arrows got.
       +'<div id="sc-topic-wrap" class="sc-mh-group-topic">'
       +'<div id="sc-pagenum" style="position:absolute;top:-14px;left:0;font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1010</div>'
-      +'<div class="sc-cdrop" id="sc-topic-cdrop">'
+      // Sept 27 2026 -- Larry: "MASTER field is higher than Blue Sky
+      // field" (the exact "change one, forget the other" drift the id-
+      // band.js consolidation was meant to end -- this file's own
+      // sc-boardkind-wrap already has display:flex;align-items:center on
+      // its own .sc-cdrop, matching BB's bb-topic-cdrop and bb-boardkind-
+      // wrap; this one was the one left over from before, still block-
+      // level, so #sc-topic-box (inline-block) got extra baseline
+      // whitespace below it, making this wrap measure a few px taller
+      // than sc-boardkind-wrap -- IDBand.positionRow centers each field
+      // by its OWN measured height, so an inflated topicWrap gets
+      // pushed down less/positioned differently than boardkindWrap once
+      // the two are supposed to sit on one shared centered row.
+      +'<div class="sc-cdrop" id="sc-topic-cdrop" style="display:flex;align-items:center">'
       +'<div id="sc-topic-box" data-header-id="__topic__" title="Click to see this project\'s headers"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div></div>'
       +'<div class="sc-cdrop-menu sc-topic-tree" id="sc-topic-menu" hidden></div>'
       +'</div>'

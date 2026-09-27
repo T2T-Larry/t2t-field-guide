@@ -523,8 +523,11 @@
       // off this one rule instead of a hand-copied second one that could
       // drift out of size sync the way the old small PROJECT/STORYBOARD
       // chip already had drifted once (Sept 15 2026 notes, elsewhere in
-      // this file).
-      +'.bb-topic-hit,.bb-boardkind-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));line-height:'+IDBand.TOKENS.topicBox.lineHeight+';cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      // this file). box-shadow added same day -- see the topicBox token's
+      // own comment in id-band.js: Larry liked this "glow" on the Idea/
+      // Blue Sky board and wants it everywhere, so it's a shared token
+      // now, not a value only that one board happened to have.
+      +'.bb-topic-hit,.bb-boardkind-hit{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';box-sizing:border-box;font-family:var(--bb-head-font);font-weight:700;font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));line-height:'+IDBand.TOKENS.topicBox.lineHeight+';cursor:default;max-width:calc(360px * var(--fg-text-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:'+IDBand.TOKENS.topicBox.boxShadow+'}'
       +'.bb-topic-caret{background:#fff;border:2px solid var(--bb-accent);color:var(--bb-ink);border-radius:8px;padding:0;box-sizing:border-box;width:'+IDBand.TOKENS.topicCaret.width+'px;align-self:stretch;cursor:pointer;font-size:calc('+IDBand.TOKENS.topicCaret.glyphSize+'px * var(--fg-text-scale,1));display:flex;align-items:center;justify-content:center;flex-shrink:0}'
       +'.bb-topic-caret:hover{opacity:.75}'
       // Sept 6 2026 -- the new up-arrow (bb-topic-caret-up, shares this

@@ -43,8 +43,14 @@
 
   window.IDBand = {
     TOKENS: {
-      // TOPIC's own chip (bb-topic-hit / #sc-topic-box).
-      topicBox: { fontSize:44, radius:8, padding:'2px 16px', lineHeight:1.15 },
+      // TOPIC's own chip (bb-topic-hit / #sc-topic-box). boxShadow added
+      // Sept 27 2026 -- Larry liked the "glow" the Idea/Blue Sky board's
+      // TOPIC box already had (its own hand-copied box-shadow, never on
+      // BB's matching chip) and asked for it on every board; pulled into
+      // this shared token, same fix as the rest of this file's own
+      // opening comment, rather than copying the value into BB's rule by
+      // hand a second time.
+      topicBox: { fontSize:44, radius:8, padding:'2px 16px', lineHeight:1.15, boxShadow:'0 3px 10px rgba(0,0,0,0.28)' },
 
       // The big centered board-kind name (bb-mh / sc-board-kind-trigger):
       // "Briefing Board", "IDEA", and (soon) "Plan" / "Share".
