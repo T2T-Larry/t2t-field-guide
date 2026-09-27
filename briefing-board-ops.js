@@ -1490,7 +1490,7 @@
       var logoSlot=document.getElementById('bb-d-org-logo-slot');
       if(logoSlot) logoSlot.innerHTML = c.logoUrl
         ? '<img id="bb-d-org-logo-img" src="'+_esc(c.logoUrl)+'" style="max-width:100%;max-height:100%;object-fit:contain">'
-        : '<span id="bb-d-org-logo-plus" style="font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)">+</span>';
+        : '<span id="bb-d-org-logo-plus" style="font-size:calc(8px * var(--fg-text-scale,1));font-weight:600;letter-spacing:0.3px;color:var(--bb-sub)">LOGO</span>';
       var orgStatus=document.getElementById('bb-d-org-status'); if(orgStatus) orgStatus.textContent='';
     })();
     _bbRenderColorSwatches(c);

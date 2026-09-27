@@ -629,12 +629,12 @@
             // not the bundled BB_ADDITIONS pattern -- text/logo save
             // immediately (like the Idea Card), not on card-close.
             +'<div class="bb-field bb-addition" id="bb-d-add-org-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-org"><span class="bb-addition-eyebrow">Organization</span></label><div class="bb-addition-body" id="bb-d-org-body" style="display:none">'
-            +   '<input type="text" id="bb-d-org-eyebrow" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box;margin-bottom:6px">'
-            +   '<div style="display:flex;align-items:center;gap:8px">'
+            +   '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
             +     '<input type="text" id="bb-d-org-name" autocomplete="off" placeholder="Organization name" style="flex:1 1 auto;min-width:0">'
-            +     '<div id="bb-d-org-logo-slot" title="Tap to upload a logo" style="flex-shrink:0;width:36px;height:36px;border:1.5px solid var(--bb-accent);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff"><span id="bb-d-org-logo-plus" style="font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)">+</span></div>'
+            +     '<div id="bb-d-org-logo-slot" title="Tap to upload a logo" style="flex-shrink:0;width:36px;height:36px;border:1.5px solid var(--bb-accent);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff"><span id="bb-d-org-logo-plus" style="font-size:calc(8px * var(--fg-text-scale,1));font-weight:600;letter-spacing:0.3px;color:var(--bb-sub)">LOGO</span></div>'
             +     '<input type="file" id="bb-d-org-logo-input" accept="image/*" style="display:none">'
             +   '</div>'
+            +   '<input type="text" id="bb-d-org-eyebrow" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box">'
             +   '<div id="bb-d-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
             + '</div></div>'
             // Divider, Aug 27 2026 -- now sits directly above Reviewed

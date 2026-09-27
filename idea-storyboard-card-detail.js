@@ -385,14 +385,14 @@
       // org_name/logo_url/logo_w/logo_h are the same columns that picker
       // used, just given real per-card, inheritable meaning now.
       + '<div class="bb-field bb-addition" id="sb-add-org-wrap"><label class="bb-addition-label" for="sb-add-org"><input type="checkbox" id="sb-add-org"'+(addOrgOpen?' checked':'')+'><span class="bb-addition-eyebrow">Organization</span></label><div class="bb-addition-body" id="sb-org-body" style="display:'+(addOrgOpen?'':'none')+'">'
-      +   '<input type="text" id="sb-org-eyebrow-input" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box;margin-bottom:6px" value="'+_sboardEsc(item.org_eyebrow||'')+'">'
-      +   '<div style="display:flex;align-items:center;gap:8px">'
+      +   '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
       +     '<input type="text" id="sb-org-name-input" autocomplete="off" placeholder="Organization name" style="flex:1 1 auto;min-width:0" value="'+_sboardEsc(item.org_name||'')+'">'
       +     '<div id="sb-org-logo-slot" title="Tap to upload a logo" style="flex-shrink:0;width:36px;height:36px;border:1px solid #cfe4f2;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff">'
-      +       (item.logo_url ? '<img id="sb-org-logo-img" src="'+_sboardEsc(item.logo_url)+'" style="max-width:100%;max-height:100%;object-fit:contain">' : '<span id="sb-org-logo-plus" style="font-size:calc(16px * var(--fg-text-scale,1));color:#a3907a">+</span>')
+      +       (item.logo_url ? '<img id="sb-org-logo-img" src="'+_sboardEsc(item.logo_url)+'" style="max-width:100%;max-height:100%;object-fit:contain">' : '<span id="sb-org-logo-plus" style="font-size:calc(8px * var(--fg-text-scale,1));font-weight:600;letter-spacing:0.3px;color:#a3907a">LOGO</span>')
       +     '</div>'
       +     '<input type="file" id="sb-org-logo-input" accept="image/*" style="display:none">'
       +   '</div>'
+      +   '<input type="text" id="sb-org-eyebrow-input" autocomplete="off" placeholder="Descriptor — e.g. A Shine Partner" style="width:100%;box-sizing:border-box" value="'+_sboardEsc(item.org_eyebrow||'')+'">'
       +   '<div id="sb-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
       + '</div></div>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'

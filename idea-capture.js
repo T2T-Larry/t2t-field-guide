@@ -521,6 +521,11 @@
     ta.value=''; ta.focus();
     _icIdeaMode='idea';
     _icClearPendingImage();
+    // Sept 27 2026 fix (Larry: subject carried over into the next add) --
+    // Subject is per-entry, same as the idea text itself, so it has to
+    // clear here too instead of sitting there for whatever gets typed next.
+    var subjEl=document.getElementById('isx-p-subject');
+    if(subjEl) subjEl.value='';
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
       // Repaint HEADER/SUBBER back to its SUBBER default after each save
