@@ -1102,6 +1102,16 @@
           }
         }catch(e){}
       });
+      // Sept 27 2026 fix (Larry: "clock face disappears while loading
+      // continues but not finished, blank screen") -- this function never
+      // returned `settled` to nav()'s _activateResult, so backpack.js's
+      // "is this a promise?" check always failed here and hid the travel
+      // spinner the instant this synchronous wrapper returned, not when
+      // the board's own async data load (_bbInitBoardsAndData) actually
+      // finished. Returning it here is what lets nav()'s existing
+      // "hide once the promise settles" logic (already correct) cover
+      // the real fetch instead of the wrapper around it.
+      return settled;
     });
 
     wireBriefingBoard();
