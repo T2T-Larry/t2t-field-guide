@@ -1743,6 +1743,7 @@
         +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-decompose" style="width:100%">📄 Decompose a document</button>'
       +'</div>'
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#1a3a5c;padding:8px 4px;border-top:1px solid #dce7f0;margin-bottom:4px">'
         +'<span>&#128373; Initials on cards<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;font-weight:400">This whole project, all cards at once</span></span>'
@@ -1756,6 +1757,22 @@
     T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
     T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
     T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
+    // Sept 27 2026 -- Master BB "Document Decomposition" card. Clusters
+    // under whichever header is currently open (T2TShared.currentTopicId,
+    // same context _sboardOpenQuickCapture already uses for a single new
+    // card) so a pasted document lands exactly where the traveler was
+    // standing when they opened this menu.
+    T().wire('sb-gear-decompose', function(){
+      closeSbDetail();
+      if(!window.DocDecomp || !T2TShared.currentTopicId) return;
+      window.DocDecomp.open({
+        parentHeaderId: T2TShared.currentTopicId,
+        // false, not true -- renderSeaBoard's arg is fromCache, and the
+        // new headers/cards were just written straight to Supabase,
+        // bypassing the local cache, so this needs a real refetch.
+        onDone: function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(false); }
+      });
+    });
     var initialsToggle=document.getElementById('sb-prefs-initials-toggle');
     if(initialsToggle) initialsToggle.addEventListener('click', function(e){
       var btn=e.target.closest('.sb-gear-tab'); if(!btn) return;
