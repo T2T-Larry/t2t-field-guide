@@ -198,7 +198,36 @@
       +'.cr-bfill{border:1px dashed #b4b2a9;border-radius:5px;padding:0 6px;font-style:italic}'
       +'.cr-badd{justify-content:center;margin-top:2px}'
       +'.cr-badd .cr-bfill{border-style:solid;border-color:transparent}'
-      +'.cr-bempty{font-size:.85em;color:#8a877e;padding:2px 3px}';
+      +'.cr-bempty{font-size:.85em;color:#8a877e;padding:2px 3px}'
+      // CAST Hub -- Sept 27 2026. Deliberately not the warm-parchment
+      // card language every other board uses: a dark banner header and
+      // rounded icon tiles, so CAST reads as its own place, not a Board
+      // View reskin. Only the Hub screen (and its header banner) breaks
+      // from the shared palette -- Roster/Pyramid/Role Sheet keep the
+      // existing look once you're inside them.
+      +'.cr-head.cr-head-hub{background:linear-gradient(120deg,#20304a,#2c4569);margin:-16px -16px 8px;padding:14px 16px;border-radius:14px 14px 0 0}'
+      +'.cr-head.cr-head-hub .cr-title{color:#f4f2ea}'
+      +'.cr-head.cr-head-hub .cr-btn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);color:#f4f2ea}'
+      +'.cr-title-hub{letter-spacing:.14em;font-size:calc(13px * var(--fg-text-scale,1))}'
+      +'.cr-hub-grid{display:flex;flex-wrap:wrap;gap:14px;padding:8px 2px 4px;justify-content:center}'
+      +'.cr-hub-tile{width:152px;flex:none;background:linear-gradient(160deg,#25395a,#324c74);color:#f4f2ea;border:none;border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;box-shadow:0 3px 10px rgba(20,30,50,.28);transition:transform .12s ease,box-shadow .12s ease}'
+      +'.cr-hub-tile:hover,.cr-hub-tile:focus{transform:translateY(-2px);box-shadow:0 6px 16px rgba(20,30,50,.38);outline:none}'
+      +'.cr-hub-icon{font-size:28px;line-height:1;margin-bottom:8px}'
+      +'.cr-hub-label{font-weight:700;font-size:calc(12.5px * var(--fg-text-scale,1));letter-spacing:.02em;margin-bottom:5px}'
+      +'.cr-hub-blurb{font-size:calc(10px * var(--fg-text-scale,1));opacity:.85;line-height:1.35}'
+      // Stakeholder Role Sheet -- a person picker beside their level list.
+      +'.cr-rs-wrap{display:flex;gap:14px;align-items:flex-start}'
+      +'.cr-rs-picker{flex:0 0 148px;max-height:380px;overflow-y:auto;border-right:1px solid #e4e0d6;padding-right:8px}'
+      +'.cr-rs-prow{display:flex;align-items:center;gap:6px;padding:5px 6px;border-radius:6px;cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1))}'
+      +'.cr-rs-prow:hover{background:rgba(0,0,0,.05)}'
+      +'.cr-rs-prow-on{background:rgba(26,58,92,.14);font-weight:700}'
+      +'.cr-rs-pname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'.cr-rs-detail{flex:1;min-width:0}'
+      +'.cr-rs-dname{font-weight:700;font-size:calc(13.5px * var(--fg-text-scale,1));margin-bottom:8px}'
+      +'.cr-rs-erow{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:6px;font-size:calc(12px * var(--fg-text-scale,1));border-bottom:1px solid #eee6d6}'
+      +'.cr-rs-erow.cr-editable{cursor:pointer}'
+      +'.cr-rs-erow.cr-editable:hover{background:rgba(0,0,0,.05)}'
+      +'.cr-rs-elevel{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}';
     var st=document.createElement('style'); st.id='cr-styles'; st.textContent=css;
     document.head.appendChild(st);
   }
@@ -300,7 +329,14 @@
   // ---------- screen ----------
   var _state=null, _topicId=null;
   var _openPeople={}, _openKids={};   // remembered across refreshes
-  var _viewMode='board';   // 'board' (classic fill-in-the-blank cards) or 'pyramid' (tree)
+  // Sept 27 2026 (Larry: "almost every board should have a unique look ...
+  // CAST is not yet unique") -- CAST now opens on its own front door, an
+  // icon-tile Hub, instead of landing straight in Roster. 'hub' is a real
+  // mode alongside the three sections so _render/_paintHead/_paintSub can
+  // switch on it the same way. Board+Pyramid used to be one toggle; now
+  // each is its own hub tile, so the toggle button is gone.
+  var _viewMode='hub';   // 'hub' | 'board' (Roster) | 'pyramid' (Org Chart) | 'rolesheet' (Stakeholder Role Sheet)
+  var _rsSelected=null;  // Stakeholder Role Sheet: userId of the person currently shown
 
   function _ensureOverlay(){
     if(document.getElementById('cr-overlay')) return;
@@ -324,25 +360,48 @@
 
   async function open(topicId){
     _ensureStyles(); _ensureOverlay();
-    if(String(topicId)!==String(_topicId)){ _openPeople={}; _openKids={}; }
+    if(String(topicId)!==String(_topicId)){ _openPeople={}; _openKids={}; _rsSelected=null; }
     _topicId=topicId;
+    _viewMode='hub';   // CAST always opens on its own Hub, same as walking back in the door
     var ov=document.getElementById('cr-overlay'), card=document.getElementById('cr-card');
-    card.innerHTML='<div class="cr-head"><span class="cr-title">👥 CAST ROSTER</span>'
-      +'<button class="cr-btn" id="cr-view-toggle"></button>'
-      +'<button class="cr-btn" id="cr-print-btn" title="Print as an Organization Chart" disabled>🖨 Org Chart</button>'
-      +'<button class="cr-btn" id="cr-close" aria-label="Close">✕</button></div>'
+    card.innerHTML='<div class="cr-head"></div>'
       +'<div class="cr-sub" id="cr-sub"></div>'
       +'<div id="cr-alert-slot"></div>'
       +'<div id="cr-body"><div class="cr-msg">Loading…</div></div>';
     ov.style.display='flex';
-    document.getElementById('cr-close').onclick=close;
+    _paintHead();
     _paintSub();
-    document.getElementById('cr-view-toggle').onclick=function(){
-      _viewMode=(_viewMode==='board')?'pyramid':'board';
-      _paintSub();
+    await _reload(true);
+  }
+
+  // Hub vs. section header. The Hub's own banner (dark, "front door") is
+  // deliberately unlike every other board's header; each section keeps a
+  // plain header with a Hub-back button instead of the old board/pyramid
+  // toggle -- Board and Pyramid are separate hub tiles now, not a toggle.
+  function _paintHead(){
+    var head=document.querySelector('#cr-card .cr-head'); if(!head) return;
+    head.classList.toggle('cr-head-hub', _viewMode==='hub');
+    if(_viewMode==='hub'){
+      head.innerHTML='<span class="cr-title cr-title-hub">🎭 CAST</span>'
+        +'<button class="cr-btn" id="cr-close" aria-label="Close">✕</button>';
+    } else {
+      var label = _viewMode==='board' ? '📋 Roster'
+        : _viewMode==='pyramid' ? '🏛 Org Chart'
+        : '🪪 Stakeholder Role Sheet';
+      head.innerHTML='<button class="cr-btn" id="cr-hub-back" title="Back to the CAST Hub">← Hub</button>'
+        +'<span class="cr-title">'+label+'</span>'
+        +(_viewMode==='pyramid' ? '<button class="cr-btn" id="cr-print-btn" title="Print as an Organization Chart">🖨 Print</button>' : '')
+        +'<button class="cr-btn" id="cr-close" aria-label="Close">✕</button>';
+    }
+    document.getElementById('cr-close').onclick=close;
+    var back=document.getElementById('cr-hub-back');
+    if(back) back.onclick=function(){
+      _viewMode='hub';
+      _paintHead(); _paintSub();
       _render(document.getElementById('cr-body'), false);
     };
-    await _reload(true);
+    var pb=document.getElementById('cr-print-btn');
+    if(pb) pb.onclick=_printOrgChart;
   }
 
   // Loads (or reloads after a change) and redraws, keeping what's open.
@@ -392,6 +451,11 @@
         var p=_state.levels[l.parentId];
         while(p && p.rel>=0 && p.id!==_state.current.id){ _openKids[p.id]=true; p=_state.levels[p.parentId]; }
       });
+      // The flash only means something in the Org Chart tree -- jump
+      // there regardless of which mode (Hub included) this was tapped
+      // from, same as tapping the Org Chart tile would.
+      _viewMode='pyramid';
+      _paintHead(); _paintSub();
       var body=document.getElementById('cr-body');
       _render(body, false);
       var first=null;
@@ -410,20 +474,50 @@
     if(ov) ov.style.display='none';
   }
 
-  // Toggle button + helper line swap with the view; kept in one place so
-  // both stay honest about which mode is showing.
+  // Helper line under the header; text swaps with the mode.
   function _paintSub(){
-    var btn=document.getElementById('cr-view-toggle'), sub=document.getElementById('cr-sub');
-    if(btn) btn.textContent=(_viewMode==='board')?'🔺 Pyramid View':'📋 Board View';
-    if(!sub) return;
-    sub.textContent=(_viewMode==='board')
-      ? 'A card for the current level and each level below it. Dashed lines are blank — tap to fill them in.'
-      : 'Tap a level to see its people. The arrow opens the levels beneath. The number beside a name is how many projects they\'re PRIMARY on (amber at '+_load().limit+'+).';
+    var sub=document.getElementById('cr-sub'); if(!sub) return;
+    if(_viewMode==='hub') sub.textContent='Everything people-related for this Topic — pick where to go.';
+    else if(_viewMode==='board') sub.textContent='A card for the current level and each level below it. Dashed lines are blank — tap to fill them in.';
+    else if(_viewMode==='pyramid') sub.textContent='Tap a level to see its people. The arrow opens the levels beneath. The number beside a name is how many projects they\'re PRIMARY on (amber at '+_load().limit+'+).';
+    else if(_viewMode==='rolesheet') sub.textContent=_rsSelected ? 'Every level this person holds a role on, in this Topic.' : 'Pick a name to see every level they hold a role on.';
   }
 
   function _render(body, first){
-    if(_viewMode==='board') _renderBoard(body, first);
-    else _renderPyramid(body, first);
+    if(_viewMode==='hub') _renderHub(body);
+    else if(_viewMode==='board') _renderBoard(body, first);
+    else if(_viewMode==='pyramid') _renderPyramid(body, first);
+    else if(_viewMode==='rolesheet') _renderRoleSheet(body, first);
+  }
+
+  // The CAST Hub -- Sept 27 2026, Larry: CAST should read as its own
+  // thing rather than borrowing Board/Pyramid's look; this is its front
+  // door. Three tiles today (Roster, Org Chart, Stakeholder Role Sheet),
+  // room to add more later without disturbing this layout.
+  function _renderHub(body){
+    body.innerHTML='';
+    var wrap=document.createElement('div'); wrap.className='cr-hub-grid';
+    var tiles=[
+      {mode:'board', icon:'📋', label:'Roster', blurb:'This level and the ones below it, as fill-in-the-blank cards.'},
+      {mode:'pyramid', icon:'🏛', label:'Org Chart', blurb:'The full tree, top to bottom — and print it as an Organization Chart.'},
+      {mode:'rolesheet', icon:'🪪', label:'Stakeholder Role Sheet', blurb:'Pick a person, see every level they hold a role on.'}
+    ];
+    tiles.forEach(function(t){
+      var tile=document.createElement('div');
+      tile.className='cr-hub-tile'; tile.tabIndex=0;
+      tile.innerHTML='<div class="cr-hub-icon">'+t.icon+'</div>'
+        +'<div class="cr-hub-label">'+_esc(t.label)+'</div>'
+        +'<div class="cr-hub-blurb">'+_esc(t.blurb)+'</div>';
+      function go(){
+        _viewMode=t.mode;
+        _paintHead(); _paintSub();
+        _render(document.getElementById('cr-body'), true);
+      }
+      tile.addEventListener('click', go);
+      tile.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); go(); } });
+      wrap.appendChild(tile);
+    });
+    body.appendChild(wrap);
   }
 
   function _renderPyramid(body, first){
@@ -755,6 +849,73 @@
       },
       onClose: function(){ try{ menu.remove(); }catch(e){} }
     });
+  }
+
+  // ---------- Stakeholder Role Sheet ----------
+  // Sept 27 2026 (CAST Hub, Larry). Same data as Roster/Pyramid
+  // (_state.order, already loaded), just indexed by person instead of by
+  // level: pick a name on the left, see every level in this Topic's tree
+  // they hold a role on, on the right. Tapping a level here opens the
+  // exact same role-change popover as everywhere else (_personPop) --
+  // this is a new lens on the existing Cast, not a second data model or
+  // a second ★ assignment mechanism.
+  function _renderRoleSheet(body, first){
+    body.innerHTML='';
+    var people={};
+    _state.order.forEach(function(lv){
+      lv.people.forEach(function(p){
+        var key=String(p.userId);
+        if(!people[key]) people[key]={userId:p.userId, shortName:p.shortName, load:p.load, entries:[]};
+        people[key].entries.push({lv:lv, p:p});
+      });
+    });
+    var list=Object.keys(people).map(function(k){ return people[k]; });
+    if(!list.length){
+      body.innerHTML='<div class="cr-msg">No one\'s on this Topic\'s Cast yet.</div>';
+      return;
+    }
+    list.sort(function(a,b){ return a.shortName.localeCompare(b.shortName, undefined, {sensitivity:'base'}); });
+    if(_rsSelected==null || !people[String(_rsSelected)]) _rsSelected=list[0].userId;
+
+    var wrap=document.createElement('div'); wrap.className='cr-rs-wrap';
+
+    var picker=document.createElement('div'); picker.className='cr-rs-picker';
+    list.forEach(function(person){
+      var row=document.createElement('div');
+      row.className='cr-rs-prow'+(String(_rsSelected)===String(person.userId)?' cr-rs-prow-on':'');
+      row.innerHTML='<span class="cr-rs-pname">'+_esc(person.shortName)+'</span>'
+        +'<span class="cr-count">('+person.entries.length+')</span>'
+        +_load().badgeHTML(person.load);
+      row.addEventListener('click', function(){
+        if(String(_rsSelected)===String(person.userId)) return;
+        _rsSelected=person.userId;
+        _paintSub();
+        _renderRoleSheet(body, false);
+      });
+      picker.appendChild(row);
+    });
+    wrap.appendChild(picker);
+
+    var detail=document.createElement('div'); detail.className='cr-rs-detail';
+    var sel=people[String(_rsSelected)];
+    var h=document.createElement('div'); h.className='cr-rs-dname'; h.textContent=sel.shortName;
+    detail.appendChild(h);
+    sel.entries.forEach(function(e){
+      var lv=e.lv, p=e.p;
+      var row=document.createElement('div'); row.className='cr-rs-erow';
+      var tags=_tags(p);
+      row.innerHTML='<span class="cr-rs-elevel">'+_esc(lv.name)+'</span>'
+        +(tags?'<span class="cr-tags">'+_esc(tags)+'</span>':'')
+        +(p.thread?'<span class="cr-star" title="Carried over from the level above">★</span>':'');
+      if(lv.canEdit){
+        row.classList.add('cr-editable','cr-pophost');
+        row.title='Change '+p.shortName+'\'s role on '+lv.name;
+        row.addEventListener('click', function(){ _personPop(row, lv, p); });
+      }
+      detail.appendChild(row);
+    });
+    wrap.appendChild(detail);
+    body.appendChild(wrap);
   }
 
   // ---------- Organization Chart (print) ----------
