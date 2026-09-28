@@ -800,7 +800,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      head / utility / X buttons (same white 30px icon buttons as a board's
      ID Band, IDBand.TOKENS.iconBtn) in the upper right. */
   .isx-pcard.isx-pcard-uni{--uni-accent:#7FB2DD;width:600px;max-width:94vw;aspect-ratio:5/3;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
-    border-radius:8px;box-shadow:0 10px 30px rgba(26,58,92,.30);padding:18px 22px 22px}
+    border-radius:3px;box-shadow:0 10px 30px rgba(26,58,92,.30);padding:18px 22px 22px}
   .isx-pcard.isx-pcard-uni.isx-pcard-bb{--uni-accent:#C9A87C;background:#FFFDF7;border-top-color:#C9A87C;box-shadow:0 10px 30px rgba(59,37,16,.35)}
   .isx-p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;cursor:grab;user-select:none}
   .isx-p-newtitle{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--isx-navy);
@@ -935,3 +935,11 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-pcard.isx-pcard-uni{display:flex;flex-direction:column}
   .isx-pcard-uni textarea{flex:1 1 auto;height:auto;min-height:70px;margin-bottom:8px}
   .isx-pcard-uni .isx-save-row{margin-top:auto}
+
+  /* Round 7 (Sept 28 2026, Larry): square corners like a real index card,
+     and the card recolors live with the BOARD field (see _icSetBoardKind):
+     Blue Sky = light blue, Briefing = tan, Notebook = sage green. */
+  .isx-pcard.isx-pcard-uni{border-radius:3px}
+  .isx-pcard.isx-pcard-uni.isx-pcard-nb{--isx-navy:#4F7A5A;--isx-paleblue:#9DBFA5;--brand-blue-gray:#4F7A5A;--uni-accent:#7FAF8A;
+    background:#F4F9F4;border-top-color:#7FAF8A;box-shadow:0 10px 30px rgba(40,70,50,.30)}
+  .isx-pcard.isx-pcard-uni.isx-pcard-nb .isx-save:hover{background:#365a40}

@@ -851,6 +851,14 @@
     if(!k) return false;
     _icBoardKind=k.value; _icEntryType=k.entry;
     var txt=document.getElementById('isx-p-board-txt'); if(txt) txt.textContent=k.label;
+    // Live recolor (Sept 28 2026, Larry): the card wears the color of the
+    // board it is going to -- light blue for Blue Sky, tan for Briefing,
+    // green for Notebook -- so color always says where the entry lands.
+    var cardEl=document.querySelector('#isx-popup-layer .isx-pcard-uni');
+    if(cardEl){
+      cardEl.classList.toggle('isx-pcard-bb', k.value==='BRIEFING BOARD');
+      cardEl.classList.toggle('isx-pcard-nb', k.value==='NOTEBOOK');
+    }
     return true;
   }
 
