@@ -41,8 +41,10 @@
    files over 50 MB are turned away, each with a plain message — see
    _icAcceptFile, the one door drop, paste and the ATTACH button share.
    The ID Band also changed: a NEW chip (flips to the assigned person's
-   first name), PROJECT, TOPIC, and BOARD (Blue Sky / Briefing /
-   Notebook, which replaces the old IDEA/TASK/NOTES row), and the
+   first name), TOPIC (one field opening the shared topic pyramid,
+   replacing the old separate PROJECT and TOPIC pickers), and BOARD
+   (Blue Sky / Briefing / Notebook, which replaces the old
+   IDEA/TASK/NOTES row), and the
    HEADER/SUBBER buttons are gone — a trailing ? or : makes a header.
    ============================================================ */
 
@@ -1092,7 +1094,7 @@
     // project" (bridge.currentProjectRow()), which has nothing to do with
     // whatever PROJECT the traveler just picked inside this card's own
     // PROJECT field. Picking a PROJECT here only ever updated _icProjectId/
-    // _icProjectLabel (see _icWireProjectTopicPickers above) -- it never
+    // _icProjectLabel (see _icWireTopicPicker above) -- it never
     // touched the board's ambient state -- so the cast picker kept asking
     // the wrong place, over and over, and "Pick a PROJECT first." never
     // cleared no matter how many times a PROJECT was picked. Build the row
@@ -1219,54 +1221,127 @@
     }, 0);
   }
 
-  // PROJECT lists every top-level project this traveler owns (the same
-  // list feeding the Idea Board's own project switcher); TOPIC lists the
-  // headers directly under whichever PROJECT is current. Picking a
-  // PROJECT re-points the entry at that project's own Parking Lot (no
-  // TOPIC yet) until a TOPIC is also picked -- Larry, Sept 19 2026:
-  // "just because you are in a given project... doesn't mean you might
-  // not think of an idea for a completely different project."
-  function _icWireProjectTopicPickers(){
-    var projEl=document.getElementById('isx-p-project');
+  // TOPIC picker, Sept 28 2026 -- Larry: the boards' ID Band is TOPIC + Board
+  // Type, and this card's band is the same band in miniature, so PROJECT
+  // and TOPIC collapse into one TOPIC field that opens the same pyramid
+  // popup the boards use (topic-pyramid.js): the straight line of ancestors
+  // up to MASTER, the current Topic highlighted, and its children below,
+  // each openable in turn. Any level is a valid pick -- "just because you
+  // are in a given project... doesn't mean you might not think of an idea
+  // for a completely different project" (Sept 19 2026) -- so a pick simply
+  // becomes the entry's home (_icBoardId, the same id every save path
+  // already writes). MASTER is the apex and means "no Topic yet".
+  //
+  // TopicPyramid knows nothing about Supabase, so this hands it plain
+  // {id,name,priority} nodes: ancestors are found by walking cluster_id up
+  // until the hidden account-root row (which reads as MASTER), children are
+  // that Topic's own header rows minus the reserved bucket names (same
+  // reserved list the Idea Board's pyramid hides). Fetched fresh on each
+  // open, so a header added a moment ago always shows up.
+  function _icWireTopicPicker(){
     var topicEl=document.getElementById('isx-p-topic');
-    if(projEl) projEl.addEventListener('click', async function(ev){
+    if(!topicEl) return;
+    var MASTER_ID='__master__';
+    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+    var names={};
+
+    function fetchRow(id){
+      return T().sb.from('ideas').select('id,text_content,cluster_id,priority').eq('id',id).limit(1)
+        .then(function(res){ return (!res.error && res.data && res.data[0]) || null; });
+    }
+    async function loadAncestors(row){
+      var chain=[], parentId=row.cluster_id, guard=0;
+      while(parentId && guard<50){
+        guard++;
+        var p=await fetchRow(parentId);
+        if(!p) break;
+        if(window.IDBand && IDBand.isNonProjectName(p.text_content)) break; // the account root -- shown as MASTER below
+        chain.unshift({id:p.id, name:p.text_content||'(untitled)', priority:p.priority||''});
+        parentId=p.cluster_id;
+      }
+      chain.unshift({id:MASTER_ID, name:'MASTER', priority:''});
+      return chain;
+    }
+    async function loadChildren(id){
+      var kids;
+      if(id===MASTER_ID){
+        var roots=[];
+        try{ roots=(typeof _sboardLoadMyRoots==='function') ? (await _sboardLoadMyRoots())||[] : []; }
+        catch(e){ console.warn('NEW card: could not load top-level topics', e); }
+        kids=roots.filter(function(r){ return !(window.IDBand && IDBand.isNonProjectName(r.text_content)); })
+          .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
+      } else {
+        var res=await T().sb.from('ideas').select('id,text_content,priority,storyboard_kind')
+          .eq('content_type','header').eq('cluster_id',id).order('sort_order',{ascending:true}).order('text_content');
+        if(res.error) throw res.error;
+        kids=(res.data||[])
+          .filter(function(r){ return !RESERVED[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA'; })
+          .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
+      }
+      kids.forEach(function(k){ names[k.id]=k.name; });
+      return kids;
+    }
+    function pick(id){
+      var isMaster=(id===MASTER_ID);
+      var label=isMaster ? 'MASTER' : (names[id]||'(untitled)');
+      _icBoardId=isMaster?null:id; _icProjectId=isMaster?null:id; _icHeaderId=null;
+      _icTopicLabel=label; _icProjectLabel=label;
+      var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=label;
+    }
+
+    topicEl.addEventListener('click', async function(ev){
       ev.stopPropagation();
-      var roots=[];
-      try{ roots=(typeof _sboardLoadMyRoots==='function') ? (await _sboardLoadMyRoots())||[] : []; }
-      catch(e){ console.warn('NEW card: could not load project list', e); }
-      // Parking Lot, Sept 19 2026 -- Larry: "if location is undecided,"
-      // PROJECT needs its own '-' option too, same meaning '-' already
-      // has on TOPIC -- files nowhere in particular until reassigned.
-      // Sept 22 2026 -- Larry: "PROJECTS is never a project. MASTER is
-      // the highest project. Parking Lot is never a project." The '-'
-      // (Parking Lot) PROJECT option is now MASTER (same no-project-id
-      // meaning underneath), and any root row carrying one of those
-      // non-project names is left off the list.
-      var rows=[{id:null, label:'MASTER'}].concat(
-        roots.filter(function(r){ return !(window.IDBand && IDBand.isNonProjectName(r.text_content)); })
-          .map(function(r){ return {id:r.id, label:r.text_content||'(untitled)'}; }));
-      _icOpenFieldDropdown(projEl, rows, function(picked){
-        _icProjectId=picked.id; _icProjectLabel=picked.id?picked.label:'MASTER';
-        _icBoardId=picked.id; _icHeaderId=null; _icTopicLabel='-';
-        var pt=document.getElementById('isx-p-project-txt'); if(pt) pt.textContent=_icEsc(_icProjectLabel);
-        var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=_icEsc(_icTopicLabel);
-      });
-    });
-    if(topicEl) topicEl.addEventListener('click', async function(ev){
-      ev.stopPropagation();
-      if(!_icProjectId) return; // nothing to cascade from -- pick a PROJECT first
-      var rows=[{id:null, label:'– (Parking Lot)'}];
+      if(!window.TopicPyramid) return;
+      var old=document.getElementById('isx-p-field-menu'); if(old) old.remove();
+      var menu=document.createElement('div');
+      menu.id='isx-p-field-menu';
+      menu.style.cssText='position:fixed;z-index:100000;background:#fff;color:#1a3a5c;border:1.5px solid #b0a898;border-radius:8px;'
+        +'box-shadow:0 6px 18px rgba(0,0,0,.18);max-height:min(360px,60vh);overflow:auto;min-width:220px;padding:6px;'
+        +'font-family:"Playfair Display",serif';
+      menu.textContent='Loading…';
+      document.body.appendChild(menu);
+      var r=topicEl.getBoundingClientRect();
+      menu.style.left=r.left+'px'; menu.style.top=(r.bottom+4)+'px';
+      menu.style.minWidth=Math.max(220,r.width)+'px';
+
+      var curId=_icBoardId||_icProjectId||null, current, ancestors=[];
       try{
-        var _sb=T().sb;
-        var res=await _sb.from('ideas').select('id,text_content').eq('content_type','header').eq('cluster_id',_icProjectId).order('text_content');
-        if(!res.error && res.data) rows=rows.concat(res.data.map(function(h){ return {id:h.id, label:h.text_content||'(untitled)'}; }));
-      }catch(e){ console.warn('NEW card: could not load topic list', e); }
-      _icOpenFieldDropdown(topicEl, rows, function(picked){
-        _icBoardId=picked.id||_icProjectId; _icTopicLabel=picked.id?picked.label:'-'; _icHeaderId=null;
-        var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=_icEsc(_icTopicLabel);
+        if(curId){
+          var row=await fetchRow(curId);
+          current={id:curId, name:(row&&row.text_content)||(_icTopicLabel!=='-'?_icTopicLabel:_icProjectLabel)||'(untitled)', priority:(row&&row.priority)||''};
+          ancestors=row ? await loadAncestors(row) : [{id:MASTER_ID, name:'MASTER', priority:''}];
+        } else {
+          current={id:MASTER_ID, name:'MASTER', priority:''};
+        }
+      }catch(e){
+        console.warn('NEW card: could not load topic pyramid', e);
+        menu.textContent='Couldn’t load — try again.';
+        return;
+      }
+      names[current.id]=current.name;
+      ancestors.forEach(function(a){ names[a.id]=a.name; });
+      var currentRow=window.TopicPyramid.render(menu, {
+        ancestors:ancestors,
+        current:current,
+        getChildren:loadChildren,
+        onNavigate:function(id){ menu.remove(); pick(id); }
       });
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
+      if(currentRow && currentRow.scrollIntoView) currentRow.scrollIntoView({block:'center'});
+      // Clicks inside the pyramid (its expand arrows) must not close it --
+      // only a click outside does.
+      setTimeout(function(){
+        document.addEventListener('click', function closeOutside(e){
+          var m=document.getElementById('isx-p-field-menu');
+          if(m && m.contains(e.target)) return;
+          if(m) m.remove();
+          document.removeEventListener('click', closeOutside);
+        });
+      }, 0);
     });
   }
+
   function _icRenderIdeaPanel(){
     _icIdeaMode='idea';
     // NEW card should default to whatever card type matches the board
@@ -1283,20 +1358,19 @@
     _icInputPendingFile=null;
     var _icBoardKindNow=_IC_BOARD_KINDS.filter(function(k){ return k.value===_icBoardKind; })[0];
     _icOpenPopup('<div class="isx-pcard'+(_icMode==='bb'?' isx-pcard-bb':'')+'" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
-      // ID Band, Sept 28 2026 (universal input card) -- NEW sits in the
-      // band itself as a state chip (it flips to the assigned person's
-      // first name once the head button picks someone, see paintCast), then
-      // the same PROJECT/TOPIC pickers as before, then BOARD TYPE. Board
+      // ID Band, Sept 28 2026 (universal input card) -- the boards' own band
+      // in miniature: NEW sits in it as a state chip (it flips to the
+      // assigned person's first name once the head button picks someone,
+      // see paintCast), then TOPIC (the same pyramid popup the boards use;
+      // MASTER at the apex), then BOARD TYPE. Board
       // Type replaces the old IDEA/TASK/NOTES row: the board already implies
       // the kind. In 'bb' mode it's fixed to BRIEFING, matching the fact
       // that everything opened from the Briefing Board saves to it.
       +'<div class="isx-p-idband">'
         +'<div class="isx-p-idgrp isx-p-idgrp-new"><div class="isx-p-eyebrow">Card</div>'
           +'<div class="isx-p-idfield isx-p-idfield-static" id="isx-p-newchip"><span id="isx-p-newchip-txt">NEW</span></div></div>'
-        +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Project</div>'
-          +'<div class="isx-p-project isx-p-idfield" id="isx-p-project"><span id="isx-p-project-txt">'+_icEsc(_icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
         +'<div class="isx-p-idgrp isx-p-idgrp-topic"><div class="isx-p-eyebrow">Topic</div>'
-          +'<div class="isx-p-topic isx-p-idfield" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
+          +'<div class="isx-p-topic isx-p-idfield" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
         +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Board</div>'
           +'<div class="isx-p-idfield'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div></div>'
       +'</div>'
@@ -1386,15 +1460,10 @@
       paintCast();
     })();
 
-    // PROJECT/TOPIC picker, Sept 19 2026 round 3 -- Larry: picking a
-    // PROJECT filters TOPIC down to that project's own topics, since an
-    // entry made while standing in one project might really belong to a
-    // different one. PROJECT lists every project this traveler owns
-    // (same list the Idea Board's own project switcher reads);  TOPIC
-    // lists the headers directly under whichever PROJECT is current,
-    // fetched fresh each time it's opened so a newly-added header
-    // always shows up.
-    _icWireProjectTopicPickers();
+    // TOPIC picker -- one field, the boards' shared topic pyramid (see
+    // _icWireTopicPicker). It replaced the separate PROJECT and TOPIC
+    // pickers of Sept 19 2026, which cascaded one into the other.
+    _icWireTopicPicker();
 
     _icWirePopupDrag(document.querySelector('#isx-popup-layer .isx-pcard'));
 
