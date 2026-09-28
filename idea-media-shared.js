@@ -102,9 +102,12 @@
   function _linkParseText(text){
     try{
       var parsed=JSON.parse(text);
-      if(parsed && parsed.url) return {url:parsed.url, title:parsed.title||parsed.url};
+      // file/ext/kind/size added Sept 28 2026 -- an attached file rides the
+      // link content type (see idea-capture.js _icSaveFileCard), so the same
+      // parse serves both; a plain link just gets file:false.
+      if(parsed && parsed.url) return {url:parsed.url, title:parsed.title||parsed.url, file:!!parsed.file, ext:parsed.ext||'', kind:parsed.kind||'', size:parsed.size||0};
     }catch(e){}
-    return {url:text||'', title:text||'Link'};
+    return {url:text||'', title:text||'Link', file:false, ext:'', kind:'', size:0};
   }
 
   /* Delegate to the shared data layer (header-data.js) — canonical logic

@@ -33,9 +33,17 @@
    dropped on it goes through the same pending-preview-then-SAVE path
    as a pasted image; a dropped/dragged link (from a browser tab, a
    file's own URL, etc.) goes through the same path as a pasted URL.
-   Any other raw file (a document, a video) gets a plain "not supported
-   yet, paste a link instead" message — V1 deliberately does not host
-   raw documents/video. See _icHandleIdeaDrop.
+
+   Accept-anything, Sept 28 2026 (universal input card) — ANY other file
+   (document, sheet, slide, audio, video, archive, unfamiliar type) now
+   waits as a chip until SAVE and is saved as a link-type card carrying
+   file:true (see _icSaveFileCard). Only programs/installers/scripts and
+   files over 50 MB are turned away, each with a plain message — see
+   _icAcceptFile, the one door drop, paste and the ATTACH button share.
+   The ID Band also changed: a NEW chip (flips to the assigned person's
+   first name), PROJECT, TOPIC, and BOARD (Blue Sky / Briefing /
+   Notebook, which replaces the old IDEA/TASK/NOTES row), and the
+   HEADER/SUBBER buttons are gone — a trailing ? or : makes a header.
    ============================================================ */
 
 (function(){
@@ -53,6 +61,26 @@
   var _icIdeaMode='idea';       // manual idea/header override -- wired to the isx-p-header-toggle button, Aug 7, 2026
   var _icInputPendingImageFile=null;
   var _icInputPendingLink=null; // {url, title, thumb}
+  // Sept 28 2026 (universal input card) -- ANY other file (document, sheet,
+  // slide, audio, video, archive, anything unfamiliar) waits here as a chip
+  // until SAVE, same hold-then-confirm shape as a pending image or link.
+  var _icInputPendingFile=null;
+  // Board Type, Sept 28 2026 -- the ID Band's second field. It replaces the
+  // old IDEA/TASK/NOTES row because the board already implies the kind:
+  // BLUE SKY -> idea, BRIEFING -> task, NOTEBOOK -> note. _icEntryType stays
+  // as the internal flavor every save path below already reads; picking a
+  // Board Type just sets both together (see _icSetBoardKind).
+  var _icBoardKind='IDEA';      // 'IDEA' (BLUE SKY) | 'BRIEFING BOARD' | 'NOTEBOOK'
+  var _IC_BOARD_KINDS=[
+    {value:'IDEA',           label:'BLUE SKY',   entry:'idea'},
+    {value:'BRIEFING BOARD', label:'BRIEFING',   entry:'task'},
+    {value:'NOTEBOOK',       label:'NOTEBOOK',   entry:'note'},
+    // Shown so the full set is visible, but nothing to save into yet --
+    // picking one explains that instead of silently saving elsewhere.
+    {value:'SEA',            label:'SEA OF IDEAS', soon:'SEA OF IDEAS is coming soon — pick another board for now.'},
+    {value:'PLAN',           label:'PATHFINDER',   soon:'PATHFINDER cards are coming soon — pick another board for now.'},
+    {value:'SHARE',          label:'STORY',        soon:'STORY BOARD is coming soon — pick another board for now.'}
+  ];
 
   // ── NEW card fields, Sept 19 2026 (Larry's "NEW CARD" spec) ──
   // Sept 20 2026, Larry: the top project level is always MASTER, never a
@@ -306,6 +334,67 @@
     }
   }
 
+  // Any other file (Sept 28 2026). Uploads the raw file as-is (no
+  // compression -- that only makes sense for images) to the same public
+  // bucket images use, then saves it as a LINK-type card whose JSON carries
+  // file:true plus the name/extension/size/kind. Riding the existing 'link'
+  // content type means no schema change and no new tile code: the card
+  // already opens its URL, and the tile shows a paperclip instead of the
+  // link glyph when file is true (see T2TMedia.parseText). Stays open for
+  // the next entry, same as the image path. Typed text becomes the card's
+  // title when there's no SUBJECT, so nothing typed is thrown away.
+  async function _icSaveFileCard(file){
+    var headerId=_icHeaderId||_icBoardId;
+    var subjEl=document.getElementById('isx-p-subject');
+    var subject=subjEl?subjEl.value.trim():'';
+    var ta=document.getElementById('isx-idea-text');
+    var typed=(ta?ta.value:'').trim();
+    var savedOk=false, saveErr=null, row=null;
+    try{
+      var _sb=T().sb;
+      var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
+      if(!user){ saveErr='Not signed in.'; }
+      else{
+        var fname=file.name||('file-'+Date.now());
+        var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
+        var up=await _sb.storage.from('sea-of-ideas').upload(path, file);
+        if(up.error) throw up.error;
+        var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+        var url=pub.data && pub.data.publicUrl;
+        if(!url) throw new Error('No public URL returned.');
+        var k=_icFileKind(file);
+        var title=subject || typed.split('\n')[0].slice(0,120) || fname;
+        var ins=await _sb.from('ideas').insert({
+          user_id:user.id,
+          content_type:'link',
+          subject: subject||null,
+          text_content: JSON.stringify({url:url, title:title, file:true, name:fname, ext:_icFileExt(fname), size:file.size, kind:k.kind}),
+          image_url: null,
+          cluster_id: headerId||null,
+          created_at:new Date().toISOString()
+        }).select().single();
+        if(ins.error){ saveErr=ins.error.message||String(ins.error); console.error('_icSaveFileCard insert error:', ins.error); }
+        else { savedOk=true; row=ins.data; }
+      }
+    }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_icSaveFileCard exception:', e); }
+
+    if(savedOk){
+      if(_icOnSaved) _icOnSaved(row);
+      _icMaybeApplyCast(row);
+      _icResetIdeaPanelForNext(false, 'File attached — keep going');
+    } else {
+      // Put the chip back so the traveler can retry without re-dropping it.
+      _icShowPendingFile(file);
+      var errBox=document.querySelector('#isx-popup-layer .isx-pcard');
+      if(errBox){
+        var errEl=document.createElement('div');
+        errEl.style.cssText='color:#A32D2D;font-size:11px;text-align:center;margin-top:6px';
+        errEl.textContent='Save failed: '+(saveErr||'unknown error');
+        errBox.appendChild(errEl);
+      }
+    }
+  }
+
   // ── Popup shell — open/close/badge/drag. Same #isx-popup-layer DOM id
   //    as before; it's now a global overlay (see index.html) so it can
   //    sit on top of whatever screen is active. ──
@@ -322,7 +411,7 @@
     var cb=_icOnClosed;
     _icHeaderId=null; _icHeaderLabel='New'; _icBoardId=null;
     _icOnSaved=null; _icOnClosed=null;
-    _icProjectLabel='MASTER'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false; _icMode='idea';
+    _icProjectLabel='MASTER'; _icTopicLabel='-'; _icProjectId=null; _icEntryType='idea'; _icBoardKind='IDEA'; _icInputPendingFile=null; _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false; _icMode='idea';
     var stray=document.getElementById('isx-p-field-menu'); if(stray) stray.remove();
     if(cb) cb();
   }
@@ -521,18 +610,23 @@
     ta.value=''; ta.focus();
     _icIdeaMode='idea';
     _icClearPendingImage();
+    _icClearPendingFile();
     // Sept 27 2026 fix (Larry: subject carried over into the next add) --
     // Subject is per-entry, same as the idea text itself, so it has to
     // clear here too instead of sitting there for whatever gets typed next.
     var subjEl=document.getElementById('isx-p-subject');
     if(subjEl) subjEl.value='';
+    // The head button's pick is spent once the entry is saved (see
+    // _icMaybeApplyCast), so the band's NEW chip goes back to NEW too.
+    var newChip=document.getElementById('isx-p-newchip-txt');
+    if(newChip) newChip.textContent='NEW';
+    var castBtnReset=document.getElementById('isx-p-cast-btn');
+    if(castBtnReset){ castBtnReset.classList.remove('on'); castBtnReset.title='Pick who’s PRIMARY'; }
+    _icSyncKindLine();
     var card=document.querySelector('#isx-popup-layer .isx-pcard');
     if(card){
-      // Repaint HEADER/SUBBER back to its SUBBER default after each save
-      // (not present at all in 'bb' mode, hence the null guards).
-      var hBtn=card.querySelector('#isx-p-header-btn'), sBtn=card.querySelector('#isx-p-subber-btn');
-      if(hBtn) hBtn.classList.remove('on');
-      if(sBtn) sBtn.classList.add('on');
+      // (HEADER/SUBBER buttons were retired Sept 28 2026 -- a trailing ? or
+      // : makes a header now -- so there's nothing to repaint here.)
       var old=card.querySelector('.isx-save-flash'); if(old) old.remove();
       var flash=document.createElement('div');
       flash.className='isx-save-flash';
@@ -550,6 +644,7 @@
   // preview with CANCEL/SAVE, matching the locked rule that non-text
   // content gets an explicit save affordance rather than auto-committing.
   function _icShowPendingImage(file){
+    _icInputPendingFile=null;
     _icInputPendingImageFile=file;
     var preview=document.getElementById('isx-paste-preview');
     if(preview){
@@ -559,12 +654,14 @@
       preview.style.display='block';
       preview.dataset.icRole='image';
     }
+    _icSyncKindLine();
   }
 
   function _icClearPendingImage(){
     _icInputPendingImageFile=null;
     var preview=document.getElementById('isx-paste-preview');
     if(preview){ preview.innerHTML=''; preview.style.display='none'; preview.dataset.icRole=''; }
+    _icSyncKindLine();
   }
 
   // Same preview-then-confirm shape as the image path: show what the
@@ -573,6 +670,7 @@
   // shared oEmbed lookup returns — allowlisted providers only (YouTube,
   // Vimeo, Spotify, SoundCloud, TikTok).
   function _icShowPendingLink(url){
+    _icInputPendingFile=null;
     _icInputPendingLink={url:url, title:null, thumb:null};
     var preview=document.getElementById('isx-paste-preview');
     if(preview){
@@ -580,6 +678,7 @@
       preview.style.display='block';
       preview.dataset.icRole='link';
     }
+    _icSyncKindLine();
     _icResolveOEmbed(url).then(function(meta){
       if(!_icInputPendingLink || _icInputPendingLink.url!==url) return; // cancelled or replaced meanwhile
       _icInputPendingLink.title=meta&&meta.title||url;
@@ -597,6 +696,7 @@
     _icInputPendingLink=null;
     var preview=document.getElementById('isx-paste-preview');
     if(preview){ preview.innerHTML=''; preview.style.display='none'; preview.dataset.icRole=''; }
+    _icSyncKindLine();
   }
 
   // A single bare URL, nothing else on the line — conservative on
@@ -617,6 +717,139 @@
     var hasParagraphs = /\n\s*\n/.test(t);
     var sentenceCount = (t.match(/[.!?](?=\s|$)/g)||[]).length;
     return hasParagraphs || sentenceCount>=3;
+  }
+
+  // ── Attachments: accept anything, with a short block list, Sept 28 2026
+  // (Larry: "I would like to accept anything with rare exceptions noted by
+  // message"). Known kinds get their own chip label and icon; everything
+  // else is a plain "file" chip, so nothing is turned away for being
+  // unfamiliar. The exceptions are files that can RUN on someone's computer
+  // (programs, installers, scripts) and files over the size ceiling. Both
+  // checks run on the name AND the first bytes, so renaming a program to
+  // .txt doesn't get it past.
+  var _IC_MAX_FILE_BYTES=50*1024*1024; // Supabase's default per-upload ceiling on this project
+  var _IC_BLOCKED_EXT=/^(exe|msi|bat|cmd|com|scr|pif|app|dmg|apk|jar|vbs|vbe|wsf|ps1|sh|cpl|reg|lnk|js)$/i;
+  var _IC_BLOCKED_MSG='That file type can’t be attached — it can run programs on a computer. Try zipping it, or describing it in a note.';
+  var _IC_FILE_KINDS=[
+    {kind:'image',    icon:'🖼', ext:/^(jpe?g|png|gif|webp|svg|heic|heif|bmp|tiff?|avif)$/i, mime:/^image\//},
+    {kind:'document', icon:'📄', ext:/^(pdf|docx?|txt|md|rtf|odt|pages|epub)$/i},
+    {kind:'sheet',    icon:'📊', ext:/^(xlsx?|csv|tsv|ods|numbers)$/i},
+    {kind:'slide',    icon:'📽', ext:/^(pptx?|key|odp)$/i},
+    {kind:'audio',    icon:'🎵', ext:/^(mp3|m4a|wav|aac|flac|ogg|oga|aiff?)$/i, mime:/^audio\//},
+    {kind:'video',    icon:'🎬', ext:/^(mp4|mov|m4v|webm|avi|mkv|mpe?g)$/i, mime:/^video\//}
+  ];
+
+  function _icFileExt(name){
+    var m=/\.([A-Za-z0-9]{1,8})$/.exec(name||'');
+    return m ? m[1].toLowerCase() : '';
+  }
+
+  function _icFileKind(file){
+    var ext=_icFileExt(file && file.name), type=(file && file.type)||'';
+    for(var i=0;i<_IC_FILE_KINDS.length;i++){
+      var k=_IC_FILE_KINDS[i];
+      if((k.ext && k.ext.test(ext)) || (k.mime && k.mime.test(type))) return {kind:k.kind, icon:k.icon};
+    }
+    return {kind:'file', icon:'📎'};
+  }
+
+  function _icFormatBytes(n){
+    if(n<1024) return n+' B';
+    if(n<1024*1024) return Math.round(n/1024)+' KB';
+    return (n/(1024*1024)).toFixed(n>=10*1024*1024?0:1)+' MB';
+  }
+
+  // First bytes only -- enough to recognise a Windows/Linux/Mac executable
+  // or a shebang script no matter what the file was renamed to.
+  function _icLooksExecutable(file){
+    return new Promise(function(resolve){
+      try{
+        var reader=new FileReader();
+        reader.onload=function(){
+          var b=new Uint8Array(reader.result||new ArrayBuffer(0));
+          var hex=Array.prototype.map.call(b.subarray(0,4), function(x){ return ('0'+x.toString(16)).slice(-2); }).join('');
+          resolve(hex.indexOf('4d5a')===0            // MZ -- Windows program
+            || hex==='7f454c46'                        // ELF -- Linux program
+            || hex==='feedface' || hex==='feedfacf' || hex==='cefaedfe' || hex==='cffaedfe' // Mach-O -- Mac program
+            || hex.indexOf('2321')===0);               // #! -- shebang script
+        };
+        reader.onerror=function(){ resolve(false); };
+        reader.readAsArrayBuffer(file.slice(0,4));
+      }catch(e){ resolve(false); }
+    });
+  }
+
+  // HEIC/HEIF won't display in most browsers, so it rides as a file chip
+  // rather than a broken image card; every other image/* keeps the existing
+  // compress-and-upload image path.
+  function _icIsRenderableImage(file){
+    var t=(file && file.type)||'', ext=_icFileExt(file && file.name);
+    return t.indexOf('image/')===0 && !/^(heic|heif)$/i.test(ext) && !/heic|heif/i.test(t);
+  }
+
+  // One door for every file that arrives by drop, paste, or the attach
+  // button. Validates first, then routes: a renderable image goes to the
+  // existing pending-image preview, anything else becomes a file chip.
+  async function _icAcceptFile(file, extraCount){
+    if(!file) return;
+    if(_IC_BLOCKED_EXT.test(_icFileExt(file.name)) || await _icLooksExecutable(file)){
+      _icShowFormatBoundaryMessage(_IC_BLOCKED_MSG);
+      return;
+    }
+    if(file.size>_IC_MAX_FILE_BYTES){
+      _icShowFormatBoundaryMessage('That file is '+_icFormatBytes(file.size)+' — the limit is '+_icFormatBytes(_IC_MAX_FILE_BYTES)+'. Try a smaller version or a link to it.');
+      return;
+    }
+    if(_icIsRenderableImage(file)) _icShowPendingImage(file);
+    else _icShowPendingFile(file, extraCount);
+  }
+
+  function _icShowPendingFile(file, extraCount){
+    _icClearPendingImage(); _icClearPendingLink();
+    _icInputPendingFile=file;
+    var k=_icFileKind(file), ext=_icFileExt(file.name);
+    var preview=document.getElementById('isx-paste-preview');
+    if(preview){
+      preview.innerHTML='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#fff;border:1.5px solid var(--isx-paleblue);border-radius:8px;margin-bottom:8px">'
+        +'<div style="font-size:26px;line-height:1">'+k.icon+'</div>'
+        +'<div style="min-width:0;flex:1;text-align:left">'
+          +'<div style="font-size:12px;font-weight:700;color:var(--isx-navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_icEsc(file.name||'file')+'</div>'
+          +'<div style="font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:#7a90a8">'+k.kind+(ext?' · '+_icEsc(ext):'')+' · '+_icFormatBytes(file.size)
+            +(extraCount>0?' · 1 of '+(extraCount+1)+' — add the rest one at a time':'')+'</div>'
+        +'</div></div>';
+      preview.style.display='block';
+      preview.dataset.icRole='file';
+    }
+    _icSyncKindLine();
+  }
+
+  function _icClearPendingFile(){
+    _icInputPendingFile=null;
+    var preview=document.getElementById('isx-paste-preview');
+    if(preview && preview.dataset.icRole==='file'){ preview.innerHTML=''; preview.style.display='none'; preview.dataset.icRole=''; }
+    _icSyncKindLine();
+  }
+
+  // The eyebrow line under the divider ("image · document · ...") is a
+  // hint, so it's only shown while the card is empty -- once there's text or
+  // something attached, the entry itself is the message. Larry, Sept 27
+  // 2026: "I also like the input options visible until an entry is made."
+  function _icSyncKindLine(){
+    var el=document.getElementById('isx-p-kindline');
+    if(!el) return;
+    var ta=document.getElementById('isx-idea-text');
+    var empty=!(ta && ta.value.trim()) && !_icInputPendingImageFile && !_icInputPendingLink && !_icInputPendingFile;
+    el.style.visibility = empty ? 'visible' : 'hidden'; // hidden, not display:none, so the card doesn't jump in height
+  }
+
+  // Keeps Board Type and the internal entry flavor in step -- see the
+  // comment on _IC_BOARD_KINDS above.
+  function _icSetBoardKind(value){
+    var k=_IC_BOARD_KINDS.filter(function(x){ return x.value===value && !x.soon; })[0];
+    if(!k) return false;
+    _icBoardKind=k.value; _icEntryType=k.entry;
+    var txt=document.getElementById('isx-p-board-txt'); if(txt) txt.textContent=k.label;
+    return true;
   }
 
   // Unified drop zone, Sept 2026 — the card already accepted a pasted
@@ -665,12 +898,10 @@
     var dt=e.dataTransfer;
     if(!dt) return;
     if(dt.files && dt.files.length){
-      var file=dt.files[0];
-      if(file.type && file.type.indexOf('image/')===0){
-        _icShowPendingImage(file);
-      } else {
-        _icShowFormatBoundaryMessage();
-      }
+      // Any file is welcome now (Sept 28 2026) -- _icAcceptFile decides
+      // between an image preview, a file chip, or a plain message for the
+      // few blocked types. Only the first file is taken per drop.
+      _icAcceptFile(dt.files[0], dt.files.length-1);
       return;
     }
     var dragged=_icExtractDraggedUrl(dt);
@@ -712,7 +943,7 @@
     var _icCommitIsHeader = (_icIdeaMode==='header') || (!_icInputPendingImageFile && _icIsAutoHeaderText(_icCommitRawText));
     var wantsBB = (_icMode==='bb') || (_icEntryType==='task' && !_icCommitIsHeader);
     if(wantsBB){
-      if(_icInputPendingImageFile || _icInputPendingLink){
+      if(_icInputPendingImageFile || _icInputPendingLink || _icInputPendingFile){
         _icShowFormatBoundaryMessage('Briefing Board cards are text-only for now — type it in as text instead.');
         return;
       }
@@ -720,11 +951,19 @@
       return;
     }
     if(_icEntryType==='note' && !_icCommitIsHeader){
-      if(_icInputPendingImageFile || _icInputPendingLink){
+      if(_icInputPendingImageFile || _icInputPendingLink || _icInputPendingFile){
         _icShowFormatBoundaryMessage('Notebook cards are text-only for now — type it in as text instead.');
         return;
       }
       _icSaveNotebookCard();
+      return;
+    }
+    if(_icInputPendingFile){
+      var pendingFile=_icInputPendingFile;
+      var fpreview=document.getElementById('isx-paste-preview');
+      if(fpreview) fpreview.insertAdjacentHTML('beforeend','<div style="font-size:10px;color:#5b9bd5;text-align:center">Uploading…</div>');
+      _icInputPendingFile=null;
+      _icSaveFileCard(pendingFile);
       return;
     }
     if(_icInputPendingImageFile){
@@ -755,8 +994,10 @@
   function _icCancelIdeaEntry(){
     _icClearPendingImage();
     _icClearPendingLink();
+    _icClearPendingFile();
     var ta=document.getElementById('isx-idea-text');
     if(ta){ ta.value=''; ta.focus(); }
+    _icSyncKindLine();
   }
 
   // ── 1170 — NEW card (Larry's "NEW CARD" spec, Sept 19 2026) ──
@@ -1034,77 +1275,87 @@
     // card was opened from the Briefing Board (openAddCard), so TASK is
     // the sensible starting selection there; every other opener (Idea
     // Storyboard, etc.) keeps the previous IDEA default.
+    _icBoardKind=(_icMode==='bb')?'BRIEFING BOARD':'IDEA';
     _icEntryType=(_icMode==='bb')?'task':'idea';
     _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false;
     _icInputPendingImageFile=null;
     _icInputPendingLink=null;
+    _icInputPendingFile=null;
+    var _icBoardKindNow=_IC_BOARD_KINDS.filter(function(k){ return k.value===_icBoardKind; })[0];
     _icOpenPopup('<div class="isx-pcard'+(_icMode==='bb'?' isx-pcard-bb':'')+'" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
-      +'<div class="isx-ptitle isx-ptitle-black" style="text-align:center;margin:0 0 4px">'+(_icMode==='bb'?'NEW TASK':'NEW')+'</div>'
-      // ID-Band look, Sept 22 2026 (Larry) -- PROJECT and TOPIC sit side
-      // by side as framed white fields with small eyebrows above them,
-      // the same shape as the board's own ID Band, instead of stacked
-      // plain text. Same ids, so the pickers wired below are unchanged.
+      // ID Band, Sept 28 2026 (universal input card) -- NEW sits in the
+      // band itself as a state chip (it flips to the assigned person's
+      // first name once the head button picks someone, see paintCast), then
+      // the same PROJECT/TOPIC pickers as before, then BOARD TYPE. Board
+      // Type replaces the old IDEA/TASK/NOTES row: the board already implies
+      // the kind. In 'bb' mode it's fixed to BRIEFING, matching the fact
+      // that everything opened from the Briefing Board saves to it.
       +'<div class="isx-p-idband">'
+        +'<div class="isx-p-idgrp isx-p-idgrp-new"><div class="isx-p-eyebrow">Card</div>'
+          +'<div class="isx-p-idfield isx-p-idfield-static" id="isx-p-newchip"><span id="isx-p-newchip-txt">NEW</span></div></div>'
         +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Project</div>'
           +'<div class="isx-p-project isx-p-idfield" id="isx-p-project"><span id="isx-p-project-txt">'+_icEsc(_icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
         +'<div class="isx-p-idgrp isx-p-idgrp-topic"><div class="isx-p-eyebrow">Topic</div>'
           +'<div class="isx-p-topic isx-p-idfield" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
-      +'</div>'
-      +'<div class="isx-p-type-row">'
-        +'<button class="isx-src-btn'+(_icEntryType==='idea'?' on':'')+'" type="button" data-type="idea">IDEA</button>'
-        +'<button class="isx-src-btn'+(_icEntryType==='task'?' on':'')+'" type="button" data-type="task">TASK</button>'
-        +'<button class="isx-src-btn'+(_icEntryType==='note'?' on':'')+'" type="button" data-type="note">NOTES</button>'
+        +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Board</div>'
+          +'<div class="isx-p-idfield'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div></div>'
       +'</div>'
       +'<div class="isx-p-subject-row">'
         +'<input type="text" id="isx-p-subject" autocomplete="off" autocorrect="off" spellcheck="true" placeholder="Subject (optional)">'
         +'<button class="isx-p-cast-btn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY">👤</button>'
       +'</div>'
-      // HEADER/SUBBER only means something on the Idea Board's own header
-      // hierarchy -- a Briefing Board card has no such concept, so this
-      // row is skipped entirely in 'bb' mode rather than shown disabled.
-      +(_icMode==='bb' ? '' :
-        '<div class="isx-p-bottom-row">'
-          +'<button class="isx-p-hs-btn" type="button" id="isx-p-header-btn">HEADER</button>'
-          +'<button class="isx-p-hs-btn on" type="button" id="isx-p-subber-btn">SUBBER</button>'
-        +'</div>')
       +'<div id="isx-paste-preview" style="display:none"></div>'
-      +'<textarea id="isx-idea-text" placeholder="Type, paste, or drop anything…"></textarea>'
+      // A trailing ? or : makes the entry a header (see _icIsAutoHeaderText)
+      // -- no HEADER/SUBBER buttons any more (Sept 28 2026, Larry: "header
+      // and subber distinguished only by ? and :"), so the placeholder
+      // carries the habit. Briefing Board has no headers, so no hint there.
+      +'<textarea id="isx-idea-text" placeholder="Type, paste, or drop anything…'+(_icMode==='bb'?'':' End with ? or : for a header.')+'"></textarea>'
       +'<div id="isx-doc-banner" style="display:none;font-size:11px;color:#1a3a5c;background:#eaf3fb;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;margin:-4px 0 6px;text-align:center">'
         +'That looks like a whole document. '
         +'<button type="button" id="isx-doc-decompose" style="border:none;background:none;color:#1a3a5c;font-weight:700;text-decoration:underline;cursor:pointer;padding:0">Split it into cards instead?</button>'
       +'</div>'
+      +(_icMode==='bb' ? '' :
+        '<div class="isx-p-attach-row"><button class="isx-p-attach-btn" type="button" id="isx-p-attach-btn">📎 ATTACH A FILE</button>'
+        +'<input type="file" id="isx-p-file-input" style="display:none"></div>')
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
-      +'</div></div>');
+      +'</div>'
+      // Eyebrow-size hint under a divider, only while the card is empty.
+      +'<div class="isx-p-divider"></div>'
+      +'<div class="isx-p-kindline" id="isx-p-kindline">image · document · sheet · slide · audio · video · link · anything</div>'
+      +'</div>');
     document.getElementById('isx-p-close').onclick=_icClosePopup;
     document.getElementById('isx-p-save').onclick=_icCommitIdeaPanel;
     document.getElementById('isx-p-cancel').onclick=_icCancelIdeaEntry;
 
-    // O IDEA / TASK / NOTES -- one selected at a time.
+    // BOARD TYPE -- picks where this entry goes and, with it, what kind of
+    // card it is (see _IC_BOARD_KINDS). Boards with nothing to save into
+    // yet are listed but explain themselves instead of saving elsewhere.
     (function(){
-      var typeBtns=document.querySelectorAll('.isx-p-type-row .isx-src-btn');
-      typeBtns.forEach(function(b){
-        b.onclick=function(){
-          _icEntryType=b.getAttribute('data-type');
-          typeBtns.forEach(function(x){ x.classList.toggle('on', x===b); });
-        };
+      var boardEl=document.getElementById('isx-p-board');
+      if(!boardEl || _icMode==='bb') return;
+      boardEl.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var rows=_IC_BOARD_KINDS.map(function(k){ return {id:k.value, label:k.label+(k.soon?' · soon':''), kind:k}; });
+        _icOpenFieldDropdown(boardEl, rows, function(picked){
+          if(picked.kind.soon){ _icShowFormatBoundaryMessage(picked.kind.soon); return; }
+          _icSetBoardKind(picked.kind.value);
+        });
       });
     })();
 
-    // HEADER / SUBBER -- wires the same _icIdeaMode variable _icSaveCard
-    // already checks; SUBBER (adds under the current header) is the
-    // default, matching how this card is opened everywhere today.
+    // ATTACH A FILE -- the picker has no accept filter on purpose; the
+    // block list and size ceiling live in _icAcceptFile, so drop, paste and
+    // this button all get exactly the same rules.
     (function(){
-      var hBtn=document.getElementById('isx-p-header-btn');
-      var sBtn=document.getElementById('isx-p-subber-btn');
-      function paint(){
-        if(hBtn) hBtn.classList.toggle('on', _icIdeaMode==='header');
-        if(sBtn) sBtn.classList.toggle('on', _icIdeaMode!=='header');
-      }
-      if(hBtn) hBtn.onclick=function(){ _icIdeaMode='header'; paint(); };
-      if(sBtn) sBtn.onclick=function(){ _icIdeaMode='idea'; paint(); };
-      paint();
+      var btn=document.getElementById('isx-p-attach-btn'), inp=document.getElementById('isx-p-file-input');
+      if(!btn || !inp) return;
+      btn.onclick=function(){ inp.click(); };
+      inp.addEventListener('change', function(){
+        if(inp.files && inp.files.length) _icAcceptFile(inp.files[0], inp.files.length-1);
+        inp.value='';
+      });
     })();
 
     // Cast, Sept 19 2026 round 5 -- one button: opens the same roster
@@ -1113,12 +1364,17 @@
     // someone not on the project yet. Picking a name just arms
     // _icCastPersonId -- doesn't write anything until this entry has a
     // saved row to attach a card_roles row to (see _icMaybeApplyCast).
+    // Sept 28 2026: the ID Band's NEW chip flips to that person's first
+    // name once one is picked (the roster already lists first names), so
+    // the card visibly says who it's for before it's saved.
     (function(){
       var castBtn=document.getElementById('isx-p-cast-btn');
       function paintCast(){
         if(!castBtn) return;
         castBtn.classList.toggle('on', !!_icCastPersonId);
         castBtn.title=_icCastPersonId ? ('PRIMARY: '+_icCastPersonName+' — click to change') : 'Pick who’s PRIMARY';
+        var chip=document.getElementById('isx-p-newchip-txt');
+        if(chip) chip.textContent=_icCastPersonId ? String(_icCastPersonName||'NEW').trim().split(/\s+/)[0] : 'NEW';
       }
       if(castBtn) castBtn.onclick=function(ev){
         ev.stopPropagation();
@@ -1167,7 +1423,19 @@
               var file=items[i].getAsFile();
               if(file){
                 e.preventDefault();
-                _icShowPendingImage(file);
+                // Through the shared door so HEIC and the size ceiling get
+                // the same rules as a dropped or attached image.
+                _icAcceptFile(file, 0);
+              }
+              return;
+            }
+            // Any other pasted file (copied from Finder/Explorer, etc.) --
+            // Sept 28 2026, accept-anything.
+            if(items[i].kind==='file'){
+              var pastedFile=items[i].getAsFile();
+              if(pastedFile){
+                e.preventDefault();
+                _icAcceptFile(pastedFile, 0);
               }
               return;
             }
@@ -1190,6 +1458,7 @@
         if(banner) banner.style.display = (text && _icLooksLikeDocument(text)) ? 'block' : 'none';
       });
       ta.addEventListener('input', function(){
+        _icSyncKindLine();
         var banner=document.getElementById('isx-doc-banner');
         if(banner && banner.style.display!=='none' && !_icLooksLikeDocument(ta.value)) banner.style.display='none';
       });

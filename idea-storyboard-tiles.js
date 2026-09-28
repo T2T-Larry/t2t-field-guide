@@ -427,7 +427,10 @@
       }
     } else if(item.content_type==='link'){
       var lp=document.createElement('p');
-      var lpText='\ud83d\udd17 '+(_stSubject || T2TMedia.parseText(item.text_content).title);
+      // Paperclip for an attached file, link glyph for a link (Sept 28 2026
+      // -- files ride the link content type, see idea-capture.js).
+      var _lpParsed=T2TMedia.parseText(item.text_content);
+      var lpText=(_lpParsed.file?'\ud83d\udcce ':'\ud83d\udd17 ')+(_stSubject || _lpParsed.title);
       lp.textContent=lpText;
       var lpBase=Math.round((height>=60?17:14)*2/3*(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1));
       // Floor lowered Aug 21 2026 (Larry: long words like "Appreciation"

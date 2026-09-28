@@ -780,6 +780,20 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     display:flex;align-items:center;justify-content:center}
   .isx-p-cast-btn.on{background:var(--isx-navy);color:var(--brand-white);border-color:var(--isx-navy)}
   .isx-p-url-preview{font-size:calc(9.5px * var(--fg-text-scale,1));color:#7a90a8;text-align:center;word-break:break-word;margin-top:2px}
+  /* Universal input card, Sept 28 2026 -- the NEW chip and the fixed
+     (Briefing-mode) BOARD field are plain, non-clickable ID Band boxes;
+     ATTACH A FILE sits under the entry field; the kind line is an
+     eyebrow-size hint under a divider at the very bottom, shown only
+     while the card is empty. */
+  .isx-p-idgrp-new{flex:0 0 auto;min-width:62px}
+  .isx-p-idfield-static{cursor:default;justify-content:center}
+  .isx-p-idfield-static:hover{border-color:var(--isx-paleblue)}
+  .isx-p-attach-row{display:flex;margin:0 0 8px}
+  .isx-p-attach-btn{flex:1;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 4px;border:1.5px dashed var(--isx-paleblue);
+    border-radius:8px;background:transparent;cursor:pointer;color:var(--isx-navy);font-weight:700;letter-spacing:.5px}
+  .isx-p-attach-btn:hover{background:rgba(0,0,0,.04);border-color:var(--isx-navy)}
+  .isx-p-divider{height:1px;background:var(--isx-paleblue);opacity:.6;margin:10px 0 6px}
+  .isx-p-kindline{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a90a8;text-align:center;line-height:1.4}
 
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
   .isx-tnode{margin:2px 0 2px 14px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--isx-navy);cursor:pointer;padding:2px 4px;border-radius:5px}
