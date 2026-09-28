@@ -1383,6 +1383,7 @@
         +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Board</div>'
           +'<div class="isx-p-idfield'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div></div>'
       +'</div>'
+      +'<div class="isx-p-band-rule"></div>'
       +'<div class="isx-p-subject-row">'
         +'<input type="text" id="isx-p-subject" autocomplete="off" autocorrect="off" spellcheck="true" placeholder="Subject (optional)">'
       +'</div>'

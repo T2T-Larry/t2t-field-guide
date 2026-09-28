@@ -799,9 +799,9 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      the boards' ID Band in miniature -- NEW as a plain title on the left,
      head / utility / X buttons (same white 30px icon buttons as a board's
      ID Band, IDBand.TOKENS.iconBtn) in the upper right. */
-  .isx-pcard.isx-pcard-uni{width:340px;max-width:90vw;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
+  .isx-pcard.isx-pcard-uni{--uni-accent:#7FB2DD;width:380px;max-width:92vw;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
     border-radius:8px;box-shadow:0 10px 30px rgba(26,58,92,.30);padding:18px 22px 22px}
-  .isx-pcard.isx-pcard-uni.isx-pcard-bb{background:#FFFDF7;border-top-color:#C9A87C;box-shadow:0 10px 30px rgba(59,37,16,.35)}
+  .isx-pcard.isx-pcard-uni.isx-pcard-bb{--uni-accent:#C9A87C;background:#FFFDF7;border-top-color:#C9A87C;box-shadow:0 10px 30px rgba(59,37,16,.35)}
   .isx-p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;cursor:grab;user-select:none}
   .isx-p-newtitle{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--isx-navy);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -907,3 +907,12 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     font-weight:700;font-size:calc(12px * var(--fg-text-scale,1));cursor:pointer}
   .nb-gem:hover{background:#f3e6cf}
   .nb-status{font-size:calc(11px * var(--fg-text-scale,1));text-align:center;margin-top:2px;min-height:10px;font-family:'Playfair Display',serif}
+
+  /* Universal input card, round 3 (Sept 28 2026, Larry): wider, to the
+     Idea card back's own 380px; field look matches the card back's fields
+     (1.5px accent frame, 4px corners); a divider rule closes the ID Band. */
+  .isx-p-band-rule{height:1px;background:var(--uni-accent,#7FB2DD);opacity:.7;margin:2px 0 12px}
+  .isx-pcard-uni .isx-p-idfield{border:1.5px solid var(--uni-accent);border-radius:4px}
+  .isx-pcard-uni textarea,.isx-pcard-uni input[type=text]{border:1.5px solid var(--uni-accent);border-radius:4px}
+  .isx-pcard-uni .isx-p-attach-btn{border-color:var(--uni-accent);border-radius:4px}
+  .isx-pcard-uni .isx-p-hbtn{border-color:var(--uni-accent);border-radius:4px}
