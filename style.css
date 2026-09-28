@@ -799,7 +799,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      the boards' ID Band in miniature -- NEW as a plain title on the left,
      head / utility / X buttons (same white 30px icon buttons as a board's
      ID Band, IDBand.TOKENS.iconBtn) in the upper right. */
-  .isx-pcard.isx-pcard-uni{--uni-accent:#7FB2DD;width:380px;max-width:92vw;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
+  .isx-pcard.isx-pcard-uni{--uni-accent:#7FB2DD;width:600px;max-width:94vw;aspect-ratio:5/3;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
     border-radius:8px;box-shadow:0 10px 30px rgba(26,58,92,.30);padding:18px 22px 22px}
   .isx-pcard.isx-pcard-uni.isx-pcard-bb{--uni-accent:#C9A87C;background:#FFFDF7;border-top-color:#C9A87C;box-shadow:0 10px 30px rgba(59,37,16,.35)}
   .isx-p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;cursor:grab;user-select:none}
@@ -916,3 +916,9 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-pcard-uni textarea,.isx-pcard-uni input[type=text]{border:1.5px solid var(--uni-accent);border-radius:4px}
   .isx-pcard-uni .isx-p-attach-btn{border-color:var(--uni-accent);border-radius:4px}
   .isx-pcard-uni .isx-p-hbtn{border-color:var(--uni-accent);border-radius:4px}
+
+  /* Round 4 (Sept 28 2026, Larry): a Subber is the shape of a 3x5 index
+     card, so the universal card is one -- landscape 5:3 (600 x 360). The
+     ratio is a floor: on a very narrow screen the content may still make
+     it taller rather than get cut off. */
+  .isx-pcard-uni textarea{height:70px}
