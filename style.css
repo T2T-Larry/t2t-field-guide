@@ -929,3 +929,9 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-p-head-topic{flex:1 1 0;min-width:0}
   .isx-p-head-board{flex:0 1 140px;min-width:0}
   .isx-p-band-rule{margin:0 0 12px}
+
+  /* Round 6 (Sept 28 2026, Larry): the Content field takes all the spare
+     height, so SAVE / CANCEL always sit at the bottom of the index card. */
+  .isx-pcard.isx-pcard-uni{display:flex;flex-direction:column}
+  .isx-pcard-uni textarea{flex:1 1 auto;height:auto;min-height:70px;margin-bottom:8px}
+  .isx-pcard-uni .isx-save-row{margin-top:auto}

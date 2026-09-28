@@ -1388,7 +1388,7 @@
       // -- no HEADER/SUBBER buttons any more (Sept 28 2026, Larry: "header
       // and subber distinguished only by ? and :"), so the placeholder
       // carries the habit. Briefing Board has no headers, so no hint there.
-      +'<textarea id="isx-idea-text" placeholder="Type, paste, or drop anything…'+(_icMode==='bb'?'':' End with ? or : for a header.')+'"></textarea>'
+      +'<textarea id="isx-idea-text" placeholder="Content"></textarea>'
       +'<div id="isx-doc-banner" style="display:none;font-size:11px;color:#1a3a5c;background:#eaf3fb;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;margin:-4px 0 6px;text-align:center">'
         +'That looks like a whole document. '
         +'<button type="button" id="isx-doc-decompose" style="border:none;background:none;color:#1a3a5c;font-weight:700;text-decoration:underline;cursor:pointer;padding:0">Split it into cards instead?</button>'
@@ -1399,7 +1399,7 @@
       +(_icMode==='bb' ? '' :
         '<div class="isx-p-attach-row"><button class="isx-p-attach-btn" type="button" id="isx-p-attach-btn">📎 ATTACH A FILE</button>'
         +'<input type="file" id="isx-p-file-input" style="display:none"></div>')
-      +'<div class="isx-p-kindline" id="isx-p-kindline">image · document · sheet · slide · audio · video · link</div>'
+      +'<div class="isx-p-kindline" id="isx-p-kindline">text · image · document · sheet · slide · audio · video · link</div>'
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
