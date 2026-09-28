@@ -792,8 +792,25 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-p-attach-btn{flex:1;font-size:calc(10px * var(--fg-text-scale,1));padding:6px 4px;border:1.5px dashed var(--isx-paleblue);
     border-radius:8px;background:transparent;cursor:pointer;color:var(--isx-navy);font-weight:700;letter-spacing:.5px}
   .isx-p-attach-btn:hover{background:rgba(0,0,0,.04);border-color:var(--isx-navy)}
-  .isx-p-divider{height:1px;background:var(--isx-paleblue);opacity:.6;margin:10px 0 6px}
-  .isx-p-kindline{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a90a8;text-align:center;line-height:1.4}
+  .isx-p-kindline{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a90a8;text-align:center;line-height:1.4;margin:0 0 10px}
+  /* Universal input card, round 2 (Sept 28 2026, Larry) -- same shape as
+     the Idea / Briefing card back (.bb-overlay-card + .fg-cardback-idea:
+     340px, 8px corners, colored top stripe, no thin rim), and its top is
+     the boards' ID Band in miniature -- NEW as a plain title on the left,
+     head / utility / X buttons (same white 30px icon buttons as a board's
+     ID Band, IDBand.TOKENS.iconBtn) in the upper right. */
+  .isx-pcard.isx-pcard-uni{width:340px;max-width:90vw;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
+    border-radius:8px;box-shadow:0 10px 30px rgba(26,58,92,.30);padding:18px 22px 22px}
+  .isx-pcard.isx-pcard-uni.isx-pcard-bb{background:#FFFDF7;border-top-color:#C9A87C;box-shadow:0 10px 30px rgba(59,37,16,.35)}
+  .isx-p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;cursor:grab;user-select:none}
+  .isx-p-newtitle{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--isx-navy);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .isx-p-head-btns{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .isx-p-hbtn{width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+    background:#fff;border:1.5px solid var(--isx-navy);border-radius:6px;cursor:pointer;color:var(--isx-navy);
+    font-size:calc(14px * var(--fg-text-scale,1));font-weight:700}
+  .isx-p-hbtn:hover{background:#eef2f6}
+  .isx-p-hbtn.on{background:var(--isx-navy);color:var(--brand-white);border-color:var(--isx-navy)}
 
   .isx-tree-card{width:300px;max-height:80vh;overflow:auto;background:#eef2f6;border-radius:14px;padding:16px 18px;position:relative}
   .isx-tnode{margin:2px 0 2px 14px;font-size:calc(12px * var(--fg-text-scale,1));color:var(--isx-navy);cursor:pointer;padding:2px 4px;border-radius:5px}

@@ -1357,18 +1357,27 @@
     _icInputPendingLink=null;
     _icInputPendingFile=null;
     var _icBoardKindNow=_IC_BOARD_KINDS.filter(function(k){ return k.value===_icBoardKind; })[0];
-    _icOpenPopup('<div class="isx-pcard'+(_icMode==='bb'?' isx-pcard-bb':'')+'" data-pagenum="1170"><button class="isx-pclose" id="isx-p-close">✕</button>'
-      // ID Band, Sept 28 2026 (universal input card) -- the boards' own band
-      // in miniature: NEW sits in it as a state chip (it flips to the
-      // assigned person's first name once the head button picks someone,
-      // see paintCast), then TOPIC (the same pyramid popup the boards use;
-      // MASTER at the apex), then BOARD TYPE. Board
-      // Type replaces the old IDEA/TASK/NOTES row: the board already implies
-      // the kind. In 'bb' mode it's fixed to BRIEFING, matching the fact
-      // that everything opened from the Briefing Board saves to it.
+    _icOpenPopup('<div class="isx-pcard isx-pcard-uni'+(_icMode==='bb'?' isx-pcard-bb':'')+'" data-pagenum="1170">'
+      // Sept 28 2026 (Larry, round 2): the card is the Idea/Briefing card
+      // back's shape (340px, 8px corners, colored top stripe) and its top is
+      // the boards' ID Band in miniature: NEW is a plain title (not a
+      // field) on the left -- it flips to the assigned person's first name
+      // once the head button picks someone, see paintCast -- and the same
+      // head / utility / X buttons ride the upper right as on a board.
+      // Under it, the two ID Band fields: TOPIC (the boards' shared topic
+      // pyramid, MASTER at the apex) and BOARD TYPE. Board Type replaces the
+      // old IDEA/TASK/NOTES row: the board already implies the kind. In
+      // bb mode it is fixed to BRIEFING, since everything opened from
+      // the Briefing Board saves to it.
+      +'<div class="isx-p-head" id="isx-p-head">'
+        +'<span class="isx-p-newtitle" id="isx-p-newchip-txt">NEW</span>'
+        +'<div class="isx-p-head-btns">'
+          +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">👤</button>'
+          +'<button class="isx-p-hbtn" type="button" id="isx-p-util-btn" title="Utility" aria-label="Utility">⚙️</button>'
+          +'<button class="isx-p-hbtn" type="button" id="isx-p-close" title="Close" aria-label="Close">✕</button>'
+        +'</div>'
+      +'</div>'
       +'<div class="isx-p-idband">'
-        +'<div class="isx-p-idgrp isx-p-idgrp-new"><div class="isx-p-eyebrow">Card</div>'
-          +'<div class="isx-p-idfield isx-p-idfield-static" id="isx-p-newchip"><span id="isx-p-newchip-txt">NEW</span></div></div>'
         +'<div class="isx-p-idgrp isx-p-idgrp-topic"><div class="isx-p-eyebrow">Topic</div>'
           +'<div class="isx-p-topic isx-p-idfield" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
         +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Board</div>'
@@ -1376,7 +1385,6 @@
       +'</div>'
       +'<div class="isx-p-subject-row">'
         +'<input type="text" id="isx-p-subject" autocomplete="off" autocorrect="off" spellcheck="true" placeholder="Subject (optional)">'
-        +'<button class="isx-p-cast-btn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY">👤</button>'
       +'</div>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       // A trailing ? or : makes the entry a header (see _icIsAutoHeaderText)
@@ -1388,16 +1396,17 @@
         +'That looks like a whole document. '
         +'<button type="button" id="isx-doc-decompose" style="border:none;background:none;color:#1a3a5c;font-weight:700;text-decoration:underline;cursor:pointer;padding:0">Split it into cards instead?</button>'
       +'</div>'
+      // ATTACH A FILE with the kinds it takes written directly beneath it
+      // (Larry, Sept 28 2026: "move the attachment options up directly under
+      // Attach... delete ANYTHING"). Shown only while the card is empty.
       +(_icMode==='bb' ? '' :
         '<div class="isx-p-attach-row"><button class="isx-p-attach-btn" type="button" id="isx-p-attach-btn">📎 ATTACH A FILE</button>'
         +'<input type="file" id="isx-p-file-input" style="display:none"></div>')
+      +'<div class="isx-p-kindline" id="isx-p-kindline">image · document · sheet · slide · audio · video · link</div>'
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
       +'</div>'
-      // Eyebrow-size hint under a divider, only while the card is empty.
-      +'<div class="isx-p-divider"></div>'
-      +'<div class="isx-p-kindline" id="isx-p-kindline">image · document · sheet · slide · audio · video · link · anything</div>'
       +'</div>');
     document.getElementById('isx-p-close').onclick=_icClosePopup;
     document.getElementById('isx-p-save').onclick=_icCommitIdeaPanel;
@@ -1532,25 +1541,57 @@
         if(banner && banner.style.display!=='none' && !_icLooksLikeDocument(ta.value)) banner.style.display='none';
       });
     }
-    var decomposeBtn=document.getElementById('isx-doc-decompose');
-    if(decomposeBtn){
-      decomposeBtn.onclick=function(){
-        var ta2=document.getElementById('isx-idea-text');
-        var text=ta2 ? ta2.value : '';
-        if(!text.trim() || !window.DocDecomp) return;
-        var targetHeaderId=_icHeaderId;
-        _icClosePopup();
-        window.DocDecomp.open({
-          parentHeaderId: targetHeaderId,
-          initialText: text,
-          // false, not true -- renderSeaBoard's arg is fromCache; these
-          // rows were just written straight to Supabase, bypassing the
-          // local board cache, so this needs a real refetch (same as the
-          // gear-menu entry point in idea-storyboard-header.js).
-          onDone: function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(false); }
-        });
-      };
+    // Split-a-document, shared by the banner link (shown when a paste looks
+    // like a whole document) and the UTILITY button's menu.
+    function openDecompose(){
+      var ta2=document.getElementById('isx-idea-text');
+      var text=ta2 ? ta2.value : '';
+      if(!text.trim() || !window.DocDecomp) return false;
+      var targetHeaderId=_icHeaderId;
+      _icClosePopup();
+      window.DocDecomp.open({
+        parentHeaderId: targetHeaderId,
+        initialText: text,
+        // false, not true -- renderSeaBoard's arg is fromCache; these
+        // rows were just written straight to Supabase, bypassing the
+        // local board cache, so this needs a real refetch (same as the
+        // gear-menu entry point in idea-storyboard-header.js).
+        onDone: function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(false); }
+      });
+      return true;
     }
+    var decomposeBtn=document.getElementById('isx-doc-decompose');
+    if(decomposeBtn) decomposeBtn.onclick=openDecompose;
+
+    // UTILITY button (the gear in the card's ID Band, same place as on a
+    // board): the card-level tools. Split-a-document only exists on the
+    // idea boards (the Briefing Board has no headers to split into);
+    // Clear card is everywhere.
+    (function(){
+      var utilBtn=document.getElementById('isx-p-util-btn');
+      if(!utilBtn) return;
+      utilBtn.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var rows=[];
+        if(_icMode!=='bb') rows.push({id:'split', label:'Split a document into cards'});
+        rows.push({id:'clear', label:'Clear this card'});
+        _icOpenFieldDropdown(utilBtn, rows, function(picked){
+          var taU=document.getElementById('isx-idea-text');
+          if(picked.id==='split'){
+            if(!openDecompose() && taU){
+              taU.placeholder='Paste a document here first, then choose Utility again.';
+              taU.focus();
+            }
+          } else if(picked.id==='clear'){
+            if(taU){ taU.value=''; taU.focus(); }
+            var subjU=document.getElementById('isx-p-subject'); if(subjU) subjU.value='';
+            _icClearPendingImage(); _icClearPendingFile(); _icClearPendingLink();
+            var bannerU=document.getElementById('isx-doc-banner'); if(bannerU) bannerU.style.display='none';
+            _icSyncKindLine();
+          }
+        });
+      });
+    })();
 
     // Unified drop zone — the whole card is the target, not just the
     // textarea, so dropping doesn't depend on hitting a small hit area.
