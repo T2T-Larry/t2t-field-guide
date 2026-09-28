@@ -1371,17 +1371,13 @@
       // the Briefing Board saves to it.
       +'<div class="isx-p-head" id="isx-p-head">'
         +'<span class="isx-p-newtitle" id="isx-p-newchip-txt">NEW</span>'
+        +'<div class="isx-p-topic isx-p-idfield isx-p-head-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div>'
+        +'<div class="isx-p-idfield isx-p-head-board'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div>'
         +'<div class="isx-p-head-btns">'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">👤</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-util-btn" title="Utility" aria-label="Utility">⚙️</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-close" title="Close" aria-label="Close">✕</button>'
         +'</div>'
-      +'</div>'
-      +'<div class="isx-p-idband">'
-        +'<div class="isx-p-idgrp isx-p-idgrp-topic"><div class="isx-p-eyebrow">Topic</div>'
-          +'<div class="isx-p-topic isx-p-idfield" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div></div>'
-        +'<div class="isx-p-idgrp"><div class="isx-p-eyebrow">Board</div>'
-          +'<div class="isx-p-idfield'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div></div>'
       +'</div>'
       +'<div class="isx-p-band-rule"></div>'
       +'<div class="isx-p-subject-row">'
@@ -1752,7 +1748,7 @@
       _icHeaderLabel=opts.headerLabel||'New';
       _icBoardId=opts.boardId||null;
       _icProjectLabel=window.IDBand ? IDBand.projectLabel(opts.projectLabel) : (opts.projectLabel||'MASTER');
-      _icTopicLabel=opts.topicLabel||'-';
+      _icTopicLabel=opts.topicLabel ? (window.IDBand ? IDBand.projectLabel(opts.topicLabel) : opts.topicLabel) : '-';
       _icProjectId=opts.projectId||null;
       _icMode=opts.mode==='bb'?'bb':'idea';
       _icOnSaved=typeof opts.onSaved==='function'?opts.onSaved:null;
