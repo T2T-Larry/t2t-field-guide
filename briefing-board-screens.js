@@ -651,11 +651,11 @@
         priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         FGCardBack.checkRegion(bbw);
-        // Start Date + Due Date on one line with Add-to-Calendar at the right end.
-        var sb=q('bb-d-start-body'), db=q('bb-d-due-body'), cal=q('bb-d-calendar');
-        if(sb && db && cal){
+        // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
+        var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
+        if(sb && db){
           var drow=document.createElement('div'); drow.className='fg-back-daterow';
-          sb.parentNode.insertBefore(drow, sb); drow.appendChild(sb); drow.appendChild(db); drow.appendChild(cal);
+          sb.parentNode.insertBefore(drow, sb); drow.appendChild(sb); drow.appendChild(db);
         }
         // Duplicate moves under the Utility (gear) swatch row.
         var colorRow=q('bb-d-color-row'), dup=q('bb-d-duplicate');

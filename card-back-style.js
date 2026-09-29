@@ -124,18 +124,16 @@
       +'.fg-back-checks .bb-field.bb-addition{width:auto;margin:0}'
       +'.fg-back-checks #bb-d-add-notes-wrap{display:none}'
       // Priority + Subject share one line; Show-on-front sits right under it.
-      +'.fg-back-toprow{display:flex;gap:12px;align-items:flex-end;width:100%}'
+      +'.fg-back-toprow{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end;width:100%}'
       +'.fg-back-toprow .bb-field{margin-bottom:6px}'
-      +'.fg-back-toprow .bb-field:first-child{flex:0 0 auto;width:auto}'
-      +'.fg-back-toprow .bb-field:last-child{flex:0 1 200px;min-width:0}'
-      // Start Date + Due Date on one line, Add-to-Calendar at the right end (only while a date is open).
+      +'.fg-back-toprow .bb-field:first-child{justify-self:start;width:auto}'
+      +'.fg-back-toprow .bb-field:last-child{grid-column:2;width:200px;max-width:100%;min-width:0}'
+      // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
       +'.fg-back-daterow{display:flex;gap:10px;align-items:flex-end}'
       +'.fg-back-daterow .bb-addition-body{flex:1 1 0;min-width:0}'
       +'.fg-back-daterow .bb-date-row{gap:3px;flex-wrap:wrap}'
       +'.fg-back-daterow .bb-date-row input[type=text]{min-width:0;flex:1 1 64px}'
       +'.fg-back-daterow .bb-date-row .bb-date-time{flex:0 1 48px}'
-      +'.fg-back-daterow #bb-d-calendar{flex:0 0 auto;margin-bottom:8px}'
-      +'.fg-back-daterow:not(:has(.bb-addition-body:not([style*="display: none"]))) #bb-d-calendar{display:none}'
       // Utility extras (Duplicate) show with the gear's swatch row.
       +'.fg-back-util-extra{display:none;gap:6px;margin-top:4px}'
       +'#bb-d-color-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
