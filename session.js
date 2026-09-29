@@ -174,6 +174,9 @@
       }
     }
     T2TShared.ideaCaptureCtx=null;
+    // The ID Band has to be wired BEFORE the first paint, or that paint is a
+    // silent no-op and TOPIC stays on its "—" placeholder (init is idempotent).
+    if(window.T2TSeaIdBand) T2TSeaIdBand.init({labelFor:_isxLabel, goToTopic:_isxGoToTopic, fetchRow:_isxFetchRow, toast:_isxShowToast});
     await _isxRenderLadder();
     await _isxRenderBoard();
     var pnInit=document.getElementById('isx-pagenum'); if(pnInit) pnInit.textContent='1014'; // renumbered from 9711, Aug 9 2026
