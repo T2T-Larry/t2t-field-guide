@@ -1545,9 +1545,14 @@
       // Everything the board drew, in wrap-local layout pixels (offset sizes
       // ignore the camera's scale, so this is the same at any zoom).
       contentBox:function(){
+        // scrollWidth/scrollHeight, not offsetHeight: the row container is
+        // stretched to the viewport height while a tall column overflows it,
+        // so its own offset size hides the bottom of the tallest column and
+        // its (+) (found live Sept 29 2026: Concepts, 660px in a 562px row).
         var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
         Array.prototype.forEach.call(wrap.children,function(k){
-          var x=k.offsetLeft, y=k.offsetTop, w=k.offsetWidth, h=k.offsetHeight;
+          var x=k.offsetLeft, y=k.offsetTop;
+          var w=Math.max(k.offsetWidth,k.scrollWidth), h=Math.max(k.offsetHeight,k.scrollHeight);
           if(!w && !h) return;
           if(x<x0) x0=x; if(y<y0) y0=y;
           if(x+w>x1) x1=x+w; if(y+h>y1) y1=y+h;
