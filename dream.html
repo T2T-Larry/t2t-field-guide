@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;1,400&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <style>@media print{@page{size:landscape;margin:0.3in}*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}html,body{height:100%!important;width:100%!important}body{padding:0!important;margin:0!important;background:#fdf8f0!important}body>*:not(.fg){display:none!important}.fg{box-shadow:none!important;border:none!important;border-radius:0!important;margin:0!important;width:100%!important;max-width:none!important;height:100%!important;transform:none!important}.sc{display:none!important}#s-cl-5{display:flex!important;flex-direction:column!important;width:100%!important;height:100%!important;min-height:0!important;max-height:none!important;overflow:visible!important}#cl-print-area{width:100%!important;height:100%!important;padding:0!important}#cl-cert-svg{max-height:none!important;width:100%!important;height:auto!important}.bar2{display:none!important}button[onclick]{display:none!important}}</style>
-<link rel="stylesheet" href="style.css?v=20260929a">
+<link rel="stylesheet" href="style.css?v=20260929c">
 <style>
 .fg{font-family:'Playfair Display',Georgia,serif;width:680px;margin:0 auto;transition:transform .15s ease-out;border:2px solid #999;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);position:relative;user-select:none;-webkit-user-select:none;cursor:default}
 /* Kept in sync with index.html's text-selection fix, July 27 2026.
@@ -47,7 +47,7 @@
 <script src="settings-menu.js?v=20260922a"></script>
 <script src="member-identity.js?v=20260920a"></script>
 <script src="shortcuts-list.js?v=20260922p"></script>
-<script src="id-band.js?v=20260927d"></script>
+<script src="id-band.js?v=20260929c"></script>
 <script src="header-data.js?v=20260923i"></script>
 <script src="text-fit.js?v=20260915a"></script>
 <script src="backpack.js?v=20260919a"></script>
@@ -57,7 +57,7 @@
 <script src="briefing-board-signal-flags.js?v=20260909b"></script>
 <script src="briefing-board-master.js?v=20260923i"></script>
 <script src="topic-pyramid.js?v=20260923j"></script>
-<script src="briefing-board-master-nav.js?v=20260929b"></script>
+<script src="briefing-board-master-nav.js?v=20260929c"></script>
 <script src="cast-pick-list.js?v=20260923j"></script>
 <script src="cast-roster.js?v=20260927hub"></script>
 <script src="briefing-board-ops.js?v=20260927b"></script>
@@ -67,12 +67,12 @@
 <script src="idea-capture.js?v=20260929b"></script>
 <script src="notebook-open.js?v=20260729g"></script>
 <script src="idea-media-shared.js?v=20260928b"></script>
-<script src="idea-storyboard-screens.js?v=20260927f"></script>
+<script src="idea-storyboard-screens.js?v=20260929c"></script>
 <script src="idea-storyboard-shared.js?v=20260927a"></script>
 <script src="idea-storyboard-signal-flags.js?v=20260912a"></script>
 <script src="idea-storyboard-people.js?v=20260923g"></script>
 <script src="idea-storyboard-cluster.js?v=20260922v"></script>
-<script src="idea-storyboard-navigation.js?v=20260929b"></script>
+<script src="idea-storyboard-navigation.js?v=20260929c"></script>
 <script src="idea-storyboard-tiles.js?v=20260928b"></script>
 <script src="idea-storyboard-header.js?v=20260927b"></script>
 <script src="document-decomposition.js?v=20260927b"></script>
@@ -80,7 +80,8 @@
 <script src="idea-storyboard-card-detail.js?v=20260927a"></script>
 <script src="idea-storyboard-9710.js?v=20260922m"></script>
 <script src="board-canvas-camera.js?v=20260929a"></script>
-<script src="session.js?v=20260929b"></script>
+<script src="sea-id-band.js?v=20260929c"></script>
+<script src="session.js?v=20260929c"></script>
 <script src="gems.js?v=20260905a"></script>
 <!-- Missing until now, July 27 2026 -- Larry: landing on 1000 left him
      completely stuck, no drawers, no TV frame, no nav buttons. The
@@ -1248,31 +1249,29 @@
 <!-- 💡 IDEA INPUT + FOCUSED BUCKET — 1014, was 9711 (locked July 13, 2026, was 9210); renumbered Aug 9 2026 into the Dream Phase 1000s, right after ISB (1010) -->
 <div class="sc" id="s-idea-session">
   <div id="isx-header-area">
-    <div id="isx-header-topleft">
-      <div class="isx-hdr-col">
-        <div class="sc-hdr-eyebrow">Project</div>
-        <div class="sc-hdr-frame" id="isx-project-hit"><div class="sc-hdr-frame-label" id="isx-project-label">—</div></div>
-      </div>
-      <div class="isx-hdr-col">
-        <div class="sc-hdr-eyebrow">Parent</div>
-        <div class="sc-hdr-frame inert" id="isx-parent-hit"><div class="sc-hdr-frame-label" id="isx-parent-label">—</div></div>
+    <!-- ID BAND (Sept 29 2026): the same band the Blue Sky board and the
+         Briefing Board carry -- identity block top-left, TOPIC + Board Type
+         as a centered pair, icon row top-right -- built and wired by
+         sea-id-band.js. Project / Parent / View are deliberately not here:
+         this board is for capturing every kind of idea. -->
+    <div class="sc-idn" id="isx-idn">
+      <div class="sc-idn-toprow"><div class="sc-idn-org" id="isx-idn-org" style="display:none"></div></div>
+      <div class="sc-traveler-eyebrow" id="isx-traveler-name"></div>
+    </div>
+    <div id="isx-topic-wrap" class="sc-mh-group-topic">
+      <div id="isx-pagenum" style="position:absolute;top:-14px;left:0;font-size:8px;letter-spacing:2px;color:#7fa8cc;height:10px;opacity:0;transition:opacity .3s">1014</div>
+      <div class="sc-cdrop" style="display:flex;align-items:center">
+        <div id="isx-topic-box" title="Click to see this project's headers"><span id="isx-topic-text">&mdash;</span></div>
+        <div class="sc-cdrop-menu sc-topic-tree" id="isx-topic-menu" hidden></div>
       </div>
     </div>
-    <div id="isx-header-center">
-      <div class="sc-hdr-eyebrow">Topic</div>
-      <div class="sc-topic-box" id="isx-topic-box"><span id="isx-topic-text">—</span></div>
+    <div class="sc-mh-group-center" id="isx-boardkind-wrap"><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-cdrop-trigger" id="isx-board-kind-trigger" title="Switch board type">SEA OF IDEAS</button></div><div class="sc-cdrop-menu" id="isx-board-kind-menu" hidden></div></div>
+    <div class="sc-hdr-side" id="isx-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:flex-end">
+      <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-idea-btn" title="Add an idea (Alt+N)">&#128161;</button>
+      <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-return" title="Return to previous screen">&#8617;&#65038;</button>
+      <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-gear-btn" title="Utility">&#9881;&#65039;</button>
+      <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-end-btn" title="Close">&#10005;</button>
     </div>
-    <div id="isx-header-right">
-      <button class="sc-ov-btn" id="isx-idea-btn" title="Add an idea">💡</button>
-      <div class="isx-hdr-col" id="isx-view-wrap" style="position:relative">
-        <div class="sc-hdr-eyebrow">View</div>
-        <div class="sc-hdr-frame" id="isx-view-btn" style="cursor:pointer"><div class="sc-hdr-frame-label">Session</div></div>
-        <div class="sc-hdr-viewmenu" id="isx-view-menu"><div class="sc-hdr-viewmenu-item" id="isx-compass-btn">Switch to Storyboard</div></div>
-      </div>
-      <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-gear-btn" title="Utility">⚙️</button>
-      <button class="sc-ov-btn" id="isx-end-btn" title="Close">✕</button>
-    </div>
-    <div id="isx-pagenum">1014</div>
   </div>
 
   <div id="isx-board">

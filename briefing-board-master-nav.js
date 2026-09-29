@@ -1976,16 +1976,11 @@
   // generic idea-column/cluster mechanism, unchanged. 'STORY' is the
   // short dropdown label for the new concept -- kept in sync with
   // idea-storyboard-navigation.js's own copy of this list.
-  // Sept 29 2026 -- Larry: SEA OF IDEAS goes above BLUE SKY in Board Type,
-  // kept in sync with idea-storyboard-navigation.js's copy of this list.
-  var _bbBoardKinds=[
-    {value:'SEA', label:'SEA OF IDEAS'},
-    {value:'IDEA', label:'BLUE SKY'},
-    {value:'PLAN', label:'PATHFINDER'},
-    {value:'BRIEFING BOARD', label:'BRIEFING'},
-    {value:'SHARE', label:'STORY'},
-    {value:'CAST', label:'CAST'}
-  ];
+  // Sept 29 2026 -- the list itself now lives in id-band.js
+  // (IDBand.BOARD_KINDS), shared with every other board's ID Band, so a
+  // change to the set of board types is one edit instead of a copy per
+  // board. Larry: SEA OF IDEAS above BLUE SKY.
+  var _bbBoardKinds=window.IDBand.BOARD_KINDS;
   function _bbWireBoardKindDropdown(){
     var trigger=document.getElementById('bb-boardkind-trigger'), menu=document.getElementById('bb-boardkind-menu');
     if(!trigger || !menu) return;
@@ -2002,6 +1997,7 @@
         // board's TOPIC: T2TMedia.openIdeaSession reads the current topic
         // from T2TShared, so hand it this board's before calling.
         if(k.value==='SEA'){
+          IDBand.recordReturn('BRIEFING BOARD', _bbCurrentTopicHeaderId);
           if(window.T2TShared && _bbCurrentTopicHeaderId) window.T2TShared.currentTopicId=_bbCurrentTopicHeaderId;
           if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); }
           else { _bbShowToast('Sea of Ideas isn’t available right now.'); }

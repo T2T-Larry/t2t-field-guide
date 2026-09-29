@@ -663,18 +663,12 @@
   // CASE, not yet built); lowercase 'storyboard' stays the existing
   // generic idea-column/cluster mechanism, unchanged. 'STORY' is the
   // short dropdown label for the new concept.
-  // Sept 29 2026 -- Larry: SEA OF IDEAS belongs in the Board Type list,
-  // above BLUE SKY (the content-maturity pipeline reads WISH TANK / Sea of
-  // Ideas -> BLUE SKY -> STORY). Opens the freeform board (screen 1014,
-  // session.js) on the current TOPIC.
-  var _sboardBoardKinds=[
-    {value:'SEA', label:'SEA OF IDEAS', soon:null},
-    {value:'IDEA', label:'BLUE SKY', soon:null},
-    {value:'PLAN', label:'PATHFINDER', soon:null},
-    {value:'BRIEFING BOARD', label:'BRIEFING', soon:null},
-    {value:'SHARE', label:'STORY', soon:'STORY BOARD coming soon'},
-    {value:'CAST', label:'CAST', soon:null}
-  ];
+  // Sept 29 2026 -- the list itself now lives in id-band.js
+  // (IDBand.BOARD_KINDS) so every board's Board Type dropdown reads one
+  // source instead of hand-kept copies. Larry: SEA OF IDEAS belongs above
+  // BLUE SKY (the content-maturity pipeline reads WISH TANK / Sea of Ideas
+  // -> BLUE SKY -> STORY).
+  var _sboardBoardKinds=window.IDBand.BOARD_KINDS;
   function _sboardWireBoardKindDropdown(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
     if(!trigger || !menu) return;
@@ -688,6 +682,7 @@
         e.stopPropagation();
         menu.hidden=true;
         if(k.value==='SEA'){
+          IDBand.recordReturn('IDEA', T2TShared.currentTopicId);
           if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); }
           else { _sboardShowToast('Sea of Ideas isn’t available right now.'); }
           return;

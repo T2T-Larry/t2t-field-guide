@@ -361,7 +361,10 @@
         // this "glow" and asked for it on every board, so it moved into
         // the shared token BB's own rule now reads too, rather than
         // staying a value only this board happened to already have.
-        +'#sc-topic-box,#sc-board-kind-trigger{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:'+IDBand.TOKENS.topicBox.boxShadow+'}'
+        // Sept 29 2026 -- the isx-* ids are Sea of Ideas' (screen 1014) own
+        // TOPIC / Board Type, given the same rules so its ID Band is identical
+        // to this board's, not a lookalike (sea-id-band.js).
+        +'#sc-topic-box,#sc-board-kind-trigger,#isx-topic-box,#isx-board-kind-trigger{text-align:center;background:#fff;border:2px solid #1a3a5c;border-radius:'+IDBand.TOKENS.topicBox.radius+'px;padding:'+IDBand.TOKENS.topicBox.padding+';font-size:calc('+IDBand.TOKENS.topicBox.fontSize+'px * var(--fg-text-scale,1));font-weight:700;font-family:\'Playfair Display\',serif;line-height:'+IDBand.TOKENS.topicBox.lineHeight+';color:#1a3a5c;cursor:pointer;position:relative;box-shadow:'+IDBand.TOKENS.topicBox.boxShadow+'}'
         +'#s-sea-of-ideas-cluster .sw{align-items:stretch}'
         +'#sc-divider{border-bottom:none;margin:0 0 2px;width:100%}'
         +'#sc-status{font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;text-align:right;margin-bottom:2px;min-height:0}'
@@ -779,11 +782,11 @@
         // trigger -- its separate sc-board-kind-caret button is gone
         // (Larry, Sept 19, BB side: "additional unneeded dropdown arrow
         // beside board name").
-        +'#sc-board-kind-trigger.sc-cdrop-trigger:after{content:none}'
+        +'#sc-board-kind-trigger.sc-cdrop-trigger:after,#isx-board-kind-trigger.sc-cdrop-trigger:after{content:none}'
         // TOPIC hierarchy menu (click TOPIC) -- taller than the standard
         // dropdown so a whole project tree is readable, current header
         // highlighted, deeper levels indented. Mirrors #bb-topic-menu.
-        +'#sc-topic-menu{max-height:min(60vh, 420px)}'
+        +'#sc-topic-menu,#isx-topic-menu{max-height:min(60vh, 420px)}'
         // Sept 21 2026 fix -- Larry: TOPIC's tree was unreadable, black
         // text on this menu's dark navy background. These two rules
         // targeted .sc-topic-tree-row/.active, the OLD flat-list TOPIC
@@ -795,9 +798,9 @@
         // it on its own light dropdown, where inherited black is
         // already right). Scoped here instead of touching that shared
         // file, same as the dead rules they replace.
-        +'#sc-topic-menu .tp-row{color:#fff}'
-        +'#sc-topic-menu .tp-row:hover{background:rgba(255,255,255,.08)}'
-        +'#sc-topic-menu .tp-current{background:rgba(255,255,255,.16)}'
+        +'#sc-topic-menu .tp-row,#isx-topic-menu .tp-row{color:#fff}'
+        +'#sc-topic-menu .tp-row:hover,#isx-topic-menu .tp-row:hover{background:rgba(255,255,255,.08)}'
+        +'#sc-topic-menu .tp-current,#isx-topic-menu .tp-current{background:rgba(255,255,255,.16)}'
         // Dotted-circle (+) for the Type/Title dropdowns, Aug 13 2026 --
         // Larry: "the + in a dotted line circle just like every other
         // add. Consistent symbol." Same shape/border/color as the
@@ -817,7 +820,7 @@
         // even after the Sept 6 pass above matched its size/shape to BB's
         // bb-topic-hit. Matched the rest of the way now: same nowrap +
         // ellipsis, same max-width formula BB's own box uses.
-        +'#sc-topic-box{display:inline-block;max-width:calc(360px * var(--fg-text-scale,1));box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}'
+        +'#sc-topic-box,#isx-topic-box{display:inline-block;max-width:calc(360px * var(--fg-text-scale,1));box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}'
         +'.sc-pill.has-children{box-shadow:3px 3px 0 rgba(26,58,92,0.20),6px 6px 0 rgba(26,58,92,0.11)}'
         +'.sc-add-header-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'
         +'.sc-add-subber-tile:hover{background:#eaf3fb;border-color:#5b9bd5;opacity:1}'

@@ -131,6 +131,26 @@
   };
   window.IDBand.hasReturn = function(){ return !!_lastBoard; };
 
+  // The Board Type list every ID Band's dropdown offers, in display order.
+  // Sept 29 2026 -- Larry: "ALL boards should have exactly the same ID
+  // BAND," and SEA OF IDEAS belongs above BLUE SKY. This used to be two
+  // hand-copied arrays (idea-storyboard-navigation.js's _sboardBoardKinds
+  // and briefing-board-master-nav.js's _bbBoardKinds, each with a comment
+  // saying "kept in sync with the other") -- the same change-one-forget-
+  // the-other drift this file exists to stop. Every board's dropdown reads
+  // this one list now, so adding or reordering a board type is one edit.
+  // value is the internal name each board's own click handler keys off;
+  // label is the displayed word; soon (optional) is the toast for a board
+  // type that has no screen yet.
+  window.IDBand.BOARD_KINDS = [
+    {value:'SEA',            label:'SEA OF IDEAS', soon:null},
+    {value:'IDEA',           label:'BLUE SKY',     soon:null},
+    {value:'PLAN',           label:'PATHFINDER',   soon:null},
+    {value:'BRIEFING BOARD', label:'BRIEFING',     soon:null},
+    {value:'SHARE',          label:'STORY',        soon:'STORY BOARD coming soon'},
+    {value:'CAST',           label:'CAST',         soon:null}
+  ];
+
   // Shared RETURN click handler -- both boards' RETURN button call this
   // directly rather than each re-implementing the same dispatch.
   window.IDBand.jumpToRecorded = function(){
@@ -142,6 +162,13 @@
     }
     if(v.kind==='IDEA' || v.kind==='PLAN'){
       if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(v.topicId, v.kind);
+      return true;
+    }
+    // Sept 29 2026 -- SEA OF IDEAS is a board type too: T2TMedia.openIdeaSession
+    // reads the topic to open from T2TShared.currentTopicId.
+    if(v.kind==='SEA'){
+      if(window.T2TShared && v.topicId) window.T2TShared.currentTopicId=v.topicId;
+      if(window.T2TMedia && window.T2TMedia.openIdeaSession) window.T2TMedia.openIdeaSession();
       return true;
     }
     return false;

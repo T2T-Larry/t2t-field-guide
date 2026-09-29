@@ -554,9 +554,13 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      on load order). PROJECT + PARENT top-left, TOPIC large top-center,
      action buttons top-right. No left toolbar — the old sidebar (mode
      tabs, rungs, action-btn column) is retired. */
-  #isx-header-area{background:#1a3a5c;padding:10px 16px 8px;position:relative;min-height:40px;
-    display:flex;align-items:flex-start;justify-content:center;box-shadow:2px 0 10px rgba(0,0,0,.25);
-    border-bottom:2px solid var(--brand-ink)}
+  /* Sept 29 2026 -- same container the Blue Sky board's ID Band sits in
+     (#sc-header-area: navy, 10/16/4 padding, 70px tall, hairline bottom
+     border). The band's children are absolutely positioned by
+     sea-id-band.js / IDBand.positionRow, so this is no longer a flex row.
+     Larry: "ALL boards should have exactly the same ID BAND." */
+  #isx-header-area{background:#1a3a5c;padding:10px 16px 4px;position:relative;min-height:70px;
+    border-bottom:1px solid rgba(255,255,255,.15)}
   #isx-header-topleft{position:absolute;top:10px;left:16px;display:flex;gap:14px;align-items:flex-start}
   .isx-hdr-col{display:flex;flex-direction:column;align-items:center}
   #isx-header-center{text-align:center;padding-top:2px}
@@ -569,7 +573,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   #isx-header-right{position:absolute;top:23px;right:16px;display:flex;flex-direction:row;
     gap:6px;align-items:center;flex-wrap:wrap;max-width:320px;justify-content:flex-end}
   .isx-hdr-row{display:flex;flex-direction:row;flex-wrap:wrap;gap:4px;justify-content:flex-end}
-  #isx-pagenum{position:absolute;bottom:2px;right:8px;font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:#7fa8cc;opacity:0;transition:opacity .3s}
+  /* #isx-pagenum now sits inside #isx-topic-wrap and carries its own inline position (Sept 29 2026), like the Blue Sky board's #sc-pagenum. */
 
   /* Shared header-chrome classes — same names/values as 9710's own header
      (see injectSeaOfIdeasCluster in sea-of-ideas.js), defined here too so
@@ -584,6 +588,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     padding:8px 16px;font-size:calc(26px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;display:inline-block;max-width:calc(260px * var(--fg-text-scale,1));
     box-sizing:border-box;white-space:normal;word-wrap:break-word;position:relative}
   .sc-topic-box.isx-rung-dropready{outline:2px solid #5b9bd5;background:rgba(55,138,221,.28);color:var(--brand-white)}
+  #isx-topic-box.isx-rung-dropready{outline:2px solid #5b9bd5;background:rgba(55,138,221,.28)}
   .sc-ov-btn{border:1px solid #cfe4f2;background:#fff;padding:6px 10px;border-radius:14px;font-size:calc(11px * var(--fg-text-scale,1));
     font-weight:600;cursor:pointer;color:#5b9bd5}
   .sc-ov-btn:hover{background:#eaf3fb}

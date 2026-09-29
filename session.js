@@ -179,6 +179,9 @@
     var pnInit=document.getElementById('isx-pagenum'); if(pnInit) pnInit.textContent='1014'; // renumbered from 9711, Aug 9 2026
     if(!_isxWired){
       _isxWired=true;
+      // ID Band (sea-id-band.js), Sept 29 2026 -- the same band as every other
+      // board; this hands it what is specific to this screen.
+      if(window.T2TSeaIdBand) T2TSeaIdBand.init({labelFor:_isxLabel, goToTopic:_isxGoToTopic, fetchRow:_isxFetchRow, toast:_isxShowToast});
       T().wire('isx-idea-btn', _isxOpenIdeaCaptureHere);
       T().wire('isx-gear-btn', _isxOpenGearMenu);
       // RULES button moved off 9711's header onto 1170 (Idea Input card)
@@ -227,14 +230,10 @@
       (function(){
         var topicBoxEl=document.getElementById('isx-topic-box');
         if(!topicBoxEl) return;
+        // Single click now opens the TOPIC pyramid (sea-id-band.js), same as
+        // every other board's ID Band; the old sibling-list switcher
+        // (_isxOpenTopicSwitcher) is retired in place, not deleted.
         var topicClickTimer=null;
-        topicBoxEl.addEventListener('click', function(){
-          if(topicClickTimer) return;
-          topicClickTimer=setTimeout(function(){
-            topicClickTimer=null;
-            _isxOpenTopicSwitcher();
-          }, 250);
-        });
         topicBoxEl.addEventListener('dblclick', function(e){
           e.stopPropagation();
           if(topicClickTimer){ clearTimeout(topicClickTimer); topicClickTimer=null; }
@@ -287,7 +286,7 @@
       // as double-clicking the board itself. Larry, August 1 2026.
       var isxHeaderAreaEl=document.getElementById('isx-header-area');
       if(isxHeaderAreaEl) isxHeaderAreaEl.addEventListener('dblclick', function(e){
-        if(e.target===isxHeaderAreaEl || e.target.id==='isx-header-topleft' || e.target.id==='isx-header-center') T2TStoryboard.openBoardBgPicker();
+        if(e.target===isxHeaderAreaEl || e.target.id==='isx-idn') T2TStoryboard.openBoardBgPicker();
       });
       var lassoCanvas=document.getElementById('isx-canvas');
       if(lassoCanvas) _isxWireLasso(lassoCanvas);
@@ -307,7 +306,7 @@
       // convention as 9710's own sc-parent-hit trick.
       (function(){
         var clicks=0, timer=null;
-        var hit=document.getElementById('isx-parent-hit');
+        var hit=document.getElementById('isx-topic-box');
         if(hit) hit.addEventListener('click', function(){
           clicks++;
           if(timer) clearTimeout(timer);
@@ -573,59 +572,16 @@
     return entry.text;
   }
 
+  // Ladder render, Sept 29 2026 -- the old PROJECT / PARENT / TOPIC boxes
+  // are gone; the shared ID Band (sea-id-band.js) draws TOPIC and Board
+  // Type. This just makes sure the account-root id is known (so the root
+  // reads MASTER) and asks the band to repaint.
   async function _isxRenderLadder(){
    try{
-    var projectLabel=document.getElementById('isx-project-label');
-    var parentHit=document.getElementById('isx-parent-hit');
-    var parentLabel=document.getElementById('isx-parent-label');
-    var topicBox=document.getElementById('isx-topic-box');
-    var topicText=document.getElementById('isx-topic-text');
-    if(!projectLabel||!parentHit||!parentLabel||!topicBox||!topicText) return;
     if(!_isxRootId && window.T2TData && T2TData.ensureIdeaStoryboardsRoot){
       try{ _isxRootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){}
     }
-
-    // PROJECT — fixed anchor, display only. Switching projects entirely is
-    // FOCUS's job (reopen via 💡), same division of labor as everywhere else.
-    projectLabel.textContent=_isxLabel(T2TShared.isxPath[0]);
-
-    // PARENT — one level above TOPIC, click to climb back exactly one level.
-    // Blank/inert only when TOPIC === PROJECT (nothing above yet).
-    if(T2TShared.isxPath.length>1){
-      parentLabel.textContent=_isxLabel(T2TShared.isxPath[T2TShared.isxPath.length-2]);
-      parentHit.classList.remove('inert');
-      parentHit.onclick=function(){
-        T2TShared.isxPath.pop(); T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
-        _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
-      };
-      // Double-click PARENT is the explicit gesture for climbing back to
-      // TOPIC level — added July 16, 2026, alongside the existing single click.
-      parentHit.ondblclick=parentHit.onclick;
-    } else {
-      parentLabel.textContent='\u2014';
-      parentHit.classList.add('inert');
-      parentHit.onclick=null;
-      parentHit.ondblclick=null;
-    }
-
-    // TOPIC — current position, large centered pill, matches 9710's own
-    // #sc-topic-box treatment exactly (same class, same look). Written to
-    // the inner #isx-topic-text span, NOT the outer box, so textContent on
-    // the parent doesn't wipe out other children the box holds on every
-    // single render. July 18, 2026.
-    var _isxCurTopicEntry=T2TShared.isxPath[T2TShared.isxPath.length-1];
-    topicText.textContent=_isxLabel(_isxCurTopicEntry);
-    // Color: 9710's own _sboardUpdateHeaderChrome already does this
-    // (topicBox.style.background=topicRow.color||'') from its own row
-    // cache — 9711 never had the equivalent line. No local row cache to
-    // read here, so fetch just this one row; fire-and-forget, doesn't
-    // block the rest of the ladder render. July 18, 2026.
-    if(_isxCurTopicEntry && _isxCurTopicEntry.id){
-      _isxFetchRow(_isxCurTopicEntry.id).then(function(curRow){
-        if(curRow && topicBox) topicBox.style.background=curRow.color||'';
-      });
-    }
-
+    if(window.T2TSeaIdBand) T2TSeaIdBand.render();
     // 9711 lock, July 13, 2026: Header rung removed entirely — every save
     // targets this Topic's own NEW/Ideas bucket (T2TShared.isxHeaderId stays null
     // permanently, see _isxInit). Moving an *existing* idea to a different
@@ -634,6 +590,19 @@
      console.error('_isxRenderLadder failed:', e);
      _isxShowError('Something went wrong loading this level: '+(e&&e.message?e.message:String(e)));
    }
+  }
+
+  // Move this board to another Topic (picked from the TOPIC pyramid): resolve
+  // its ancestor chain, make that the path, repaint. Same steps the old
+  // sibling switcher and PARENT climb each did by hand.
+  async function _isxGoToTopic(id){
+    var chain=(window.T2TData && T2TData.ancestorChain) ? await T2TData.ancestorChain(id) : null;
+    if(!chain || !chain.length) return;
+    T2TShared.isxPath=chain;
+    T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
+    await _isxRenderLadder();
+    _isxRenderBoard();
+    _isxPersistLastTopic();
   }
 
   // isx-scoped PROJECT switcher — July 14, 2026. Same UI/UX pattern as
