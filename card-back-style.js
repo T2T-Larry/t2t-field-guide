@@ -149,7 +149,9 @@
       +'.fg-back-3x5 .bb-field label{font-size:calc(10px * var(--fg-text-scale,1));margin-bottom:2px}'
       +'.fg-back-3x5 .bb-field textarea{min-height:36px}'
       // One icon row across the bottom; pencil lights up while Notes is open.
-      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-end;gap:6px;margin-top:auto;padding-top:6px;width:auto;align-self:flex-end}'
+      // Full card width so its top line runs edge to edge; the buttons themselves ride the right end.
+      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-end;gap:6px;margin:auto 0 0 -22px;padding:6px 22px 0;width:calc(100% + 44px);max-width:none;align-self:flex-start;box-sizing:border-box}'
+      +'#bb-detail-overlay .fg-back-3x5{padding-bottom:8px!important}'
       // Briefing Card back only: the card is a column so its icon row rides the lower right corner.
       +'#bb-detail-overlay .fg-back-3x5{display:flex;flex-direction:column}'
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
