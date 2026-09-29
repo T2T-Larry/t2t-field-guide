@@ -1090,46 +1090,66 @@
     }
     return chain;
   }
-  function _bbWireTopicTree(){
-    var trigger=document.getElementById('bb-topic-hit'), menu=document.getElementById('bb-topic-menu');
-    if(!trigger || !menu) return;
-    trigger.onclick=async function(e){
-      e.stopPropagation();
-      if(!_bbCurrentTopicHeaderId) return; // '(not linked)' -- nothing to show
-      var willOpen=menu.hidden;
-      _bbCloseAllDropdowns(willOpen?'bb-topic-menu':null);
-      if(!willOpen){ menu.hidden=true; return; }
-      menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
-      if(menu.parentElement!==document.body) document.body.appendChild(menu);
-      _bbSyncMenuTheme(menu);
-      var r=trigger.getBoundingClientRect();
-      menu.style.left=r.left+'px';
-      menu.style.top=(r.bottom+4)+'px';
-      menu.style.minWidth=Math.max(200,r.width)+'px';
-      menu.hidden=false;
-      var curInfo=await _bbFetchHeaderInfo(_bbCurrentTopicHeaderId);
-      if(menu.hidden || !curInfo || !window.TopicPyramid) return; // closed again while this was in flight
-      var ancestors=await _bbPyramidAncestors(_bbCurrentTopicHeaderId);
-      if(menu.hidden) return;
-      var curTopicId=_bbCurrentTopicHeaderId;
-      var currentRow=window.TopicPyramid.render(menu, {
-        ancestors:ancestors,
-        current:{id:curTopicId, name:curInfo.name, priority:curInfo.priority||''},
-        getChildren:function(id){
-          return _bbTopicChildChoices(id).then(function(rows){
-            return rows.map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
-          });
-        },
-        onNavigate:function(id){
-          menu.hidden=true;
-          if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(id);
+  // Sept 29 2026 -- Larry: "a snippet of common code for all boards."
+  // TOPIC pyramid, Board Type list, RETURN and the row layout now all run
+  // from ONE shared routine (id-band-controls.js, IDBand.mountControls).
+  // This board only hands it its own facts: where TOPIC comes from (the
+  // live header chain), how to move to another Topic, and the two Board
+  // Type choices whose destination this board works out for itself
+  // (IDEA/PLAN -> which project, CAST -> team-list fallback).
+  var _bbIdBand=null;
+  function _bbMountIdBand(){
+    if(_bbIdBand || !window.IDBand || !window.IDBand.mountControls) return;
+    _bbIdBand=window.IDBand.mountControls({
+      screenId:'s-briefing-board',
+      kind:'BRIEFING BOARD',
+      rowClass:'bb-cdrop-row',
+      fitBaseSize:42,
+      container:'#s-briefing-board .bb-mhead-top',
+      actions:'#s-briefing-board .bb-mhead-actions',
+      ids:{idn:'bb-idn', idnOrg:'bb-idn-org', idnLogo:'bb-idn-logo', name:'bb-traveler-name',
+           topicWrap:'bb-topic-wrap', topicTrigger:'bb-topic-hit', topicMenu:'bb-topic-menu',
+           kindWrap:'bb-boardkind-wrap', kindTrigger:'bb-boardkind-trigger', kindMenu:'bb-boardkind-menu',
+           kindCaret:'bb-boardkind-caret', ret:'bb-return'},
+      hideOrg:function(){ return _bbCurrentTopicIsRoot; },
+      topicId:function(){ return _bbCurrentTopicHeaderId; },
+      getTopic:async function(){
+        var id=_bbCurrentTopicHeaderId;
+        if(!id) return null;                          // '(not linked)' -- nothing to show
+        var info=await _bbFetchHeaderInfo(id);
+        if(!info) return null;
+        var ancestors=await _bbPyramidAncestors(id);
+        return {ancestors:ancestors, current:{id:id, name:info.name, priority:info.priority||''}};
+      },
+      getChildren:function(id){
+        return _bbTopicChildChoices(id).then(function(rows){
+          return rows.map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
+        });
+      },
+      goToTopic:function(id){
+        if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(id);
+      },
+      closeOthers:_bbCloseAllDropdowns,
+      prepareMenu:_bbSyncMenuTheme,
+      toast:_bbShowToast,
+      onPick:function(k){
+        if(k.value==='CAST' && !(window.CastRoster && _bbCurrentTopicHeaderId)){ openTeamRoster(); return true; }
+        if(k.value==='IDEA' || k.value==='PLAN'){
+          var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
+          // One-board model (Sept 8 2026): board.storyboard_project_id is
+          // always the account root, so in single-board mode read whichever
+          // project is actually being viewed right now.
+          var projectId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
+          if(!projectId){ _bbShowToast('This board isn’t linked to a project.'); return true; }
+          IDBand.recordReturn('BRIEFING BOARD', projectId);
+          if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(projectId, k.value);
+          return true;
         }
-      });
-      var mr=menu.getBoundingClientRect();
-      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      if(currentRow && currentRow.scrollIntoView) currentRow.scrollIntoView({block:'center'});
-    };
+        return false;
+      }
+    });
   }
+  function _bbWireTopicTree(){ _bbMountIdBand(); }
   // Kept under its old name so briefing-board.js's existing wire-up call
   // keeps working without a matching edit there.
   function _bbWireTopicDropdown(){ _bbWireTopicTree(); }
@@ -1251,9 +1271,6 @@
   // math; see that file's own comment for why. Kept as its own named
   // function so every existing caller in this file (_bbPositionIdBandRow,
   // below) is untouched.
-  function _bbFitBoardKindLabel(availableWidthPx){
-    window.IDBand.fitLabelToWidth('bb-boardkind-trigger', availableWidthPx, 42);
-  }
   // TOPIC's own shrink-to-fit, Sept 15 2026 -- Larry (Master BB session
   // with Bill): a long TOPIC title was cutting off with "..." instead of
   // shrinking. bb-topic-hit has a hard max-width and used only the
@@ -1272,108 +1289,9 @@
   // type field needs to be the same distance from the TOPIC as the
   // PROJECT field." One constant instead of three separately-typed
   // numbers so it can't drift apart a second time.
-  var ID_BAND_GAP = 10;
-  // ID Band row layout, Sept 15 2026 rewrite (renamed from
-  // _bbPositionBoardKindMidway) -- Larry: "Move PROJECT - TOPIC -
-  // STORYBOARD - VIEW to now center on the BB again." The old version
-  // only ever placed Board Type at the midpoint between TOPIC and Logo,
-  // with VIEW chasing along after it and PROJECT/TOPIC left pinned to
-  // the grid's own flush-left edge (see briefing-board-styles.js for the
-  // grid removal this replaces) -- nothing ever centered all four as one
-  // group. This positions all four (now all position:absolute, same
-  // file) as a single left-to-right chain, ID_BAND_GAP apart, then
-  // centers that chain's total width on the header -- clamped so it
-  // never runs under Logo/Utility/Close on the right or off the
-  // container's own left edge, same "measure the real boxes, clamp
-  // against a hard edge" shape every positioning fix in this file has
-  // used since Sept 6.
-  // Sept 16 2026 fix -- Larry, live-site, still jumbled after the Sept 15
-  // member-name patch: PROJECT/TOPIC were still landing overlapped even
-  // though the member-name race that patch targeted wasn't the only way
-  // these boxes' widths change after this function's already run once.
-  // Chasing each async cause one at a time (member name, board picker
-  // text, font swap, logo load...) is exactly the whack-a-mole the Sept
-  // 15 comments below already describe losing to -- a ResizeObserver on
-  // the boxes whose CONTENT (not this function) can change their size
-  // catches every future cause the same way, without knowing what it is.
-  // boardkindWrap is deliberately NOT observed -- this function itself
-  // resizes it (_bbFitBoardKindLabel), so observing it would just be
-  // watching its own output; it's re-measured fresh on every pass
-  // regardless. Set up once, lazily, the first time real elements exist.
-  // Sept 27 2026 -- body now delegates to the shared implementation
-  // (id-band.js, IDBand.observeRow); see that file's own comment.
-  function _bbSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container){
-    window.IDBand.observeRow('s-briefing-board', _bbPositionIdBandRow, [topicWrap, idnEl, actionsEl, container]);
-  }
-  // Rewritten Sept 27 2026 -- PROJECT (the old TOPIC-field/board-switcher,
-  // bb-project-wrap) is retired, so this is now a two-item chain (TOPIC,
-  // STORYBOARD/Board Type) instead of PROJECT-TOPIC-STORYBOARD. Both
-  // fields stay permanently visible (Larry: "always 2 fields on the top")
-  // -- TOPIC just reads MASTER at the apex of its own pyramid instead of
-  // a header name, same clamp-against-the-hard-edges shape every version
-  // of this function has used since Sept 6, just with one fewer chain
-  // link to add up.
-  //
-  // Same day, later -- body now delegates the actual geometry to the
-  // shared implementation (id-band.js, IDBand.positionRow) instead of its
-  // own hand-copied math, so this and the Idea Board's own mirror
-  // (_sboardPositionIdBandRow, idea-storyboard-navigation.js) can't drift
-  // apart the way they just did. This wrapper's only job now is finding
-  // BB's own DOM elements and handing them over.
-  function _bbPositionIdBandRow(){
-    var topicWrap=document.getElementById('bb-topic-wrap');
-    var boardkindWrap=document.getElementById('bb-boardkind-wrap');
-    // Sept 19 2026 -- VIEW left this chain (now a head icon in the
-    // upper-right actions row), and the top-left identity block (#bb-idn:
-    // organization / logo / member name) joined it as something the chain
-    // must never run underneath.
-    var idnEl=document.getElementById('bb-idn');
-    var actionsEl=document.querySelector('#s-briefing-board .bb-mhead-actions');
-    var container=document.querySelector('#s-briefing-board .bb-mhead-top');
-    if(!topicWrap || !boardkindWrap || !actionsEl || !container) return;
-    _bbSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container);
-    window.IDBand.positionRow({
-      container:container, actionsEl:actionsEl, idnEl:idnEl, gap:ID_BAND_GAP,
-      fields:[topicWrap, boardkindWrap], fitLabelId:'bb-boardkind-trigger', fitBaseSize:42
-    });
-  }
-  // Window resize, Sept 6 2026 -- mirrors the Idea Board's own resize
-  // listener for the same reason (idea-storyboard-9710.js, near
-  // _sboardPositionProjectMidwayToLogo): a real browser-window resize
-  // changes TOPIC's and Logo's actual rendered positions, not just the
-  // text-scale re-render screen-fit.js already handles. No-ops instantly
-  // whenever the Briefing Board isn't the active screen.
-  window.addEventListener('resize', function(){
-    try{
-      var scr=document.getElementById('s-briefing-board');
-      if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
-    }catch(e){}
-  });
-  // Font-load race, Sept 15 2026 -- root cause of "distances between
-  // PROJECT/TOPIC/STORYBOARD/VIEW look right sometimes, wrong other
-  // times, with no code change in between" (looked correct only right
-  // after forcing a real browser resize). PROJECT/TOPIC/STORYBOARD/VIEW
-  // all render in the Playfair Display head font (var(--bb-head-font)),
-  // loaded from Google Fonts with display:swap (index.html's <link>) --
-  // the very first paint shows a fallback system font, and
-  // _bbPositionIdBandRow's very first call (right after board data
-  // loads, above) usually lands before Playfair Display has actually
-  // finished loading, so it measures every box's width in the WRONG
-  // font. Nothing ever re-measured after the real font swapped in,
-  // since only an actual window resize ever re-triggered this function
-  // -- a plain page load, with no resize in between, kept the fallback-
-  // font positions forever. document.fonts.ready fires once the swap
-  // has genuinely happened (immediately, if it already had); this
-  // re-runs the same position pass the resize listener above uses,
-  // once, right when the real widths become known.
-  if(window.document && document.fonts && document.fonts.ready){
-    document.fonts.ready.then(function(){
-      try{
-        var scr=document.getElementById('s-briefing-board');
-        if(scr && scr.classList.contains('active')) _bbPositionIdBandRow();
-      }catch(e){}
-    });
-  }
+  // Row layout lives in the shared routine (id-band-controls.js); this keeps
+  // the old name so existing callers (briefing-board.js, -master.js) work.
+  function _bbPositionIdBandRow(){ if(_bbIdBand) _bbIdBand.position(); }
 
   // Traveler name, Sept 5 2026 -- same shared member profile the Idea
   // board's own _sboardRenderMemberName reads (T().getMember(), backed
@@ -1386,6 +1304,7 @@
   // of only the name. Name-only fallback kept for the moment before that
   // file has loaded.
   function _bbRenderTravelerName(){
+    if(_bbIdBand){ _bbIdBand.renderIdentity(); return; }
     if(window.T2TMemberIdentity){
       // Sept 20 2026, Larry: "MASTER lists can have NO org as they include
       // all orgs associated with a member including a personal projects."
@@ -1980,85 +1899,8 @@
   // (IDBand.BOARD_KINDS), shared with every other board's ID Band, so a
   // change to the set of board types is one edit instead of a copy per
   // board. Larry: SEA OF IDEAS above BLUE SKY.
-  var _bbBoardKinds=window.IDBand.BOARD_KINDS;
-  function _bbWireBoardKindDropdown(){
-    var trigger=document.getElementById('bb-boardkind-trigger'), menu=document.getElementById('bb-boardkind-menu');
-    if(!trigger || !menu) return;
-    menu.innerHTML='';
-    _bbBoardKinds.forEach(function(k){
-      var row=document.createElement('div');
-      row.className='bb-cdrop-row'+(k.value==='BRIEFING BOARD' ? ' active' : '');
-      row.textContent=k.label;
-      row.addEventListener('click', function(e){
-        e.stopPropagation();
-        menu.hidden=true;
-        if(k.value==='BRIEFING BOARD') return;
-        // Sept 29 2026 -- SEA OF IDEAS opens the freeform board on this
-        // board's TOPIC: T2TMedia.openIdeaSession reads the current topic
-        // from T2TShared, so hand it this board's before calling.
-        if(k.value==='SEA'){
-          IDBand.recordReturn('BRIEFING BOARD', _bbCurrentTopicHeaderId);
-          if(window.T2TShared && _bbCurrentTopicHeaderId) window.T2TShared.currentTopicId=_bbCurrentTopicHeaderId;
-          if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); }
-          else { _bbShowToast('Sea of Ideas isn’t available right now.'); }
-          return;
-        }
-        // Sept 23 2026 -- CAST opens the Cast Roster (the Project Pyramid
-        // with people on it, cast-roster.js) at this board's TOPIC -- the
-        // same screen the Idea Board's CAST opens. The older team list
-        // stays as a fallback.
-        if(k.value==='CAST'){
-          if(window.CastRoster && _bbCurrentTopicHeaderId){ window.CastRoster.open(_bbCurrentTopicHeaderId); return; }
-          openTeamRoster(); return;
-        }
-        if(k.value==='SHARE'){ _bbShowToast('STORY BOARD coming soon'); return; }
-        if(k.value==='IDEA' || k.value==='PLAN'){
-          var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-          // Sept 8 2026 fix -- one-board model, same reasoning as
-          // _bbRenderTopicField (line ~6387): board.storyboard_project_id
-          // is always the account root now, so in single-board mode this
-          // must read whichever project is actually being viewed right
-          // now (_bbProjectFilter()) instead of the fixed board-row value,
-          // or IDEA/PLAN always dropped you back at the root project
-          // regardless of which header's Briefing Board you were on.
-          var projectId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
-          if(!projectId){ _bbShowToast('This board isn’t linked to a project.'); return; }
-          IDBand.recordReturn('BRIEFING BOARD', projectId);
-          if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
-            window.T2TStoryboard.jumpToProjectKind(projectId, k.value);
-          }
-          return;
-        }
-      });
-      menu.appendChild(row);
-    });
-    if(menu.parentElement!==document.body) document.body.appendChild(menu);
-    _bbSyncMenuTheme(menu);
-    trigger.onclick=function(e){
-      e.stopPropagation();
-      var willOpen=menu.hidden;
-      _bbCloseAllDropdowns(willOpen?'bb-boardkind-menu':null);
-      if(willOpen){
-        var r=trigger.getBoundingClientRect();
-        menu.style.left=r.left+'px';
-        menu.style.top=(r.bottom+4)+'px';
-        menu.style.minWidth=Math.max(120,r.width)+'px';
-        menu.hidden=false;
-        var mr=menu.getBoundingClientRect();
-        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      } else {
-        menu.hidden=true;
-      }
-    };
-    // bb-boardkind-caret, Sept 15 2026 -- same forward-to-trigger pattern
-    // as bb-project-caret above: no independent behavior, just widens the
-    // click target now that STORYBOARD has a visible arrow of its own.
-    var kindCaret=document.getElementById('bb-boardkind-caret');
-    if(kindCaret) kindCaret.onclick=function(e){
-      e.stopPropagation();
-      trigger.click();
-    };
-  }
+  // Wired by the shared routine along with TOPIC (see _bbMountIdBand, above).
+  function _bbWireBoardKindDropdown(){ _bbMountIdBand(); }
 
   // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m -- see the
   // HTML comment on bb-view-wrap in briefing-board-screens.js for the
@@ -2237,9 +2079,6 @@
     T().wire('bb-briefinglog-close', closeBriefingLog);
     T().wire('bb-briefinglog-back', function(){ closeBriefingLog(); openHX(); });
     T().wire('bb-gear', openSettings);
-    T().wire('bb-return', function(){
-      if(!IDBand.jumpToRecorded()) _bbShowToast('Nothing to return to yet');
-    });
     // Double-click the board's own background (not a card) opens the same
     // Board Settings the gear does -- Color Theme is the first field in that
     // panel, so this is BB's version of the traveler color-options shortcut
