@@ -640,6 +640,17 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   #isx-header-ring .isx-tile{pointer-events:auto}
   #isx-canvas-scroll{flex:1;position:relative;overflow:auto}
   #isx-canvas{position:relative;width:100%;min-height:100%}
+  /* Infinite canvas camera (board-canvas-camera.js, Sept 29 2026): once it
+     attaches, the camera owns panning, so native scrollbars step aside and
+     #isx-canvas carries the camera's translate+scale from its top-left.
+     Without the camera script, none of these rules apply and the board
+     scrolls natively exactly as before. */
+  #isx-canvas-scroll.isx-camera{overflow:hidden;cursor:grab}
+  #isx-canvas-scroll.isx-camera.isx-panning{cursor:grabbing}
+  #isx-canvas-scroll.isx-camera #isx-canvas{transform-origin:0 0}
+  /* Last-touched card, shown only when zoomed far out so the traveler can
+     still find where they were working. */
+  .isx-tile.isx-current{outline:4px solid #e0a020;outline-offset:6px}
   .isx-tile{position:absolute;width:calc(112px * var(--fg-text-scale,1));min-height:calc(66px * var(--fg-text-scale,1));background:var(--brand-white);border:2px solid var(--brand-ink);border-radius:0;
     box-shadow:0 3px 8px rgba(0,0,0,.2);padding:8px;font-size:calc(10.5px * var(--fg-text-scale,1));color:#000;cursor:grab}
   .isx-tile:active{cursor:grabbing}

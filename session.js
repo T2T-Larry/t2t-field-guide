@@ -291,6 +291,18 @@
       });
       var lassoCanvas=document.getElementById('isx-canvas');
       if(lassoCanvas) _isxWireLasso(lassoCanvas);
+      // Infinite canvas camera (board-canvas-camera.js), Sept 29 2026: wheel
+      // zoom + background-drag pan over this same canvas. Lasso moved to
+      // Shift+drag to make room for pan (see _isxWireLasso). If the camera
+      // file ever fails to load, the board falls back to native scrolling.
+      if(lassoCanvas && window.T2TCanvasCamera){
+        T2TCanvasCamera.attach({
+          board:document.getElementById('isx-board'),
+          scroller:document.getElementById('isx-canvas-scroll'),
+          canvas:lassoCanvas,
+          onBackgroundClick:_isxClearSelection
+        });
+      }
       // Triple-click PARENT to reveal the page number badge — same
       // convention as 9710's own sc-parent-hit trick.
       (function(){
@@ -1241,6 +1253,9 @@
         return _isxBuildHeaderPile(cr, '', w, h, canvas, null);
       }));
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
+      // A different Topic is a different world: start it at the default view
+      // rather than wherever the last one was panned/zoomed to.
+      if(_isxLastRenderedClusterId!==clusterId && window.T2TCanvasCamera) T2TCanvasCamera.reset(false);
       _isxLastRenderedClusterId = clusterId;
       // Hands this Topic's own real header list to the shared DETAILS
       // "Move to a different Header" panel (idea-storyboard-9710.js),
@@ -1577,6 +1592,13 @@
       startX=e.clientX; startY=e.clientY; moved=false;
       origLeft=parseFloat(tile.style.left)||0; origTop=parseFloat(tile.style.top)||0;
       var startScrollLeft=scroller?scroller.scrollLeft:0, startScrollTop=scroller?scroller.scrollTop:0;
+      // Camera (board-canvas-camera.js), Sept 29 2026. A tile on the canvas
+      // is measured in canvas units, so its drag distance is the cursor's
+      // travel through the camera, not raw client pixels. Ring tiles live in
+      // the fixed, unscaled ring layer and keep plain client deltas.
+      var cam=(window.T2TCanvasCamera && T2TCanvasCamera.isAttached())?T2TCanvasCamera:null;
+      var startC=(cam && !ringMode)?cam.screenToCanvas(e.clientX, e.clientY):null;
+      if(cam) cam.setCurrent(rowId);
 
       // Lasso-selected group (2+) moves together, relative positions kept
       // — same convention as 9710's own CLUSTER lasso. Snapshot every
@@ -1632,14 +1654,21 @@
         if(!scroller) return;
         var r=scroller.getBoundingClientRect();
         var x=ev.clientX, y=ev.clientY;
+        var vx=0, vy=0;
         if(x>=r.left && x<=r.right){
-          if(x-r.left<EDGE) scroller.scrollLeft-=MAXSPEED*(1-(x-r.left)/EDGE);
-          else if(r.right-x<EDGE) scroller.scrollLeft+=MAXSPEED*(1-(r.right-x)/EDGE);
+          if(x-r.left<EDGE) vx=-MAXSPEED*(1-(x-r.left)/EDGE);
+          else if(r.right-x<EDGE) vx=MAXSPEED*(1-(r.right-x)/EDGE);
         }
         if(y>=r.top && y<=r.bottom){
-          if(y-r.top<EDGE) scroller.scrollTop-=MAXSPEED*(1-(y-r.top)/EDGE);
-          else if(r.bottom-y<EDGE) scroller.scrollTop+=MAXSPEED*(1-(r.bottom-y)/EDGE);
+          if(y-r.top<EDGE) vy=-MAXSPEED*(1-(y-r.top)/EDGE);
+          else if(r.bottom-y<EDGE) vy=MAXSPEED*(1-(r.bottom-y)/EDGE);
         }
+        if(!vx && !vy) return;
+        // With the camera on, the canvas no longer scrolls natively: the
+        // camera pans the opposite way instead (content moves toward the
+        // cursor's edge). Same speeds as before.
+        if(cam) cam.panBy(-vx, -vy);
+        else{ scroller.scrollLeft+=vx; scroller.scrollTop+=vy; }
       }
       function onMove(ev){
         edgeScroll(ev);
@@ -1647,11 +1676,21 @@
         // mousedown, or the tile drifts from the cursor as soon as
         // edgeScroll kicks in — raw client-coordinate delta alone stops
         // matching canvas-local position the moment the container scrolls
-        // underneath a fixed cursor position.
-        var scrollDx=scroller?(scroller.scrollLeft-startScrollLeft):0;
-        var scrollDy=scroller?(scroller.scrollTop-startScrollTop):0;
-        var dx=(ev.clientX-startX)+scrollDx, dy=(ev.clientY-startY)+scrollDy;
-        if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+        // underneath a fixed cursor position. With the camera on, the
+        // cursor's position in canvas units already includes any pan/zoom
+        // since mousedown, so that IS the compensation.
+        var dx, dy, moveDx, moveDy;
+        if(startC){
+          var cc=cam.screenToCanvas(ev.clientX, ev.clientY);
+          dx=cc.x-startC.x; dy=cc.y-startC.y;
+          moveDx=ev.clientX-startX; moveDy=ev.clientY-startY;   // click-vs-drag threshold stays in screen pixels
+        } else {
+          var scrollDx=scroller?(scroller.scrollLeft-startScrollLeft):0;
+          var scrollDy=scroller?(scroller.scrollTop-startScrollTop):0;
+          dx=(ev.clientX-startX)+scrollDx; dy=(ev.clientY-startY)+scrollDy;
+          moveDx=dx; moveDy=dy;
+        }
+        if(Math.abs(moveDx)>3||Math.abs(moveDy)>3) moved=true;
         tile.style.left=Math.round(origLeft+dx)+'px';
         tile.style.top=Math.round(origTop+dy)+'px';
         if(groupEls){
@@ -1700,8 +1739,15 @@
         } else if(moved){
           var finalX=parseFloat(tile.style.left)||0, finalY=parseFloat(tile.style.top)||0;
           if(ringMode){
-            finalX += scroller?scroller.scrollLeft:0;
-            finalY += scroller?scroller.scrollTop:0;
+            if(cam){
+              // Detaching from the fixed ring onto the zoomed/panned canvas:
+              // convert where the tile sits on screen into canvas units.
+              var landed=cam.ringToCanvas(finalX, finalY, document.getElementById('isx-header-ring'));
+              finalX=landed.x; finalY=landed.y;
+            } else {
+              finalX += scroller?scroller.scrollLeft:0;
+              finalY += scroller?scroller.scrollTop:0;
+            }
           }
           _isxCardPos[rowId]={x:finalX,y:finalY};
           _isxSavePos(rowId, finalX, finalY);
@@ -1726,12 +1772,28 @@
   // whole selection together — see _isxWireTileDrag. A click with no real
   // movement just clears the current selection. Ported from 9710's
   // CLUSTER lasso — Larry, July 18, 2026.
+  function _isxClearSelection(){
+    var canvas=document.getElementById('isx-canvas');
+    _isxSelected={};
+    if(!canvas) return;
+    Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
+      t.classList.remove('isx-selected');
+    });
+  }
+
   function _isxWireLasso(canvas){
     canvas.addEventListener('mousedown', function(e){
       if(e.target!==canvas) return;
+      // With the camera attached, plain background-drag pans and Shift+drag
+      // is the lasso. Without it, the old plain-drag lasso is unchanged.
+      var cam=(window.T2TCanvasCamera && T2TCanvasCamera.isAttached())?T2TCanvasCamera:null;
+      if(cam && !e.shiftKey) return;
       e.preventDefault();
+      // The canvas may be zoomed: client-pixel distances divide by the scale
+      // to become canvas units, the same units tiles' left/top use.
+      var sc=cam?cam.getScale():1;
       var r0=canvas.getBoundingClientRect();
-      var start={x:e.clientX-r0.left, y:e.clientY-r0.top};
+      var start={x:(e.clientX-r0.left)/sc, y:(e.clientY-r0.top)/sc};
       var moved=false;
       var lasso=document.createElement('div');
       lasso.className='isx-lasso';
@@ -1750,7 +1812,7 @@
       }
       function onMove(e2){
         var r=canvas.getBoundingClientRect();
-        var cx=e2.clientX-r.left, cy=e2.clientY-r.top;
+        var cx=(e2.clientX-r.left)/sc, cy=(e2.clientY-r.top)/sc;
         if(Math.abs(cx-start.x)>3 || Math.abs(cy-start.y)>3) moved=true;
         var x=Math.min(cx,start.x), y=Math.min(cy,start.y);
         lasso.style.left=x+'px'; lasso.style.top=y+'px';
