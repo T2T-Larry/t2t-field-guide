@@ -653,7 +653,7 @@
     if(!cardEl || !headEl) return;
     var dragging=false, startX=0, startY=0, startLeft=0, startTop=0;
     function onDown(e){
-      if(e.target.closest('.bb-close')) return; // the X still just closes
+      if(e.target.closest('.bb-close,button,select,input,textarea,a,.bb-cdrop-menu')) return; // the X still just closes; controls on the head (e.g. the ID Band's pickers) stay clickable
       var pt = e.touches ? e.touches[0] : e;
       var rect=cardEl.getBoundingClientRect();
       dragging=true;
@@ -1566,6 +1566,10 @@
       var open=!!(c.pro||c.grow||c.verified||c.growNote||(c.reviewedBy && c.reviewedBy!==REVIEWERS[0]));
       var rcb=document.getElementById('bb-d-add-review'); if(rcb) rcb.checked=open;
       var rbody=document.getElementById('bb-d-review-body'); if(rbody) rbody.style.display=open?'':'none';
+    })();
+    (function(){
+      var pen=document.getElementById('bb-d-notes-pencil'), ncb=document.getElementById('bb-d-add-notes');
+      if(pen) pen.classList.toggle('fg-on', !!(ncb && ncb.checked));
     })();
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }

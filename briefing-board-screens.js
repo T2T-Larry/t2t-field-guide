@@ -409,7 +409,7 @@
       detailOv.innerHTML=
          '<div class="bb-overlay-card fg-back-3x5">'
           // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
-          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'}) : '')
+          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, titleHTML:'BRIEFING<br>CARD', extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'+'<button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button>'}) : '')
           // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
           // Routine card icon from top of card") -- redundant now that
           // Routine is its own checkbox further down: picking a
@@ -417,7 +417,6 @@
           // see wireRoutineControls' select handler. The card-front
           // badge and the overlay's own routine-tinted top border stay
           // -- only the manual header button goes.
-          +'<div class="bb-overlay-head"><span class="bb-overlay-title">Briefing Card</span><div style="display:flex;gap:6px"><button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button></div></div>'
           +'<div class="bbw">'
             +'<div class="bb-field"><label>Priority</label><div class="bb-priorities">'
               +PRIORITY_BASE.map(function(p){ return '<button class="bb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
@@ -625,6 +624,7 @@
               +'<button class="bb-icon-btn" id="bb-d-people" type="button" title="Who is working on this?">👥</button>'
               +'<div class="sc-cdrop-menu" id="bb-people-menu" hidden></div>'
               +'<button class="bb-icon-btn" id="bb-d-gear" type="button" title="Utility">⚙️</button>'
+              +'<button class="bb-icon-btn" id="bb-d-notes-pencil" type="button" title="Notes">✏️</button>'
               // Add to Calendar, Sept 14 2026 (Larry: "Can you get dates
               // on a plan or on the BB to an Outlook calendar?") -- one
               // click downloads a standard .ics for this card's Due Date
@@ -641,15 +641,43 @@
             +'</div>'
           +'</div>'
         +'</div>';
-      // Two-column 5x3 back, Sept 29 2026 -- see FGCardBack.twoColumn (card-back-style.js): moves every opened addition into the right column.
-      if(window.FGCardBack) FGCardBack.twoColumn(detailOv.querySelector('.bbw'));
+      // 5x3 back layout, Sept 29 2026 (Larry, round 2) -- see card-back-style.js. One full-width column; only the checkbox region is two columns.
+      (function(){
+        var bbw=detailOv.querySelector('.bbw'); if(!bbw || !window.FGCardBack) return;
+        var q=function(id){ return detailOv.querySelector('#'+id); };
+        // Priority + Subject on one line, Show-on-front right under it, Task full width below.
+        var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
+        var row=document.createElement('div'); row.className='fg-back-toprow';
+        priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
+        var front=q('bb-d-contents-front-row'); if(front) row.parentNode.insertBefore(front, row.nextSibling);
+        FGCardBack.checkRegion(bbw);
+        // Start Date + Due Date on one line with Add-to-Calendar at the right end.
+        var sb=q('bb-d-start-body'), db=q('bb-d-due-body'), cal=q('bb-d-calendar');
+        if(sb && db && cal){
+          var drow=document.createElement('div'); drow.className='fg-back-daterow';
+          sb.parentNode.insertBefore(drow, sb); drow.appendChild(sb); drow.appendChild(db); drow.appendChild(cal);
+        }
+        // Duplicate moves under the Utility (gear) swatch row.
+        var colorRow=q('bb-d-color-row'), dup=q('bb-d-duplicate');
+        if(colorRow && dup){
+          var ux=document.createElement('div'); ux.className='fg-back-util-extra';
+          colorRow.parentNode.insertBefore(ux, colorRow.nextSibling); ux.appendChild(dup);
+        }
+        // Notes = the pencil along the bottom; it drives the (hidden) Notes checkbox so all existing saving/showing keeps working.
+        var pen=q('bb-d-notes-pencil'), ncb=q('bb-d-add-notes');
+        if(pen && ncb) pen.addEventListener('click', function(e){
+          e.stopPropagation(); ncb.checked=!ncb.checked;
+          ncb.dispatchEvent(new Event('change',{bubbles:true}));
+          pen.classList.toggle('fg-on', ncb.checked);
+        });
+      })();
       (function(){
         var rcb=detailOv.querySelector('#bb-d-add-review'), rbody=detailOv.querySelector('#bb-d-review-body');
         if(rcb && rbody) rcb.addEventListener('change', function(){ rbody.style.display=rcb.checked?'':'none'; });
       })();
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
-      _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.bb-overlay-head'));
+      _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.fg-back-idband'));
     }
     // Door-Soon placeholder, Aug 12 2026 -- Plan/Organization/Share
     // doors on the Briefing Card back all point here until their real

@@ -107,19 +107,37 @@
       // older Idea frame rules all set their own width/max-height and are
       // injected at different times, so source order can't be relied on.
       +'.fg-back-3x5{--fg-back-w:min(600px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important}'
-      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:-18px -22px 12px;padding:8px 22px;background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
+      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:-18px -22px 12px;padding:8px 22px;background:inherit;border:0;box-sizing:border-box}'
       +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:1 1 0;min-width:0;max-width:none;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 8px;line-height:1.2}'
       +'.fg-back-idband .fg-back-empty{display:none}'
-      // Two columns (Sept 29 2026, Larry: "what if the checkboxes open into the 2nd column?"): left = the fixed core + the checkbox list,
-      // right = whatever the checkboxes have opened. Each opened block carries its own small title so it reads without its checkbox nearby.
-      +'.fg-back-3x5 .bbw.fg-back-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:18px;align-items:start;width:100%}'
-      +'.fg-back-3x5 .fg-back-left,.fg-back-3x5 .fg-back-right{min-width:0}'
-      +'.fg-back-3x5 .fg-back-cols .bb-field{max-width:none;margin-bottom:8px}'
-      +'.fg-back-3x5 .fg-back-right .bb-addition-body{margin:0 0 10px;padding:0 0 8px;border-bottom:1px dotted var(--bb-accent)}'
-      +'.fg-back-3x5 .fg-back-right .bb-addition-body[data-fg-title]::before{content:attr(data-fg-title);display:block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:3px}'
-      // Checkbox list: smaller and darker (Larry, Sept 29 2026), flowing in rows.
-      +'.fg-back-3x5 .fg-back-checks{display:flex;flex-wrap:wrap;gap:3px 14px;margin:2px 0 8px}'
-      +'.fg-back-3x5 .fg-back-checks .bb-field.bb-addition{width:auto;margin:0}'
+      // Layout (Sept 29 2026, Larry, round 2): the card is ONE full-width column -- except the checkbox region, which is two columns:
+      // opened blocks on the left, the small dark checkbox list on the right. Each opened block carries its own small title.
+      +'.fg-back-3x5 .bbw .bb-field{max-width:none;margin-bottom:8px}'
+      +'.fg-back-region{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:start;width:100%}'
+      +'.fg-back-open{min-width:0}'
+      +'.fg-back-open .bb-addition-body,.fg-back-daterow .bb-addition-body{margin:0 0 8px;padding:0 0 6px;border-bottom:1px dotted var(--bb-accent)}'
+      +'.fg-back-3x5 .bb-addition-body[data-fg-title]::before{content:attr(data-fg-title);display:block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:3px}'
+      +'.fg-back-checks{display:flex;flex-direction:column;gap:5px;padding-left:12px;border-left:1px dotted var(--bb-accent);min-width:88px}'
+      +'.fg-back-checks .bb-field.bb-addition{width:auto;margin:0}'
+      +'.fg-back-checks #bb-d-add-notes-wrap{display:none}'
+      // Priority + Subject share one line; Show-on-front sits right under it.
+      +'.fg-back-toprow{display:flex;gap:12px;align-items:flex-end;width:100%}'
+      +'.fg-back-toprow .bb-field{margin-bottom:6px}'
+      +'.fg-back-toprow .bb-field:first-child{flex:0 0 auto;width:auto}'
+      +'.fg-back-toprow .bb-field:last-child{flex:1 1 0;min-width:0}'
+      +'.fg-back-3x5 .fg-back-toprow + .bb-front-check{margin:-2px 0 6px}'
+      // Start Date + Due Date on one line, Add-to-Calendar at the right end (only while a date is open).
+      +'.fg-back-daterow{display:flex;gap:10px;align-items:flex-end}'
+      +'.fg-back-daterow .bb-addition-body{flex:1 1 0;min-width:0}'
+      +'.fg-back-daterow .bb-date-row{gap:3px;flex-wrap:wrap}'
+      +'.fg-back-daterow .bb-date-row input[type=text]{min-width:0;flex:1 1 64px}'
+      +'.fg-back-daterow .bb-date-row .bb-date-time{flex:0 1 48px}'
+      +'.fg-back-daterow #bb-d-calendar{flex:0 0 auto;margin-bottom:8px}'
+      +'.fg-back-daterow:not(:has(.bb-addition-body:not([style*="display: none"]))) #bb-d-calendar{display:none}'
+      // Utility extras (Duplicate) show with the gear's swatch row.
+      +'.fg-back-util-extra{display:none;gap:6px;margin-top:4px}'
+      +'#bb-d-color-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
+      // Checkbox list: smaller and darker (Larry, Sept 29 2026).
       +'.fg-back-3x5 .bb-addition-eyebrow{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;color:var(--bb-ink);opacity:1}'
       +'.fg-back-3x5 .bb-addition-label{gap:4px;line-height:12px;color:var(--bb-ink)}'
       +'.fg-back-3x5 .bb-addition-label input[type=checkbox]{width:11px;height:11px}'
@@ -128,10 +146,14 @@
       +'.fg-back-3x5 .bb-pri-btn{flex:0 0 auto;min-width:26px;padding:2px 6px;font-size:calc(10px * var(--fg-text-scale,1));line-height:1.3}'
       +'.fg-back-3x5 .bb-field label{font-size:calc(10px * var(--fg-text-scale,1));margin-bottom:2px}'
       +'.fg-back-3x5 .bb-field textarea{min-height:44px}'
-      // Icon row stays one line at the bottom of the left column.
-      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;gap:4px;margin-top:6px}'
+      // One icon row across the bottom; pencil lights up while Notes is open.
+      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;gap:4px;margin-top:6px;width:100%}'
+      +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
+      // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
+      +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1.1;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
+      +'.fg-back-idband .bb-icon-btn,.fg-back-idband .bb-close{flex:0 0 auto;width:26px;height:26px;min-width:0;padding:0;font-size:calc(13px * var(--fg-text-scale,1))}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
-      +'.fg-back-idband .bb-icon-btn{flex:0 0 auto}';
+      ;
     document.head.appendChild(st);
   }
 
@@ -145,29 +167,27 @@
     var topic = opts.projectPicker
       ? '<div class="bb-cdrop"><button type="button" class="bb-topic-hit bb-cdrop-trigger fg-back-topic fg-back-own" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="cursor:pointer;width:100%"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
       : '<span class="bb-topic-hit fg-back-topic"></span>';
-    return '<div class="fg-back-idband">'+topic+'<span class="bb-boardkind-hit fg-back-kind"></span>'+(opts.extraHTML||'')+'</div>';
+    var title = opts.titleHTML ? '<span class="fg-back-title">'+opts.titleHTML+'</span>' : '';
+    return '<div class="fg-back-idband">'+title+topic+'<span class="bb-boardkind-hit fg-back-kind"></span>'+(opts.extraHTML||'')+'</div>';
   }
 
-  // Splits a .bbw into two columns: everything stays on the left, except each addition's opened body, which moves to the right column
-  // (ids are untouched, so all show/hide wiring keeps working). The addition checkboxes gather into one small list on the left.
-  function twoColumn(bbw){
-    if(!bbw || bbw.classList.contains('fg-back-cols')) return;
-    var left=document.createElement('div'), right=document.createElement('div');
-    left.className='fg-back-left'; right.className='fg-back-right';
-    while(bbw.firstChild) left.appendChild(bbw.firstChild);
-    var checks=document.createElement('div'); checks.className='fg-back-checks';
-    var adds=Array.prototype.slice.call(left.querySelectorAll('.bb-addition'));
-    var anchor=adds.length ? adds[0] : null;
-    if(anchor) anchor.parentNode.insertBefore(checks, anchor);
+  // The checkbox region: every addition's opened body moves into a left column, and the addition checkboxes gather into a small dark list
+  // on the right. Ids are untouched, so all the show/hide wiring keeps working. Everything else on the card stays full width.
+  function checkRegion(bbw){
+    if(!bbw || bbw.querySelector('.fg-back-region')) return null;
+    var adds=Array.prototype.slice.call(bbw.querySelectorAll('.bb-addition'));
+    if(!adds.length) return null;
+    var region=document.createElement('div'), open=document.createElement('div'), checks=document.createElement('div');
+    region.className='fg-back-region'; open.className='fg-back-open'; checks.className='fg-back-checks';
+    adds[0].parentNode.insertBefore(region, adds[0]);
+    region.appendChild(open); region.appendChild(checks);
     adds.forEach(function(w){
       var body=w.querySelector('.bb-addition-body');
       var eb=w.querySelector('.bb-addition-eyebrow');
-      if(body){ body.setAttribute('data-fg-title', eb ? eb.textContent : ''); right.appendChild(body); }
+      if(body){ body.setAttribute('data-fg-title', eb ? eb.textContent : ''); open.appendChild(body); }
       checks.appendChild(w);
     });
-    // The bottom icon row rides under the checkbox list, still in the left column.
-    bbw.classList.add('fg-back-cols');
-    bbw.appendChild(left); bbw.appendChild(right);
+    return region;
   }
 
   // Fill (or refresh) the band inside one card-back element from the live
@@ -185,5 +205,5 @@
 
   injectShape();
 
-  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, twoColumn: twoColumn, paintBand: paintBand, colors: { idea: IDEA } };
+  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, colors: { idea: IDEA } };
 })();
