@@ -1561,6 +1561,12 @@
       var cb=document.getElementById(a.cb); if(cb) cb.checked=open;
       var body=document.getElementById(a.body); if(body) body.style.display=open?'':'none';
     });
+    // Review addition, Sept 29 2026 -- open whenever the card already carries review data (reviewer other than the default, PRO/GROW/Complete, or a GROW note).
+    (function(){
+      var open=!!(c.pro||c.grow||c.verified||c.growNote||(c.reviewedBy && c.reviewedBy!==REVIEWERS[0]));
+      var rcb=document.getElementById('bb-d-add-review'); if(rcb) rcb.checked=open;
+      var rbody=document.getElementById('bb-d-review-body'); if(rbody) rbody.style.display=open?'':'none';
+    })();
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }

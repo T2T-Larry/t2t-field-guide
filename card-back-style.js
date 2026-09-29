@@ -109,14 +109,65 @@
       +'.fg-back-3x5{--fg-back-w:min(600px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important}'
       +'.fg-back-idband{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:-18px -22px 12px;padding:8px 22px;background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
       +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:1 1 0;min-width:0;max-width:none;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 8px;line-height:1.2}'
-      +'.fg-back-idband .fg-back-empty{display:none}';
+      +'.fg-back-idband .fg-back-empty{display:none}'
+      // Two columns (Sept 29 2026, Larry: "what if the checkboxes open into the 2nd column?"): left = the fixed core + the checkbox list,
+      // right = whatever the checkboxes have opened. Each opened block carries its own small title so it reads without its checkbox nearby.
+      +'.fg-back-3x5 .bbw.fg-back-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:18px;align-items:start;width:100%}'
+      +'.fg-back-3x5 .fg-back-left,.fg-back-3x5 .fg-back-right{min-width:0}'
+      +'.fg-back-3x5 .fg-back-cols .bb-field{max-width:none;margin-bottom:8px}'
+      +'.fg-back-3x5 .fg-back-right .bb-addition-body{margin:0 0 10px;padding:0 0 8px;border-bottom:1px dotted var(--bb-accent)}'
+      +'.fg-back-3x5 .fg-back-right .bb-addition-body[data-fg-title]::before{content:attr(data-fg-title);display:block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:3px}'
+      // Checkbox list: smaller and darker (Larry, Sept 29 2026), flowing in rows.
+      +'.fg-back-3x5 .fg-back-checks{display:flex;flex-wrap:wrap;gap:3px 14px;margin:2px 0 8px}'
+      +'.fg-back-3x5 .fg-back-checks .bb-field.bb-addition{width:auto;margin:0}'
+      +'.fg-back-3x5 .bb-addition-eyebrow{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;color:var(--bb-ink);opacity:1}'
+      +'.fg-back-3x5 .bb-addition-label{gap:4px;line-height:12px;color:var(--bb-ink)}'
+      +'.fg-back-3x5 .bb-addition-label input[type=checkbox]{width:11px;height:11px}'
+      // Smaller H / M / L buttons.
+      +'.fg-back-3x5 .bb-priorities{gap:3px}'
+      +'.fg-back-3x5 .bb-pri-btn{flex:0 0 auto;min-width:26px;padding:2px 6px;font-size:calc(10px * var(--fg-text-scale,1));line-height:1.3}'
+      +'.fg-back-3x5 .bb-field label{font-size:calc(10px * var(--fg-text-scale,1));margin-bottom:2px}'
+      +'.fg-back-3x5 .bb-field textarea{min-height:44px}'
+      // Icon row stays one line at the bottom of the left column.
+      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;gap:4px;margin-top:6px}'
+      +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
+      +'.fg-back-idband .bb-icon-btn{flex:0 0 auto}';
     document.head.appendChild(st);
   }
 
   // The band's markup. Empty until paintBand fills it.
-  function bandHTML(){
+  // opts.projectPicker: TOPIC is a real dropdown trigger (#bb-d-project-trigger + #bb-d-project-menu) so the Briefing Card back can move the
+  //   card to another topic from the band itself; paintBand leaves its text alone (the card's own project fills it).
+  // opts.extraHTML: extra controls placed at the right end of the band (the PRIMARY head on the Briefing Card).
+  function bandHTML(opts){
+    opts=opts||{};
     injectShape();
-    return '<div class="fg-back-idband"><span class="bb-topic-hit fg-back-topic"></span><span class="bb-boardkind-hit fg-back-kind"></span></div>';
+    var topic = opts.projectPicker
+      ? '<div class="bb-cdrop"><button type="button" class="bb-topic-hit bb-cdrop-trigger fg-back-topic fg-back-own" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="cursor:pointer;width:100%"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
+      : '<span class="bb-topic-hit fg-back-topic"></span>';
+    return '<div class="fg-back-idband">'+topic+'<span class="bb-boardkind-hit fg-back-kind"></span>'+(opts.extraHTML||'')+'</div>';
+  }
+
+  // Splits a .bbw into two columns: everything stays on the left, except each addition's opened body, which moves to the right column
+  // (ids are untouched, so all show/hide wiring keeps working). The addition checkboxes gather into one small list on the left.
+  function twoColumn(bbw){
+    if(!bbw || bbw.classList.contains('fg-back-cols')) return;
+    var left=document.createElement('div'), right=document.createElement('div');
+    left.className='fg-back-left'; right.className='fg-back-right';
+    while(bbw.firstChild) left.appendChild(bbw.firstChild);
+    var checks=document.createElement('div'); checks.className='fg-back-checks';
+    var adds=Array.prototype.slice.call(left.querySelectorAll('.bb-addition'));
+    var anchor=adds.length ? adds[0] : null;
+    if(anchor) anchor.parentNode.insertBefore(checks, anchor);
+    adds.forEach(function(w){
+      var body=w.querySelector('.bb-addition-body');
+      var eb=w.querySelector('.bb-addition-eyebrow');
+      if(body){ body.setAttribute('data-fg-title', eb ? eb.textContent : ''); right.appendChild(body); }
+      checks.appendChild(w);
+    });
+    // The bottom icon row rides under the checkbox list, still in the left column.
+    bbw.classList.add('fg-back-cols');
+    bbw.appendChild(left); bbw.appendChild(right);
   }
 
   // Fill (or refresh) the band inside one card-back element from the live
@@ -127,12 +178,12 @@
     if(!band) return;
     var t=band.querySelector('.fg-back-topic'), k=band.querySelector('.fg-back-kind');
     var tv=_liveText(TOPIC_IDS), kv=_liveText(KIND_IDS);
-    if(t){ t.textContent=tv; t.title=tv; t.classList.toggle('fg-back-empty', !tv); }
+    if(t && !t.classList.contains('fg-back-own')){ t.textContent=tv; t.title=tv; t.classList.toggle('fg-back-empty', !tv); }
     if(k){ k.textContent=kv; k.title=kv; k.classList.toggle('fg-back-empty', !kv); }
-    band.style.display = (tv||kv) ? '' : 'none';
+    band.style.display = (tv||kv||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
   }
 
   injectShape();
 
-  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, paintBand: paintBand, colors: { idea: IDEA } };
+  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, twoColumn: twoColumn, paintBand: paintBand, colors: { idea: IDEA } };
 })();

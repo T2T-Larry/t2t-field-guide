@@ -409,7 +409,7 @@
       detailOv.innerHTML=
          '<div class="bb-overlay-card fg-back-3x5">'
           // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
-          +(window.FGCardBack ? FGCardBack.bandHTML() : '')
+          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'}) : '')
           // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
           // Routine card icon from top of card") -- redundant now that
           // Routine is its own checkbox further down: picking a
@@ -453,10 +453,9 @@
             // instead of filtering the board. Wired in
             // _bbRenderCardPrimaryField (briefing-board-master.js),
             // called from openCardDetail alongside the Project field.
-            +'<div class="bb-field"><label>Project</label><div style="display:flex;align-items:center;gap:8px">'
-              +'<div class="bb-cdrop" style="flex:1 1 auto;min-width:0"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
-              +'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'
-            +'</div></div>'
+            // Project field retired from the back, Sept 29 2026 (Larry: "PROJECT has appeared again! isn't that the same field as the ID BAND?") --
+            // the ID BAND's TOPIC box at the top of the back IS the project picker now (same #bb-d-project-trigger/-menu ids, so
+            // _bbRenderCardProjectField wires it unchanged), and the PRIMARY head sits beside it in the band. See card-back-style.js.
             // Added-date, Aug 27 2026 (Larry: "What if the date added is
             // quietly after the TASK Eyebrow?") -- the standalone "Dates"
             // block (below) used to hold this, but once Start Date moved
@@ -602,10 +601,14 @@
             // by (the last item that isn't itself a checkbox), so the
             // whole run of additions -- Checklist through Signal Flags
             // -- reads as one contiguous section.
-            +'<hr class="bb-field-divider">'
-            +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
-            +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Complete</button></div></div>'
-            +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
+            // Review checkbox, Sept 29 2026 (Larry: "what if review is a checkbox?") -- Reviewed by, the PRO / GROW / Complete flags and the
+            // GROW comment now live in one opt-in addition like the rest. Ids are unchanged, so every existing handler keeps working.
+            // Open state is derived (any review data on the card opens it); the checkbox itself is not stored on the card yet.
+            +'<div class="bb-field bb-addition" id="bb-d-add-review-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-review"><span class="bb-addition-eyebrow">Review</span></label><div class="bb-addition-body" id="bb-d-review-body" style="display:none">'
+              +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
+              +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Complete</button></div></div>'
+              +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
+            +'</div></div>'
             // Bottom action row, Session 234 (Aug 21, Larry: "add the same
             // bottom row as on the IDEA CARD to the BB Cards? lock - twin
             // heads - gear - trash"). Lock moved down here (was the big
@@ -638,6 +641,12 @@
             +'</div>'
           +'</div>'
         +'</div>';
+      // Two-column 5x3 back, Sept 29 2026 -- see FGCardBack.twoColumn (card-back-style.js): moves every opened addition into the right column.
+      if(window.FGCardBack) FGCardBack.twoColumn(detailOv.querySelector('.bbw'));
+      (function(){
+        var rcb=detailOv.querySelector('#bb-d-add-review'), rbody=detailOv.querySelector('#bb-d-review-body');
+        if(rcb && rbody) rcb.addEventListener('change', function(){ rbody.style.display=rcb.checked?'':'none'; });
+      })();
       fg.appendChild(detailOv);
       detailOv.addEventListener('click', function(e){ if(e.target===detailOv) closeCardDetail(); });
       _bbMakeDraggable(detailOv.querySelector('.bb-overlay-card'), detailOv.querySelector('.bb-overlay-head'));
