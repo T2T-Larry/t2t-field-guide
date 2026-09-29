@@ -623,7 +623,7 @@
     // The head button's pick is spent once the entry is saved (see
     // _icMaybeApplyCast), so the band's NEW chip goes back to NEW too.
     var newChip=document.getElementById('isx-p-newchip-txt');
-    if(newChip) newChip.textContent='';
+    if(newChip) newChip.textContent='NEW';
     var castBtnReset=document.getElementById('isx-p-cast-btn');
     if(castBtnReset){ castBtnReset.classList.remove('on'); castBtnReset.title='Pick who’s PRIMARY'; }
     _icSyncKindLine();
@@ -1380,7 +1380,7 @@
       // bb mode it is fixed to BRIEFING, since everything opened from
       // the Briefing Board saves to it.
       +'<div class="isx-p-head" id="isx-p-head">'
-        +'<span class="isx-p-newtitle" id="isx-p-newchip-txt"></span>'
+        +'<span class="isx-p-newtitle" id="isx-p-newchip-txt">NEW</span>'
         +'<div class="isx-p-topic isx-p-idfield isx-p-head-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div>'
         +'<div class="isx-p-idfield isx-p-head-board'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div>'
         +'<div class="isx-p-head-btns">'
@@ -1464,7 +1464,7 @@
         castBtn.classList.toggle('on', !!_icCastPersonId);
         castBtn.title=_icCastPersonId ? ('PRIMARY: '+_icCastPersonName+' — click to change') : 'Pick who’s PRIMARY';
         var chip=document.getElementById('isx-p-newchip-txt');
-        if(chip) chip.textContent=_icCastPersonId ? String(_icCastPersonName||'').trim().split(/\s+/)[0] : '';
+        if(chip) chip.textContent=_icCastPersonId ? String(_icCastPersonName||'NEW').trim().split(/\s+/)[0] : 'NEW';
       }
       if(castBtn) castBtn.onclick=function(ev){
         ev.stopPropagation();
