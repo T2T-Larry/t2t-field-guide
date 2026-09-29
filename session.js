@@ -1183,7 +1183,7 @@
       }
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
       var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId) && String(r.id)!==String(purposeId); });
-      var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || _isxAllRowsById[miscId] || (fromCache ? null : await _isxFetchRow(miscId));
+      var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || (miscId ? _isxAllRowsById[miscId] : null) || ((fromCache || !miscId) ? null : await _isxFetchRow(miscId));
       var purposeRow=purposeId ? allRows.find(function(r){ return String(r.id)===String(purposeId); }) : null;
 
       // July 18, 2026 (Larry): the board used to wipe to blank the instant
