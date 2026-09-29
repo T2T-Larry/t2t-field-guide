@@ -395,12 +395,9 @@
     // member-identity.js has loaded (or on the couple of phase pages
     // that don't yet include it -- see index.html vs. believe/dare/
     // dream/journey.html).
+    // Shared identity block (id-band-controls.js); MASTER hides the org line.
+    if(typeof _sboardIdBand!=='undefined' && _sboardIdBand){ _sboardIdBand.renderIdentity(); return; }
     if(window.T2TMemberIdentity){
-      // Sept 20 2026, Larry: "MASTER lists can have NO org as they include
-      // all orgs associated with a member including a personal projects."
-      // _sboardIsAtMasterRoot (set by _sboardRenderProjectLabel, just below)
-      // is the same atRoot check PROJECT already keys its own MASTER label
-      // off of, so this stays in lockstep with wherever MASTER is showing.
       window.T2TMemberIdentity.fill({wrap:'sc-idn', org:'sc-idn-org', name:'sc-traveler-name'}, {hideOrg:_sboardIsAtMasterRoot});
       return;
     }

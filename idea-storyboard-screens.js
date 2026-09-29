@@ -1227,11 +1227,8 @@
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
     T().wire('b-sc-close', _sboardCloseBoard);
     T().wire('b-sc-gear', _sboardOpenGearMenu);
-    T().wire('sc-return', function(){
-      if(!IDBand.jumpToRecorded()) _sboardShowToast('Nothing to return to yet');
-    });
     T2TLogo.wire(_sboardLogoCfg);
-    _sboardWireBoardKindDropdown();
+    _sboardMountIdBand();   // TOPIC pyramid, Board Type, RETURN, row layout -- shared (id-band-controls.js)
     // _sboardWireProjectHeaderDropdown(), Sept 19 2026 -- re-pointed at
     // sc-title-trigger now that sc-project-caret is gone (see that
     // function's own trigger lookup, above): PROJECT drops down on click
@@ -1248,7 +1245,6 @@
     // functions are left defined, just unreachable, same "retire in
     // place" treatment every other superseded ID Band control on this
     // project gets.
-    _sboardWireTopicTree();
     // PROJECT, Sept 2 2026 -- Larry: "Top Project for each member = IDEA
     // STORYBOARDS. The HEADERS for that board are the PROJECTS plus
     // COLLABORATOR and STAKEHOLDER." Every member has exactly one true

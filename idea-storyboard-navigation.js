@@ -668,105 +668,53 @@
   // source instead of hand-kept copies. Larry: SEA OF IDEAS belongs above
   // BLUE SKY (the content-maturity pipeline reads WISH TANK / Sea of Ideas
   // -> BLUE SKY -> STORY).
-  var _sboardBoardKinds=window.IDBand.BOARD_KINDS;
-  function _sboardWireBoardKindDropdown(){
-    var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
-    if(!trigger || !menu) return;
-    menu.innerHTML='';
-    _sboardBoardKinds.forEach(function(k){
-      var row=document.createElement('div');
-      row.className='sc-cdrop-row';
-      row.setAttribute('data-kind', k.value);
-      row.textContent=k.label;
-      row.addEventListener('click', function(e){
-        e.stopPropagation();
-        menu.hidden=true;
-        if(k.value==='SEA'){
-          IDBand.recordReturn('IDEA', T2TShared.currentTopicId);
-          if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); }
-          else { _sboardShowToast('Sea of Ideas isn’t available right now.'); }
-          return;
-        }
-        if(k.value==='PLAN'){ IDBand.recordReturn('IDEA', T2TShared.currentTopicId); _sboardOpenOrCreatePlanBoard(); return; }
-        if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return; }
-        if(k.value==='BRIEFING BOARD'){
-          // Sept 5 2026, Larry: "if an Idea Board changes a PROJECT or a
-          // level, jumping to the BB should instantly go to the same
-          // project and level" -- then, same day: "what if TOPIC is
-          // exactly the same [as the Idea Board's]? If DREAM PHASE is the
-          // TOPIC on the Idea Board, then DREAM PHASE is the BB." So this
-          // hands off the traveler's exact current TOPIC (whatever
-          // T2TShared.currentTopicId is right now, at any depth -- the
-          // project root itself counts, same as everywhere else that
-          // treats "standing at the root" as just TOPIC's own value being
-          // the root row), not the project it climbs up to -- briefing-
-          // board.js's jumpToTopic lands on (or creates) that exact
-          // layer's own Briefing Board instead of just nav()'ing here and
-          // leaving whatever board was already open in place.
-          var bbTopicId=T2TShared.currentTopicId;
-          if(!bbTopicId){ _sboardShowToast('Open a project first.'); return; }
-          IDBand.recordReturn('IDEA', bbTopicId);
-          if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic){
-            window.T2TBriefingBoard.jumpToTopic(bbTopicId);
-          } else if(window.T2T && window.T2T.nav){
-            window.T2T.nav('s-briefing-board');
-          }
-          return;
-        }
-        if(k.value==='CAST'){
-          // Sept 14 2026, Larry: CAST is a board choice like Idea/Plan/
-          // Briefing Board/Share, not a small icon buried inside every
-          // card's Call Sheet -- picking it here, with the current card
-          // as TOPIC (project), opens the full Project Cast Roster
-          // (idea-storyboard-people.js's _csOpenProjectRoster): everyone
-          // on this project and everything below it, roles and contact,
-          // one screen. Replaces the older storyboard_members-only Team
-          // Roster (_sboardOpenTeam) as this menu's destination -- that
-          // function stays in place for now (nothing else calls it yet),
-          // but CAST-the-board-choice now means the real Cast, same
-          // source of truth as everywhere else.
-          var castRow=_sboardCurrentProjectRow();
-          // Sept 23 2026 -- Larry: the Cast Roster is the Project Pyramid
-          // with people on it, opened at the current TOPIC
-          // (cast-roster.js). Same screen as the Briefing Board's CAST.
-          // The flat Project Cast Roster below stays as a fallback.
-          var castTopic=T2TShared.currentTopicId || (castRow ? castRow.id : null);
-          if(!castTopic){ _sboardShowToast('Open a project first.'); return; }
-          if(window.CastRoster){ window.CastRoster.open(castTopic); return; }
-          if(castRow) _csOpenProjectRoster(castRow);
-          return;
-        }
-        if(k.soon) _sboardShowToast(k.soon);
-      });
-      menu.appendChild(row);
-    });
-    if(menu.parentElement!==document.body) document.body.appendChild(menu);
-    trigger.onclick=function(e){
-      e.stopPropagation();
-      var willOpen=menu.hidden;
-      _sboardCloseAllDropdowns(willOpen?'sc-board-kind-menu':null);
-      if(willOpen){
-        _sboardSyncBoardKindChrome();
-        var r=trigger.getBoundingClientRect();
-        menu.style.left=r.left+'px';
-        menu.style.top=(r.bottom+4)+'px';
-        menu.style.minWidth=Math.max(120,r.width)+'px';
-        menu.hidden=false;
-        var mr=menu.getBoundingClientRect();
-        if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      } else {
-        menu.hidden=true;
+  // Sept 29 2026 -- Larry: "a snippet of common code for all boards."
+  // TOPIC pyramid, Board Type list, RETURN and the row layout now all run
+  // from ONE shared routine (id-band-controls.js, IDBand.mountControls).
+  // This board only hands it its own facts below: where TOPIC comes from,
+  // how to move to another Topic, and the two choices (BLUE SKY <-> PATHFINDER)
+  // that are this board's own flow. Every other Board Type choice (SEA OF
+  // IDEAS, BRIEFING, CAST, STORY) uses the shared default.
+  var _sboardIdBand=null;
+  function _sboardMountIdBand(){
+    if(_sboardIdBand || !window.IDBand || !window.IDBand.mountControls) return;
+    _sboardIdBand=window.IDBand.mountControls({
+      screenId:'s-sea-of-ideas-cluster',
+      kind:function(){ return _sboardIsPlanBoard?'PLAN':'IDEA'; },
+      setTriggerLabel:true,
+      rowClass:'sc-cdrop-row',
+      fitBaseSize:36,
+      container:'sc-header-area',
+      actions:'#s-sea-of-ideas-cluster .sc-hdr-side',
+      ids:{idn:'sc-idn', idnOrg:'sc-idn-org', name:'sc-traveler-name',
+           topicWrap:'sc-topic-wrap', topicTrigger:'sc-topic-box', topicMenu:'sc-topic-menu',
+           kindWrap:'sc-boardkind-wrap', kindTrigger:'sc-board-kind-trigger', kindMenu:'sc-board-kind-menu',
+           kindCaret:'sc-board-kind-caret', ret:'sc-return'},
+      hideOrg:function(){ return _sboardIsAtMasterRoot; },
+      topicId:function(){
+        var castRow=_sboardCurrentProjectRow();
+        return T2TShared.currentTopicId || (castRow ? castRow.id : null);
+      },
+      getTopic:function(){
+        var curId=T2TShared.currentTopicId;
+        if(!curId) return null;                       // root prompt -- nothing to show
+        var curRow=_sboardAllRowsById[curId];
+        if(!curRow) return null;
+        return {ancestors:_sboardPyramidAncestors(curId),
+                current:{id:curRow.id, name:curRow.text_content||'(untitled)', priority:curRow.priority||''}};
+      },
+      getChildren:function(id){ return Promise.resolve(_sboardPyramidChildren(id)); },
+      goToTopic:function(id){ if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]); },
+      closeOthers:_sboardCloseAllDropdowns,
+      toast:_sboardShowToast,
+      // The two choices that are this board's own flow: switching between
+      // the Blue Sky board and its one-time Pathfinder copy.
+      onPick:function(k){
+        if(k.value==='PLAN'){ IDBand.recordReturn('IDEA', T2TShared.currentTopicId); _sboardOpenOrCreatePlanBoard(); return true; }
+        if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return true; }
+        return false;
       }
-    };
-    // sc-board-kind-caret, Sept 15 2026 -- same forward-to-trigger pattern
-    // as sc-project-caret: no independent behavior, just a wider/visible
-    // click target now that STORYBOARD has its own arrow instead of
-    // relying on the whole word being clickable.
-    var kindCaret=document.getElementById('sc-board-kind-caret');
-    if(kindCaret) kindCaret.onclick=function(e){
-      e.stopPropagation();
-      trigger.click();
-    };
+    });
     _sboardSyncBoardKindChrome();
   }
 
@@ -1167,42 +1115,6 @@
       .sort(_sboardBySortOrder)
       .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
   }
-  function _sboardWireTopicTree(){
-    var trigger=document.getElementById('sc-topic-box'), menu=document.getElementById('sc-topic-menu');
-    if(!trigger || !menu) return;
-    // addEventListener, not .onclick -- sc-topic-box already carries its
-    // own triple-click page-number reveal listener (wired separately,
-    // near injectSeaOfIdeasCluster's own end), and this needs to run
-    // alongside it, not replace it.
-    trigger.addEventListener('click', function(e){
-      e.stopPropagation();
-      if(!T2TShared.currentTopicId) return; // root prompt -- nothing to show
-      var willOpen=menu.hidden;
-      _sboardCloseAllDropdowns(willOpen?'sc-topic-menu':null);
-      if(!willOpen){ menu.hidden=true; return; }
-      var curRow=_sboardAllRowsById[T2TShared.currentTopicId];
-      if(!curRow || !window.TopicPyramid) return;
-      if(menu.parentElement!==document.body) document.body.appendChild(menu);
-      var currentRow=window.TopicPyramid.render(menu, {
-        ancestors:_sboardPyramidAncestors(T2TShared.currentTopicId),
-        current:{id:curRow.id, name:curRow.text_content||'(untitled)', priority:curRow.priority||''},
-        getChildren:function(id){ return _sboardPyramidChildren(id); },
-        onNavigate:function(id){
-          menu.hidden=true;
-          if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]);
-        }
-      });
-      var r=trigger.getBoundingClientRect();
-      menu.style.left=r.left+'px';
-      menu.style.top=(r.bottom+4)+'px';
-      menu.style.minWidth=Math.max(200,r.width)+'px';
-      menu.hidden=false;
-      var mr=menu.getBoundingClientRect();
-      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
-      if(currentRow && currentRow.scrollIntoView) currentRow.scrollIntoView({block:'center'});
-    });
-  }
-
   // ID Band row layout, Sept 19 2026 -- Larry: "make the Idea Board's ID
   // Band exactly like BB's." Mirrors BB's own _bbPositionIdBandRow
   // (briefing-board-master-nav.js).
@@ -1220,41 +1132,9 @@
   // old names (every existing call site below and in idea-storyboard-
   // header.js is untouched) and just hand this board's own DOM elements
   // to the shared functions.
-  var SC_ID_BAND_GAP = 10;
-  function _sboardSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container){
-    window.IDBand.observeRow('s-sea-of-ideas-cluster', _sboardPositionIdBandRow, [topicWrap, idnEl, actionsEl, container]);
-  }
-  function _sboardFitBoardKindLabel(availableWidthPx){
-    window.IDBand.fitLabelToWidth('sc-board-kind-trigger', availableWidthPx, 36);
-  }
-  function _sboardPositionIdBandRow(){
-    var topicWrap=document.getElementById('sc-topic-wrap');
-    var boardkindWrap=document.getElementById('sc-boardkind-wrap');
-    var idnEl=document.getElementById('sc-idn');
-    var actionsEl=document.querySelector('#s-sea-of-ideas-cluster .sc-hdr-side');
-    var container=document.getElementById('sc-header-area');
-    if(!topicWrap || !boardkindWrap || !actionsEl || !container) return;
-    _sboardSetUpIdBandObserver(topicWrap, idnEl, actionsEl, container);
-    window.IDBand.positionRow({
-      container:container, actionsEl:actionsEl, idnEl:idnEl, gap:SC_ID_BAND_GAP,
-      fields:[topicWrap, boardkindWrap], fitLabelId:'sc-board-kind-trigger', fitBaseSize:36
-    });
-  }
-
-  window.addEventListener('resize', function(){
-    try{
-      var scr=document.getElementById('s-sea-of-ideas-cluster');
-      if(scr && scr.classList.contains('active')) _sboardPositionIdBandRow();
-    }catch(e){}
-  });
-  if(window.document && document.fonts && document.fonts.ready){
-    document.fonts.ready.then(function(){
-      try{
-        var scr=document.getElementById('s-sea-of-ideas-cluster');
-        if(scr && scr.classList.contains('active')) _sboardPositionIdBandRow();
-      }catch(e){}
-    });
-  }
+  // Row layout now lives in the shared routine (id-band-controls.js); this
+  // keeps the old name so existing callers (idea-storyboard-header.js) work.
+  function _sboardPositionIdBandRow(){ if(_sboardIdBand) _sboardIdBand.position(); }
 
   // Picking PLAN, Aug 26 2026 (Larry: "duplicate a Project Idea Board, put
   // the card numbers on the front of the cards and make every card
