@@ -57,7 +57,7 @@
   // name yet -- or an old per-Topic "(Thumb Rest)"-style catch-all, see
   // ensureNewAdditionsHeader below -- still gets excluded from ordinary
   // header listings, not just the current name.
-  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS','MASTER'];
+  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
 
   /* ── generic tree helpers ── */
 
@@ -191,7 +191,7 @@
       // name so an account that still has the old row self-heals onto
       // the new one instead of spawning a second root; the insert path
       // below only ever creates 'PROJECTS' going forward.
-      var existing=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').in('text_content',['MASTER','PROJECTS','Idea Storyboards']).is('cluster_id',null).limit(1);
+      var existing=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').in('text_content',['MASTER','Idea Storyboards']).is('cluster_id',null).limit(1);
       if(existing.error){ console.warn('ensureIdeaStoryboardsRoot select error:', existing.error); return null; }
       var rootId;
       if(existing.data && existing.data.length){
@@ -207,7 +207,7 @@
       var candidates=await sb.from('ideas').select('id,text_content,storyboard_kind')
         .eq('user_id',u.id).eq('content_type','header').is('cluster_id',null).neq('id',rootId);
       if(!candidates.error && candidates.data && candidates.data.length){
-        var EXCLUDE={'Trash':1,'Archived':1,'MISC':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'PROJECTS':1,'MASTER':1};
+        var EXCLUDE={'Trash':1,'Archived':1,'MISC':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'MASTER':1};
         var toMove=candidates.data.filter(function(r){
           return !EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA';
         }).map(function(r){ return r.id; });
