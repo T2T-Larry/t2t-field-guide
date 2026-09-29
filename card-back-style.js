@@ -107,7 +107,7 @@
       // older Idea frame rules all set their own width/max-height and are
       // injected at different times, so source order can't be relied on.
       +'.fg-back-3x5{--fg-back-w:min(640px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;border-radius:0!important;border-top:0!important;padding-top:0!important;scrollbar-width:thin}'
-      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 0 10px -22px;width:calc(100% + 44px);max-width:none;align-self:flex-start;padding:6px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
+      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 0 8px -22px;width:calc(100% + 44px);max-width:none;align-self:flex-start;padding:4px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
       +'.fg-back-idl{justify-self:start}.fg-back-idr{justify-self:end;display:flex;align-items:center;gap:6px}'
       +'.fg-back-idc{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}'
       +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:0 1 auto;min-width:0;max-width:170px;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 10px;line-height:1.2}'
@@ -120,12 +120,14 @@
       +'.fg-back-open{min-width:0}'
       +'.fg-back-open .bb-addition-body,.fg-back-daterow .bb-addition-body{margin:0 0 8px;padding:0 0 6px;border-bottom:1px dotted var(--bb-accent)}'
       +'.fg-back-3x5 .bb-addition-body[data-fg-title]::before{content:attr(data-fg-title);display:block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:3px}'
-      +'.fg-back-checks{display:flex;flex-direction:column;gap:4px;padding-right:12px;border-right:1px solid var(--bb-accent);min-width:88px;align-self:stretch}'
+      +'.fg-back-checks{display:flex;flex-direction:column;gap:1px;padding-right:12px;border-right:1px solid var(--bb-accent);min-width:88px;align-self:stretch}'
       +'.fg-back-checks .bb-field.bb-addition{width:auto;margin:0}'
+      +'.fg-back-checks .bb-addition-label{min-height:0}'
       +'.fg-back-checks #bb-d-add-notes-wrap{display:none}'
       // Priority + Subject share one line; Show-on-front sits right under it.
       +'.fg-back-toprow{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end;width:100%}'
-      +'.fg-back-toprow .bb-field{margin-bottom:6px}'
+      +'.fg-back-toprow .bb-field{margin-bottom:4px}'
+      +'#bb-detail-overlay .fg-back-task .bb-front-check{margin:2px 0 0}'
       +'.fg-back-toprow .bb-field:first-child{justify-self:start;width:auto}'
       +'.fg-back-toprow .bb-field:last-child{grid-column:2;width:200px;max-width:100%;min-width:0}'
       // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
@@ -150,14 +152,14 @@
       +'.fg-back-3x5 .bb-field textarea{min-height:36px}'
       // One icon row across the bottom; pencil lights up while Notes is open.
       // Full card width so its top line runs edge to edge; the buttons themselves ride the right end.
-      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-end;gap:6px;margin:auto 0 0 -22px;padding:6px 22px 0;width:calc(100% + 44px);max-width:none;align-self:flex-start;box-sizing:border-box}'
+      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-end;gap:6px;margin:auto 0 0 -22px;padding:4px 22px 0;width:calc(100% + 44px);max-width:none;align-self:flex-start;box-sizing:border-box}'
       +'#bb-detail-overlay .fg-back-3x5{padding-bottom:8px!important}'
       // Briefing Card back only: the card is a column so its icon row rides the lower right corner.
       +'#bb-detail-overlay .fg-back-3x5{display:flex;flex-direction:column}'
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
       +'#bb-detail-overlay .fg-back-3x5 .bbw{flex:1 0 auto}'
       // Task is exactly three full lines tall (Larry, Sept 29 2026); it scrolls inside itself past that.
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{line-height:1.25;height:calc(3.75em + 14px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{line-height:1.25;height:calc(3.75em + 10px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
