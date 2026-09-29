@@ -125,6 +125,8 @@
     // now Idea/Plan get their own defaults (_sboardDefaultBoardBg above).
     var bg=c||_sboardDefaultBoardBg();
     if(w) w.style.background=bg;
+    var vpEl=document.getElementById('sc-board-viewport');
+    if(vpEl) vpEl.style.background=bg;
     if(areaEl) areaEl.style.background=bg;
     if(clusterEl) clusterEl.style.background=c||'';
     if(swEl) swEl.style.background=c||'';

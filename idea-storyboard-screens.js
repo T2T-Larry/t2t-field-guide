@@ -498,6 +498,17 @@
         +'.sb-overlay{position:fixed;inset:0;z-index:200;background:rgba(26,58,92,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
         +'.sb-overlay.active{display:flex}'
         +'#sc-board-wrap{text-align:left;overflow-x:auto;padding-bottom:4px;flex:1}'
+        // Infinite canvas camera (board-canvas-camera.js), Sept 29 2026. Until
+        // the camera attaches, the viewport takes no box of its own
+        // (display:contents), so the board lays out and scrolls exactly as
+        // before. Once attached, the viewport fills the space under the header
+        // and clips; the wrap becomes the canvas (natural size, moved and
+        // scaled from its top-left) and the camera owns panning.
+        +'#sc-board-viewport{display:contents}'
+        +'#sc-board-viewport.isx-camera{display:flex;flex:1;min-height:0;position:relative;overflow:hidden;cursor:grab}'
+        +'#sc-board-viewport.isx-camera.isx-panning{cursor:grabbing}'
+        +'#sc-board-viewport.isx-camera #sc-board-wrap{flex:0 0 auto;position:relative;overflow:visible;width:max-content;min-width:100%;align-self:stretch;transform-origin:0 0;padding-bottom:0}'
+        +'#sc-board-viewport.isx-camera #sc-board-wrap>*{cursor:auto}'
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
         +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:calc(10px * var(--fg-text-scale,1))}'
         // Sept 5 2026 -- found the real source of Larry's "still see a
@@ -1198,7 +1209,12 @@
       +'</div>'
       +'<div id="sc-divider"></div>'
       +'<div id="sc-status">Loading…</div>'
-      +'<div id="sc-board-wrap"></div>'
+      // #sc-board-viewport (Sept 29 2026): the camera's window onto the board.
+      // #sc-board-wrap stays the one element every render clears and refills;
+      // the camera moves/scales it from outside, so nothing that draws the
+      // board had to change. Without the camera script the viewport is
+      // display:contents (see the CSS) and the board scrolls natively as before.
+      +'<div id="sc-board-viewport"><div id="sc-board-wrap"></div></div>'
       +'</div></div>';
     fg.appendChild(div.firstChild);
     // These live as direct children of fg-root, NOT inside the Storyboard's
@@ -1321,6 +1337,10 @@
     Promise.all([_sboardLoadMyRoots(), _sboardEnsureHiddenTypesLoaded(), T2TData.ensureBoardTypeColorsLoaded('idea_bg')]).then(function(){ _sboardRenderTypePicker(); _sboardRenderOrgName(); _sboardApplyBoardBg(); });
     var boardWrapBgEl=document.getElementById('sc-board-wrap');
     if(boardWrapBgEl) boardWrapBgEl.addEventListener('dblclick', function(e){ if(e.target===boardWrapBgEl || e.target.id==='sc-groups-wrap') openBoardBgPicker(); });
+    // Under the camera the empty board can also be the viewport itself
+    // (the area past the edge of the columns), Sept 29 2026.
+    var boardViewportBgEl=document.getElementById('sc-board-viewport');
+    if(boardViewportBgEl) boardViewportBgEl.addEventListener('dblclick', function(e){ if(e.target===boardViewportBgEl) openBoardBgPicker(); });
     // Header band is now the same single color as the board (see
     // _sboardApplyBoardBg) — double-click there opens the same picker,
     // same gesture as double-clicking the board itself. Larry, August 1
@@ -1329,6 +1349,7 @@
     if(scHeaderAreaEl) scHeaderAreaEl.addEventListener('dblclick', function(e){ if(e.target===scHeaderAreaEl) openBoardBgPicker(); });
     _sboardApplyBoardBg();
     _sboardWireAutoScroll();
+    _sboardAttachCamera();
 
     // Opening the TOPIC card, Aug 13 2026 (Larry: "Double click to open
     // the TOPIC card") -- double-click is the way in. Was a second way
@@ -1507,12 +1528,69 @@
   // little on every dragover tick (which fires continuously), covering both
   // the horizontal row of header columns and, in tall columns, the vertical
   // scroll on the outer card.
+  // Infinite canvas camera for Blue Sky, Sept 29 2026 (Larry: every board is
+  // its own world on the infinite canvas, wheel to zoom). Blue Sky stores
+  // cards by header column and rank, not x,y, so it plugs into the camera as
+  // a computed layout: the camera is told how big the laid-out board is and
+  // how big one card is, and nothing about storage or rendering changes.
+  var _sboardCam=null;
+  function _sboardAttachCamera(){
+    if(_sboardCam || !window.T2TCanvasCamera || !T2TCanvasCamera.create) return;
+    var vp=document.getElementById('sc-board-viewport');
+    var wrap=document.getElementById('sc-board-wrap');
+    var screen=document.getElementById('s-sea-of-ideas-cluster');
+    if(!vp || !wrap || !screen) return;
+    _sboardCam=T2TCanvasCamera.create({
+      board:vp, scroller:vp, canvas:wrap,
+      // Everything the board drew, in wrap-local layout pixels (offset sizes
+      // ignore the camera's scale, so this is the same at any zoom).
+      contentBox:function(){
+        var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+        Array.prototype.forEach.call(wrap.children,function(k){
+          var x=k.offsetLeft, y=k.offsetTop, w=k.offsetWidth, h=k.offsetHeight;
+          if(!w && !h) return;
+          if(x<x0) x0=x; if(y<y0) y0=y;
+          if(x+w>x1) x1=x+w; if(y+h>y1) y1=y+h;
+        });
+        return x0===Infinity ? null : {x:x0,y:y0,w:x1-x0,h:y1-y0};
+      },
+      // One header card sets how close the closest zoom goes.
+      cardSize:function(){
+        var t=wrap.querySelector('.sc-stack-tile');
+        return t ? {w:t.offsetWidth,h:t.offsetHeight} : null;
+      },
+      // Empty board: the viewport past the columns, the wrap, and the row
+      // or strip containers that only hold cards.
+      isBackground:function(t){
+        return t===vp || t===wrap || t.id==='sc-groups-wrap' || t.id==='sc-role-shortcuts-wrap' || t.id==='sc-pending-collab-wrap';
+      }
+    });
+  }
+
   function _sboardWireAutoScroll(){
     var hWrap=document.getElementById('sc-board-wrap');
     var vWrap=document.getElementById('s-sea-of-ideas-cluster');
     var EDGE=56, MAXSPEED=16;
+    // Under the camera nothing scrolls natively, so a drag near any edge of
+    // the viewport pans the camera instead (Sept 29 2026).
+    function edgePanCamera(e){
+      if(!_sboardCam) return false;
+      var vp=document.getElementById('sc-board-viewport');
+      if(!vp) return false;
+      var rect=vp.getBoundingClientRect();
+      var x=e.clientX, y=e.clientY;
+      if(x<rect.left || x>rect.right || y<rect.top || y>rect.bottom) return true;
+      var dx=0, dy=0;
+      if(x-rect.left<EDGE) dx=MAXSPEED*(1-(x-rect.left)/EDGE);
+      else if(rect.right-x<EDGE) dx=-MAXSPEED*(1-(rect.right-x)/EDGE);
+      if(y-rect.top<EDGE) dy=MAXSPEED*(1-(y-rect.top)/EDGE);
+      else if(rect.bottom-y<EDGE) dy=-MAXSPEED*(1-(rect.bottom-y)/EDGE);
+      if(dx||dy) _sboardCam.panBy(dx, dy);
+      return true;
+    }
     function edgeScrollX(e){
       if(!hWrap) return;
+      if(edgePanCamera(e)) return;
       var rect=hWrap.getBoundingClientRect();
       var x=e.clientX;
       if(x<rect.left || x>rect.right) return;
@@ -1521,6 +1599,7 @@
     }
     function edgeScrollY(e){
       if(!vWrap) return;
+      if(_sboardCam) return;
       var rect=vWrap.getBoundingClientRect();
       var y=e.clientY;
       if(y<rect.top || y>rect.bottom) return;
@@ -1589,6 +1668,7 @@
     if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
       _sboardAlphaHeaderView=false;
       _sboardLastRenderedTopicId=T2TShared.currentTopicId;
+      if(_sboardCam) _sboardCam.reset(false);   // a different board starts from the top-left, same as Sea of Ideas
     }
     if(statusEl && !fromCache){ statusEl.textContent='Loading…'; statusEl.classList.remove('err'); }
     try{
@@ -2302,7 +2382,7 @@
         function inPromoteZone(e){
           if(!_sboardDraggingHeaderId) return false;
           var rect=block.getBoundingClientRect();
-          return (e.clientY - rect.top) <= PROMOTE_ZONE_H;
+          return (e.clientY - rect.top) <= PROMOTE_ZONE_H * (_sboardCam ? _sboardCam.getScale() : 1);
         }
         block.addEventListener('dragover', function(e){
           if(inPromoteZone(e)){ e.stopPropagation(); hdDragOver(e); }
