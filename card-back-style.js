@@ -61,5 +61,77 @@
     document.head.appendChild(st);
   }
 
-  window.FGCardBack = { inject: inject, colors: { idea: IDEA } };
+  // ============================================================
+  // SHARED 3x5 SHAPE + ID BAND, Sept 29 2026 -- Larry: "Backs of cards:
+  // shape them like the cards themselves in 3x5 proportion with the top
+  // of the back of the cards also displaying the ID BAND."
+  //
+  // Applies to every card back that uses the shared Briefing Card back
+  // building blocks: the Briefing Card back (#bb-detail-overlay) and the
+  // Idea Card back (.sb-details-card). Both opt in with the class
+  // fg-back-3x5 and put FGCardBack.bandHTML() as the card's first child.
+  //
+  // SHAPE: portrait 3 wide : 5 tall (aspect-ratio:3/5). The width is the
+  // old 340px, capped so the height (width x 5/3 = ~567px) always fits
+  // the window; the one number to change to flip orientation or size is
+  // --fg-back-w plus the aspect-ratio below. Content taller than the card
+  // scrolls INSIDE it -- the card itself never grows past 3x5.
+  //
+  // ID BAND: the same two fields every board's ID Band carries (TOPIC and
+  // Board Type), drawn with the boards' own .bb-topic-hit/.bb-boardkind-hit
+  // look and sticky at the top so it stays visible while the back scrolls.
+  // The text is read live from the ID Band of the board the card is
+  // sitting on (paintBand), so it can never drift from what the band
+  // behind the card says -- one source of truth, no second copy.
+  // ============================================================
+  var TOPIC_IDS = ['bb-topic-hit','sc-topic-text'];
+  var KIND_IDS  = ['bb-boardkind-trigger','sc-board-kind-trigger'];
+
+  function _liveText(ids){
+    for(var i=0;i<ids.length;i++){
+      var el=document.getElementById(ids[i]);
+      if(!el) continue;
+      var t=(el.textContent||'').replace(/\s+/g,' ').trim();
+      if(t && t!=='…' && t!=='...') return t;
+    }
+    return '';
+  }
+
+  function injectShape(){
+    if(document.getElementById('fg-cardback-shape-style')) return;
+    var st=document.createElement('style');
+    st.id='fg-cardback-shape-style';
+    st.textContent=''
+      // !important on the frame numbers: the Briefing Card, Idea Card and
+      // older Idea frame rules all set their own width/max-height and are
+      // injected at different times, so source order can't be relied on.
+      +'.fg-back-3x5{--fg-back-w:min(340px,90vw,calc(88vh * 0.6));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:3/5!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important}'
+      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:-18px -22px 12px;padding:8px 22px;background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
+      +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:1 1 0;min-width:0;max-width:none;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 8px;line-height:1.2}'
+      +'.fg-back-idband .fg-back-empty{display:none}';
+    document.head.appendChild(st);
+  }
+
+  // The band's markup. Empty until paintBand fills it.
+  function bandHTML(){
+    injectShape();
+    return '<div class="fg-back-idband"><span class="bb-topic-hit fg-back-topic"></span><span class="bb-boardkind-hit fg-back-kind"></span></div>';
+  }
+
+  // Fill (or refresh) the band inside one card-back element from the live
+  // ID Band. Safe to call every time a back opens.
+  function paintBand(cardEl){
+    if(!cardEl) return;
+    var band=cardEl.querySelector('.fg-back-idband');
+    if(!band) return;
+    var t=band.querySelector('.fg-back-topic'), k=band.querySelector('.fg-back-kind');
+    var tv=_liveText(TOPIC_IDS), kv=_liveText(KIND_IDS);
+    if(t){ t.textContent=tv; t.title=tv; t.classList.toggle('fg-back-empty', !tv); }
+    if(k){ k.textContent=kv; k.title=kv; k.classList.toggle('fg-back-empty', !kv); }
+    band.style.display = (tv||kv) ? '' : 'none';
+  }
+
+  injectShape();
+
+  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, paintBand: paintBand, colors: { idea: IDEA } };
 })();

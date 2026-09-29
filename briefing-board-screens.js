@@ -407,7 +407,9 @@
       var detailOv=document.createElement('div');
       detailOv.id='bb-detail-overlay'; detailOv.className='bb-overlay';
       detailOv.innerHTML=
-         '<div class="bb-overlay-card">'
+         '<div class="bb-overlay-card fg-back-3x5">'
+          // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
+          +(window.FGCardBack ? FGCardBack.bandHTML() : '')
           // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
           // Routine card icon from top of card") -- redundant now that
           // Routine is its own checkbox further down: picking a

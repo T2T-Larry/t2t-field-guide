@@ -293,7 +293,9 @@
     // BB-only items (dates, budget, checklist, reviewed by) stay on BB.
     if(typeof injectBriefingBoardStyles==='function') injectBriefingBoardStyles();
     if(window.FGCardBack) FGCardBack.inject();
-    ov.innerHTML='<div class="sc-overlay-card sb-details-card bb-overlay-card fg-cardback-idea" style="position:relative">'
+    ov.innerHTML='<div class="sc-overlay-card sb-details-card bb-overlay-card fg-cardback-idea fg-back-3x5" style="position:relative">'
+      // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
+      + (window.FGCardBack ? FGCardBack.bandHTML() : '')
       + '<div id="sb-details-head" class="bb-overlay-head">'
       + '<span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Idea Card</span>'
       + '<button id="sb-close" class="bb-close" aria-label="Close">✕</button>'
@@ -423,6 +425,7 @@
       + '<button id="sb-trash-no" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
       + '</div></div></div>'
       + '</div>';
+    if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'));
     ov.classList.add('active');
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
     // Card overlay drags via _bbMakeDraggable in briefing-board.js, this
