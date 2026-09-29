@@ -650,7 +650,8 @@
         var row=document.createElement('div'); row.className='fg-back-toprow';
         priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
-        FGCardBack.checkRegion(bbw);
+        // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
+        FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
         // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
         if(sb && db){
@@ -662,6 +663,7 @@
         if(colorRow && dup){
           var ux=document.createElement('div'); ux.className='fg-back-util-extra';
           colorRow.parentNode.insertBefore(ux, colorRow.nextSibling); ux.appendChild(dup);
+          ['bb-d-add-budget-wrap','bb-d-add-links-wrap'].forEach(function(id){ var w=q(id); if(w) ux.appendChild(w); });
         }
         // Notes = the pencil along the bottom; it drives the (hidden) Notes checkbox so all existing saving/showing keeps working.
         var pen=q('bb-d-notes-pencil'), ncb=q('bb-d-add-notes');

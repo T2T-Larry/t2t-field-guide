@@ -106,7 +106,7 @@
       // !important on the frame numbers: the Briefing Card, Idea Card and
       // older Idea frame rules all set their own width/max-height and are
       // injected at different times, so source order can't be relied on.
-      +'.fg-back-3x5{--fg-back-w:min(600px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;border-radius:0!important;border-top:0!important;padding-top:0!important;scrollbar-width:thin}'
+      +'.fg-back-3x5{--fg-back-w:min(640px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;border-radius:0!important;border-top:0!important;padding-top:0!important;scrollbar-width:thin}'
       +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 -22px 10px;padding:6px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
       +'.fg-back-idl{justify-self:start}.fg-back-idr{justify-self:end;display:flex;align-items:center;gap:6px}'
       +'.fg-back-idc{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}'
@@ -135,7 +135,9 @@
       +'.fg-back-daterow .bb-date-row input[type=text]{min-width:0;flex:1 1 64px}'
       +'.fg-back-daterow .bb-date-row .bb-date-time{flex:0 1 48px}'
       // Utility extras (Duplicate) show with the gear's swatch row.
-      +'.fg-back-util-extra{display:none;gap:6px;margin-top:4px}'
+      +'.fg-back-util-extra{display:none;flex-direction:column;align-items:flex-start;gap:6px;margin-top:4px;width:100%}'
+      +'.fg-back-util-extra .bb-field{margin:0;width:100%}'
+      +'.fg-back-util-extra .bb-addition-body{margin-top:3px}'
       +'#bb-d-color-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
       // Checkbox list: smaller and darker (Larry, Sept 29 2026).
       +'.fg-back-3x5 .bb-addition-eyebrow{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;color:var(--bb-ink);opacity:1}'
@@ -147,11 +149,15 @@
       +'.fg-back-3x5 .bb-field label{font-size:calc(10px * var(--fg-text-scale,1));margin-bottom:2px}'
       +'.fg-back-3x5 .bb-field textarea{min-height:36px}'
       // One icon row across the bottom; pencil lights up while Notes is open.
-      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-start;gap:6px;margin-top:4px;width:100%}'
+      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-end;gap:6px;margin-top:auto;padding-top:6px;width:auto;align-self:flex-end}'
+      // Briefing Card back only: the card is a column so its icon row rides the lower right corner.
+      +'#bb-detail-overlay .fg-back-3x5{display:flex;flex-direction:column}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
+      +'#bb-detail-overlay .fg-back-3x5 .bbw{flex:1 0 auto}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
-      +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1.1;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
+      +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:.9;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
       +'.fg-back-idband .bb-icon-btn,.fg-back-idband .bb-close{flex:0 0 auto;width:26px;height:26px;min-width:0;padding:0;font-size:calc(13px * var(--fg-text-scale,1))}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
       ;
@@ -174,9 +180,10 @@
 
   // The checkbox region: every addition's opened body moves into a left column, and the addition checkboxes gather into a small dark list
   // on the right. Ids are untouched, so all the show/hide wiring keeps working. Everything else on the card stays full width.
-  function checkRegion(bbw){
+  function checkRegion(bbw, skipIds){
+    skipIds=skipIds||[];
     if(!bbw || bbw.querySelector('.fg-back-region')) return null;
-    var adds=Array.prototype.slice.call(bbw.querySelectorAll('.bb-addition'));
+    var adds=Array.prototype.slice.call(bbw.querySelectorAll('.bb-addition')).filter(function(w){ return skipIds.indexOf(w.id)<0; });
     if(!adds.length) return null;
     var region=document.createElement('div'), open=document.createElement('div'), checks=document.createElement('div');
     region.className='fg-back-region'; open.className='fg-back-open'; checks.className='fg-back-checks';
