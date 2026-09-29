@@ -106,26 +106,28 @@
       // !important on the frame numbers: the Briefing Card, Idea Card and
       // older Idea frame rules all set their own width/max-height and are
       // injected at different times, so source order can't be relied on.
-      +'.fg-back-3x5{--fg-back-w:min(600px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important}'
-      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:-18px -22px 12px;padding:8px 22px;background:inherit;border:0;box-sizing:border-box}'
-      +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:1 1 0;min-width:0;max-width:none;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 8px;line-height:1.2}'
+      +'.fg-back-3x5{--fg-back-w:min(600px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;border-radius:0!important;border-top:0!important;padding-top:0!important;scrollbar-width:thin}'
+      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 -22px 10px;padding:6px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
+      +'.fg-back-idl{justify-self:start}.fg-back-idr{justify-self:end;display:flex;align-items:center;gap:6px}'
+      +'.fg-back-idc{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}'
+      +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:0 1 auto;min-width:0;max-width:170px;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 10px;line-height:1.2}'
+      +'.fg-back-idband .bb-cdrop{position:relative;flex:0 1 auto;min-width:0}'
       +'.fg-back-idband .fg-back-empty{display:none}'
       // Layout (Sept 29 2026, Larry, round 2): the card is ONE full-width column -- except the checkbox region, which is two columns:
       // opened blocks on the left, the small dark checkbox list on the right. Each opened block carries its own small title.
       +'.fg-back-3x5 .bbw .bb-field{max-width:none;margin-bottom:8px}'
-      +'.fg-back-region{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:start;width:100%}'
+      +'.fg-back-region{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;align-items:start;width:100%}'
       +'.fg-back-open{min-width:0}'
       +'.fg-back-open .bb-addition-body,.fg-back-daterow .bb-addition-body{margin:0 0 8px;padding:0 0 6px;border-bottom:1px dotted var(--bb-accent)}'
       +'.fg-back-3x5 .bb-addition-body[data-fg-title]::before{content:attr(data-fg-title);display:block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:3px}'
-      +'.fg-back-checks{display:flex;flex-direction:column;gap:5px;padding-left:12px;border-left:1px dotted var(--bb-accent);min-width:88px}'
+      +'.fg-back-checks{display:flex;flex-direction:column;gap:4px;padding-right:12px;border-right:1px solid var(--bb-accent);min-width:88px;align-self:stretch}'
       +'.fg-back-checks .bb-field.bb-addition{width:auto;margin:0}'
       +'.fg-back-checks #bb-d-add-notes-wrap{display:none}'
       // Priority + Subject share one line; Show-on-front sits right under it.
       +'.fg-back-toprow{display:flex;gap:12px;align-items:flex-end;width:100%}'
       +'.fg-back-toprow .bb-field{margin-bottom:6px}'
       +'.fg-back-toprow .bb-field:first-child{flex:0 0 auto;width:auto}'
-      +'.fg-back-toprow .bb-field:last-child{flex:1 1 0;min-width:0}'
-      +'.fg-back-3x5 .fg-back-toprow + .bb-front-check{margin:-2px 0 6px}'
+      +'.fg-back-toprow .bb-field:last-child{flex:0 1 200px;min-width:0}'
       // Start Date + Due Date on one line, Add-to-Calendar at the right end (only while a date is open).
       +'.fg-back-daterow{display:flex;gap:10px;align-items:flex-end}'
       +'.fg-back-daterow .bb-addition-body{flex:1 1 0;min-width:0}'
@@ -145,9 +147,10 @@
       +'.fg-back-3x5 .bb-priorities{gap:3px}'
       +'.fg-back-3x5 .bb-pri-btn{flex:0 0 auto;min-width:26px;padding:2px 6px;font-size:calc(10px * var(--fg-text-scale,1));line-height:1.3}'
       +'.fg-back-3x5 .bb-field label{font-size:calc(10px * var(--fg-text-scale,1));margin-bottom:2px}'
-      +'.fg-back-3x5 .bb-field textarea{min-height:44px}'
+      +'.fg-back-3x5 .bb-field textarea{min-height:36px}'
       // One icon row across the bottom; pencil lights up while Notes is open.
-      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;gap:4px;margin-top:6px;width:100%}'
+      +'.fg-back-3x5 .bb-action-row{flex-wrap:nowrap;justify-content:flex-start;gap:6px;margin-top:4px;width:100%}'
+      +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
       +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1.1;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
@@ -165,10 +168,10 @@
     opts=opts||{};
     injectShape();
     var topic = opts.projectPicker
-      ? '<div class="bb-cdrop"><button type="button" class="bb-topic-hit bb-cdrop-trigger fg-back-topic fg-back-own" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="cursor:pointer;width:100%"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
+      ? '<div class="bb-cdrop"><button type="button" class="bb-topic-hit bb-cdrop-trigger fg-back-topic fg-back-own" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="cursor:pointer"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
       : '<span class="bb-topic-hit fg-back-topic"></span>';
     var title = opts.titleHTML ? '<span class="fg-back-title">'+opts.titleHTML+'</span>' : '';
-    return '<div class="fg-back-idband">'+title+topic+'<span class="bb-boardkind-hit fg-back-kind"></span>'+(opts.extraHTML||'')+'</div>';
+    return '<div class="fg-back-idband"><div class="fg-back-idl">'+title+'</div><div class="fg-back-idc">'+topic+'<span class="bb-boardkind-hit fg-back-kind"></span></div><div class="fg-back-idr">'+(opts.extraHTML||'')+'</div></div>';
   }
 
   // The checkbox region: every addition's opened body moves into a left column, and the addition checkboxes gather into a small dark list
@@ -180,7 +183,7 @@
     var region=document.createElement('div'), open=document.createElement('div'), checks=document.createElement('div');
     region.className='fg-back-region'; open.className='fg-back-open'; checks.className='fg-back-checks';
     adds[0].parentNode.insertBefore(region, adds[0]);
-    region.appendChild(open); region.appendChild(checks);
+    region.appendChild(checks); region.appendChild(open);
     adds.forEach(function(w){
       var body=w.querySelector('.bb-addition-body');
       var eb=w.querySelector('.bb-addition-eyebrow');

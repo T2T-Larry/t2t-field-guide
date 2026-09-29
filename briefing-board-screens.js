@@ -645,11 +645,11 @@
       (function(){
         var bbw=detailOv.querySelector('.bbw'); if(!bbw || !window.FGCardBack) return;
         var q=function(id){ return detailOv.querySelector('#'+id); };
-        // Priority + Subject on one line, Show-on-front right under it, Task full width below.
+        // Priority + Subject on one line, Task full width below with its Show-on-front.
         var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
         var row=document.createElement('div'); row.className='fg-back-toprow';
         priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
-        var front=q('bb-d-contents-front-row'); if(front) row.parentNode.insertBefore(front, row.nextSibling);
+        // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         FGCardBack.checkRegion(bbw);
         // Start Date + Due Date on one line with Add-to-Calendar at the right end.
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body'), cal=q('bb-d-calendar');
