@@ -71,8 +71,9 @@
   // Idea Card back (.sb-details-card). Both opt in with the class
   // fg-back-3x5 and put FGCardBack.bandHTML() as the card's first child.
   //
-  // SHAPE: portrait 3 wide : 5 tall (aspect-ratio:3/5). The width is the
-  // old 340px, capped so the height (width x 5/3 = ~567px) always fits
+  // SHAPE: landscape 5 wide : 3 tall (aspect-ratio:5/3), like a real index
+  // card (Larry, Sept 29 2026: "5 wide and 3 tall" -- first cut was portrait).
+  // Width 600px, capped so the height (width x 3/5 = 360px) always fits
   // the window; the one number to change to flip orientation or size is
   // --fg-back-w plus the aspect-ratio below. Content taller than the card
   // scrolls INSIDE it -- the card itself never grows past 3x5.
@@ -105,7 +106,7 @@
       // !important on the frame numbers: the Briefing Card, Idea Card and
       // older Idea frame rules all set their own width/max-height and are
       // injected at different times, so source order can't be relied on.
-      +'.fg-back-3x5{--fg-back-w:min(340px,90vw,calc(88vh * 0.6));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:3/5!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important}'
+      +'.fg-back-3x5{--fg-back-w:min(600px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important}'
       +'.fg-back-idband{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:-18px -22px 12px;padding:8px 22px;background:var(--bb-bg);border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
       +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:1 1 0;min-width:0;max-width:none;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 8px;line-height:1.2}'
       +'.fg-back-idband .fg-back-empty{display:none}';
