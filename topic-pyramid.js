@@ -261,6 +261,26 @@
     if(arrowEl && arrowEl.isConnected && !arrowEl.classList.contains('tp-none')) arrowEl.click();
   }
 
+  // (+) at the bottom of the current Topic's children, Sept 29 2026 -- Larry:
+  // "show all the current topics with a (+) at the bottom to add a new topic
+  // if desired." Same dashed-circle (+) every other dropdown ends with.
+  // Only drawn when the caller supplies opts.onAdd(parentId); the pyramid
+  // itself still knows nothing about how a topic gets created.
+  function _tpAddRow(menuEl, opts){
+    if(typeof opts.onAdd!=='function') return;
+    var wrap=document.createElement('div');
+    wrap.className='tp-addrow';
+    wrap.style.cssText='display:flex;justify-content:center;padding:6px 0 2px;margin-top:4px;border-top:1px solid rgba(128,128,128,.3)';
+    var btn=document.createElement('button');
+    btn.type='button';
+    btn.title='Add a new topic under '+(opts.current.name||'this');
+    btn.textContent='+';
+    btn.style.cssText='width:22px;height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed currentColor;border-radius:50%;color:inherit;font:inherit;font-weight:700;line-height:1;cursor:pointer;opacity:.75;padding:0';
+    btn.addEventListener('click', function(e){ e.stopPropagation(); opts.onAdd(opts.current.id); });
+    wrap.appendChild(btn);
+    menuEl.appendChild(wrap);
+  }
+
   // Every {id,name} may also carry priority ('HH'..'L') -- Sept 23 2026:
   // shown as a badge, and children are listed highest priority first.
   // opts = {
@@ -302,6 +322,7 @@
         _tpAutoExpand(built.arrow, kid, opts);
       });
       _tpDecorate(topRows);
+      _tpAddRow(menuEl, opts);
     }, function(){
       loadingRow.textContent='Couldn\'t load — try again.';
       _tpDecorate(topRows);

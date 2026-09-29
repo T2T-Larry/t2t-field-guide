@@ -705,6 +705,7 @@
       },
       getChildren:function(id){ return Promise.resolve(_sboardPyramidChildren(id)); },
       goToTopic:function(id){ if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]); },
+      onTopicAdded:function(row){ _sboardAllRowsById[row.id]=row; },   // so the new topic shows in the list at once
       closeOthers:_sboardCloseAllDropdowns,
       toast:_sboardShowToast,
       // The two choices that are this board's own flow: switching between

@@ -103,18 +103,17 @@
     function wireTopic(){
       var trigger=$(ids.topicTrigger), menu=$(ids.topicMenu);
       if(!trigger || !menu) return;
-      trigger.addEventListener('click', function(e){
-        e.stopPropagation();
-        var willOpen=menu.hidden;
-        beforeOpen(willOpen ? ids.topicMenu : null);
-        if(!willOpen){ menu.hidden=true; return; }
+      var openSeq=0;
+      function openPyramid(){
+        var seq=++openSeq;
         Promise.resolve(cfg.getTopic ? cfg.getTopic() : null).then(function(t){
           if(!t || !t.current || !window.TopicPyramid) return;
-          if(!menu.hidden) return;     // opened/closed again while we waited
+          if(seq!==openSeq) return;   // closed or re-opened while we waited
           var rowEl=window.TopicPyramid.render(menu, {
             ancestors:t.ancestors || [],
             current:t.current,
             getChildren:cfg.getChildren,
+            onAdd:addTopic,
             onNavigate:function(id){
               menu.hidden=true;
               if(String(id)!==String(t.current.id) && cfg.goToTopic) cfg.goToTopic(id);
@@ -123,6 +122,24 @@
           placeMenu(menu, trigger, 200);
           if(rowEl && rowEl.scrollIntoView) rowEl.scrollIntoView({block:'center'});
         });
+      }
+      // (+) at the bottom: name it, create it under the current Topic, then
+      // show the list again with the new topic in it.
+      function addTopic(parentId){
+        if(!window.T2TData || !window.T2TData.createHeader){ toast('Adding topics isn’t available right now.'); return; }
+        var name=window.prompt('Name for the new topic:');
+        if(!name || !name.trim()) return;
+        window.T2TData.createHeader(name.trim(), parentId).then(function(row){
+          if(cfg.onTopicAdded) cfg.onTopicAdded(row);
+          menu.hidden=true; openPyramid();
+        }, function(err){ toast('Could not add the topic. ' + ((err && err.message) || '')); });
+      }
+      trigger.addEventListener('click', function(e){
+        e.stopPropagation();
+        var willOpen=menu.hidden;
+        beforeOpen(willOpen ? ids.topicMenu : null);
+        if(!willOpen){ openSeq++; menu.hidden=true; return; }
+        openPyramid();
       });
     }
 
