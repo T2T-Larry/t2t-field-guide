@@ -107,7 +107,7 @@
       // older Idea frame rules all set their own width/max-height and are
       // injected at different times, so source order can't be relied on.
       +'.fg-back-3x5{--fg-back-w:min(640px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;border-radius:0!important;border-top:0!important;padding-top:0!important;scrollbar-width:thin}'
-      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 -22px 10px;padding:6px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
+      +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 0 10px -22px;width:calc(100% + 44px);max-width:none;align-self:flex-start;padding:6px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
       +'.fg-back-idl{justify-self:start}.fg-back-idr{justify-self:end;display:flex;align-items:center;gap:6px}'
       +'.fg-back-idc{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}'
       +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:0 1 auto;min-width:0;max-width:170px;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 10px;line-height:1.2}'
@@ -154,6 +154,9 @@
       +'#bb-detail-overlay .fg-back-3x5{display:flex;flex-direction:column}'
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
       +'#bb-detail-overlay .fg-back-3x5 .bbw{flex:1 0 auto}'
+      // Task takes whatever height is left, so there is never empty space under the icon row; it never shrinks below ~3 lines.
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}'
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{flex:1 1 auto;min-height:52px;resize:none}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.

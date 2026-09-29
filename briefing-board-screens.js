@@ -651,6 +651,7 @@
         priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
+        var taskF=q('bb-d-task').closest('.bb-field'); if(taskF) taskF.classList.add('fg-back-task');
         FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
         // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
