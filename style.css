@@ -815,9 +815,9 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      the boards' ID Band in miniature -- NEW as a plain title on the left,
      head / utility / X buttons (same white 30px icon buttons as a board's
      ID Band, IDBand.TOKENS.iconBtn) in the upper right. */
-  .isx-pcard.isx-pcard-uni{--uni-accent:#7FB2DD;width:600px;max-width:94vw;aspect-ratio:5/3;max-height:min(640px,90vh);background:#F2F8FD;border:none;border-top:6px solid #7FB2DD;
+  .isx-pcard.isx-pcard-uni{--uni-accent:#7FB2DD;width:600px;max-width:94vw;aspect-ratio:5/3;max-height:min(640px,90vh);background:#F2F8FD;border:none;
     border-radius:3px;box-shadow:0 10px 30px rgba(26,58,92,.30);padding:18px 22px 22px}
-  .isx-pcard.isx-pcard-uni.isx-pcard-bb{--uni-accent:#C9A87C;background:#FFFDF7;border-top-color:#C9A87C;box-shadow:0 10px 30px rgba(59,37,16,.35)}
+  .isx-pcard.isx-pcard-uni.isx-pcard-bb{--uni-accent:#C9A87C;background:#FFFDF7;border-top:none;box-shadow:0 10px 30px rgba(59,37,16,.35)}
   .isx-p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;cursor:grab;user-select:none}
   .isx-p-newtitle{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--isx-navy);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -957,5 +957,5 @@ body.t2t-bare-screen{background:#d0d0d0!important}
      Blue Sky = light blue, Briefing = tan, Notebook = sage green. */
   .isx-pcard.isx-pcard-uni{border-radius:3px}
   .isx-pcard.isx-pcard-uni.isx-pcard-nb{--isx-navy:#4F7A5A;--isx-paleblue:#9DBFA5;--brand-blue-gray:#4F7A5A;--uni-accent:#7FAF8A;
-    background:#F4F9F4;border-top-color:#7FAF8A;box-shadow:0 10px 30px rgba(40,70,50,.30)}
+    background:#F4F9F4;border-top:none;box-shadow:0 10px 30px rgba(40,70,50,.30)}
   .isx-pcard.isx-pcard-uni.isx-pcard-nb .isx-save:hover{background:#365a40}
