@@ -189,7 +189,7 @@
     // the future resize ceiling/floor and the default for a brand-new
     // upload change), so nothing already on screen jumps size.
     minSize:IDBand.TOKENS.logo.minSize, maxSize:IDBand.TOKENS.logo.maxSize, defaultSize:IDBand.TOKENS.logo.defaultSize, minFrameFromCrop:12,
-    uploadPrefix:'logo', subjectLabel:'project',
+    uploadPrefix:'logo', subjectLabel:'topic',
     // Sept 13 2026 fix -- was a direct reference (showToast:_sboardShowToast),
     // which reads _sboardShowToast's value the instant this object literal
     // runs (this file's own top-level code, executed as the script loads).
@@ -1084,7 +1084,7 @@
       // they were, just with no sc-title-trigger visible for them to
       // update; harmless no-ops, same as BB's own _bbRenderBoardPicker.
       +'<div id="sc-project-wrap" class="sc-mh-typebox" style="display:none">'
-      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Topic</div><div class="sc-cdrop" id="sc-title-cdrop"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your projects; double-click for the fast-jump list"></button><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div></div>'
+      +'<div class="sc-mh-fieldgrp"><div class="sc-mh-eyebrow">Topic</div><div class="sc-cdrop" id="sc-title-cdrop"><button type="button" class="sc-hdr-select sc-mh-field-trigger" id="sc-title-trigger" title="Click to open your topics; double-click for the fast-jump list"></button><div class="sc-cdrop-menu" id="sc-title-menu" hidden></div></div></div>'
       +'</div>'
       // TOPIC -- Sept 19 2026, matching BB's own redesign: the up/down
       // arrow chips are gone ("too cluttered" on BB). Clicking TOPIC
@@ -1111,7 +1111,7 @@
       // pushed down less/positioned differently than boardkindWrap once
       // the two are supposed to sit on one shared centered row.
       +'<div class="sc-cdrop" id="sc-topic-cdrop" style="display:flex;align-items:center">'
-      +'<div id="sc-topic-box" data-header-id="__topic__" title="Click to see this project\'s headers"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div></div>'
+      +'<div id="sc-topic-box" data-header-id="__topic__" title="Click to see this topic\'s headers"><span id="sc-topic-text"></span><div id="sc-topic-badge"></div></div>'
       +'<div class="sc-cdrop-menu sc-topic-tree" id="sc-topic-menu" hidden></div>'
       +'</div>'
       +'</div>'
@@ -1293,7 +1293,7 @@
         // MASTER wording applies board-wide, not just here -- see
         // briefing-board.js's own root PROJECT label.
         titleTrigger.textContent='MASTER';
-        titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
+        titleTrigger.title='Click to open your topics; double-click for the fast-jump list';
         titleTrigger.addEventListener('dblclick', function(e){
           e.stopPropagation();
           openProjectSwitcher();

@@ -1134,7 +1134,7 @@
         var empty=document.createElement('div');
         empty.className='sc-cdrop-row';
         empty.style.cssText='cursor:default;opacity:.6';
-        empty.textContent=projRow?'No one on this project yet.':'Pick a PROJECT first.';
+        empty.textContent=projRow?'No one on this topic yet.':'Pick a TOPIC first.';
         menu.appendChild(empty);
       } else {
         people.forEach(function(p){
@@ -1155,11 +1155,11 @@
         var addBtn=document.createElement('button');
         addBtn.type='button';
         addBtn.className='sc-dotted-add-btn';
-        addBtn.title='Add someone to this project';
+        addBtn.title='Add someone to this topic';
         addBtn.textContent='+';
         addBtn.addEventListener('click', async function(ev){
           ev.stopPropagation();
-          var email=window.prompt('Email of the T2T member to add to this project:');
+          var email=window.prompt('Email of the T2T member to add to this topic:');
           if(!email || !email.trim()) return;
           var res=await bridge.addMember(projRow, email.trim());
           if(!res.ok){ window.alert(res.msg||'Could not add them.'); return; }

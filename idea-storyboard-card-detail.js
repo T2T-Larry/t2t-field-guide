@@ -606,7 +606,7 @@
       // Parking Lot / NEW / Purpose / MISC are real places a card can go (the
       // old move panel offered them), so they stay in the list; only the
       // system buckets that aren't destinations are hidden.
-      var ANYWHERE_RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
+      var ANYWHERE_RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS','MASTER'];
       var ROOT_ID='__anywhere_root__';
       function nodeFrom(h){ return {id:h.id, name:h.text_content||h.text||'(untitled)', priority:h.priority||''}; } // priority: Sept 23 2026, shown on every Pyramid
       function getChildren(id){

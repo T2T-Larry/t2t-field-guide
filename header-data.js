@@ -57,7 +57,7 @@
   // name yet -- or an old per-Topic "(Thumb Rest)"-style catch-all, see
   // ensureNewAdditionsHeader below -- still gets excluded from ordinary
   // header listings, not just the current name.
-  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS'];
+  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','PROJECTS','MASTER'];
 
   /* ── generic tree helpers ── */
 
@@ -191,23 +191,23 @@
       // name so an account that still has the old row self-heals onto
       // the new one instead of spawning a second root; the insert path
       // below only ever creates 'PROJECTS' going forward.
-      var existing=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').in('text_content',['PROJECTS','Idea Storyboards']).is('cluster_id',null).limit(1);
+      var existing=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').in('text_content',['MASTER','PROJECTS','Idea Storyboards']).is('cluster_id',null).limit(1);
       if(existing.error){ console.warn('ensureIdeaStoryboardsRoot select error:', existing.error); return null; }
       var rootId;
       if(existing.data && existing.data.length){
         rootId=existing.data[0].id;
-        if(existing.data[0].text_content!=='PROJECTS'){
-          try{ await sb.from('ideas').update({text_content:'PROJECTS'}).eq('id',rootId); }catch(e){}
+        if(existing.data[0].text_content!=='MASTER'){
+          try{ await sb.from('ideas').update({text_content:'MASTER'}).eq('id',rootId); }catch(e){}
         }
       } else {
-        var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'PROJECTS',cluster_id:null,created_at:new Date().toISOString()}).select().single();
+        var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'MASTER',cluster_id:null,created_at:new Date().toISOString()}).select().single();
         if(ins.error || !ins.data){ console.warn('ensureIdeaStoryboardsRoot insert error:', ins.error); return null; }
         rootId=ins.data.id;
       }
       var candidates=await sb.from('ideas').select('id,text_content,storyboard_kind')
         .eq('user_id',u.id).eq('content_type','header').is('cluster_id',null).neq('id',rootId);
       if(!candidates.error && candidates.data && candidates.data.length){
-        var EXCLUDE={'Trash':1,'Archived':1,'MISC':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'PROJECTS':1};
+        var EXCLUDE={'Trash':1,'Archived':1,'MISC':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'PROJECTS':1,'MASTER':1};
         var toMove=candidates.data.filter(function(r){
           return !EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA';
         }).map(function(r){ return r.id; });

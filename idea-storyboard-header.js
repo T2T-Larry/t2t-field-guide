@@ -445,10 +445,10 @@
       // that duplicated TOPIC's own root label, which stays PROJECTS).
       // Uniform across every board kind, not just the Idea Board.
       titleTrigger.textContent='MASTER';
-      titleTrigger.title='Click to open your projects; double-click for the fast-jump list';
+      titleTrigger.title='Click to open your topics; double-click for the fast-jump list';
     } else {
       titleTrigger.textContent=projRow.text_content||'(untitled)';
-      titleTrigger.title='Click to open '+(projRow.text_content||'this project')+'; double-click for the fast-jump list';
+      titleTrigger.title='Click to open '+(projRow.text_content||'this topic')+'; double-click for the fast-jump list';
     }
     // _sboardRenderMemberName already ran earlier in this same chrome
     // refresh (_sboardUpdateHeaderChrome calls it before this function),
@@ -888,7 +888,7 @@
         // -- same shape as every other guarded action in this file, a
         // status message instead of a silent wrong result.
         if(!T2TShared.currentTopicId){
-          if(statusEl){ statusEl.textContent='Can\'t make a new project this way — use + NEW PROJECT.'; statusEl.classList.add('err'); }
+          if(statusEl){ statusEl.textContent='Can\'t make a new topic this way — use + NEW TOPIC.'; statusEl.classList.add('err'); }
           return;
         }
         var updCluster=await _sb.from('ideas').update({cluster_id:T2TShared.currentTopicId}).eq('id',draggedId).select('id');

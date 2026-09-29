@@ -430,7 +430,7 @@
         if(ir.error) throw ir.error;
         freshIdea=ir.data;
       }
-      if(!freshIdea){ _sboardShowToast('Could not open that project.'); return; }
+      if(!freshIdea){ _sboardShowToast('Could not open that topic.'); return; }
       _sboardOpenPlanStartChoice(freshIdea);
     }catch(err){
       _sboardShowToast('Could not open that Plan board — '+(err&&err.message?err.message:'try again'));
@@ -504,9 +504,9 @@
           await _sb.from('ideas').update({briefing_board_id:bbIns.data.id}).eq('id',ins.data.id);
         } else {
           console.warn('Idea Board: could not mirror new board onto the Briefing Board', bbIns.error);
-          _sboardShowToast('Project saved, but its Briefing Board could not be created -- tell Claude so it can add one.');
+          _sboardShowToast('Topic saved, but its Briefing Board could not be created -- tell Claude so it can add one.');
         }
-      }catch(e){ console.warn('Idea Board: could not mirror new board onto the Briefing Board', e); _sboardShowToast('Project saved, but its Briefing Board could not be created -- tell Claude so it can add one.'); }
+      }catch(e){ console.warn('Idea Board: could not mirror new board onto the Briefing Board', e); _sboardShowToast('Topic saved, but its Briefing Board could not be created -- tell Claude so it can add one.'); }
       }
       await _sboardLoadMyRoots(true);
       return ins.data.id;
@@ -834,7 +834,7 @@
         var empty=document.createElement('div');
         empty.className='sc-cdrop-row';
         empty.style.cssText='cursor:default;opacity:.6';
-        empty.textContent='No other projects yet.';
+        empty.textContent='No other topics yet.';
         menu.appendChild(empty);
       } else {
         choices.forEach(function(h){
@@ -1146,7 +1146,7 @@
   // (Larry's call), so nothing done there is ever silently overwritten.
   async function _sboardOpenOrCreatePlanBoard(){
     var ideaRow=_sboardCurrentProjectRow();
-    if(!ideaRow){ _sboardShowToast('Open a project first.'); return; }
+    if(!ideaRow){ _sboardShowToast('Open a topic first.'); return; }
     if(ideaRow.storyboard_kind==='PLAN') return; // already there -- no-op, matches IDEA's own re-pick behavior
     var _sb=T().sb;
     try{
@@ -1853,11 +1853,11 @@
         _sboardRenderTitlePicker();
         _sboardRenderOrgName();
       }
-      if(msg) msg.textContent='Detached. Open the Briefing Board\'s 🔗 Relationships button to pick a new parent for this project.';
+      if(msg) msg.textContent='Detached. Open the Briefing Board\'s 🔗 Relationships button to pick a new parent for this topic.';
     });
     T().wire('sb-hub-archive-btn', function(){
       var msg=document.getElementById('sb-hub-msg');
-      if(msg) msg.textContent='Archiving a whole project isn\'t built yet -- for now you can archive individual cards inside it.';
+      if(msg) msg.textContent='Archiving a whole topic isn\'t built yet -- for now you can archive individual cards inside it.';
     });
     // Session 251 (Aug 26), Larry: "When someone says to TRASH a
     // project, TRASH it! but give them one chance to change their
@@ -1884,9 +1884,9 @@
           await _sboardLoadMyRoots(true);
           var fallback=(_sboardMyRoots||[])[0];
           if(fallback) _sboardSwitchToRootBoard(fallback.id);
-          else _sboardShowToast('Project trashed.');
+          else _sboardShowToast('Topic trashed.');
         }catch(err){
-          if(errBox) errBox.textContent=(err&&err.message)?err.message:'Could not trash this project.';
+          if(errBox) errBox.textContent=(err&&err.message)?err.message:'Could not trash this topic.';
         }
       });
     });
@@ -2115,7 +2115,7 @@
       +'<div style="border-top:1px solid #e0dcd0;margin:0 0 10px"></div>'
       +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;color:#7a6040;margin-bottom:4px;text-align:left">+ NEW PROJECT</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
-      +'<input id="sb-proj-new-input" type="text" placeholder="Project name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
+      +'<input id="sb-proj-new-input" type="text" placeholder="Topic name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
       +'<button class="sc-ov-btn save" id="sb-proj-new-go">Create</button>'
       +'</div>'
       +'<div id="sb-proj-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:0;min-height:12px"></div>'

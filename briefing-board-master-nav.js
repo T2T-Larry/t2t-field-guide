@@ -430,14 +430,14 @@
       // board row here (there's only ever the one true board in this
       // world) -- just a new Header under PROJECTS, then land straight
       // on it, same as picking any other project from this same menu.
-      var name=window.prompt('Name for the new project:');
+      var name=window.prompt('Name for the new topic:');
       if(!name || !name.trim()) return;
       var rootId=_bbIdeaStoryboardsRootId;
       if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
-      if(!rootId){ window.alert('Could not add a project right now. Try again in a moment.'); return; }
+      if(!rootId){ window.alert('Could not add a topic right now. Try again in a moment.'); return; }
       var hdr;
       try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
-      catch(e){ console.error('Briefing Board: could not add project header', e); window.alert('Could not add the project "'+name.trim()+'". Try again.'); return; }
+      catch(e){ console.error('Briefing Board: could not add topic header', e); window.alert('Could not add the topic "'+name.trim()+'". Try again.'); return; }
       _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
       var board=await _bbResolveOrCreateBoardForHeader(hdr.id);
       if(board) await _bbSwitchToBoard(board.id);
@@ -1140,7 +1140,7 @@
           // always the account root, so in single-board mode read whichever
           // project is actually being viewed right now.
           var projectId=_bbSingleBoardMode() ? (_bbProjectFilter() || _bbIdeaStoryboardsRootId) : (board && board.storyboard_project_id);
-          if(!projectId){ _bbShowToast('This board isn’t linked to a project.'); return true; }
+          if(!projectId){ _bbShowToast('This board isn’t linked to a topic.'); return true; }
           IDBand.recordReturn('BRIEFING BOARD', projectId);
           if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(projectId, k.value);
           return true;
@@ -1503,7 +1503,7 @@
     _bbProjectHubBoardId = boardId;
     var board=_bbBoards.filter(function(b){ return b.id===boardId; })[0];
     var label=document.getElementById('bb-hub-board-label');
-    if(label) label.textContent = board ? ((board.name||'This project')+' — '+_bbTypeLabel(board.board_type||'personal')) : 'This project';
+    if(label) label.textContent = board ? ((board.name||'This topic')+' — '+_bbTypeLabel(board.board_type||'personal')) : 'This topic';
     var msg=document.getElementById('bb-hub-msg'); if(msg) msg.textContent='';
     var ov=document.getElementById('bb-project-hub-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
@@ -1533,11 +1533,11 @@
     });
     T().wire('bb-hub-archive-btn', function(){
       var msg=document.getElementById('bb-hub-msg');
-      if(msg) msg.textContent='Archiving a whole project isn\'t built yet -- for now you can archive individual cards inside it.';
+      if(msg) msg.textContent='Archiving a whole topic isn\'t built yet -- for now you can archive individual cards inside it.';
     });
     T().wire('bb-hub-trash-btn', function(){
       var msg=document.getElementById('bb-hub-msg');
-      if(msg) msg.textContent='Trashing a whole project isn\'t built yet -- for now you can trash individual cards inside it.';
+      if(msg) msg.textContent='Trashing a whole topic isn\'t built yet -- for now you can trash individual cards inside it.';
     });
   }
 

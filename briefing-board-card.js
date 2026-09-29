@@ -503,7 +503,7 @@
     _bbPaintScopeButtons('project');
     if(!projectId) return;
     var msg=document.getElementById('bb-calendar-msg');
-    if(msg) msg.textContent='Preparing this project\u2019s link\u2026';
+    if(msg) msg.textContent='Preparing this topic\u2019s link\u2026';
     _bbGetOrCreateProjectCalendarToken(boardId, projectId).then(function(token){
       if(boardId!==_bbCurrentBoardId || projectId!==((typeof _bbProjectFilter==='function')?_bbProjectFilter():null)) return; // stale -- moved on before this resolved
       var pWebcal=_bbProjectCalendarFeedUrl('webcal', boardId, projectId, token);

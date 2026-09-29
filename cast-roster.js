@@ -407,7 +407,7 @@
   // Loads (or reloads after a change) and redraws, keeping what's open.
   async function _reload(first){
     var body=document.getElementById('cr-body'); if(!body) return;
-    if(!_topicId){ body.innerHTML='<div class="cr-msg">Open a project first.</div>'; return; }
+    if(!_topicId){ body.innerHTML='<div class="cr-msg">Open a topic first.</div>'; return; }
     var sb=_sb();
     if(!sb){ body.innerHTML='<div class="cr-msg cr-err">Not connected.</div>'; return; }
     if(!first) _load().invalidate();
@@ -479,7 +479,7 @@
     var sub=document.getElementById('cr-sub'); if(!sub) return;
     if(_viewMode==='hub') sub.textContent='Everything people-related for this Topic — pick where to go.';
     else if(_viewMode==='board') sub.textContent='A card for the current level and each level below it. Dashed lines are blank — tap to fill them in.';
-    else if(_viewMode==='pyramid') sub.textContent='Tap a level to see its people. The arrow opens the levels beneath. The number beside a name is how many projects they\'re PRIMARY on (amber at '+_load().limit+'+).';
+    else if(_viewMode==='pyramid') sub.textContent='Tap a level to see its people. The arrow opens the levels beneath. The number beside a name is how many topics they\'re PRIMARY on (amber at '+_load().limit+'+).';
     else if(_viewMode==='rolesheet') sub.textContent=_rsSelected ? 'Every level this person holds a role on, in this Topic.' : 'Pick a name to see every level they hold a role on.';
   }
 

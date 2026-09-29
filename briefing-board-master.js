@@ -947,7 +947,7 @@
     var v=String(value), targetBoard=null;
     if(v.indexOf('hdr:')===0) targetBoard=await _bbResolveOrCreateBoardForHeader(v.slice(4));
     else if(v.indexOf('brd:')===0) targetBoard=_bbBoards.filter(function(b){ return b.id===v.slice(4); })[0];
-    if(!targetBoard){ window.alert('Could not find that project. Try again in a moment.'); return; }
+    if(!targetBoard){ window.alert('Could not find that topic. Try again in a moment.'); return; }
     var c=_bbFindCardAnywhere(cardId);
     if(!c) return;
     var ok=await _bbMoveCardObjectToBoard(c, targetBoard);
@@ -993,14 +993,14 @@
         var v=String(value);
         if(v.indexOf('hdr:')===0) _bbSetCardProjectHeader(c.id, v.slice(4));
       }, async function(){
-        var name=window.prompt('Name for the new project:');
+        var name=window.prompt('Name for the new topic:');
         if(!name || !name.trim()) return;
         var rootId=_bbIdeaStoryboardsRootId;
         if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
-        if(!rootId){ window.alert('Could not add a project right now. Try again in a moment.'); return; }
+        if(!rootId){ window.alert('Could not add a topic right now. Try again in a moment.'); return; }
         var hdr;
         try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
-        catch(e){ console.error('Briefing Board: could not add project header', e); window.alert('Could not add the project "'+name.trim()+'". Try again.'); return; }
+        catch(e){ console.error('Briefing Board: could not add topic header', e); window.alert('Could not add the topic "'+name.trim()+'". Try again.'); return; }
         _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
         await _bbSetCardProjectHeader(c.id, hdr.id);
       }, 'Add a project');
@@ -1009,7 +1009,7 @@
     _bbRenderDropdown('bb-d-project-trigger','bb-d-project-menu', opts, pv.value, function(value){
       _bbMoveCardToProject(c.id, value);
     }, async function(){
-      var name=window.prompt('Name for the new project:');
+      var name=window.prompt('Name for the new topic:');
       if(!name || !name.trim()) return;
       var ok=await _bbCreateBoard(name.trim(), 'project');
       if(!ok) return;

@@ -859,7 +859,7 @@
     {label:'Time Zone', has:false},
     {label:'Notes', has:true},
     {label:'NEWS', has:false},
-    {label:'Projects', has:false},
+    {label:'Topics', has:false},
     {label:'Pro’s & Grow’s', has:false}
   ];
   var CS_TABLE_CSS = '<style>'
@@ -2109,7 +2109,7 @@
       var res=_sb ? await _sb.rpc('project_cast_roster', {p_root_id:item.id}) : {error:{message:'Not connected.'}};
       if(res.error){ rowsEl.innerHTML='<div style="color:#b8562f;font-size:calc(11px * var(--fg-text-scale,1))">'+_esc9710(res.error.message||'Could not load the roster.')+'</div>'; return; }
       var rows=res.data||[];
-      if(!rows.length){ rowsEl.innerHTML='<div style="color:#5b5b56;font-size:calc(11px * var(--fg-text-scale,1))">Nobody on this project yet.</div>'; return; }
+      if(!rows.length){ rowsEl.innerHTML='<div style="color:#5b5b56;font-size:calc(11px * var(--fg-text-scale,1))">Nobody on this topic yet.</div>'; return; }
       rowsEl.innerHTML=rows.map(function(r){
         var roleLabels=(r.roles||[]).map(function(role){ return CS_ROLE_LABEL[role]||role; }).join(' · ');
         return '<div class="tm-row"><div class="tm-body">'

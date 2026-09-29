@@ -1304,14 +1304,14 @@
       var v=String(value);
       if(v.indexOf('hdr:')===0) _bbNewCardProjectHeaderId=v.slice(4);
     }, async function(){
-      var name=window.prompt('Name for the new project:');
+      var name=window.prompt('Name for the new topic:');
       if(!name || !name.trim()) return;
       var rootId=_bbIdeaStoryboardsRootId;
       if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
-      if(!rootId){ window.alert('Could not add a project right now. Try again in a moment.'); return; }
+      if(!rootId){ window.alert('Could not add a topic right now. Try again in a moment.'); return; }
       var hdr;
       try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
-      catch(e){ console.error('Briefing Board: could not add project header', e); window.alert('Could not add the project "'+name.trim()+'". Try again.'); return; }
+      catch(e){ console.error('Briefing Board: could not add topic header', e); window.alert('Could not add the topic "'+name.trim()+'". Try again.'); return; }
       _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
       _bbNewCardProjectHeaderId=hdr.id;
       _bbRenderAddCardProjectField();

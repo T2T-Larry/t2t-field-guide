@@ -55,9 +55,27 @@
     if (window.FGFitBoxTextOneLine) window.FGFitBoxTextOneLine(box, text);
   }
 
+  // Organization = the checkbox on the back of a card, inherited down the tree:
+  // walk from the current Topic up to the first card that has it checked.
+  // No card checked -> no organization line (a personal project like Wish Tank
+  // must not show T2T).
+  var orgSeq = 0;
+  function renderOrg(){
+    var seq = ++orgSeq, p = path().slice();
+    if (!hooks.fetchRow || !p.length){ ctl.renderIdentity(); return; }
+    ctl.renderIdentity();          // name at once; the org line joins when found
+    (async function(){
+      for (var i = p.length - 1; i >= 0; i--){
+        var row = await hooks.fetchRow(p[i].id);
+        if (seq !== orgSeq) return;
+        if (row && row.adds_org){ ctl.renderIdentity({orgName: row.org_name || ''}); return; }
+      }
+    })();
+  }
+
   function render(){
     if (!ctl) return;
-    ctl.renderIdentity();
+    renderOrg();
     renderTopic();
     ctl.position();
     // Fonts and the member profile can land after the first pass.

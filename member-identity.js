@@ -60,7 +60,12 @@
     var orgEl = ids.org && document.getElementById(ids.org);
     var logoEl = ids.logo && document.getElementById(ids.logo);
     var nameEl = ids.name && document.getElementById(ids.name);
-    var org = opts.hideOrg ? '' : (m.org_name || '').trim();
+    // Sept 29 2026 -- Larry: the Organization is the checkbox on the back of a
+    // card (inherited down the tree), NOT the member profile -- a personal
+    // project like Wish Tank must not show T2T. So the profile's org_name is
+    // no longer painted here; a board passes the card-level org in as
+    // opts.orgName (or paints it itself afterward, as Blue Sky/BB do).
+    var org = opts.hideOrg ? '' : String(opts.orgName || '').trim();
     var logo = (m.logo_url || '').trim();
     if(nameEl && m.display_name) nameEl.textContent = m.display_name.toUpperCase();
     if(orgEl){

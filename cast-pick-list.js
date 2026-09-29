@@ -144,7 +144,7 @@
     function badgeHTML(n){
       n=n||0; if(!n) return '';
       var over=n>=LIMIT;
-      return '<span class="t2t-load" title="PRIMARY on '+n+' project'+(n===1?'':'s')+(over?' — at capacity (5+)':'')+'" style="display:inline-block;min-width:14px;padding:0 4px;border-radius:7px;font-size:9px;line-height:14px;font-weight:700;text-align:center;vertical-align:middle;'
+      return '<span class="t2t-load" title="PRIMARY on '+n+' topic'+(n===1?'':'s')+(over?' — at capacity (5+)':'')+'" style="display:inline-block;min-width:14px;padding:0 4px;border-radius:7px;font-size:9px;line-height:14px;font-weight:700;text-align:center;vertical-align:middle;'
         +(over?'background:#e8a33a;color:#3b2200':'background:rgba(0,0,0,.08);color:#5b5b56')+'">'+(over?'⚠ ':'')+n+'</span>';
     }
     return {limit:LIMIT, fetch:fetchAll, badgeHTML:badgeHTML, invalidate:function(){ cache=null; }};

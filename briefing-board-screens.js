@@ -202,7 +202,7 @@
                 // up/down menus (bb-topic-ancestor-menu, and the descend
                 // menu's own markup) are retired in place: their functions
                 // still exist, they just no-op with no arrow to attach to.
-                +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:pointer" title="Click to see this project\'s headers">…</button>'
+                +'<button type="button" class="bb-topic-hit" id="bb-topic-hit" style="cursor:pointer" title="Click to see this topic\'s headers">…</button>'
                 +'<div class="bb-cdrop-menu bb-topic-tree" id="bb-topic-menu" hidden></div>'
               +'</div>'
             +'</div>'
@@ -381,7 +381,7 @@
             // by openAddCard outside single-board mode, where per-card
             // project tagging isn't a thing yet (mirrors _bbSaveNewCard's
             // own _bbSingleBoardMode() gate below).
-            +'<div class="bb-field" id="bb-add-project-field"><label>Project</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-add-project-trigger" title="Which project is this task for?" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))">MASTER</button><div class="bb-cdrop-menu" id="bb-add-project-menu" hidden></div></div></div>'
+            +'<div class="bb-field" id="bb-add-project-field"><label>Topic</label><div class="bb-cdrop"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-add-project-trigger" title="Which topic is this task for?" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))">MASTER</button><div class="bb-cdrop-menu" id="bb-add-project-menu" hidden></div></div></div>'
             // "Assign to" mirrors the Project field just above: a
             // bb-hdr-select trigger + bb-cdrop-menu, populated from the
             // board roster in _bbRenderAddCardAssignField() (briefing-board-ops.js).
@@ -452,7 +452,7 @@
             // _bbRenderCardPrimaryField (briefing-board-master.js),
             // called from openCardDetail alongside the Project field.
             +'<div class="bb-field"><label>Project</label><div style="display:flex;align-items:center;gap:8px">'
-              +'<div class="bb-cdrop" style="flex:1 1 auto;min-width:0"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which project this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
+              +'<div class="bb-cdrop" style="flex:1 1 auto;min-width:0"><button type="button" class="bb-hdr-select bb-cdrop-trigger" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="width:100%;max-width:none;height:34px;font-size:calc(13px * var(--fg-text-scale,1))"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
               +'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'
             +'</div></div>'
             // Added-date, Aug 27 2026 (Larry: "What if the date added is

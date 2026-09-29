@@ -53,10 +53,10 @@
     function screenActive(){ var s=$(cfg.screenId); return !!(s && s.classList.contains('active')); }
 
     // ---- identity ----------------------------------------------------------
-    function renderIdentity(){
+    function renderIdentity(extra){
       var hide = cfg.hideOrg ? !!cfg.hideOrg() : false;
       if(window.T2TMemberIdentity){
-        window.T2TMemberIdentity.fill({wrap:ids.idn, org:ids.idnOrg, logo:ids.idnLogo, name:ids.name}, {hideOrg:hide});
+        window.T2TMemberIdentity.fill({wrap:ids.idn, org:ids.idnOrg, logo:ids.idnLogo, name:ids.name}, {hideOrg:hide, orgName:extra && extra.orgName});
         return;
       }
       var m = (window.T2T && window.T2T.getMember) ? window.T2T.getMember() : null;
@@ -150,7 +150,7 @@
       if(k.value===here) return;
       if(k.value==='SHARE'){ toast(k.soon || 'Coming soon'); return; }
       var topicId = cfg.topicId ? cfg.topicId() : null;
-      if(!topicId){ toast('Open a project first.'); return; }
+      if(!topicId){ toast('Open a topic first.'); return; }
       if(k.value==='CAST'){
         if(window.CastRoster) window.CastRoster.open(topicId);
         return;
@@ -230,7 +230,7 @@
     if(document.fonts && document.fonts.ready){
       document.fonts.ready.then(function(){ if(screenActive()) position(); });
     }
-    window.addEventListener('t2t:member-loaded', renderIdentity);
+    window.addEventListener('t2t:member-loaded', function(){ renderIdentity(); });
 
     return { position:position, renderIdentity:renderIdentity, closeMenus:closeMenus, markActive:markActive };
   }
