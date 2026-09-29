@@ -663,7 +663,12 @@
   // CASE, not yet built); lowercase 'storyboard' stays the existing
   // generic idea-column/cluster mechanism, unchanged. 'STORY' is the
   // short dropdown label for the new concept.
+  // Sept 29 2026 -- Larry: SEA OF IDEAS belongs in the Board Type list,
+  // above BLUE SKY (the content-maturity pipeline reads WISH TANK / Sea of
+  // Ideas -> BLUE SKY -> STORY). Opens the freeform board (screen 1014,
+  // session.js) on the current TOPIC.
   var _sboardBoardKinds=[
+    {value:'SEA', label:'SEA OF IDEAS', soon:null},
     {value:'IDEA', label:'BLUE SKY', soon:null},
     {value:'PLAN', label:'PATHFINDER', soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING', soon:null},
@@ -682,6 +687,11 @@
       row.addEventListener('click', function(e){
         e.stopPropagation();
         menu.hidden=true;
+        if(k.value==='SEA'){
+          if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); }
+          else { _sboardShowToast('Sea of Ideas isn’t available right now.'); }
+          return;
+        }
         if(k.value==='PLAN'){ IDBand.recordReturn('IDEA', T2TShared.currentTopicId); _sboardOpenOrCreatePlanBoard(); return; }
         if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return; }
         if(k.value==='BRIEFING BOARD'){

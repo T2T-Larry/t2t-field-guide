@@ -1976,7 +1976,10 @@
   // generic idea-column/cluster mechanism, unchanged. 'STORY' is the
   // short dropdown label for the new concept -- kept in sync with
   // idea-storyboard-navigation.js's own copy of this list.
+  // Sept 29 2026 -- Larry: SEA OF IDEAS goes above BLUE SKY in Board Type,
+  // kept in sync with idea-storyboard-navigation.js's copy of this list.
   var _bbBoardKinds=[
+    {value:'SEA', label:'SEA OF IDEAS'},
     {value:'IDEA', label:'BLUE SKY'},
     {value:'PLAN', label:'PATHFINDER'},
     {value:'BRIEFING BOARD', label:'BRIEFING'},
@@ -1995,6 +1998,15 @@
         e.stopPropagation();
         menu.hidden=true;
         if(k.value==='BRIEFING BOARD') return;
+        // Sept 29 2026 -- SEA OF IDEAS opens the freeform board on this
+        // board's TOPIC: T2TMedia.openIdeaSession reads the current topic
+        // from T2TShared, so hand it this board's before calling.
+        if(k.value==='SEA'){
+          if(window.T2TShared && _bbCurrentTopicHeaderId) window.T2TShared.currentTopicId=_bbCurrentTopicHeaderId;
+          if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); }
+          else { _bbShowToast('Sea of Ideas isn’t available right now.'); }
+          return;
+        }
         // Sept 23 2026 -- CAST opens the Cast Roster (the Project Pyramid
         // with people on it, cast-roster.js) at this board's TOPIC -- the
         // same screen the Idea Board's CAST opens. The older team list

@@ -558,6 +558,21 @@
     if(!any) _isxShowToast('Nothing on the canvas to select.');
   }
 
+  // MASTER display rule, Sept 29 2026 -- Larry: "MASTER displays obsolete
+  // PROJECTS as top level. Should say MASTER for consistency." The account-
+  // root row's stored name stays 'PROJECTS' internally (reserved-word checks
+  // across the codebase key off it); this is display-only, same as
+  // IDBand.projectLabel / topicLabel on the other boards. Matches the real
+  // root by id once it's been fetched, and by the literal name as a fallback
+  // so nothing shows PROJECTS in the gap before that fetch lands.
+  var _isxRootId=null;
+  function _isxLabel(entry){
+    if(!entry) return '';
+    if(_isxRootId && entry.id!=null && String(entry.id)===String(_isxRootId)) return 'MASTER';
+    if(String(entry.text==null?'':entry.text).trim().toLowerCase()==='projects') return 'MASTER';
+    return entry.text;
+  }
+
   async function _isxRenderLadder(){
    try{
     var projectLabel=document.getElementById('isx-project-label');
@@ -566,15 +581,18 @@
     var topicBox=document.getElementById('isx-topic-box');
     var topicText=document.getElementById('isx-topic-text');
     if(!projectLabel||!parentHit||!parentLabel||!topicBox||!topicText) return;
+    if(!_isxRootId && window.T2TData && T2TData.ensureIdeaStoryboardsRoot){
+      try{ _isxRootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){}
+    }
 
     // PROJECT — fixed anchor, display only. Switching projects entirely is
     // FOCUS's job (reopen via 💡), same division of labor as everywhere else.
-    projectLabel.textContent=T2TShared.isxPath[0].text;
+    projectLabel.textContent=_isxLabel(T2TShared.isxPath[0]);
 
     // PARENT — one level above TOPIC, click to climb back exactly one level.
     // Blank/inert only when TOPIC === PROJECT (nothing above yet).
     if(T2TShared.isxPath.length>1){
-      parentLabel.textContent=T2TShared.isxPath[T2TShared.isxPath.length-2].text;
+      parentLabel.textContent=_isxLabel(T2TShared.isxPath[T2TShared.isxPath.length-2]);
       parentHit.classList.remove('inert');
       parentHit.onclick=function(){
         T2TShared.isxPath.pop(); T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
@@ -596,7 +614,7 @@
     // the parent doesn't wipe out other children the box holds on every
     // single render. July 18, 2026.
     var _isxCurTopicEntry=T2TShared.isxPath[T2TShared.isxPath.length-1];
-    topicText.textContent=_isxCurTopicEntry.text;
+    topicText.textContent=_isxLabel(_isxCurTopicEntry);
     // Color: 9710's own _sboardUpdateHeaderChrome already does this
     // (topicBox.style.background=topicRow.color||'') from its own row
     // cache — 9711 never had the equivalent line. No local row cache to
@@ -707,7 +725,7 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">Switch Topic</div>'
       +'<div class="sb-hdr-vlist" style="display:flex;flex-direction:column;max-height:220px;overflow-y:auto;margin-bottom:10px">'+rows+'</div>'
-      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new topic'+(parentEntry?(' under '+parentEntry.text):'')+'</label>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Start a new topic'+(parentEntry?(' under '+_isxLabel(parentEntry)):'')+'</label>'
       +'<div style="display:flex;gap:6px;margin-bottom:10px">'
       +'<input id="sb-topic-new-input" type="text" placeholder="Topic name…" style="flex:1;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box">'
       +'<button class="sc-ov-btn save" id="sb-topic-new-go">Create</button>'
@@ -1278,8 +1296,8 @@
         T2TStoryboard.setIsxContext({
           rowsById: rowsById,
           topicId: clusterId,
-          topicText: (T2TShared.isxPath && T2TShared.isxPath.length) ? T2TShared.isxPath[T2TShared.isxPath.length-1].text : '',
-          parentText: (T2TShared.isxPath && T2TShared.isxPath.length>1) ? T2TShared.isxPath[T2TShared.isxPath.length-2].text : null,
+          topicText: (T2TShared.isxPath && T2TShared.isxPath.length) ? _isxLabel(T2TShared.isxPath[T2TShared.isxPath.length-1]) : '',
+          parentText: (T2TShared.isxPath && T2TShared.isxPath.length>1) ? _isxLabel(T2TShared.isxPath[T2TShared.isxPath.length-2]) : null,
           // Card-details sweep, July 19, 2026: DETAILS also reads
           // _sboardMiscId/_sboardTrashId/_sboardPurposeId directly for the
           // trash/misc button states and the Purpose row in the Move list --
