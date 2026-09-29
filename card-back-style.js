@@ -156,9 +156,8 @@
       +'#bb-detail-overlay .fg-back-3x5{display:flex;flex-direction:column}'
       +'#bb-detail-overlay .fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
       +'#bb-detail-overlay .fg-back-3x5 .bbw{flex:1 0 auto}'
-      // Task takes whatever height is left, so there is never empty space under the icon row; it never shrinks below ~3 lines.
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}'
-      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{flex:1 1 auto;min-height:52px;resize:none}'
+      // Task is exactly three full lines tall (Larry, Sept 29 2026); it scrolls inside itself past that.
+      +'#bb-detail-overlay .fg-back-3x5 .fg-back-task textarea{line-height:1.25;height:calc(3.75em + 14px);min-height:0;box-sizing:border-box;resize:none;overflow-y:auto}'
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
