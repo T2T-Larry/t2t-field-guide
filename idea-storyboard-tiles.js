@@ -602,6 +602,31 @@
     }
   }
 
+  // SUBJECT on a HEADER's face, Sept 30 2026 -- Larry: "I added a subject to the INTRO SCREENS header but it did not display on the card."
+  // Plain cards (_sboardMakeTile) have shown their Subject since Sept 22, but the two header faces -- the column pill and the
+  // sub-header stack card -- only ever drew the header's name. Same rule as the plain card: a Subject shows as a bold headline; the
+  // header's own name follows underneath unless "Show on front" is off for it (hide_contents_front) or the board's Subject-only view
+  // is on. No Subject = the name alone, exactly as before. el: the element whose text is the label (its own fit size is overridden
+  // here only when a Subject is present).
+  function _sboardPaintHeaderFace(el, row, name, base, min, maxW, maxH, lineH){
+    var subj=String((row && row.subject)||'').trim();
+    if(!subj){ el.textContent=name; return; }
+    var showName=!(row.hide_contents_front) && !_sboardIsSubjectOnlyView();
+    el.textContent='';
+    var hS=document.createElement('span');
+    hS.textContent=subj;
+    hS.style.cssText='display:block;font-weight:700;line-height:'+lineH+';word-break:break-word';
+    if(!showName){
+      hS.style.fontSize=_sboardFitFontSize(subj, base, min, maxW, maxH, lineH)+'px';
+      el.appendChild(hS); return;
+    }
+    hS.style.fontSize=_sboardFitFontSize(subj, base, Math.max(6,Math.round(min*0.8)), maxW, Math.round(maxH*0.55), lineH)+'px';
+    var hN=document.createElement('span');
+    hN.textContent=name;
+    hN.style.cssText='display:block;font-weight:400;line-height:'+lineH+';word-break:break-word;margin-top:2px;font-size:'+_sboardFitFontSize(name, Math.round(base*0.75), Math.max(6,Math.round(min*0.7)), maxW, Math.round(maxH*0.4), lineH)+'px';
+    el.appendChild(hS); el.appendChild(hN);
+  }
+
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
     width=width||70;
     height=height||width;
@@ -632,6 +657,7 @@
     // wrapping in this small, fixed, overflow-hidden card.
     var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
+    _sboardPaintHeaderFace(p, headerRow, headerRow.text_content||'(untitled)', Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
     // 2026 (Larry: "is the LOCK not just another FLAG?") -- was a
