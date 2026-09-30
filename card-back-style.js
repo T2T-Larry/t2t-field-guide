@@ -178,11 +178,12 @@
       +'.fg-back-idband .bb-icon-btn,.fg-back-idband .bb-close{flex:0 0 auto;width:26px;height:26px;min-width:0;padding:0;font-size:calc(13px * var(--fg-text-scale,1))}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
       // TOPIC dropdown on the Blue Sky back: same dark-navy fix the board's own topic menu carries (pyramid rows are colorless, so they went black on navy).
-      +'#sb-d-topic-menu .tp-row{color:#fff}'
-      +'#sb-d-topic-menu .tp-row:hover{background:rgba(255,255,255,.08)}'
-      +'#sb-d-topic-menu .tp-current{background:rgba(255,255,255,.16)}'
+      +'.fg-back-menu-idea .tp-row{color:#fff}'
+      +'.fg-back-menu-idea .tp-row:hover{background:rgba(255,255,255,.08)}'
+      +'.fg-back-menu-idea .tp-current{background:rgba(255,255,255,.16)}'
+      +'.fg-back-menu{max-height:min(60vh,420px)!important}'
       // Blue Sky back: TOPIC and board type look like the boards' own boxes -- white, navy 2px border, Playfair bold navy (Larry, Sept 30 2026).
-      +'.fg-cardback-idea .fg-back-idband .bb-topic-hit,.fg-cardback-idea .fg-back-idband .bb-boardkind-hit{background:#fff;border:2px solid #1a3a5c;border-radius:8px;font-family:\'Playfair Display\',serif;font-weight:700;color:#1a3a5c;box-shadow:0 2px 6px rgba(0,0,0,.22);text-transform:uppercase}'
+      +'.fg-cardback-idea .fg-back-idband .bb-topic-hit,.fg-cardback-idea .fg-back-idband .bb-boardkind-hit{background:#fff;border:2px solid #1a3a5c;border-radius:8px;font-family:\'Playfair Display\',serif;font-weight:700;color:#1a3a5c;box-shadow:0 2px 6px rgba(0,0,0,.22)}'
       // Blue Sky (Idea) card back -- same 5x3 recipe as the Briefing Card back (Sept 30 2026): a column, the content block grows, the icon row rides the bottom.
       +'.sc-overlay-card.sb-details-card.fg-cardback-idea.fg-back-3x5{display:flex;flex-direction:column;padding-bottom:8px!important}'
       +'.fg-cardback-idea.fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
@@ -223,15 +224,14 @@
   function bandHTML(opts){
     opts=opts||{};
     injectShape();
-    var topic = opts.projectPicker
-      ? '<div class="bb-cdrop"><button type="button" class="bb-topic-hit bb-cdrop-trigger fg-back-topic fg-back-own" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="cursor:pointer"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
-      : (opts.topicPicker
-          // Sept 30 2026 (Larry: "TOPIC and board type should always allow a card to move where appropriate") -- a clickable TOPIC whose text is
-          // still painted live from the board's band; the card's own code wires the click (Blue Sky back: opens the move pyramid).
-          ? '<button type="button" class="bb-topic-hit fg-back-topic" id="'+(opts.topicPickerId||'fg-back-topic-btn')+'" title="Move this card to another topic" style="cursor:pointer"></button>'
-          : '<span class="bb-topic-hit fg-back-topic"></span>');
+    // TOPIC on every card back is ONE control (Larry, Sept 30 2026: "All TOPIC and Board type should work and look the same on all boards
+    // and cards"): a button whose click the card's own code hands to FGCardBack.openTopicMenu. opts.projectPicker is the Briefing Card's older
+    // name for the same thing (keeps its element id and its "card's own project fills the text" behavior).
+    var topic = (opts.projectPicker || opts.topicPicker)
+      ? '<button type="button" class="bb-topic-hit fg-back-topic'+(opts.projectPicker?' fg-back-own':'')+'" id="'+(opts.projectPicker?'bb-d-project-trigger':(opts.topicPickerId||'fg-back-topic-btn'))+'" title="Move this card to another topic" style="cursor:pointer"></button>'
+      : '<span class="bb-topic-hit fg-back-topic"></span>';
     var title = opts.titleHTML ? '<span class="fg-back-title">'+opts.titleHTML+'</span>' : '';
-    var kind = opts.kindPicker
+    var kind = (opts.kindPicker || opts.projectPicker)
       ? '<button type="button" class="bb-boardkind-hit fg-back-kind" id="'+(opts.kindPickerId||'fg-back-kind-btn')+'" title="Move this card to another board" style="cursor:pointer"></button>'
       : '<span class="bb-boardkind-hit fg-back-kind"></span>';
     return '<div class="fg-back-idband"><div class="fg-back-idl">'+title+'</div><div class="fg-back-idc">'+topic+kind+'</div><div class="fg-back-idr">'+(opts.extraHTML||'')+'</div></div>';
@@ -272,7 +272,109 @@
     band.style.display = (tv||kv||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
   }
 
+  // ============================================================
+  // SHARED TOPIC + BOARD TYPE MENUS for every card back (Sept 30 2026, Larry: "All TOPIC and Board type should work and look the same!!
+  // on all boards and cards"). One implementation: the Briefing Card back and the Blue Sky (Idea) card back both call these, so they cannot
+  // drift. The menu shell and rows reuse each board's OWN classes (theme 'bb' = .bb-cdrop-menu/.bb-cdrop-row, theme 'idea' =
+  // .sc-cdrop-menu/.sc-cdrop-row), so a back's dropdown looks like its board's dropdown. What a pick DOES is handed in by the card.
+  // ============================================================
+  var TOPIC_ROOT_ID = '__fg_all_topics__';
+  function _cls(theme){ return theme==='bb' ? {menu:'bb-cdrop-menu', row:'bb-cdrop-row'} : {menu:'sc-cdrop-menu', row:'sc-cdrop-row'}; }
+  function closeMenus(){
+    ['fg-back-topic-menu','fg-back-kind-menu'].forEach(function(id){ var m=document.getElementById(id); if(m) m.remove(); });
+  }
+  // Opens (or toggles shut) a menu under trigger. Returns the menu element, or null when it toggled shut.
+  function _openShell(trigger, id, theme, minW){
+    var had=document.getElementById(id);
+    closeMenus();
+    if(had) return null;
+    var cls=_cls(theme);
+    var menu=document.createElement('div');
+    menu.className=cls.menu+' fg-back-menu fg-back-menu-'+(theme==='bb'?'bb':'idea');
+    menu.id=id;
+    menu.addEventListener('click', function(e){ e.stopPropagation(); });
+    document.body.appendChild(menu);
+    var r=trigger.getBoundingClientRect();
+    menu.style.left=r.left+'px'; menu.style.top=(r.bottom+4)+'px'; menu.style.minWidth=Math.max(minW||120, r.width)+'px';
+    var mr=menu.getBoundingClientRect();
+    if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8, window.innerWidth-8-mr.width)+'px';
+    setTimeout(function(){ document.addEventListener('click', function c(){ closeMenus(); document.removeEventListener('click', c); }); }, 0);
+    return menu;
+  }
+  // opts: {theme, current:'IDEA'|'BRIEFING BOARD'|..., onPick(kind)}  -- kind = an IDBand.BOARD_KINDS entry
+  function openKindMenu(trigger, opts){
+    if(!trigger) return;
+    var menu=_openShell(trigger, 'fg-back-kind-menu', opts.theme, 120);
+    if(!menu) return;
+    var cls=_cls(opts.theme);
+    ((window.IDBand && IDBand.BOARD_KINDS) || []).forEach(function(k){
+      var row=document.createElement('div');
+      row.className=cls.row+(k.value===opts.current?' active':'');
+      row.setAttribute('data-kind', k.value);
+      row.textContent=k.label;
+      row.addEventListener('click', function(e){
+        e.stopPropagation(); closeMenus();
+        if(k.value===opts.current) return;
+        if(opts.onPick) opts.onPick(k);
+      });
+      menu.appendChild(row);
+    });
+  }
+  // Children source for the topic pyramid: top level = this member's topics, below = that header's child headers (system buckets hidden).
+  // opts: {sb, excludeId (the card's own id, if it is itself a header)}
+  function _pyramidChildren(opts){
+    var RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
+    function node(h){ return {id:h.id, name:h.text_content||h.text||'(untitled)', priority:h.priority||''}; }
+    return function(id){
+      if(id===TOPIC_ROOT_ID) return T2TData.topLevelBoards().then(function(b){ return b.filter(function(x){ return String(x.id)!==String(opts.excludeId); }).map(node); });
+      return T2TData.childHeaders(id).then(function(kids){ return kids.filter(function(h){ return RESERVED.indexOf(h.text_content)===-1 && String(h.id)!==String(opts.excludeId); }).map(node); });
+    };
+  }
+  // Ids from the top down to startId (so the pyramid opens already showing where the card lives).
+  async function _pyramidPath(sb, startId){
+    var path=[];
+    try{
+      var cur=startId, guard=0;
+      while(cur && guard<30){
+        guard++;
+        var rr=await sb.from('ideas').select('id,cluster_id').eq('id',cur).maybeSingle();
+        var row=rr && rr.data; if(!row) break;
+        if(!row.cluster_id) break;   // that is the MASTER root itself
+        path.unshift(String(row.id));
+        cur=row.cluster_id;
+      }
+    }catch(e){}
+    return path;
+  }
+  // opts: {theme, sb, hereId (header the card lives under, or null), excludeId, onPick(headerId), extras:[{label, fn}]}
+  async function openTopicMenu(trigger, opts){
+    if(!trigger || !window.TopicPyramid || !window.T2TData) return;
+    var menu=_openShell(trigger, 'fg-back-topic-menu', opts.theme, 220);
+    if(!menu) return;
+    var path=opts.hereId ? await _pyramidPath(opts.sb, opts.hereId) : [];
+    if(!document.getElementById('fg-back-topic-menu')) return;   // closed while the path loaded
+    window.TopicPyramid.render(menu, {
+      ancestors: [],
+      current: {id:TOPIC_ROOT_ID, name:'All Topics'},
+      getChildren: _pyramidChildren({excludeId:opts.excludeId}),
+      expandPath: path,
+      hereId: opts.hereId ? String(opts.hereId) : null,
+      onNavigate: function(hid){
+        if(hid===TOPIC_ROOT_ID) return;
+        closeMenus();
+        if(opts.onPick) opts.onPick(hid);
+      }
+    });
+    var cls=_cls(opts.theme);
+    (opts.extras||[]).forEach(function(x){
+      var row=document.createElement('div');
+      row.className=cls.row; row.style.borderTop='1px solid rgba(128,128,128,.35)'; row.textContent=x.label;
+      row.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); x.fn(); });
+      menu.appendChild(row);
+    });
+  }
+
   injectShape();
 
-  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, colors: { idea: IDEA } };
+  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA } };
 })();

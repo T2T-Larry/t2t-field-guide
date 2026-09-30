@@ -969,9 +969,13 @@
   // (which switches the whole screen to the board it creates) so the
   // move that follows always has the right card in hand regardless of
   // what that switch just did to _bbCards.
+  // Sept 30 2026 (Larry: "All TOPIC and Board type should work and look the same on all boards and cards") -- the back's TOPIC and board-type
+  // boxes now open the SAME shared menus the Blue Sky card back uses (FGCardBack.openTopicMenu / openKindMenu, card-back-style.js), drawn
+  // with this board's own dropdown look. The old flat project list (_bbRenderDropdown) is gone from here. What a pick DOES stays the
+  // existing logic: single-board travelers get _bbSetCardProjectHeader, everyone else _bbMoveCardToProject.
   async function _bbRenderCardProjectField(c){
-    var trigger=document.getElementById('bb-d-project-trigger'), menu=document.getElementById('bb-d-project-menu');
-    if(!trigger || !menu) return;
+    var trigger=document.getElementById('bb-d-project-trigger');
+    if(!trigger || !window.FGCardBack) return;
     var homeBoardId = c._homeBoardId || _bbCurrentBoardId;
     var pv=_bbCardProjectValue(c, homeBoardId);
     if(pv.pendingHeaderId){
@@ -981,20 +985,15 @@
     }
     var opts=await _bbProjectPickerOptions();
     if(_bbOpenCardId!==c.id) return; // a different card opened while this was loading
-    if(pv.value && !opts.some(function(o){ return o.value===pv.value; }) && pv.fallbackName){
-      opts=opts.concat([{value:pv.value, label:pv.fallbackName}]);
-    }
-    // One-board model, Sept 8 2026 -- single-board travelers get the
-    // dedicated _bbSetCardProjectHeader path (one narrow write, no
-    // board involved); everyone else keeps the original Sept 7 move-
-    // to-a-different-board behavior untouched.
-    if(_bbSingleBoardMode()){
-      _bbRenderDropdown('bb-d-project-trigger','bb-d-project-menu', opts, pv.value, function(value){
-        var v=String(value);
-        if(v.indexOf('hdr:')===0) _bbSetCardProjectHeader(c.id, v.slice(4));
-      }, async function(){
-        var name=window.prompt('Name for the new topic:');
-        if(!name || !name.trim()) return;
+    var label=pv.fallbackName||'';
+    opts.forEach(function(o){ if(o.value===pv.value) label=o.label; });
+    trigger.textContent=label||'TOPIC';
+    trigger.title=label||'TOPIC';
+    var hereId=(pv.value && String(pv.value).indexOf('hdr:')===0) ? String(pv.value).slice(4) : null;
+    var extras=[{label:'+ Add a project', fn:async function(){
+      var name=window.prompt('Name for the new topic:');
+      if(!name || !name.trim()) return;
+      if(_bbSingleBoardMode()){
         var rootId=_bbIdeaStoryboardsRootId;
         if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
         if(!rootId){ window.alert('Could not add a topic right now. Try again in a moment.'); return; }
@@ -1003,21 +1002,52 @@
         catch(e){ console.error('Briefing Board: could not add topic header', e); window.alert('Could not add the topic "'+name.trim()+'". Try again.'); return; }
         _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
         await _bbSetCardProjectHeader(c.id, hdr.id);
-      }, 'Add a project');
-      return;
-    }
-    _bbRenderDropdown('bb-d-project-trigger','bb-d-project-menu', opts, pv.value, function(value){
-      _bbMoveCardToProject(c.id, value);
-    }, async function(){
-      var name=window.prompt('Name for the new topic:');
-      if(!name || !name.trim()) return;
+        return;
+      }
       var ok=await _bbCreateBoard(name.trim(), 'project');
       if(!ok) return;
       var targetBoard=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
       if(targetBoard) await _bbMoveCardObjectToBoard(c, targetBoard);
       closeCardDetail();
       renderBoard();
-    }, 'Add a project');
+    }}];
+    trigger.onclick=function(e){
+      e.stopPropagation();
+      FGCardBack.openTopicMenu(trigger, {theme:'bb', sb:T().sb, hereId:hereId, excludeId:null, extras:extras, onPick:function(hid){
+        if(_bbSingleBoardMode()) _bbSetCardProjectHeader(c.id, hid);
+        else _bbMoveCardToProject(c.id, 'hdr:'+hid);
+      }});
+    };
+    var kindBtn=document.getElementById('fg-back-kind-btn');
+    if(kindBtn) kindBtn.onclick=function(e){
+      e.stopPropagation();
+      FGCardBack.openKindMenu(kindBtn, {theme:'bb', current:'BRIEFING BOARD', onPick:function(k){
+        if(k.value==='IDEA') _bbSendCardToBlueSky(c, hereId);
+        else _bbShowToast('Moving a card to '+k.label+' is not built yet.');
+      }});
+    };
+  }
+
+  // Briefing card -> new Blue Sky card in that topic's Parking Lot (a text card). Copy: the Briefing card stays. Mirror of the Blue Sky
+  // back's "send to Briefing" (idea-storyboard-card-detail.js), so the two boards' board-type boxes work the same way.
+  async function _bbSendCardToBlueSky(c, topicId){
+    try{
+      var text=(c.task||'').trim(), subj=(c.subject||'').trim();
+      if(!text && !subj){ _bbShowToast('This card has no text to send.'); return; }
+      var sb=T().sb, uid=await _bbCurrentUserId();
+      if(!sb || !uid) throw new Error('Not signed in');
+      var parentId=topicId || _bbIdeaStoryboardsRootId || null;
+      var parkId=await T2TData.ensureNewAdditionsHeader(parentId);
+      if(!parkId) throw new Error('No Parking Lot found for that topic');
+      var row={user_id:uid, content_type:'text', text_content:text||subj, cluster_id:parkId, created_at:new Date().toISOString()};
+      if(subj && text) row.subject=subj;
+      var ins=await sb.from('ideas').insert(row);
+      if(ins.error) throw ins.error;
+      _bbShowToast('Sent to the Blue Sky Parking Lot. The Briefing card stays here.');
+    }catch(err){
+      console.error('Send to Blue Sky failed', err);
+      _bbShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));
+    }
   }
 
   // PRIMARY head icon, Sept 22 2026 -- see the HTML comment on this field

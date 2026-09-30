@@ -619,24 +619,9 @@
     // it and tapping its name. onNavigate here does the actual move
     // (writes cluster_id) instead of just changing what's on screen,
     // which is TOPIC's own onNavigate job.
-    // dropdown=true (the TOPIC box on the back's ID Band, Sept 30 2026): same pyramid, drawn as the board's own dark dropdown under the box
-    // instead of a card-sized overlay. Alt+M and anything else calls it with no argument and gets the overlay as before.
-    async function openMoveAnywherePicker(dropdown){
-      dropdown = (dropdown===true);
+    async function openMoveAnywherePicker(){
       var ov2=document.getElementById('sb-detail-overlay');
       if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
-      var ddMenu=null;
-      if(dropdown){
-        var oldMenu=document.getElementById('sb-d-topic-menu');
-        if(oldMenu){ oldMenu.remove(); return; }
-        ddMenu=document.createElement('div'); ddMenu.className='sc-cdrop-menu'; ddMenu.id='sb-d-topic-menu';
-        ddMenu.style.maxHeight='320px'; ddMenu.style.minWidth='220px';
-        ddMenu.addEventListener('click', function(e){ e.stopPropagation(); });
-        document.body.appendChild(ddMenu);
-        var tb=document.getElementById('sb-d-topic-btn');
-        if(tb){ var tr=tb.getBoundingClientRect(); ddMenu.style.left=tr.left+'px'; ddMenu.style.top=(tr.bottom+4)+'px'; }
-        setTimeout(function(){ document.addEventListener('click', function closeTd(){ var m=document.getElementById('sb-d-topic-menu'); if(m) m.remove(); document.removeEventListener('click', closeTd); }); }, 0);
-      }
       // Parking Lot / NEW / Purpose / MISC are real places a card can go (the
       // old move panel offered them), so they stay in the list; only the
       // system buckets that aren't destinations are hidden.
@@ -660,7 +645,6 @@
       // "+ New header" (the two things the old move panel had that the
       // pyramid didn't) sit underneath it.
       var _sbTopicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      if(!dropdown){
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+_sboardEsc(item.text_content||'(untitled)')+'"</div>'
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Tap any project or topic to move this card there. ▸ opens a level.</div>'
@@ -673,7 +657,6 @@
         +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov2.classList.add('active');
-      }
       // Path from the top down to this card's current spot. Walked with a
       // plain lookup per level (no owner filter, so a shared project works
       // too); stops at the MASTER root, which the pyramid shows as "All
@@ -695,7 +678,7 @@
           cur=rowP.cluster_id;
         }
       }catch(e){}
-      var menuEl=dropdown ? ddMenu : document.getElementById('sb-anywhere-pyramid');
+      var menuEl=document.getElementById('sb-anywhere-pyramid');
       window.TopicPyramid.render(menuEl, {
         ancestors: [],
         current: {id:ROOT_ID, name:'All Topics'},
@@ -704,7 +687,6 @@
         hereId: item.cluster_id ? String(item.cluster_id) : null,
         onNavigate: async function(hid){
           if(hid===ROOT_ID) return; // "All Topics" itself isn't a place a card can live
-          if(dropdown){ var _m=document.getElementById('sb-d-topic-menu'); if(_m) _m.remove(); }
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
           var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
           try{
@@ -723,11 +705,6 @@
           }catch(err){ console.error(err); }
         }
       });
-      if(dropdown && ddMenu){
-        var mk=function(label, fn){ var r=document.createElement('div'); r.className='sc-cdrop-row'; r.style.borderTop='1px solid rgba(255,255,255,.18)'; r.textContent=label; r.addEventListener('click', function(e){ e.stopPropagation(); ddMenu.remove(); fn(); }); ddMenu.appendChild(r); };
-        mk(isMisc?'📦 Take out of Misc':'📦 Send to Misc', function(){ _sbMoveFromBoard=false; _sbSendToMisc(); });
-        if(_sbTopicForNew) mk('+ New header here', function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(_sbTopicForNew, nm); });
-      }
       T().wire('sb-anywhere-misc', function(){ _sbMoveFromBoard=false; _sbSendToMisc(); });
       T().wire('sb-anywhere-newh', function(){
         var row=document.getElementById('sb-newheader-row'); if(!row) return;
@@ -749,41 +726,42 @@
       });
     }
 
-    // ID Band on the back (Sept 30 2026, Larry: "TOPIC and board type should always allow a card to move where appropriate").
-    // TOPIC opens the same pyramid the MOVE field used to; the board-type box opens a short list of boards.
-    // Only Blue Sky -> Briefing is wired so far; the other boards say so rather than pretending.
-    // The board-type dropdown is the board's own: same .sc-cdrop-menu / .sc-cdrop-row shell (dark navy list, white rows, this board marked
-    // active), same labels from IDBand.BOARD_KINDS, opened right under the box (Larry, Sept 30 2026: "board type should look exactly like
-    // the board type on the board itself"). Only Briefing actually moves the card so far; the others say so.
+    // ID Band on the back (Sept 30 2026, Larry: "All TOPIC and Board type should work and look the same on all boards and cards").
+    // Both boxes open the SHARED menus in card-back-style.js (FGCardBack.openTopicMenu / openKindMenu) -- the same code the Briefing Card back
+    // uses, drawn with this board's own dropdown look. What a pick does is this card's part: move under a header, or go to another board.
+    async function moveCardToHeader(hid){
+      if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
+      var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
+      try{
+        var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
+        if(upd.error) throw upd.error;
+        item.cluster_id=hid;
+        _sboardPatchRow(item.id, {cluster_id:hid});
+        (function(){
+          var itemId=item.id, after={cluster_id:hid, sort_order:before.sort_order};
+          _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
+        })();
+        _sbMoveFromBoard=false;
+        closeSbDetail();
+        renderSeaBoard(true);
+        _sboardShowToast('Moved — Ctrl/Cmd+Z to undo.');
+      }catch(err){ console.error(err); }
+    }
+    function openTopicPicker(ev){
+      if(ev && ev.stopPropagation) ev.stopPropagation();
+      if(!window.FGCardBack) return;
+      var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
+      var extras=[{label:(isMisc?'📦 Take out of Misc':'📦 Send to Misc'), fn:function(){ _sbMoveFromBoard=false; _sbSendToMisc(); }}];
+      if(topicForNew) extras.push({label:'+ New header here', fn:function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); }});
+      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:item.cluster_id, excludeId:item.id, onPick:moveCardToHeader, extras:extras});
+    }
     function openKindPicker(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();
-      var trig=document.getElementById('sb-d-kind-btn');
-      if(!trig) return;
-      var old=document.getElementById('sb-d-kind-menu');
-      if(old){ old.remove(); return; }
-      var menu=document.createElement('div');
-      menu.className='sc-cdrop-menu'; menu.id='sb-d-kind-menu';
-      ((window.IDBand && IDBand.BOARD_KINDS) || []).forEach(function(k){
-        var row=document.createElement('div');
-        row.className='sc-cdrop-row'+(k.value==='IDEA'?' active':'');
-        row.setAttribute('data-kind', k.value);
-        row.textContent=k.label;
-        row.addEventListener('click', function(e){
-          e.stopPropagation(); menu.remove();
-          if(k.value==='IDEA') return;
-          if(k.value==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
-          _sboardShowToast('Moving a card to '+k.label+' is not built yet.');
-        });
-        menu.appendChild(row);
-      });
-      document.body.appendChild(menu);
-      var r=trig.getBoundingClientRect();
-      menu.style.left=r.left+'px'; menu.style.top=(r.bottom+4)+'px'; menu.style.minWidth=Math.max(120, r.width)+'px';
-      var mr=menu.getBoundingClientRect();
-      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8, window.innerWidth-8-mr.width)+'px';
-      setTimeout(function(){
-        document.addEventListener('click', function close(){ var m=document.getElementById('sb-d-kind-menu'); if(m) m.remove(); document.removeEventListener('click', close); });
-      }, 0);
+      if(!window.FGCardBack) return;
+      FGCardBack.openKindMenu(document.getElementById('sb-d-kind-btn'), {theme:'idea', current:'IDEA', onPick:function(k){
+        if(k.value==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
+        _sboardShowToast('Moving a card to '+k.label+' is not built yet.');
+      }});
     }
     // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. The Blue Sky card is kept.
     async function sendToBriefingBoard(){
@@ -814,7 +792,7 @@
         try{ openSbDetail(item); }catch(e){}
       }
     }
-    T().wire('sb-d-topic-btn', function(e){ if(e && e.stopPropagation) e.stopPropagation(); openMoveAnywherePicker(true); });
+    T().wire('sb-d-topic-btn', openTopicPicker);
     T().wire('sb-d-kind-btn', openKindPicker);
     T().wire('sb-move-btn', openMoveAnywherePicker);
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
