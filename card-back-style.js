@@ -184,6 +184,21 @@
       +'.fg-cardback-idea.fg-back-3x5 .bbw>:not(.bb-action-row){align-self:stretch}'
       +'.fg-back-checks #sb-add-notes-wrap{display:none}'
       +'#sb-swatch-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
+      // Squeezed so the back opens without a scrollbar (Larry, Sept 30 2026): Contents box was 120px tall minimum, the page-number line
+      // and status line each held space, and field gaps were roomy.
+      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{min-height:36px!important;max-height:60px!important;padding:4px 8px;margin-bottom:3px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box:has(img){max-height:84px!important}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-body-text-clamp{-webkit-line-clamp:2}'
+      +'.fg-cardback-idea.fg-back-3x5 #sb-pagenum{position:absolute;top:2px;right:70px;height:auto;margin:0;z-index:7}'
+      +'.fg-cardback-idea.fg-back-3x5 #sb-note-status{min-height:0;margin:0}'
+      +'.fg-cardback-idea.fg-back-3x5 .fg-back-idband{margin-bottom:4px}'
+      +'.fg-cardback-idea.fg-back-3x5 .bbw .bb-field{margin-bottom:4px}'
+      +'.fg-cardback-idea.fg-back-3x5 .fg-back-toprow .bb-field{margin-bottom:0}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-eyebrow-row{margin-bottom:3px;gap:6px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-hdr-eyebrow2{margin-bottom:1px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-view-frame{padding:3px 10px}'
+      +'.fg-cardback-idea.fg-back-3x5 .bb-front-check{margin:1px 0 0}'
+      +'.fg-cardback-idea.fg-back-3x5 .bb-action-row{padding-top:3px}'
       ;
     document.head.appendChild(st);
   }
