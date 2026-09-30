@@ -622,18 +622,22 @@
     var realName=String((row && row.text_content)||'').trim();
     var showName=!(row.hide_contents_front) && !_sboardIsSubjectOnlyView() && realName && realName!==subj;
     el.textContent='';
+    // The header faces are row-flex boxes (centering), so two children would sit side by side -- the Subject pushed left of the name.
+    // One block-level wrapper is the single flex item; the two lines stack normally inside it.
+    var box=document.createElement('div');
+    box.style.cssText='width:100%;min-width:0;text-align:center';
     var hS=document.createElement('span');
     hS.textContent=subj;
     hS.style.cssText='display:block;font-weight:700;line-height:'+lineH+';word-break:break-word';
     if(!showName){
       hS.style.fontSize=_sboardFitFontSize(subj, base, min, maxW, maxH, lineH)+'px';
-      el.appendChild(hS); return;
+      box.appendChild(hS); el.appendChild(box); return;
     }
     hS.style.fontSize=_sboardFitFontSize(subj, base, Math.max(6,Math.round(min*0.8)), maxW, Math.round(maxH*0.55), lineH)+'px';
     var hN=document.createElement('span');
     hN.textContent=name;
     hN.style.cssText='display:block;font-weight:400;line-height:'+lineH+';word-break:break-word;margin-top:2px;font-size:'+_sboardFitFontSize(name, Math.round(base*0.75), Math.max(6,Math.round(min*0.7)), maxW, Math.round(maxH*0.4), lineH)+'px';
-    el.appendChild(hS); el.appendChild(hN);
+    box.appendChild(hS); box.appendChild(hN); el.appendChild(box);
   }
 
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
