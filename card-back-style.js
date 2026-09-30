@@ -177,6 +177,10 @@
       +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:.9;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
       +'.fg-back-idband .bb-icon-btn,.fg-back-idband .bb-close{flex:0 0 auto;width:26px;height:26px;min-width:0;padding:0;font-size:calc(13px * var(--fg-text-scale,1))}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
+      // TOPIC dropdown on the Blue Sky back: same dark-navy fix the board's own topic menu carries (pyramid rows are colorless, so they went black on navy).
+      +'#sb-d-topic-menu .tp-row{color:#fff}'
+      +'#sb-d-topic-menu .tp-row:hover{background:rgba(255,255,255,.08)}'
+      +'#sb-d-topic-menu .tp-current{background:rgba(255,255,255,.16)}'
       // Blue Sky back: TOPIC and board type look like the boards' own boxes -- white, navy 2px border, Playfair bold navy (Larry, Sept 30 2026).
       +'.fg-cardback-idea .fg-back-idband .bb-topic-hit,.fg-cardback-idea .fg-back-idband .bb-boardkind-hit{background:#fff;border:2px solid #1a3a5c;border-radius:8px;font-family:\'Playfair Display\',serif;font-weight:700;color:#1a3a5c;box-shadow:0 2px 6px rgba(0,0,0,.22);text-transform:uppercase}'
       // Blue Sky (Idea) card back -- same 5x3 recipe as the Briefing Card back (Sept 30 2026): a column, the content block grows, the icon row rides the bottom.
