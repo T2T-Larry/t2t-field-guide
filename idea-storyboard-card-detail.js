@@ -1382,6 +1382,9 @@
   // choices instead of requiring an extra tap on the Appearance gear.
   function openSbDetailToColor(item){
     openSbDetail(item);
+    // Sept 30 2026 (Larry: "Gear default is to show color options on headers. Make it not the default -- open gear to find colors"):
+    // a header opens with the gear closed; the gear opens the colors. Other cards keep the double-click-to-colors shortcut.
+    if(item && item.content_type==='header') return;
     var row=document.getElementById('sb-swatch-row');
     if(row) row.style.display='flex';
   }
