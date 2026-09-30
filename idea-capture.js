@@ -247,7 +247,7 @@
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_icSaveCard exception:', e); }
 
     if(savedOk){
-      if(_icOnSaved) _icOnSaved(row);
+      if(_icOnSaved && _icMode!=='bb') _icOnSaved(row); // a 'bb' card's onSaved expects a BB card, not an ideas row
       _icMaybeApplyCast(row);
       _icResetIdeaPanelForNext(row && row.content_type==='header');
     } else {
@@ -321,7 +321,7 @@
       // which checks onSaved before any cleanup. That's why a pasted
       // video sat invisible until the next manual refresh. Grab the
       // callback first, close, then call it.
-      var _onSavedCb=_icOnSaved;
+      var _onSavedCb=(_icMode==='bb')?null:_icOnSaved; // 'bb' onSaved expects a BB card, not an ideas row
       var wantCastPersonId=_icCastPersonId, wantCastFromAbove=_icCastFromAbove;
       _icClosePopup();
       if(_onSavedCb) _onSavedCb(row);
@@ -383,7 +383,7 @@
     }catch(e){ saveErr=(e&&e.message)?e.message:String(e); console.error('_icSaveFileCard exception:', e); }
 
     if(savedOk){
-      if(_icOnSaved) _icOnSaved(row);
+      if(_icOnSaved && _icMode!=='bb') _icOnSaved(row);
       _icMaybeApplyCast(row);
       _icResetIdeaPanelForNext(false, 'File attached — keep going');
     } else {
@@ -437,7 +437,7 @@
     var fromAbove=_icCastFromAbove;
     _icCastPersonId=null; _icCastPersonName=''; _icCastFromAbove=false;
     if(!row || !row.id || !personId) return;
-    var cardType = cardTypeOverride || ((_icMode==='bb') ? 'briefing_card' : 'idea');
+    var cardType = cardTypeOverride || ((_icMode==='bb' && _icEntryType==='task') ? 'briefing_card' : 'idea');
     if(window.T2TStoryboard && typeof window.T2TStoryboard.assignPrimaryDirect==='function'){
       window.T2TStoryboard.assignPrimaryDirect(row, cardType, personId, {fromAbove:fromAbove})
         .then(function(res){ if(res && !res.ok) console.warn('NEW card: PRIMARY assign failed', res.msg); });
@@ -953,7 +953,14 @@
     // checks.
     var _icCommitRawText=(function(){ var t=document.getElementById('isx-idea-text'); return t?t.value:''; })();
     var _icCommitIsHeader = (_icIdeaMode==='header') || (!_icInputPendingImageFile && _icIsAutoHeaderText(_icCommitRawText));
-    var wantsBB = (_icMode==='bb') || (_icEntryType==='task' && !_icCommitIsHeader);
+    // Sept 30 2026 -- Larry: switching Board Type from BRIEFING to BLUE SKY on a
+    // card opened from the Briefing Board did nothing. The old rule here sent
+    // EVERYTHING from a 'bb'-opened card to the Briefing Board no matter what
+    // Board Type said. Board Type now decides: a 'bb'-opened card still starts
+    // as BRIEFING (entry type 'task'), but picking BLUE SKY/NOTEBOOK sends the
+    // entry there, so a thought about another board can be dropped in without
+    // leaving the board being worked on.
+    var wantsBB = (_icEntryType==='task' && !_icCommitIsHeader);
     if(wantsBB){
       if(_icInputPendingImageFile || _icInputPendingLink || _icInputPendingFile){
         _icShowFormatBoundaryMessage('Briefing Board cards are text-only for now — type it in as text instead.');
@@ -1382,7 +1389,7 @@
       +'<div class="isx-p-head" id="isx-p-head">'
         +'<span class="isx-p-newtitle" id="isx-p-newchip-txt">NEW</span>'
         +'<div class="isx-p-topic isx-p-idfield isx-p-head-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div>'
-        +'<div class="isx-p-idfield isx-p-head-board'+(_icMode==='bb'?' isx-p-idfield-static':'')+'" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span>'+(_icMode==='bb'?'':'<span class="isx-p-caret">▾</span>')+'</div>'
+        +'<div class="isx-p-idfield isx-p-head-board" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span><span class="isx-p-caret">▾</span></div>'
         +'<div class="isx-p-head-btns">'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">👤</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-util-btn" title="Utility" aria-label="Utility">⚙️</button>'
@@ -1406,9 +1413,8 @@
       // ATTACH A FILE with the kinds it takes written directly beneath it
       // (Larry, Sept 28 2026: "move the attachment options up directly under
       // Attach... delete ANYTHING"). Shown only while the card is empty.
-      +(_icMode==='bb' ? '' :
-        '<div class="isx-p-attach-row"><button class="isx-p-attach-btn" type="button" id="isx-p-attach-btn">📎 ATTACH A FILE</button>'
-        +'<input type="file" id="isx-p-file-input" style="display:none"></div>')
+      +'<div class="isx-p-attach-row"><button class="isx-p-attach-btn" type="button" id="isx-p-attach-btn">📎 ATTACH A FILE</button>'
+        +'<input type="file" id="isx-p-file-input" style="display:none"></div>'
       +'<div class="isx-p-kindline" id="isx-p-kindline">text · image · document · sheet · slide · audio · video · link</div>'
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
@@ -1424,7 +1430,7 @@
     // yet are listed but explain themselves instead of saving elsewhere.
     (function(){
       var boardEl=document.getElementById('isx-p-board');
-      if(!boardEl || _icMode==='bb') return;
+      if(!boardEl) return;
       boardEl.addEventListener('click', function(ev){
         ev.stopPropagation();
         var rows=_IC_BOARD_KINDS.map(function(k){ return {id:k.value, label:k.label+(k.soon?' · soon':''), kind:k}; });
