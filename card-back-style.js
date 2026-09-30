@@ -188,6 +188,10 @@
       // and status line each held space, and field gaps were roomy.
       // Contents is the stretchy field (Larry, Sept 30 2026: "increase Contents to push stuff back down near the bottom of the card"):
       // it takes whatever height the rest leaves, so Move/View/Order, the checkbox list and the icon row sit at the bottom, with a gap above it.
+      // Subject is bold on the card face, so what you type for it is bold too (Larry, Sept 30 2026).
+      +'.fg-cardback-idea #sb-subject-input{font-weight:700}'
+      // Matches the Briefing Card back's Subject entry too.
+      +'#bb-detail-overlay #bb-d-subject{font-weight:700}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 auto;display:flex;flex-direction:column;min-height:48px;margin-top:10px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field>label:first-child{flex:0 0 auto}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:36px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
