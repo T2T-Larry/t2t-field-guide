@@ -200,7 +200,11 @@
     var headerId=_icHeaderId||_icBoardId;
     var ta=document.getElementById('isx-idea-text');
     var rawText=(ta?ta.value:'').trim();
-    if(!rawText && !imageUrl) return;
+    // A Subject alone is a complete card (Larry, Sept 30 2026: "Subject without content refused to save") -- it shows as the bold
+    // headline. Headers still need their text, since a header's text is its name.
+    var _icSubjOnlyEl=document.getElementById('isx-p-subject');
+    var _icSubjOnly=(_icSubjOnlyEl?_icSubjOnlyEl.value.trim():'') && _icIdeaMode!=='header';
+    if(!rawText && !imageUrl && !_icSubjOnly) return;
     var text=_icComposeText(rawText);
     var savedOk=false, saveErr=null, row=null;
     try{
@@ -455,7 +459,6 @@
   function _icSaveBBCard(){
     var ta=document.getElementById('isx-idea-text');
     var rawText=(ta?ta.value:'').trim();
-    if(!rawText) return;
     // SUBJECT gets its own column on briefing_cards now (Sept 22 2026) --
     // it rides the card front as a headline under the PROJECT eyebrow,
     // so it's kept separate here instead of folded into the task text
@@ -463,6 +466,8 @@
     var text=rawText;
     var _icSubjEl=document.getElementById('isx-p-subject');
     var subject=_icSubjEl?_icSubjEl.value.trim():'';
+    // A Subject alone is enough to save (Larry, Sept 30 2026).
+    if(!rawText && !subject) return;
     if(typeof _bbCardsList!=='function' || typeof _bbSaveLocal!=='function' || typeof _bbUUID!=='function'){
       console.error('NEW card (BB): Briefing Board save functions are not loaded on this page.');
       return;

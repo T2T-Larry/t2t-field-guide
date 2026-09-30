@@ -366,7 +366,9 @@
     var _stSubject=String(item.subject||'').trim();
     // Sept 27 2026 -- universal Subject-only view (Utility button)
     // overrides each card's own per-card "Show contents" choice while on.
-    var _stShowContents=!_stSubject || (!item.hide_contents_front && !_sboardIsSubjectOnlyView());
+    // A card saved with a Subject and no contents shows just the Subject (Sept 30 2026) -- nothing to put underneath it.
+    var _stHasBody=!!(String(item.text_content||'').trim() || item.image_url || item.link_url);
+    var _stShowContents=!_stSubject || (_stHasBody && !item.hide_contents_front && !_sboardIsSubjectOnlyView());
     var _stMultNow=(window.FGTextSize&&window.FGTextSize.getMult?window.FGTextSize.getMult():1);
     var _stBase=Math.round((height>=60?17:14)*2/3*_stMultNow);
     if(_stSubject && !_stShowContents){
