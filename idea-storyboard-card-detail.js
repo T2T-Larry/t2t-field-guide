@@ -205,20 +205,10 @@
     var orderCanUp=(_sbOrderList && _sbOrderIdx>0);
     var orderCanDown=(_sbOrderList && _sbOrderIdx>-1 && _sbOrderIdx<_sbOrderList.length-1);
 
+    // MOVE column retired Sept 30 2026 (Larry: TOPIC and board type on the ID Band should always let a card move, so "MOVE field ... might not
+    // be needed any more"). The TOPIC box now opens the same pyramid (openMoveAnywherePicker: any topic or header, Misc, + New header) and the
+    // board-type box moves the card to another board. Alt+M still opens the pyramid.
     var topRowHTML='<div class="sb-eyebrow-row">'
-      + '<div class="sb-eyebrow-col">'
-      // PARENT -> MOVE, Sept 22 2026 -- Larry: "Move button could replace
-      // the PARENT field on Idea card." Still shows where the card lives
-      // now; tapping opens the project pyramid (openMoveAnywherePicker),
-      // already opened down to this spot.
-      + '<div class="sb-hdr-eyebrow2">Move</div>'
-      // Sept 26 2026 -- sb-move-frame (idea-storyboard-screens.js) keeps
-      // this button one line tall (ellipsis instead of wrap) even when
-      // curHeaderLabel is long, matching the fixed one-line height of the
-      // View and Order columns beside it (Larry: "MOVE field is 2 lines
-      // ... make it one line consistent with other fields on that line").
-      + '<button class="sb-view-frame sb-move-frame" id="sb-move-btn" type="button" title="Where this card lives — tap to move it anywhere (Alt+M) — '+_sboardEsc(curHeaderLabel)+'">'+curHeaderLabel+' ▾</button>'
-      + '</div>'
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
       + '<div class="sb-eyebrow-col">'
       + '<div class="sb-hdr-eyebrow2">Order</div>'
@@ -299,7 +289,7 @@
       // title head is gone: the ID Band carries the title (upper left), the PRIMARY head and the X, exactly like the Briefing Card back.
       // Same ids (sb-close, sb-primary-trigger/-menu, sb-details-eyebrow) so every existing handler keeps working.
       + (window.FGCardBack
-          ? FGCardBack.bandHTML({board:'idea', titleHTML:'<span id="sb-details-eyebrow">BLUE SKY<br>CARD</span>', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
+          ? FGCardBack.bandHTML({board:'idea', topicPicker:true, topicPickerId:'sb-d-topic-btn', kindPicker:true, kindPickerId:'sb-d-kind-btn', titleHTML:'<span id="sb-details-eyebrow">BLUE SKY<br>CARD</span>', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
           : '<div id="sb-details-head" class="bb-overlay-head"><span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Blue Sky Card</span><button id="sb-close" class="bb-close" aria-label="Close">✕</button></div>')
       + '<div class="bbw">'
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:var(--bb-sub);height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
@@ -736,6 +726,65 @@
       });
     }
 
+    // ID Band on the back (Sept 30 2026, Larry: "TOPIC and board type should always allow a card to move where appropriate").
+    // TOPIC opens the same pyramid the MOVE field used to; the board-type box opens a short list of boards.
+    // Only Blue Sky -> Briefing is wired so far; the other boards say so rather than pretending.
+    function openKindPicker(){
+      var ov3=document.getElementById('sb-detail-overlay');
+      if(!ov3) return;
+      var kinds=(window.IDBand && IDBand.BOARD_KINDS) || [];
+      var rows=kinds.map(function(k){
+        var here=(k.value==='IDEA'), ok=(k.value==='BRIEFING BOARD');
+        return '<button class="sc-ov-btn sb-kind-row" data-kind="'+k.value+'" style="width:100%;margin-bottom:4px;'+((here||!ok)?'opacity:.55;':'')+'">'+_sboardEsc(k.label)+(here?' (this board)':(ok?'':' — not yet'))+'</button>';
+      }).join('');
+      ov3.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+_sboardEsc(item.text_content||item.subject||'(untitled)')+'" to which board?</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Briefing makes a copy in that board\'s Parking Lot; this card stays here.</div>'
+        +rows
+        +'<button class="sc-ov-btn" id="sb-kind-cancel" style="width:100%;margin-top:4px">Cancel</button>'
+        +'</div>';
+      ov3.classList.add('active');
+      Array.prototype.forEach.call(ov3.querySelectorAll('.sb-kind-row'), function(b){
+        b.addEventListener('click', function(){
+          var kv=b.getAttribute('data-kind');
+          if(kv==='IDEA'){ openSbDetail(item); return; }
+          if(kv==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
+          _sboardShowToast('Moving a card to that board is not built yet.');
+        });
+      });
+      T().wire('sb-kind-cancel', function(){ openSbDetail(item); });
+    }
+    // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. The Blue Sky card is kept.
+    async function sendToBriefingBoard(){
+      try{
+        if(item.content_type==='header'){ _sboardShowToast('Headers reach the Briefing Board through their own assign button.'); openSbDetail(item); return; }
+        var text=(item.text_content||'').trim(), subj=(item.subject||'').trim();
+        if(!text && !subj){ _sboardShowToast('This card has no text to send.'); openSbDetail(item); return; }
+        var au=await _sb.auth.getUser(); var uid=(au&&au.data&&au.data.user)?au.data.user.id:null;
+        if(!uid) throw new Error('Not signed in');
+        var topicId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.currentTopicId||null);
+        var br=await _sb.from('briefing_boards').select('id,board_type,storyboard_project_id,created_at').eq('user_id',uid).order('created_at',{ascending:true});
+        if(br.error) throw br.error;
+        var boards=br.data||[];
+        var board=boards.filter(function(b){ return topicId && String(b.storyboard_project_id)===String(topicId); })[0]
+               || boards.filter(function(b){ return (b.board_type||'personal')==='personal'; })[0] || boards[0];
+        if(!board){ _sboardShowToast('Open the Briefing Board once first, so it has a board to receive this.'); openSbDetail(item); return; }
+        var top=await _sb.from('briefing_cards').select('sort_order').eq('board_id',board.id).eq('col','new').order('sort_order',{ascending:true,nullsFirst:false}).limit(1);
+        var minSort=(top.data && top.data[0] && typeof top.data[0].sort_order==='number') ? top.data[0].sort_order : 1;
+        var row={board_id:board.id, col:'new', task:text||subj, subject:subj||null, hide_contents_front:!!item.hide_contents_front, priority:'', sort_order:minSort-1};
+        if(topicId) row.project_header_id=topicId;
+        var ins=await _sb.from('briefing_cards').insert(row).select('id').single();
+        if(ins.error) throw ins.error;
+        closeSbDetail();
+        _sboardShowToast('Sent to the Briefing Board Parking Lot. The Blue Sky card stays here.');
+      }catch(err){
+        console.error('Send to Briefing Board failed', err);
+        _sboardShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));
+        try{ openSbDetail(item); }catch(e){}
+      }
+    }
+    T().wire('sb-d-topic-btn', openMoveAnywherePicker);
+    T().wire('sb-d-kind-btn', openKindPicker);
     T().wire('sb-move-btn', openMoveAnywherePicker);
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
     // then asks for the move picker straight away.

@@ -219,9 +219,16 @@
     injectShape();
     var topic = opts.projectPicker
       ? '<div class="bb-cdrop"><button type="button" class="bb-topic-hit bb-cdrop-trigger fg-back-topic fg-back-own" id="bb-d-project-trigger" title="Change which topic this card belongs to" style="cursor:pointer"></button><div class="bb-cdrop-menu" id="bb-d-project-menu" hidden></div></div>'
-      : '<span class="bb-topic-hit fg-back-topic"></span>';
+      : (opts.topicPicker
+          // Sept 30 2026 (Larry: "TOPIC and board type should always allow a card to move where appropriate") -- a clickable TOPIC whose text is
+          // still painted live from the board's band; the card's own code wires the click (Blue Sky back: opens the move pyramid).
+          ? '<button type="button" class="bb-topic-hit fg-back-topic" id="'+(opts.topicPickerId||'fg-back-topic-btn')+'" title="Move this card to another topic" style="cursor:pointer"></button>'
+          : '<span class="bb-topic-hit fg-back-topic"></span>');
     var title = opts.titleHTML ? '<span class="fg-back-title">'+opts.titleHTML+'</span>' : '';
-    return '<div class="fg-back-idband"><div class="fg-back-idl">'+title+'</div><div class="fg-back-idc">'+topic+'<span class="bb-boardkind-hit fg-back-kind"></span></div><div class="fg-back-idr">'+(opts.extraHTML||'')+'</div></div>';
+    var kind = opts.kindPicker
+      ? '<button type="button" class="bb-boardkind-hit fg-back-kind" id="'+(opts.kindPickerId||'fg-back-kind-btn')+'" title="Move this card to another board" style="cursor:pointer"></button>'
+      : '<span class="bb-boardkind-hit fg-back-kind"></span>';
+    return '<div class="fg-back-idband"><div class="fg-back-idl">'+title+'</div><div class="fg-back-idc">'+topic+kind+'</div><div class="fg-back-idr">'+(opts.extraHTML||'')+'</div></div>';
   }
 
   // The checkbox region: every addition's opened body moves into a left column, and the addition checkboxes gather into a small dark list
