@@ -88,14 +88,25 @@
   var TOPIC_IDS = ['bb-topic-hit','sc-topic-text'];
   var KIND_IDS  = ['bb-boardkind-trigger','sc-board-kind-trigger'];
 
+  // Sept 30 2026 (Larry: a Blue Sky Parking Lot card's back said MASTER BRIEFING) -- the Briefing Board's band elements stay in the page,
+  // hidden, after you leave it, and this used to take the first id with any text -- so a hidden BB band beat the Blue Sky band actually
+  // on screen. Two guards now: each board passes its OWN ids (BOARD_IDS below), and within a list an element that is really on screen
+  // wins over one that is not.
+  var BOARD_IDS = {
+    idea: { topic:['sc-topic-text'],  kind:['sc-board-kind-trigger'] },
+    bb:   { topic:['bb-topic-hit'],   kind:['bb-boardkind-trigger'] }
+  };
   function _liveText(ids){
+    var hidden='';
     for(var i=0;i<ids.length;i++){
       var el=document.getElementById(ids[i]);
       if(!el) continue;
       var t=(el.textContent||'').replace(/\s+/g,' ').trim();
-      if(t && t!=='…' && t!=='...') return t;
+      if(!t || t==='…' || t==='...') continue;
+      if(el.getClientRects().length) return t;
+      if(!hidden) hidden=t;
     }
-    return '';
+    return hidden;
   }
 
   function injectShape(){
@@ -166,6 +177,13 @@
       +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:.9;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
       +'.fg-back-idband .bb-icon-btn,.fg-back-idband .bb-close{flex:0 0 auto;width:26px;height:26px;min-width:0;padding:0;font-size:calc(13px * var(--fg-text-scale,1))}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
+      // Blue Sky (Idea) card back -- same 5x3 recipe as the Briefing Card back (Sept 30 2026): a column, the content block grows, the icon row rides the bottom.
+      +'.sc-overlay-card.sb-details-card.fg-cardback-idea.fg-back-3x5{display:flex;flex-direction:column;padding-bottom:8px!important}'
+      +'.fg-cardback-idea.fg-back-3x5 .fg-back-idband{flex:0 0 auto}'
+      +'.fg-cardback-idea.fg-back-3x5 .bbw{flex:1 0 auto;align-items:flex-start}'
+      +'.fg-cardback-idea.fg-back-3x5 .bbw>:not(.bb-action-row){align-self:stretch}'
+      +'.fg-back-checks #sb-add-notes-wrap{display:none}'
+      +'#sb-swatch-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
       ;
     document.head.appendChild(st);
   }
@@ -206,12 +224,14 @@
 
   // Fill (or refresh) the band inside one card-back element from the live
   // ID Band. Safe to call every time a back opens.
-  function paintBand(cardEl){
+  // board: 'idea' or 'bb' reads only that board's own band; omitted = either, on-screen one first.
+  function paintBand(cardEl, board){
     if(!cardEl) return;
     var band=cardEl.querySelector('.fg-back-idband');
     if(!band) return;
     var t=band.querySelector('.fg-back-topic'), k=band.querySelector('.fg-back-kind');
-    var tv=_liveText(TOPIC_IDS), kv=_liveText(KIND_IDS);
+    var own=BOARD_IDS[board];
+    var tv=_liveText(own?own.topic:TOPIC_IDS), kv=_liveText(own?own.kind:KIND_IDS);
     if(t && !t.classList.contains('fg-back-own')){ t.textContent=tv; t.title=tv; t.classList.toggle('fg-back-empty', !tv); }
     if(k){ k.textContent=kv; k.title=kv; k.classList.toggle('fg-back-empty', !kv); }
     band.style.display = (tv||kv||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';

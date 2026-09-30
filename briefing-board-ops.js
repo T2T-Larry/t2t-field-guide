@@ -1459,7 +1459,7 @@
     // fixed Hang-Ups red (#a3372b) already used on the column header and
     // flag buttons -- one semantic color for "this is stuck," everywhere.
     var _bbDetailCard=document.querySelector('#bb-detail-overlay .bb-overlay-card');
-    if(_bbDetailCard && window.FGCardBack) FGCardBack.paintBand(_bbDetailCard);
+    if(_bbDetailCard && window.FGCardBack) FGCardBack.paintBand(_bbDetailCard, 'bb');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';

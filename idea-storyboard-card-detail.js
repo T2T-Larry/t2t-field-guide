@@ -295,11 +295,13 @@
     if(window.FGCardBack) FGCardBack.inject();
     ov.innerHTML='<div class="sc-overlay-card sb-details-card bb-overlay-card fg-cardback-idea fg-back-3x5" style="position:relative">'
       // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
-      + (window.FGCardBack ? FGCardBack.bandHTML() : '')
-      + '<div id="sb-details-head" class="bb-overlay-head">'
-      + '<span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Idea Card</span>'
-      + '<button id="sb-close" class="bb-close" aria-label="Close">✕</button>'
-      + '</div>'
+      // Sept 30 2026 (Larry: "backs of the cards need some consistency... a look like the BB cards but for BLUE SKY cards") -- the old
+      // title head is gone: the ID Band carries the title (upper left), the PRIMARY head and the X, exactly like the Briefing Card back.
+      // Same ids (sb-close, sb-primary-trigger/-menu, sb-details-eyebrow) so every existing handler keeps working.
+      + (window.FGCardBack
+          ? FGCardBack.bandHTML({board:'idea', titleHTML:'<span id="sb-details-eyebrow">BLUE SKY<br>CARD</span>', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
+          : '<div id="sb-details-head" class="bb-overlay-head"><span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Blue Sky Card</span><button id="sb-close" class="bb-close" aria-label="Close">✕</button></div>')
+      + '<div class="bbw">'
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:var(--bb-sub);height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
       // Priority, Sept 22 2026 -- Larry, Master BB (DOING): "The BB cards
       // have priority options at the top of the cards. Make Idea cards
@@ -308,11 +310,16 @@
       // M->MH->off, L->ML->off) and colors -- _bbNextPriority/PRI_COLOR
       // come straight from briefing-board-ops.js so the two never disagree.
       // Yes/No = ideas.hide_priority_front (No hides the tag on the face).
+      + '<div class="fg-back-toprow">'
       + '<div class="bb-field sb-pri-field"><label>Priority</label>'
       +   '<div id="sb-pri-btns" class="bb-priorities">'
       +     ['H','M','L'].map(function(p){ return '<button type="button" class="bb-pri-btn sb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
       +   '</div>'
       +   '<label class="bb-front-check" id="sb-pri-front-row"><input type="checkbox" id="sb-pri-front"><span>Show on front</span></label>'
+      + '</div>'
+      + '<div class="bb-field sb-subject-field"><label>Subject</label>'
+      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
+      + '</div>'
       + '</div>'
       + apexTag
       + topRowHTML
@@ -332,10 +339,6 @@
       // agnostic T2TStoryboard.assignPrimaryDirect (defaults to 'idea')
       // -- see _sbRenderCardPrimaryField below, wired the same way
       // _bbRenderCardPrimaryField wires the Briefing Card's.
-      + '<div class="bb-field sb-subject-field"><label>Subject</label><div style="display:flex;align-items:center;gap:8px">'
-      +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline for the front of the card" style="flex:1 1 auto;min-width:0" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
-      +   '<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div>'
-      + '</div></div>'
       + '<div class="bb-field sb-contents-field"><label>Contents</label>'
       + bodyHTML
       // "Show on front" checkbox, Sept 23 2026 -- replaces the Yes/No
@@ -398,6 +401,8 @@
       +   '<div id="sb-org-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-top:4px;min-height:11px"></div>'
       + '</div></div>'
       + '<div id="sb-swatch-row" class="sb-swatch-row2">'+swatches+'</div>'
+      // Links live under the gear (Utility), same as Budget/Links on the Briefing Card back -- moved in by the layout block below.
+      + '<div class="fg-back-util-extra" id="sb-util-extra"></div>'
       + '<div id="sb-note-status" style="font-size:calc(9px * var(--fg-text-scale,1));color:var(--bb-sub);margin-bottom:4px;min-height:11px"></div>'
       + '<input type="file" id="sb-img-input" accept="image/*" style="display:none">'
       + '<div class="bb-doors-row bb-action-row">'
@@ -405,6 +410,7 @@
       + '<button class="bb-icon-btn" id="sb-people-btn" title="Who\'s on this card">👥</button>'
       + '<div class="sc-cdrop-menu" id="sb-people-menu" hidden></div>'
       + '<button class="bb-icon-btn" id="sb-gear" title="Utility">⚙️</button>'
+      + '<button class="bb-icon-btn" id="sb-notes-pencil" type="button" title="Notes">✏️</button>'
       + '<button class="bb-icon-btn" id="sb-trash" title="Trash">'+(isTrashed?'↩️':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>')+'</button>'
       + '</div>'
       // sb-trash-overlay ("Moose poop?" confirm) — renumbered 9718 → 1221
@@ -424,8 +430,27 @@
       + '<button id="sb-trash-yes" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Yes</button>'
       + '<button id="sb-trash-no" style="font-size:calc(12px * var(--fg-text-scale,1));padding:6px 12px;background:#fff;border:0.5px solid #B4B2A9;border-radius:6px;cursor:pointer">Keep it</button>'
       + '</div></div></div>'
+      + '</div>'
       + '</div>';
-    if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'));
+    // 5x3 back layout, Sept 30 2026 -- same recipe as the Briefing Card back (briefing-board-screens.js): one full-width column,
+    // only the checkbox region is two columns, Notes is the pencil in the bottom row, Links sit under the gear.
+    (function(){
+      var card=ov.querySelector('.sb-details-card'); if(!card || !window.FGCardBack) return;
+      var bbw=card.querySelector('.bbw'); if(!bbw) return;
+      FGCardBack.checkRegion(bbw, ['sb-add-links-wrap']);
+      var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
+      if(ux && lw) ux.appendChild(lw);
+      var pen=card.querySelector('#sb-notes-pencil'), ncb=card.querySelector('#sb-add-notes');
+      if(pen && ncb){
+        pen.classList.toggle('fg-on', ncb.checked);
+        pen.addEventListener('click', function(e){
+          e.stopPropagation(); ncb.checked=!ncb.checked;
+          ncb.dispatchEvent(new Event('change',{bubbles:true}));
+          pen.classList.toggle('fg-on', ncb.checked);
+        });
+      }
+    })();
+    if(window.FGCardBack) FGCardBack.paintBand(ov.querySelector('.sb-details-card'), 'idea');
     ov.classList.add('active');
     // Drag, Aug 19 2026 (Larry): IDEA CARD never had this -- every Briefing
     // Card overlay drags via _bbMakeDraggable in briefing-board.js, this
@@ -434,7 +459,7 @@
     // icons, not modal overlay cards. Position resets on close/reopen
     // (innerHTML is rebuilt from scratch) -- no saved-position persistence
     // yet, matching what was asked for.
-    _sbMakeDraggable(ov.querySelector('.sb-details-card'), document.getElementById('sb-details-head'));
+    _sbMakeDraggable(ov.querySelector('.sb-details-card'), ov.querySelector('.sb-details-card .fg-back-idband') || document.getElementById('sb-details-head'));
 
     (function(){
       var clicks=0, timer=null;
@@ -1636,7 +1661,7 @@
   function _sbMakeDraggable(cardEl, headEl){
     if(!cardEl || !headEl) return;
     function onDown(e){
-      if(e.target.closest('#sb-close')) return;
+      if(e.target.closest('#sb-close, .bb-icon-btn, .bb-cdrop-menu')) return;
       var pt = e.touches ? e.touches[0] : e;
       var rect=cardEl.getBoundingClientRect();
       _sbDragState={cardEl:cardEl, headEl:headEl, startX:pt.clientX, startY:pt.clientY, startLeft:rect.left, startTop:rect.top};
