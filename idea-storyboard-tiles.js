@@ -579,7 +579,11 @@
         // .select(), a write filtered out by RLS or a stale id still
         // comes back with no .error, so it looks like it worked when
         // nothing was touched).
-        var upd=await _sb.from('ideas').update({content_type:'header'}).eq('id',targetItem.id).select('id');
+        // A card with only a Subject (no contents) has no name to carry over -- the Subject is its title, so it becomes the header's
+        // name too, rather than the header reading "(untitled)" everywhere (Larry, Sept 30 2026).
+        var _promoFields={content_type:'header'};
+        if(!String(targetItem.text_content||'').trim() && String(targetItem.subject||'').trim()) _promoFields.text_content=String(targetItem.subject).trim();
+        var upd=await _sb.from('ideas').update(_promoFields).eq('id',targetItem.id).select('id');
         if(upd.error) throw upd.error;
         if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- nothing promoted.');
         // Cache patch, Sept 19 2026 (Larry: "dropped a card into a subber
@@ -596,7 +600,7 @@
         // row. Patching the cache here, same as every other write in this
         // file already does before its own renderSeaBoard(true), keeps
         // this one immediately consistent too.
-        _sboardPatchRow(targetItem.id, {content_type:'header'});
+        _sboardPatchRow(targetItem.id, _promoFields);
       }
       await _sboardMoveCard(draggedId, targetItem.id);
     }catch(err){
@@ -613,7 +617,10 @@
   function _sboardPaintHeaderFace(el, row, name, base, min, maxW, maxH, lineH){
     var subj=String((row && row.subject)||'').trim();
     if(!subj){ el.textContent=name; return; }
-    var showName=!(row.hide_contents_front) && !_sboardIsSubjectOnlyView();
+    // The header's own name can be empty (a Subject-only card turned into a header) or the same words as the Subject -- either way the
+    // Subject is the title and nothing else is added to the face (Larry, Sept 30 2026: "Do not add words to card").
+    var realName=String((row && row.text_content)||'').trim();
+    var showName=!(row.hide_contents_front) && !_sboardIsSubjectOnlyView() && realName && realName!==subj;
     el.textContent='';
     var hS=document.createElement('span');
     hS.textContent=subj;
