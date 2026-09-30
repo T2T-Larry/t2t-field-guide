@@ -729,30 +729,38 @@
     // ID Band on the back (Sept 30 2026, Larry: "TOPIC and board type should always allow a card to move where appropriate").
     // TOPIC opens the same pyramid the MOVE field used to; the board-type box opens a short list of boards.
     // Only Blue Sky -> Briefing is wired so far; the other boards say so rather than pretending.
-    function openKindPicker(){
-      var ov3=document.getElementById('sb-detail-overlay');
-      if(!ov3) return;
-      var kinds=(window.IDBand && IDBand.BOARD_KINDS) || [];
-      var rows=kinds.map(function(k){
-        var here=(k.value==='IDEA'), ok=(k.value==='BRIEFING BOARD');
-        return '<button class="sc-ov-btn sb-kind-row" data-kind="'+k.value+'" style="width:100%;margin-bottom:4px;'+((here||!ok)?'opacity:.55;':'')+'">'+_sboardEsc(k.label)+(here?' (this board)':(ok?'':' — not yet'))+'</button>';
-      }).join('');
-      ov3.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+_sboardEsc(item.text_content||item.subject||'(untitled)')+'" to which board?</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Briefing makes a copy in that board\'s Parking Lot; this card stays here.</div>'
-        +rows
-        +'<button class="sc-ov-btn" id="sb-kind-cancel" style="width:100%;margin-top:4px">Cancel</button>'
-        +'</div>';
-      ov3.classList.add('active');
-      Array.prototype.forEach.call(ov3.querySelectorAll('.sb-kind-row'), function(b){
-        b.addEventListener('click', function(){
-          var kv=b.getAttribute('data-kind');
-          if(kv==='IDEA'){ openSbDetail(item); return; }
-          if(kv==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
-          _sboardShowToast('Moving a card to that board is not built yet.');
+    // The board-type dropdown is the board's own: same .sc-cdrop-menu / .sc-cdrop-row shell (dark navy list, white rows, this board marked
+    // active), same labels from IDBand.BOARD_KINDS, opened right under the box (Larry, Sept 30 2026: "board type should look exactly like
+    // the board type on the board itself"). Only Briefing actually moves the card so far; the others say so.
+    function openKindPicker(ev){
+      if(ev && ev.stopPropagation) ev.stopPropagation();
+      var trig=document.getElementById('sb-d-kind-btn');
+      if(!trig) return;
+      var old=document.getElementById('sb-d-kind-menu');
+      if(old){ old.remove(); return; }
+      var menu=document.createElement('div');
+      menu.className='sc-cdrop-menu'; menu.id='sb-d-kind-menu';
+      ((window.IDBand && IDBand.BOARD_KINDS) || []).forEach(function(k){
+        var row=document.createElement('div');
+        row.className='sc-cdrop-row'+(k.value==='IDEA'?' active':'');
+        row.setAttribute('data-kind', k.value);
+        row.textContent=k.label;
+        row.addEventListener('click', function(e){
+          e.stopPropagation(); menu.remove();
+          if(k.value==='IDEA') return;
+          if(k.value==='BRIEFING BOARD'){ sendToBriefingBoard(); return; }
+          _sboardShowToast('Moving a card to '+k.label+' is not built yet.');
         });
+        menu.appendChild(row);
       });
-      T().wire('sb-kind-cancel', function(){ openSbDetail(item); });
+      document.body.appendChild(menu);
+      var r=trig.getBoundingClientRect();
+      menu.style.left=r.left+'px'; menu.style.top=(r.bottom+4)+'px'; menu.style.minWidth=Math.max(120, r.width)+'px';
+      var mr=menu.getBoundingClientRect();
+      if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8, window.innerWidth-8-mr.width)+'px';
+      setTimeout(function(){
+        document.addEventListener('click', function close(){ var m=document.getElementById('sb-d-kind-menu'); if(m) m.remove(); document.removeEventListener('click', close); });
+      }, 0);
     }
     // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. The Blue Sky card is kept.
     async function sendToBriefingBoard(){
