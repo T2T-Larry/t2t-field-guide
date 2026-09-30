@@ -322,8 +322,6 @@
       + '</div>'
       + '</div>'
       + apexTag
-      + topRowHTML
-      + headerListHTML
       // SUBJECT + contents on face, Sept 22 2026 (Larry: "Idea Board
       // should have the same Subject with optional content on face" --
       // same as the Briefing Card). Laid out exactly like the Briefing
@@ -345,6 +343,9 @@
       // pill; same quiet lower-right checkbox as the Briefing Card.
       +   '<label class="bb-front-check" id="sb-contents-front-row"><input type="checkbox" id="sb-contents-front"><span>Show on front</span></label>'
       + '</div>'
+      // MOVE - VIEW - ORDER now sit below Contents (Larry, Sept 30 2026).
+      + topRowHTML
+      + headerListHTML
       // Additions, Aug 27 2026 (Larry: "very similar to BRIEFING CARD but
       // no PRIORITY and no DATES and no BUDGET... IDEA - NOTES - LINKS -
       // RELATED STORYBOARDS - SIGNAL FLAGS, especially option for
