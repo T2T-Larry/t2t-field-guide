@@ -619,9 +619,24 @@
     // it and tapping its name. onNavigate here does the actual move
     // (writes cluster_id) instead of just changing what's on screen,
     // which is TOPIC's own onNavigate job.
-    async function openMoveAnywherePicker(){
+    // dropdown=true (the TOPIC box on the back's ID Band, Sept 30 2026): same pyramid, drawn as the board's own dark dropdown under the box
+    // instead of a card-sized overlay. Alt+M and anything else calls it with no argument and gets the overlay as before.
+    async function openMoveAnywherePicker(dropdown){
+      dropdown = (dropdown===true);
       var ov2=document.getElementById('sb-detail-overlay');
       if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
+      var ddMenu=null;
+      if(dropdown){
+        var oldMenu=document.getElementById('sb-d-topic-menu');
+        if(oldMenu){ oldMenu.remove(); return; }
+        ddMenu=document.createElement('div'); ddMenu.className='sc-cdrop-menu'; ddMenu.id='sb-d-topic-menu';
+        ddMenu.style.maxHeight='320px'; ddMenu.style.minWidth='220px';
+        ddMenu.addEventListener('click', function(e){ e.stopPropagation(); });
+        document.body.appendChild(ddMenu);
+        var tb=document.getElementById('sb-d-topic-btn');
+        if(tb){ var tr=tb.getBoundingClientRect(); ddMenu.style.left=tr.left+'px'; ddMenu.style.top=(tr.bottom+4)+'px'; }
+        setTimeout(function(){ document.addEventListener('click', function closeTd(){ var m=document.getElementById('sb-d-topic-menu'); if(m) m.remove(); document.removeEventListener('click', closeTd); }); }, 0);
+      }
       // Parking Lot / NEW / Purpose / MISC are real places a card can go (the
       // old move panel offered them), so they stay in the list; only the
       // system buckets that aren't destinations are hidden.
@@ -645,6 +660,7 @@
       // "+ New header" (the two things the old move panel had that the
       // pyramid didn't) sit underneath it.
       var _sbTopicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
+      if(!dropdown){
       ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+_sboardEsc(item.text_content||'(untitled)')+'"</div>'
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Tap any project or topic to move this card there. ▸ opens a level.</div>'
@@ -657,6 +673,7 @@
         +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov2.classList.add('active');
+      }
       // Path from the top down to this card's current spot. Walked with a
       // plain lookup per level (no owner filter, so a shared project works
       // too); stops at the MASTER root, which the pyramid shows as "All
@@ -678,7 +695,7 @@
           cur=rowP.cluster_id;
         }
       }catch(e){}
-      var menuEl=document.getElementById('sb-anywhere-pyramid');
+      var menuEl=dropdown ? ddMenu : document.getElementById('sb-anywhere-pyramid');
       window.TopicPyramid.render(menuEl, {
         ancestors: [],
         current: {id:ROOT_ID, name:'All Topics'},
@@ -687,6 +704,7 @@
         hereId: item.cluster_id ? String(item.cluster_id) : null,
         onNavigate: async function(hid){
           if(hid===ROOT_ID) return; // "All Topics" itself isn't a place a card can live
+          if(dropdown){ var _m=document.getElementById('sb-d-topic-menu'); if(_m) _m.remove(); }
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
           var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
           try{
@@ -705,6 +723,11 @@
           }catch(err){ console.error(err); }
         }
       });
+      if(dropdown && ddMenu){
+        var mk=function(label, fn){ var r=document.createElement('div'); r.className='sc-cdrop-row'; r.style.borderTop='1px solid rgba(255,255,255,.18)'; r.textContent=label; r.addEventListener('click', function(e){ e.stopPropagation(); ddMenu.remove(); fn(); }); ddMenu.appendChild(r); };
+        mk(isMisc?'📦 Take out of Misc':'📦 Send to Misc', function(){ _sbMoveFromBoard=false; _sbSendToMisc(); });
+        if(_sbTopicForNew) mk('+ New header here', function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(_sbTopicForNew, nm); });
+      }
       T().wire('sb-anywhere-misc', function(){ _sbMoveFromBoard=false; _sbSendToMisc(); });
       T().wire('sb-anywhere-newh', function(){
         var row=document.getElementById('sb-newheader-row'); if(!row) return;
@@ -791,7 +814,7 @@
         try{ openSbDetail(item); }catch(e){}
       }
     }
-    T().wire('sb-d-topic-btn', openMoveAnywherePicker);
+    T().wire('sb-d-topic-btn', function(e){ if(e && e.stopPropagation) e.stopPropagation(); openMoveAnywherePicker(true); });
     T().wire('sb-d-kind-btn', openKindPicker);
     T().wire('sb-move-btn', openMoveAnywherePicker);
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
@@ -800,9 +823,9 @@
     // "+ New header here" (inside the MOVE pyramid): creates a header on
     // the board being viewed and moves this card into it. Same ENTER +
     // Saving… feedback as the standalone New Header prompt.
-    async function _sbNewHeaderGo(parentId){
+    async function _sbNewHeaderGo(parentId, nameOverride){
       var goBtn=document.getElementById('sb-newheader-go');
-      var name=(document.getElementById('sb-newheader-input')||{}).value||'';
+      var name=nameOverride || (document.getElementById('sb-newheader-input')||{}).value||'';
       name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
       if(goBtn){ goBtn.disabled=true; goBtn.textContent='Saving...'; }
       try{
