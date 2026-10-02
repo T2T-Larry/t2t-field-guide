@@ -142,14 +142,29 @@
   // value is the internal name each board's own click handler keys off;
   // label is the displayed word; soon (optional) is the toast for a board
   // type that has no screen yet.
+  //
+  // Oct 2 2026 -- TRIAL, Larry: the Board Type is the kind of INPUT, not the
+  // board: IDEA - TASK - NOTES. Each keeps its current link (IDEA -> Blue Sky,
+  // later Sea of Ideas; TASK -> Briefing Board; NOTES -> the Notebook). The
+  // old six-board list (SEA OF IDEAS, BLUE SKY, PATHFINDER, BRIEFING, STORY,
+  // CAST) is gone from the dropdown for now; each board's own click handler
+  // still understands those values, so restoring any of them is one line here.
+  // alsoFor (optional) lists other board kinds that READ as this type in the
+  // band's label and checkmark -- Sea of Ideas reads IDEA, Pathfinder reads
+  // TASK -- without changing what a pick does.
   window.IDBand.BOARD_KINDS = [
-    {value:'SEA',            label:'SEA OF IDEAS', soon:null},
-    {value:'IDEA',           label:'BLUE SKY',     soon:null},
-    {value:'PLAN',           label:'PATHFINDER',   soon:null},
-    {value:'BRIEFING BOARD', label:'BRIEFING',     soon:null},
-    {value:'SHARE',          label:'STORY',        soon:'STORY BOARD coming soon'},
-    {value:'CAST',           label:'CAST',         soon:null}
+    {value:'IDEA',           label:'IDEA',  soon:null, alsoFor:['SEA']},
+    {value:'BRIEFING BOARD', label:'TASK',  soon:null, alsoFor:['PLAN']},
+    {value:'NOTEBOOK',       label:'NOTES', soon:null, alsoFor:['SHARE']}
   ];
+  // The kind entry whose label a board of this kind shows (exact value first,
+  // then alsoFor). null if none -- callers fall back to the raw value.
+  window.IDBand.kindEntryFor = function(boardKind){
+    var list=window.IDBand.BOARD_KINDS, i;
+    for(i=0;i<list.length;i++) if(list[i].value===boardKind) return list[i];
+    for(i=0;i<list.length;i++) if(list[i].alsoFor && list[i].alsoFor.indexOf(boardKind)!==-1) return list[i];
+    return null;
+  };
 
   // Shared RETURN click handler -- both boards' RETURN button call this
   // directly rather than each re-implementing the same dispatch.

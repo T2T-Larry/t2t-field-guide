@@ -74,16 +74,12 @@
   // Board Type just sets both together (see _icSetBoardKind).
   var _icBoardKind='IDEA';      // 'IDEA' (BLUE SKY) | 'BRIEFING BOARD' | 'NOTEBOOK'
   var _IC_BOARD_KINDS=[
-    // Sept 29 2026 -- Larry: SEA OF IDEAS goes above BLUE SKY. The board
-    // itself exists now; saving a NEW card straight into it isn't built.
-    {value:'SEA',            label:'SEA OF IDEAS', soon:'Saving straight into SEA OF IDEAS isn’t built yet — pick another board for now.'},
-    {value:'IDEA',           label:'BLUE SKY',   entry:'idea'},
-    {value:'BRIEFING BOARD', label:'BRIEFING',   entry:'task'},
-    {value:'NOTEBOOK',       label:'NOTEBOOK',   entry:'note'},
-    // Shown so the full set is visible, but nothing to save into yet --
-    // picking one explains that instead of silently saving elsewhere.
-    {value:'PLAN',           label:'PATHFINDER',   soon:'PATHFINDER cards are coming soon — pick another board for now.'},
-    {value:'SHARE',          label:'STORY',        soon:'STORY BOARD is coming soon — pick another board for now.'}
+    // Oct 2 2026 -- Board Type trial (Larry): the band's Board Type is the
+    // kind of input, IDEA - TASK - NOTES, same three words as every board's
+    // ID Band. Each still lands where it did: Blue Sky, Briefing, Notebook.
+    {value:'IDEA',           label:'IDEA',  entry:'idea'},
+    {value:'BRIEFING BOARD', label:'TASK',  entry:'task'},
+    {value:'NOTEBOOK',       label:'NOTES', entry:'note'}
   ];
 
   // ── NEW card fields, Sept 19 2026 (Larry's "NEW CARD" spec) ──

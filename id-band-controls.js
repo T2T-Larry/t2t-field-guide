@@ -149,6 +149,13 @@
       var here=kindNow();
       if(k.value===here) return;
       if(k.value==='SHARE'){ toast(k.soon || 'Coming soon'); return; }
+      // NOTES -> the Notebook. It floats over whatever is showing and never
+      // changes the screen, so there is no topic to carry and nothing to RETURN to.
+      if(k.value==='NOTEBOOK'){
+        if(window.NotebookOpen && window.NotebookOpen.open) window.NotebookOpen.open();
+        else toast('The Notebook isn’t available right now.');
+        return;
+      }
       var topicId = cfg.topicId ? cfg.topicId() : null;
       if(!topicId){ toast('Open a topic first.'); return; }
       if(k.value==='CAST'){
@@ -176,11 +183,10 @@
 
     function markActive(){
       var menu=$(ids.kindMenu), now=kindNow(), trig=$(ids.kindTrigger);
-      var kinds=window.IDBand.BOARD_KINDS, label=now;
-      kinds.forEach(function(k){ if(k.value===now) label=k.label; });
+      var entry=window.IDBand.kindEntryFor(now), label=entry ? entry.label : now;
       if(trig && cfg.setTriggerLabel) trig.textContent=label;
       if(menu) Array.prototype.forEach.call(menu.querySelectorAll('[data-kind]'), function(r){
-        r.classList.toggle('active', r.getAttribute('data-kind')===now);
+        r.classList.toggle('active', !!entry && r.getAttribute('data-kind')===entry.value);
       });
     }
 
