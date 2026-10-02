@@ -157,6 +157,15 @@
     {value:'BRIEFING BOARD', label:'TASK',  soon:null, alsoFor:['PLAN']},
     {value:'NOTEBOOK',       label:'NOTES', soon:null, alsoFor:['SHARE']}
   ];
+  // What each BOARD calls itself in its own band. The dropdown offers the
+  // three input types (above); the band itself keeps naming the board you
+  // are standing on, so you always know where you are. (Oct 2 2026, Larry:
+  // "the board type stays on the board itself but the action is the 3 type
+  // choices.")
+  window.IDBand.boardName = function(boardKind){
+    var names={SEA:'SEA OF IDEAS', IDEA:'BLUE SKY', PLAN:'PATHFINDER', 'BRIEFING BOARD':'BRIEFING', SHARE:'STORY', CAST:'CAST', NOTEBOOK:'NOTEBOOK'};
+    return names[boardKind] || boardKind;
+  };
   // The kind entry whose label a board of this kind shows (exact value first,
   // then alsoFor). null if none -- callers fall back to the raw value.
   window.IDBand.kindEntryFor = function(boardKind){

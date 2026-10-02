@@ -183,7 +183,7 @@
 
     function markActive(){
       var menu=$(ids.kindMenu), now=kindNow(), trig=$(ids.kindTrigger);
-      var entry=window.IDBand.kindEntryFor(now), label=entry ? entry.label : now;
+      var entry=window.IDBand.kindEntryFor(now), label=window.IDBand.boardName(now);
       if(trig && cfg.setTriggerLabel) trig.textContent=label;
       if(menu) Array.prototype.forEach.call(menu.querySelectorAll('[data-kind]'), function(r){
         r.classList.toggle('active', !!entry && r.getAttribute('data-kind')===entry.value);

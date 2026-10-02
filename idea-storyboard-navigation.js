@@ -734,10 +734,11 @@
     // internally (matches storyboard_kind and every k.value comparison
     // above), only the displayed word changes. Sept 26 2026 -- IDEAS ->
     // BLUE SKY, PLAN -> PATHFINDER (kept in sync with _sboardBoardKinds).
-    // Oct 2 2026 -- Board Type trial: the band reads IDEA - TASK - NOTES, so
-    // Blue Sky shows IDEA and Pathfinder shows TASK (IDBand.kindEntryFor).
+    // Oct 2 2026 -- Board Type trial: the dropdown offers IDEA - TASK - NOTES,
+    // but the band keeps the board's own name (BLUE SKY, PATHFINDER); the
+    // checkmark sits on the type that board belongs to (IDBand.kindEntryFor).
     var kindEntry=window.IDBand && IDBand.kindEntryFor ? IDBand.kindEntryFor(kindNow) : null;
-    if(trigger) trigger.textContent=kindEntry ? kindEntry.label : kindNow;
+    if(trigger) trigger.textContent=(window.IDBand && IDBand.boardName) ? IDBand.boardName(kindNow) : kindNow;
     if(menu){
       Array.prototype.forEach.call(menu.querySelectorAll('.sc-cdrop-row[data-kind]'), function(row){
         row.classList.toggle('active', !!kindEntry && row.getAttribute('data-kind')===kindEntry.value);
