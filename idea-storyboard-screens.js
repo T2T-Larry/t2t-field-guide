@@ -2072,7 +2072,15 @@
       _unordered.forEach(function(h){ if(!seen[h.id]){ seen[h.id]=true; order.push(String(h.id)); } });
       var fallbackTop=order.map(function(id){ return _unordered.find(function(h){ return String(h.id)===String(id); }); }).filter(Boolean);
       var explicitTop=_ordered.slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); });
-      var orderedTop=fallbackTop.concat(explicitTop);
+      // Oct 2 2026, Larry: ALL additions go to the BOTTOM of a list, header or
+      // subber alike. A brand-new top-level header has no sort_order yet, and
+      // this used to put every such row FIRST (fallbackTop before explicitTop),
+      // so each new header landed at the top. Rows that already have a real
+      // order now come first and the not-yet-ordered ones follow, so a new
+      // header lands last; the backfill just below then makes that position
+      // permanent. (Subber columns and nested rows already sorted
+      // null-sort_order last, so they needed no change.)
+      var orderedTop=explicitTop.concat(fallbackTop);
       // ORDER # badges always read the REAL order, never the alphabetical
       // display below -- backfill first so that's a genuine persisted
       // position from here on, then set _sboardTopLevelOrder from it
