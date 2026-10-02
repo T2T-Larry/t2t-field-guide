@@ -1889,7 +1889,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front')
+          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -2177,8 +2177,15 @@
         // one relying on it. Subbers/ideas render vertically top to
         // bottom, always in this real order -- there's no alphabetical
         // view for this level (yet), so no separate display copy needed.
-        _sboardBackfillSortOrder(subs);
-        _sboardBackfillSortOrder(directItems);
+        // Oct 2 2026, Larry: "ALL NEW ADDITIONS need to start at the bottom."
+        // ROOT CAUSE of new headers landing above everything: these two calls
+        // numbered each kind SEPARATELY (a brand-new header with no order got
+        // 0 among the headers, a new card got 0 among the cards) BEFORE the
+        // two lists were merged into one column below, so a new header always
+        // came in as 0 and sorted to the top. The column is now ordered ONCE,
+        // as one list, by _sboardBackfillColumnOrder further down: rows with
+        // no order yet sort last (oldest-created first), so a new header or
+        // card lands at the bottom and is then numbered there for good.
         // Unified column order, Aug 22 2026 (Larry: "sub-headers always
         // cluster to the top... I want to mix them into the story"). Used
         // to be two entirely separate 0-based sequences (Subbers, plain
@@ -2212,7 +2219,13 @@
         // case it was built for), never a false alarm from this
         // concatenation artifact.
         var combined=subs.concat(directItems);
-        combined.sort(_sboardBySortOrder);
+        combined.sort(function(a,b){
+          var d=_sboardBySortOrder(a,b);
+          if(d===d && d!==0) return d; // both ordered, or one ordered + one not
+          // Both have no order yet (NaN from Infinity-Infinity) or tie:
+          // oldest-created first, so the newest addition is last.
+          return String(a.created_at||'').localeCompare(String(b.created_at||''));
+        });
         _sboardBackfillColumnOrder(combined);
         // Same-type subsets of the line above, kept in sync purely for
         // other code that only ever asks about one type (CLUSTER's own
