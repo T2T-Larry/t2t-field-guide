@@ -1972,6 +1972,9 @@
       var rows=projectRow ? _tmAllRosterRows(projectRow) : [];
       _sboardViewMenuRowsCache=rows;
       menu.innerHTML='';
+      // Clicks inside the list (the (+) form's input, its suggestions) must
+      // not reach the page-level "click anywhere closes every dropdown".
+      menu.onclick=function(e){ e.stopPropagation(); };
       var allRow=document.createElement('div');
       allRow.className='sc-cdrop-row'+((!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) ? ' active' : '');
       allRow.textContent='All';
@@ -2003,6 +2006,93 @@
         });
         row.addEventListener('click', function(e){ e.stopPropagation(); });
         menu.appendChild(row);
+      });
+      // Dashed (+) at the bottom, Oct 3 2026 -- Larry, on MASTER BLUE SKY:
+      // "My name was there, but no (+) at the bottom to add new members.
+      // Must be there. Flexibility!" Every other Cast list (the 👤 CAST PICK
+      // list, the 👥 card dropdown, BB's own menus) ends in the same dashed
+      // (+); this one never built it. Same inline search of every T2T
+      // member as cast-pick-list.js: picking a member seats them on this
+      // board's Cast (same add_storyboard_member call the Team Roster
+      // uses); a typed name that isn't a member yet becomes a Cast person.
+      var addRow=document.createElement('div');
+      addRow.className='sc-cdrop-addrow';
+      var addBtn=document.createElement('button');
+      addBtn.type='button';
+      addBtn.className='sc-dotted-add-btn';
+      addBtn.title='Add someone to this board';
+      addBtn.textContent='+';
+      addRow.appendChild(addBtn);
+      menu.appendChild(addRow);
+      addBtn.addEventListener('click', async function(e){
+        e.stopPropagation();
+        addRow.remove();
+        var form=document.createElement('div');
+        form.className='sc-view-addform';
+        form.innerHTML='<input type="text" placeholder="Type a name or email…" autocomplete="off"><div class="tm-add-suggest" style="display:none"></div><div class="sc-view-add-error" style="display:none"></div>';
+        menu.appendChild(form);
+        var input=form.querySelector('input'), box=form.querySelector('.tm-add-suggest'), msg=form.querySelector('.sc-view-add-error');
+        var listed={}; rows.forEach(function(r){ listed[String(r.user_id)]=true; });
+        try{ await _tmFetchAllMembers(); }catch(err){}
+        var pool=_tmAllMembersCache||[];
+        function say(text, bad){ msg.style.display=text?'block':'none'; msg.textContent=text||''; msg.style.color=bad?'#ffb4a2':'#b7e4c7'; }
+        function renderSuggest(){
+          var q=input.value.trim().toLowerCase();
+          var matches=pool.filter(function(p){
+            if(!p.user_id || listed[String(p.user_id)]) return false;
+            if(!q) return true;
+            return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.email||'').toLowerCase().indexOf(q)>=0;
+          });
+          var typed=input.value.trim();
+          var exact=typed && pool.some(function(p){ return String(p.name||'').toLowerCase()===typed.toLowerCase(); });
+          var html=matches.map(function(p){
+            return '<div class="tm-add-suggest-row" data-uid="'+_esc9710(p.user_id)+'">'
+              +'<div class="tm-add-suggest-name">'+_esc9710(p.name||p.email||'')+(p.is_member===false?' <span style="opacity:.6;font-size:.85em">(not a member yet)</span>':'')+'</div>'
+              +(p.email?'<div class="tm-add-suggest-email">'+_esc9710(p.email)+'</div>':'')
+            +'</div>';
+          }).join('');
+          if(typed && !exact){
+            html+='<div class="tm-add-suggest-row" data-newname="'+_esc9710(typed)+'"><div class="tm-add-suggest-name">+ Add “'+_esc9710(typed)+'”</div><div class="tm-add-suggest-email">new person — not a T2T member yet</div></div>';
+          }
+          box.innerHTML=html || '<div class="tm-add-suggest-empty">Everyone’s already listed above.</div>';
+          box.style.display='block';
+        }
+        box.addEventListener('click', async function(ev){
+          ev.stopPropagation();
+          var r=ev.target.closest('.tm-add-suggest-row'); if(!r) return;
+          var newName=r.getAttribute('data-newname');
+          if(newName){
+            if(typeof _castAddPerson!=='function') return;
+            var made=await _castAddPerson(newName);
+            if(!made.ok){ say(made.msg||'Could not add that person.', true); return; }
+            say('Added “'+made.person.name+'”. They show in this list once they are on a card here.', false);
+            input.value=''; renderSuggest();
+            return;
+          }
+          var uid=r.getAttribute('data-uid');
+          var p=pool.filter(function(x){ return String(x.user_id)===String(uid); })[0];
+          if(!p){ return; }
+          if(p.is_member===false){ say('“'+(p.name||'That person')+'” is not a T2T member yet, so they can’t be seated on the board itself. Assign them to a card and they will show up here.', true); return; }
+          if(!projectRow){ say('Open a board first.', true); return; }
+          var res;
+          if(p.email){
+            res=await _tmAddMember(projectRow, p.email);
+          } else {
+            try{
+              var ins=await T().sb.rpc('add_storyboard_member', {p_project_id: projectRow.id, p_user_id: uid});
+              res=ins.error?{ok:false,msg:ins.error.message||'Could not add them.'}:{ok:true};
+            }catch(err2){ res={ok:false,msg:'Could not add them.'}; }
+          }
+          if(!res.ok){ say(res.msg||'Could not add them.', true); return; }
+          await openMenu();   // rebuild so the new name shows as a row
+        });
+        input.addEventListener('input', renderSuggest);
+        input.addEventListener('keydown', function(ev){
+          if(ev.key==='Escape'){ ev.stopPropagation(); menu.hidden=true; }
+          if(ev.key==='Enter'){ ev.preventDefault(); var first=box.querySelector('.tm-add-suggest-row'); if(first) first.click(); }
+        });
+        renderSuggest();
+        input.focus();
       });
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
