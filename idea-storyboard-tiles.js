@@ -186,10 +186,11 @@
     }
     return false;
   }
-  function _sboardOrderBadgeHTML(orderedIds, itemId){
+  // right=true puts it in the upper right (Oct 3 2026, Larry: eye on the card back -> card number on the face, for using a board as a presentation script).
+  function _sboardOrderBadgeHTML(orderedIds, itemId, right){
     var idx=-1;
     for(var i=0;i<orderedIds.length;i++){ if(String(orderedIds[i])===String(itemId)){ idx=i; break; } }
-    return idx===-1 ? '' : '<div class="sb-order-badge">'+(idx+1)+'</div>';
+    return idx===-1 ? '' : '<div class="sb-order-badge'+(right?' sb-order-right':'')+'">'+(idx+1)+'</div>';
   }
 
   // maxWidthPx is the real available width inside the tile (tile width
@@ -476,8 +477,8 @@
     // numbers on the front of the cards," while building the PLAN
     // Storyboard) -- IDEA boards are untouched, still back-only per the
     // Aug 20 decision above.
-    if(_sboardIsPlanBoard){
-      tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id));
+    if(_sboardIsPlanBoard || item.show_order_front){
+      tile.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[groupParentId]||[], item.id, !_sboardIsPlanBoard));
     }
     // Person Assigned badge, Aug 9 2026 -- Larry: "look like the BB card
     // with the initials on the front."
@@ -689,8 +690,8 @@
     // just computed in renderGroup (subs and cards share one sequence
     // as of Aug 22 2026), so a Subber's number matches its place in
     // that same interleaved order, not a Subbers-only count.
-    if(_sboardIsPlanBoard){
-      front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id));
+    if(_sboardIsPlanBoard || headerRow.show_order_front){
+      front.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardCardOrderByParent[headerRow.cluster_id]||[], headerRow.id, !_sboardIsPlanBoard));
     }
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));

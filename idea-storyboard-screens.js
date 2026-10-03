@@ -269,6 +269,8 @@
         // reads first, before anything else on the card. The link badge
         // (top-left, link+image cards only) is nudged right below so the
         // two never overlap.
+        +'.sb-order-badge.sb-order-right{left:auto;right:3px}'
+        +'*:has(> .sb-person-badge) > .sb-order-badge.sb-order-right{right:20px}'
         +'.sb-order-badge{position:absolute;top:2px;left:3px;font-size:calc(9px * var(--fg-text-scale,1));line-height:1;font-weight:700;font-family:sans-serif;color:rgba(0,0,0,.55);background:rgba(255,255,255,.78);border-radius:6px;padding:1px 4px;pointer-events:none;z-index:6}'
         // Bottom-left signal cluster, Aug 15 2026 (Larry: "is the LOCK
         // not just another FLAG? ... all signal flags are added to the
@@ -1889,7 +1891,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front')
+          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -2316,8 +2318,8 @@
     // just above), so they need their own badge call too, reading
     // _sboardTopLevelOrder -- the one place that already tracks this
     // row's real order, same source the drag-reorder math itself uses.
-    if(_sboardIsPlanBoard){
-      hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id));
+    if(_sboardIsPlanBoard || headerRow.show_order_front){
+      hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id, !_sboardIsPlanBoard));
     }
     hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     hd.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));

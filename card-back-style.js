@@ -175,7 +175,7 @@
       +'.fg-back-3x5 .bb-action-row .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       +'.fg-back-3x5 .bb-icon-btn.fg-on{background:var(--bb-bg);border-color:var(--bb-ink)}'
       // ID Band: title upper-left on two lines (checkbox-label size), small head + X the same size.
-      +'.fg-back-title{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:.9;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
+      +'.fg-back-title{flex:0 0 auto;font-size:calc(15px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;line-height:1;text-transform:uppercase;color:var(--bb-ink);white-space:nowrap;cursor:grab}'
       +'.fg-back-idband .bb-icon-btn,.fg-back-idband .bb-close{flex:0 0 auto;width:26px;height:26px;min-width:0;padding:0;font-size:calc(13px * var(--fg-text-scale,1))}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:1 1 0;min-width:0}'
       // TOPIC dropdown on the Blue Sky back: same dark-navy fix the board's own topic menu carries (pyramid rows are colorless, so they went black on navy).
@@ -200,9 +200,9 @@
       +'.fg-cardback-idea #sb-subject-input{font-weight:700}'
       // Matches the Briefing Card back's Subject entry too.
       +'#bb-detail-overlay #bb-d-subject{font-weight:700}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:64px;margin-top:10px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:40px;margin-top:6px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field>label:first-child{flex:0 0 auto}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:36px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:28px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-body-text-clamp{-webkit-line-clamp:2}'
       +'.fg-cardback-idea.fg-back-3x5 #sb-pagenum{position:absolute;top:2px;right:70px;height:auto;margin:0;z-index:7}'
       +'.fg-cardback-idea.fg-back-3x5 #sb-note-status{min-height:0;margin:0}'
@@ -225,8 +225,9 @@
       // ORDER rides the Priority / Subject line at the right edge (Blue Sky back).
       +'.fg-back-toprow .sb-subject-field{grid-column:2;width:100%;max-width:none;min-width:0;justify-self:stretch}'
       +'#sb-subject-input,#bb-d-subject{font-size:calc(16px * var(--fg-text-scale,1));padding:6px 8px;font-family:var(--bb-head-font,Georgia,serif)}'
-      +'.fg-back-toprow .sb-order-top{grid-column:3;justify-self:end;display:flex;flex-direction:column;align-items:center;min-width:0}'
-      +'.fg-back-toprow .sb-order-top .sb-hdr-eyebrow2{text-align:center;margin-bottom:2px}'
+      +'.fg-back-toprow .bb-field.sb-order-top{grid-column:3;justify-self:end;width:auto;max-width:none;min-width:0}'
+      +'.fg-back-toprow .sb-order-top .bb-priorities{pointer-events:auto}'
+      +'.sb-order-num{cursor:default;pointer-events:none}'
       // Header/Subber toggle sits dead center on the bottom row (Larry: "such a key choice").
       +'.fg-back-3x5 .bb-action-row{position:relative}'
       +'.fg-back-viewslot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;margin-top:1px;white-space:nowrap}'

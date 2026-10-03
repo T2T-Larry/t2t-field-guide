@@ -287,7 +287,7 @@
       // title head is gone: the ID Band carries the title (upper left), the PRIMARY head and the X, exactly like the Briefing Card back.
       // Same ids (sb-close, sb-primary-trigger/-menu, sb-details-eyebrow) so every existing handler keeps working.
       + (window.FGCardBack
-          ? FGCardBack.bandHTML({board:'idea', topicPicker:true, topicPickerId:'sb-d-topic-btn', kindPicker:true, kindPickerId:'sb-d-kind-btn', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
+          ? FGCardBack.bandHTML({board:'idea', topicPicker:true, topicPickerId:'sb-d-topic-btn', kindPicker:true, kindPickerId:'sb-d-kind-btn', titleHTML:'<span id="sb-details-eyebrow">IDEA</span>', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
           : '<div id="sb-details-head" class="bb-overlay-head"><span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Blue Sky Card</span><button id="sb-close" class="bb-close" aria-label="Close">✕</button></div>')
       + '<div class="bbw">'
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:var(--bb-sub);height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
@@ -446,7 +446,24 @@
         var viewWrap=bbw.querySelector('#sb-view-wrap');
         var toprow=bbw.querySelector('.fg-back-toprow');
         var arow=bbw.querySelector('.bb-action-row');
-        if(cols.length>1 && toprow){ cols[1].classList.add('sb-order-top'); toprow.appendChild(cols[1]); }
+        if(cols.length>1 && toprow){
+          // Oct 3 2026 (Larry: "ORDER ... same level and boldness as PRIORITY with fields same vertical size as HML") -- the order column is rebuilt
+          // from Priority's own pieces: a real field label, buttons carrying Priority's own button class (so size/border can never drift), and the
+          // same quiet eye underneath. Ids stay (sb-order-up/-value/-down), so the existing nudge wiring is untouched.
+          var oc=cols[1];
+          oc.className='bb-field sb-order-top';
+          var eb=oc.querySelector('.sb-hdr-eyebrow2'); if(eb){ var lb=document.createElement('label'); lb.textContent='Order'; eb.replaceWith(lb); }
+          var ctl=oc.querySelector('div'); if(ctl){ ctl.removeAttribute('style'); ctl.className='bb-priorities'; }
+          ['sb-order-up','sb-order-down'].forEach(function(id){ var b=oc.querySelector('#'+id); if(b){ b.removeAttribute('style'); b.classList.add('bb-pri-btn'); b.style.opacity=b.disabled?'0.3':'1'; b.style.cursor=b.disabled?'default':'pointer'; } });
+          var fr=oc.querySelector('.sb-view-frame'); if(fr){
+            fr.removeAttribute('style'); fr.className='bb-pri-btn sb-order-num';
+            Array.prototype.slice.call(fr.childNodes).forEach(function(n){ if(n.nodeType===3) n.remove(); });   // drop the 🔢 so it is the same height as H/M/L
+          }
+          var eyeRow=document.createElement('label'); eyeRow.className='bb-front-check'; eyeRow.id='sb-order-front-row';
+          eyeRow.innerHTML='<input type="checkbox" id="sb-order-front"><span></span>';
+          oc.appendChild(eyeRow);
+          toprow.appendChild(oc);
+        }
         if(viewWrap && arow){
           var slot=document.createElement('div'); slot.className='fg-back-viewslot';
           slot.appendChild(viewWrap); arow.appendChild(slot);
@@ -597,6 +614,29 @@
       }
       if(upBtn) upBtn.addEventListener('click', function(){ nudgeOrder(-1); });
       if(downBtn) downBtn.addEventListener('click', function(){ nudgeOrder(1); });
+    })();
+
+    // Order eye, Oct 3 2026 (Larry: "eyeball option allowing card number to show in the upper right corner of a card ... board as presentation
+    // script"). Checked = the card's order number shows in the upper right of its face. Only live when the card has a place in an order.
+    (function(){
+      var cb=document.getElementById('sb-order-front'), row=document.getElementById('sb-order-front-row');
+      if(!cb || !row) return;
+      var live=!!(_sbOrderList && _sbOrderIdx>-1);
+      cb.checked=!!item.show_order_front; cb.disabled=!live;
+      row.classList.toggle('bb-disabled', !live);
+      function tip(){ row.title = !live ? 'This card has no place in an order yet' : (cb.checked ? 'Card number shows in the upper right of the card \u2014 click to hide it' : 'Card number is back only \u2014 click to show it in the upper right of the card'); }
+      tip();
+      cb.addEventListener('change', async function(){
+        tip();
+        var show=cb.checked, patch={show_order_front:show};
+        try{
+          var upd=await _sb.from('ideas').update(patch).eq('id',item.id).select('id');
+          if(upd.error) throw upd.error;
+          item.show_order_front=show;
+          _sboardPatchRow(item.id, patch);
+          renderSeaBoard(true);
+        }catch(err){ cb.checked=!show; tip(); if(statusBox) statusBox.textContent=err.message; }
+      });
     })();
 
     // VIEW -- Header/Subber toggle, Aug 7 2026 (Larry) -- replaces the old

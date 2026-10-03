@@ -409,7 +409,7 @@
       detailOv.innerHTML=
          '<div class="bb-overlay-card fg-back-3x5">'
           // 3x5 shape + ID Band on top of the back, Sept 29 2026 (Larry) -- see card-back-style.js.
-          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, titleHTML:'BRIEFING<br>CARD', extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'+'<button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button>'}) : '')
+          +(window.FGCardBack ? FGCardBack.bandHTML({projectPicker:true, titleHTML:'TASK', extraHTML:'<div class="bb-cdrop" id="bb-d-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="bb-d-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this task">👤</button><div class="bb-cdrop-menu" id="bb-d-primary-menu" hidden></div></div>'+'<button class="bb-close" id="bb-detail-close" aria-label="Close">✕</button>'}) : '')
           // Routine-card toggle button dropped, Aug 27 2026 (Larry: "Drop
           // Routine card icon from top of card") -- redundant now that
           // Routine is its own checkbox further down: picking a
