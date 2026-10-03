@@ -292,7 +292,6 @@
         if(e.target===isxHeaderAreaEl || e.target.id==='isx-idn') T2TStoryboard.openBoardBgPicker();
       });
       var lassoCanvas=document.getElementById('isx-canvas');
-      if(lassoCanvas) _isxWireLasso(lassoCanvas);
       // Infinite canvas camera (board-canvas-camera.js), Sept 29 2026: wheel
       // zoom + background-drag pan over this same canvas. Lasso moved to
       // Shift+drag to make room for pan (see _isxWireLasso). If the camera
@@ -1781,67 +1780,6 @@
     });
   }
 
-  function _isxWireLasso(canvas){
-    canvas.addEventListener('mousedown', function(e){
-      if(e.target!==canvas) return;
-      // With the camera attached, plain background-drag pans and Shift+drag
-      // is the lasso. Without it, the old plain-drag lasso is unchanged.
-      var cam=(window.T2TCanvasCamera && T2TCanvasCamera.isAttached())?T2TCanvasCamera:null;
-      if(cam && !e.shiftKey) return;
-      e.preventDefault();
-      // The canvas may be zoomed: client-pixel distances divide by the scale
-      // to become canvas units, the same units tiles' left/top use.
-      var sc=cam?cam.getScale():1;
-      var r0=canvas.getBoundingClientRect();
-      var start={x:(e.clientX-r0.left)/sc, y:(e.clientY-r0.top)/sc};
-      var moved=false;
-      var lasso=document.createElement('div');
-      lasso.className='isx-lasso';
-      lasso.style.left=start.x+'px'; lasso.style.top=start.y+'px';
-      lasso.style.width='0px'; lasso.style.height='0px';
-      canvas.appendChild(lasso);
-      function applySelection(lb){
-        _isxSelected={};
-        Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
-          var tx=parseFloat(t.style.left)||0, ty=parseFloat(t.style.top)||0;
-          var tw=t.offsetWidth||112, th=t.offsetHeight||66;
-          var overlaps = tx<lb.left+lb.width && tx+tw>lb.left && ty<lb.top+lb.height && ty+th>lb.top;
-          if(overlaps) _isxSelected[t.dataset.isxId]=true;
-          t.classList.toggle('isx-selected', overlaps);
-        });
-      }
-      function onMove(e2){
-        var r=canvas.getBoundingClientRect();
-        var cx=(e2.clientX-r.left)/sc, cy=(e2.clientY-r.top)/sc;
-        if(Math.abs(cx-start.x)>3 || Math.abs(cy-start.y)>3) moved=true;
-        var x=Math.min(cx,start.x), y=Math.min(cy,start.y);
-        lasso.style.left=x+'px'; lasso.style.top=y+'px';
-        lasso.style.width=Math.abs(cx-start.x)+'px';
-        lasso.style.height=Math.abs(cy-start.y)+'px';
-        // Highlight live as the rectangle passes over tiles, so it's clear
-        // before releasing exactly what's about to be grabbed — flagged by
-        // Larry, July 18, 2026.
-        if(moved) applySelection({left:x, top:y, width:Math.abs(cx-start.x), height:Math.abs(cy-start.y)});
-      }
-      function onUp(){
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        var lb={left:parseFloat(lasso.style.left), top:parseFloat(lasso.style.top), width:parseFloat(lasso.style.width), height:parseFloat(lasso.style.height)};
-        if(lasso.parentNode) lasso.parentNode.removeChild(lasso);
-        if(moved){
-          applySelection(lb);
-        } else {
-          _isxSelected={};
-          Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
-            t.classList.remove('isx-selected');
-          });
-        }
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  }
-
   // Drop one loose idea onto another — groups them by promoting the target
   // to a header. Naming is optional (Larry, July 14, 2026): Save renames
   // the new header, Skip/blank keeps the target's own existing text as the
@@ -2123,6 +2061,53 @@
       if(!row) return;
       var member=T().getMember && T().getMember();
       if(!member || String(row.user_id)===String(member.user_id)) _isxAllRowsById[row.id]=row;
+    },
+    // Shared lasso (lasso-select.js), Oct 3 2026 -- this board hands the
+    // shared tool just what it cannot see from outside: the current
+    // Topic's headers, the group-drag selection state, and a bulk move.
+    // The lasso itself (the dashed loop, ALT-F, the move bar) lives in
+    // lasso-select.js; the old rectangle lasso that used to sit here
+    // was retired in its favor.
+    lassoHooks: {
+      headers: function(){
+        var tid=_isxCurrentTopicId(), out=[];
+        Object.keys(_isxAllRowsById).forEach(function(k){
+          var r=_isxAllRowsById[k];
+          if(r && r.content_type==='header' && String(r.cluster_id)===String(tid) && k!==_isxTrashId && k!==_isxMiscId)
+            out.push({id:r.id, name:r.text_content||'(untitled)'});
+        });
+        out.sort(function(a,b){ return a.name.localeCompare(b.name); });
+        return out;
+      },
+      setSelected: function(ids){
+        _isxSelected={};
+        (ids||[]).forEach(function(id){ _isxSelected[id]=true; });
+        var canvas=document.getElementById('isx-canvas');
+        if(canvas) Array.prototype.forEach.call(canvas.querySelectorAll('.isx-tile'), function(t){
+          t.classList.toggle('isx-selected', !!_isxSelected[t.dataset.isxId]);
+        });
+      },
+      addHeader: async function(name){
+        var row=await T2TData.createHeader(name, _isxCurrentTopicId());
+        _isxAddRow(row);
+        return row;
+      },
+      moveCards: async function(ids, headerId){
+        var moved=0, skipped=0;
+        for(var i=0;i<ids.length;i++){
+          var row=_isxAllRowsById[ids[i]] || await _isxFetchRow(ids[i]);
+          // Header piles are not moved by this path -- nesting a whole
+          // header is a bigger decision than sweeping loose cards in.
+          if(!row || row.content_type==='header' || String(row.id)===String(headerId)){ skipped++; continue; }
+          delete _isxCardPos[row.id];
+          await T2TStoryboard.moveCard(row.id, headerId);
+          _isxPatchRow(row.id, {cluster_id:headerId});
+          moved++;
+        }
+        _isxSelected={};
+        await _isxRenderBoard(true);
+        _isxShowToast(moved+(moved===1?' card':' cards')+' moved'+(skipped?' ('+skipped+' header'+(skipped===1?'':'s')+' left where '+(skipped===1?'it is':'they are')+')':'')+'.');
+      }
     }
   };
 

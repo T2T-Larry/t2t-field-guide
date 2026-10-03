@@ -1010,55 +1010,11 @@
       });
       return closest.el;
     }
-    // Lasso rubber-band selection, Sept 2026 -- mousedown on empty space
-    // inside a column's own card list (never on a card itself, and
-    // never while that mousedown is actually the start of a card drag)
-    // draws a dashed rectangle; any card in THIS column overlapping it
-    // at mouseup gets added to _bbLassoSelected. Scoped to one column
-    // at a time (mousemove outside this zone's own bounds doesn't pull
-    // in cards from a neighboring column) -- see the scope note on
-    // _bbLassoSelected above for why this stays column-local rather
-    // than a free 2D rectangle across the whole board.
-    wrap.querySelectorAll('.bb-col-cards').forEach(function(zone){
-      var lassoBox=null, lassoStartX=0, lassoStartY=0, lassoActive=false;
-      zone.addEventListener('mousedown', function(e){
-        if(e.button!==0 || e.target.closest('.bb-card')) return;
-        lassoActive=true;
-        lassoStartX=e.clientX; lassoStartY=e.clientY;
-        lassoBox=document.createElement('div');
-        lassoBox.className='bb-lasso-rect';
-        document.body.appendChild(lassoBox);
-        _bbPositionLassoRect(lassoBox, lassoStartX, lassoStartY, e.clientX, e.clientY);
-        e.preventDefault();
-      });
-      zone.addEventListener('mousemove', function(e){
-        if(!lassoActive || !lassoBox) return;
-        _bbPositionLassoRect(lassoBox, lassoStartX, lassoStartY, e.clientX, e.clientY);
-      });
-      function finishLasso(e){
-        if(!lassoActive) return;
-        lassoActive=false;
-        if(lassoBox){
-          var rect=lassoBox.getBoundingClientRect();
-          // Foreign/shared-in/rollup cards (bb-card-foreign) are
-          // skipped -- each has its own separate save path (see
-          // _bbHandlePersonalBoardDrop/_bbHandleSharedInDrop/
-          // _bbHandleRollupDrop on the single-card drop above), which
-          // _bbBulkMoveSelectedTo doesn't replicate. Simplest safe
-          // answer: they're just not lasso-selectable.
-          zone.querySelectorAll('.bb-card:not(.bb-card-foreign)').forEach(function(cardEl){
-            var box=cardEl.getBoundingClientRect();
-            var overlaps = box.left<rect.right && box.right>rect.left && box.top<rect.bottom && box.bottom>rect.top;
-            var id=cardEl.getAttribute('data-id');
-            if(overlaps){ _bbLassoSelected[id]=true; cardEl.classList.add('bb-lasso-selected'); }
-          });
-          lassoBox.remove();
-          lassoBox=null;
-        }
-      }
-      zone.addEventListener('mouseup', finishLasso);
-      zone.addEventListener('mouseleave', function(e){ if(lassoActive) finishLasso(e); });
-    });
+    // Lasso selection moved to the shared lasso-select.js (Oct 3 2026): the
+    // dashed freehand loop, ALT-F, and the move bar are one tool for every
+    // board. Its Briefing Board adapter (lasso-adapters.js) keeps
+    // _bbLassoSelected in step, so clicking a column head still sends the
+    // selection there, and _bbBulkMoveSelectedTo below does the move.
     wrap.querySelectorAll('.bb-col-cards').forEach(function(zone){
       zone.addEventListener('dragover', function(e){ e.preventDefault(); zone.classList.add('bb-dragover'); });
       zone.addEventListener('dragleave', function(){ zone.classList.remove('bb-dragover'); });
@@ -1193,6 +1149,8 @@
   }
   function _bbClearLassoSelection(){
     if(!Object.keys(_bbLassoSelected).length) return;
+    var _sh=window.T2TLasso && window.T2TLasso.get('bb');
+    if(_sh){ _sh.clear(); return; }   // the shared lasso mirrors back into _bbLassoSelected
     _bbLassoSelected={};
     document.querySelectorAll('.bb-card.bb-lasso-selected').forEach(function(el){ el.classList.remove('bb-lasso-selected'); });
   }
