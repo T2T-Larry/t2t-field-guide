@@ -162,14 +162,10 @@
     // RANK would suggest importance, which isn't what this number means.
     var viewOtherLabel = isHeaderType ? 'Subber' : 'Header';
     var viewSwitchDisabled = isHeaderType && isBucket;
+    // Oct 3 2026 (Larry: "drop IS A completely. Click subber should change text to Header, no extra words. like an on off switch") -- the
+    // button IS the switch: it shows what the card is now, one click flips it. No label, no menu. Hover explains the two choices.
     var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap">'
-      // Oct 3 2026 (Larry: "Subber / Header toggle says it is VIEW. Would another title work more effectively?") -- it is not a view of the board,
-      // it is what THIS card is, so the label now reads "Is a" ("Is a  Header"). Hover explains the two choices (tooltip-on-every-decision standard).
-      + '<div class="sb-hdr-eyebrow2">Is a</div>'
-      + '<button class="sb-view-frame" id="sb-view-btn" type="button" title="Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.">'+(isHeaderType?'Header':'Subber')+'</button>'
-      + '<div class="sb-view-menu" id="sb-view-menu">'
-      + '<div class="sb-view-menu-item'+(viewSwitchDisabled?' disabled':'')+'" id="sb-view-switch"'+(viewSwitchDisabled?' title="Move its cards out first"':'')+'>Switch to '+viewOtherLabel+'</div>'
-      + '</div>'
+      + '<button class="sb-view-frame" id="sb-view-btn" type="button"'+(viewSwitchDisabled?' disabled':'')+' title="'+(viewSwitchDisabled?'Move its cards out first':'Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.')+'">'+(isHeaderType?'Header':'Subber')+'</button>'
       + '</div>';
 
     var orderValueText='—';
@@ -291,7 +287,7 @@
       // title head is gone: the ID Band carries the title (upper left), the PRIMARY head and the X, exactly like the Briefing Card back.
       // Same ids (sb-close, sb-primary-trigger/-menu, sb-details-eyebrow) so every existing handler keeps working.
       + (window.FGCardBack
-          ? FGCardBack.bandHTML({board:'idea', topicPicker:true, topicPickerId:'sb-d-topic-btn', kindPicker:true, kindPickerId:'sb-d-kind-btn', titleHTML:'<span id="sb-details-eyebrow">BLUE SKY<br>CARD</span>', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
+          ? FGCardBack.bandHTML({board:'idea', topicPicker:true, topicPickerId:'sb-d-topic-btn', kindPicker:true, kindPickerId:'sb-d-kind-btn', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
           : '<div id="sb-details-head" class="bb-overlay-head"><span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Blue Sky Card</span><button id="sb-close" class="bb-close" aria-label="Close">✕</button></div>')
       + '<div class="bbw">'
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:var(--bb-sub);height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
@@ -482,7 +478,7 @@
 
     (function(){
       var clicks=0, timer=null;
-      var eyebrow=document.getElementById('sb-details-eyebrow');
+      var eyebrow=document.querySelector('#sb-details-eyebrow') || ov.querySelector('.sb-details-card .fg-back-idl');
       if(eyebrow) eyebrow.addEventListener('click', function(){
         clicks++;
         if(timer) clearTimeout(timer);
@@ -615,20 +611,16 @@
     // via viewSwitchDisabled (menu item greyed out, click no-ops) whenever
     // the header is still actively holding content -- move it out first,
     // so demoting can never silently orphan anything.
-    T().wire('sb-view-btn', function(e){
+    T().wire('sb-view-btn', async function(e){
       e.stopPropagation();
-      var m=document.getElementById('sb-view-menu');
-      if(m) m.classList.toggle('open');
-    });
-    T().wire('sb-view-switch', async function(){
       if(viewSwitchDisabled) return;
       var newType = isHeaderType ? (item.image_url ? 'image' : 'text') : 'header';
       try{
         var upd=await _sb.from('ideas').update({content_type:newType}).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.content_type=newType;
-        closeSbDetail();
         renderSeaBoard(true);
+        openSbDetail(item);   // reopen this card's back as its new type -- the button now reads the other word
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 

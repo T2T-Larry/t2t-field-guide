@@ -119,9 +119,10 @@
       // injected at different times, so source order can't be relied on.
       +'.fg-back-3x5{--fg-back-w:min(640px,94vw,calc(88vh * 5 / 3));width:var(--fg-back-w)!important;max-width:none!important;height:auto!important;max-height:none!important;aspect-ratio:5/3!important;overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box!important;border-radius:0!important;border-top:0!important;padding-top:0!important;scrollbar-width:thin}'
       +'.fg-back-idband{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:0 0 8px -22px;width:calc(100% + 44px);max-width:none;align-self:flex-start;padding:4px 22px;background:inherit;border:0;border-bottom:1px solid var(--bb-accent);box-sizing:border-box}'
+      +'.fg-back-idl:empty{min-width:48px;min-height:26px}'
       +'.fg-back-idl{justify-self:start}.fg-back-idr{justify-self:end;display:flex;align-items:center;gap:6px}'
       +'.fg-back-idc{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}'
-      +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:0 1 auto;min-width:0;max-width:170px;text-align:center;cursor:default;font-size:calc(13px * var(--fg-text-scale,1));padding:4px 10px;line-height:1.2}'
+      +'.fg-back-idband .bb-topic-hit,.fg-back-idband .bb-boardkind-hit{flex:0 1 auto;min-width:0;max-width:240px;text-align:center;cursor:default;font-size:calc(22px * var(--fg-text-scale,1));padding:2px 14px;line-height:1.15}'
       +'.fg-back-idband .bb-cdrop{position:relative;flex:0 1 auto;min-width:0}'
       +'.fg-back-idband .fg-back-empty{display:none}'
       // Layout (Sept 29 2026, Larry, round 2): the card is ONE full-width column -- except the checkbox region, which is two columns:
@@ -136,11 +137,11 @@
       +'.fg-back-checks .bb-addition-label{min-height:0}'
       +'.fg-back-checks #bb-d-add-notes-wrap{display:none}'
       // Priority + Subject share one line; Show-on-front sits right under it.
-      +'.fg-back-toprow{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end;width:100%}'
+      +'.fg-back-toprow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:end;width:100%}'
       +'.fg-back-toprow .bb-field{margin-bottom:4px}'
       +'#bb-detail-overlay .fg-back-task .bb-front-check{margin:2px 0 0}'
       +'.fg-back-toprow .bb-field:first-child{justify-self:start;width:auto}'
-      +'.fg-back-toprow .bb-field:last-child{grid-column:2;width:200px;max-width:100%;min-width:0}'
+      +'.fg-back-toprow .bb-field:last-child{grid-column:2;width:100%;max-width:none;min-width:0}'
       // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
       +'.fg-back-daterow{display:flex;gap:10px;align-items:flex-end}'
       +'.fg-back-daterow .bb-addition-body{flex:1 1 0;min-width:0}'
@@ -199,7 +200,7 @@
       +'.fg-cardback-idea #sb-subject-input{font-weight:700}'
       // Matches the Briefing Card back's Subject entry too.
       +'#bb-detail-overlay #bb-d-subject{font-weight:700}'
-      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 auto;display:flex;flex-direction:column;min-height:48px;margin-top:10px}'
+      +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field{flex:1 1 0;display:flex;flex-direction:column;min-height:64px;margin-top:10px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-contents-field>label:first-child{flex:0 0 auto}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-body-box{flex:1 1 auto;min-height:36px!important;max-height:none!important;padding:4px 8px;margin-bottom:3px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-body-text-clamp{-webkit-line-clamp:2}'
@@ -222,14 +223,15 @@
       +'.bb-front-check input:not(:checked)+span{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3Cline x1=%223%22 y1=%223%22 x2=%2221%22 y2=%2221%22/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3Cline x1=%223%22 y1=%223%22 x2=%2221%22 y2=%2221%22/%3E%3C/svg%3E")}'
       +'.bb-front-check{color:var(--bb-ink);opacity:.8;cursor:pointer}'
       // ORDER rides the Priority / Subject line at the right edge (Blue Sky back).
-      +'.fg-back-toprow .sb-subject-field{grid-column:2;width:200px;max-width:100%;min-width:0;justify-self:center}'
+      +'.fg-back-toprow .sb-subject-field{grid-column:2;width:100%;max-width:none;min-width:0;justify-self:stretch}'
+      +'#sb-subject-input,#bb-d-subject{font-size:calc(16px * var(--fg-text-scale,1));padding:6px 8px;font-family:var(--bb-head-font,Georgia,serif)}'
       +'.fg-back-toprow .sb-order-top{grid-column:3;justify-self:end;display:flex;flex-direction:column;align-items:center;min-width:0}'
       +'.fg-back-toprow .sb-order-top .sb-hdr-eyebrow2{text-align:center;margin-bottom:2px}'
       // Header/Subber toggle sits dead center on the bottom row (Larry: "such a key choice").
       +'.fg-back-3x5 .bb-action-row{position:relative}'
       +'.fg-back-viewslot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;margin-top:1px;white-space:nowrap}'
       +'.fg-back-viewslot .sb-view-wrap{display:flex;align-items:center;gap:6px}'
-      +'.fg-back-viewslot .sb-hdr-eyebrow2{margin:0}'
+      +'.sb-view-frame[disabled]{opacity:.5;cursor:default}'
       +'.fg-back-viewslot .sb-view-frame{padding:3px 12px}'
       +'.fg-back-viewslot .sb-view-menu{top:auto;bottom:100%;left:auto;right:0;margin:0 0 4px}'
       ;
