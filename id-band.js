@@ -161,7 +161,7 @@
   window.IDBand.BOARD_KINDS = [
     {value:'SEA',            label:'SEA OF IDEAS', soon:null},
     {value:'IDEA',           label:'BLUE SKY',     soon:null},
-    {value:'PLAN',           label:'PATHFINDER',   soon:null},
+    {value:'PLAN',           label:'PLAN',         soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING',     soon:null},
     {value:'SHARE',          label:'STORY',        soon:'STORY BOARD coming soon'},
     {value:'CAST',           label:'CAST',         soon:null}
@@ -172,7 +172,7 @@
   // "the board type stays on the board itself but the action is the 3 type
   // choices.")
   window.IDBand.boardName = function(boardKind){
-    var names={SEA:'SEA OF IDEAS', IDEA:'BLUE SKY', PLAN:'PATHFINDER', 'BRIEFING BOARD':'BRIEFING', SHARE:'STORY', CAST:'CAST', NOTEBOOK:'NOTEBOOK'};
+    var names={SEA:'SEA OF IDEAS', IDEA:'BLUE SKY', PLAN:'PLAN', 'BRIEFING BOARD':'BRIEFING', SHARE:'STORY', CAST:'CAST', NOTEBOOK:'NOTEBOOK'};
     return names[boardKind] || boardKind;
   };
   // The kind entry whose label a board of this kind shows (exact value first,

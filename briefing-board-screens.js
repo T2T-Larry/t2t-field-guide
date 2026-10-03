@@ -252,7 +252,7 @@
             // Positioning (left/top, plus the TOPIC-STORYBOARD gap as one
             // centered pair) is _bbPositionIdBandRow (briefing-board-
             // master-nav.js) -- see that function for the full story.
-            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-boardkind-hit bb-cdrop-trigger" id="bb-boardkind-trigger" style="cursor:pointer" title="Switch to Blue Sky, Pathfinder, Storyboard, or Cast">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
+            +'<div class="bb-mh-group-center" id="bb-boardkind-wrap"><div class="bb-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="bb-boardkind-hit bb-cdrop-trigger" id="bb-boardkind-trigger" style="cursor:pointer" title="Switch to Blue Sky, Plan, Story, or Cast">BRIEFING</button></div><div class="bb-cdrop-menu" id="bb-boardkind-menu" hidden></div></div>'
             // VIEW dropdown, rebuilt Sept 13 2026 (Master BB card, do-m:
             // "filtering by person is fine from the CAST card but not
             // convenient for a quick view -- add a VIEW dropdown to the

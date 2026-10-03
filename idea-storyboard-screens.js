@@ -1139,7 +1139,7 @@
       // button now reads the shared #sc-topic-box,#sc-board-kind-trigger
       // CSS rule above instead, so it can't drift out of size sync with
       // TOPIC the way the old small chip drifted from PROJECT's.
-      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Pathfinder, Storyboard, or Cast">BLUE SKY</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
+      +'<div class="sc-mh-group-center" id="sc-boardkind-wrap"><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-cdrop-trigger" id="sc-board-kind-trigger" title="Switch to Plan, Story, or Cast">BLUE SKY</button></div><div class="sc-cdrop-menu" id="sc-board-kind-menu" hidden></div></div>'
       // Sept 5 2026, Larry: "delete the nametag -- don't totally delete it
       // yet, I don't know why, I just like it. Can it go somewhere on the
       // website that is retrievable but not in active use?" Retired in
