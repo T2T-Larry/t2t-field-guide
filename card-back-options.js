@@ -41,10 +41,10 @@
       // Selected-items field: the opened bodies, full width, each with a small title row.
       +'.fg-back-selected{display:flex;flex-direction:column;width:100%;min-width:0}'
       +'.fg-back-selected .bb-addition-body{margin:0 0 8px;padding:0 0 6px;border-bottom:1px dotted var(--bb-accent)}'
-      +'.fg-back-selected .bb-addition-body[data-fg-title]::before{content:attr(data-fg-title);display:block;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:3px;padding-right:26px}'
-      +'.fg-back-selected .bb-addition-body{position:relative}'
-      // Slashed eye rides the right edge of its block's title row.
-      +'.fg-back-eye{position:absolute;top:-3px;right:0;width:22px;height:22px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:4px;color:var(--bb-ink);cursor:pointer;opacity:.85}'
+      // Title row: the eyebrow, with its eye immediately to the right of it (Larry, Oct 3 2026).
+      +'.fg-back-opt-title{display:flex;align-items:center;gap:4px;margin-bottom:2px;min-height:18px;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
+      +'.fg-back-eye{flex:0 0 auto;width:18px;height:18px;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-radius:4px;color:var(--bb-ink);cursor:pointer;opacity:.85}'
+      +'.fg-back-eye svg{width:14px;height:14px}'
       +'.fg-back-eye:hover{opacity:1;background:var(--bb-bg)}'
       +'.fg-back-eye.fg-eye-off{opacity:.6}'
       // The real checkboxes live here, out of sight; the popup rows drive them.
@@ -112,12 +112,15 @@
       var body=w.querySelector('.bb-addition-body');
       var label=eb ? eb.textContent : key;
       if(body){
-        body.setAttribute('data-fg-title', label);
+        // A real title row (eyebrow + its eye) at the top of the block -- not a pseudo-element -- so the eye can sit right beside the words.
+        var tr=document.createElement('div'); tr.className='fg-back-opt-title';
+        var tx=document.createElement('span'); tx.textContent=label; tr.appendChild(tx);
+        body.insertBefore(tr, body.firstChild);
         selected.appendChild(body);
         if(canEye && frontKeys.indexOf(key)>=0){
           var eye=document.createElement('button');
           eye.type='button'; eye.className='fg-back-eye'; eye.setAttribute('data-fg-key', key);
-          body.insertBefore(eye, body.firstChild);
+          tr.appendChild(eye);
           eye.addEventListener('click', function(e){
             e.stopPropagation();
             var cur=(cfg.getHidden()||[]).slice(), i=cur.indexOf(key);
