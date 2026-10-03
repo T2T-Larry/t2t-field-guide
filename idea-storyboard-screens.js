@@ -317,7 +317,7 @@
         // stays click-through (so it never grabs a card drag), but a
         // dot inherits that "none" too unless it opts back in, which
         // was silently killing its own title-on-hover meaning tooltip.
-        +'.sb-key-dot{display:inline-block;width:8px;height:8px;box-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:auto;cursor:default}'
+        +'.sb-key-dot{display:inline-block;width:10px;height:10px;box-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:auto;cursor:default}'
         // Lock badge, moved here from a top-right icon Aug 15 2026 (Larry:
         // treat LOCK as just another signal flag) -- a plain flex child
         // of .sb-signal-row, leftmost in the cluster.

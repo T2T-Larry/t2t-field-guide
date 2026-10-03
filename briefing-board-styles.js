@@ -717,7 +717,7 @@
       // tooltip (the meaning, on hover) never fires -- a child inherits
       // "none" from its parent unless it opts back in like this.
       +'.bb-key-badge-wrap{display:inline-flex;align-items:center;gap:2px;pointer-events:auto;cursor:default}'
-      +'.bb-key-badge{width:12px;height:12px;box-shadow:0 1px 2px rgba(0,0,0,.3);flex-shrink:0}'
+      +'.bb-key-badge{width:10px;height:10px;box-shadow:0 1px 2px rgba(0,0,0,.3);flex-shrink:0}'
       // .bb-key-link-count removed Aug 15 2026 (Larry: "delete number
       // of like flags from front of every type of card") -- the count
       // is still computed and available via each flag's hover tooltip,
@@ -798,11 +798,11 @@
       +'.bb-key-add{font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub);border-style:dashed}'
       +'.bb-key-swatch{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}'
       +'.bb-key-swatch.bb-swatch-active{border-color:#3B2510}'
-      +'.bb-key-pick-row-wrap{display:flex;align-items:center;gap:6px;margin-bottom:6px}'
-      +'.bb-key-pick-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0;padding:8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:left}'
+      +'.bb-key-pick-row-wrap{display:flex;align-items:center;gap:6px;margin-bottom:4px}'
+      +'.bb-key-pick-row{display:flex;align-items:center;gap:6px;flex:1;min-width:0;padding:5px 8px;border:1px solid var(--bb-accent);border-radius:6px;background:#fff;cursor:pointer;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink);text-align:left}'
       +'.bb-key-pick-meaning{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       +'.bb-key-pick-edit{background:none;border:none;cursor:pointer;font-size:calc(14px * var(--fg-text-scale,1));color:#4a7a95;flex-shrink:0;padding:0 4px}'
-      +'.bb-key-pick-swatch{width:16px;height:16px;flex-shrink:0}'
+      +'.bb-key-pick-swatch{width:12px;height:12px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
       +'.bb-key-pick-empty-msg{font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
       // Sept 13 2026 (Master BB card, do-m: "Tighten checklist spacing --

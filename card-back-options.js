@@ -47,6 +47,16 @@
       +'.fg-back-eye svg{width:14px;height:14px}'
       +'.fg-back-eye:hover{opacity:1;background:var(--bb-bg)}'
       +'.fg-back-eye.fg-eye-off{opacity:.6}'
+      // Signal Flags on the back, Oct 3 2026 (Larry: flags drew too much attention next to the other options) -- same quiet size as everything else:
+      // 20px buttons (were 28), a 12px shape inside (was 16), a compact heart pill, tighter gaps.
+      +'.fg-back-3x5 .bb-key-row,.fg-back-3x5 #sb-keys-row{gap:4px!important}'
+      +'.fg-back-3x5 .bb-key-btn{width:20px;height:20px;border-width:1px}'
+      +'.fg-back-3x5 .bb-key-btn .bb-key-shape{width:12px!important;height:12px!important}'
+      +'.fg-back-3x5 .bb-key-add{font-size:calc(13px * var(--fg-text-scale,1))}'
+      +'.fg-back-3x5 .sb-heart-pill{padding:2px 7px!important;font-size:calc(11px * var(--fg-text-scale,1))!important}'
+      +'.fg-back-3x5 .sb-key-slot-btn{min-width:0!important;width:20px!important;height:20px!important;padding:0!important;display:inline-flex!important;align-items:center;justify-content:center}'
+      +'.fg-back-3x5 .sb-key-slot-btn span{width:12px!important;height:12px!important}'
+      +'.fg-back-3x5 .sb-flag-add-btn{font-size:calc(13px * var(--fg-text-scale,1))!important}'
       // A field's label with its eye right beside it.
       +'.fg-back-labelrow{display:flex;align-items:center;gap:4px;margin-bottom:3px;flex:0 0 auto;min-width:0}'
       +'.fg-back-labelrow>label:first-child{margin-bottom:0}'
