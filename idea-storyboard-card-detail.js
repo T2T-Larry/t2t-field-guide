@@ -163,8 +163,10 @@
     var viewOtherLabel = isHeaderType ? 'Subber' : 'Header';
     var viewSwitchDisabled = isHeaderType && isBucket;
     var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap">'
-      + '<div class="sb-hdr-eyebrow2">View</div>'
-      + '<button class="sb-view-frame" id="sb-view-btn" type="button">'+(isHeaderType?'Header':'Subber')+'</button>'
+      // Oct 3 2026 (Larry: "Subber / Header toggle says it is VIEW. Would another title work more effectively?") -- it is not a view of the board,
+      // it is what THIS card is, so the label now reads "Is a" ("Is a  Header"). Hover explains the two choices (tooltip-on-every-decision standard).
+      + '<div class="sb-hdr-eyebrow2">Is a</div>'
+      + '<button class="sb-view-frame" id="sb-view-btn" type="button" title="Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.">'+(isHeaderType?'Header':'Subber')+'</button>'
       + '<div class="sb-view-menu" id="sb-view-menu">'
       + '<div class="sb-view-menu-item'+(viewSwitchDisabled?' disabled':'')+'" id="sb-view-switch"'+(viewSwitchDisabled?' title="Move its cards out first"':'')+'>Switch to '+viewOtherLabel+'</div>'
       + '</div>'
@@ -441,6 +443,20 @@
       } else {
         FGCardBack.checkRegion(bbw, ['sb-add-links-wrap']);
       }
+      // Oct 3 2026 (Larry) -- ORDER moves up to the Priority/Subject line, right edge ("a finer selection over priority"); the Header/Subber
+      // toggle moves to the bottom center of the card ("such a key choice"). Pure DOM moves: every id and its wiring stays exactly as it was.
+      (function(){
+        var cols=bbw.querySelectorAll('.sb-eyebrow-row > .sb-eyebrow-col');
+        var viewWrap=bbw.querySelector('#sb-view-wrap');
+        var toprow=bbw.querySelector('.fg-back-toprow');
+        var arow=bbw.querySelector('.bb-action-row');
+        if(cols.length>1 && toprow){ cols[1].classList.add('sb-order-top'); toprow.appendChild(cols[1]); }
+        if(viewWrap && arow){
+          var slot=document.createElement('div'); slot.className='fg-back-viewslot';
+          slot.appendChild(viewWrap); arow.appendChild(slot);
+        }
+        var er=bbw.querySelector('.sb-eyebrow-row'); if(er && !er.querySelector('#sb-view-wrap, #sb-order-value')) er.remove();
+      })();
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw) ux.appendChild(lw);
       var pen=card.querySelector('#sb-notes-pencil'), ncb=card.querySelector('#sb-add-notes');

@@ -213,6 +213,25 @@
       +'.fg-cardback-idea.fg-back-3x5 .sb-view-frame{padding:3px 10px}'
       +'.fg-cardback-idea.fg-back-3x5 .bb-front-check{margin:1px 0 0}'
       +'.fg-cardback-idea.fg-back-3x5 .bb-action-row{padding-top:3px}'
+      // Oct 3 2026 (Larry: "Show on front is not the eye symbol we discussed") -- every "Show on front" checkbox on every back now reads as the
+      // eye: open eye = shows on the front, slashed eye = back only. The real checkbox stays underneath (hidden), so all saving is untouched.
+      +'.bb-front-check{position:relative}'
+      +'.bb-front-check input,.bb-field .bb-front-check input{position:absolute!important;opacity:0;pointer-events:none;width:1px!important;height:1px!important}'
+      +'.bb-front-check span,.bb-field .bb-front-check span{display:block;flex:0 0 auto;width:17px;height:17px;font-size:0;line-height:0;background:currentColor;color:inherit;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-position:center;mask-position:center}'
+      +'.bb-front-check input:checked+span{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E")}'
+      +'.bb-front-check input:not(:checked)+span{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3Cline x1=%223%22 y1=%223%22 x2=%2221%22 y2=%2221%22/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22black%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3Cline x1=%223%22 y1=%223%22 x2=%2221%22 y2=%2221%22/%3E%3C/svg%3E")}'
+      +'.bb-front-check{color:var(--bb-ink);opacity:.8;cursor:pointer}'
+      // ORDER rides the Priority / Subject line at the right edge (Blue Sky back).
+      +'.fg-back-toprow .sb-subject-field{grid-column:2;width:200px;max-width:100%;min-width:0;justify-self:center}'
+      +'.fg-back-toprow .sb-order-top{grid-column:3;justify-self:end;display:flex;flex-direction:column;align-items:center;min-width:0}'
+      +'.fg-back-toprow .sb-order-top .sb-hdr-eyebrow2{text-align:center;margin-bottom:2px}'
+      // Header/Subber toggle sits dead center on the bottom row (Larry: "such a key choice").
+      +'.fg-back-3x5 .bb-action-row{position:relative}'
+      +'.fg-back-viewslot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;margin-top:1px;white-space:nowrap}'
+      +'.fg-back-viewslot .sb-view-wrap{display:flex;align-items:center;gap:6px}'
+      +'.fg-back-viewslot .sb-hdr-eyebrow2{margin:0}'
+      +'.fg-back-viewslot .sb-view-frame{padding:3px 12px}'
+      +'.fg-back-viewslot .sb-view-menu{top:auto;bottom:100%;left:auto;right:0;margin:0 0 4px}'
       ;
     document.head.appendChild(st);
   }

@@ -1009,7 +1009,13 @@
       cb.disabled=!enabled;
       if(row){
         row.classList.toggle('bb-disabled', !enabled);
-        row.title = enabled ? 'Show this on the front of the card' : ('Add a Subject to choose — without one, the '+(what||'contents')+' always shows');
+        // Oct 3 2026 -- the eye: hover says which state it is in and what a click does (kept current on every click).
+        var tip=function(){
+          row.title = !cb.disabled ? (cb.checked ? 'Shows on the front \u2014 click to show on the back only' : 'Back only \u2014 click to show on the front')
+                                   : ('Add a Subject to choose \u2014 without one, the '+(what||'contents')+' always shows');
+        };
+        tip();
+        if(!row.__fgEyeTip){ row.__fgEyeTip=true; cb.addEventListener('change', tip); }
       }
     }
   };

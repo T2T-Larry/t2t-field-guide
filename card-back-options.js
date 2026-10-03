@@ -50,7 +50,7 @@
       // The real checkboxes live here, out of sight; the popup rows drive them.
       +'.fg-back-optstore{display:none!important}'
       // OPTIONS button: the dashed (+) -- the standard "add something here" symbol, no words.
-      +'.fg-back-3x5 .bb-action-row .fg-opt-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed var(--bb-ink);border-radius:50%;color:var(--bb-ink);font-size:calc(15px * var(--fg-text-scale,1));line-height:1;cursor:pointer;font-weight:700}'
+      +'.fg-back-3x5 .bb-action-row .fg-opt-btn{margin-right:auto;flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed var(--bb-ink);border-radius:50%;color:var(--bb-ink);font-size:calc(15px * var(--fg-text-scale,1));line-height:1;cursor:pointer;font-weight:700}'
       +'.fg-back-3x5 .bb-action-row .fg-opt-btn:hover,.fg-back-3x5 .bb-action-row .fg-opt-btn.fg-on{background:var(--bb-bg)}'
       // Active-count dot: shows how many options are on without opening the popup.
       +'.fg-opt-btn{position:relative}'
