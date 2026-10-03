@@ -652,7 +652,30 @@
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
         var taskF=q('bb-d-task').closest('.bb-field'); if(taskF) taskF.classList.add('fg-back-task');
-        FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
+        // Oct 3 2026 (Larry: "a popup button called OPTIONS... universal options + unique ones") -- the always-on checkbox list is
+        // replaced by the OPTIONS (+) popup in the bottom icon row; every checked option stays visible on the back in one "selected items"
+        // field, each with a slashed-eye (front vs back-only). Same real checkboxes/ids underneath, so all existing wiring is untouched.
+        // Falls back to the old checkbox list if card-back-options.js did not load.
+        if(window.FGCardBackOptions){
+          FGCardBackOptions.optionsRegion(bbw, {
+            skip: ['bb-d-add-budget-wrap','bb-d-add-links-wrap'],
+            noPopup: ['notes'],
+            universal: ['flags','start','due','org','review'],
+            ownLabel: 'Briefing card',
+            frontKeys: ['start','due','flags','notes','routine'],
+            actionRow: bbw.querySelector('.bb-action-row'),
+            getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
+            setHidden: function(arr){
+              var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+              c.frontHidden=arr.join(',');
+              _bbSaveLocal(_bbCardsList());
+              _bbPersistMergedCardById(_bbOpenCardId);
+              renderBoard();
+            }
+          });
+        } else {
+          FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
+        }
         // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
         if(sb && db){

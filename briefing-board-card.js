@@ -940,6 +940,8 @@
       start_escalated_for: _bbToISODate(c.startEscalatedFor), due_escalated_for: _bbToISODate(c.dueEscalatedFor),
       overdue_flash_shown_for: _bbToISODate(c.overdueFlashShownFor),
       start_overdue_flash_shown_for: _bbToISODate(c.startOverdueFlashShownFor),
+      // Oct 3 2026 -- slashed-eye (back-only) option keys, see card-back-options.js
+      front_hidden: c.frontHidden||null,
       trashed_at: c.trashedAt || null
     };
   }
@@ -974,6 +976,7 @@
       startEscalatedFor: _bbFromISODate(row.start_escalated_for), dueEscalatedFor: _bbFromISODate(row.due_escalated_for),
       overdueFlashShownFor: _bbFromISODate(row.overdue_flash_shown_for),
       startOverdueFlashShownFor: _bbFromISODate(row.start_overdue_flash_shown_for),
+      frontHidden: row.front_hidden || '',
       trashedAt: row.trashed_at || null,
       // Header-linked task cards only (Aug 11 2026) -- auto-created and kept
       // in sync by the ideas_sync_header_task_card DB trigger whenever an

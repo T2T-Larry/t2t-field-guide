@@ -428,7 +428,19 @@
     (function(){
       var card=ov.querySelector('.sb-details-card'); if(!card || !window.FGCardBack) return;
       var bbw=card.querySelector('.bbw'); if(!bbw) return;
-      FGCardBack.checkRegion(bbw, ['sb-add-links-wrap']);
+      // Oct 3 2026 -- same OPTIONS (+) popup + "selected items" field as the Briefing Card back (card-back-options.js). No slashed eye
+      // here yet: it only appears once this card's FRONT honors back-only (front_hidden is wired on the Briefing Card first).
+      if(window.FGCardBackOptions){
+        FGCardBackOptions.optionsRegion(bbw, {
+          skip: ['sb-add-links-wrap'],
+          noPopup: ['notes'],
+          universal: ['flags','org'],
+          ownLabel: 'Blue Sky card',
+          actionRow: bbw.querySelector('.bb-action-row')
+        });
+      } else {
+        FGCardBack.checkRegion(bbw, ['sb-add-links-wrap']);
+      }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw) ux.appendChild(lw);
       var pen=card.querySelector('#sb-notes-pencil'), ncb=card.querySelector('#sb-add-notes');

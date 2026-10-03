@@ -855,7 +855,9 @@
         // simpler (Larry: "ROUTINE needs to appear on the front above
         // the date") -- plain word, no icon, no cadence in parens this
         // time, sitting at the top of the date stack, right above DUE.
-        var routineLineHTML = c.routine ? '<div class="bb-date-line bb-routine-badge">ROUTINE</div>' : '';
+        // Oct 3 2026 -- every option can be set back-only (slashed eye on the card back); _bbBO(key) = "hide this one on the face".
+        var _bbBO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
+        var routineLineHTML = (c.routine && !_bbBO('routine')) ? '<div class="bb-date-line bb-routine-badge">ROUTINE</div>' : '';
         // Lock badge moved into the bottom-left signal cluster, Aug 15
         // 2026 (Larry: "is the LOCK not just another FLAG?") -- was up
         // top with priority/routine/date; now reads as one more signal
@@ -866,7 +868,7 @@
         // signal flags") -- was up top with the other card badges;
         // now renders inside .bb-key-badges below instead, so every
         // per-card "signal" lives in the same corner.
-        var notesBadge = (c.notes && c.notes.trim()) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
+        var notesBadge = (c.notes && c.notes.trim() && !_bbBO('notes')) ? '<span class="bb-notes-badge" title="Has notes">✏️</span>' : '';
         var _linkIsPdf = c.linkUrl && /\.pdf(\?.*)?$/i.test(c.linkUrl.trim());
         var linkBadge = (c.linkUrl && c.linkUrl.trim()) ? '<a class="bb-link-badge" href="'+_esc(c.linkUrl)+'" target="_blank" rel="noopener" draggable="false" title="'+(_linkIsPdf?'Open PDF':'Open link')+'">'+(_linkIsPdf?'📄':'🎬')+'</a>' : '';
         // Larry, July 20, 2026: no date shown at all until a START DATE
@@ -890,16 +892,16 @@
         // _bbIsStartOverdue above for the matching escalation fix).
         var dateStackHTML = ''
           + routineLineHTML
-          + (c.startDate && !c.routine ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
-          + (_bbStartIsOverdue ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
-          + (c.due ? ('<div class="bb-date-line bb-due">DUE: '+_esc(c.due)+'</div>') : '')
+          + (c.startDate && !c.routine && !_bbBO('start') ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
+          + (_bbStartIsOverdue && !_bbBO('start') ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
+          + (c.due && !_bbBO('due') ? ('<div class="bb-date-line bb-due">DUE: '+_esc(c.due)+'</div>') : '')
           + (c.col==='done' && c.completedDate ? ('<div class="bb-date-line bb-done-date">COMPLETED: '+_esc(c.completedDate)+'</div>') : '');
         // Signal Flags row, bottom-left corner -- Notes badge joined
         // this group Aug 11 2026 (Larry: move it down "with other
         // signal flags") instead of sitting up top with the rest of
         // the badges, so the pencil-if-there-are-Notes marker and the
         // card's actual Signal Flags read together as one cluster.
-        var keyBadgesHTML = (c.keys && c.keys.some(function(k){ return k; })) ? c.keys.filter(function(kid){ return kid; }).map(function(kid){
+        var keyBadgesHTML = (!_bbBO('flags') && c.keys && c.keys.some(function(k){ return k; })) ? c.keys.filter(function(kid){ return kid; }).map(function(kid){
               var k=_keyLib.filter(function(x){ return x.id===kid; })[0];
               if(!k) return '';
               // Link count removed from the card front, Aug 15 2026
