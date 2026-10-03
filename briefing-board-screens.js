@@ -676,6 +676,7 @@
         } else {
           FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
         }
+        if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Task's eye sits right of TASK
         // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
         if(sb && db){

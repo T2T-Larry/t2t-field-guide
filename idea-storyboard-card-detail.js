@@ -469,6 +469,7 @@
           slot.appendChild(viewWrap); arow.appendChild(slot);
         }
         var er=bbw.querySelector('.sb-eyebrow-row'); if(er && !er.querySelector('#sb-view-wrap, #sb-order-value')) er.remove();
+        if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw) ux.appendChild(lw);

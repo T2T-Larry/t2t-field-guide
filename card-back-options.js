@@ -47,6 +47,11 @@
       +'.fg-back-eye svg{width:14px;height:14px}'
       +'.fg-back-eye:hover{opacity:1;background:var(--bb-bg)}'
       +'.fg-back-eye.fg-eye-off{opacity:.6}'
+      // A field's label with its eye right beside it.
+      +'.fg-back-labelrow{display:flex;align-items:center;gap:4px;margin-bottom:3px;flex:0 0 auto;min-width:0}'
+      +'.fg-back-labelrow>label:first-child{margin-bottom:0}'
+      +'.fg-back-labelrow .bb-front-check,.bb-field .fg-back-labelrow .bb-front-check{margin:0!important;justify-content:flex-start;width:auto}'
+      +'.fg-back-labelrow .bb-added-quiet{margin-left:4px}'
       // The real checkboxes live here, out of sight; the popup rows drive them.
       +'.fg-back-optstore{display:none!important}'
       // OPTIONS button: the dashed (+) -- the standard "add something here" symbol, no words.
@@ -210,6 +215,25 @@
     return {region:selected, refresh:refresh, closePop:closePop};
   }
 
+  // Oct 3 2026 (Larry: "eye to the immediate right of the eyebrow for ALL visibility options ... first is there an option, then do you want it visible
+  // on the front") -- every field's "show on front" eye (Task, Priority, Contents, Order...) moves up beside its own label, the same place the option
+  // blocks put theirs. Pure DOM move: the real checkbox and its id stay, so all saving is untouched. A quiet "added" date rides after the eye.
+  function eyeBesideLabels(root){
+    if(!root) return;
+    injectStyle();
+    Array.prototype.forEach.call(root.querySelectorAll('.bb-front-check'), function(fc){
+      if(fc.closest('.fg-back-labelrow')) return;
+      var field=fc.closest('.bb-field'); if(!field) return;
+      var lab=null;
+      for(var i=0;i<field.children.length;i++){ var ch=field.children[i]; if(ch.tagName==='LABEL' && !ch.classList.contains('bb-front-check')){ lab=ch; break; } }
+      if(!lab) return;
+      var row=document.createElement('div'); row.className='fg-back-labelrow';
+      lab.parentNode.insertBefore(row, lab);
+      row.appendChild(lab); row.appendChild(fc);
+      var q=lab.querySelector('.bb-added-quiet'); if(q) row.appendChild(q);
+    });
+  }
+
   // Front-face helper for the boards: is this option set to back-only on this card?
   // hidden may be an array or the stored comma-separated string.
   function isBackOnly(hidden, key){
@@ -222,5 +246,5 @@
   }
 
   injectStyle();
-  window.FGCardBackOptions = { optionsRegion: optionsRegion, isBackOnly: isBackOnly, parseHidden: parseHidden, closePop: closePop };
+  window.FGCardBackOptions = { eyeBesideLabels: eyeBesideLabels, optionsRegion: optionsRegion, isBackOnly: isBackOnly, parseHidden: parseHidden, closePop: closePop };
 })();
