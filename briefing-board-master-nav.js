@@ -1699,7 +1699,7 @@
     try{ await sb.rpc('update_board_owner_contact', {p_phone: phone}); }catch(e){}
   }
 
-  async function _bbTeamAddMember(email){
+  async function _bbTeamAddMember(email, knownUserId){
     var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
     if(!board) return {ok:false,msg:'No board selected.'};
     var rows=_bbAllRosterRows();
@@ -1707,8 +1707,14 @@
     if(rows.length>=cap) return {ok:false,msg:'This board is at its '+cap+'-person cap.'};
     var sb=T().sb; if(!sb) return {ok:false,msg:'Not connected.'};
     try{
-      var res=await sb.rpc('find_member_by_email', {p_email: String(email||'').trim().toLowerCase()});
-      var match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
+      // Picked from the Team menu's (+): the person is already known, so
+      // there is no email to look up (Oct 3 2026).
+      var match=null;
+      if(knownUserId){ match={user_id:knownUserId}; }
+      else {
+        var res=await sb.rpc('find_member_by_email', {p_email: String(email||'').trim().toLowerCase()});
+        match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
+      }
       if(!match) return {ok:false,msg:'No T2T member found with that email.'};
       var myUid=await _bbCurrentUserId();
       var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid, access_level: 'edit'});
@@ -1987,45 +1993,33 @@
       await _bbLoadRoster();
       var rows=await _bbAssignedRosterRows();
       _bbViewMenuRowsCache=rows;
-      menu.innerHTML='';
-      var teamRow=document.createElement('div');
-      teamRow.className='bb-cdrop-row'+((!_bbPersonFilterIds || !_bbPersonFilterIds.length) ? ' active' : '');
-      teamRow.textContent='All';
-      teamRow.addEventListener('click', function(e){
-        e.stopPropagation();
-        menu.hidden=true;
-        // In-place clear (.length=0), not a reassignment -- shared with
-        // the Idea/Plan Storyboard's own name for this same array (Sept
-        // 20 2026 unification, briefing-board-master.js) -- a plain
-        // "=[]" would swap this LOCAL name onto a new array and quietly
-        // break the sync.
-        _bbPersonFilterIds.length=0;
-        _bbPersistViewFilter();
-        _bbSourceFilter=null;
-        _bbSyncViewTriggerLabel();
-        _bbRecomputeFilterMatches().then(renderBoard);
-      });
-      menu.appendChild(teamRow);
-      rows.forEach(function(m){
-        var checked=_bbPersonFilterIds && _bbPersonFilterIds.indexOf(String(m.user_id))>=0;
-        var row=document.createElement('label');
-        row.className='bb-cdrop-row bb-view-person-row';
-        // "• task only" tag dropped, Sept 20 2026 (Larry, Master BB:
-        // "list only the names... Call Sheet can ID roles and contact
-        // info") -- VIEW just needs a name to check, not a status label;
-        // anyone in this list already has a real task at this level
-        // (that's how _bbAssignedRosterRows put them here), and the Call
-        // Sheet (👥) is the one place that spells out roles/contact
-        // detail. m.assignedOnly itself is untouched -- still exactly
-        // how this list decides who to include, just no longer shown.
-        row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(checked?' checked':'')+'> <span>'+_esc(m.name||m.email||'(unnamed)')+'</span>';
-        var chk=row.querySelector('input');
-        chk.addEventListener('change', function(){
-          _bbCastFilterChange(m.user_id, chk.checked);
-          teamRow.className='bb-cdrop-row'+((!_bbPersonFilterIds || !_bbPersonFilterIds.length) ? ' active' : '');
-        });
-        row.addEventListener('click', function(e){ e.stopPropagation(); });
-        menu.appendChild(row);
+      // The menu body (TEAM title, All, one row per person, the (+) and its
+      // add form) is the shared T2TTeam (team-button.js) -- Blue Sky draws
+      // the very same one. This board supplies only what is its own: the
+      // roster, how its filter works, and how a seat is saved.
+      T2TTeam.build(menu, {
+        prefix:'bb',
+        rows:rows,
+        esc:_esc,
+        getFilterIds:function(){ return _bbPersonFilterIds||[]; },
+        setFilter:function(uid, on){ _bbCastFilterChange(uid, on); },
+        clearFilter:function(){
+          // In-place clear (.length=0), not a reassignment -- shared with
+          // the Idea/Plan Storyboard's own name for this same array (Sept
+          // 20 2026 unification, briefing-board-master.js) -- a plain
+          // "=[]" would swap this LOCAL name onto a new array and quietly
+          // break the sync.
+          _bbPersonFilterIds.length=0;
+          _bbPersistViewFilter();
+          _bbSourceFilter=null;
+          _bbSyncViewTriggerLabel();
+          _bbRecomputeFilterMatches().then(renderBoard);
+        },
+        loadPool:function(){ return _bbFetchAllMembers(); },
+        addPerson:function(name){ return (typeof _castAddPerson==='function') ? _castAddPerson(name) : Promise.resolve({ok:false,msg:'Adding people is not available here.'}); },
+        seatMember:function(person){ return _bbTeamAddMember(person.email, person.user_id); },
+        rebuild:openMenu,
+        close:function(){ menu.hidden=true; }
       });
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       _bbSyncMenuTheme(menu);
@@ -2034,6 +2028,7 @@
       menu.style.top=(r.bottom+4)+'px';
       menu.style.minWidth=Math.max(120,r.width)+'px';
       menu.hidden=false;
+      if(window.T2TAddControl) T2TAddControl.refresh(menu);
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
     }

@@ -1971,128 +1971,40 @@
       if(projectRow) await _tmLoadRoster(projectRow);
       var rows=projectRow ? _tmAllRosterRows(projectRow) : [];
       _sboardViewMenuRowsCache=rows;
-      menu.innerHTML='';
-      // Clicks inside the list (the (+) form's input, its suggestions) must
-      // not reach the page-level "click anywhere closes every dropdown".
-      menu.onclick=function(e){ e.stopPropagation(); };
-      var allRow=document.createElement('div');
-      allRow.className='sc-cdrop-row'+((!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) ? ' active' : '');
-      allRow.textContent='All';
-      allRow.addEventListener('click', function(e){
-        e.stopPropagation();
-        menu.hidden=true;
-        _sboardPersonFilterIds=[];
+      // The menu body (TEAM title, All, one row per person, the (+) and its
+      // add form) is the shared T2TTeam (team-button.js) -- the Briefing
+      // Board draws the very same one. This board supplies only what is its
+      // own: the roster, how its filter works, and how a seat is saved.
+      function _scRefilter(){
         _sboardPersistViewFilter();
         _sboardSyncViewTriggerLabel();
         _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
-      });
-      menu.appendChild(allRow);
-      rows.forEach(function(m){
-        var checked=!!(_sboardPersonFilterIds && _sboardPersonFilterIds.indexOf(String(m.user_id))>=0);
-        var row=document.createElement('label');
-        row.className='sc-cdrop-row sc-view-person-row';
-        row.innerHTML='<input type="checkbox" class="sc-view-person-chk"'+(checked?' checked':'')+'> <span>'+_esc9710(m.name||m.email||'(unnamed)')+'</span>';
-        var chk=row.querySelector('input');
-        chk.addEventListener('change', function(){
-          var uid=String(m.user_id);
+      }
+      T2TTeam.build(menu, {
+        prefix:'sc',
+        rows:rows,
+        esc:_esc9710,
+        getFilterIds:function(){ return _sboardPersonFilterIds||[]; },
+        setFilter:function(uid, on){
           _sboardPersonFilterIds=_sboardPersonFilterIds||[];
           var idx=_sboardPersonFilterIds.indexOf(uid);
-          if(chk.checked && idx<0) _sboardPersonFilterIds.push(uid);
-          if(!chk.checked && idx>=0) _sboardPersonFilterIds.splice(idx,1);
-          _sboardPersistViewFilter();
-          allRow.className='sc-cdrop-row'+((!_sboardPersonFilterIds || !_sboardPersonFilterIds.length) ? ' active' : '');
-          _sboardSyncViewTriggerLabel();
-          _sboardRecomputeFilterMatches().then(function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); });
-        });
-        row.addEventListener('click', function(e){ e.stopPropagation(); });
-        menu.appendChild(row);
-      });
-      // Dashed (+) at the bottom, Oct 3 2026 -- Larry, on MASTER BLUE SKY:
-      // "My name was there, but no (+) at the bottom to add new members.
-      // Must be there. Flexibility!" Every other Cast list (the 👤 CAST PICK
-      // list, the 👥 card dropdown, BB's own menus) ends in the same dashed
-      // (+); this one never built it. Same inline search of every T2T
-      // member as cast-pick-list.js: picking a member seats them on this
-      // board's Cast (same add_storyboard_member call the Team Roster
-      // uses); a typed name that isn't a member yet becomes a Cast person.
-      var addRow=document.createElement('div');
-      addRow.className='sc-cdrop-addrow';
-      var addBtn=document.createElement('button');
-      addBtn.type='button';
-      addBtn.className='sc-dotted-add-btn';
-      addBtn.title='Add someone to this board';
-      addBtn.textContent='+';
-      addRow.appendChild(addBtn);
-      menu.appendChild(addRow);
-      addBtn.addEventListener('click', async function(e){
-        e.stopPropagation();
-        addRow.remove();
-        var form=document.createElement('div');
-        form.className='sc-view-addform';
-        form.innerHTML='<input type="text" placeholder="Type a name or email…" autocomplete="off"><div class="tm-add-suggest" style="display:none"></div><div class="sc-view-add-error" style="display:none"></div>';
-        menu.appendChild(form);
-        var input=form.querySelector('input'), box=form.querySelector('.tm-add-suggest'), msg=form.querySelector('.sc-view-add-error');
-        var listed={}; rows.forEach(function(r){ listed[String(r.user_id)]=true; });
-        try{ await _tmFetchAllMembers(); }catch(err){}
-        var pool=_tmAllMembersCache||[];
-        function say(text, bad){ msg.style.display=text?'block':'none'; msg.textContent=text||''; msg.style.color=bad?'#ffb4a2':'#b7e4c7'; }
-        function renderSuggest(){
-          var q=input.value.trim().toLowerCase();
-          var matches=pool.filter(function(p){
-            if(!p.user_id || listed[String(p.user_id)]) return false;
-            if(!q) return true;
-            return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.email||'').toLowerCase().indexOf(q)>=0;
-          });
-          var typed=input.value.trim();
-          var exact=typed && pool.some(function(p){ return String(p.name||'').toLowerCase()===typed.toLowerCase(); });
-          var html=matches.map(function(p){
-            return '<div class="tm-add-suggest-row" data-uid="'+_esc9710(p.user_id)+'">'
-              +'<div class="tm-add-suggest-name">'+_esc9710(p.name||p.email||'')+(p.is_member===false?' <span style="opacity:.6;font-size:.85em">(not a member yet)</span>':'')+'</div>'
-              +(p.email?'<div class="tm-add-suggest-email">'+_esc9710(p.email)+'</div>':'')
-            +'</div>';
-          }).join('');
-          if(typed && !exact){
-            html+='<div class="tm-add-suggest-row" data-newname="'+_esc9710(typed)+'"><div class="tm-add-suggest-name">+ Add “'+_esc9710(typed)+'”</div><div class="tm-add-suggest-email">new person — not a T2T member yet</div></div>';
-          }
-          box.innerHTML=html || '<div class="tm-add-suggest-empty">Everyone’s already listed above.</div>';
-          box.style.display='block';
-        }
-        box.addEventListener('click', async function(ev){
-          ev.stopPropagation();
-          var r=ev.target.closest('.tm-add-suggest-row'); if(!r) return;
-          var newName=r.getAttribute('data-newname');
-          if(newName){
-            if(typeof _castAddPerson!=='function') return;
-            var made=await _castAddPerson(newName);
-            if(!made.ok){ say(made.msg||'Could not add that person.', true); return; }
-            say('Added “'+made.person.name+'”. They show in this list once they are on a card here.', false);
-            input.value=''; renderSuggest();
-            return;
-          }
-          var uid=r.getAttribute('data-uid');
-          var p=pool.filter(function(x){ return String(x.user_id)===String(uid); })[0];
-          if(!p){ return; }
-          if(p.is_member===false){ say('“'+(p.name||'That person')+'” is not a T2T member yet, so they can’t be seated on the board itself. Assign them to a card and they will show up here.', true); return; }
-          if(!projectRow){ say('Open a board first.', true); return; }
-          var res;
-          if(p.email){
-            res=await _tmAddMember(projectRow, p.email);
-          } else {
-            try{
-              var ins=await T().sb.rpc('add_storyboard_member', {p_project_id: projectRow.id, p_user_id: uid});
-              res=ins.error?{ok:false,msg:ins.error.message||'Could not add them.'}:{ok:true};
-            }catch(err2){ res={ok:false,msg:'Could not add them.'}; }
-          }
-          if(!res.ok){ say(res.msg||'Could not add them.', true); return; }
-          await openMenu();   // rebuild so the new name shows as a row
-        });
-        input.addEventListener('input', renderSuggest);
-        input.addEventListener('keydown', function(ev){
-          if(ev.key==='Escape'){ ev.stopPropagation(); menu.hidden=true; }
-          if(ev.key==='Enter'){ ev.preventDefault(); var first=box.querySelector('.tm-add-suggest-row'); if(first) first.click(); }
-        });
-        renderSuggest();
-        input.focus();
+          if(on && idx<0) _sboardPersonFilterIds.push(uid);
+          if(!on && idx>=0) _sboardPersonFilterIds.splice(idx,1);
+          _scRefilter();
+        },
+        clearFilter:function(){ _sboardPersonFilterIds=[]; _scRefilter(); },
+        loadPool:async function(){ try{ await _tmFetchAllMembers(); }catch(err){} return _tmAllMembersCache||[]; },
+        addPerson:function(name){ return (typeof _castAddPerson==='function') ? _castAddPerson(name) : Promise.resolve({ok:false,msg:'Adding people is not available here.'}); },
+        seatMember:async function(person){
+          if(!projectRow) return {ok:false,msg:'Open a board first.'};
+          if(person.email) return await _tmAddMember(projectRow, person.email);
+          try{
+            var ins=await T().sb.rpc('add_storyboard_member', {p_project_id: projectRow.id, p_user_id: person.user_id});
+            return ins.error?{ok:false,msg:ins.error.message||'Could not add them.'}:{ok:true};
+          }catch(err2){ return {ok:false,msg:'Could not add them.'}; }
+        },
+        rebuild:openMenu,
+        close:function(){ menu.hidden=true; }
       });
       if(menu.parentElement!==document.body) document.body.appendChild(menu);
       var r=trigger.getBoundingClientRect();
@@ -2100,6 +2012,7 @@
       menu.style.top=(r.bottom+4)+'px';
       menu.style.minWidth=Math.max(120,r.width)+'px';
       menu.hidden=false;
+      if(window.T2TAddControl) T2TAddControl.refresh(menu);
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
     }
