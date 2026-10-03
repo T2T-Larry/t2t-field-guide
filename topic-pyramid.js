@@ -275,7 +275,15 @@
     btn.type='button';
     btn.title='Add a new topic under '+(opts.current.name||'this');
     btn.textContent='+';
-    btn.style.cssText='width:22px;height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed currentColor;border-radius:50%;color:inherit;font:inherit;font-weight:700;line-height:1;cursor:pointer;opacity:.75;padding:0';
+    // Oct 3 2026 -- Larry: the (+) at the bottom of the Topics list is white
+    // (dashed ring and the +). White only reads on a dark list (Blue Sky's
+    // navy); on a light list (Briefing Board's white one) it would vanish, so
+    // the colour follows whatever the menu's own background turns out to be.
+    var _bg=(window.getComputedStyle?getComputedStyle(menuEl).backgroundColor:'')||'';
+    var _m=_bg.match(/\d+(\.\d+)?/g)||[];
+    var _dark=_m.length>=3 && (_m.length<4 || parseFloat(_m[3])>0.5) && (0.299*_m[0]+0.587*_m[1]+0.114*_m[2])<140;
+    var _ink=_dark?'#fff':'currentColor';
+    btn.style.cssText='width:22px;height:22px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:transparent;border:1.5px dashed '+_ink+';border-radius:50%;color:'+_ink+';font:inherit;font-weight:700;line-height:1;cursor:pointer;opacity:'+(_dark?'1':'.75')+';padding:0';
     btn.addEventListener('click', function(e){ e.stopPropagation(); opts.onAdd(opts.current.id); });
     wrap.appendChild(btn);
     menuEl.appendChild(wrap);
