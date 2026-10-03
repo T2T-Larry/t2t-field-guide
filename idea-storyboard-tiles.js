@@ -935,7 +935,12 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:T2TShared.currentTopicId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        // Oct 3 2026 -- when no Topic is open (standing at MASTER) this used
+        // to insert cluster_id:null, a true root, which renders without the
+        // apex frame until a later reload sweeps it under MASTER. Fall back
+        // to the MASTER root's id so it lands framed immediately.
+        var _addParentId=T2TShared.currentTopicId||_sboardIdeaStoryboardsRootId||null;
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:_addParentId,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         _sboardAddRow(ins.data);
         await renderSeaBoard(true);

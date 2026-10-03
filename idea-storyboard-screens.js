@@ -2254,7 +2254,12 @@
         // check in _sboardHeaderQuickMenu -- !headerRow.cluster_id -- looks
         // like it predates that migration and may itself be stale, but
         // that's a separate thing to fix, not touched here.) Sept 27 2026.
-        var _isApexTopic=_sboardIdeaStoryboardsRootId && String(headerRow.cluster_id)===String(_sboardIdeaStoryboardsRootId);
+        // Oct 3 2026: also true for a not-yet-swept true-root row (cluster_id
+        // null, not the root itself, not a reserved bucket) so a header that
+        // was just added at MASTER level is framed right away, not only
+        // after the next reload migrates it under the root.
+        var _isApexTopic=_sboardIdeaStoryboardsRootId && (String(headerRow.cluster_id)===String(_sboardIdeaStoryboardsRootId)
+          || (!headerRow.cluster_id && String(headerRow.id)!==String(_sboardIdeaStoryboardsRootId) && !isReserved));
         hd.className='sc-pill named'+((subs.length||directItems.length) && !isReserved ? ' has-children':'')+(_isApexTopic?' apex-topic':'')+(String(_sboardSelectedHeaderId)===String(headerRow.id)?' sb-kbd-selected':'');
         hd.setAttribute('data-header-id', String(headerRow.id));
         // Sept 20 2026, Larry (Master BB do-h card: "Allow headers to

@@ -660,7 +660,17 @@
       try{
         var user=(await _sb.auth.getUser()).data.user;
         if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
+        // Oct 3 2026 -- Larry: a header added at MASTER level "did not have
+        // the border like all the others." Root cause: this inserted with
+        // cluster_id:null (a true root), but the apex frame is keyed to
+        // cluster_id === the MASTER root's id. The row only got swept under
+        // MASTER (ensureIdeaStoryboardsRoot) on a later reload, so until
+        // then it rendered unframed. New top-level Topics now land under the
+        // MASTER root directly, same as idea-storyboard-navigation.js does.
+        if(!_isxRootId && window.T2TData && T2TData.ensureIdeaStoryboardsRoot){
+          try{ _isxRootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){}
+        }
+        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:_isxRootId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
         T2TShared.isxPath=[{id:ins.data.id, text:ins.data.text_content}];
