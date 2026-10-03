@@ -824,8 +824,97 @@
         +'</div></div>';
       preview.style.display='block';
       preview.dataset.icRole='file';
+      // Oct 3 2026 (Master BB "Document input with multiple cards"): a
+      // document file on an idea board asks how it should land -- one card
+      // that keeps the file, or bite-sized cards split by subject.
+      if(k.kind==='document' && _icMode!=='bb' && _icFileIsReadable(file)){
+        var ask=document.createElement('div');
+        ask.id='isx-file-split-ask';
+        ask.style.cssText='font-size:11px;color:#1a3a5c;background:#eaf3fb;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;margin:-4px 0 8px;text-align:center';
+        ask.innerHTML='Put this document on <b>one card</b>, or split it into <b>bite-sized cards</b>?'
+          +'<div style="margin-top:5px;display:flex;gap:6px;justify-content:center">'
+          +'<button type="button" id="isx-file-one" style="font-size:11px;padding:3px 10px;border-radius:12px;border:1px solid #1a3a5c;background:#1a3a5c;color:#fff;cursor:pointer">One card</button>'
+          +'<button type="button" id="isx-file-many" style="font-size:11px;padding:3px 10px;border-radius:12px;border:1px solid #1a3a5c;background:#fff;color:#1a3a5c;cursor:pointer">Bite-sized cards</button>'
+          +'</div><div id="isx-file-split-msg" style="margin-top:4px;font-size:10px;color:#7a90a8"></div>';
+        preview.appendChild(ask);
+        var one=document.getElementById('isx-file-one'), many=document.getElementById('isx-file-many');
+        if(one) one.onclick=function(){ ask.remove(); };   // default path: file saves as one card on SAVE
+        if(many) many.onclick=function(){ _icSplitFileIntoCards(file); };
+      }
     }
     _icSyncKindLine();
+  }
+
+  // Which document files can have their text read in the browser. Plain
+  // text kinds are read directly; .docx and .pdf load a reader on demand.
+  function _icFileIsReadable(file){
+    return /^(txt|md|rtf|docx|pdf)$/i.test(_icFileExt(file && file.name));
+  }
+
+  function _icLoadScriptOnce(src){
+    return new Promise(function(resolve, reject){
+      var ex=document.querySelector('script[data-ic-lib="'+src+'"]');
+      if(ex){ if(ex.dataset.loaded) return resolve(); ex.addEventListener('load', resolve); ex.addEventListener('error', reject); return; }
+      var s=document.createElement('script'); s.src=src; s.dataset.icLib=src;
+      s.onload=function(){ s.dataset.loaded='1'; resolve(); };
+      s.onerror=function(){ reject(new Error('could not load '+src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function _icReadFileText(file){
+    var ext=_icFileExt(file.name);
+    if(/^(txt|md)$/.test(ext)) return file.text();
+    if(ext==='rtf') return file.text().then(function(t){
+      return t.replace(/\\par[d]?/g,'\n').replace(/\{\\\*[^}]*\}/g,'').replace(/\\'[0-9a-f]{2}/gi,'')
+              .replace(/\\[a-z]+-?\d* ?/gi,'').replace(/[{}]/g,'').replace(/\n{3,}/g,'\n\n').trim();
+    });
+    if(ext==='docx'){
+      return _icLoadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js')
+        .then(function(){ return file.arrayBuffer(); })
+        .then(function(buf){ return window.mammoth.extractRawText({arrayBuffer:buf}); })
+        .then(function(r){ return r.value; });
+    }
+    if(ext==='pdf'){
+      var base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+      return _icLoadScriptOnce(base+'pdf.min.js').then(function(){
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js';
+        return file.arrayBuffer();
+      }).then(function(buf){
+        return window.pdfjsLib.getDocument({data:buf}).promise;
+      }).then(async function(pdf){
+        var out=[];
+        for(var p=1;p<=pdf.numPages;p++){
+          var pg=await pdf.getPage(p), tc=await pg.getTextContent(), line='', lines=[];
+          tc.items.forEach(function(it){ line+=it.str; if(it.hasEOL){ lines.push(line); line=''; } else line+=' '; });
+          if(line.trim()) lines.push(line);
+          out.push(lines.join('\n'));
+        }
+        return out.join('\n\n');
+      });
+    }
+    return Promise.reject(new Error('unsupported'));
+  }
+
+  // "Bite-sized cards": read the document's text and hand it to the same
+  // review screen the paste route uses, so the traveler edits before saving.
+  async function _icSplitFileIntoCards(file){
+    var msg=document.getElementById('isx-file-split-msg');
+    if(msg) msg.textContent='Reading the document…';
+    var text='';
+    try{ text=(await _icReadFileText(file))||''; }catch(e){ console.warn('[idea-capture] split read failed', e); }
+    if(!text.trim() || !window.DocDecomp){
+      if(msg) msg.textContent='Could not read text from this file, so it will stay on one card.';
+      return;
+    }
+    var targetHeaderId=_icHeaderId;
+    _icClearPendingFile();
+    _icClosePopup();
+    window.DocDecomp.open({
+      parentHeaderId: targetHeaderId,
+      initialText: text,
+      onDone: function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(false); }
+    });
   }
 
   function _icClearPendingFile(){
