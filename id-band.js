@@ -152,10 +152,19 @@
   // alsoFor (optional) lists other board kinds that READ as this type in the
   // band's label and checkmark -- Sea of Ideas reads IDEA, Pathfinder reads
   // TASK -- without changing what a pick does.
+  //
+  // Oct 3 2026 -- Larry, ending the trial: "change the ID BAND back to board
+  // type." IDEA / TASK / NOTES are the units of DATA a card holds; the band's
+  // Board Type is the BOARD the card lives on, and changing it MOVES the card
+  // (TASK card back: Board = PLAN moves it to that Topic's PLAN Parking Lot).
+  // The six-board list is restored exactly as it was before the Oct 2 trial.
   window.IDBand.BOARD_KINDS = [
-    {value:'IDEA',           label:'IDEA',  soon:null, alsoFor:['SEA']},
-    {value:'BRIEFING BOARD', label:'TASK',  soon:null, alsoFor:['PLAN']},
-    {value:'NOTEBOOK',       label:'NOTES', soon:null, alsoFor:['SHARE']}
+    {value:'SEA',            label:'SEA OF IDEAS', soon:null},
+    {value:'IDEA',           label:'BLUE SKY',     soon:null},
+    {value:'PLAN',           label:'PATHFINDER',   soon:null},
+    {value:'BRIEFING BOARD', label:'BRIEFING',     soon:null},
+    {value:'SHARE',          label:'STORY',        soon:'STORY BOARD coming soon'},
+    {value:'CAST',           label:'CAST',         soon:null}
   ];
   // What each BOARD calls itself in its own band. The dropdown offers the
   // three input types (above); the band itself keeps naming the board you
