@@ -689,6 +689,13 @@
   // board (see _sboardDrillInto/_sboardGoUpOneLevel) so a freshly opened
   // board never inherits a leftover alphabetical view from somewhere else.
   var _sboardAlphaHeaderView = false;
+  // A-Z letter view, Oct 4 2026 -- Larry: toggle between the clustered view and
+  // ONE alphabetical list under letter headers (a single letter or a group of
+  // letters), from the A-Z button in the ID Band (az-toggle.js). Also a pure
+  // DISPLAY mode, never written to sort_order. Unlike the gear's A -> Z above
+  // it is remembered per TOPIC (T2TAZ.isOn), restored whenever the board lands
+  // on a different Topic (see renderSeaBoard).
+  var _sboardAzLetterView = false;
   var _sboardLastRenderedTopicId = undefined;
   // Signal Flags, Aug 3 2026 -- Larry: "We use red hearts to mean I like
   // this one. What about a blue heart? or a yellow triangle with custom

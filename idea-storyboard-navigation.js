@@ -2025,6 +2025,87 @@
     _sboardSyncViewTriggerLabel();
   }
 
+  // A-Z button (ID Band), Oct 4 2026 -- Larry: "toggle between this view and a
+  // single alpha order with headers of a single letter or group of letters",
+  // a button that is only ever on or off, or N/A on a board where it does not
+  // apply. Markup/look/grouping live in az-toggle.js (T2TAZ), shared by every
+  // board's band; this is the Blue Sky side: where it applies, how it toggles,
+  // and which rows the letter view lists.
+  //
+  // Applies on Blue Sky only. A PLAN board's order IS its steps, so it is N/A
+  // there (same gray as off, click does nothing, tooltip explains).
+  function _sboardAzApplies(){
+    return !!(window.T2TAZ && !_sboardIsPlanBoard);
+  }
+  function _sboardSyncAzButton(){
+    var btn=document.getElementById('sc-az-btn');
+    if(!btn || !window.T2TAZ) return;
+    T2TAZ.sync(btn, {applies:_sboardAzApplies(), on:_sboardAzLetterView});
+  }
+  function _sboardWireAzButton(){
+    var btn=document.getElementById('sc-az-btn');
+    if(!btn || !window.T2TAZ) return;
+    btn.onclick=function(e){
+      e.stopPropagation();
+      if(!_sboardAzApplies()) return;   // N/A: nothing happens, the tooltip says why
+      _sboardAzLetterView=!_sboardAzLetterView;
+      T2TAZ.setOn(T2TShared.currentTopicId, _sboardAzLetterView);
+      if(_sboardAzLetterView) _sboardAlphaHeaderView=false;   // one A-Z at a time
+      _sboardSyncAzButton();
+      renderSeaBoard(true);
+    };
+    _sboardSyncAzButton();
+  }
+
+  // The rows the letter view lists. Everything under the open Topic that is a
+  // "concept" in its own right, in one flat list:
+  //   - a header with no sub-headers whose cards carry no Subject is ONE concept
+  //     (its sentences stay inside it);
+  //   - a header with no sub-headers whose cards DO carry a Subject is only a
+  //     cluster of concepts, so each such card is its own entry and the cluster
+  //     name drops out (that is what A-Z replaces);
+  //   - a header that has sub-headers is walked into, and any loose cards on it
+  //     are entries too.
+  // Cards sitting loose directly on the open Topic stay in the Parking Lot
+  // column, and auto-managed buckets (Parking Lot, NEW, MISC, Purpose, Trash,
+  // "(...)") are never listed. Pure read: nothing here writes anything.
+  var _SBOARD_AZ_AUTO=['NEW','New Additions','Parking Lot','MISC','Purpose','Trash'];
+  function _sboardAzIsAuto(h){
+    var t=String(h && h.text_content || '').trim();
+    return _SBOARD_AZ_AUTO.indexOf(t)!==-1 || /^\(.*\)$/.test(t);
+  }
+  function _sboardAzEntryName(r){
+    if(!r) return '';
+    if(r.content_type==='header') return r.text_content||'';
+    var s=String(r.subject||'').trim();
+    if(s) return s;
+    var t=String(r.text_content||r.idea_text||r.link_title||'').trim();
+    return t.length>60 ? t.slice(0,60) : t;
+  }
+  function _sboardAzCollectEntries(rootId, subHeadersOf, childrenOfHeader){
+    var out=[], seen={};
+    function add(r){ if(r && !seen[r.id]){ seen[r.id]=true; out.push(r); } }
+    function walk(id){
+      (subHeadersOf[id]||[]).forEach(function(h){
+        if(_sboardAzIsAuto(h)) return;
+        var realKids=(subHeadersOf[h.id]||[]).filter(function(k){ return !_sboardAzIsAuto(k); });
+        var cards=childrenOfHeader[h.id]||[];
+        if(realKids.length){
+          walk(h.id);
+          cards.forEach(add);
+        } else if(!cards.length){
+          add(h);
+        } else if(cards.some(function(c){ return String(c.subject||'').trim(); })){
+          cards.forEach(add);
+        } else {
+          add(h);
+        }
+      });
+    }
+    walk(rootId);
+    return out;
+  }
+
   // Project switcher — added July 12, 2026. PROJECT was previously a
   // fixed-anchor label only; this makes it a real lateral jump between
   // top-level projects (the flat Top Banana root list), not just a return

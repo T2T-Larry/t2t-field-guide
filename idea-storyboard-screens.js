@@ -1191,6 +1191,12 @@
         // state, the same state the Cast popup's checkboxes
         // (idea-storyboard-people.js) already write to, rather than
         // building a second, separate filter.
+        // A-Z, Oct 4 2026 -- Larry: one button in every board's ID Band icon
+        // row, leftmost (left of TEAM). Gray when off, lit when on; on boards
+        // where it does not apply it looks the same as off and only the hover
+        // tooltip explains. Markup, look and letter grouping: az-toggle.js.
+        // Wiring on this board: _sboardWireAzButton, idea-storyboard-navigation.js.
+      +(window.T2TAZ ? T2TAZ.buttonHTML('sc-az-btn','sc-hdr-btn-muted sc-hdr-btn-icon') : '')
       +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="View: everyone" aria-label="View — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
         // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump back to
         // the last screen." Same muted-icon family as Utility, mirrors
@@ -1255,6 +1261,7 @@
     // just like STORYBOARD field").
     _sboardWireProjectHeaderDropdown();
     _sboardWireViewFilterDropdown();
+    _sboardWireAzButton();
     // _sboardWireParentAncestorDropdown()/_sboardWireTopicChildDropdown()
     // no longer wired at boot, Sept 19 2026 -- TOPIC's up/down arrow chips
     // are gone (matching BB's own Sept 19 ID Band redesign); a single
@@ -1674,6 +1681,9 @@
     // real order.
     if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
       _sboardAlphaHeaderView=false;
+      // A-Z letter view is remembered per TOPIC (az-toggle.js), so landing on a
+      // Topic restores whatever that Topic was last set to.
+      _sboardAzLetterView=!!(window.T2TAZ && T2TAZ.isOn(T2TShared.currentTopicId));
       _sboardLastRenderedTopicId=T2TShared.currentTopicId;
       if(_sboardCam) _sboardCam.reset(false);   // a different board starts from the top-left, same as Sea of Ideas
     }
@@ -2576,9 +2586,37 @@
         return block;
       }
 
+      // A-Z letter view column, Oct 4 2026 -- one column per letter group (a
+      // single letter, or a range like "X-Z" for thin letters), built from the
+      // flat entry list _sboardAzCollectEntries returns. Display only: the
+      // letter label is inert, tiles don't drag, and there is no (+) -- a new
+      // card lands in its sorted spot once you toggle back or add it elsewhere.
+      function renderLetterGroup(group){
+        var block=document.createElement('div');
+        block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
+        var hd=document.createElement('div');
+        hd.className='sc-pill named';
+        hd.setAttribute('data-az-letter', group.label);
+        hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+Math.round(30*_tsMult)+'px;font-weight:400;margin-bottom:2px;cursor:default;text-align:center;white-space:normal;line-height:1.2;border-radius:0';
+        hd.textContent=group.label;
+        block.appendChild(hd);
+        var scroll=document.createElement('div');
+        scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
+        var _azAllowed={};
+        _sboardFilterByPerson(group.entries.filter(function(r){ return r.content_type!=='header'; })).forEach(function(r){ _azAllowed[r.id]=true; });
+        group.entries.forEach(function(r){
+          if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, true)); }
+          else if(_azAllowed[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, true, r.cluster_id, SUBBER_H)); }
+        });
+        Array.prototype.forEach.call(scroll.querySelectorAll('[draggable="true"]'), function(t){ t.draggable=false; t.removeAttribute('draggable'); });
+        block.appendChild(scroll);
+        return block;
+      }
+
       var groupsWrap=document.createElement('div');
       groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
+      var _azActive=false;   // true only while the A-Z letter view is actually drawn this render
 
       if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
         var directIdeas=(childrenOfHeader[T2TShared.currentTopicId]||[]).slice().sort(_sboardBySortOrder);
@@ -2649,7 +2687,20 @@
         // itself -- the real order everything else (badges, drag-reorder)
         // reads from -- is untouched either way.
         var displayMergedRow=mergedRow;
-        if(_sboardAlphaHeaderView){
+        var _azGroups=null;
+        if(_sboardAzLetterView && _sboardAzApplies()){
+          // A-Z letter view: Purpose/NEW (Parking Lot) stay pinned first and MISC
+          // last, exactly like the gear's A -> Z; everything between is replaced
+          // by the letter columns. mergedRow (the real order) is untouched.
+          var _azFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
+          var _azLastId=miscRow?String(miscRow.id):null;
+          var _azPinFirst=mergedRow.filter(function(h){ return _azFirstIds.indexOf(String(h.id))!==-1; });
+          var _azPinLast=mergedRow.filter(function(h){ return _azLastId && String(h.id)===_azLastId; });
+          var _azEntries=_sboardAzCollectEntries(T2TShared.currentTopicId, subHeadersOf, childrenOfHeader);
+          _azGroups=T2TAZ.groupLetters(_azEntries, _sboardAzEntryName, T2TAZ.MIN_GROUP);
+          _azActive=true;
+          displayMergedRow=_azPinFirst.concat([{__azLetters:true}]).concat(_azPinLast);
+        } else if(_sboardAlphaHeaderView){
           var _pinFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
           var _pinLastId=miscRow?String(miscRow.id):null;
           var _pinFirst=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))!==-1; });
@@ -2659,6 +2710,10 @@
         }
 
         displayMergedRow.forEach(function(h){
+          if(h.__azLetters){
+            (_azGroups||[]).forEach(function(g){ groupsWrap.appendChild(renderLetterGroup(g)); });
+            return;
+          }
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)){
             groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, T2TShared.currentTopicId, h));
           } else {
@@ -2675,7 +2730,8 @@
       // [+] after MISC — adds a new header at this board's level. Simpler,
       // more discoverable than the 💡 button for this one job. Locked
       // July 16, 2026.
-      groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));
+      if(!_azActive) groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));
+      _sboardSyncAzButton();
 
       wrap.appendChild(groupsWrap);
 

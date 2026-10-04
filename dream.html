@@ -50,12 +50,13 @@
 <script src="member-identity.js?v=20260920a"></script>
 <script src="shortcuts-list.js?v=20260922p"></script>
 <script src="id-band.js?v=20261003f"></script>
+<script src="az-toggle.js?v=20261004c"></script>
 <script src="id-band-controls.js?v=20261002b"></script>
 <script src="header-data.js?v=20260929a"></script>
 <script src="text-fit.js?v=20260915a"></script>
 <script src="backpack.js?v=20260919a"></script>
 <script src="briefing-board-styles.js?v=20261003g"></script>
-<script src="briefing-board-screens.js?v=20261003f"></script>
+<script src="briefing-board-screens.js?v=20261004c"></script>
 <script src="briefing-board-card.js?v=20261003a"></script>
 <script src="briefing-board-signal-flags.js?v=20260909b"></script>
 <script src="briefing-board-master.js?v=20261003e"></script>
@@ -72,12 +73,12 @@
 <script src="idea-capture.js?v=20261003a"></script>
 <script src="notebook-open.js?v=20260729g"></script>
 <script src="idea-media-shared.js?v=20260928b"></script>
-<script src="idea-storyboard-screens.js?v=20261004b"></script>
-<script src="idea-storyboard-shared.js?v=20260927a"></script>
+<script src="idea-storyboard-screens.js?v=20261004c"></script>
+<script src="idea-storyboard-shared.js?v=20261004c"></script>
 <script src="idea-storyboard-signal-flags.js?v=20260912a"></script>
 <script src="idea-storyboard-people.js?v=20260923g"></script>
 <script src="idea-storyboard-cluster.js?v=20261003d"></script>
-<script src="idea-storyboard-navigation.js?v=20261003c"></script>
+<script src="idea-storyboard-navigation.js?v=20261004c"></script>
 <script src="idea-storyboard-tiles.js?v=20261003d"></script>
 <script src="idea-storyboard-header.js?v=20261003d"></script>
 <script src="document-decomposition.js?v=20260927b"></script>
@@ -1273,6 +1274,7 @@
     </div>
     <div class="sc-mh-group-center" id="isx-boardkind-wrap"><div class="sc-cdrop" style="display:flex;align-items:center;gap:2px"><button type="button" class="sc-cdrop-trigger" id="isx-board-kind-trigger" title="Switch board type">SEA OF IDEAS</button></div><div class="sc-cdrop-menu" id="isx-board-kind-menu" hidden></div></div>
     <div class="sc-hdr-side" id="isx-hdr-side" style="position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:flex-end">
+      <button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon az-btn" id="isx-az-btn" data-az="na" title="Alphabetical order isn’t available on this board" aria-label="Alphabetical order">A-Z</button>
       <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-idea-btn" title="Add an idea (Alt+N)">&#128161;</button>
       <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-return" title="Return to previous screen">&#8617;&#65038;</button>
       <button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="isx-gear-btn" title="Utility">&#9881;&#65039;</button>
