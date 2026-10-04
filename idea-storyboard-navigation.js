@@ -2076,9 +2076,12 @@
   }
   function _sboardAzEntryName(r){
     if(!r) return '';
-    if(r.content_type==='header') return r.text_content||'';
+    // Oct 4 2026 fix (Larry: "Persuasion" filed under W-Y, "No Magic Formula" under T): a header with a
+    // Subject shows that Subject as its bold headline (_sboardPaintHeaderFace), so the A-Z sort has to
+    // use the Subject too -- it was sorting by the header's long text instead. Same rule as cards below.
     var s=String(r.subject||'').trim();
     if(s) return s;
+    if(r.content_type==='header') return r.text_content||'';
     var t=String(r.text_content||r.idea_text||r.link_title||'').trim();
     return t.length>60 ? t.slice(0,60) : t;
   }
