@@ -2464,10 +2464,29 @@
       // per-level NEW row _sboardEnsureNewAdditionsHeader already ensures exists,
       // so the color picker has something real to save to.
       function renderLocalNewAdditions(directItems, parentIdForDrop, newRow){
+        // Oct 4 2026, Larry: "the Parking Lot flashed into view and then
+        // disappeared... still nothing under Parking Lot and no frame around
+        // it." ROOT CAUSE: this column only ever showed loose cards sitting
+        // directly on the open Topic (directItems) -- cards filed under the
+        // Parking Lot header's OWN id (e.g. the CONCEPTS-purge leftovers at
+        // MASTER) were never read here. The first, cache-only paint (before
+        // the ensure-call resolves newAdditionsId) drew the Parking Lot as an
+        // ordinary column, so they flashed up; the real render then swapped
+        // in this virtual column and they vanished. Now: the row's own
+        // children are merged in, and an apex Parking Lot (a direct child of
+        // the MASTER root) gets the same apex frame as its sibling columns.
+        if(newRow){
+          var _ownKids=(childrenOfHeader[newRow.id]||[]);
+          if(_ownKids.length){
+            var _seenIds={}; directItems.forEach(function(r){ _seenIds[r.id]=true; });
+            directItems=directItems.concat(_ownKids.filter(function(r){ return !_seenIds[r.id]; })).sort(_sboardBySortOrder);
+          }
+        }
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
         var hd=document.createElement('div');
-        hd.className='sc-pill named';
+        var _lnaApex=!!(newRow && _sboardIdeaStoryboardsRootId && String(newRow.cluster_id)===String(_sboardIdeaStoryboardsRootId));
+        hd.className='sc-pill named'+(_lnaApex?' apex-topic':'');
         // Plain "NEW" everywhere, matching the Briefing Board's NEW column
         // — Aug 7 2026, Larry. Used to read "[Topic] Ideas" (e.g. "Website
         // Ideas") whenever a Topic was open, on the reasoning that loose
@@ -2539,7 +2558,7 @@
         if(directItems.length || (newRow && !newRow.locked)){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
-          _sboardFilterByPerson(directItems).forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, parentIdForDrop, SUBBER_H)); });
+          _sboardFilterByPerson(directItems).forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, (item.cluster_id||parentIdForDrop), SUBBER_H)); });
           if(newRow && !newRow.locked){
             scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
           }
