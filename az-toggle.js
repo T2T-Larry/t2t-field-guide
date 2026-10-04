@@ -134,8 +134,18 @@
         push(cur);
       }
     }
-    groups.forEach(function(g){
-      var a = g.letters[0], z = g.letters[g.letters.length - 1];
+    // Labels cover the whole alphabet with no gaps (Larry, Oct 4 2026: a header reading
+    // "W-Y" makes a traveler wonder whether Z is missing). The first group starts at A,
+    // each group runs up to the letter before the next group begins, and the last ends
+    // at Z -- so a letter nobody has used yet is still visibly inside some range.
+    // g.letters keeps the letters that really have entries.
+    var A_CODE = 65, Z_CODE = 90;
+    groups.forEach(function(g, i){
+      var next = groups[i + 1];
+      var startCode = (i === 0) ? A_CODE : g.letters[0].charCodeAt(0);
+      var endCode = next ? next.letters[0].charCodeAt(0) - 1 : Z_CODE;
+      if(endCode < startCode) endCode = startCode;
+      var a = String.fromCharCode(startCode), z = String.fromCharCode(endCode);
       g.label = (a === z) ? a : (a + '–' + z);
     });
     if(hasHash) groups.push({letters:['#'], entries:buckets['#'].slice(), label:'#'});
