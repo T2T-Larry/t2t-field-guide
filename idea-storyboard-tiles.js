@@ -887,7 +887,8 @@
     }
   }
 
-  function _sboardOpenAddHeaderPrompt(){
+  function _sboardOpenAddHeaderPrompt(opts){
+    opts=opts||{};
     // Sept 20 2026 (Larry: "clicking on the header name drops a useless
     // set of options") -- not app code, Chrome's own form-field autofill.
     // This input keeps the same id across every use and had no
@@ -899,8 +900,8 @@
     if(!ov) return;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center;position:relative">'
       +'<button class="sc-ov-btn" id="sb-addheader-close" aria-label="Close" style="position:absolute;right:-4px;top:-6px;padding:2px 8px;font-size:calc(12px * var(--fg-text-scale,1));line-height:1">✕</button>'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">New header</div>'
-      +'<input id="sb-addheader-input" type="text" autocomplete="off" placeholder="Header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:10px">'+(opts.azLabel?'New concept':'New header')+'</div>'
+      +'<input id="sb-addheader-input" type="text" autocomplete="off" placeholder="'+(opts.azLabel?'Concept name…':'Header name…')+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
       +'<div id="sb-addheader-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-addheader-go" style="flex:1">Create</button></div>'
       +'</div>';
@@ -961,6 +962,15 @@
     if(input) input.addEventListener('input', function(){
       var errEl=document.getElementById('sb-addheader-err');
       if(errEl && errEl.style.color==='rgb(58, 125, 58)') errEl.textContent='';
+      // From an A-Z letter column: say plainly which column the name will land in
+      // if it doesn't start inside this one (it sorts itself, nothing is blocked).
+      if(opts.azLabel && errEl && window.T2TAZ){
+        var L=T2TAZ.letterOf(input.value), lab=String(opts.azLabel);
+        var lo=lab.charAt(0), hi=lab.charAt(lab.length-1);
+        var inside=(lab==='#') ? (L==='#') : (L!=='#' && L>=lo && L<=hi);
+        errEl.style.color='#6b7b8a';
+        errEl.textContent=(input.value.trim() && !inside) ? ('Starts with '+L+', so it will sort into that letter\'s column.') : '';
+      }
     });
   }
 

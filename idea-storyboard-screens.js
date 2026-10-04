@@ -2588,9 +2588,9 @@
 
       // A-Z letter view column, Oct 4 2026 -- one column per letter group (a
       // single letter, or a range like "X-Z" for thin letters), built from the
-      // flat entry list _sboardAzCollectEntries returns. Display only: the
-      // letter label is inert, tiles don't drag, and there is no (+) -- a new
-      // card lands in its sorted spot once you toggle back or add it elsewhere.
+      // flat entry list _sboardAzCollectEntries returns. The letter label is inert;
+      // tiles drag and drop INTO another card (see the handlers below), and each
+      // column ends in a (+) that adds a new concept.
       function renderLetterGroup(group){
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
@@ -2608,7 +2608,53 @@
           if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, true)); }
           else if(_azAllowed[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, true, r.cluster_id, SUBBER_H)); }
         });
-        Array.prototype.forEach.call(scroll.querySelectorAll('[draggable="true"]'), function(t){ t.draggable=false; t.removeAttribute('draggable'); });
+        // Oct 4 2026 (Larry: "I cannot move or drop them into another card in alpha view"):
+        // tiles stay draggable here. A-Z has no manual order to reorder (it is alphabetical),
+        // so the top/bottom "reorder" edges the normal tiles use are meaningless; instead the
+        // WHOLE card is one drop target that files the dragged card/header IN UNDER it
+        // (a plain card is promoted to a header first, same as the middle zone on the normal
+        // board). Capture phase, so these run before -- and replace -- each tile's own handlers.
+        function _azTargetOf(e){
+          var el=e.target && e.target.closest ? e.target.closest('[data-idea-id],[data-header-id]') : null;
+          if(!el || !scroll.contains(el)) return null;
+          return el;
+        }
+        function _azClear(el){ if(el){ el.style.outline='none'; el.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; } }
+        scroll.addEventListener('dragover', function(e){
+          var el=_azTargetOf(e); if(!el) return;
+          e.preventDefault(); e.stopPropagation();
+          el.style.outline='5px solid #22c55e'; el.style.boxShadow='0 0 0 11px rgba(34,197,94,.28)';
+        }, true);
+        scroll.addEventListener('dragleave', function(e){
+          var el=_azTargetOf(e); if(!el) return;
+          e.stopPropagation(); _azClear(el);
+        }, true);
+        scroll.addEventListener('drop', function(e){
+          var el=_azTargetOf(e); if(!el) return;
+          e.preventDefault(); e.stopPropagation(); _azClear(el);
+          var raw=e.dataTransfer.getData('text/plain');
+          if(!raw || raw==='sb-goup') return;
+          var draggedId=raw.indexOf('header:')===0 ? raw.slice(7) : raw;
+          var targetId=el.getAttribute('data-header-id') || el.getAttribute('data-idea-id');
+          var target=_sboardAllRowsById[targetId];
+          if(!target || String(draggedId)===String(targetId)) return;
+          // never file something inside its own descendant (would orphan both)
+          var up=target, guard=0;
+          while(up && guard++<50){
+            if(String(up.id)===String(draggedId)) return;
+            up=up.cluster_id ? _sboardAllRowsById[up.cluster_id] : null;
+          }
+          if(target.content_type==='header') _sboardMoveCard(draggedId, target.id);
+          else _sboardStackIntoHeader(draggedId, target);
+        }, true);
+        // (+) at the bottom of each letter column -- a new concept can be added right where
+        // you are looking (Larry, Oct 4 2026). It is created as a header under the open Topic
+        // and sorts into its own letter on its own; the prompt says where it will land.
+        var _azAdd=(window.T2TAddControl && T2TAddControl.make)
+          ? T2TAddControl.make({title:'Add a new concept under '+group.label, onClick:function(){ _sboardOpenAddHeaderPrompt({azLabel:group.label}); }, sense:block})
+          : _sboardMakeAddSubberTile(T2TShared.currentTopicId, SUBBER_W, SUBBER_H);
+        if(window.T2TAddControl && T2TAddControl.make){ _azAdd.style.margin='4px auto 8px'; scroll.appendChild(_azAdd); }
+        else { _azAdd.onclick=null; scroll.appendChild(_azAdd); }
         block.appendChild(scroll);
         return block;
       }
