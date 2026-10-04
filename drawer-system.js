@@ -510,6 +510,17 @@
         if (window.SZDesk.isClosed()) { window.SZDesk.reopen(); return; }
         window.SZDesk.close();
       } },
+    // Oct 4 2026, Larry: "Library = read only. make a brass button like
+    // the others." Opens the read-only Concepts reader for any signed-in
+    // member (library-concepts.js; database side is the ideas "library
+    // member read" SELECT policy). It never opens an editing board.
+    { id: 'concepts',       label: 'Concepts',        action: function(){
+        if (window.T2TLibraryConcepts && window.T2TLibraryConcepts.open) {
+          window.T2TLibraryConcepts.open();
+        } else {
+          showZeroToast('Concepts had trouble opening -- please try again.');
+        }
+      } },
     { id: 'storytelling',   label: 'Storytelling',    action: function(){ showZeroToast('Storytelling — coming later.'); } },
     { id: 'excellence',     label: 'Excellence',      action: function(){ showZeroToast('Excellence — coming later.'); } }
   ];
