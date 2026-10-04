@@ -2475,12 +2475,17 @@
         // in this virtual column and they vanished. Now: the row's own
         // children are merged in, and an apex Parking Lot (a direct child of
         // the MASTER root) gets the same apex frame as its sibling columns.
+        // Headers/Subbers filed under the Parking Lot (Larry: "A header could
+        // be in a Parking Lot") live in subHeadersOf, not childrenOfHeader,
+        // so they are merged in separately and drawn as header stack tiles.
+        var _lnaHeaderKids=[];
         if(newRow){
           var _ownKids=(childrenOfHeader[newRow.id]||[]);
           if(_ownKids.length){
             var _seenIds={}; directItems.forEach(function(r){ _seenIds[r.id]=true; });
             directItems=directItems.concat(_ownKids.filter(function(r){ return !_seenIds[r.id]; })).sort(_sboardBySortOrder);
           }
+          _lnaHeaderKids=(subHeadersOf[newRow.id]||[]).slice();
         }
         var block=document.createElement('div');
         block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
@@ -2555,10 +2560,14 @@
         // in by sliding down or being demoted. Scroll section now always
         // renders (even with zero items yet) so the [+] has somewhere to
         // sit; only a locked NEW row (shouldn't normally happen) hides it.
-        if(directItems.length || (newRow && !newRow.locked)){
+        if(directItems.length || _lnaHeaderKids.length || (newRow && !newRow.locked)){
           var scroll=document.createElement('div');
           scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
-          _sboardFilterByPerson(directItems).forEach(function(item){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, (item.cluster_id||parentIdForDrop), SUBBER_H)); });
+          var _lnaAllowed={}; _sboardFilterByPerson(directItems).forEach(function(r){ _lnaAllowed[r.id]=true; });
+          _lnaHeaderKids.concat(directItems).sort(_sboardBySortOrder).forEach(function(item){
+            if(item.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(item, SUBBER_W, SUBBER_H, true)); }
+            else if(_lnaAllowed[item.id]){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, (item.cluster_id||parentIdForDrop), SUBBER_H)); }
+          });
           if(newRow && !newRow.locked){
             scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
           }
