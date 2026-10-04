@@ -2093,6 +2093,11 @@
         if(_sboardAzIsAuto(h)) return;
         var realKids=(subHeadersOf[h.id]||[]).filter(function(k){ return !_sboardAzIsAuto(k); });
         var cards=childrenOfHeader[h.id]||[];
+        // Oct 4 2026 (Larry dropped Aspirational Values into Values and Values vanished from A-Z): a header that
+        // carries its own Subject is a concept in its own right -- e.g. a card promoted to a header by
+        // dropping another card into it -- so it is listed itself AND its contents are still walked below.
+        // Subject-less headers are plain clusters and keep dropping out, as before.
+        if(String(h.subject||'').trim()) add(h);
         if(realKids.length){
           walk(h.id);
           cards.forEach(add);
