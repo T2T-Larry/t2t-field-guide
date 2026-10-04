@@ -2097,7 +2097,10 @@
         // carries its own Subject is a concept in its own right -- e.g. a card promoted to a header by
         // dropping another card into it -- so it is listed itself AND its contents are still walked below.
         // Subject-less headers are plain clusters and keep dropping out, as before.
-        if(String(h.subject||'').trim()) add(h);
+        // Larry, same day: a concept filed under another is a SUBSET of it, not a concept of its own ("Aspirational
+        // Values" under "Values"), so a Subject-carrying header lists only itself -- everything inside it is its
+        // children, reached by opening it, and does not also get its own A-Z entry.
+        if(String(h.subject||'').trim()){ add(h); return; }
         if(realKids.length){
           walk(h.id);
           cards.forEach(add);
