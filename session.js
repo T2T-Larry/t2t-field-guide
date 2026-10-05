@@ -1442,7 +1442,9 @@
     if(!isxShowContents){
       t.innerHTML=isxSubjectHTML;
     } else if(row.content_type==='image'){
-      t.innerHTML='<img src="'+row.image_url+'" style="height:52px">'+isxSubjectHTML;
+      t.innerHTML='<img style="height:52px">'+isxSubjectHTML;
+      var _isxImg=t.querySelector('img');
+      if(window.T2TMedia&&T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(_isxImg,row.image_url); else _isxImg.src=row.image_url;
     } else if(row.content_type==='link'){
       t.innerHTML=(row.image_url?'<img src="'+row.image_url+'" style="height:52px">':'')
         +isxSubjectHTML

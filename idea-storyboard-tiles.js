@@ -407,7 +407,7 @@
       sWrap.appendChild(sBody);
       tile.appendChild(sWrap);
     } else if((item.content_type==='image'||item.content_type==='link') && item.image_url){
-      var img=document.createElement('img'); img.src=item.image_url; tile.appendChild(img);
+      var img=document.createElement('img'); if(window.T2TMedia&&T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img,item.image_url); else img.src=item.image_url; tile.appendChild(img);
       if(item.content_type==='link'){
         var badge=document.createElement('div');
         badge.style.cssText='position:absolute;top:2px;left:20px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';

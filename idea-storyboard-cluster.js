@@ -362,7 +362,7 @@
     tile.addEventListener('mouseleave', function(){ tile.style.transform=restTransform; tile.style.zIndex=String(baseZ); });
     if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img');
-      img.src=item.image_url;
+      if(window.T2TMedia&&T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img,item.image_url); else img.src=item.image_url;
       img.style.cssText='width:100%;height:100%;object-fit:contain;display:block;pointer-events:none';
       tile.appendChild(img);
       if(item.content_type==='image' && item.text_content){

@@ -268,14 +268,8 @@
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) throw new Error('Not signed in.');
       if(box) box.innerHTML='Compressing\u2026';
-      var toUpload=await _icCompressImageFile(file);
       if(box) box.innerHTML='Uploading\u2026';
-      var fname=toUpload.name||file.name||('pasted-image-'+Date.now()+'.jpg');
-      var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
-      var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
-      if(up.error) throw up.error;
-      var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
-      var url=pub.data && pub.data.publicUrl;
+      var url=await window.T2TMedia.uploadImageWithThumb(_sb, user.id, file, file.name||'pasted-image');
       if(!url) throw new Error('No public URL returned.');
       await _icSaveCard(url);
     }catch(e){

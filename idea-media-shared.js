@@ -271,8 +271,13 @@
   // particular tend to be uncompressed PNGs (multi-MB for a single
   // screenshot), and none of our tiles ever show more than a few hundred
   // px across, so there's no reason to store full-resolution originals.
-  function _compressImageFile(file, maxDim, quality){
-    maxDim=maxDim||1600; quality=quality||0.82;
+  // Oct 5 2026 -- re-encodes as WebP (about 25% smaller than JPEG at the
+  // same visual quality), falling back to JPEG on the rare browser whose
+  // canvas can't encode WebP (it silently hands back a PNG instead, so the
+  // blob's own type is the test). Same function now also makes thumbnails:
+  // pass a small maxDim (see _makeThumbFile).
+  function _compressImageFile(file, maxDim, quality, forceType){
+    maxDim=maxDim||1600; quality=quality||0.8;
     return new Promise(function(resolve){
       try{
         var url=URL.createObjectURL(file);
@@ -288,21 +293,66 @@
             var ctx=canvas.getContext('2d');
             ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch); // flattens transparency
             ctx.drawImage(img,0,0,cw,ch);
-            canvas.toBlob(function(blob){
+            var finish=function(blob, type, ext){
               URL.revokeObjectURL(url);
               if(!blob){ resolve(file); return; }
-              // Only use the compressed version if it's actually smaller —
-              // tiny/simple images can sometimes grow slightly as JPEG.
-              if(blob.size>=file.size && scale===1){ resolve(file); return; }
-              var newName=(file.name||'image').replace(/\.[^.]+$/,'')+'.jpg';
-              resolve(new File([blob], newName, {type:'image/jpeg'}));
-            }, 'image/jpeg', quality);
+              // Only use the compressed version if it's actually smaller
+              // (thumbnails always use it -- they are a different size).
+              if(!forceType && blob.size>=file.size && scale===1){ resolve(file); return; }
+              var newName=(file.name||'image').replace(/\.[^.]+$/,'')+ext;
+              resolve(new File([blob], newName, {type:type}));
+            };
+            canvas.toBlob(function(blob){
+              if(blob && blob.type==='image/webp'){ finish(blob,'image/webp','.webp'); return; }
+              canvas.toBlob(function(jb){ finish(jb,'image/jpeg','.jpg'); }, 'image/jpeg', 0.82);
+            }, 'image/webp', quality);
           }catch(e){ URL.revokeObjectURL(url); resolve(file); }
         };
         img.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
         img.src=url;
       }catch(e){ resolve(file); }
     });
+  }
+
+  // ── Two-size image storage, Oct 5 2026 ──────────────────────────────
+  // Every board image is stored twice: the full picture (<= 1600px) and a
+  // ~400px thumbnail next to it, named <same>_t.webp. No database column
+  // needed: the thumbnail's address is DERIVED from the full one. Boards
+  // and tiles load only the thumbnail; the full picture loads only when a
+  // card is opened. Older JPG/PNG images have no thumbnail and just keep
+  // loading as before.
+  function _thumbUrl(url){
+    return (url && /\.webp(\?.*)?$/i.test(url) && url.indexOf('/sea-of-ideas/')>-1) ? url.replace(/\.webp(\?.*)?$/i,'_t.webp$1') : url;
+  }
+
+  // Sets an <img> to the thumbnail (lazy, async-decoded); if the thumbnail
+  // doesn't exist (older image) it quietly falls back to the full picture.
+  function _setThumbSrc(img, url){
+    var t=_thumbUrl(url);
+    img.loading='lazy'; img.decoding='async';
+    if(t!==url){ img.onerror=function(){ img.onerror=null; img.src=url; }; }
+    img.src=t;
+  }
+
+  // Compresses + uploads full and thumbnail; returns the FULL public URL.
+  // path = '<userId>/<name>' without extension; both files get a year-long
+  // cache header (names are unique per upload, so they never go stale).
+  async function _uploadImageWithThumb(sb, userId, file, label){
+    var full=await _compressImageFile(file, 1600, 0.8);
+    var base=userId+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,6)+'-'+String(label||file.name||'image').replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,60);
+    var ext=(full.type==='image/webp')?'.webp':(full.type==='image/jpeg'?'.jpg':(/\.([a-z0-9]+)$/i.exec(full.name||'')||[0,'png'])[1].replace(/^/,'.'));
+    var opts={cacheControl:'31536000', upsert:false};
+    var up=await sb.storage.from('sea-of-ideas').upload(base+ext, full, opts);
+    if(up.error) throw up.error;
+    if(ext==='.webp'){
+      var thumb=await _compressImageFile(file, 400, 0.72, true);
+      if(thumb && thumb.type==='image/webp'){
+        var tu=await sb.storage.from('sea-of-ideas').upload(base+'_t.webp', thumb, opts);
+        if(tu.error) console.warn('Thumbnail upload failed (full image kept):', tu.error.message);
+      }
+    }
+    var pub=sb.storage.from('sea-of-ideas').getPublicUrl(base+ext);
+    return pub.data && pub.data.publicUrl;
   }
 
   // Legacy 9210-9214 idea-capture family (_ideaSaveImageFile,
@@ -329,7 +379,10 @@
     openIdeaSession: _sboardOpenIdeaSession,
     resolveOEmbed: _linkResolveOEmbed,
     getDefaultHeaderId: _ideaGetDefaultHeaderId,
-    compressImageFile: _compressImageFile
+    compressImageFile: _compressImageFile,
+    thumbUrl: _thumbUrl,
+    setThumbSrc: _setThumbSrc,
+    uploadImageWithThumb: _uploadImageWithThumb
   };
 
 /* ============================================================

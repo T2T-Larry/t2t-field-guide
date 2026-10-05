@@ -2851,14 +2851,7 @@
         var f=files[i];
         if(statusEl){ statusEl.classList.remove('err'); statusEl.textContent='Uploading '+(i+1)+' of '+files.length+'…'; }
         try{
-          var fname=f.name||('pasted-image-'+Date.now()+'.png');
-          var toUpload=await T2TMedia.compressImageFile(f);
-          var uploadName=toUpload.name||fname;
-          var path=user.id+'/'+Date.now()+'-'+i+'-'+uploadName.replace(/[^a-zA-Z0-9._-]/g,'_');
-          var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
-          if(up.error) throw up.error;
-          var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
-          var url=pub.data && pub.data.publicUrl;
+          var url=await T2TMedia.uploadImageWithThumb(_sb, user.id, f, f.name);
           if(!url) throw new Error('No public URL returned.');
           var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'image',image_url:url,cluster_id:T2TShared.filter||null,created_at:new Date().toISOString()}).select().single();
           if(ins.error) throw ins.error;
