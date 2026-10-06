@@ -174,9 +174,7 @@
     menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
     menu.hidden=false;
     position();
-    var loadP=window.T2TLoad.fetch();
     var rows=await _bbCastPickRows(opts.level||null);
-    var loads=await loadP;
     if(menu.hidden) return; // closed while loading
     var selected=opts.selectedUid ? String(opts.selectedUid) : null;
     // Whoever's already picked always shows (checked), even if they
@@ -193,9 +191,15 @@
     menu.innerHTML='';
     // Optional eye (Larry, Oct 6 2026: "the eyeball should be inside the TEAM screen"): the caller says whether the
     // PRIMARY's initials show on the card's face. Open eye = on the front, slashed = back only. No visible label, hover tooltip only.
+    // Oct 6 2026, Larry: TEAM eyebrow top left, the eye top right, a divider line beneath both.
+    var eyeRow=document.createElement('div');
+    eyeRow.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:2px 6px 2px 10px;margin-bottom:4px;border-bottom:1px solid currentColor;border-bottom-color:rgba(128,128,128,.4)';
+    var teamLbl=document.createElement('span');
+    teamLbl.textContent='TEAM';
+    teamLbl.title='Every member of the team has a seat on the board';
+    teamLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.12em;opacity:.7;cursor:default';
+    eyeRow.appendChild(teamLbl);
     if(opts.frontEye){
-      var eyeRow=document.createElement('div');
-      eyeRow.style.cssText='display:flex;justify-content:flex-end;padding:2px 6px 0';
       var eyeB=document.createElement('button');
       eyeB.type='button'; eyeB.className='bb-icon-btn';
       eyeB.style.cssText='width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center';
@@ -215,8 +219,8 @@
         paintFrontEye();
       });
       eyeRow.appendChild(eyeB);
-      menu.appendChild(eyeRow);
     }
+    menu.appendChild(eyeRow);
     // Type-to-filter, Sept 23 2026 -- a level can hold hundreds of
     // people, so a long list gets a filter box at the top.
     var filterInput=null;
@@ -245,8 +249,7 @@
       row.title=m.name+(m.source==='above'?' — from the team one level up':(m.source==='stakeholder'?' — Stakeholder from higher up':''));
       row.setAttribute('data-find', (String(m.name||'')+' '+String(m.email||'')).toLowerCase());
       row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(isSel?' checked':'')+'> <span>'+_esc(m.shortName)+'</span>'
-        +(fromAbove?' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>':'')
-        +' '+window.T2TLoad.badgeHTML(loads[String(m.user_id)]);
+        +(fromAbove?' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>':'');
       var chk=row.querySelector('input');
       chk.addEventListener('change', function(){
         if(chk.checked){
