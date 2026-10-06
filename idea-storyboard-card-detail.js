@@ -1470,7 +1470,68 @@
       }catch(e){ console.error('Idea card: could not load current PRIMARY', e); }
     }
     if(_sboardActiveId!==item.id) return; // a different card opened while this was loading
-    await _bbPaintPrimaryTrigger(trigger, currentUid);
+
+    // Oct 6 2026, Larry: "Why are my initials visible on front when Team button says unassigned?"
+    // The front badge shows the PRIMARY inherited from up the chain (Delegate, never abdicate);
+    // this button only read the card's OWN role, so it said "unassigned" beside visible initials.
+    // With no PRIMARY of its own, the button now names the inherited one, dimmed, "from above".
+    // Who actually resolves as PRIMARY is untouched -- this only reads the same resolver the badge uses.
+    async function paint(){
+      await _bbPaintPrimaryTrigger(trigger, currentUid);
+      trigger.style.opacity='';
+      if(currentUid) return;
+      try{
+        await _sboardEnsureEffectivePrimaryRaw('idea', [item.id]);
+        if(_sboardActiveId!==item.id) return;
+        var inh=_sboardEffectivePrimaryUidRaw('idea', item.id);
+        var nm=inh && _sboardAssignedCache[inh] && _sboardAssignedCache[inh].name;
+        if(inh && nm){
+          trigger.classList.add('bb-view-on');
+          trigger.style.opacity='.6';
+          trigger.title='PRIMARY: '+nm+', from above';
+          trigger.setAttribute('aria-label','PRIMARY — '+nm+', from above — click to choose one for this card');
+        }
+      }catch(e){}
+    }
+    await paint();
+
+    // Eye beside the head: show this card's PRIMARY initials on the front, or keep them back-only.
+    // Same switch as the Call Sheet's initials ON/OFF (ideas.hide_primary_badge), nothing new in the database.
+    var eyeBtn=document.getElementById('sb-primary-eye');
+    if(!eyeBtn){
+      eyeBtn=document.createElement('button');
+      eyeBtn.type='button'; eyeBtn.id='sb-primary-eye'; eyeBtn.className='bb-icon-btn';
+      eyeBtn.style.cssText='margin-left:2px';
+      trigger.insertAdjacentElement('afterend', eyeBtn);
+    }
+    var EYE_ON='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var EYE_OFF='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+    function boardInitialsOff(){
+      var pr=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
+      return !!(pr && pr.hide_all_initials);
+    }
+    function paintEye(){
+      var hidden=!!item.hide_primary_badge || boardInitialsOff();
+      eyeBtn.innerHTML=hidden ? EYE_OFF : EYE_ON;
+      eyeBtn.style.opacity=hidden ? '.6' : '';
+      var tip=hidden ? (boardInitialsOff() ? 'Initials are off for this whole board — click to show them on this card' : 'PRIMARY initials: back only — click to show on the front') : 'PRIMARY initials: shown on the front — click for back only';
+      eyeBtn.title=tip; eyeBtn.setAttribute('aria-label', tip);
+    }
+    paintEye();
+    eyeBtn.onclick=async function(e){
+      e.stopPropagation();
+      var wantHidden=!(item.hide_primary_badge || boardInitialsOff());
+      if(!sb) return;
+      try{
+        if(!wantHidden && boardInitialsOff()) await _sboardSetHideAllInitials(false);
+        var upd=await sb.from('ideas').update({hide_primary_badge:wantHidden}).eq('id', item.id);
+        if(upd.error){ _sboardShowToast('Could not change that.'); return; }
+        item.hide_primary_badge=wantHidden;
+        _sboardPatchRow(item.id, {hide_primary_badge:wantHidden});
+        paintEye();
+        renderSeaBoard(true);
+      }catch(err){ console.error('Idea card: could not change initials visibility', err); }
+    };
 
     function openMenu(){
       var projectRow=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
@@ -1483,7 +1544,7 @@
           var res=await window.T2TStoryboard.assignPrimaryDirect(item, 'idea', person.user_id, {fromAbove:!!person.fromAbove});
           if(!res || !res.ok){ _sboardShowToast((res&&res.msg)||'Could not assign PRIMARY.'); return; }
           currentUid=person.user_id;
-          await _bbPaintPrimaryTrigger(trigger, currentUid);
+          await paint();
           renderSeaBoard(true);
         }
       });

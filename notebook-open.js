@@ -226,14 +226,21 @@
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) throw new Error('Not signed in.');
       if(preview) preview.insertAdjacentHTML('beforeend','<div class="nb-loading">Compressing…</div>');
-      var toUpload=await _nbCompressImageFile(file);
-      if(preview) preview.insertAdjacentHTML('beforeend','<div class="nb-loading">Uploading…</div>');
-      var fname=toUpload.name||file.name||('pasted-image-'+Date.now()+'.jpg');
-      var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
-      var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
-      if(up.error) throw up.error;
-      var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
-      var url=pub.data && pub.data.publicUrl;
+      var url;
+      if(window.T2TMedia && window.T2TMedia.uploadImageWithThumb){
+        // Oct 6 2026: same WebP + 400px thumbnail path every board image uses.
+        if(preview) preview.insertAdjacentHTML('beforeend','<div class="nb-loading">Uploading…</div>');
+        url=await window.T2TMedia.uploadImageWithThumb(_sb, user.id, file, file.name||'pasted-image');
+      } else {
+        var toUpload=await _nbCompressImageFile(file);
+        if(preview) preview.insertAdjacentHTML('beforeend','<div class="nb-loading">Uploading…</div>');
+        var fname=toUpload.name||file.name||('pasted-image-'+Date.now()+'.jpg');
+        var path=user.id+'/'+Date.now()+'-'+fname.replace(/[^a-zA-Z0-9._-]/g,'_');
+        var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
+        if(up.error) throw up.error;
+        var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
+        url=pub.data && pub.data.publicUrl;
+      }
       if(!url) throw new Error('No public URL returned.');
       var combined = caption ? (caption+'\n'+url) : url;
       _nbPendingImageFile=null;

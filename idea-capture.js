@@ -143,40 +143,6 @@
     return (window.T2TSea && window.T2TSea.resolveOEmbed) ? window.T2TSea.resolveOEmbed(url) : Promise.resolve(null);
   }
 
-  function _icCompressImageFile(file, maxDim, quality){
-    maxDim=maxDim||1600; quality=quality||0.82;
-    return new Promise(function(resolve){
-      try{
-        var url=URL.createObjectURL(file);
-        var img=new Image();
-        img.onload=function(){
-          try{
-            var w=img.naturalWidth, h=img.naturalHeight;
-            if(w<=0||h<=0){ URL.revokeObjectURL(url); resolve(file); return; }
-            var scale=Math.min(1, maxDim/Math.max(w,h));
-            var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
-            var canvas=document.createElement('canvas');
-            canvas.width=cw; canvas.height=ch;
-            var ctx=canvas.getContext('2d');
-            ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,cw,ch); // flattens transparency
-            ctx.drawImage(img,0,0,cw,ch);
-            canvas.toBlob(function(blob){
-              URL.revokeObjectURL(url);
-              if(!blob){ resolve(file); return; }
-              // Only use the compressed version if it's actually smaller —
-              // tiny/simple images can sometimes grow slightly as JPEG.
-              if(blob.size>=file.size && scale===1){ resolve(file); return; }
-              var newName=(file.name||'image').replace(/\.[^.]+$/,'')+'.jpg';
-              resolve(new File([blob], newName, {type:'image/jpeg'}));
-            }, 'image/jpeg', quality);
-          }catch(e){ URL.revokeObjectURL(url); resolve(file); }
-        };
-        img.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
-        img.src=url;
-      }catch(e){ resolve(file); }
-    });
-  }
-
   // ── SAVE — the three insert paths. Each targets _icHeaderId (falling
   //    back to _icBoardId, the header's own "New" bucket, if no
   //    sub-header was picked), and calls _icOnSaved(row) on success. No
