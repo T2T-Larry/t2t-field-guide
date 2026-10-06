@@ -1376,6 +1376,7 @@
     // card at root to open, so double-clicking TOPIC there is now inert,
     // same as PARENT already is at that level.
     function _sboardOpenTopicCard(){
+      if(_sboardIsReadOnly()){ if(window.T2TLibraryView && _sboardAllRowsById[T2TShared.currentTopicId]) T2TLibraryView.showCard(_sboardAllRowsById[T2TShared.currentTopicId]); return; }
       if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
         openSbDetail(_sboardAllRowsById[T2TShared.currentTopicId]);
       }
@@ -1645,6 +1646,7 @@
     // actually active, since the library is shared/global, not tied to
     // either screen.
     _sboardEnsureKeyLibraryLoaded();
+    try{ document.body.classList.toggle('fg-readonly', _sboardIsReadOnly()); }catch(e){} // Oct 6 2026: Library view hides editing controls (library-readonly.js)
     // July 18, 2026: DETAILS (openSbDetail, below) is shared between 9710
     // and 9711 — every action inside it (color, heart, lock, trash, move,
     // notes) calls this function afterward to refresh the board. But
@@ -1829,7 +1831,18 @@
             if(_ensureHeaderCalls.length) await Promise.all(_ensureHeaderCalls);
           }catch(e){ console.warn('Idea Storyboards COLLABORATOR/STAKEHOLDER ensure failed:', e); }
         }
-        var _ensureResults=await Promise.all([
+        // Oct 6 2026: in the read-only Library view never create anything -- only look up the Parking Lot header that already exists.
+        var _roView=_sboardIsReadOnly();
+        var _ensureResults=_roView ? await Promise.all([
+          (async function(){
+            try{
+              var q=await _sb.from('ideas').select('id,text_content').eq('content_type','header').eq('cluster_id',T2TShared.currentTopicId).in('text_content',['Parking Lot','NEW','New Additions']).limit(1);
+              return (q.data && q.data[0]) ? q.data[0].id : null;
+            }catch(e){ return null; }
+          })(),
+          Promise.resolve(null),
+          Promise.resolve(null)
+        ]) : await Promise.all([
           T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId) : Promise.resolve(null),
           currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
           T2TData.ensureMiscHeader(T2TShared.currentTopicId)
@@ -1901,7 +1914,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,idea_text,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front')
+          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,idea_text,library_shared,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -1919,6 +1932,7 @@
           _sboardFetchFrom+=_sboardFetchPageSize;
         }
         _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
+        try{ document.body.classList.toggle('fg-readonly', _sboardIsReadOnly()); }catch(e){}
         _sboardCacheReady=true;
       }
 

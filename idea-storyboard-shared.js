@@ -155,6 +155,22 @@
   // flash the unfiltered board).
   var _sboardFilterMatchCardIds = null;
   var _sboardAllRowsById = {};
+
+  /* Oct 6 2026 (Master BB: CONCEPTS FOR MEMBERS). The Blue Sky board is read-only when a member opened the
+     LIBRARY (T2TShared.libraryRootId) and the topic on screen is inside it, or whenever the topic on screen is
+     a LIBRARY card owned by somebody else. Database rules already refuse every member write; this only hides
+     the editing controls so nothing looks editable. */
+  function _sboardIsReadOnly(){
+    var S=window.T2TShared; if(!S || !S.currentTopicId) return false;
+    var rows=_sboardAllRowsById||{}; var cur=rows[S.currentTopicId];
+    if(S.libraryRootId){
+      if(S.currentTopicId===S.libraryRootId) return true;
+      var n=cur, g=0; while(n && g++<60){ if(n.id===S.libraryRootId) return true; n=rows[n.cluster_id]; }
+    }
+    if(cur && cur.library_shared===true && S._meId && cur.user_id && cur.user_id!==S._meId) return true;
+    return false;
+  }
+
   var _sboardVisibleHeaders = [];
   var _sboardCacheReady = false;
   // Merges known-good field values straight into the cached row instead
@@ -402,6 +418,7 @@
     document.addEventListener('keydown', function(e){
       var screen=document.getElementById('s-sea-of-ideas-cluster');
       if(!screen || !screen.classList.contains('active')) return;
+      if(_sboardIsReadOnly()) return; // Oct 6 2026: Library view -- no keyboard edits
       var tag=(e.target&&e.target.tagName||'').toLowerCase();
       if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
       var k=e.key.toLowerCase();

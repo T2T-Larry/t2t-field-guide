@@ -515,8 +515,8 @@
     // member (library-concepts.js; database side is the ideas "library
     // member read" SELECT policy). It never opens an editing board.
     { id: 'concepts',       label: 'Concepts',        action: function(){
-        if (window.T2TLibraryConcepts && window.T2TLibraryConcepts.open) {
-          window.T2TLibraryConcepts.open();
+        if (window.T2TLibraryView && window.T2TLibraryView.open) {
+          window.T2TLibraryView.open();
         } else {
           showZeroToast('Concepts had trouble opening -- please try again.');
         }

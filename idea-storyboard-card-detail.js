@@ -31,6 +31,8 @@
     openSbDetail(item);
   }
   function openSbDetail(item){
+    // Oct 6 2026: in the read-only Library view a card opens the plain reader, never the editable back.
+    if(_sboardIsReadOnly()){ if(window.T2TLibraryView && item) T2TLibraryView.showCard(item); return; }
     _sboardActiveId=item.id;
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;

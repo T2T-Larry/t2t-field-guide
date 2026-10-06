@@ -39,7 +39,10 @@
     returnBoardId: null,
     isxPath: null,          // [{id,text}] apex .. current Topic
     isxHeaderId: null,      // null = New (defaults to current Topic's own id)
-    isxHeaderLabel: 'New'
+    isxHeaderLabel: 'New',
+    libraryRootId: null,    // Oct 6 2026: set while a member views the LIBRARY (Concepts) read-only; see library-readonly.js
+    _libraryNext: null,
+    _meId: null
   };
   var T2TShared = window.T2TShared;
 
@@ -159,6 +162,8 @@
   // (the exact Aug 1 2026 bug this file's push:false convention already
   // exists to prevent, just never plumbed through this particular path).
   function _ideaOpenBoard(boardId, push){
+    // Oct 6 2026: only library-readonly.js's own open() may leave the board read-only; every other way in is editable.
+    T2TShared.libraryRootId=(T2TShared._libraryNext===boardId)?boardId:null; T2TShared._libraryNext=null;
     T2TShared.currentTopicId=boardId; T2TShared.filter=boardId;
     _ideaPersistLastTopic(boardId);
     T().nav('s-sea-of-ideas-cluster', push);

@@ -144,6 +144,7 @@
     _sboardApplyBoardBg();
   }
   function openBoardBgPicker(){
+    if(_sboardIsReadOnly()) return; // Oct 6 2026: Library view is read-only
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
     var swHTML=_sboardBoardBgPalette.map(function(p){
