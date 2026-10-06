@@ -191,6 +191,32 @@
       }
     }
     menu.innerHTML='';
+    // Optional eye (Larry, Oct 6 2026: "the eyeball should be inside the TEAM screen"): the caller says whether the
+    // PRIMARY's initials show on the card's face. Open eye = on the front, slashed = back only. No visible label, hover tooltip only.
+    if(opts.frontEye){
+      var eyeRow=document.createElement('div');
+      eyeRow.style.cssText='display:flex;justify-content:flex-end;padding:2px 6px 0';
+      var eyeB=document.createElement('button');
+      eyeB.type='button'; eyeB.className='bb-icon-btn';
+      eyeB.style.cssText='width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center';
+      var EYE_ON_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      var EYE_OFF_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+      var paintFrontEye=function(){
+        var on=!!opts.frontEye.isOn();
+        eyeB.innerHTML=on?EYE_ON_SVG:EYE_OFF_SVG;
+        eyeB.style.opacity=on?'1':'.55';
+        var tip=opts.frontEye.tip ? opts.frontEye.tip(on) : (on?'Initials shown on the front — click for back only':'Initials back only — click to show on the front');
+        eyeB.title=tip; eyeB.setAttribute('aria-label',tip);
+      };
+      paintFrontEye();
+      eyeB.addEventListener('click', async function(e){
+        e.stopPropagation(); e.preventDefault();
+        await opts.frontEye.onToggle();
+        paintFrontEye();
+      });
+      eyeRow.appendChild(eyeB);
+      menu.appendChild(eyeRow);
+    }
     // Type-to-filter, Sept 23 2026 -- a level can hold hundreds of
     // people, so a long list gets a filter box at the top.
     var filterInput=null;

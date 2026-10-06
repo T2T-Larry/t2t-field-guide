@@ -1495,33 +1495,13 @@
     }
     await paint();
 
-    // Eye beside the head: show this card's PRIMARY initials on the front, or keep them back-only.
-    // Same switch as the Call Sheet's initials ON/OFF (ideas.hide_primary_badge), nothing new in the database.
-    // The eye lives INSIDE the head button (Larry, Oct 6 2026), as a span so it is not a button inside a button.
-    var eyeBtn=document.getElementById('sb-primary-eye');
-    if(!eyeBtn){
-      eyeBtn=document.createElement('span');
-      eyeBtn.id='sb-primary-eye'; eyeBtn.setAttribute('role','button'); eyeBtn.tabIndex=0;
-      eyeBtn.style.cssText='display:inline-flex;align-items:center;justify-content:center;margin-left:4px;cursor:pointer;line-height:0';
-      trigger.style.width='auto'; trigger.style.display='inline-flex'; trigger.style.alignItems='center'; trigger.style.paddingLeft='6px'; trigger.style.paddingRight='6px';
-      trigger.appendChild(eyeBtn);
-    }
-    var EYE_ON='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-    var EYE_OFF='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+    // Eye in the TEAM list the head button opens (Larry, Oct 6 2026): show this card's PRIMARY initials on the front,
+    // or keep them back-only. Same switch as the Call Sheet's initials ON/OFF (ideas.hide_primary_badge), nothing new in the database.
     function boardInitialsOff(){
       var pr=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
       return !!(pr && pr.hide_all_initials);
     }
-    function paintEye(){
-      var hidden=!!item.hide_primary_badge || boardInitialsOff();
-      eyeBtn.innerHTML=hidden ? EYE_OFF : EYE_ON;
-      eyeBtn.style.opacity=hidden ? '.55' : '1';
-      var tip=hidden ? (boardInitialsOff() ? 'Initials are off for this whole board — click to show them on this card' : 'PRIMARY initials: back only — click to show on the front') : 'PRIMARY initials: shown on the front — click for back only';
-      eyeBtn.title=tip; eyeBtn.setAttribute('aria-label', tip);
-    }
-    paintEye();
-    eyeBtn.onclick=async function(e){
-      e.stopPropagation(); e.preventDefault();
+    async function toggleFront(){
       var wantHidden=!(item.hide_primary_badge || boardInitialsOff());
       if(!sb) return;
       try{
@@ -1530,16 +1510,20 @@
         if(upd.error){ _sboardShowToast('Could not change that.'); return; }
         item.hide_primary_badge=wantHidden;
         _sboardPatchRow(item.id, {hide_primary_badge:wantHidden});
-        paintEye();
         renderSeaBoard(true);
       }catch(err){ console.error('Idea card: could not change initials visibility', err); }
-    };
+    }
 
     function openMenu(){
       var projectRow=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
       _bbOpenCastPickMenu(menu, trigger, {
         level: projectRow ? projectRow.id : null,   // project-level Cast, same ambient lookup the New Card popup uses
         selectedUid: currentUid,
+        frontEye: {
+          isOn: function(){ return !(item.hide_primary_badge || boardInitialsOff()); },
+          tip: function(on){ return boardInitialsOff() ? 'Initials are off for this whole board — click to show them on this card' : (on ? 'PRIMARY initials: shown on the front — click for back only' : 'PRIMARY initials: back only — click to show on the front'); },
+          onToggle: toggleFront
+        },
         onPick: async function(person){
           if(_sboardActiveId!==item.id) return;
           if(!window.T2TStoryboard || typeof window.T2TStoryboard.assignPrimaryDirect!=='function') return;
