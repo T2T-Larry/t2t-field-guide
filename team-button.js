@@ -88,6 +88,7 @@
         e.stopPropagation(); e.preventDefault();
         await cfg.frontEye.onToggle();
         paintEye();
+        cfg.close();   // like picking a name: the choice is made, the list gets out of the way
       });
       head.appendChild(eye);
     }
