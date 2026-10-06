@@ -59,19 +59,26 @@
   // header listings, not just the current name.
   var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
 
+  /* Oct 6 2026 (Master BB bug): a header whose title sits only in idea_text (older Library filing) read as
+     "(untitled)" everywhere. Fill text_content from idea_text / link_title once, as the rows load. */
+  function _fillHeaderTitles(rows){
+    (rows||[]).forEach(function(r){ if(r && !String(r.text_content||'').trim()){ var t=String(r.idea_text||r.link_title||'').trim(); if(t) r.text_content=t; } });
+    return rows;
+  }
+
   /* ── generic tree helpers ── */
 
   async function fetchAllHeaders(){
     var sb=_sb(); var u=await _currentUser();
     if(!u) return [];
-    var res=await sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',u.id).eq('content_type','header');
+    var res=await sb.from('ideas').select('id,text_content,idea_text,link_title,cluster_id').eq('user_id',u.id).eq('content_type','header');
     if(res && res.error){
       console.warn('fetchAllHeaders error, retrying once:', res.error);
       await new Promise(function(r){ setTimeout(r,400); });
-      res=await sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',u.id).eq('content_type','header');
+      res=await sb.from('ideas').select('id,text_content,idea_text,link_title,cluster_id').eq('user_id',u.id).eq('content_type','header');
       if(res && res.error) console.error('fetchAllHeaders failed after retry:', res.error);
     }
-    return (res && res.data) || [];
+    return _fillHeaderTitles((res && res.data) || []);
   }
 
   function headerDescendants(allHeaders, rootId){
@@ -102,9 +109,9 @@
     if(!parentId) return [];
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
-      var res=await sb.from('ideas').select('id,text_content,priority').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',parentId);
+      var res=await sb.from('ideas').select('id,text_content,idea_text,link_title,priority').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',parentId);
       if(res.error){ console.warn('childHeaders error:', res.error); return []; }
-      return res.data||[];
+      return _fillHeaderTitles(res.data||[]);
     }catch(e){ console.warn('childHeaders exception:', e); return []; }
   }
 

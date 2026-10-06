@@ -1901,12 +1901,15 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front')
+          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,idea_text,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
           if(pageRes.error) throw new Error(pageRes.error.message);
           var pageRows=pageRes.data||[];
+          // Oct 6 2026 (Master BB bug): a header filed with its title only in idea_text drew as "(untitled)".
+          // Every renderer reads text_content, so fill it here once, at load, from idea_text / link_title.
+          pageRows.forEach(function(r){ if(r && r.content_type==='header' && !String(r.text_content||'').trim()){ var _t=String(r.idea_text||r.link_title||'').trim(); if(_t) r.text_content=_t; } });
           _freshRows=_freshRows.concat(pageRows);
           // A short page (fewer than a full page size back) means this was
           // the last one -- stop. The 50-page (50,000-row) backstop below
