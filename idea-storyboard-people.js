@@ -350,7 +350,11 @@
     // resolution itself, and everything that depends on it (filtering,
     // the Call Sheet screen), is untouched; only this one badge is
     // suppressed.
-    if(item && item.hide_primary_badge) return '';
+    // Oct 6 2026, Larry: "Assignment and seeing initials on the front are a member choice. Defaults are our choice.
+    // Default is no initials on the front of ideas cards whether in SEA or BLUE SKY." So an Idea card shows its
+    // PRIMARY's initials only when a member opted in (ideas.show_primary_badge = true, set by the eye in the TEAM
+    // list or the Call Sheet's Initials ON). Nothing opted in = nothing shown; no bulk change to old rows needed.
+    if(!item || !item.show_primary_badge) return '';
     // Aug 29 2026, Larry: a board-wide master switch (Utility -> Preferences
     // -> Initials) -- "if I am the only person on the project, there is no
     // need to have initials on any cards." Lives on the project's own root
@@ -979,7 +983,7 @@
     try{
       if(!hidden && _csBoardInitialsOff()) await _sboardSetHideAllInitials(false);
       Array.prototype.forEach.call(document.querySelectorAll('.cs-initials-boardoff'), function(n){ if(!_csBoardInitialsOff()) n.remove(); });
-      var upd=await _sb.from(table).update({hide_primary_badge:hidden}).eq('id', _csItem.id);
+      var upd=await _sb.from(table).update(table==='briefing_cards' ? {hide_primary_badge:hidden} : {show_primary_badge:!hidden}).eq('id', _csItem.id);
       if(upd.error) return;
       // Both spellings: idea-storyboard-9710.js reads raw snake_case
       // Supabase fields straight off item (item.hide_primary_badge);
@@ -987,9 +991,8 @@
       // (c.hidePrimaryBadge, see _bbRowToCard) -- _csItem is a live
       // reference into whichever board's own object, so both need
       // setting here rather than guessing which one the caller reads.
-      _csItem.hide_primary_badge=hidden;
-      _csItem.hidePrimaryBadge=hidden;
-      if(_csCardType!=='briefing_card') _sboardPatchRow(_csItem.id, {hide_primary_badge:hidden});
+      if(_csCardType==='briefing_card'){ _csItem.hide_primary_badge=hidden; _csItem.hidePrimaryBadge=hidden; }
+      else { _csItem.show_primary_badge=!hidden; _sboardPatchRow(_csItem.id, {show_primary_badge:!hidden}); }
       if(_csOnRosterChange) _csOnRosterChange();
     }catch(e){}
   }
@@ -1761,8 +1764,8 @@
       +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:calc(10px * var(--fg-text-scale,1));color:#5b5b56;padding:4px 2px;border-top:1px solid #e4ded0">'
         +'<span>Initials on front</span>'
         +'<div class="sb-gear-tabs" id="sb-people-hide-badge-toggle" style="margin-bottom:0;width:auto;min-width:88px">'
-          +'<button type="button" class="sb-gear-tab'+((item.hide_primary_badge||_sbBoardOffNow)?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
-          +'<button type="button" class="sb-gear-tab'+((item.hide_primary_badge||_sbBoardOffNow)?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
+          +'<button type="button" class="sb-gear-tab'+((!item.show_primary_badge||_sbBoardOffNow)?'':' active')+'" data-hide="0" style="padding:3px 8px">ON</button>'
+          +'<button type="button" class="sb-gear-tab'+((!item.show_primary_badge||_sbBoardOffNow)?' active':'')+'" data-hide="1" style="padding:3px 8px">OFF</button>'
         +'</div>'
       +'</div>'
       +_csInitialsNoteHTML()
@@ -2204,7 +2207,7 @@
     if(!ov || !cardEl || !item) return;
     // Aug 28 2026 -- read whichever spelling this card type actually
     // carries (see _csSetHideBadge's own comment for why there are two).
-    var _csHideBadgeNow = (_csCardType==='briefing_card') ? !!item.hidePrimaryBadge : !!item.hide_primary_badge;
+    var _csHideBadgeNow = (_csCardType==='briefing_card') ? !!item.hidePrimaryBadge : !item.show_primary_badge;
     cardEl.innerHTML='<div id="cs-body">'
       // Sept 14 2026, Larry: "classic call sheet" redesign -- CALL SHEET is
       // now the big centered title (this screen's own name), not a small

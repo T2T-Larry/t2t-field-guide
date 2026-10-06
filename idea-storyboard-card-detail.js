@@ -1496,20 +1496,20 @@
     await paint();
 
     // Eye in the TEAM list the head button opens (Larry, Oct 6 2026): show this card's PRIMARY initials on the front,
-    // or keep them back-only. Same switch as the Call Sheet's initials ON/OFF (ideas.hide_primary_badge), nothing new in the database.
+    // or keep them back-only. Same switch as the Call Sheet's initials ON/OFF (ideas.show_primary_badge: a member's opt-in; the default is no initials on the front).
     function boardInitialsOff(){
       var pr=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
       return !!(pr && pr.hide_all_initials);
     }
     async function toggleFront(){
-      var wantHidden=!(item.hide_primary_badge || boardInitialsOff());
+      var wantShow=!(item.show_primary_badge && !boardInitialsOff());
       if(!sb) return;
       try{
-        if(!wantHidden && boardInitialsOff()) await _sboardSetHideAllInitials(false);
-        var upd=await sb.from('ideas').update({hide_primary_badge:wantHidden}).eq('id', item.id);
+        if(wantShow && boardInitialsOff()) await _sboardSetHideAllInitials(false);
+        var upd=await sb.from('ideas').update({show_primary_badge:wantShow}).eq('id', item.id);
         if(upd.error){ _sboardShowToast('Could not change that.'); return; }
-        item.hide_primary_badge=wantHidden;
-        _sboardPatchRow(item.id, {hide_primary_badge:wantHidden});
+        item.show_primary_badge=wantShow;
+        _sboardPatchRow(item.id, {show_primary_badge:wantShow});
         renderSeaBoard(true);
       }catch(err){ console.error('Idea card: could not change initials visibility', err); }
     }
@@ -1520,7 +1520,7 @@
         level: projectRow ? projectRow.id : null,   // project-level Cast, same ambient lookup the New Card popup uses
         selectedUid: currentUid,
         frontEye: {
-          isOn: function(){ return !(item.hide_primary_badge || boardInitialsOff()); },
+          isOn: function(){ return !!item.show_primary_badge && !boardInitialsOff(); },
           tip: function(on){ return boardInitialsOff() ? 'Initials are off for this whole board — click to show them on this card' : (on ? 'PRIMARY initials: shown on the front — click for back only' : 'PRIMARY initials: back only — click to show on the front'); },
           onToggle: toggleFront
         },
