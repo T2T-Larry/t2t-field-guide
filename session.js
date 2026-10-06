@@ -1461,7 +1461,8 @@
     // Person Assigned badge, Aug 9 2026 -- bridge pattern, the
     // initials cache/lookup lives in 9710's closure, this just borrows
     // it.
-    // Oct 6 2026, Larry: nobody is assigned to a Sea of Ideas item -- no initials on this board (hearts instead).
+    // Oct 6 2026, Larry: initials follow the card's own eye (the TEAM list) here too -- the ID BAND controls apply on every board.
+    if(window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
     if(window.T2TStoryboard && T2TStoryboard.priorityBadgeHTML) t.insertAdjacentHTML('beforeend', T2TStoryboard.priorityBadgeHTML(row));
     // Bottom-left signal cluster: Signal Flags (Aug 3 2026, Larry:
     // "This option could be in every gear? Anywhere a traveler makes a
@@ -1523,6 +1524,7 @@
     // Person Assigned badge, Aug 9 2026 -- header piles get the same
     // badge as plain cards.
     var isxStackFront=t.querySelector('.isx-stack-front');
+    if(isxStackFront && window.T2TStoryboard && T2TStoryboard.assignedBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.assignedBadgeHTML(row));
     if(isxStackFront && window.T2TStoryboard && T2TStoryboard.priorityBadgeHTML) isxStackFront.insertAdjacentHTML('beforeend', T2TStoryboard.priorityBadgeHTML(row));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- Aug 15 2026
     // (Lock/Flags; Larry: "is the LOCK not just another FLAG?"), Aug 22
@@ -2031,6 +2033,8 @@
         projectId: _icPath2.length ? _icPath2[0].id : null
       });
     },
+    // Oct 6 2026: shared card edits (DETAILS, the TEAM eye) patch the Blue Sky cache AND this board's own, so a cache render shows them.
+    patchRow: _isxPatchRow,
     getCurrentBoardContext: function(){ return T2TShared.currentTopicId?{boardId:T2TShared.currentTopicId}:null; },
     getDefaultHeaderId: T2TMedia.getDefaultHeaderId,
     resolveOEmbed: T2TMedia.resolveOEmbed,

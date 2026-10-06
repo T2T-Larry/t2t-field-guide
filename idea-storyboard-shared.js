@@ -166,6 +166,8 @@
   // edits). No-ops harmlessly if the row isn't in the cache yet for some
   // reason -- falls back to whatever the next real render fetches.
   function _sboardPatchRow(id, fields){
+    // The Sea of Ideas board keeps its own row cache; keep it in step (Oct 6 2026).
+    if(id && window.T2TSea && typeof window.T2TSea.patchRow==='function') window.T2TSea.patchRow(id, fields);
     if(!id || !_sboardAllRowsById[id]) return;
     var row=_sboardAllRowsById[id];
     for(var k in fields){ if(Object.prototype.hasOwnProperty.call(fields,k)) row[k]=fields[k]; }
