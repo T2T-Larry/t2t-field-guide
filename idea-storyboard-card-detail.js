@@ -1497,12 +1497,14 @@
 
     // Eye beside the head: show this card's PRIMARY initials on the front, or keep them back-only.
     // Same switch as the Call Sheet's initials ON/OFF (ideas.hide_primary_badge), nothing new in the database.
+    // The eye lives INSIDE the head button (Larry, Oct 6 2026), as a span so it is not a button inside a button.
     var eyeBtn=document.getElementById('sb-primary-eye');
     if(!eyeBtn){
-      eyeBtn=document.createElement('button');
-      eyeBtn.type='button'; eyeBtn.id='sb-primary-eye'; eyeBtn.className='bb-icon-btn';
-      eyeBtn.style.cssText='margin-left:2px';
-      trigger.insertAdjacentElement('afterend', eyeBtn);
+      eyeBtn=document.createElement('span');
+      eyeBtn.id='sb-primary-eye'; eyeBtn.setAttribute('role','button'); eyeBtn.tabIndex=0;
+      eyeBtn.style.cssText='display:inline-flex;align-items:center;justify-content:center;margin-left:4px;cursor:pointer;line-height:0';
+      trigger.style.width='auto'; trigger.style.display='inline-flex'; trigger.style.alignItems='center'; trigger.style.paddingLeft='6px'; trigger.style.paddingRight='6px';
+      trigger.appendChild(eyeBtn);
     }
     var EYE_ON='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
     var EYE_OFF='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
@@ -1513,13 +1515,13 @@
     function paintEye(){
       var hidden=!!item.hide_primary_badge || boardInitialsOff();
       eyeBtn.innerHTML=hidden ? EYE_OFF : EYE_ON;
-      eyeBtn.style.opacity=hidden ? '.6' : '';
+      eyeBtn.style.opacity=hidden ? '.55' : '1';
       var tip=hidden ? (boardInitialsOff() ? 'Initials are off for this whole board — click to show them on this card' : 'PRIMARY initials: back only — click to show on the front') : 'PRIMARY initials: shown on the front — click for back only';
       eyeBtn.title=tip; eyeBtn.setAttribute('aria-label', tip);
     }
     paintEye();
     eyeBtn.onclick=async function(e){
-      e.stopPropagation();
+      e.stopPropagation(); e.preventDefault();
       var wantHidden=!(item.hide_primary_badge || boardInitialsOff());
       if(!sb) return;
       try{
