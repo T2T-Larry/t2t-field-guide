@@ -1383,6 +1383,63 @@
     });
     T().wire('sb-trash-no', function(){ if(trashOverlay) trashOverlay.style.display='none'; });
 
+    // LIBRARY ACCESS, Oct 6 2026 (Larry): a visibility choice on each LIBRARY header -- INHERIT (follow the header above),
+    // CAST (only people seated on that branch can see it) or MEMBER (every traveler with an account can read it).
+    // No public/anonymous access exists. The database (ideas.library_access plus the library_shared trigger) does the real
+    // enforcing and cascades down the branch; this control only sets the choice. Shown to the card's owner on headers inside LIBRARY.
+    (function _sbWireLibraryAccess(){
+      try{
+        if(!isHeaderType || typeof _sb==='undefined' || !_sb) return;
+        var meId=(window.T2TShared && window.T2TShared._meId) || null;
+        if(!meId || item.user_id!==meId) return;
+        var rows=(typeof _sboardAllRowsById!=='undefined' && _sboardAllRowsById) || {};
+        function isLibRoot(r){ return r && r.content_type==='header' && r.library_shared===true && /^\s*library\s*$/i.test(r.text_content||''); }
+        var n=rows[item.cluster_id], g=0, inLib=false, inherited='member';
+        var foundInherited=false;
+        while(n && g++<60){
+          if(!foundInherited && (n.library_access==='cast' || n.library_access==='member')){ inherited=n.library_access; foundInherited=true; }
+          if(isLibRoot(n)){ inLib=true; break; }
+          n=rows[n.cluster_id];
+        }
+        if(!inLib && !isLibRoot(item)) return;
+        var actionRow=document.getElementById('sb-lock') && document.getElementById('sb-lock').parentNode;
+        if(!actionRow || !actionRow.parentNode) return;
+        var box=document.createElement('div');
+        box.id='sb-library-access';
+        box.style.cssText='display:flex;align-items:center;gap:6px;margin:4px 0;font-size:calc(10px * var(--fg-text-scale,1));color:var(--bb-sub)';
+        var tips={
+          inherit:'Follows the header above it ('+inherited.toUpperCase()+' right now). A lower header can override.',
+          cast:'CAST: only people seated on this branch can see it.',
+          member:'MEMBER: every traveler with an account can read it. Never public.'
+        };
+        var cur=item.library_access||'inherit';
+        function paint(){
+          Array.prototype.forEach.call(box.querySelectorAll('button'), function(b){
+            var on=b.getAttribute('data-v')===cur;
+            b.style.background=on?'#1a3a5c':'transparent';
+            b.style.color=on?'#fff':'inherit';
+          });
+        }
+        box.innerHTML='<span style="letter-spacing:1px;text-transform:uppercase" title="Who can see this header and everything under it. No public access.">Access</span>'
+          + ['inherit','cast','member'].map(function(v){
+              return '<button type="button" data-v="'+v+'" title="'+tips[v].replace(/"/g,'&quot;')+'" style="font-size:inherit;padding:2px 8px;border:0.5px solid #B4B2A9;border-radius:10px;cursor:pointer;text-transform:uppercase;letter-spacing:.5px">'+v+'</button>';
+            }).join('');
+        actionRow.parentNode.insertBefore(box, actionRow);
+        paint();
+        box.addEventListener('click', async function(ev){
+          var b=ev.target.closest && ev.target.closest('button[data-v]'); if(!b) return;
+          var v=b.getAttribute('data-v'); if(v===cur) return;
+          var val=(v==='inherit')?null:v;
+          var upd=await _sb.from('ideas').update({library_access:val}).eq('id', item.id).select('id,library_access,library_shared');
+          if(upd.error || !upd.data || !upd.data.length){ _sboardShowToast('Could not change access.'); return; }
+          cur=v; item.library_access=val; item.library_shared=upd.data[0].library_shared;
+          _sboardPatchRow(item.id, {library_access:val, library_shared:upd.data[0].library_shared});
+          paint();
+          _sboardShowToast(v==='cast'?'CAST: only people seated on this branch can see it.':v==='member'?'MEMBER: every traveler with an account can read it.':'Access now follows the header above.');
+        });
+      }catch(err){ console.error('Library access control', err); }
+    })();
+
     // Gear → color swatches
     T().wire('sb-gear', function(){
       var row=document.getElementById('sb-swatch-row');
