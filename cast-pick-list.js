@@ -188,164 +188,36 @@
         rows.sort(function(a,b){ return a.shortName.localeCompare(b.shortName, undefined, {sensitivity:'base'}) || String(a.name).localeCompare(String(b.name)); });
       }
     }
-    menu.innerHTML='';
-    // Optional eye (Larry, Oct 6 2026: "the eyeball should be inside the TEAM screen"): the caller says whether the
-    // PRIMARY's initials show on the card's face. Open eye = on the front, slashed = back only. No visible label, hover tooltip only.
-    // Oct 6 2026, Larry: TEAM eyebrow top left, the eye top right, a divider line beneath both.
-    var eyeRow=document.createElement('div');
-    eyeRow.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:2px 6px 2px 10px;margin-bottom:4px;border-bottom:1px solid currentColor;border-bottom-color:rgba(128,128,128,.4)';
-    var teamLbl=document.createElement('span');
-    teamLbl.textContent='TEAM';
-    teamLbl.title='Every member of the team has a seat on the board';
-    teamLbl.style.cssText='font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.12em;opacity:.7;cursor:default';
-    eyeRow.appendChild(teamLbl);
-    if(opts.frontEye){
-      var eyeB=document.createElement('button');
-      eyeB.type='button'; eyeB.className='bb-icon-btn';
-      eyeB.style.cssText='width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center';
-      var EYE_ON_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-      var EYE_OFF_SVG='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
-      var paintFrontEye=function(){
-        var on=!!opts.frontEye.isOn();
-        eyeB.innerHTML=on?EYE_ON_SVG:EYE_OFF_SVG;
-        eyeB.style.opacity=on?'1':'.55';
-        var tip=opts.frontEye.tip ? opts.frontEye.tip(on) : (on?'Initials shown on the front — click for back only':'Initials back only — click to show on the front');
-        eyeB.title=tip; eyeB.setAttribute('aria-label',tip);
-      };
-      paintFrontEye();
-      eyeB.addEventListener('click', async function(e){
-        e.stopPropagation(); e.preventDefault();
-        await opts.frontEye.onToggle();
-        paintFrontEye();
-      });
-      eyeRow.appendChild(eyeB);
-    }
-    menu.appendChild(eyeRow);
-    // Type-to-filter, Sept 23 2026 -- a level can hold hundreds of
-    // people, so a long list gets a filter box at the top.
-    var filterInput=null;
-    if(rows.length>8){
-      var fwrap=document.createElement('div');
-      fwrap.className='bb-view-addform';
-      fwrap.innerHTML='<input type="text" placeholder="Type to find…" autocomplete="off">';
-      filterInput=fwrap.querySelector('input');
-      menu.appendChild(fwrap);
-    }
-    var listWrap=document.createElement('div');
-    listWrap.style.cssText='max-height:min(60vh,420px);overflow-y:auto';
-    menu.appendChild(listWrap);
-    if(!rows.length){
-      var empty=document.createElement('div');
-      empty.className='bb-cdrop-row';
-      empty.style.cssText='cursor:default;opacity:.6';
-      empty.textContent='No one at this level yet.';
-      listWrap.appendChild(empty);
-    }
-    rows.forEach(function(m){
-      var isSel=selected && selected===String(m.user_id);
-      var fromAbove=(m.source==='above' || m.source==='stakeholder');
-      var row=document.createElement('label');
-      row.className='bb-cdrop-row bb-view-person-row';
-      row.title=m.name+(m.source==='above'?' — from the team one level up':(m.source==='stakeholder'?' — Stakeholder from higher up':''));
-      row.setAttribute('data-find', (String(m.name||'')+' '+String(m.email||'')).toLowerCase());
-      row.innerHTML='<input type="checkbox" class="bb-view-person-chk"'+(isSel?' checked':'')+'> <span>'+_esc(m.shortName)+'</span>'
-        +(fromAbove?' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>':'');
-      var chk=row.querySelector('input');
-      chk.addEventListener('change', function(){
-        if(chk.checked){
-          close();
-          window.T2TLoad.invalidate();   // their PRIMARY count may change
-          if(window.T2TPrimaryStatus) window.T2TPrimaryStatus.invalidate();   // ⚠ may clear
-          opts.onPick && opts.onPick({user_id:m.user_id, name:m.name||m.email||'(unnamed)', fromAbove:fromAbove && !isSel});
-        } else if(opts.onClear){
-          close();
-          opts.onClear();
-        } else {
-          chk.checked=true;
-        }
-      });
-      listWrap.appendChild(row);
+    // Everything the list LOOKS like and does inside (TEAM header and eye, name rows,
+    // type-to-find, the (+) add form) is the one shared T2TTeam (team-button.js), the
+    // same list the boards' TEAM button draws (Larry, Oct 6 2026: "build it right").
+    // This function keeps only what is the pick's own: who is listed at this level,
+    // first-name labels, and where the list sits on the screen.
+    if(!window.T2TTeam){ menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">The TEAM list is not loaded on this page.</div>'; return; }
+    window.T2TTeam.build(menu, {
+      mode:'pick',
+      prefix:'bb',
+      esc:_esc,
+      rows: rows.map(function(m){
+        var fromAbove=(m.source==='above' || m.source==='stakeholder');
+        return {
+          user_id:m.user_id, name:m.name, email:m.email, label:m.shortName, fromAbove:fromAbove,
+          tip:m.name+(m.source==='above'?' — from the team one level up':(m.source==='stakeholder'?' — Stakeholder from higher up':''))
+        };
+      }),
+      selectedUid: selected,
+      frontEye: opts.frontEye,
+      onPick: function(person){
+        window.T2TLoad.invalidate();   // their PRIMARY count may change
+        if(window.T2TPrimaryStatus) window.T2TPrimaryStatus.invalidate();   // ⚠ may clear
+        if(opts.onPick) opts.onPick(person);
+      },
+      onClear: opts.onClear ? function(){ opts.onClear(); } : null,
+      loadPool: function(){ return _bbFetchAllMembers(); },
+      addPerson: (typeof _castAddPerson==='function') ? _castAddPerson : null,
+      close: close,
+      onResize: position
     });
-    if(filterInput){
-      filterInput.addEventListener('input', function(){
-        var q=filterInput.value.trim().toLowerCase();
-        Array.prototype.forEach.call(listWrap.querySelectorAll('.bb-view-person-row'), function(r){
-          r.style.display=(!q || r.getAttribute('data-find').indexOf(q)>=0)?'':'none';
-        });
-      });
-      filterInput.addEventListener('keydown', function(e){ if(e.key==='Escape'){ e.stopPropagation(); close(); } });
-      setTimeout(function(){ try{ filterInput.focus(); }catch(e){} }, 0);
-    }
-    // Add a name -- dashed (+), same button every other BB dropdown uses.
-    var addRow=document.createElement('div');
-    addRow.className='bb-cdrop-addrow';
-    var addBtn=document.createElement('button');
-    addBtn.type='button';
-    addBtn.className='bb-dotted-add-btn';
-    addBtn.title='Add a name';
-    addBtn.textContent='+';
-    addRow.appendChild(addBtn);
-    menu.appendChild(addRow);
-    addBtn.addEventListener('click', async function(){
-      addRow.remove();
-      var form=document.createElement('div');
-      form.className='bb-view-addform';
-      form.innerHTML='<input type="text" placeholder="Type a name or email…" autocomplete="off"><div class="tm-add-suggest" style="display:none"></div>';
-      menu.appendChild(form);
-      var input=form.querySelector('input'), box=form.querySelector('.tm-add-suggest');
-      var listed={}; rows.forEach(function(r){ listed[String(r.user_id)]=true; });
-      var pool=await _bbFetchAllMembers();
-      function renderSuggest(){
-        var q=input.value.trim().toLowerCase();
-        var matches=(pool||[]).filter(function(p){
-          if(!p.user_id) return false;
-          if(!q) return !listed[String(p.user_id)];
-          return (p.name||'').toLowerCase().indexOf(q)>=0 || (p.email||'').toLowerCase().indexOf(q)>=0;
-        });
-        // CAST Phase 2 (Sept 22 2026): a typed name with no exact match
-        // gets a "+ Add" row -- creates a Cast person (not a member yet)
-        // and picks them, same as picking anyone else.
-        var typed=input.value.trim();
-        var exact=typed && (pool||[]).some(function(p){ return String(p.name||'').toLowerCase()===typed.toLowerCase(); });
-        var html=matches.map(function(p){
-          return '<div class="tm-add-suggest-row" data-uid="'+_esc(p.user_id)+'">'
-            +'<div class="tm-add-suggest-name">'+_esc(p.name||p.email||'')+(p.is_member===false?' <span style="opacity:.6;font-size:.85em">(not a member yet)</span>':'')+'</div>'
-            +(p.email?'<div class="tm-add-suggest-email">'+_esc(p.email)+'</div>':'')
-          +'</div>';
-        }).join('');
-        if(typed && !exact){
-          html+='<div class="tm-add-suggest-row" data-newname="'+_esc(typed)+'"><div class="tm-add-suggest-name">+ Add “'+_esc(typed)+'”</div><div class="tm-add-suggest-email">new person — not a T2T member yet</div></div>';
-        }
-        box.innerHTML = html || '<div class="tm-add-suggest-empty">Everyone’s already listed above.</div>';
-        box.style.display='block';
-        position();
-      }
-      box.addEventListener('click', async function(e){
-        var r=e.target.closest('.tm-add-suggest-row'); if(!r) return;
-        var newName=r.getAttribute('data-newname');
-        if(newName){
-          if(typeof _castAddPerson!=='function') return;
-          var made=await _castAddPerson(newName);
-          if(!made.ok){ box.innerHTML='<div class="tm-add-suggest-empty">'+_esc(made.msg)+'</div>'; return; }
-          close();
-          opts.onPick && opts.onPick({user_id:made.person.user_id, name:made.person.name});
-          return;
-        }
-        var uid=r.getAttribute('data-uid');
-        var p=(pool||[]).filter(function(x){ return String(x.user_id)===String(uid); })[0];
-        close();
-        opts.onPick && opts.onPick({user_id:uid, name:p?(p.name||p.email):'(unnamed)'});
-      });
-      input.addEventListener('input', renderSuggest);
-      input.addEventListener('keydown', function(e){
-        if(e.key==='Escape'){ e.stopPropagation(); close(); }
-        if(e.key==='Enter'){
-          e.preventDefault();
-          var first=box.querySelector('.tm-add-suggest-row'); if(first) first.click();
-        }
-      });
-      renderSuggest();
-      input.focus();
-    });
+    if(window.T2TAddControl) T2TAddControl.refresh(menu);
     position();
   }
