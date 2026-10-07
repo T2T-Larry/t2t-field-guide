@@ -968,7 +968,7 @@ body.t2t-bare-screen{background:#d0d0d0!important}
 
 /* Named groups on the Sea of Ideas (sea-cluster-groups.js), Oct 7 2026 */
 .isx-group-frame{position:absolute;box-sizing:border-box;border:2px dashed rgba(47,127,224,.55);border-radius:14px;background:rgba(47,127,224,.05);pointer-events:none;z-index:0}
-.isx-group-tab{position:absolute;left:10px;top:-2px;transform:translateY(-100%);display:flex;align-items:center;gap:6px;background:#1a3a5c;color:#fff;border-radius:8px 8px 0 0;padding:3px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;cursor:grab;pointer-events:auto;white-space:nowrap;max-width:320px}
+.isx-group-tab{position:absolute;left:10px;top:0;display:flex;align-items:center;gap:6px;background:#1a3a5c;color:#fff;border-radius:0 0 8px 8px;padding:3px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-weight:700;cursor:grab;pointer-events:auto;white-space:nowrap;max-width:320px}
 .isx-group-tab:active{cursor:grabbing}
 .isx-group-name{overflow:hidden;text-overflow:ellipsis;outline:none}
 .isx-group-name[contenteditable="true"]{background:#fff;color:#1a3a5c;padding:0 4px;border-radius:4px;cursor:text}
