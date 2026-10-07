@@ -263,7 +263,9 @@
     // synced locally yet, same reasoning as BB's own migration note).
     var hasKeys=!!(item.key_slot_1||item.key_slot_2||item.key_slot_3);
     var addNotesOpen=(item.adds_notes!=null?!!item.adds_notes:!!(item.notes&&item.notes.trim()));
-    var addLinksOpen=(item.adds_links!=null?!!item.adds_links:!!item.link_url);
+    // Oct 7 2026 (Larry): on an IMAGE card the Links block is the card's SOURCE -- it opens by itself whenever a source is saved.
+    var isImgSrc=(item.content_type==='image');
+    var addLinksOpen=(isImgSrc && item.link_url)?true:(item.adds_links!=null?!!item.adds_links:!!item.link_url);
     var addRelatedOpen=(item.adds_related!=null?!!item.adds_related:!!item.track_on_briefing_board);
     var addFlagsOpen=(item.adds_flags!=null?!!item.adds_flags:(heartCount>0||hasKeys));
     // Organization, Sept 26 2026 -- see the sb-add-org markup below.
@@ -354,12 +356,12 @@
       // now instead of always showing. See IC_ADDITIONS/
       // wireIcAdditionToggles below for the shared plumbing.
       + '<div class="bb-field bb-addition" id="sb-add-notes-wrap"><label class="bb-addition-label" for="sb-add-notes"><input type="checkbox" id="sb-add-notes"'+(addNotesOpen?' checked':'')+'><span class="bb-addition-eyebrow">Notes</span></label><div class="bb-addition-body" id="sb-notes-body" style="display:'+(addNotesOpen?'':'none')+'"><textarea id="sb-notes-box" placeholder="Add a note…">'+(item.notes||'')+'</textarea></div></div>'
-      + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">Links</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
+      + '<div class="bb-field bb-addition" id="sb-add-links-wrap"><label class="bb-addition-label" for="sb-add-links"><input type="checkbox" id="sb-add-links"'+(addLinksOpen?' checked':'')+'><span class="bb-addition-eyebrow">'+(isImgSrc?'Source':'Links')+'</span></label><div class="bb-addition-body" id="sb-links-body" style="display:'+(addLinksOpen?'':'none')+'">'
       + '<div class="bb-link-row">'
-      + '<input id="sb-link-url" type="text" placeholder="Paste a YouTube, Vimeo, or other link…" value="'+_sboardEsc(item.link_url||'')+'">'
+      + '<input id="sb-link-url" type="text" placeholder="'+(isImgSrc?'Where this image came from…':'Paste a YouTube, Vimeo, or other link…')+'" value="'+_sboardEsc(item.link_url||'')+'">'
       + '<button id="sb-link-clear" class="bb-icon-btn" type="button" title="Remove">✕</button>'
       + '</div>'
-      + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:var(--bb-ink)">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(item.link_title||item.link_url||'')+'</div>'
+      + '<div id="sb-link-preview" style="display:'+((item.link_url)?'block':'none')+';margin-top:6px;font-size:calc(11px * var(--fg-text-scale,1));text-align:center;font-style:italic;color:var(--bb-ink)">'+((item.link_thumb)?('<img src="'+_sboardEsc(item.link_thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+(isImgSrc&&item.link_url?('<a href="'+_sboardEsc(item.link_url)+'" target="_blank" rel="noopener" style="color:inherit">'+_sboardEsc(item.link_title||item.link_url)+' \u2197</a>'):_sboardEsc(item.link_title||item.link_url||''))+'</div>'
       + '</div></div>'
       + (isTopRowHeader ? ('<div class="bb-field bb-addition" id="sb-add-related-wrap"><label class="bb-addition-label" for="sb-add-related"><input type="checkbox" id="sb-add-related"'+(addRelatedOpen?' checked':'')+'><span class="bb-addition-eyebrow">Related Storyboards</span></label><div class="bb-addition-body" id="sb-related-body" style="display:'+(addRelatedOpen?'':'none')+'"><div class="sb-blue-row-sm">'
         + '<button class="sb-blue-btn-sm" id="sb-bb-assign" title="'+(item.track_on_briefing_board?'Unassign from Briefing Board':'Assign to Briefing Board')+'">'+(item.track_on_briefing_board?'📌 Unassign from Briefing Board':'📋 Assign to Briefing Board')+'</button>'
@@ -432,10 +434,23 @@
       // here yet: it only appears once this card's FRONT honors back-only (front_hidden is wired on the Briefing Card first).
       if(window.FGCardBackOptions){
         FGCardBackOptions.optionsRegion(bbw, {
-          skip: ['sb-add-links-wrap'],
+          skip: isImgSrc ? [] : ['sb-add-links-wrap'],
           noPopup: ['notes'],
           universal: ['flags','org'],
           ownLabel: 'Blue Sky card',
+          // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
+          frontKeys: isImgSrc ? ['links'] : [],
+          getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
+          setHidden: function(arr){
+            var prev=item.front_hidden||null, v=arr.join(',')||null, patch={front_hidden:v};
+            item.front_hidden=v;
+            var _sbx=T().sb;
+            _sbx.from('ideas').update(patch).eq('id',item.id).then(function(r){
+              if(r.error){ item.front_hidden=prev; var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
+              _sboardPatchRow(item.id, patch);
+              renderSeaBoard(true);
+            });
+          },
           actionRow: bbw.querySelector('.bb-action-row')
         });
       } else {
@@ -474,7 +489,7 @@
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
-      if(ux && lw) ux.appendChild(lw);
+      if(ux && lw && !isImgSrc) ux.appendChild(lw);
       var pen=card.querySelector('#sb-notes-pencil'), ncb=card.querySelector('#sb-add-notes');
       if(pen && ncb){
         pen.classList.toggle('fg-on', ncb.checked);
@@ -1271,7 +1286,7 @@
         if(!linkPreview) return;
         if(!url){ linkPreview.style.display='none'; linkPreview.innerHTML=''; return; }
         linkPreview.style.display='block';
-        linkPreview.innerHTML=(thumb?('<img src="'+_sboardEsc(thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+_sboardEsc(title||url);
+        linkPreview.innerHTML=(thumb?('<img src="'+_sboardEsc(thumb)+'" style="max-width:100%;max-height:80px;border-radius:6px;display:block;margin:0 auto 4px;object-fit:contain">'):'')+(isImgSrc?('<a href="'+_sboardEsc(url)+'" target="_blank" rel="noopener" style="color:inherit">'+_sboardEsc(title||url)+' \u2197</a>'):_sboardEsc(title||url));
       }
       async function saveLinkField(){
         var val=linkInput?linkInput.value.trim():'';

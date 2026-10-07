@@ -203,7 +203,10 @@
   // those already show their own built-in 🔗 marker.
   function _sboardLinkBadgeHTML(item){
     if(!item.link_url || item.content_type==='link') return '';
-    return '<a class="sb-link-badge" href="'+_sboardEsc(item.link_url)+'" target="_blank" rel="noopener" draggable="false" title="Open link">🎬</a>';
+    // Oct 7 2026 (Larry): an image's source (e.g. its Miro origin) lives on the BACK; the eye beside it decides whether the badge also
+    // shows on the front. front_hidden is the same comma list the Briefing Card uses -- 'links' in it means back only.
+    if(String(item.front_hidden||'').split(',').map(function(s){ return s.trim(); }).indexOf('links')>=0) return '';
+    return '<a class="sb-link-badge" href="'+_sboardEsc(item.link_url)+'" target="_blank" rel="noopener" draggable="false" title="'+(item.content_type==='image'?'Open source':'Open link')+'">'+(item.content_type==='image'?'🔗':'🎬')+'</a>';
   }
 
   // ---- Ctrl/Cmd+Z undo (single-step), Aug 11 2026 -- same shape as the
