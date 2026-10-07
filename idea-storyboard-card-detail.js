@@ -1666,6 +1666,9 @@
     // Sept 30 2026 (Larry: "Gear default is to show color options on headers. Make it not the default -- open gear to find colors"):
     // a header opens with the gear closed; the gear opens the colors. Other cards keep the double-click-to-colors shortcut.
     if(item && item.content_type==='header') return;
+    // Oct 7 2026 (Larry: "color choice on the back of an image card has no meaning. default should be not visible"): a picture with no Subject
+    // is shown bare -- there is no card to color -- so its back opens with the gear closed, like a header's.
+    if(item && item.content_type==='image' && !String(item.subject||'').trim()) return;
     var row=document.getElementById('sb-swatch-row');
     if(row) row.style.display='flex';
   }

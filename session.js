@@ -1452,6 +1452,8 @@
       if(!isxSubject){ t.classList.add('isx-bare'); t.innerHTML='<img>'; } else { t.innerHTML='<img style="height:52px">'+isxSubjectHTML; }
       var _isxImg=t.querySelector('img');
       if(window.T2TMedia&&T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(_isxImg,row.image_url); else _isxImg.src=row.image_url;
+      // A lazy picture with no size yet is 0px tall and can sit unloaded forever -- hold a small placeholder height until the real picture arrives.
+      if(t.classList.contains('isx-bare')){ _isxImg.style.minHeight='60px'; var _isxDone=function(){ _isxImg.style.minHeight='0'; }; if(_isxImg.complete&&_isxImg.naturalWidth) _isxDone(); else _isxImg.addEventListener('load', _isxDone); }
     } else if(row.content_type==='link'){
       t.innerHTML=(row.image_url?'<img src="'+row.image_url+'" style="height:52px">':'')
         +isxSubjectHTML
