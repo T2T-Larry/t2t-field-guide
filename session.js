@@ -1530,7 +1530,7 @@
         tile.classList.remove('isx-resizing');
         if(now===w0) return;
         row.tile_w=now;
-        try{ var up=await _sb.from('ideas').update({tile_w:now}).eq('id',row.id); if(up.error) throw up.error; }
+        try{ var up=await T().sb.from('ideas').update({tile_w:now}).eq('id',row.id); if(up.error) throw up.error; }
         catch(err){ console.warn('Resize save failed:', err); }
       }
       document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
