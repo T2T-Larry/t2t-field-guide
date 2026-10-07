@@ -265,7 +265,7 @@
     var addNotesOpen=(item.adds_notes!=null?!!item.adds_notes:!!(item.notes&&item.notes.trim()));
     // Oct 7 2026 (Larry): on an IMAGE card the Links block is the card's SOURCE -- it opens by itself whenever a source is saved.
     var isImgSrc=(item.content_type==='image');
-    var addLinksOpen=(isImgSrc && item.link_url)?true:(item.adds_links!=null?!!item.adds_links:!!item.link_url);
+    var addLinksOpen=isImgSrc?false:(item.adds_links!=null?!!item.adds_links:!!item.link_url);
     var addRelatedOpen=(item.adds_related!=null?!!item.adds_related:!!item.track_on_briefing_board);
     var addFlagsOpen=(item.adds_flags!=null?!!item.adds_flags:(heartCount>0||hasKeys));
     // Organization, Sept 26 2026 -- see the sb-add-org markup below.
@@ -434,15 +434,15 @@
       // here yet: it only appears once this card's FRONT honors back-only (front_hidden is wired on the Briefing Card first).
       if(window.FGCardBackOptions){
         FGCardBackOptions.optionsRegion(bbw, {
-          skip: isImgSrc ? [] : ['sb-add-links-wrap'],
+          skip: ['sb-add-links-wrap'],
           noPopup: ['notes'],
           universal: ['flags','org'],
           ownLabel: 'Blue Sky card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
-          frontKeys: isImgSrc ? ['links'] : [],
+          frontKeys: [],
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
-            var prev=item.front_hidden||null, v=arr.join(',')||null, patch={front_hidden:v};
+            var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
             item.front_hidden=v;
             var _sbx=T().sb;
             _sbx.from('ideas').update(patch).eq('id',item.id).then(function(r){
@@ -490,6 +490,47 @@
       })();
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc) ux.appendChild(lw);
+      // Oct 7 2026 (Larry): an image's SOURCE is a popup, only on the back, opened by its own button. The eye inside it puts a source
+      // symbol on the front (default: nothing on the front). The block is moved onto the card as a floating panel; ids and saving are untouched.
+      if(isImgSrc && lw){
+        var srcBody=lw.querySelector('#sb-links-body'), srcRow=card.querySelector('.bb-action-row');
+        if(srcBody && srcRow){
+          var srcLab=lw.querySelector('.bb-addition-eyebrow');
+          var srcTitle=document.createElement('div'); srcTitle.className='fg-back-opt-title';
+          var srcTx=document.createElement('span'); srcTx.textContent='Source'; srcTitle.appendChild(srcTx);
+          var srcEye=document.createElement('button'); srcEye.type='button'; srcEye.className='fg-back-eye'; srcTitle.appendChild(srcEye);
+          srcBody.insertBefore(srcTitle, srcBody.firstChild);
+          function srcShown(){ return item.front_hidden!=null && FGCardBackOptions.parseHidden(item.front_hidden).indexOf('links')<0; }
+          function paintSrcEye(){
+            var on=srcShown();
+            srcEye.innerHTML=on?'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+            srcEye.title=on?'Source symbol shows on the front \u2014 click to keep it on the back only':'Back only \u2014 click to show the source symbol on the front';
+            srcEye.setAttribute('aria-label', srcEye.title);
+          }
+          paintSrcEye();
+          srcEye.addEventListener('click', function(e){
+            e.stopPropagation();
+            var prev=item.front_hidden==null?null:item.front_hidden, v=srcShown()?'links':'', patch={front_hidden:v};
+            item.front_hidden=v; paintSrcEye();
+            T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
+              if(r.error){ item.front_hidden=prev; paintSrcEye(); return; }
+              _sboardPatchRow(item.id, patch); renderSeaBoard(true);
+            });
+          });
+          srcBody.style.cssText='display:none;position:absolute;left:12px;right:12px;bottom:58px;z-index:30;background:var(--bb-bg,#fff);border:1px solid var(--bb-ink,#888);border-radius:6px;padding:8px 10px;box-shadow:0 6px 18px rgba(0,0,0,.28)';
+          card.appendChild(srcBody);
+          var srcBtn=document.createElement('button'); srcBtn.type='button'; srcBtn.id='sb-source-btn'; srcBtn.className='bb-icon-btn';
+          srcBtn.title='Source'; srcBtn.setAttribute('aria-label','Source'); srcBtn.textContent='\uD83D\uDD17';
+          srcRow.insertBefore(srcBtn, srcRow.firstChild);
+          function closeSrc(){ srcBody.style.display='none'; srcBtn.classList.remove('fg-on'); }
+          srcBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            var open=srcBody.style.display!=='none'; if(open) closeSrc(); else { srcBody.style.display='block'; srcBtn.classList.add('fg-on'); }
+          });
+          srcBody.addEventListener('click', function(e){ e.stopPropagation(); });
+          card.addEventListener('click', function(e){ if(srcBody.style.display!=='none' && e.target!==srcBtn) closeSrc(); });
+        }
+      }
       var pen=card.querySelector('#sb-notes-pencil'), ncb=card.querySelector('#sb-add-notes');
       if(pen && ncb){
         pen.classList.toggle('fg-on', ncb.checked);

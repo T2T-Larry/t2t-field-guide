@@ -247,6 +247,7 @@
         +'.sc-tile{position:absolute;width:64px;height:64px;border-radius:0;background:#fff;border:1px solid #cfe4f2;box-shadow:0 3px 10px rgba(0,0,0,0.28);overflow:hidden;cursor:grab;user-select:none}'
         +'.sc-tile.dragging{cursor:grabbing;box-shadow:0 8px 18px rgba(0,0,0,0.4);z-index:50}'
         +'.sc-tile img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}'
+        +'#s-sea-of-ideas-cluster .sc-tile.sc-bare{background:transparent;border:0;box-shadow:0 2px 6px rgba(0,0,0,0.25)}#s-sea-of-ideas-cluster .sc-tile.sc-bare img{object-fit:fill}'
         +'.sc-tile-caption{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff;font-size:calc(8px * var(--fg-text-scale,1));line-height:1.2;font-weight:600;padding:6px 4px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}'
         +'.sc-tile.text{padding:5px;display:flex;align-items:center;justify-content:center}'
         +'.sc-tile.text p{margin:0;font-size:calc(8.5px * var(--fg-text-scale,1));line-height:1.25;color:#000;font-weight:400;text-align:center;pointer-events:none}'

@@ -205,6 +205,8 @@
     if(!item.link_url || item.content_type==='link') return '';
     // Oct 7 2026 (Larry): an image's source (e.g. its Miro origin) lives on the BACK; the eye beside it decides whether the badge also
     // shows on the front. front_hidden is the same comma list the Briefing Card uses -- 'links' in it means back only.
+    // Images: nothing on the front by default (front_hidden null = back only); the eye saves '' to show it. Other cards keep the old default.
+    if(item.content_type==='image' && (item.front_hidden==null)) return '';
     if(String(item.front_hidden||'').split(',').map(function(s){ return s.trim(); }).indexOf('links')>=0) return '';
     return '<a class="sb-link-badge" href="'+_sboardEsc(item.link_url)+'" target="_blank" rel="noopener" draggable="false" title="'+(item.content_type==='image'?'Open source':'Open link')+'">'+(item.content_type==='image'?'🔗':'🎬')+'</a>';
   }
