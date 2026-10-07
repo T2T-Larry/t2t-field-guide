@@ -109,7 +109,12 @@
       if(!ctx || !ctx.boardId){
         try{
           if(window.T2TData && window.T2TData.getLastInputTopic && window.T2TData.ancestorChain){
-            var lastId=await window.T2TData.getLastInputTopic(wt.id);
+            // Oct 7 2026 (Larry: "refresh did not return to the import board but to the Wish Tank"): _isxPersistLastTopic saves the last topic on
+            // whichever project the traveler was IN (here MASTER), but this read always asked Wish Tank's own row -- so any board outside Wish Tank
+            // was forgotten on reload. Ask the remembered project first, same as the desk's resume path (_ideaOpenBoardResume).
+            var _resumeProj=(window.T2TMedia && T2TMedia.recallProject && T2TMedia.recallProject()) || wt.id;
+            var lastId=await window.T2TData.getLastInputTopic(_resumeProj);
+            if(!lastId && _resumeProj!==wt.id) lastId=await window.T2TData.getLastInputTopic(wt.id);
             if(lastId){
               var chain=await window.T2TData.ancestorChain(lastId);
               if(chain && chain.length) T2TShared.isxPath=chain;
