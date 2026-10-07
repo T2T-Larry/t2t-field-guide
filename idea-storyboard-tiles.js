@@ -408,17 +408,6 @@
       tile.appendChild(sWrap);
     } else if((item.content_type==='image'||item.content_type==='link') && item.image_url){
       var img=document.createElement('img'); if(window.T2TMedia&&T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img,item.image_url); else img.src=item.image_url; tile.appendChild(img);
-      // Oct 7 2026 (Larry): on the SEA OF IDEAS board a picture shows as itself, no card space around it -- the tile takes the image's own
-      // shape, fitted inside the usual box. (Blue Sky keeps the card look.) Done on load, once the real proportions are known.
-      if(item.content_type==='image'){
-        img.addEventListener('load', function(){
-          if(!tile.closest || !tile.closest('#s-sea-of-ideas-cluster')) return;
-          var nw=img.naturalWidth, nh=img.naturalHeight; if(!nw||!nh) return;
-          var sc=Math.min(width/nw, height/nh);
-          tile.style.width=Math.round(nw*sc)+'px'; tile.style.height=Math.round(nh*sc)+'px';
-          tile.classList.add('sc-bare');
-        });
-      }
       if(item.content_type==='link'){
         var badge=document.createElement('div');
         badge.style.cssText='position:absolute;top:2px;left:20px;font-size:calc(11px * var(--fg-text-scale,1));line-height:1;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none';
