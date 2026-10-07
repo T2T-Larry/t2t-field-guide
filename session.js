@@ -1153,7 +1153,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1385,7 +1385,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1497,7 +1497,42 @@
     // _isxMakeHeaderStackTile below) — this just brings loose cards in
     // line with how headers already behaved.
     _isxWireTileDrag(t, row.id, linkUrl, false);
+    _isxWireTileResize(t, row);
     return t;
+  }
+
+  // Oct 7 2026 (Larry: "Some ideas are more important than others. We need to be able to hover to resize option for individual images."):
+  // a bare picture on the Sea of Ideas shows a small corner handle on hover; drag it to make THIS picture bigger or smaller, proportions kept.
+  // The width is saved on the card itself (ideas.tile_w), so it survives reloads. Works through the canvas camera (pan/zoom) like a tile drag.
+  function _isxWireTileResize(tile, row){
+    if(!tile.classList.contains('isx-bare') || row.locked) return;
+    if(row.tile_w) tile.style.width=row.tile_w+'px';
+    var h=document.createElement('div');
+    h.className='isx-resize'; h.title='Drag to resize'; h.setAttribute('aria-label','Resize');
+    h.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 8 L8 2 M5 8 L8 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>';
+    tile.appendChild(h);
+    h.addEventListener('dblclick', function(e){ e.stopPropagation(); });
+    h.addEventListener('mousedown', function(e){
+      e.preventDefault(); e.stopPropagation();
+      var cam=(window.T2TCanvasCamera && T2TCanvasCamera.isAttached())?T2TCanvasCamera:null;
+      var startC=cam?cam.screenToCanvas(e.clientX, e.clientY):null, startX=e.clientX;
+      var w0=tile.offsetWidth||112, now=w0;
+      tile.classList.add('isx-resizing');
+      function onMove(ev){
+        var dx=startC?(cam.screenToCanvas(ev.clientX, ev.clientY).x-startC.x):(ev.clientX-startX);
+        now=Math.max(48, Math.min(1200, Math.round(w0+dx)));
+        tile.style.width=now+'px';
+      }
+      async function onUp(){
+        document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
+        tile.classList.remove('isx-resizing');
+        if(now===w0) return;
+        row.tile_w=now;
+        try{ var up=await _sb.from('ideas').update({tile_w:now}).eq('id',row.id); if(up.error) throw up.error; }
+        catch(err){ console.warn('Resize save failed:', err); }
+      }
+      document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+    });
   }
 
   // Header buckets — redesigned July 18, 2026 as freeform piles: live
@@ -1884,7 +1919,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,adds_org,org_name,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,adds_org,org_name,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
