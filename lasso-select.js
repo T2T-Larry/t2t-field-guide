@@ -186,6 +186,8 @@
         '<span class="lb-count">' + n + ' selected' + (phrase ? ' <em>“' + esc(phrase) + '”</em>' : '') + '</span>'
         + (n ? '<button type="button" data-a="move">Move to header ▾</button>' : '')
         + (n && canNew ? '<button type="button" data-a="new">New header…</button>' : '')
+        + (n && typeof ad.labelGroup === 'function' ? '<button type="button" data-a="label" title="Adds a header without moving anything — the cards reorganize when you open Blue Sky">Name group…</button>' : '')
+        + (n && typeof ad.hasGrouped === 'function' && ad.hasGrouped(ids()) ? '<button type="button" data-a="ungroup">Ungroup</button>' : '')
         + '<button type="button" data-a="clear">Clear</button>';
       bar.onmousedown = function(e){ e.stopPropagation(); };
       bar.onclick = function(e){
@@ -194,7 +196,51 @@
         if (a === 'clear') inst.clear();
         else if (a === 'move') openMoveMenu(b);
         else if (a === 'new') openNewHeader();
+        else if (a === 'label') openLabelGroup();
+        else if (a === 'ungroup') doUngroup();
       };
+    }
+
+    async function doUngroup(){
+      if (busy) return; busy = true;
+      try { await ad.ungroup(ids()); selected = {}; phrase = ''; changed(); }
+      catch (err) { console.warn('lasso ungroup failed', err); window.alert('Couldn’t ungroup: ' + (err && err.message ? err.message : String(err))); }
+      finally { busy = false; }
+    }
+
+    // "Name group" — names the selection WITHOUT moving it (Sea of Ideas).
+    function openLabelGroup(){
+      removeMenu();
+      var bar = document.getElementById('t2t-lasso-bar'); if (!bar) return;
+      bar.innerHTML =
+        '<span class="lb-count">' + ids().length + ' selected</span>'
+        + '<input type="text" id="t2t-lasso-newname" placeholder="Group name" value="' + esc(phrase) + '">'
+        + '<button type="button" data-a="go">Name it</button>'
+        + '<button type="button" data-a="back">Back</button>';
+      var inp = document.getElementById('t2t-lasso-newname');
+      if (inp) { inp.focus(); inp.select(); }
+      async function go(){
+        var name = ((inp && inp.value) || '').trim();
+        if (!name) { if (inp) inp.focus(); return; }
+        if (busy) return; busy = true;
+        try {
+          await ad.labelGroup(ids(), name);
+          selected = {}; phrase = '';
+          changed();
+        } catch (err) {
+          console.warn('lasso label failed', err);
+          window.alert('Couldn’t name this group: ' + (err && err.message ? err.message : String(err)));
+        } finally { busy = false; }
+      }
+      bar.onclick = function(e){
+        var b = e.target.closest('button'); if (!b) return;
+        var a = b.getAttribute('data-a');
+        if (a === 'go') go(); else if (a === 'back') renderBar();
+      };
+      if (inp) inp.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') { e.preventDefault(); go(); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); renderBar(); }
+      });
     }
 
     async function doMove(headerId){

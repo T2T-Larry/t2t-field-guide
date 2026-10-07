@@ -166,6 +166,13 @@
     T2TShared.libraryRootId=(T2TShared._libraryNext===boardId)?boardId:null; T2TShared._libraryNext=null;
     T2TShared.currentTopicId=boardId; T2TShared.filter=boardId;
     _ideaPersistLastTopic(boardId);
+    // Oct 7 2026: named groups on the Sea of Ideas become real headers the
+    // moment Blue Sky opens (sea-cluster-groups.js). Only gate the navigation
+    // when this topic actually has groups waiting, so every other entry stays instant.
+    if(window.T2TGroups && T2TGroups.has(boardId)){
+      T2TGroups.commit(boardId).catch(function(e){ console.warn('group commit failed', e); }).then(function(){ T().nav('s-sea-of-ideas-cluster', push); });
+      return;
+    }
     T().nav('s-sea-of-ideas-cluster', push);
   }
 

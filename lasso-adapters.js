@@ -33,6 +33,11 @@
     headers: function(){ return window.T2TSea && T2TSea.lassoHooks ? T2TSea.lassoHooks.headers() : []; },
     moveToHeader: function(ids, hid){ return T2TSea.lassoHooks.moveCards(ids, hid); },
     createHeader: function(name){ return T2TSea.lassoHooks.addHeader(name); },
+    // Oct 7 2026: name the set in place (dashed frame, nothing moves); real
+    // header + reorganizing happens when Blue Sky opens (sea-cluster-groups.js).
+    labelGroup: function(ids, name){ return T2TSea.lassoHooks.labelGroup(ids, name); },
+    hasGrouped: function(ids){ return T2TSea.lassoHooks.hasGrouped(ids); },
+    ungroup: function(ids){ return T2TSea.lassoHooks.ungroup(ids); },
     // Mirror into the board's own group-drag state, so dragging any selected
     // tile moves the whole set to an unused x,y spot, as it always has.
     onSelect: function(ids){ if (window.T2TSea && T2TSea.lassoHooks) T2TSea.lassoHooks.setSelected(ids); }

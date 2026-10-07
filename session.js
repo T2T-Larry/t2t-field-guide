@@ -1048,6 +1048,7 @@
       var res=await _sb.from('ideas').select('id,text_content')
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
+      if(window.T2TGroups) await T2TGroups.load(clusterId);
       var excludedNames=['Purpose','NEW','New Additions','Parking Lot'];
       var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; })
         .map(function(r){ return r.id; }).concat(miscId?[miscId]:[]);
@@ -1153,7 +1154,7 @@
         // Supabase round trip every time this ran, including for a remote
         // update on a different tab and for every single local edit, which
         // is what this cache mode now avoids. Aug 9 2026.
-        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w')
+        var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
           .eq('cluster_id',clusterId).in('content_type',['image','text','link','header'])
           .order('created_at',{ascending:true}).limit(300);
         // July 18, 2026: this used to fall through unchecked — a Supabase
@@ -1257,6 +1258,8 @@
         return _isxBuildHeaderPile(cr, '', w, h, canvas, null);
       }));
       ideaRows.forEach(function(r){ canvas.appendChild(_isxMakeTile(r, w, h)); });
+      _isxDrawGroupFrames();
+      if(!canvas._isxFrameLoadWired){ canvas._isxFrameLoadWired=true; canvas.addEventListener('load', _isxScheduleFrames, true); }
       // A different Topic is a different world: start it at the default view
       // rather than wherever the last one was panned/zoomed to.
       if(_isxLastRenderedClusterId!==clusterId && window.T2TCanvasCamera) T2TCanvasCamera.reset(false);
@@ -1295,6 +1298,101 @@
         });
       }
     }catch(e){ console.warn('_isxRenderBoard failed:', e); _isxShowError('Board didn\u2019t load: '+(e&&e.message?e.message:String(e))); }
+  }
+
+
+  // Named groups (sea-cluster-groups.js), Oct 7 2026 -- Larry: "Attach a
+  // header to a cluster but without reorganizing them until we switch to
+  // BLUE SKY." A lassoed set is NAMED in place: a dashed frame + name tab is
+  // drawn around its cards and nothing moves. The cards only reorganize into
+  // a real header when Blue Sky opens (T2TGroups.commit). The frame is pure
+  // decoration (pointer-events:none) so tiles, lasso and pan work through it;
+  // only its name tab is interactive: drag = move the whole group, double-click
+  // = rename, x = ungroup.
+  var _isxFrameRaf=0;
+  function _isxScheduleFrames(){
+    if(_isxFrameRaf) return;
+    _isxFrameRaf=requestAnimationFrame(function(){ _isxFrameRaf=0; _isxDrawGroupFrames(); });
+  }
+  function _isxGroupTiles(groupId){
+    var canvas=document.getElementById('isx-canvas'); if(!canvas) return [];
+    return Array.prototype.filter.call(canvas.querySelectorAll('.isx-tile'), function(t){
+      var r=_isxAllRowsById[t.dataset.isxId];
+      return r && String(r.group_id)===String(groupId);
+    });
+  }
+  function _isxDrawGroupFrames(){
+    var canvas=document.getElementById('isx-canvas');
+    if(!canvas || !window.T2TGroups) return;
+    Array.prototype.forEach.call(canvas.querySelectorAll('.isx-group-frame'), function(f){ f.remove(); });
+    var tid=_isxCurrentTopicId(); if(!tid) return;
+    var groups=(T2TGroups.cached && T2TGroups.cached(tid)) || [];
+    var PAD=16, TAB=26;
+    groups.forEach(function(g){
+      var tiles=_isxGroupTiles(g.id); if(!tiles.length) return;
+      var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+      tiles.forEach(function(t){
+        var l=parseFloat(t.style.left)||0, tp=parseFloat(t.style.top)||0;
+        var tw=t.offsetWidth||80, th=t.offsetHeight||60;
+        x0=Math.min(x0,l); y0=Math.min(y0,tp); x1=Math.max(x1,l+tw); y1=Math.max(y1,tp+th);
+      });
+      var f=document.createElement('div');
+      f.className='isx-group-frame'; f.dataset.groupId=g.id;
+      f.style.left=(x0-PAD)+'px'; f.style.top=(y0-PAD-TAB)+'px';
+      f.style.width=(x1-x0+PAD*2)+'px'; f.style.height=(y1-y0+PAD*2+TAB)+'px';
+      var tab=document.createElement('div'); tab.className='isx-group-tab';
+      var nm=document.createElement('span'); nm.className='isx-group-name'; nm.textContent=g.name||'(group)'; nm.title='Drag to move the group · double-click to rename';
+      var x=document.createElement('button'); x.type='button'; x.className='isx-group-x'; x.textContent='×'; x.title='Ungroup (cards stay put)';
+      tab.appendChild(nm); tab.appendChild(x); f.appendChild(tab);
+      canvas.insertBefore(f, canvas.firstChild);
+      x.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+      x.addEventListener('click', function(e){
+        e.stopPropagation();
+        T2TGroups.remove(tid, g.id).then(function(){
+          tiles.forEach(function(t){ _isxPatchRow(t.dataset.isxId,{group_id:null}); });
+          _isxDrawGroupFrames();
+        }).catch(function(err){ _isxShowError('Couldn’t ungroup: '+(err&&err.message?err.message:String(err))); });
+      });
+      nm.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        nm.contentEditable='true'; nm.focus();
+        var rg=document.createRange(); rg.selectNodeContents(nm); var sl=window.getSelection(); sl.removeAllRanges(); sl.addRange(rg);
+        function done(save){
+          nm.contentEditable='false'; nm.removeEventListener('blur', onBlur); nm.removeEventListener('keydown', onKey);
+          var v=(nm.textContent||'').trim();
+          if(save && v && v!==g.name){ T2TGroups.rename(g.id, v).then(function(){ g.name=v; }).catch(function(){}); } else nm.textContent=g.name;
+        }
+        function onBlur(){ done(true); }
+        function onKey(ev){ if(ev.key==='Enter'){ ev.preventDefault(); nm.blur(); } else if(ev.key==='Escape'){ ev.preventDefault(); nm.removeEventListener('blur', onBlur); done(false); } }
+        nm.addEventListener('blur', onBlur); nm.addEventListener('keydown', onKey);
+      });
+      // Drag the name tab = move every card in the group together.
+      tab.addEventListener('mousedown', function(e){
+        if(e.target===x || nm.isContentEditable) return;
+        e.preventDefault(); e.stopPropagation();
+        var cam=(window.T2TCanvasCamera && T2TCanvasCamera.isAttached())?T2TCanvasCamera:null;
+        var sx=e.clientX, sy=e.clientY, startC=cam?cam.screenToCanvas(e.clientX,e.clientY):null, moved=false;
+        var orig=tiles.map(function(t){ return {left:parseFloat(t.style.left)||0, top:parseFloat(t.style.top)||0}; });
+        var fl=parseFloat(f.style.left)||0, ft=parseFloat(f.style.top)||0;
+        function onMove(ev){
+          var dx,dy;
+          if(startC){ var cc=cam.screenToCanvas(ev.clientX,ev.clientY); dx=cc.x-startC.x; dy=cc.y-startC.y; }
+          else { dx=ev.clientX-sx; dy=ev.clientY-sy; }
+          if(Math.abs(ev.clientX-sx)>3||Math.abs(ev.clientY-sy)>3) moved=true;
+          tiles.forEach(function(t,i){ t.style.left=Math.round(orig[i].left+dx)+'px'; t.style.top=Math.round(orig[i].top+dy)+'px'; });
+          f.style.left=Math.round(fl+dx)+'px'; f.style.top=Math.round(ft+dy)+'px';
+        }
+        function onUp(){
+          document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
+          if(!moved) return;
+          tiles.forEach(function(t){
+            var gx=parseFloat(t.style.left)||0, gy=parseFloat(t.style.top)||0, id=t.dataset.isxId;
+            _isxCardPos[id]={x:gx,y:gy}; _isxSavePos(id,gx,gy); _isxPatchRow(id,{canvas_x:gx,canvas_y:gy});
+          });
+        }
+        document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp);
+      });
+    });
   }
 
   // Fixed Trash icon (July 18, 2026) — small, pinned to the bottom-right of
@@ -1385,7 +1483,7 @@
     var _sb=T().sb;
     var children=[];
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w')
+      var res=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
         .eq('cluster_id',row.id).in('content_type',['image','text','link','header'])
         .order('created_at',{ascending:true}).limit(300);
       if(res.error) throw res.error;
@@ -1524,6 +1622,7 @@
         var dx=startC?(cam.screenToCanvas(ev.clientX, ev.clientY).x-startC.x):(ev.clientX-startX);
         now=Math.max(48, Math.min(1200, Math.round(w0+dx)));
         tile.style.width=now+'px';
+        _isxScheduleFrames();
       }
       async function onUp(){
         document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp);
@@ -1739,6 +1838,7 @@
         if(Math.abs(moveDx)>3||Math.abs(moveDy)>3) moved=true;
         tile.style.left=Math.round(origLeft+dx)+'px';
         tile.style.top=Math.round(origTop+dy)+'px';
+        _isxScheduleFrames();
         if(groupEls){
           groupEls.forEach(function(t,i){
             if(t===tile) return;
@@ -1762,8 +1862,10 @@
               var gx=parseFloat(t.style.left)||0, gy=parseFloat(t.style.top)||0;
               _isxCardPos[t.dataset.isxId]={x:gx,y:gy};
               _isxSavePos(t.dataset.isxId, gx, gy);
+              _isxPatchRow(t.dataset.isxId, {canvas_x:gx, canvas_y:gy});
             });
           }
+          _isxScheduleFrames();
           return;
         }
         clearRungHighlights();
@@ -1798,6 +1900,7 @@
           _isxCardPos[rowId]={x:finalX,y:finalY};
           _isxSavePos(rowId, finalX, finalY);
           _isxPatchRow(rowId, {canvas_x:finalX, canvas_y:finalY});
+          _isxScheduleFrames();
           // A moved header pile needs a refresh so its cascade/spread
           // children re-anchor around its new spot; a loose idea doesn't
           // need the whole board reloaded for a nudge.
@@ -1921,7 +2024,7 @@
   async function _isxFetchRow(rowId){
     var _sb=T().sb;
     try{
-      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,adds_org,org_name,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w').eq('id',rowId).single();
+      var res=await _sb.from('ideas').select('id,user_id,content_type,text_content,cluster_id,adds_org,org_name,image_url,color,locked,canvas_x,canvas_y,assigned_user_id,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id').eq('id',rowId).single();
       if(res.error) throw res.error;
       return res.data;
     }catch(e){
@@ -2140,6 +2243,29 @@
         var row=await T2TData.createHeader(name, _isxCurrentTopicId());
         _isxAddRow(row);
         return row;
+      },
+      // Named groups (Oct 7 2026): name a set in place -- nothing moves.
+      labelGroup: async function(ids, name){
+        var tid=_isxCurrentTopicId(); if(!tid) throw new Error('No topic open');
+        var g=await T2TGroups.create(tid, name, ids);
+        ids.forEach(function(id){ _isxPatchRow(id,{group_id:g.id}); });
+        // a card that moved to the new group may have emptied an older one
+        var live={}; Object.keys(_isxAllRowsById).forEach(function(k){ var r=_isxAllRowsById[k]; if(r && r.group_id) live[r.group_id]=true; });
+        await T2TGroups.prune(tid, Object.keys(live));
+        T2TShared.seaGroupPending=T2TShared.seaGroupPending||{}; T2TShared.seaGroupPending[tid]=true;
+        _isxDrawGroupFrames();
+        _isxShowToast('Group \u201c'+name+'\u201d named \u2014 cards stay put until you open Blue Sky.');
+      },
+      hasGrouped: function(ids){
+        return (ids||[]).some(function(id){ var r=_isxAllRowsById[id]; return r && r.group_id; });
+      },
+      ungroup: async function(ids){
+        var tid=_isxCurrentTopicId();
+        await T2TGroups.setMembers(ids, null);
+        ids.forEach(function(id){ _isxPatchRow(id,{group_id:null}); });
+        var live={}; Object.keys(_isxAllRowsById).forEach(function(k){ var r=_isxAllRowsById[k]; if(r && r.group_id) live[r.group_id]=true; });
+        await T2TGroups.prune(tid, Object.keys(live));
+        _isxDrawGroupFrames();
       },
       moveCards: async function(ids, headerId){
         var moved=0, skipped=0;
