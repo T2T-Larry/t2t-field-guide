@@ -1492,7 +1492,12 @@
   }
 
   /* ── PUBLIC API on window.T2T ── */
-  window.T2T = {
+  // Oct 8 2026 -- merge-safe init. This used to be a hard overwrite
+  // (window.T2T = {...}), which only worked because backpack.js happened
+  // to load before tmap.js on every page; if tmap.js (which extends the
+  // same object) ever loaded first, its properties would have been wiped
+  // silently. Same defensive pattern tmap.js already uses.
+  window.T2T = Object.assign(window.T2T || {}, {
     nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG, goBackStack:goBackStack,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
     showTravelSpinner:showTravelSpinner, hideTravelSpinner:hideTravelSpinner,
@@ -1544,7 +1549,7 @@
     resetAndReturn:resetAndReturn,
     getDefaultHeaderColor:getDefaultHeaderColor, setDefaultHeaderColor:setDefaultHeaderColor,
     getDefaultSubberColor:getDefaultSubberColor, setDefaultSubberColor:setDefaultSubberColor
-  };
+  });
 
   document.addEventListener('DOMContentLoaded',function(){
     injectMGOverlay();
