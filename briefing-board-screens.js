@@ -337,7 +337,7 @@
               // (DO/DOING/DONE is the order), so it stays in its N/A state: looks
               // like off, does nothing on click, tooltip says why. See az-toggle.js.
               +(window.T2TAZ ? T2TAZ.buttonHTML('bb-az-btn','bb-icon-btn') : '')
-              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="View: everyone" aria-label="View — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
+              +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
               +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
               +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'

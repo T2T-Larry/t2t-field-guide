@@ -413,9 +413,16 @@
   function _sboardSignalRowHTML(item, include){
     include = include || {};
     var parts = '';
+    // Oct 8 2026 (Larry: "Eye, tooltips, TEAM") -- the slashed eye on the Blue Sky card back now works: a key in front_hidden means
+    // that option is back-only, so its badge is left off the face. Same comma list the Briefing Card uses (card-back-options.js).
+    // Default (null) = shows on the face, exactly as before. Links handle their own 'links' key in _sboardLinkBadgeHTML.
+    var _bo=function(k){
+      var h=item && item.front_hidden; if(!h) return false;
+      return String(h).split(',').map(function(x){ return x.trim(); }).indexOf(k)>=0;
+    };
     if(include.lock) parts += _sboardLockBadgeHTML(item);
-    if(include.flags) parts += _sboardKeyDotsHTML(item);
-    if(include.notes) parts += _sboardNotesBadgeHTML(item);
+    if(include.flags && !_bo('flags')) parts += _sboardKeyDotsHTML(item);
+    if(include.notes && !_bo('notes')) parts += _sboardNotesBadgeHTML(item);
     if(include.link) parts += _sboardLinkBadgeHTML(item);
     if(!parts) return '';
     return '<div class="sb-signal-row">'+parts+'</div>';

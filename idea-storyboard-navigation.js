@@ -1961,8 +1961,8 @@
       var row=ids.length===1 ? pool.filter(function(m){ return String(m.user_id)===String(ids[0]); })[0] : null;
       label=ids.length===1 ? ((row&&(row.name||row.email))||'1 person') : ids.length+' people';
     }
-    trigger.title='View: '+label;
-    trigger.setAttribute('aria-label','View — showing '+label);
+    trigger.title='TEAM: showing '+label+(ids.length?' \u2014 other cards are hidden, not deleted. Click to change.':' \u2014 click to show only one person\'s cards.');
+    trigger.setAttribute('aria-label','TEAM — showing '+label);
   }
   function _sboardWireViewFilterDropdown(){
     var trigger=document.getElementById('sc-view-trigger'), menu=document.getElementById('sc-view-menu');

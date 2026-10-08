@@ -430,8 +430,9 @@
     (function(){
       var card=ov.querySelector('.sb-details-card'); if(!card || !window.FGCardBack) return;
       var bbw=card.querySelector('.bbw'); if(!bbw) return;
-      // Oct 3 2026 -- same OPTIONS (+) popup + "selected items" field as the Briefing Card back (card-back-options.js). No slashed eye
-      // here yet: it only appears once this card's FRONT honors back-only (front_hidden is wired on the Briefing Card first).
+      // Oct 3 2026 -- same OPTIONS (+) popup + "selected items" field as the Briefing Card back (card-back-options.js).
+      // Oct 8 2026 -- the slashed eye is on now for Signal Flags and Notes: the Blue Sky face honors back-only for both
+      // (_sboardSignalRowHTML in idea-storyboard-people.js). Source/Links keep their own eye (image Source popup below).
       if(window.FGCardBackOptions){
         FGCardBackOptions.optionsRegion(bbw, {
           skip: ['sb-add-links-wrap'],
@@ -439,7 +440,7 @@
           universal: ['flags','org'],
           ownLabel: 'Blue Sky card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
-          frontKeys: [],
+          frontKeys: ['flags','notes'],
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
             var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};

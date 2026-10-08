@@ -1197,7 +1197,7 @@
         // tooltip explains. Markup, look and letter grouping: az-toggle.js.
         // Wiring on this board: _sboardWireAzButton, idea-storyboard-navigation.js.
       +(window.T2TAZ ? T2TAZ.buttonHTML('sc-az-btn','sc-hdr-btn-muted sc-hdr-btn-icon') : '')
-      +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="View: everyone" aria-label="View — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
+      +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
         // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump back to
         // the last screen." Same muted-icon family as Utility, mirrors
         // bb-return on the Briefing Board (id-band.js's IDBand.jumpToRecorded
