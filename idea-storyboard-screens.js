@@ -2596,7 +2596,17 @@
             else if(_lnaAllowed[item.id]){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, (item.cluster_id||parentIdForDrop), SUBBER_H)); }
           });
           if(newRow && !newRow.locked){
-            scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
+            // Oct 9 2026 (Larry: "into alpha list and never to Parking Lot in A-Z view"): while the A-Z
+            // letter view is on, this (+) must not file a loose card into the Parking Lot -- it opens the
+            // same "New concept" prompt as the letter columns' (+), so the new entry sorts into its own
+            // letter on redraw. Outside A-Z it is unchanged (full capture card, filed here).
+            if(_sboardAzLetterView && _sboardAzApplies() && window.T2TAddControl && T2TAddControl.make){
+              var _lnaAz=T2TAddControl.make({title:'Add a new concept (it sorts into its letter)', onClick:function(){ _sboardOpenAddHeaderPrompt({azLabel:'A–Z'}); }, sense:block});
+              _lnaAz.style.margin='4px auto 8px';
+              scroll.appendChild(_lnaAz);
+            } else if(!(_sboardAzLetterView && _sboardAzApplies())){
+              scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
+            }
           }
           block.appendChild(scroll);
         }
