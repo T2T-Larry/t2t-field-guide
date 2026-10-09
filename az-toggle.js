@@ -16,6 +16,16 @@
    owns whether A-Z applies to it and how it draws the result -- today only
    Blue Sky (idea-storyboard-screens.js) does.
 
+   Oct 9 2026 (Larry: save it in Supabase): the on/off memory now follows the
+   traveler to every device. Table public.az_view_prefs holds one row per
+   (user, TOPIC) while A-Z is ON; no row = off. localStorage stays as the instant
+   cache so the button and the board never wait on the network: setOn writes the
+   cache and then the table (best effort), and load() pulls the table into the
+   cache once the session is ready and fires 't2t-az-synced' if the open
+   TOPIC's state changed, so the board can redraw. A browser that already had
+   A-Z turned on before this existed uploads those settings once (flag
+   t2t_az_migrated) and from then on the table is the truth.
+
    A-Z is a DISPLAY mode only. It never writes sort_order, so every card's real
    ORDER # is untouched and switching back loses nothing.
 
@@ -23,7 +33,8 @@
      buttonHTML(id, cls)      markup for the band's icon row (starts as N/A)
      sync(btn, {applies,on})  set the button to off / on / N/A
      isOn(topicId)            remembered state for that TOPIC (this browser)
-     setOn(topicId, on)       remember it
+     setOn(topicId, on)       remember it (cache now, Supabase right after)
+     load()                   pull saved settings from Supabase (runs by itself)
      sortKey(name)            lowercased, accents and leading The/A/An dropped
      letterOf(name)           'A'..'Z', or '#' for anything else
      groupLetters(entries, nameOf, minGroup)
@@ -65,16 +76,91 @@
     btn.title = applies ? 'Alphabetical order' : 'Alphabetical order isn’t available on this board';
   }
 
-  // ---- memory, per TOPIC ----
+  // ---- memory, per TOPIC (cache here, truth in public.az_view_prefs) ----
+  var TABLE = 'az_view_prefs';
+  var MIGRATED_KEY = 't2t_az_migrated';
+
   function isOn(topicId){
     try{ return !!topicId && localStorage.getItem(KEY + topicId) === '1'; }catch(e){ return false; }
   }
-  function setOn(topicId, on){
+  function cacheSet(topicId, on){
     try{
-      if(!topicId) return;
       if(on) localStorage.setItem(KEY + topicId, '1'); else localStorage.removeItem(KEY + topicId);
     }catch(e){}
   }
+  function client(){ return (window.T2T && window.T2T.sb) ? window.T2T.sb : null; }
+  function currentUserId(sb){
+    return sb.auth.getSession().then(function(r){
+      return (r && r.data && r.data.session && r.data.session.user) ? r.data.session.user.id : null;
+    });
+  }
+
+  function setOn(topicId, on){
+    if(!topicId) return;
+    cacheSet(topicId, on);
+    var sb = client();
+    if(!sb) return;   // not signed in yet: the cache holds it and the first load() uploads it
+    currentUserId(sb).then(function(uid){
+      if(!uid) return;
+      if(on){
+        return sb.from(TABLE).upsert({user_id: uid, topic_id: topicId, az_on: true, updated_at: new Date().toISOString()});
+      }
+      return sb.from(TABLE).delete().eq('user_id', uid).eq('topic_id', topicId);
+    }).catch(function(){});
+  }
+
+  var _loaded = false, _loading = false;
+  // Pull this traveler's saved settings into the cache. Safe to call repeatedly;
+  // only the first successful pass does anything.
+  function load(){
+    if(_loaded || _loading) return;
+    var sb = client();
+    if(!sb) return;
+    _loading = true;
+    currentUserId(sb).then(function(uid){
+      if(!uid){ _loading = false; return; }
+      return sb.from(TABLE).select('topic_id').eq('user_id', uid).then(function(res){
+        if(!res || res.error){ _loading = false; return; }
+        var remote = {};
+        (res.data || []).forEach(function(r){ remote[r.topic_id] = true; });
+        var before = isOn(window.T2TShared && T2TShared.currentTopicId);
+        var migrated = false;
+        try{ migrated = localStorage.getItem(MIGRATED_KEY) === '1'; }catch(e){}
+        var uploads = [];
+        try{
+          var local = [];
+          for(var i = 0; i < localStorage.length; i++){
+            var k = localStorage.key(i);
+            if(k && k.indexOf(KEY) === 0) local.push(k.slice(KEY.length));
+          }
+          if(!migrated){
+            // first time this browser meets the table: keep what it already had
+            local.forEach(function(t){
+              if(!remote[t]){ remote[t] = true; uploads.push({user_id: uid, topic_id: t, az_on: true}); }
+            });
+            localStorage.setItem(MIGRATED_KEY, '1');
+          } else {
+            // the table is the truth: drop cache entries it does not have
+            local.forEach(function(t){ if(!remote[t]) localStorage.removeItem(KEY + t); });
+          }
+        }catch(e){}
+        Object.keys(remote).forEach(function(t){ cacheSet(t, true); });
+        if(uploads.length){ sb.from(TABLE).upsert(uploads).then(function(){}, function(){}); }
+        _loaded = true; _loading = false;
+        var after = isOn(window.T2TShared && T2TShared.currentTopicId);
+        if(after !== before){
+          try{ window.dispatchEvent(new CustomEvent('t2t-az-synced')); }catch(e){}
+        }
+      });
+    }).catch(function(){ _loading = false; });
+  }
+
+  // The session is not ready the instant this file loads, so try until it is
+  // (about 30 seconds at most), then stop.
+  (function poll(n){
+    load();
+    if(!_loaded && n < 60) setTimeout(function(){ poll(n + 1); }, 500);
+  })(0);
 
   // ---- ordering and letters ----
   function sortKey(name){
@@ -158,6 +244,7 @@
     sync: sync,
     isOn: isOn,
     setOn: setOn,
+    load: load,
     sortKey: sortKey,
     letterOf: letterOf,
     groupLetters: groupLetters

@@ -2043,6 +2043,18 @@
     if(!btn || !window.T2TAZ) return;
     T2TAZ.sync(btn, {applies:_sboardAzApplies(), on:_sboardAzLetterView});
   }
+  // Oct 9 2026: A-Z is now saved in Supabase (az-toggle.js). When the saved settings arrive after
+  // the board has already drawn (another device turned it on, or this one just signed in), pick up
+  // the open Topic's state and redraw once so the button and columns match.
+  window.addEventListener('t2t-az-synced', function(){
+    if(!window.T2TAZ) return;
+    var now=!!T2TAZ.isOn(T2TShared.currentTopicId);
+    if(now===_sboardAzLetterView) return;
+    _sboardAzLetterView=now;
+    if(now) _sboardAlphaHeaderView=false;
+    _sboardSyncAzButton();
+    if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+  });
   function _sboardWireAzButton(){
     var btn=document.getElementById('sc-az-btn');
     if(!btn || !window.T2TAZ) return;
