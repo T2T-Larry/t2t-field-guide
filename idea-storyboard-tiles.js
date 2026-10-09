@@ -615,7 +615,36 @@
   // header's own name follows underneath unless "Show on front" is off for it (hide_contents_front) or the board's Subject-only view
   // is on. No Subject = the name alone, exactly as before. el: the element whose text is the label (its own fit size is overridden
   // here only when a Subject is present).
+  // PICTURE on a HEADER's face, Oct 9 2026 -- Larry turned a picture card (Vanja, under Akron Marketing) into a header and the
+  // picture vanished, because header faces only ever drew text. A header now keeps its own picture (ideas.image_url, the same column
+  // the picture card used, so converting card -> header loses nothing) and both header faces (column pill and sub-header stack card)
+  // draw it above the title. One shared painter, so every board looks the same. The picture is NOT the org logo (ideas.logo_url,
+  // which belongs to the ID Band / Header back's Organization block) -- two different things on purpose.
+  function _sboardPaintHeaderFaceWithPicture(el, row, name, base, min, maxW, maxH, lineH, picUrl){
+    var subj=String((row && row.subject)||'').trim();
+    var title=subj||name;
+    el.textContent='';
+    var box=document.createElement('div');
+    box.style.cssText='width:100%;height:100%;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px';
+    var imgH=Math.max(18, Math.round(maxH*0.62));
+    var img=document.createElement('img');
+    img.alt=''; img.draggable=false;
+    img.style.cssText='display:block;width:100%;max-width:'+Math.round(maxW)+'px;height:'+imgH+'px;object-fit:cover;object-position:center 25%;flex-shrink:0';
+    if(window.T2TMedia && T2TMedia.setThumbSrc) T2TMedia.setThumbSrc(img, picUrl); else img.src=picUrl;
+    box.appendChild(img);
+    var t=document.createElement('span');
+    t.textContent=title;
+    var textH=Math.max(10, maxH-imgH-3);
+    t.style.cssText='display:block;width:100%;text-align:center;line-height:'+lineH+';word-break:break-word;font-weight:'+(subj?'700':'400')+';font-size:'+_sboardFitFontSize(title, Math.round(base*0.8), Math.max(6,Math.round(min*0.7)), maxW, textH, lineH)+'px';
+    box.appendChild(t);
+    el.appendChild(box);
+  }
+
   function _sboardPaintHeaderFace(el, row, name, base, min, maxW, maxH, lineH){
+    if(row && row.content_type==='header' && row.image_url){
+      _sboardPaintHeaderFaceWithPicture(el, row, name, base, min, maxW, maxH, lineH, String(row.image_url));
+      return;
+    }
     var subj=String((row && row.subject)||'').trim();
     if(!subj){ el.textContent=name; return; }
     // The header's own name can be empty (a Subject-only card turned into a header) or the same words as the Subject -- either way the

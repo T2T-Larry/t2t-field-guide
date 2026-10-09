@@ -252,6 +252,16 @@
       bodyHTML='<div class="sb-body-box"><div id="sb-text-display" class="sb-body-text sb-body-text-clamp" style="font-size:calc(18px * var(--fg-text-scale,1))" title="Tap to edit">'+(item.text_content||'(untitled)')+'</div>'
         + '<div id="sb-text-edit" style="display:none;width:100%"><textarea id="sb-text-input" style="width:100%;box-sizing:border-box;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:6px">'+(item.text_content||'')+'</textarea>'
         + '<div style="display:flex;gap:6px"><button class="sb-blue-btn" id="sb-text-save">Save</button><button class="sb-blue-btn" id="sb-text-cancel" style="background:#aab8c2">Cancel</button></div></div></div>';
+      // PICTURE on a HEADER, Oct 9 2026 -- a header keeps its own picture (ideas.image_url) and both header faces draw it
+      // (_sboardPaintHeaderFace, idea-storyboard-tiles.js). Icon buttons only, hover tooltips, no words (Larry's standing rule).
+      // The upload itself is the existing sb-img-input handler below; Remove is its own small handler.
+      if(isHeaderType){
+        bodyHTML+='<div id="sb-hdr-pic-row" style="display:flex;align-items:center;gap:8px;margin-top:6px">'
+          + (item.image_url?'<img id="sb-hdr-pic-preview" src="'+_sboardEsc(item.image_url)+'" alt="" style="width:44px;height:44px;object-fit:cover;object-position:center 25%;border-radius:4px;border:1px solid var(--bb-accent)">':'')
+          + '<button type="button" class="bb-icon-btn" id="sb-img-swap" title="'+(item.image_url?'Replace picture':'Add a picture')+'">\ud83d\uddbc\ufe0f</button>'
+          + (item.image_url?'<button type="button" class="bb-icon-btn" id="sb-hdr-pic-remove" title="Remove picture">\u2715</button>':'')
+          + '</div>';
+      }
     }
 
     // Additions, Aug 27 2026 (Larry: same checkbox-gated system as the
@@ -982,6 +992,17 @@
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
+    // Remove a header's picture, Oct 9 2026 (see the Picture row in the Contents body above).
+    T().wire('sb-hdr-pic-remove', async function(){
+      try{
+        var rm=await _sb.from('ideas').update({image_url:null}).eq('id',item.id);
+        if(rm.error) throw rm.error;
+        item.image_url=null;
+        _sboardPatchRow(item.id, {image_url:null});
+        closeSbDetail();
+        renderSeaBoard(true);
+      }catch(err){ if(statusBox) statusBox.textContent=err.message; }
+    });
     // Photo — works from any card type; attaching a photo to a text idea
     // converts it to an image card, an image card just gets a new photo.
     T().wire('sb-img-swap', function(){ document.getElementById('sb-img-input').click(); });
