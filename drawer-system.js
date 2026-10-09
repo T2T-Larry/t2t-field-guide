@@ -1365,9 +1365,24 @@
     try { return !!localStorage.getItem(NOTEBOOK_KEY); } catch(e){ return false; }
   }
 
-  function dockRail(bar, notebook){
-    var dockSide = 'left';
-    try { dockSide = localStorage.getItem(DOCK_KEY) || 'left'; } catch(e){}
+  /* ---------- Shared drag/dock building block (Oct 9 2026 -- replaces the
+     two near-identical copies that used to live in dockRail and
+     dockRightDrawer). Handles everything the two drawers have in
+     common: horizontal-only drag, snap flush to the nearest edge on
+     release, persisting the chosen side, and refreshing the riders on
+     the drawer's slot. What differs is passed in:
+       slot        -- 'left' | 'right', the rider slot this drawer owns
+       dockKey     -- localStorage key remembering the docked side
+       defaultSide -- side used when nothing is stored yet
+       markSide    -- function(side) that toggles the drawer's own
+                      dock-side CSS class
+       onReposition-- optional function(leftPx), called whenever the
+                      drawer's left edge moves (the nav rail uses it to
+                      carry the notebook along)
+     ---------- */
+  function createDockableDrawer(bar, o){
+    var dockSide = o.defaultSide;
+    try { dockSide = localStorage.getItem(o.dockKey) || o.defaultSide; } catch(e){}
 
     var dragging = false, moved = false, startX = 0, startLeft = 0;
 
@@ -1377,25 +1392,9 @@
       return side === 'right' ? (window.innerWidth - width) : 0;
     }
 
-    var notebookOffsetX = 12; // default: matches the original resting spot
-
-    function captureNotebookOffset(){
-      if (!notebook) return;
-      var railRect = bar.getBoundingClientRect();
-      var nbRect = notebook.getBoundingClientRect();
-      notebookOffsetX = nbRect.left - railRect.left;
-    }
-
-    function repositionNotebook(railLeft){
-      if (!notebook || notebookIsClaimed() || getRidingSlot(NOTEBOOK_KEY)) return;
-      notebook.style.position = 'fixed';
-      notebook.style.left = (railLeft + notebookOffsetX) + 'px';
-      if (!notebook.style.top) {
-        notebook.style.top = (window.innerHeight - 132) + 'px';
-      }
-      notebook.style.right = 'auto';
-      notebook.style.bottom = 'auto';
-      notebook.style.margin = '0';
+    function reposition(left){
+      if (o.onReposition) o.onReposition(left);
+      refreshRidersForSlot(o.slot, bar.dataset.mode || '1', bar);
     }
 
     function apply(side, left){
@@ -1404,14 +1403,13 @@
       bar.style.bottom = '0';
       bar.style.left = left + 'px';
       bar.style.right = 'auto';
-      bar.classList.toggle('sz-dock-right', side === 'right');
-      repositionNotebook(left);
-      refreshRidersForSlot('left', bar.dataset.mode || '1', bar);
+      o.markSide(side);
+      reposition(left);
     }
 
     function applyDock(side){
       dockSide = side;
-      try { localStorage.setItem(DOCK_KEY, side); } catch(e){}
+      try { localStorage.setItem(o.dockKey, side); } catch(e){}
       apply(side, railLeftFor(side, currentWidth()));
     }
 
@@ -1439,8 +1437,7 @@
       var left = startLeft + dx;
       bar.style.left = left + 'px';
       bar.style.right = 'auto';
-      repositionNotebook(left);
-      refreshRidersForSlot('left', bar.dataset.mode || '1', bar);
+      reposition(left);
     }
 
     function onUp(){
@@ -1460,7 +1457,40 @@
     document.addEventListener('mouseup', onUp);
     document.addEventListener('touchend', onUp);
 
-    return { applyDock: applyDock, getSide: function(){ return dockSide; }, captureNotebookOffset: captureNotebookOffset };
+    return { applyDock: applyDock, getSide: function(){ return dockSide; } };
+  }
+
+  function dockRail(bar, notebook){
+    var notebookOffsetX = 12; // default: matches the original resting spot
+
+    function captureNotebookOffset(){
+      if (!notebook) return;
+      var railRect = bar.getBoundingClientRect();
+      var nbRect = notebook.getBoundingClientRect();
+      notebookOffsetX = nbRect.left - railRect.left;
+    }
+
+    function repositionNotebook(railLeft){
+      if (!notebook || notebookIsClaimed() || getRidingSlot(NOTEBOOK_KEY)) return;
+      notebook.style.position = 'fixed';
+      notebook.style.left = (railLeft + notebookOffsetX) + 'px';
+      if (!notebook.style.top) {
+        notebook.style.top = (window.innerHeight - 132) + 'px';
+      }
+      notebook.style.right = 'auto';
+      notebook.style.bottom = 'auto';
+      notebook.style.margin = '0';
+    }
+
+    var drawer = createDockableDrawer(bar, {
+      slot: 'left',
+      dockKey: DOCK_KEY,
+      defaultSide: 'left',
+      markSide: function(side){ bar.classList.toggle('sz-dock-right', side === 'right'); },
+      onReposition: repositionNotebook
+    });
+
+    return { applyDock: drawer.applyDock, getSide: drawer.getSide, captureNotebookOffset: captureNotebookOffset };
   }
 
   function updateNotebookVisibility(bar, notebook){
@@ -1616,86 +1646,19 @@
     return { getMode: function(){ return mode; } };
   }
 
-  /* ---------- The new right-side drawer -- mirrors the nav drawer's
-     mechanics on the right instead of the left. This deliberately
-     duplicates dockRail's drag/dock logic rather than generalizing
-     dockRail to serve both drawers -- safer, given dockRail is already
-     carrying real, tested behavior (the notebook riding along, its
-     offset-tracking fix, etc.) that a shared refactor could risk
-     disturbing. Worth unifying into one real "drawer" building block
-     later, once this one's settled -- flagged, not guessed at here. ---------- */
+  /* ---------- The right-side drawer -- mirrors the nav drawer's mechanics
+     on the right instead of the left, via the shared
+     createDockableDrawer building block above (unified Oct 9 2026). ---------- */
   var RIGHT_DOCK_KEY = 't2t-drawer-r-dock';
   var RIGHT_COLLAPSE_KEY = 't2t-drawer-r-collapsed';
 
   function dockRightDrawer(bar){
-    var dockSide = 'right';
-    try { dockSide = localStorage.getItem(RIGHT_DOCK_KEY) || 'right'; } catch(e){}
-
-    var dragging = false, moved = false, startX = 0, startLeft = 0;
-
-    function currentWidth(){ return bar.classList.contains('sz-collapsed') ? 0 : RAIL_WIDTH; }
-    function railLeftFor(side, width){ return side === 'left' ? 0 : (window.innerWidth - width); }
-
-    function apply(side, left){
-      bar.style.position = 'fixed';
-      bar.style.top = '0';
-      bar.style.bottom = '0';
-      bar.style.left = left + 'px';
-      bar.style.right = 'auto';
-      bar.classList.toggle('sz-dock-left', side === 'left');
-      refreshRidersForSlot('right', bar.dataset.mode || '1', bar);
-    }
-
-    function applyDock(side){
-      dockSide = side;
-      try { localStorage.setItem(RIGHT_DOCK_KEY, side); } catch(e){}
-      apply(side, railLeftFor(side, currentWidth()));
-    }
-
-    apply(dockSide, railLeftFor(dockSide, currentWidth()));
-
-    function pointOf(e){ return e.touches ? e.touches[0] : e; }
-
-    function onDown(e){
-      if (NAVBAR_EXCLUDE && e.target.closest(NAVBAR_EXCLUDE)) return;
-      if (bar.classList.contains('sz-collapsed')) return;
-      var p = pointOf(e);
-      dragging = true; moved = false;
-      startLeft = bar.getBoundingClientRect().left;
-      startX = p.clientX;
-      document.body.style.userSelect = 'none';
-    }
-
-    function onMove(e){
-      if (!dragging) return;
-      var p = pointOf(e);
-      var dx = p.clientX - startX;
-      if (Math.abs(dx) > 3) moved = true;
-      if (!moved) return;
-      if (e.cancelable) e.preventDefault();
-      bar.style.left = (startLeft + dx) + 'px';
-      bar.style.right = 'auto';
-      refreshRidersForSlot('right', bar.dataset.mode || '1', bar);
-    }
-
-    function onUp(){
-      if (!dragging) return;
-      dragging = false;
-      document.body.style.userSelect = '';
-      if (!moved) return;
-      var rect = bar.getBoundingClientRect();
-      var center = rect.left + rect.width / 2;
-      applyDock(center < window.innerWidth / 2 ? 'left' : 'right');
-    }
-
-    bar.addEventListener('mousedown', onDown);
-    bar.addEventListener('touchstart', onDown, { passive: true });
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('mouseup', onUp);
-    document.addEventListener('touchend', onUp);
-
-    return { applyDock: applyDock, getSide: function(){ return dockSide; } };
+    return createDockableDrawer(bar, {
+      slot: 'right',
+      dockKey: RIGHT_DOCK_KEY,
+      defaultSide: 'right',
+      markSide: function(side){ bar.classList.toggle('sz-dock-left', side === 'left'); }
+    });
   }
 
   function buildRightDrawer(){
