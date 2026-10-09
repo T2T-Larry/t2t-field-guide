@@ -35,7 +35,7 @@
    #fg-root and #sz-navbar exist with those exact ids so backpack.js
    can tell 0000 / 0020 / whatever screen is showing apart.
 
-   Loaded on every phase file, same as backpack.js/tmap.js.
+   Loaded on every phase file, same as backpack.js/traveler-map.js.
    ============================================================ */
 
 (function(){

@@ -964,12 +964,12 @@
     else     { el.classList.add('phd');    el.style.display='none'; if(tog) tog.textContent='▼'; }
   }
 
-  /* autoOpenMapPhase moved to tmap.js, July 14, 2026 — setPhOpen stays here
+  /* autoOpenMapPhase moved to traveler-map.js, July 14, 2026 — setPhOpen stays here
      and is exported below since it's a small generic utility, not Map-specific. */
 
-  /* ── MAP RENDER ── moved to tmap.js, July 14, 2026 (Tmap/Dmap split — see
+  /* ── MAP RENDER ── moved to traveler-map.js, July 14, 2026 (Tmap/Dmap split — see
      FG Standards). backpack.js exposes getCurNum/setPhOpen/getPageNumsReverse
-     below so tmap.js (and optionally dmap.js) can build the Map screen
+     below so traveler-map.js (and optionally developer-map-looking-glass.js) can build the Map screen
      without needing backpack.js's private closure state directly. */
 
   // July 23, 2026, Larry: Miro is no longer part of the Field Guide --
@@ -1263,7 +1263,7 @@
     // Touch Point, no exceptions.
     registerPageNum('s-search', '9800');
 
-    /* MAP — wired by tmap.js against its own injected elements, not here */
+    /* MAP — wired by traveler-map.js against its own injected elements, not here */
 
     /* IDEA HUB */
     wire('b-idea-back',returnToMG);
@@ -1494,9 +1494,9 @@
   /* ── PUBLIC API on window.T2T ── */
   // Oct 8 2026 -- merge-safe init. This used to be a hard overwrite
   // (window.T2T = {...}), which only worked because backpack.js happened
-  // to load before tmap.js on every page; if tmap.js (which extends the
+  // to load before traveler-map.js on every page; if traveler-map.js (which extends the
   // same object) ever loaded first, its properties would have been wiped
-  // silently. Same defensive pattern tmap.js already uses.
+  // silently. Same defensive pattern traveler-map.js already uses.
   window.T2T = Object.assign(window.T2T || {}, {
     nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG, goBackStack:goBackStack,
     goPhase:goPhase, wire:wire, togglePh:togglePh,

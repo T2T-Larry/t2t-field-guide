@@ -1,15 +1,15 @@
 /* ============================================================
-   tmap.js — T2T Field Guide traveler Map (Tmap)
+   traveler-map.js — T2T Field Guide traveler Map (Tmap)
    Builds and renders the traveler-facing Map screen. Injected
    once at runtime (same pattern as backpack.js's MG overlay via
    injectMGOverlay) — never duplicated as static HTML in phase
    files. Loaded by every phase file, right after backpack.js.
 
    Exposes window.T2T.renderMap and window.T2T.registerMapExtension
-   so optional modules (e.g. dmap.js, the developer-only Looking
+   so optional modules (e.g. developer-map-looking-glass.js, the developer-only Looking
    Glass) can extend the Map screen without this file — or
    backpack.js — needing to know they exist. To remove all
-   developer tooling from a build, delete dmap.js's <script> tag;
+   developer tooling from a build, delete developer-map-looking-glass.js's <script> tag;
    this file requires no changes either way.
    ============================================================ */
 

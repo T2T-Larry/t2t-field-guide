@@ -1,11 +1,11 @@
 /* ============================================================
-   dmap.js — T2T Field Guide developer Map (Dmap / Looking Glass)
-   Optional. Plugs into tmap.js's registerMapExtension hook —
-   tmap.js and backpack.js require no changes to load or unload
+   developer-map-looking-glass.js — T2T Field Guide developer Map (Dmap / Looking Glass)
+   Optional. Plugs into traveler-map.js's registerMapExtension hook —
+   traveler-map.js and backpack.js require no changes to load or unload
    this file. To remove all developer tooling from a build,
    delete this file's <script> tag. Nothing else needs to change,
    and no residue (DOM elements, dead code paths) is left behind
-   in tmap.js or backpack.js.
+   in traveler-map.js or backpack.js.
 
    Owner-only — the Looking Glass section only ever appears when
    the logged-in Supabase account matches OWNER_EMAIL. Simple but
