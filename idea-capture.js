@@ -191,6 +191,18 @@
         // neither value is ever written to it.
         var contentType = imageUrl ? 'image' : 'text';
         if(!imageUrl && (_icIdeaMode==='header' || _icIsAutoHeaderText(rawText))) contentType='header';
+        // Oct 9 2026 (Larry: in A-Z view nothing should land in the Parking Lot -- new entries go into the
+        // alpha list). While A-Z is on for the Topic this card is filed to, a plain one-line text entry
+        // headed for the loose spot (no header picked, or the Parking Lot itself) becomes a new concept
+        // (a header on the Topic) instead, exactly what the A-Z (+) "New concept" prompt creates, so it
+        // sorts into its own letter on redraw. Longer notes, subjects and images are not concept names,
+        // so they are left alone.
+        if(contentType==='text' && !imageUrl && _icMode!=='bb' && _icBoardId && window.T2TAZ && T2TAZ.isOn(_icBoardId)
+           && rawText && rawText.indexOf('\n')===-1 && rawText.length<=80
+           && !(document.getElementById('isx-p-subject') && document.getElementById('isx-p-subject').value.trim())){
+          var _icLoose=!_icHeaderId || ['NEW','New Additions','Parking Lot'].indexOf(_icHeaderLabel)!==-1;
+          if(_icLoose){ contentType='header'; headerId=_icBoardId; }
+        }
         // SUBJECT has its own column on ideas now (Sept 22 2026) -- it
         // rides the card face as a bold headline with the contents
         // optional underneath (see idea-storyboard-tiles.js). Headers
