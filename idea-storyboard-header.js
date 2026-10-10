@@ -109,35 +109,88 @@
   // effect. No undo after this -- a real delete can't be undone by the
   // existing snapshot/update mechanism, so the dialog says so plainly
   // instead of pretending otherwise.
+  // Oct 10 2026 -- Larry: "I should have the option to delete a header and
+  // all its children or at least send the children to the Parking Lot until
+  // a new home can be chosen." Two fixes in one place:
+  //  1) The dialog now offers BOTH choices when the header has contents:
+  //     "Move contents to Parking Lot, then delete header" (the safe default,
+  //     children land in the Parking Lot of the level the header lived in,
+  //     subtrees intact) and "Delete header and everything under it".
+  //  2) The delete itself no longer dies on dead links. A retired Briefing
+  //     Board still pointing at a header (briefing_boards.storyboard_project_id
+  //     is NO ACTION) was blocking TOOL SHED / CAST from ever being deleted,
+  //     with a message blaming a "project root". Retired boards are now
+  //     unlinked automatically; an ACTIVE linked board is named in the error.
+  function _sboardHeaderSubtreeIds(rootId){
+    var rows=Object.keys(_sboardAllRowsById||{}).map(function(k){ return _sboardAllRowsById[k]; });
+    var out=[String(rootId)], seen={}; seen[String(rootId)]=1;
+    for(var i=0;i<out.length;i++){
+      rows.forEach(function(r){
+        if(r && r.cluster_id && String(r.cluster_id)===out[i] && !seen[String(r.id)]){ seen[String(r.id)]=1; out.push(String(r.id)); }
+      });
+    }
+    return out;
+  }
+  async function _sboardUnlinkDeadBoards(_sb, ids){
+    var res=await _sb.from('briefing_boards').select('id,name,retired').in('storyboard_project_id', ids);
+    if(res.error) throw res.error;
+    var rows=res.data||[];
+    var active=rows.filter(function(b){ return !b.retired; });
+    if(active.length) throw new Error('This header is linked to the active Briefing Board "'+(active[0].name||'untitled')+'" — retire or unlink that board first.');
+    var dead=rows.map(function(b){ return b.id; });
+    if(dead.length){
+      var up=await _sb.from('briefing_boards').update({storyboard_project_id:null}).in('id', dead);
+      if(up.error) throw up.error;
+    }
+  }
   function _sboardConfirmTrashHeader(headerRow){
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var kids=Object.keys(_sboardAllRowsById||{}).filter(function(k){
+      var r=_sboardAllRowsById[k]; return r && String(r.cluster_id)===String(headerRow.id);
+    }).length;
+    var parentId=headerRow.cluster_id||null;
+    var canPark=!!(kids && parentId);
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Delete "'+safeName+'"?</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">This permanently deletes it and anything nested under it. This can\'t be undone.</div>'
-      +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="sb-trash-go" style="flex:1;background:#b8562f;border-color:#b8562f">Delete it</button><button class="sc-ov-btn" id="sb-trash-cancel" style="flex:1">Cancel</button></div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">'
+        +(kids?('It holds '+kids+' item'+(kids===1?'':'s')+'. Choose what happens to them. '):'')
+        +'Deleting can\'t be undone.</div>'
+      +(canPark?'<button class="sc-ov-btn save" id="sb-trash-park" style="width:100%;margin-bottom:6px">Move contents to Parking Lot, then delete</button>':'')
+      +'<button class="sc-ov-btn save" id="sb-trash-go" style="width:100%;margin-bottom:6px;background:#b8562f;border-color:#b8562f">'+(kids?'Delete it and everything under it':'Delete it')+'</button>'
+      +'<button class="sc-ov-btn" id="sb-trash-cancel" style="width:100%">Cancel</button>'
       +'</div>';
     ov.classList.add('active');
     T().wire('sb-trash-cancel', closeSbDetail);
-    T().wire('sb-trash-go', async function(){
+    async function _run(parkFirst){
       var _sb=T().sb;
       try{
+        if(parkFirst){
+          var parkId=await T2TData.ensureNewAdditionsHeader(parentId);
+          if(!parkId && T2TData.ensureHeaderNamed) parkId=await T2TData.ensureHeaderNamed('Parking Lot', parentId);
+          if(!parkId || String(parkId)===String(headerRow.id)) throw new Error('Could not find or create a Parking Lot here.');
+          var mv=await _sb.from('ideas').update({cluster_id:parkId}).eq('cluster_id',headerRow.id);
+          if(mv.error) throw mv.error;
+        }
+        // Whatever is still under the header (nothing, when parked) is about
+        // to cascade away, so any retired board linked to it is unlinked first.
+        await _sboardUnlinkDeadBoards(_sb, _sboardHeaderSubtreeIds(headerRow.id));
         var del=await _sb.from('ideas').delete().eq('id',headerRow.id);
         if(del.error) throw del.error;
-        // A real fetch, not fromCache=true -- the DB cascade above may
-        // have just removed a whole subtree of descendant rows (and any
-        // linked Briefing task-card mirrors) that this tab's in-memory
-        // cache still holds. A cache-only render would keep drawing
-        // those as ghosts until something else forced a real refetch.
+        // A real fetch, not fromCache=true -- the DB cascade may have just
+        // removed a whole subtree of descendant rows (and any linked Briefing
+        // task-card mirrors) that this tab's cache still holds.
         closeSbDetail();
         renderSeaBoard(false);
       }catch(err){
         var errBox=document.querySelector('.sc-overlay-card');
         var msg=err.message||String(err);
-        if(/foreign key|violates/i.test(msg)) msg='Can\'t delete this one — it\'s a project root or has its own linked Briefing Board with content depending on it.';
+        if(/foreign key|violates/i.test(msg)) msg='Can\'t delete this one — something else still points at it ('+msg.replace(/^.*constraint "([^"]+)".*$/,'$1')+').';
         if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+msg+'</div>');
       }
-    });
+    }
+    T().wire('sb-trash-go', function(){ _run(false); });
+    if(canPark) T().wire('sb-trash-park', function(){ _run(true); });
   }
 
   // Larry, August 1 2026: "I just closed the Field Guide storyboard but
