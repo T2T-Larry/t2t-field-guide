@@ -741,7 +741,7 @@
     // a long single word (a Subber name) shrinking further beats it
     // wrapping in this small, fixed, overflow-hidden card.
     var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
-    p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:'+(_libLook?_libLook.fg:'#1a3a5c')+';'+(_libLook?'font-weight:700;':'')+'white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
+    p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:'+(_libLook?_libLook.fg:'#1a3a5c')+';'+'white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     _sboardPaintHeaderFace(p, headerRow, headerRow.text_content||'(untitled)', Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15

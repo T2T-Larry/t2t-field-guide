@@ -2315,7 +2315,9 @@
         var hdFitSize=_sboardFitFontSize(name, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2, false);
         hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+hdFitSize+'px;font-weight:400;margin-bottom:2px;cursor:pointer;text-align:center;white-space:normal;word-break:break-word;line-height:1.2;border-radius:0'+(headerRow.color?';background:'+headerRow.color:'');
         var _libRootLook=(typeof _sboardLibraryRootLook==='function')?_sboardLibraryRootLook(headerRow):null; // Oct 10 2026: LIBRARY column header matches its dark-gray cards
-        if(_libRootLook){ hd.style.background=_libRootLook.bg; hd.style.color=_libRootLook.fg; hd.style.fontWeight='700'; }
+        if(_libRootLook){ hd.style.background=_libRootLook.bg; hd.style.color=_libRootLook.fg; }
+        // Oct 10 2026 (Larry: carry the Library look over when the LIBRARY is viewed as a topic): its own column headers wear it too
+        else { var _libChildLook=(typeof _sboardLibraryLook==='function')?_sboardLibraryLook(headerRow):null; if(_libChildLook){ hd.style.background=_libChildLook.bg; hd.style.color=_libChildLook.fg; } }
         _sboardPaintHeaderFace(hd, headerRow, name, Math.round(20*_tsMult), Math.round(12*_tsMult), HEADER_W-28, HEADER_H-14, 1.2);
         // Purpose used to have its own separate corner-flip editor; as of
         // July 17, 2026 it's treated exactly like any other header — same
