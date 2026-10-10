@@ -3,8 +3,8 @@
 // a small marker at the bottom of any Blue Sky header that has Briefing Board tasks
 // pointing at it (briefing_cards.project_header_id = the header, i.e. the ID Band
 // TOPIC). It reads only; nothing here writes to the BB or to the ideas table, and the
-// BB keeps running exactly as before. Clicking the marker opens the BB filtered to
-// that header's topic.
+// BB keeps running exactly as before. Clicking the marker only LISTS the tasks (with a
+// flag for the BB column each sits in); it never navigates to the BB.
 //
 // Color: a task that has a PRIMARY (card_roles role='primary') paints the marker in
 // the "task with a PRIMARY" amber; a header whose tasks are all unassigned paints it
@@ -81,7 +81,7 @@
     if(span) span.textContent=_label(m);
     var tip=m.n+' Briefing Board '+(m.n===1?'task':'tasks')+' on this header';
     if(m.assigned) tip+=' ('+m.assigned+' with a PRIMARY)';
-    tip+=' — click to open them on the Briefing Board';
+    tip+=' — click to list them';
     el.title=tip;
   }
 
