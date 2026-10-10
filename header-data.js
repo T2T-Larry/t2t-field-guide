@@ -901,11 +901,13 @@
   async function setProjectFilter(headerId, rootHeaderId){
     var normalized = (!headerId || (rootHeaderId && headerId===rootHeaderId)) ? null : headerId;
     _projectFilterCurrent = normalized;
+    // Scope key: the open topic, or the account root (MASTER) when unfiltered -- every BB gets the eyeball.
+    _scopeKey = normalized || rootHeaderId || null;
     _scopeDescIds = {};
-    if(normalized){
+    if(_scopeKey){
       try{
         var all=await fetchAllHeaders();
-        headerDescendants(all, normalized).forEach(function(h){
+        headerDescendants(all, _scopeKey).forEach(function(h){
           if(RESERVED_HEADERS.indexOf(h.text_content)===-1) _scopeDescIds[h.id]=true;
         });
       }catch(e){ console.warn('T2TData: could not load descendant topics for the scope filter', e); }
@@ -923,8 +925,14 @@
   // shape); pass a different name if another board kind's card objects
   // tag their project under a different key.
   function filterCardsByProject(cards, projectField){
-    if(!isSingleBoardMode() || !_projectFilterCurrent || !cards) return cards;
-    var want=_projectFilterCurrent, field=projectField||'projectHeaderId';
+    if(!isSingleBoardMode() || !cards) return cards;
+    var field=projectField||'projectHeaderId';
+    if(!_projectFilterCurrent){
+      // MASTER: everything by default; eyeball closed = only cards not filed under any sub-topic.
+      if(!_scopeKey || scopeIncludesChildren(_scopeKey)) return cards;
+      return cards.filter(function(c){ return !_scopeDescIds[c[field]]; });
+    }
+    var want=_projectFilterCurrent;
     var kids=scopeIncludesChildren(want) ? _scopeDescIds : null;
     return cards.filter(function(c){ var v=c[field]; return v===want || (kids && !!kids[v]); });
   }
@@ -933,6 +941,8 @@
   // under it (default); false = only cards filed directly on this topic.
   // Remembered per topic in localStorage -- instant, per browser.
   var _scopeDescIds = {};
+  var _scopeKey = null;
+  function getScopeKey(){ return _scopeKey; }
   function scopeIncludesChildren(topicId){
     if(!topicId) return true;
     try{ return localStorage.getItem('t2t_bbscope_'+topicId)!=='0'; }catch(e){ return true; }
@@ -995,6 +1005,7 @@
     scopeIncludesChildren: scopeIncludesChildren,
     setScopeIncludesChildren: setScopeIncludesChildren,
     isDescendantTopic: isDescendantTopic,
+    getScopeKey: getScopeKey,
     stampCardProject: stampCardProject
   };
 

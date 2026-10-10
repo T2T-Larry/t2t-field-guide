@@ -701,13 +701,13 @@
 
   // Scope eyeball, Oct 10 2026 (Larry: "eyeball means show me more"). Open eye = this
   // topic plus every sub-topic's cards; struck-through = only cards filed on this topic.
-  // The button shows ONLY when it would change something: a topic is open (not MASTER)
+  // The button shows ONLY when it would change something: a board is open (any topic, MASTER included)
   // and at least one card sits on a sub-topic. Scope is remembered per topic (T2TData).
   var _BB_EYE_OPEN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   var _BB_EYE_SHUT='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="21" x2="21" y2="3"/></svg>';
   function _bbSyncScopeButton(){
     var btn=document.getElementById('bb-scope-btn'); if(!btn) return;
-    var topic=(window.T2TData && T2TData.getProjectFilter) ? T2TData.getProjectFilter() : null;
+    var topic=(window.T2TData && T2TData.getScopeKey) ? T2TData.getScopeKey() : null;
     var helpful=false;
     if(topic && _bbSingleBoardMode()){
       var all=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
@@ -725,7 +725,7 @@
   document.addEventListener('click', function(e){
     var b=e.target && e.target.closest ? e.target.closest('#bb-scope-btn') : null;
     if(!b) return;
-    var topic=T2TData.getProjectFilter(); if(!topic) return;
+    var topic=T2TData.getScopeKey(); if(!topic) return;
     T2TData.setScopeIncludesChildren(topic, !T2TData.scopeIncludesChildren(topic));
     renderBoard();
   });
