@@ -699,8 +699,40 @@
     return _bbProjectFilterCards(cards);
   }
 
+  // Scope eyeball, Oct 10 2026 (Larry: "eyeball means show me more"). Open eye = this
+  // topic plus every sub-topic's cards; struck-through = only cards filed on this topic.
+  // The button shows ONLY when it would change something: a topic is open (not MASTER)
+  // and at least one card sits on a sub-topic. Scope is remembered per topic (T2TData).
+  var _BB_EYE_OPEN='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var _BB_EYE_SHUT='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/><line x1="3" y1="21" x2="21" y2="3"/></svg>';
+  function _bbSyncScopeButton(){
+    var btn=document.getElementById('bb-scope-btn'); if(!btn) return;
+    var topic=(window.T2TData && T2TData.getProjectFilter) ? T2TData.getProjectFilter() : null;
+    var helpful=false;
+    if(topic && _bbSingleBoardMode()){
+      var all=_bbCardsList().filter(function(c){ return !c.archived && !c.trashedAt; });
+      helpful=all.some(function(c){ return T2TData.isDescendantTopic(c.projectHeaderId); });
+    }
+    btn.style.display=helpful ? '' : 'none';
+    if(!helpful) return;
+    var on=T2TData.scopeIncludesChildren(topic);
+    btn.innerHTML=on ? _BB_EYE_OPEN : _BB_EYE_SHUT;
+    btn.classList.toggle('bb-view-on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.title=on ? 'Showing this topic and everything under it \u2014 click to show only cards filed on this topic'
+                 : 'Showing only cards filed on this topic \u2014 click to include sub-topic cards';
+  }
+  document.addEventListener('click', function(e){
+    var b=e.target && e.target.closest ? e.target.closest('#bb-scope-btn') : null;
+    if(!b) return;
+    var topic=T2TData.getProjectFilter(); if(!topic) return;
+    T2TData.setScopeIncludesChildren(topic, !T2TData.scopeIncludesChildren(topic));
+    renderBoard();
+  });
+
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
+    try{ _bbSyncScopeButton(); }catch(e){ console.warn('scope eyeball sync failed', e); }
     // Preserve each column's own scroll position across this full
     // rebuild, Sept 2026 (Larry: "leave scroll at last position used
     // instead of jumping back to top of list") -- renderBoard tears

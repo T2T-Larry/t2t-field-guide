@@ -870,15 +870,27 @@
   function getProjectFilter(){ return _projectFilterCurrent; }
 
   // normalized: null means "no restriction" (the account/master root --
-  // every task, every project); a Header id means "only this project's
-  // own cards," exact-match, never a descendant walk -- same "the only
-  // cards visible at any layer are those pertaining to that layer" rule
-  // Design Notes already locked for every other layer. rootHeaderId is
-  // passed in by the caller (each board kind resolves its own root via
-  // ensureIdeaStoryboardsRoot) rather than assumed here.
+  // every task, every project); a Header id means that topic's cards.
+  // Oct 10 2026 (Larry: "should the parent show all the child BB cards?
+  // MASTER does ... can we filter to only those cards assigned to that
+  // specific topic?"): a topic now shows its own cards PLUS every
+  // descendant topic's cards by default (the same rollup MASTER has), and
+  // the BB's eyeball (scope) switches it to "this topic only" -- the old
+  // exact-match behavior. The scope is remembered per topic (this browser).
+  // rootHeaderId is passed in by the caller (each board kind resolves its
+  // own root via ensureIdeaStoryboardsRoot) rather than assumed here.
   async function setProjectFilter(headerId, rootHeaderId){
     var normalized = (!headerId || (rootHeaderId && headerId===rootHeaderId)) ? null : headerId;
     _projectFilterCurrent = normalized;
+    _scopeDescIds = {};
+    if(normalized){
+      try{
+        var all=await fetchAllHeaders();
+        headerDescendants(all, normalized).forEach(function(h){
+          if(RESERVED_HEADERS.indexOf(h.text_content)===-1) _scopeDescIds[h.id]=true;
+        });
+      }catch(e){ console.warn('T2TData: could not load descendant topics for the scope filter', e); }
+    }
     try{ sessionStorage.setItem('bbCurrentProjectHeaderId', normalized||''); }catch(e){}
     var sb=_sb(); if(!sb) return normalized;
     try{
@@ -894,8 +906,23 @@
   function filterCardsByProject(cards, projectField){
     if(!isSingleBoardMode() || !_projectFilterCurrent || !cards) return cards;
     var want=_projectFilterCurrent, field=projectField||'projectHeaderId';
-    return cards.filter(function(c){ return c[field]===want; });
+    var kids=scopeIncludesChildren(want) ? _scopeDescIds : null;
+    return cards.filter(function(c){ var v=c[field]; return v===want || (kids && !!kids[v]); });
   }
+
+  // Scope (the BB eyeball), Oct 10 2026. true = this topic plus everything
+  // under it (default); false = only cards filed directly on this topic.
+  // Remembered per topic in localStorage -- instant, per browser.
+  var _scopeDescIds = {};
+  function scopeIncludesChildren(topicId){
+    if(!topicId) return true;
+    try{ return localStorage.getItem('t2t_bbscope_'+topicId)!=='0'; }catch(e){ return true; }
+  }
+  function setScopeIncludesChildren(topicId, on){
+    if(!topicId) return;
+    try{ if(on) localStorage.removeItem('t2t_bbscope_'+topicId); else localStorage.setItem('t2t_bbscope_'+topicId,'0'); }catch(e){}
+  }
+  function isDescendantTopic(headerId){ return !!_scopeDescIds[headerId]; }
 
   // The one-time, narrow write that tags a newly-created card with its
   // project. Deliberately never folded into a whole-row save -- see
@@ -946,6 +973,9 @@
     getProjectFilter: getProjectFilter,
     setProjectFilter: setProjectFilter,
     filterCardsByProject: filterCardsByProject,
+    scopeIncludesChildren: scopeIncludesChildren,
+    setScopeIncludesChildren: setScopeIncludesChildren,
+    isDescendantTopic: isDescendantTopic,
     stampCardProject: stampCardProject
   };
 

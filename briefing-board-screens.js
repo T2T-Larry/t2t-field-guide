@@ -336,7 +336,13 @@
               // Band, leftmost (left of TEAM). Not available on the Briefing Board
               // (DO/DOING/DONE is the order), so it stays in its N/A state: looks
               // like off, does nothing on click, tooltip says why. See az-toggle.js.
-              +(window.T2TAZ ? T2TAZ.buttonHTML('bb-az-btn','bb-icon-btn') : '')
+              // EYEBALL, Oct 10 2026 -- Larry: "I am good with the eyeball on the BB where
+              // A-Z is now" ... "eyeball means show me more." Takes A-Z's place on the BB
+              // (A-Z never applied here). Open eye = this topic PLUS everything under it
+              // (default); struck-through eye = only cards filed directly on this topic.
+              // Hidden unless the topic actually has cards in sub-topics (see
+              // _bbSyncScopeButton in briefing-board-ops.js), so it only appears when helpful.
+              +'<button type="button" class="bb-icon-btn bb-scope-btn" id="bb-scope-btn" style="display:none" aria-pressed="true" title="Showing this topic and everything under it" aria-label="Show sub-topic cards"></button>'
               +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
               +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
