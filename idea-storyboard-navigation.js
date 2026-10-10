@@ -1999,10 +1999,11 @@
         seatMember:async function(person){
           if(!projectRow) return {ok:false,msg:'Open a board first.'};
           if(person.email) return await _tmAddMember(projectRow, person.email);
-          try{
-            var ins=await T().sb.rpc('add_storyboard_member', {p_project_id: projectRow.id, p_user_id: person.user_id});
-            return ins.error?{ok:false,msg:ins.error.message||'Could not add them.'}:{ok:true};
-          }catch(err2){ return {ok:false,msg:'Could not add them.'}; }
+          // Oct 10 2026: invited, not seated (invitations.js) -- same rule as _tmAddMember.
+          var inv=(projectRow.briefing_board_id)
+            ? await T().invitations.invite('board', projectRow.briefing_board_id, person.user_id, 'edit')
+            : await T().invitations.invite('topic', projectRow.id, person.user_id, 'edit');
+          return inv.ok ? {ok:true, invited:true} : {ok:false,msg:inv.msg||'Could not invite them.'};
         },
         rebuild:openMenu,
         close:function(){ menu.hidden=true; }

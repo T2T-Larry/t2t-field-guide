@@ -245,6 +245,11 @@
         }
         var res = await cfg.seatMember(person);
         if (!res || !res.ok) { say((res && res.msg) || 'Could not add them.', true); return; }
+        if (res.invited) {       // Oct 10 2026: invited, not seated -- they join when they accept
+          say('Invitation sent to “' + (person.name || person.email || 'them') + '”. They join when they accept.', false);
+          input.value = ''; renderSuggest();
+          return;
+        }
         cfg.rebuild();           // rebuild so the new name shows as a row
       });
       input.addEventListener('input', renderSuggest);

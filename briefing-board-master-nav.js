@@ -645,12 +645,14 @@
           window.alert('No T2T member found with that email. They need an active Field Guide account first -- ask them to sign up, then try adding them again.');
           return;
         }
-        var myUid=await _bbCurrentUserId();
-        var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid, access_level: accessLevel});
-        if(ins.error){
-          window.alert('Could not add '+(match.name||email)+'. '+(ins.error.message||'Please try again.'));
+        // Oct 10 2026: inviting, not seating -- the guest gets a seat only
+        // when they accept (see invitations.js).
+        var inv=await T().invitations.invite('board', board.id, match.user_id, accessLevel);
+        if(!inv.ok){
+          window.alert('Could not invite '+(match.name||email)+'. '+(inv.msg||'Please try again.'));
           return;
         }
+        window.alert('Invitation sent to '+(match.name||email)+'. They are added when they accept.');
         if(input) input.value='';
         await _bbLoadSharing();
         _bbRenderSharingList();
@@ -1670,6 +1672,7 @@
     }).join('');
     var addTile=document.getElementById('bb-team-add');
     if(addTile) addTile.style.display = _bbRosterCanManage ? 'flex' : 'none';
+    if(board && T().invitations) T().invitations.mountPending(wrap, 'board', board.id);
   }
 
   async function _bbSaveMemberRole(uid, role, canFac, isFac){
@@ -1716,10 +1719,10 @@
         match=(!res.error && res.data && res.data.length) ? res.data[0] : null;
       }
       if(!match) return {ok:false,msg:'No T2T member found with that email.'};
-      var myUid=await _bbCurrentUserId();
-      var ins=await sb.from('board_members').insert({board_id: board.id, user_id: match.user_id, added_by: myUid, access_level: 'edit'});
-      if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
-      return {ok:true};
+      // Oct 10 2026: an invitation, not a seat -- they join on Accept.
+      var inv=await T().invitations.invite('board', board.id, match.user_id, 'edit');
+      if(!inv.ok) return {ok:false,msg:inv.msg||'Could not invite them.'};
+      return {ok:true, invited:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
   }
 
@@ -1762,6 +1765,7 @@
     if(input) input.value='';
     if(sugg) sugg.style.display='none';
     var row=document.getElementById('bb-team-add-row'); if(row) row.style.display='none';
+    if(res.invited) window.alert('Invitation sent. They join the team when they accept.');
     await _bbLoadRoster(); _bbRenderRoster();
   }
 

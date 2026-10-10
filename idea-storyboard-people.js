@@ -569,6 +569,10 @@
     }).join('');
     var addTile=document.getElementById('tm-add-tile');
     if(addTile) addTile.style.display = _tmRosterCanManage ? 'flex' : 'none';
+    if(projectRow && T().invitations){
+      if(projectRow.briefing_board_id) T().invitations.mountPending(wrap, 'board', projectRow.briefing_board_id);
+      else T().invitations.mountPending(wrap, 'topic', projectRow.id);
+    }
   }
 
   async function _tmSaveMemberRole(projectRow, uid, role, canFac, isFac){
@@ -608,9 +612,14 @@
       // resolves which table that actually is server-side, same as
       // list/update_storyboard_member(_notes) below -- never trust a
       // client-cached briefing_board_id for this.
-      var ins=await _sb.rpc('add_storyboard_member', {p_project_id: projectRow.id, p_user_id: match.user_id});
-      if(ins.error) return {ok:false,msg:ins.error.message||'Could not add them.'};
-      return {ok:true};
+      // Oct 10 2026: an invitation, not a seat -- they join on Accept
+      // (invitations.js). A root project linked to a Briefing Board shares
+      // that board's Cast, so the invitation targets the board then.
+      var inv=(projectRow.briefing_board_id)
+        ? await T().invitations.invite('board', projectRow.briefing_board_id, match.user_id, 'edit')
+        : await T().invitations.invite('topic', projectRow.id, match.user_id, 'edit');
+      if(!inv.ok) return {ok:false,msg:inv.msg||'Could not invite them.'};
+      return {ok:true, invited:true};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
   }
 
