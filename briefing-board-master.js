@@ -1091,7 +1091,7 @@
       if(!parkId){ _bbShowToast('That Plan board has no Parking Lot to receive this card.'); return; }
       var ins=await sb.from('ideas').insert({
         user_id:uid, content_type:'text', text_content:text||subj, subject:(subj && text)?subj:null,
-        hide_contents_front:!!c.hideContentsFront, cluster_id:parkId, storyboard_kind:'PLAN',
+        hide_contents_front:c.hideContentsFront!==false, cluster_id:parkId, storyboard_kind:'PLAN',
         track_on_briefing_board:false, created_at:new Date().toISOString()
       });
       if(ins.error) throw ins.error;

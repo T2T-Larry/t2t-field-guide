@@ -911,7 +911,7 @@
       // PROJECT eyebrow; hide_contents_front lets a card with a SUBJECT
       // show just that headline (contents always show when there's no
       // SUBJECT -- a card is never blank on its face).
-      subject: (c.subject||'').trim()||null, hide_contents_front: !!c.hideContentsFront,
+      subject: (c.subject||'').trim()||null, hide_contents_front: c.hideContentsFront!==false,
       due_date: _bbToISODate(c.due), start_date: _bbToISODate(c.startDate), completed_date: _bbToISODate(c.completedDate),
       due_time: c.dueTime||null, start_time: c.startTime||null,
       is_routine: !!c.routine, routine_freq: c.routineFreq||null, routine_custom: c.routineCustom||null,
@@ -949,7 +949,7 @@
     return {
       id: row.id, col: row.col, assigned: _bbMDFromTimestamp(row.created_at),
       task: row.task||'', person: row.person||'', due: _bbFromISODate(row.due_date),
-      subject: row.subject||'', hideContentsFront: !!row.hide_contents_front,
+      subject: row.subject||'', hideContentsFront: row.hide_contents_front!==false,
       startDate: _bbFromISODate(row.start_date), completedDate: _bbFromISODate(row.completed_date),
       dueTime: row.due_time||'', startTime: row.start_time||'',
       routine: !!row.is_routine, routineFreq: row.routine_freq||'', routineCustom: row.routine_custom||'',

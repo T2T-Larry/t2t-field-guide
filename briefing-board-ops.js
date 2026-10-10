@@ -1007,7 +1007,7 @@
         // Sept 27 2026 -- universal Subject-only view (Utility button)
         // overrides each card's own per-card "Show contents" choice while
         // on. Shared flag with Storyboard/Session -- idea-storyboard-shared.js.
-        var _bbShowTask=!_bbSubject || (!c.hideContentsFront && !window.T2TViewPrefs.isSubjectOnly());
+        var _bbShowTask=!_bbSubject || (c.hideContentsFront===false && !window.T2TViewPrefs.isSubjectOnly());
         var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==_bbHeadline)
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
@@ -1410,7 +1410,7 @@
     var hasSubject=!!((subjEl?subjEl.value:c.subject)||'').trim();
     var row=document.getElementById('bb-d-contents-front-row');
     var cb=document.getElementById('bb-d-contents-front');
-    var showing=!hasSubject || !c.hideContentsFront;
+    var showing=!hasSubject || c.hideContentsFront===false;
     if(typeof FGFrontCheck!=='undefined') FGFrontCheck.paint(row, cb, showing, hasSubject, 'task');
   }
   function openCardDetail(id){
@@ -1475,7 +1475,7 @@
       if(cb) cb.onchange=function(e){
         e.stopPropagation();
         var hide=!cb.checked;
-        if(hide===!!c.hideContentsFront) return;
+        if(hide===(c.hideContentsFront!==false)) return;
         if(subjEl) c.subject=subjEl.value.trim();
         c.hideContentsFront=hide;
         _bbPaintContentsFront(c);
