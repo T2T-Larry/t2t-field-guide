@@ -1994,10 +1994,9 @@
           rows.push({user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', phone:m?(m.phone||''):'', isOwner:false, role:null, can_facilitate:false, is_facilitator:false, notes:'', assignedOnly:true});
         });
       }
-      // Open-task count beside each name, and an Unassigned row first (Oct 10 2026, Larry).
-      rows.forEach(function(r){ r.count=Object.keys(perUser[String(r.user_id)]||{}).length; r.tip=r.count+' open task'+(r.count===1?'':'s')+' (not Done)'; });
-      var unCount=Object.keys(openIds).filter(function(cid){ return !primaryCard[cid]; }).length;
-      rows.unshift({user_id:BB_UNASSIGNED_ID, name:'Unassigned', email:'', count:unCount, tip:unCount+' open task'+(unCount===1?'':'s')+' with nobody PRIMARY (not Done)'});
+      // Unassigned row first (Oct 10 2026, Larry: no counts after the names, just the ability
+      // to view unassigned alone or together with team members).
+      rows.unshift({user_id:BB_UNASSIGNED_ID, name:'Unassigned', email:'', tip:'Cards nobody holds PRIMARY on'});
       return rows;
     }catch(e){ return rows; }
   }
