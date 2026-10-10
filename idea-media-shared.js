@@ -26,7 +26,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
 
   // Canonical shared state — the only pieces of ISB state written
   // from more than one file. Read AND write through this object;

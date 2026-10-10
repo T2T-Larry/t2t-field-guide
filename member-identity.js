@@ -29,7 +29,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
   function member(){ return (T() && T().getMember && T().getMember()) || {}; }
   function esc(s){
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){

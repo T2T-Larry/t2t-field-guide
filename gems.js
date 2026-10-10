@@ -22,7 +22,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
 
   // Aug 11 2026 -- re-render Gems' own board when the text-size boost
   // changes, but only if Gems is actually the screen on show right now

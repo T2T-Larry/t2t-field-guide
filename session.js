@@ -27,7 +27,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
   var T2TShared = window.T2TShared;
 
   /* ============================================================

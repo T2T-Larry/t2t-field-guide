@@ -62,7 +62,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
   function db(){ return T() && T().sb; }
 
   var BM_SHAPES = ['circle','square','triangle','diamond','star','heart'];

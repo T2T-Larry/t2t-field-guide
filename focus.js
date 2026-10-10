@@ -27,7 +27,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
 
   var _returnTarget = 's-sea-of-ideas-cluster';
   var _state = null;

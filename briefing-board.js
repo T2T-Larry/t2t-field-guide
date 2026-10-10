@@ -217,7 +217,6 @@
      deliberate separation between the two modules intact.
    ============================================================ */
 
-function T(){ return window.T2T; }
 
   function wireBriefingBoard(){
     // July 22, 2026, Larry: the Briefing Board is "one of the most

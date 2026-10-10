@@ -56,7 +56,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
 
   // ── State for whatever's currently open ──
   var _nbOnClosed=null;

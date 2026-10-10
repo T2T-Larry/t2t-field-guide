@@ -50,7 +50,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
 
   // ── Target + callbacks for whatever is currently open ──
   var _icHeaderId=null;

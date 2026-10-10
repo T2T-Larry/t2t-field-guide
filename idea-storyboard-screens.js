@@ -30,7 +30,6 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
-  function T(){ return window.T2T; }
 
   // Aug 11 2026 -- when the text-size boost changes (see screen-fit.js),
   // re-render whichever board is actually showing so its tiles pick up

@@ -11,7 +11,6 @@
 
 (function(){
 
-  function T(){ return window.T2T; }
 
   function _sb(){ return T().sb; }
 
