@@ -30,14 +30,19 @@
       due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false,
       reviewedBy:(typeof REVIEWERS!=='undefined'?REVIEWERS[0]:''), archived:false, projectHeaderId:projectHeaderId});
     var sync=_bbSaveLocal(cards);
+    var pending=[];
     function after(fn, label){
-      if(sync && sync.then) sync.then(fn).catch(function(e){ console.error('NEW card (BB): '+label, e); });
-      else fn();
+      var pr=(sync && sync.then) ? sync.then(fn).catch(function(e){ console.error('NEW card (BB): '+label, e); })
+                                 : Promise.resolve().then(fn).catch(function(e){ console.error('NEW card (BB): '+label, e); });
+      pending.push(pr);
     }
     if(projectHeaderId && typeof _bbStampCardProject==='function') after(function(){ return _bbStampCardProject(newCardId, projectHeaderId); }, 'could not tag project');
     if(typeof _bbAutoAssignToActiveFilter==='function') after(function(){ return _bbAutoAssignToActiveFilter(newCardId); }, 'could not auto-assign');
     if(typeof renderBoard==='function') renderBoard();
-    return {id:newCardId};
+    // ready resolves once the card is saved and tagged, so callers can refresh anything
+    // that reads it back (e.g. the Blue Sky task marker).
+    var ready=Promise.all(pending.concat([ (sync && sync.then) ? sync.catch(function(){}) : Promise.resolve() ]));
+    return {id:newCardId, ready:ready};
   };
 
   BB.hasCastPickMenu=function(){ return typeof _bbOpenCastPickMenu==='function'; };

@@ -442,9 +442,17 @@
     }
     // Oct 10 2026: goes through the Briefing Board's public front door
     // (briefing-board-public-api.js) instead of its private _bb* helpers.
-    var created=window.T2TBriefingBoard.createNewCard({task:text, subject:subject, projectHeaderId:_icBoardId||null});
+    // Oct 10 2026 (Larry: "Clicked (+) from a BS header. Added task but it disappeared"): a task
+    // entered from a Blue Sky header's (+) belongs to THAT header, so it is filed under the
+    // header you clicked, not just the open topic. Loose buckets (Parking Lot, MISC...) keep
+    // the old behavior and file under the topic.
+    var _icLooseNames=['NEW','New Additions','Parking Lot','MISC','Purpose','Trash'];
+    var _icTaskHeader=(_icMode!=='bb' && _icHeaderId && _icLooseNames.indexOf(_icHeaderLabel)===-1) ? _icHeaderId : null;
+    var created=window.T2TBriefingBoard.createNewCard({task:text, subject:subject, projectHeaderId:_icTaskHeader||_icBoardId||null});
     if(!created) return;
     var newCardId=created.id;
+    // Once saved and tagged, refresh the Blue Sky task markers so the new task shows up on its column.
+    if(created.ready && window.T2TTaskMarker) created.ready.then(function(){ window.T2TTaskMarker.refresh(); });
     var row={id:newCardId};
     // Only the Briefing Board's own NEW door passes an onSaved that
     // expects a BB card back (today it passes none at all -- see

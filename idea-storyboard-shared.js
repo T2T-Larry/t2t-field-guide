@@ -423,6 +423,15 @@
       if(_sboardIsReadOnly()) return; // Oct 6 2026: Library view -- no keyboard edits
       var tag=(e.target&&e.target.tagName||'').toLowerCase();
       if(tag==='input'||tag==='textarea'||(e.target&&e.target.isContentEditable)) return;
+      // ALT-N, Oct 10 2026 (Larry: "ALT-N did not work to add new card"): same shortcut the
+      // Briefing Board and Sea of Ideas already have -- opens the new-card input, filed to
+      // the Parking Lot of the board you are on.
+      if(e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && e.code==='KeyN'){
+        if(window.IdeaCapture && window.IdeaCapture.isOpen && window.IdeaCapture.isOpen()) return;
+        e.preventDefault();
+        if(typeof _sboardOpenQuickCapture==='function') _sboardOpenQuickCapture(_sboardNewAdditionsId||null);
+        return;
+      }
       var k=e.key.toLowerCase();
       // Tab / Shift+Tab -- MOVE: nest the selected header under the
       // previous top-level header, or un-nest it back to top-level. Same
