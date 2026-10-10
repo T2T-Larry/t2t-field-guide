@@ -452,7 +452,10 @@
     if(!created) return;
     var newCardId=created.id;
     // Once saved and tagged, refresh the Blue Sky task markers so the new task shows up on its column.
-    if(created.ready && window.T2TTaskMarker) created.ready.then(function(){ window.T2TTaskMarker.refresh(); });
+    if(created.ready) created.ready.then(function(ok){
+      if(ok===false){ alert('Sorry \u2014 that task could not be saved. Please try again.'); return; }
+      if(window.T2TTaskMarker) window.T2TTaskMarker.refresh();
+    });
     var row={id:newCardId};
     // Only the Briefing Board's own NEW door passes an onSaved that
     // expects a BB card back (today it passes none at all -- see
