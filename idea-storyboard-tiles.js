@@ -674,18 +674,26 @@
      category color carried by the TEXT (the pastel it already had becomes the lettering; Gems and Principles share purple). A dark
      card in any topic column therefore reads as "library source". Only the header cards themselves change; cards inside them keep
      their normal colors. Nothing is stored -- the look is worked out from where the header sits, so it follows a header that is moved. */
-  var _SB_LIBRARY_CARD_BG='#5c646f'; /* Oct 10 2026: lightened from #3b4048 (Larry: too dark) */
+  var _SB_LIBRARY_CARD_BG='#737b86'; /* Oct 10 2026: lightened twice, #3b4048 -> #5c646f -> #737b86 (Larry: the dark still shouts) */
+  var _SB_LIBRARY_CONCEPTS_TINT='#d0f2ec'; /* every CONCEPTS header, wherever it sits, looks like the Library's CONCEPTS */
+  function _sboardLibraryLighten(hex){ /* pull a pastel 55% toward white so the lettering stays readable on the lighter gray */
+    var m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'')); if(!m) return '#f3f0ea';
+    var n=parseInt(m[1],16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+    function mix(c){ return Math.round(c+(255-c)*0.55); }
+    return '#'+[mix(r),mix(g),mix(b)].map(function(c){ return ('0'+c.toString(16)).slice(-2); }).join('');
+  }
   function _sboardLibraryLook(headerRow){
     try{
+      if(headerRow && headerRow.content_type==='header' && String(headerRow.text_content||'').trim().toUpperCase()==='CONCEPTS'){
+        return {bg:_SB_LIBRARY_CARD_BG, fg:_sboardLibraryLighten(_SB_LIBRARY_CONCEPTS_TINT)};
+      }
       if(!headerRow || !headerRow.cluster_id || typeof _sboardAllRowsById==='undefined') return null;
       var parent=_sboardAllRowsById[headerRow.cluster_id];
       if(!parent || parent.content_type!=='header') return null;
       if(String(parent.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
       var grand=parent.cluster_id?_sboardAllRowsById[parent.cluster_id]:null;
       if(grand && grand.cluster_id) return null; /* LIBRARY must be a top-level (MASTER) header, not a look-alike deeper down */
-      var tint=headerRow.color||'#ffffff';
-      if(String(tint).toLowerCase()==='#fff'||String(tint).toLowerCase()==='#ffffff') tint='#f3f0ea';
-      return {bg:_SB_LIBRARY_CARD_BG, fg:tint};
+      return {bg:_SB_LIBRARY_CARD_BG, fg:_sboardLibraryLighten(headerRow.color||'#ffffff')};
     }catch(e){ return null; }
   }
 
@@ -696,7 +704,7 @@
       if(String(headerRow.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
       var parent=headerRow.cluster_id && typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById[headerRow.cluster_id] : null;
       if(parent && parent.cluster_id) return null; /* only the top-level (MASTER) LIBRARY, not a look-alike deeper down */
-      return {bg:_SB_LIBRARY_CARD_BG, fg:headerRow.color||'#f7d9e4'};
+      return {bg:_SB_LIBRARY_CARD_BG, fg:_sboardLibraryLighten(headerRow.color||'#f7d9e4')};
     }catch(e){ return null; }
   }
 
