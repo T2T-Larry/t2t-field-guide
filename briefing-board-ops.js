@@ -1463,13 +1463,20 @@
       var subjEl=document.getElementById('bb-d-subject');
       if(subjEl){
         subjEl.value=c.subject||'';
-        subjEl.oninput=function(){ _bbPaintContentsFront(c); };
+        // Oct 10 2026 -- keep c.subject live as it is typed. The front of the
+        // card (renderBoard) and the save below both read c.subject, but it
+        // used to be copied from the field only when the card closed, so
+        // typing a Subject and then hiding the contents in the same visit
+        // saved "hidden" against a card the board still saw as having no
+        // Subject -- the task kept showing and the eye looked broken.
+        subjEl.oninput=function(){ c.subject=subjEl.value.trim(); _bbPaintContentsFront(c); };
       }
       var cb=document.getElementById('bb-d-contents-front');
       if(cb) cb.onchange=function(e){
         e.stopPropagation();
         var hide=!cb.checked;
         if(hide===!!c.hideContentsFront) return;
+        if(subjEl) c.subject=subjEl.value.trim();
         c.hideContentsFront=hide;
         _bbPaintContentsFront(c);
         _bbSaveLocal(_bbCardsList());
