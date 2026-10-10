@@ -803,6 +803,30 @@
         var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').eq('cluster_id',rootId).limit(1);
         if(existing.error) return {id:null, error:'Select failed: '+existing.error.message};
         if(existing.data && existing.data.length) return {id:existing.data[0].id, error:null};
+        /* Oct 10 2026 -- STOP RE-SEEDING. Larry's real Wish Tank now lives under
+           PERSONAL (one tree), not directly under MASTER, so the lookup above
+           found nothing and this function silently inserted a fresh, empty
+           "Wish Tank" under MASTER every time idea capture started. Before
+           ever creating one, look one level down: a Wish Tank under any child
+           header of the root (PERSONAL first), then any other Wish Tank this
+           traveler already owns. Only when the traveler owns no Wish Tank at
+           all is a new one created. */
+        var kids=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',rootId);
+        if(!kids.error && kids.data && kids.data.length){
+          kids.data.sort(function(a,b){ return (a.text_content==='PERSONAL'?0:1)-(b.text_content==='PERSONAL'?0:1); });
+          var kidIds=kids.data.map(function(k){return k.id;});
+          var nested=await sb.from('ideas').select('id,cluster_id,opens_as_sea,sort_order').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').in('cluster_id',kidIds);
+          if(!nested.error && nested.data && nested.data.length){
+            nested.data.sort(function(a,b){
+              var pa=kidIds.indexOf(a.cluster_id), pb=kidIds.indexOf(b.cluster_id);
+              if(pa!==pb) return pa-pb;
+              return (b.opens_as_sea?1:0)-(a.opens_as_sea?1:0);
+            });
+            return {id:nested.data[0].id, error:null};
+          }
+        }
+        var anyWt=await sb.from('ideas').select('id,opens_as_sea').eq('user_id',u.id).eq('content_type','header').eq('text_content','Wish Tank').order('opens_as_sea',{ascending:false}).limit(1);
+        if(!anyWt.error && anyWt.data && anyWt.data.length) return {id:anyWt.data[0].id, error:null};
         var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Wish Tank',cluster_id:rootId,created_at:new Date().toISOString()}).select().single();
         if(ins.error || !ins.data) return {id:null, error:'Insert failed: '+(ins.error?ins.error.message:'no data returned')};
         var wishTankId=ins.data.id;
