@@ -68,6 +68,10 @@
     if (_sboardRtPendingRender) { _sboardRtPendingRender = false; _sboardRtSafeRefresh(); }
   });
   function _sboardApplyRemoteIdea(evt, row, oldRow){
+    // Oct 10 2026 (one tree): Briefing Board tasks will live in the ideas table as content_type 'task'.
+    // Blue Sky shows them only through the task marker, never as cards, so a live change to a task row
+    // is ignored here (every Blue Sky fetch already whitelists image/text/link/header).
+    if ((row && row.content_type === 'task') || (oldRow && oldRow.content_type === 'task')) return;
     if (evt === 'DELETE') {
       if (oldRow) delete _sboardAllRowsById[oldRow.id];
     } else if (row) {
