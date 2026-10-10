@@ -674,7 +674,8 @@
      category color carried by the TEXT (the pastel it already had becomes the lettering; Gems and Principles share purple). A dark
      card in any topic column therefore reads as "library source". Only the header cards themselves change; cards inside them keep
      their normal colors. Nothing is stored -- the look is worked out from where the header sits, so it follows a header that is moved. */
-  var _SB_LIBRARY_CARD_BG='#b48ae6'; /* Oct 10 2026 (Larry: "give it a full blast"): Library = vivid purple with black bold lettering; was slate #737b86 with light text */
+  var _SB_LIBRARY_CARD_BG='#dccdf2'; /* Oct 10 2026 (Larry: "pretty loud"): light purple cards, black bold lettering; the LIBRARY header is a touch deeper */
+  var _SB_LIBRARY_HEAD_BG='#c3aae8';
   var _SB_LIBRARY_TEXT='#111111';
   var _SB_LIBRARY_CONCEPTS_TINT='#d0f2ec'; /* every CONCEPTS header, wherever it sits, looks like the Library's CONCEPTS */
   function _sboardLibraryLighten(hex){ /* pull a pastel 82% toward white so the lettering stays readable on the lighter gray */
@@ -705,7 +706,7 @@
       if(String(headerRow.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
       var parent=headerRow.cluster_id && typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById[headerRow.cluster_id] : null;
       if(parent && parent.cluster_id) return null; /* only the top-level (MASTER) LIBRARY, not a look-alike deeper down */
-      return {bg:_SB_LIBRARY_CARD_BG, fg:_SB_LIBRARY_TEXT};
+      return {bg:_SB_LIBRARY_HEAD_BG, fg:_SB_LIBRARY_TEXT};
     }catch(e){ return null; }
   }
 
