@@ -1917,7 +1917,7 @@
         var _sboardFetchPageSize=1000;
         var _sboardFetchFrom=0;
         while(true){
-          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,idea_text,library_shared,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front,library_access,front_hidden,opens_as_sea')
+          var pageRes=await _sb.from('ideas').select('id,created_at,user_id,content_type,image_url,text_content,idea_text,library_shared,cluster_id,heart_count,notes,sort_order,color,locked,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,track_on_briefing_board,adds_notes,adds_links,adds_related,adds_flags,storyboard_kind,source_project_id,board_type,org_name,logo_url,logo_w,logo_h,hide_primary_badge,show_primary_badge,priority,hide_priority_front,hide_all_initials,subject,hide_contents_front,show_order_front,library_access,front_hidden,opens_as_sea,concept_group')
             .in('content_type',['image','text','link','header'])
             .order('created_at',{ascending:true})
             .range(_sboardFetchFrom, _sboardFetchFrom+_sboardFetchPageSize-1);
@@ -1935,6 +1935,9 @@
           _sboardFetchFrom+=_sboardFetchPageSize;
         }
         _sboardAllRowsById={}; _freshRows.forEach(function(r){ _sboardAllRowsById[r.id]=r; });
+        // Oct 10 2026 (Larry: the LIBRARY is a filter, not a place): in the read-only Library view only, concepts that live under
+        // their home topics are shown back under CONCEPTS, grouped by their concept_group tag. In-memory only; nothing is written.
+        try{ if(window.T2TLibraryView && T2TLibraryView.overlay) T2TLibraryView.overlay(_sboardAllRowsById); }catch(e){ console.warn('library overlay failed', e); }
         try{ document.body.classList.toggle('fg-readonly', _sboardIsReadOnly()); }catch(e){}
         _sboardCacheReady=true;
       }

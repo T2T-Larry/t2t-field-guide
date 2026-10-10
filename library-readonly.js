@@ -121,6 +121,24 @@
     }
   }
 
+  /* Oct 10 2026 (Larry: "the LIBRARY is a filter"). Concepts carry a concept_group tag (PEOPLE, PLAN, VALUES ...) and may live
+     under their home topics (CAST, TOOL SHED, T2T ...). In the Library view only, every tagged row whose parent is missing or is
+     not itself a concept (that is, the top of a concept group) is shown as a child of the CONCEPTS root, so a member sees the same
+     groups as before no matter where the rows really sit. Deeper rows keep their real parents, so each group's own structure is
+     unchanged. This edits the in-memory row cache only; nothing is written to the database. */
+  function overlay(rowsById){
+    var S = window.T2TShared;
+    if (!S || !S.libraryRootId || !rowsById) return;
+    var root = S.libraryRootId;
+    Object.keys(rowsById).forEach(function(id){
+      var r = rowsById[id];
+      if (!r || id === root || !r.concept_group) return;
+      var p = r.cluster_id ? rowsById[r.cluster_id] : null;
+      if (p && p.concept_group) return;          /* nested inside another concept: keeps its real parent */
+      if (r.cluster_id !== root) r.cluster_id = root;
+    });
+  }
+
   /* No card dragging and no edit shortcuts while the board is read-only. */
   window.addEventListener('dragstart', function(e){
     if (readOnlyNow() && document.getElementById(SCREEN).contains(e.target)) e.preventDefault();
@@ -136,5 +154,5 @@
   }, true);
 
   injectStyle();
-  window.T2TLibraryView = { open: open, showCard: showCard, close: closeCard };
+  window.T2TLibraryView = { open: open, showCard: showCard, close: closeCard, overlay: overlay };
 })();
