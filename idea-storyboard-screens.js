@@ -1682,7 +1682,10 @@
     // -- only landing on a genuinely different board snaps back to the
     // real order.
     if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
-      _sboardAlphaHeaderView=false;
+      // Header order (gear -> Preferences) is remembered per TOPIC too
+      // (header-order.js, Oct 10 2026), so landing on a Topic restores its
+      // saved MY ORDER / A to Z choice instead of always snapping back.
+      _sboardAlphaHeaderView=!!(window.T2THeaderOrder && T2THeaderOrder.isAlpha(T2TShared.currentTopicId));
       // A-Z letter view is remembered per TOPIC (az-toggle.js), so landing on a
       // Topic restores whatever that Topic was last set to.
       _sboardAzLetterView=!!(window.T2TAZ && T2TAZ.isOn(T2TShared.currentTopicId));

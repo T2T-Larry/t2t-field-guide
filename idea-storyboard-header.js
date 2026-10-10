@@ -1515,12 +1515,17 @@
     // ORDER # badge keeps showing its true position the whole time it's
     // active. Number order simply switches that view back off -- also no
     // write, since the real order was never touched to begin with.
+    // Oct 10 2026, Larry: "Parking Lot is always the first header. After that
+    // what if they are in alpha order from left to right?" -- and "yes add it"
+    // when asked whether that is a gear option. Relabeled Header order / My
+    // order / A to Z, remembered per TOPIC, current choice shown lit.
+    var _hoAlphaNow=!!_sboardAlphaHeaderView;
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Sort headers</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">A → Z is just a look -- it never changes anyone\'s ORDER #. Number order always brings back the real arrangement.</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Header order</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Parking Lot is always first. A to Z is just a look -- it never changes anyone\'s ORDER #, and My order always brings back your own arrangement. Remembered for this board.</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-      +'<button class="sc-ov-btn" id="sb-sort-alpha" style="width:100%">A → Z</button>'
-      +'<button class="sc-ov-btn" id="sb-sort-number" style="width:100%">Number order</button>'
+      +'<button class="sc-ov-btn'+(_hoAlphaNow?'':' save')+'" id="sb-sort-number" style="width:100%">My order</button>'
+      +'<button class="sc-ov-btn'+(_hoAlphaNow?' save':'')+'" id="sb-sort-alpha" style="width:100%">A to Z</button>'
       +'</div>'
       +'<button class="sc-ov-btn" id="sb-sort-close" style="width:100%">Cancel</button>'
       +'</div>';
@@ -1533,8 +1538,13 @@
   // No Supabase round trip either way now, so no spinner needed -- this
   // is purely an in-memory view flag plus a re-render, done before the
   // click handler above even returns.
+  // Oct 10 2026: the choice is now remembered per TOPIC (header-order.js --
+  // cache first, Supabase right after), so it survives changing boards and
+  // follows the traveler to other devices. Still display-only: no sort_order
+  // is ever written.
   function _sboardSetAlphaHeaderView(on){
     _sboardAlphaHeaderView=!!on;
+    if(window.T2THeaderOrder) T2THeaderOrder.setAlpha(T2TShared.currentTopicId, !!on);
     renderSeaBoard(true);
   }
 
@@ -1805,7 +1815,7 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Sort headers</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Header order</button>'
         +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-decompose" style="width:100%">📄 Decompose a document</button>'

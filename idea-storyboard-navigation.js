@@ -2055,6 +2055,15 @@
     _sboardSyncAzButton();
     if(typeof renderSeaBoard==='function') renderSeaBoard(true);
   });
+  // Oct 10 2026: same for Header order (header-order.js) -- saved settings that arrive after the
+  // board has drawn (another device changed it, or this one just signed in) redraw it once.
+  window.addEventListener('t2t-header-order-synced', function(){
+    if(!window.T2THeaderOrder) return;
+    var now=!!T2THeaderOrder.isAlpha(T2TShared.currentTopicId);
+    if(now===_sboardAlphaHeaderView) return;
+    _sboardAlphaHeaderView=now;
+    if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+  });
   function _sboardWireAzButton(){
     var btn=document.getElementById('sc-az-btn');
     if(!btn || !window.T2TAZ) return;
