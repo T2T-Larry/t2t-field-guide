@@ -17,7 +17,7 @@
 (function(){
   var AMBER_ASSIGNED='#e0a526';   // task(s) with a PRIMARY
   var AMBER_UNASSIGNED='#bfae86'; // task(s), nobody PRIMARY yet
-  var _byHeader={};               // headerId -> {n, assigned, doing, topPriority}
+  var _byHeader={};               // headerId -> {n, assigned, doing, topPriority, cards:[]}
   var _loaded=false, _loading=null, _lastLoad=0;
   var TTL_MS=60*1000;
 
@@ -29,7 +29,7 @@
     var sb=_sb(); if(!sb) return;
     try{
       var res=await sb.from('briefing_cards')
-        .select('id,project_header_id,col,priority')
+        .select('id,project_header_id,col,priority,task,subject,sort_order')
         .not('project_header_id','is',null)
         .neq('archived',true)
         .is('trashed_at',null)
@@ -46,8 +46,9 @@
       }
       var map={};
       cards.forEach(function(c){
-        var m=map[c.project_header_id]||(map[c.project_header_id]={n:0,assigned:0,doing:0,topPriority:''});
+        var m=map[c.project_header_id]||(map[c.project_header_id]={n:0,assigned:0,doing:0,topPriority:'',cards:[]});
         m.n++;
+        m.cards.push({id:c.id, col:c.col, priority:c.priority||'', text:(c.subject||c.task||'(untitled task)'), order:c.sort_order, primary:!!primaries[c.id]});
         if(primaries[c.id]) m.assigned++;
         if(c.col==='doing') m.doing++;
         if((PRI_RANK[c.priority||'']||0)>(PRI_RANK[m.topPriority]||0)) m.topPriority=c.priority||'';
@@ -87,6 +88,67 @@
     return _loading;
   }
 
+
+  // ---- Popover list (Oct 10 2026, Larry: opening the BB was confusing -- back
+  // landed on the wrong Blue Sky board. Now the marker just LISTS the tasks, each with
+  // a flag for the BB column it sits in; clicking anywhere outside closes it and you
+  // are still on the board you started from. Nothing navigates.)
+  var COL_FLAG={ 'new':['NEW','#6b7a8d'], 'do-h':['H','#c0392b'], 'do-m':['M','#d4880f'], 'do-l':['L','#2e8b57'],
+                 'doing':['DOING','#2a6fb0'], 'hangups':['HANG-UP','#8e44ad'], 'done':['DONE','#555'] };
+  var _pop=null, _popFor=null, _offDown=null, _offKey=null;
+
+  function _closePopover(){
+    if(_pop && _pop.parentNode) _pop.parentNode.removeChild(_pop);
+    _pop=null; _popFor=null;
+    if(_offDown){ document.removeEventListener('mousedown', _offDown, true); _offDown=null; }
+    if(_offKey){ document.removeEventListener('keydown', _offKey, true); _offKey=null; }
+  }
+
+  function _esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  function _togglePopover(anchor, headerId){
+    if(_pop && _popFor===headerId){ _closePopover(); return; }
+    _closePopover();
+    var m=_byHeader[headerId];
+    if(!m || !m.n) return;
+    var cards=m.cards.slice().sort(function(a,b){
+      var ra=PRI_RANK[a.priority]||0, rb=PRI_RANK[b.priority]||0;
+      if(ra!==rb) return rb-ra;
+      return (a.order||0)-(b.order||0);
+    });
+    var box=document.createElement('div');
+    box.className='sc-task-popover';
+    box.style.cssText='position:fixed;z-index:100000;width:300px;max-width:calc(100vw - 24px);max-height:60vh;overflow:auto;box-sizing:border-box;background:#fff8e6;color:#2b2200;border:1.5px solid #e0a526;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:8px 10px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1))';
+    var html='<div style="font-weight:700;margin-bottom:6px;color:#7a5a00">'+m.n+(m.n===1?' task':' tasks')+' on this header</div>';
+    cards.forEach(function(c){
+      var f=COL_FLAG[c.col]||[String(c.col||'').toUpperCase(),'#555'];
+      html+='<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(224,165,38,.35)">'
+        +'<span title="Briefing Board column" style="flex:0 0 auto;min-width:44px;text-align:center;font-size:.78em;font-weight:700;color:#fff;background:'+f[1]+';border-radius:3px;padding:2px 4px;margin-top:1px">'+_esc(f[0])+'</span>'
+        +'<span style="flex:1 1 auto;line-height:1.3;word-break:break-word">'+_esc(c.text)+'</span>'
+        +(c.primary?'<span title="Has a PRIMARY" style="flex:0 0 auto;color:#b07d00">\u2605</span>':'')
+        +'</div>';
+    });
+    box.innerHTML=html;
+    document.body.appendChild(box);
+    var r=anchor.getBoundingClientRect();
+    var bw=box.offsetWidth, bh=box.offsetHeight;
+    var left=Math.min(Math.max(12, r.left+r.width/2-bw/2), window.innerWidth-bw-12);
+    var top=r.bottom+6;
+    if(top+bh>window.innerHeight-12) top=Math.max(12, r.top-bh-6);
+    box.style.left=left+'px'; box.style.top=top+'px';
+    _pop=box; _popFor=headerId;
+    // Click anywhere outside (or Esc) closes it. Capture phase + a swallowed click so the
+    // outside click only closes the list and does not also open or drag something beneath.
+    _offDown=function(e){
+      if(_pop && _pop.contains(e.target)) return;
+      if(anchor.contains(e.target)) return; // the marker's own click toggles it
+      _closePopover();
+    };
+    _offKey=function(e){ if(e.key==='Escape'){ e.stopPropagation(); _closePopover(); } };
+    document.addEventListener('mousedown', _offDown, true);
+    document.addEventListener('keydown', _offKey, true);
+  }
+
   function makeTile(headerId, width){
     var el=document.createElement('button');
     el.type='button';
@@ -96,7 +158,7 @@
     el.innerHTML='<span aria-hidden="true">▣</span><span class="tm-label"></span>';
     el.addEventListener('click', function(e){
       e.stopPropagation();
-      if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(headerId);
+      _togglePopover(el, headerId);
     });
     // Paint right away if tasks are already known; otherwise the load below paints it.
     if(_loaded) _paint(el); else refresh();
