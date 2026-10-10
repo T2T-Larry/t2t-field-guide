@@ -676,10 +676,10 @@
      their normal colors. Nothing is stored -- the look is worked out from where the header sits, so it follows a header that is moved. */
   var _SB_LIBRARY_CARD_BG='#737b86'; /* Oct 10 2026: lightened twice, #3b4048 -> #5c646f -> #737b86 (Larry: the dark still shouts) */
   var _SB_LIBRARY_CONCEPTS_TINT='#d0f2ec'; /* every CONCEPTS header, wherever it sits, looks like the Library's CONCEPTS */
-  function _sboardLibraryLighten(hex){ /* pull a pastel 55% toward white so the lettering stays readable on the lighter gray */
+  function _sboardLibraryLighten(hex){ /* pull a pastel 82% toward white so the lettering stays readable on the lighter gray */
     var m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'')); if(!m) return '#f3f0ea';
     var n=parseInt(m[1],16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
-    function mix(c){ return Math.round(c+(255-c)*0.55); }
+    function mix(c){ return Math.round(c+(255-c)*0.82); }
     return '#'+[mix(r),mix(g),mix(b)].map(function(c){ return ('0'+c.toString(16)).slice(-2); }).join('');
   }
   function _sboardLibraryLook(headerRow){
@@ -739,7 +739,7 @@
     // a long single word (a Subber name) shrinking further beats it
     // wrapping in this small, fixed, overflow-hidden card.
     var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
-    p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:'+(_libLook?_libLook.fg:'#1a3a5c')+';white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
+    p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:'+(_libLook?_libLook.fg:'#1a3a5c')+';'+(_libLook?'font-weight:700;':'')+'white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     _sboardPaintHeaderFace(p, headerRow, headerRow.text_content||'(untitled)', Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
