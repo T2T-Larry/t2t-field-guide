@@ -674,7 +674,7 @@
      category color carried by the TEXT (the pastel it already had becomes the lettering; Gems and Principles share purple). A dark
      card in any topic column therefore reads as "library source". Only the header cards themselves change; cards inside them keep
      their normal colors. Nothing is stored -- the look is worked out from where the header sits, so it follows a header that is moved. */
-  var _SB_LIBRARY_CARD_BG='#3b4048';
+  var _SB_LIBRARY_CARD_BG='#5c646f'; /* Oct 10 2026: lightened from #3b4048 (Larry: too dark) */
   function _sboardLibraryLook(headerRow){
     try{
       if(!headerRow || !headerRow.cluster_id || typeof _sboardAllRowsById==='undefined') return null;
@@ -686,6 +686,17 @@
       var tint=headerRow.color||'#ffffff';
       if(String(tint).toLowerCase()==='#fff'||String(tint).toLowerCase()==='#ffffff') tint='#f3f0ea';
       return {bg:_SB_LIBRARY_CARD_BG, fg:tint};
+    }catch(e){ return null; }
+  }
+
+  /* The LIBRARY header itself (the column pill) wears the same dark gray, with its own pink as the lettering, so the column and its cards match. */
+  function _sboardLibraryRootLook(headerRow){
+    try{
+      if(!headerRow || headerRow.content_type!=='header') return null;
+      if(String(headerRow.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
+      var parent=headerRow.cluster_id && typeof _sboardAllRowsById!=='undefined' ? _sboardAllRowsById[headerRow.cluster_id] : null;
+      if(parent && parent.cluster_id) return null; /* only the top-level (MASTER) LIBRARY, not a look-alike deeper down */
+      return {bg:_SB_LIBRARY_CARD_BG, fg:headerRow.color||'#f7d9e4'};
     }catch(e){ return null; }
   }
 
