@@ -2124,6 +2124,10 @@
       _sboardBackfillSortOrder(orderedTop);
       _sboardTopLevelOrder=orderedTop.map(function(h){ return h.id; });
       var displayTop=_sboardAlphaHeaderView ? orderedTop.slice().sort(_sboardByAlpha) : orderedTop;
+      if(_sboardAlphaHeaderView){ // Oct 10 2026 (Larry): LIBRARY is the last header in A to Z, in spite of alpha order (display only)
+        var _libTop=displayTop.filter(function(h){ return String(h.text_content||'').trim().toUpperCase()==='LIBRARY'; });
+        if(_libTop.length) displayTop=displayTop.filter(function(h){ return _libTop.indexOf(h)===-1; }).concat(_libTop);
+      }
 
       // Tile/column sizing, scaled by the text-size boost, Aug 11 2026 --
       // Larry: bigger text should mean bigger cards here too, not text
@@ -2791,7 +2795,11 @@
           var _pinLastId=miscRow?String(miscRow.id):null;
           var _pinFirst=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))!==-1; });
           var _pinLast=mergedRow.filter(function(h){ return _pinLastId && String(h.id)===_pinLastId; });
+          // Oct 10 2026 (Larry): in A to Z the LIBRARY header is the last header -- the reference shelf closes the board, the way
+          // Parking Lot opens it -- "in spite of alpha order". Display only; MY ORDER is untouched (the traveler's own order stands).
           var _middleAlpha=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))===-1 && !(_pinLastId && String(h.id)===_pinLastId); }).sort(_sboardByAlpha);
+          var _libLast=_middleAlpha.filter(function(h){ return String(h.text_content||'').trim().toUpperCase()==='LIBRARY'; });
+          if(_libLast.length) _middleAlpha=_middleAlpha.filter(function(h){ return _libLast.indexOf(h)===-1; }).concat(_libLast);
           displayMergedRow=_pinFirst.concat(_middleAlpha).concat(_pinLast);
         }
 
