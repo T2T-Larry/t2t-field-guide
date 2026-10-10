@@ -1193,7 +1193,8 @@
     (function(){
       var PRI_BASE_LOCAL={H:'H',HH:'H',M:'M',MH:'M',L:'L',ML:'L'};
       function nextPri(cur, base){
-        if(typeof _bbNextPriority==='function') return _bbNextPriority(cur, base);
+        var _bbNext=(window.T2TBriefingBoard && window.T2TBriefingBoard.nextPriority) ? window.T2TBriefingBoard.nextPriority(cur, base) : undefined;
+        if(_bbNext!==undefined) return _bbNext;
         var seq={H:['H','HH',''],M:['M','MH',''],L:['L','ML','']}[base];
         var idx=PRI_BASE_LOCAL[cur]===base ? seq.indexOf(cur) : -1;
         return idx===-1 ? seq[0] : seq[(idx+1)%seq.length];
@@ -1614,7 +1615,7 @@
     // With no PRIMARY of its own, the button now names the inherited one, dimmed, "from above".
     // Who actually resolves as PRIMARY is untouched -- this only reads the same resolver the badge uses.
     async function paint(){
-      await _bbPaintPrimaryTrigger(trigger, currentUid);
+      await window.T2TBriefingBoard.paintPrimaryTrigger(trigger, currentUid);
       trigger.style.opacity='';
       if(currentUid) return;
       try{
@@ -1653,7 +1654,7 @@
 
     function openMenu(){
       var projectRow=(typeof _sboardCurrentProjectRow==='function') ? _sboardCurrentProjectRow() : null;
-      _bbOpenCastPickMenu(menu, trigger, {
+      window.T2TBriefingBoard.openCastPickMenu(menu, trigger, {
         level: projectRow ? projectRow.id : null,   // project-level Cast, same ambient lookup the New Card popup uses
         selectedUid: currentUid,
         frontEye: {

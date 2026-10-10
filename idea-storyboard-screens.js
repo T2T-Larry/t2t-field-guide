@@ -2471,6 +2471,11 @@
             if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }
             else if(_sbAllowedDirectIds[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, straight, headerRow.id, SUBBER_H)); }
           });
+          // Oct 10 2026 (MERGE BB INTO ONE TREE, step 2): read-only marker for any
+          // Briefing Board tasks filed under this header. Hidden unless there are some.
+          if(!isReserved && window.T2TTaskMarker){
+            scroll.appendChild(window.T2TTaskMarker.makeTile(headerRow.id, HEADER_W));
+          }
           // [+] under each header adds a new subber directly here — mirrors
           // the [+] after MISC for headers. MISC included now too (any
           // idea can land there, on-topic or not); Purpose joined them

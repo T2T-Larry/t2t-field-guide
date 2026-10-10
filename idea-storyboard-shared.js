@@ -38,14 +38,11 @@
   // saved value; this is a temporary board-wide OVERRIDE for scanning --
   // turning it off returns every card to whatever its own per-card
   // setting already was, nothing is lost.
-  var _sboardSubjectOnlyView = (function(){
-    try { return localStorage.getItem('t2t-subject-only-view')==='1'; } catch(e){ return false; }
-  })();
-  function _sboardIsSubjectOnlyView(){ return _sboardSubjectOnlyView; }
-  function _sboardSetSubjectOnlyView(on){
-    _sboardSubjectOnlyView = !!on;
-    try { localStorage.setItem('t2t-subject-only-view', _sboardSubjectOnlyView?'1':'0'); } catch(e){}
-  }
+  // Oct 10 2026: the flag itself moved to subject-only-view.js (window.T2TViewPrefs),
+  // a public module shared with the Briefing Board. These two names stay as thin
+  // wrappers so the Storyboard/Session callers below keep working unchanged.
+  function _sboardIsSubjectOnlyView(){ return window.T2TViewPrefs.isSubjectOnly(); }
+  function _sboardSetSubjectOnlyView(on){ window.T2TViewPrefs.setSubjectOnly(on); }
 
   // Idea Storyboards role-based shortcuts (Sept 2 2026) -- resolved once
   // per real render (see renderSeaBoard) and read again on a cache-only

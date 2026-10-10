@@ -436,31 +436,15 @@
     var subject=_icSubjEl?_icSubjEl.value.trim():'';
     // A Subject alone is enough to save (Larry, Sept 30 2026).
     if(!rawText && !subject) return;
-    if(typeof _bbCardsList!=='function' || typeof _bbSaveLocal!=='function' || typeof _bbUUID!=='function'){
+    if(!window.T2TBriefingBoard || !window.T2TBriefingBoard.isLoaded || !window.T2TBriefingBoard.isLoaded()){
       console.error('NEW card (BB): Briefing Board save functions are not loaded on this page.');
       return;
     }
-    var cards=_bbCardsList();
-    var maxOrder=cards.filter(function(c){ return c.col==='new' && typeof c.sortOrder==='number'; })
-      .reduce(function(m,c){ return Math.max(m,c.sortOrder); }, -1);
-    var newCardId=_bbUUID();
-    var projectHeaderId=_icBoardId||null;
-    cards.push({id:newCardId, col:'new', sortOrder:maxOrder+1, assigned:(typeof _bbToday==='function'?_bbToday():''),
-      task:text, subject:subject, person:(typeof _bbCurrentBoardDefaultAssignee==='function'?_bbCurrentBoardDefaultAssignee():''),
-      due:'', budget:'', keys:[], priority:'', verified:false, pro:false, grow:false,
-      reviewedBy:(typeof REVIEWERS!=='undefined'?REVIEWERS[0]:''), archived:false, projectHeaderId:projectHeaderId});
-    var sync=_bbSaveLocal(cards);
-    if(projectHeaderId && typeof _bbStampCardProject==='function'){
-      if(sync && sync.then) sync.then(function(){ return _bbStampCardProject(newCardId, projectHeaderId); })
-        .catch(function(e){ console.error('NEW card (BB): could not tag project', e); });
-      else _bbStampCardProject(newCardId, projectHeaderId);
-    }
-    if(typeof _bbAutoAssignToActiveFilter==='function'){
-      if(sync && sync.then) sync.then(function(){ return _bbAutoAssignToActiveFilter(newCardId); })
-        .catch(function(e){ console.error('NEW card (BB): could not auto-assign', e); });
-      else _bbAutoAssignToActiveFilter(newCardId);
-    }
-    if(typeof renderBoard==='function') renderBoard();
+    // Oct 10 2026: goes through the Briefing Board's public front door
+    // (briefing-board-public-api.js) instead of its private _bb* helpers.
+    var created=window.T2TBriefingBoard.createNewCard({task:text, subject:subject, projectHeaderId:_icBoardId||null});
+    if(!created) return;
+    var newCardId=created.id;
     var row={id:newCardId};
     // Only the Briefing Board's own NEW door passes an onSaved that
     // expects a BB card back (today it passes none at all -- see
@@ -1150,11 +1134,11 @@
       // skin), everyone who holds a role on any card, and a (+) that
       // finds any T2T member. Nothing is written until this entry saves
       // (see _icMaybeApplyCast) -- the pick is just armed here.
-      if(typeof _bbOpenCastPickMenu==='function'){
+      if(window.T2TBriefingBoard && window.T2TBriefingBoard.hasCastPickMenu && window.T2TBriefingBoard.hasCastPickMenu()){
         var bbMenu=document.createElement('div');
         bbMenu.id='isx-p-cast-menu';
         document.body.appendChild(bbMenu);
-        _bbOpenCastPickMenu(bbMenu, anchorEl, {
+        window.T2TBriefingBoard.openCastPickMenu(bbMenu, anchorEl, {
           level:_icBoardId||null,
           selectedUid:_icCastPersonId,
           onPick:function(person){ onPick({id:person.user_id, label:person.name, fromAbove:!!person.fromAbove}); },

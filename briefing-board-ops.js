@@ -972,7 +972,7 @@
         // Sept 27 2026 -- universal Subject-only view (Utility button)
         // overrides each card's own per-card "Show contents" choice while
         // on. Shared flag with Storyboard/Session -- idea-storyboard-shared.js.
-        var _bbShowTask=!_bbSubject || (!c.hideContentsFront && !_sboardIsSubjectOnlyView());
+        var _bbShowTask=!_bbSubject || (!c.hideContentsFront && !window.T2TViewPrefs.isSubjectOnly());
         var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==_bbHeadline)
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
@@ -1733,10 +1733,10 @@
       // Sept 27 2026 -- universal Subject-only view (shared with
       // Storyboard/Session, idea-storyboard-shared.js).
       var subjBtns=document.querySelectorAll('#bb-settings-body [data-subj-on]');
-      subjBtns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute('data-subj-on')==='1')===_sboardIsSubjectOnlyView()); });
+      subjBtns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute('data-subj-on')==='1')===window.T2TViewPrefs.isSubjectOnly()); });
       subjBtns.forEach(function(b){ b.addEventListener('click', function(){
         var on=(b.getAttribute('data-subj-on')==='1');
-        _sboardSetSubjectOnlyView(on);
+        window.T2TViewPrefs.setSubjectOnly(on);
         subjBtns.forEach(function(bb){ bb.classList.toggle('bb-flag-active', bb===b); });
         renderBoard();
       }); });
