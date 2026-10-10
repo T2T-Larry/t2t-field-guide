@@ -136,6 +136,7 @@
       if (m.tip) row.title = m.tip;
       row.setAttribute('data-find', (String(m.name || '') + ' ' + String(m.email || '')).toLowerCase());
       row.innerHTML = '<input type="checkbox" class="' + p + '-view-person-chk"' + (checked ? ' checked' : '') + '> <span>' + X(label(m)) + '</span>'
+        + (m.count != null ? ' <span class="' + p + '-view-count" style="opacity:.65;font-size:.85em">(' + X(m.count) + ')</span>' : '')
         + (m.fromAbove ? ' <span class="cs-parent-star" style="color:#c9a227;font-size:.85em">★</span>' : '');
       var chk = row.querySelector('input');
       chk.addEventListener('change', function(){ onChange(chk); });

@@ -228,13 +228,29 @@
     try{ sessionStorage.setItem('bbViewFilterIds', JSON.stringify(_bbPersonFilterIds||[])); }catch(e){}
   }
   var _bbFilterMatchCardIds = null;
+  // '__unassigned__' is a pseudo-person in the TEAM list (Oct 10 2026, Larry): shows the cards that
+  // nobody holds PRIMARY on, so you can see who has how many and decide who should take one.
+  var BB_UNASSIGNED_ID='__unassigned__';
   async function _bbRecomputeFilterMatches(){
     if(!_bbPersonFilterIds || !_bbPersonFilterIds.length){ _bbFilterMatchCardIds=null; return; }
     var sb=T().sb; if(!sb){ _bbFilterMatchCardIds=new Set(); return; }
     try{
-      var res=await sb.from('card_roles').select('card_id').eq('card_type','briefing_card').in('user_id', _bbPersonFilterIds);
+      var wantUn=_bbPersonFilterIds.indexOf(BB_UNASSIGNED_ID)>=0;
+      var uids=_bbPersonFilterIds.filter(function(x){ return x!==BB_UNASSIGNED_ID; });
       var set=new Set();
-      (res.data||[]).forEach(function(r){ set.add(String(r.card_id)); });
+      if(uids.length){
+        var res=await sb.from('card_roles').select('card_id').eq('card_type','briefing_card').in('user_id', uids);
+        (res.data||[]).forEach(function(r){ set.add(String(r.card_id)); });
+      }
+      if(wantUn){
+        var lvl=_bbLevelCards().map(function(c){ return c.id; }).filter(Boolean).map(String);
+        var held={};
+        for(var i=0;i<lvl.length;i+=100){
+          var rr=await sb.from('card_roles').select('card_id').eq('card_type','briefing_card').eq('role','primary').in('card_id', lvl.slice(i,i+100));
+          (rr.data||[]).forEach(function(r){ held[String(r.card_id)]=true; });
+        }
+        lvl.forEach(function(id){ if(!held[id]) set.add(id); });
+      }
       _bbFilterMatchCardIds=set;
     }catch(e){ _bbFilterMatchCardIds=new Set(); }
   }
@@ -266,7 +282,7 @@
   // single-filter-only reasoning as the Idea board fix.
   async function _bbAutoAssignToActiveFilter(cardId){
     try{
-      if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1) return;
+      if(!_bbPersonFilterIds || _bbPersonFilterIds.length!==1 || _bbPersonFilterIds[0]===BB_UNASSIGNED_ID) return;
       var sb=T().sb; if(!sb) return;
       var me=(await sb.auth.getUser()).data.user;
       var ins=await sb.from('card_roles').insert({card_type:'briefing_card', card_id:cardId, role:'primary', is_primary:true, user_id:_bbPersonFilterIds[0], added_by: me?me.id:null});

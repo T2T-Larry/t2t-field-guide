@@ -1951,6 +1951,7 @@
       label='everyone';
     } else {
       var pool=(_bbViewMenuRowsCache&&_bbViewMenuRowsCache.length)?_bbViewMenuRowsCache:_bbAllRosterRows();
+      if(ids.length===1 && ids[0]===BB_UNASSIGNED_ID){ pool=[{user_id:BB_UNASSIGNED_ID,name:'unassigned tasks'}]; }
       var row=ids.length===1 ? pool.filter(function(m){ return String(m.user_id)===String(ids[0]); })[0] : null;
       label=ids.length===1 ? ((row&&(row.name||row.email))||'1 person') : ids.length+' people';
     }
@@ -1967,22 +1968,36 @@
     var rows=_bbAllRosterRows().slice();
     var sb=T().sb; if(!sb || typeof _bbLevelCards!=='function') return rows;
     var have={}; rows.forEach(function(r){ have[String(r.user_id)]=true; });
-    var ids=_bbLevelCards().map(function(c){ return c.id; }).filter(Boolean);
+    var level=_bbLevelCards().filter(function(c){ return c.id; });
+    var ids=level.map(function(c){ return String(c.id); });
+    var openIds={}; level.forEach(function(c){ if(c.col!=='done') openIds[String(c.id)]=true; });
     if(!ids.length) return rows;
     try{
-      var res=await sb.from('card_roles').select('user_id').eq('card_type','briefing_card').in('card_id', ids);
-      var seen={}, extraIds=[];
-      (res.data||[]).forEach(function(r){
-        var uid=String(r.user_id);
+      // Who holds what on this level: one card_roles read (chunked for URL length).
+      var roles=[];
+      for(var i=0;i<ids.length;i+=100){
+        var res=await sb.from('card_roles').select('card_id,user_id,role').eq('card_type','briefing_card').in('card_id', ids.slice(i,i+100));
+        if(res.data) roles=roles.concat(res.data);
+      }
+      var seen={}, extraIds=[], perUser={}, primaryCard={};
+      roles.forEach(function(r){
+        var uid=String(r.user_id), cid=String(r.card_id);
+        if(openIds[cid]){ (perUser[uid]||(perUser[uid]={}))[cid]=true; }
+        if(r.role==='primary') primaryCard[cid]=true;
         if(have[uid] || seen[uid]) return;
         seen[uid]=true; extraIds.push(uid);
       });
-      if(!extraIds.length) return rows;
-      var pool=await _bbFetchAllMembers();
-      extraIds.forEach(function(uid){
-        var m=(pool||[]).filter(function(p){ return String(p.user_id)===uid; })[0];
-        rows.push({user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', phone:m?(m.phone||''):'', isOwner:false, role:null, can_facilitate:false, is_facilitator:false, notes:'', assignedOnly:true});
-      });
+      if(extraIds.length){
+        var pool=await _bbFetchAllMembers();
+        extraIds.forEach(function(uid){
+          var m=(pool||[]).filter(function(p){ return String(p.user_id)===uid; })[0];
+          rows.push({user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', phone:m?(m.phone||''):'', isOwner:false, role:null, can_facilitate:false, is_facilitator:false, notes:'', assignedOnly:true});
+        });
+      }
+      // Open-task count beside each name, and an Unassigned row first (Oct 10 2026, Larry).
+      rows.forEach(function(r){ r.count=Object.keys(perUser[String(r.user_id)]||{}).length; r.tip=r.count+' open task'+(r.count===1?'':'s')+' (not Done)'; });
+      var unCount=Object.keys(openIds).filter(function(cid){ return !primaryCard[cid]; }).length;
+      rows.unshift({user_id:BB_UNASSIGNED_ID, name:'Unassigned', email:'', count:unCount, tip:unCount+' open task'+(unCount===1?'':'s')+' with nobody PRIMARY (not Done)'});
       return rows;
     }catch(e){ return rows; }
   }

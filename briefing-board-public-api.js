@@ -41,7 +41,7 @@
       // new card is for that person -- otherwise the filter would hide it (no PRIMARY row yet).
       try{
         var f=JSON.parse(sessionStorage.getItem('bbViewFilterIds')||'[]');
-        if(Array.isArray(f) && f.length===1){
+        if(Array.isArray(f) && f.length===1 && f[0]!=='__unassigned__'){
           await sb.from('card_roles').insert({card_type:'briefing_card', card_id:card.id, role:'primary', is_primary:true, user_id:f[0], added_by:u.id});
         }
       }catch(e){ console.warn('NEW card (BB): could not assign to the active VIEW filter', e); }
