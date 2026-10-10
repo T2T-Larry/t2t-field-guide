@@ -37,6 +37,14 @@
                priority:'', reviewed_by:'Larry', archived:false, sort_order:next, project_header_id:card.projectHeaderId||null};
       var ins=await sb.from('briefing_cards').insert(row);
       if(ins.error){ console.error('NEW card (BB): direct save failed', ins.error); return false; }
+      // Same rule as the BB's own add: if the BB's VIEW is filtered to exactly one person, the
+      // new card is for that person -- otherwise the filter would hide it (no PRIMARY row yet).
+      try{
+        var f=JSON.parse(sessionStorage.getItem('bbViewFilterIds')||'[]');
+        if(Array.isArray(f) && f.length===1){
+          await sb.from('card_roles').insert({card_type:'briefing_card', card_id:card.id, role:'primary', is_primary:true, user_id:f[0], added_by:u.id});
+        }
+      }catch(e){ console.warn('NEW card (BB): could not assign to the active VIEW filter', e); }
       return true;
     }catch(e){ console.error('NEW card (BB): direct save failed', e); return false; }
   }

@@ -36,19 +36,27 @@
         .neq('col','done');
       if(res.error || !res.data) return;
       var cards=res.data, ids=cards.map(function(c){ return c.id; });
-      var primaries={};
+      var primaries={}, initialsByUid={};
       // card_roles in chunks (URL length) -- who holds PRIMARY on each task
       for(var i=0;i<ids.length;i+=100){
         var chunk=ids.slice(i,i+100);
-        var r=await sb.from('card_roles').select('card_id')
+        var r=await sb.from('card_roles').select('card_id,user_id')
           .eq('card_type','briefing_card').eq('role','primary').in('card_id',chunk);
-        if(!r.error && r.data) r.data.forEach(function(x){ primaries[x.card_id]=true; });
+        if(!r.error && r.data) r.data.forEach(function(x){ if(!primaries[x.card_id]) primaries[x.card_id]=x.user_id||true; });
+      }
+      // Initials of each assigned person (same people_by_ids lookup the card faces use)
+      var uids=[]; Object.keys(primaries).forEach(function(k){ var u=primaries[k]; if(u!==true && uids.indexOf(u)<0) uids.push(u); });
+      if(uids.length){
+        try{
+          var pr=await sb.rpc('people_by_ids',{p_ids:uids});
+          if(!pr.error && pr.data) pr.data.forEach(function(m){ initialsByUid[m.user_id]=(m.initials||'').toUpperCase(); });
+        }catch(e){}
       }
       var map={};
       cards.forEach(function(c){
         var m=map[c.project_header_id]||(map[c.project_header_id]={n:0,assigned:0,doing:0,topPriority:'',cards:[]});
         m.n++;
-        m.cards.push({id:c.id, col:c.col, priority:c.priority||'', text:(c.subject||c.task||'(untitled task)'), order:c.sort_order, primary:!!primaries[c.id]});
+        m.cards.push({id:c.id, col:c.col, priority:c.priority||'', text:(c.subject||c.task||'(untitled task)'), order:c.sort_order, primary:!!primaries[c.id], initials:(primaries[c.id]&&primaries[c.id]!==true)?(initialsByUid[primaries[c.id]]||''):''});
         if(primaries[c.id]) m.assigned++;
         if(c.col==='doing') m.doing++;
         if((PRI_RANK[c.priority||'']||0)>(PRI_RANK[m.topPriority]||0)) m.topPriority=c.priority||'';
@@ -125,7 +133,7 @@
       html+='<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid rgba(224,165,38,.35)">'
         +'<span title="Briefing Board column" style="flex:0 0 auto;min-width:44px;text-align:center;font-size:.78em;font-weight:700;color:#fff;background:'+f[1]+';border-radius:3px;padding:2px 4px;margin-top:1px">'+_esc(f[0])+'</span>'
         +'<span style="flex:1 1 auto;line-height:1.3;word-break:break-word">'+_esc(c.text)+'</span>'
-        +(c.primary?'<span title="Has a PRIMARY" style="flex:0 0 auto;color:#b07d00">\u2605</span>':'')
+        +(c.primary&&c.initials?'<span title="Assigned to" style="flex:0 0 auto;min-width:22px;text-align:center;font-size:.78em;font-weight:700;color:#3b2a00;background:#f3d27a;border-radius:11px;padding:2px 5px;margin-top:1px">'+_esc(c.initials)+'</span>':'')
         +'</div>';
     });
     box.innerHTML=html;
