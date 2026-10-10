@@ -663,7 +663,7 @@
           });
           var migrationUid=await _bbCurrentUserId();
           if(remappedKeys.length && migrationUid) await sb.from('custom_keys').upsert(remappedKeys.map(function(k){ return {id:k.id, user_id:migrationUid, shape:k.shape, color:k.color, meaning:k.meaning}; }));
-          if(remappedCards.length) await sb.from('briefing_cards').upsert(remappedCards.map(function(c){ return _bbCardToRow(c, boardId); }));
+          if(remappedCards.length) await sb.rpc('bb_upsert_cards',{p_rows:remappedCards.map(function(c){ return _bbCardToRow(c, boardId); })});
           try{ sessionStorage.setItem('bbMigratedLegacy','1'); }catch(e2){}
           _bbCards=remappedCards;
           await _bbEnsureKeyLibraryLoaded();

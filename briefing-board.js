@@ -426,6 +426,25 @@ function T(){ return window.T2T; }
     injectBriefingBoardScreens();
     if (T().onRealtimeChange) {
       T().onRealtimeChange('briefing_cards', _bbApplyRemoteCard);
+      // One-tree (Oct 10 2026): MASTER cards now live in the tree, so their
+      // changes arrive on task_fields (partial rows) and other boards' cards
+      // arrive from the renamed legacy table. Both are fed to the same
+      // handler; task_fields events are first turned back into a full card row.
+      T().onRealtimeChange('briefing_cards_legacy', _bbApplyRemoteCard);
+      T().onRealtimeChange('task_fields', async function(evt, row, oldRow){
+        try{
+          if(evt==='DELETE'){
+            var gone=oldRow && oldRow.idea_id;
+            if(!gone) return;
+            var inList=_bbCardsList().some(function(c){ return c.id===gone; });
+            _bbApplyRemoteCard('DELETE', null, {id:gone, board_id: inList ? _bbCurrentBoardId : null});
+            return;
+          }
+          var id=row && row.idea_id; if(!id) return;
+          var r=await T().sb.from('briefing_cards').select('*').eq('id',id).maybeSingle();
+          if(r && r.data) _bbApplyRemoteCard(evt, r.data, null);
+        }catch(e){ console.error('Briefing Board: task_fields live update failed', e); }
+      });
       T().onRealtimeChange('briefing_checklist_items', _bbApplyRemoteChecklist);
       T().onRealtimeChange('custom_keys', _bbApplyRemoteKey);
     }

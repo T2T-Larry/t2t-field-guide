@@ -272,11 +272,19 @@
       // board's own name via the existing board_id foreign key, so
       // matches can be grouped and labeled by their real board instead
       // of a generic "the Briefing Board" bucket.
-      var cardRes=await sb.from('briefing_cards').select('id,board_id,task,briefing_boards!board_id(name)')
+      // One-tree change (Oct 10 2026): briefing_cards is a view over the tree,
+      // which can't embed briefing_boards -- board names come from a second query.
+      var cardRes=await sb.from('briefing_cards').select('id,board_id,task')
         .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
         .eq('archived',false).limit(200);
       if(cardRes.error) throw new Error(cardRes.error.message);
       var cardRows=cardRes.data||[];
+      var _bIds=[]; cardRows.forEach(function(r){ if(r.board_id && _bIds.indexOf(r.board_id)===-1) _bIds.push(r.board_id); });
+      if(_bIds.length){
+        var _bRes=await sb.from('briefing_boards').select('id,name').in('id',_bIds);
+        var _bName={}; ((_bRes && _bRes.data)||[]).forEach(function(b){ _bName[b.id]=b.name; });
+        cardRows.forEach(function(r){ r.briefing_boards={name:_bName[r.board_id]||''}; });
+      }
 
       var ideaRows=[];
       try{

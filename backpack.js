@@ -124,12 +124,25 @@
   }
   var _rtChannel = null, _rtStarted = false;
   var LIVE_SYNC_TABLES = ['ideas','briefing_cards','briefing_checklist_items','briefing_card_links','custom_keys','gems'];
-  function startRealtimeSync(){
+  // One-tree (Oct 10 2026): once briefing_cards becomes a view over the tree it
+  // can't be listened to; the cards then arrive on task_fields (MASTER) and
+  // briefing_cards_legacy (every other board). bb_cards_is_view() says which.
+  async function _rtTables(){
+    try{
+      var r = await _sb.rpc('bb_cards_is_view');
+      if (r && r.data === true) {
+        return LIVE_SYNC_TABLES.filter(function(t){ return t !== 'briefing_cards'; }).concat(['task_fields','briefing_cards_legacy']);
+      }
+    }catch(e){}
+    return LIVE_SYNC_TABLES;
+  }
+  async function startRealtimeSync(){
     if (_rtStarted || !_member.user_id) return;
     _rtStarted = true;
     try {
+      var tables = await _rtTables();
       var ch = _sb.channel('t2t-live-sync');
-      LIVE_SYNC_TABLES.forEach(function(t){
+      tables.forEach(function(t){
         ch.on('postgres_changes', { event:'*', schema:'public', table:t }, function(payload){
           _rtFire(t, payload.eventType, payload.new, payload.old);
         });

@@ -1070,8 +1070,19 @@
         // never a generic bucket. Disambiguated !board_id since
         // briefing_cards has a second FK into briefing_boards
         // (shared_to_board_id) that would otherwise make this ambiguous.
-        var cardRes=await _sb.from('briefing_cards').select('id,task,board_id,briefing_boards!board_id(name)').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
-        if(!cardRes.error) cardRows=cardRes.data||[];
+        // One-tree change (Oct 10 2026): briefing_cards is now a view over the
+        // tree, and a view can't embed briefing_boards -- so the board names
+        // are fetched in a second, plain query and attached to each row.
+        var cardRes=await _sb.from('briefing_cards').select('id,task,board_id').or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id).eq('archived',false).limit(200);
+        if(!cardRes.error){
+          cardRows=cardRes.data||[];
+          var _bIds=[]; cardRows.forEach(function(r){ if(r.board_id && _bIds.indexOf(r.board_id)===-1) _bIds.push(r.board_id); });
+          if(_bIds.length){
+            var _bRes=await _sb.from('briefing_boards').select('id,name').in('id',_bIds);
+            var _bName={}; ((_bRes && _bRes.data)||[]).forEach(function(b){ _bName[b.id]=b.name; });
+            cardRows.forEach(function(r){ r.briefing_boards={name:_bName[r.board_id]||''}; });
+          }
+        }
       }catch(e){}
 
       if(!rows.length && !cardRows.length){

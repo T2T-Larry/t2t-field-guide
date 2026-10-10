@@ -1027,7 +1027,7 @@
     try{
       var rows=cards.map(function(c){ return _bbCardToRow(c, _bbCurrentBoardId); });
       if(rows.length){
-        var res=await sb.from('briefing_cards').upsert(rows);
+        var res=await sb.rpc('bb_upsert_cards',{p_rows:rows}); // one-tree: briefing_cards is a view, so no ON CONFLICT upsert
         if(res.error) throw res.error;
       }
       if(deletedIds && deletedIds.length){
