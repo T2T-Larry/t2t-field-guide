@@ -342,7 +342,7 @@
     // locked card can now be picked up and moved like any other.
     tile.draggable=true;
     tile.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(item.id)); });
-    tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+(item.color?';background:'+item.color:'');
+    tile.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;border-radius:0;cursor:pointer;transform:rotate('+rot+'deg);transition:transform .15s'+((_sboardLibraryItemBg(item)||item.color)?';background:'+(_sboardLibraryItemBg(item)||item.color):'');
     tile.addEventListener('mouseenter', function(){ tile.style.transform='rotate(0deg) scale(1.05)'; tile.style.zIndex='10'; });
     tile.addEventListener('mouseleave', function(){ tile.style.transform='rotate('+rot+'deg)'; tile.style.zIndex='1'; });
     // Click to select this card for the Ctrl+Down/Ctrl+Up keyboard
@@ -683,6 +683,23 @@
     var n=parseInt(m[1],16), r=(n>>16)&255, g=(n>>8)&255, b=n&255;
     function mix(c){ return Math.round(c+(255-c)*0.82); }
     return '#'+[mix(r),mix(g),mix(b)].map(function(c){ return ('0'+c.toString(16)).slice(-2); }).join('');
+  }
+  /* Oct 10 2026 (Larry): the cards that live inside the Library's headers are very light purple, so a library source stands apart from the
+     uniquely-colored cards of an ordinary topic. Worked out from where the card sits (nothing stored). */
+  var _SB_LIBRARY_ITEM_BG='#f1ebfb';
+  function _sboardLibraryItemBg(item){
+    try{
+      if(!item || typeof _sboardAllRowsById==='undefined') return '';
+      var cur=item, hops=0;
+      while(cur && cur.cluster_id && hops++<12){
+        cur=_sboardAllRowsById[cur.cluster_id];
+        if(cur && cur.content_type==='header' && String(cur.text_content||'').trim().toUpperCase()==='LIBRARY'){
+          var up=cur.cluster_id?_sboardAllRowsById[cur.cluster_id]:null;
+          if(!(up && up.cluster_id)) return _SB_LIBRARY_ITEM_BG;
+        }
+      }
+    }catch(e){}
+    return '';
   }
   function _sboardLibraryLook(headerRow){
     try{
