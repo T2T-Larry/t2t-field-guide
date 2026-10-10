@@ -670,6 +670,25 @@
     box.appendChild(hS); box.appendChild(hN); el.appendChild(box);
   }
 
+  /* Oct 10 2026 (Larry, one-tree merge): a header sitting directly under LIBRARY wears the Library look -- dark charcoal card, its own
+     category color carried by the TEXT (the pastel it already had becomes the lettering; Gems and Principles share purple). A dark
+     card in any topic column therefore reads as "library source". Only the header cards themselves change; cards inside them keep
+     their normal colors. Nothing is stored -- the look is worked out from where the header sits, so it follows a header that is moved. */
+  var _SB_LIBRARY_CARD_BG='#3b4048';
+  function _sboardLibraryLook(headerRow){
+    try{
+      if(!headerRow || !headerRow.cluster_id || typeof _sboardAllRowsById==='undefined') return null;
+      var parent=_sboardAllRowsById[headerRow.cluster_id];
+      if(!parent || parent.content_type!=='header') return null;
+      if(String(parent.text_content||'').trim().toUpperCase()!=='LIBRARY') return null;
+      var grand=parent.cluster_id?_sboardAllRowsById[parent.cluster_id]:null;
+      if(grand && grand.cluster_id) return null; /* LIBRARY must be a top-level (MASTER) header, not a look-alike deeper down */
+      var tint=headerRow.color||'#ffffff';
+      if(String(tint).toLowerCase()==='#fff'||String(tint).toLowerCase()==='#ffffff') tint='#f3f0ea';
+      return {bg:_SB_LIBRARY_CARD_BG, fg:tint};
+    }catch(e){ return null; }
+  }
+
   function _sboardMakeHeaderStackTile(headerRow, width, height, straight){
     width=width||70;
     height=height||width;
@@ -685,6 +704,8 @@
     wrap.addEventListener('dragend', function(){ _sboardDraggingHeaderId=null; });
     wrap.style.cssText='position:relative;flex-shrink:0;width:'+width+'px;height:'+height+'px;cursor:pointer;transform:rotate('+rot+'deg)';
     var bg=headerRow.color||'#fff';
+    var _libLook=_sboardLibraryLook(headerRow);
+    if(_libLook) bg=_libLook.bg;
     var back2=document.createElement('div');
     back2.className='sc-stack-layer';
     back2.style.cssText='position:absolute;top:5px;left:5px;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0';
@@ -699,7 +720,7 @@
     // a long single word (a Subber name) shrinking further beats it
     // wrapping in this small, fixed, overflow-hidden card.
     var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
-    p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:#1a3a5c;white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
+    p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:'+(_libLook?_libLook.fg:'#1a3a5c')+';white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
     _sboardPaintHeaderFace(p, headerRow, headerRow.text_content||'(untitled)', Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
