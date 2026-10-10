@@ -68,6 +68,12 @@
     var _effNewAdditionsId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.newAdditionsId : _sboardNewAdditionsId;
     var isTrashed=String(item.cluster_id)===String(_effTrashId) && _effTrashId;
     var isMisc=String(item.cluster_id)===String(_effMiscId) && _effMiscId;
+    // Oct 10 2026 -- Larry: no more automatic Purpose/MISC headers; "Parking Lot
+    // replaces MISC need." The old Send to Misc button went through
+    // ensureMiscHeader, which has been lookup-only since Sept 13, so on any board
+    // without a MISC it resolved to null and quietly moved the card OUT to the
+    // loose root. The button now targets the Parking Lot (isParked = already in it).
+    var isParked=!!_effNewAdditionsId && String(item.cluster_id)===String(_effNewAdditionsId);
     var heartCount=item.heart_count||0;
     // CLUSTER view-as option — Logged July 7, 2026. Only appears when this card
     // is a bucket (has something underneath it, at any depth). Never shown for
@@ -780,7 +786,7 @@
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Tap any project or topic to move this card there. ▸ opens a level.</div>'
         +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:300px;overflow-y:auto;margin-bottom:8px"></div>'
         +'<div style="display:flex;gap:6px;margin-bottom:6px">'
-        +  '<button class="sc-ov-btn" id="sb-anywhere-misc" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isMisc?'📦 Take out of Misc':'📦 Send to Misc')+'</button>'
+        +  '<button class="sc-ov-btn" id="sb-anywhere-misc" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot')+'</button>'
         +  (_sbTopicForNew ? '<button class="sc-ov-btn" id="sb-anywhere-newh" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">+ New header here</button>' : '')
         +'</div>'
         +'<div id="sb-newheader-row" style="display:none;margin-bottom:6px"><input id="sb-newheader-input" type="text" autocomplete="off" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
@@ -881,7 +887,7 @@
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      var extras=[{label:(isMisc?'📦 Take out of Misc':'📦 Send to Misc'), fn:function(){ _sbMoveFromBoard=false; _sbSendToMisc(); }}];
+      var extras=[{label:(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot'), fn:function(){ _sbMoveFromBoard=false; _sbSendToMisc(); }}];
       if(topicForNew) extras.push({label:'+ New header here', fn:function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); }});
       FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:item.cluster_id, excludeId:item.id, onPick:moveCardToHeader, extras:extras});
     }
@@ -1396,15 +1402,21 @@
       });
     })();
 
-    // Send to Misc -- offered at the bottom of the MOVE pyramid.
+    // Send to Parking Lot -- offered at the bottom of the MOVE pyramid.
+    // (Function keeps its old name, _sbSendToMisc, so the three call sites stay put.)
     async function _sbSendToMisc(){
       try{
         // Card-details sweep, July 19, 2026: T2TShared.currentTopicId is
         // 9710-only (never set by 9711's own navigation) -- use 9711's
         // handed-over Topic id when it's the active screen, same as the
         // rest of this sweep.
-        var targetId=await T2TData.ensureMiscHeader((isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : T2TShared.currentTopicId);
-        var newCluster=isMisc?null:targetId;
+        var _parkTopic=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : T2TShared.currentTopicId;
+        // Find this topic's Parking Lot (also matches legacy NEW / New Additions);
+        // if there is none yet, an explicit Send creates one -- the traveler asked for it.
+        var targetId=await T2TData.ensureNewAdditionsHeader(_parkTopic);
+        if(!targetId && T2TData.ensureHeaderNamed) targetId=await T2TData.ensureHeaderNamed('Parking Lot', _parkTopic);
+        if(!targetId && !isParked) throw new Error('Could not find or create a Parking Lot here.');
+        var newCluster=isParked?null:targetId;
         var upd=await _sb.from('ideas').update({cluster_id:newCluster}).eq('id',item.id);
         if(upd.error) throw upd.error;
         item.cluster_id=newCluster;
