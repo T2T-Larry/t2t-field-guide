@@ -68,17 +68,36 @@
 
   /* ── generic tree helpers ── */
 
+  // Oct 10 2026 (Larry: BB cards moved to WEBSITE still read MASTER on
+  // their face) -- this used to be one un-paged select, and the API caps
+  // any single response at 1,000 rows. Once a traveler passed 1,000
+  // headers (Larry: 1,752) the overflow simply never loaded, so any
+  // card whose topic fell in the missing batch had no name to show and
+  // fell back to MASTER. Now reads in 1,000-row pages, ordered by id so
+  // pages never overlap or skip, until a short page says it's done.
   async function fetchAllHeaders(){
     var sb=_sb(); var u=await _currentUser();
     if(!u) return [];
-    var res=await sb.from('ideas').select('id,text_content,idea_text,link_title,cluster_id').eq('user_id',u.id).eq('content_type','header');
-    if(res && res.error){
-      console.warn('fetchAllHeaders error, retrying once:', res.error);
-      await new Promise(function(r){ setTimeout(r,400); });
-      res=await sb.from('ideas').select('id,text_content,idea_text,link_title,cluster_id').eq('user_id',u.id).eq('content_type','header');
-      if(res && res.error) console.error('fetchAllHeaders failed after retry:', res.error);
+    var PAGE=1000, all=[], from=0, guard=0;
+    while(guard<50){
+      guard++;
+      var run=function(){
+        return sb.from('ideas').select('id,text_content,idea_text,link_title,cluster_id')
+          .eq('user_id',u.id).eq('content_type','header').order('id',{ascending:true}).range(from, from+PAGE-1);
+      };
+      var res=await run();
+      if(res && res.error){
+        console.warn('fetchAllHeaders error, retrying once:', res.error);
+        await new Promise(function(r){ setTimeout(r,400); });
+        res=await run();
+        if(res && res.error){ console.error('fetchAllHeaders failed after retry:', res.error); break; }
+      }
+      var rows=(res && res.data) || [];
+      all=all.concat(rows);
+      if(rows.length<PAGE) break;
+      from+=PAGE;
     }
-    return _fillHeaderTitles((res && res.data) || []);
+    return _fillHeaderTitles(all);
   }
 
   function headerDescendants(allHeaders, rootId){

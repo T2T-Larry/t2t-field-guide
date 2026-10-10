@@ -991,8 +991,11 @@
         var _bbTopicLbl=(c.topicLabel||'').trim();
         if(window.IDBand && IDBand.isNonProjectName(_bbTopicLbl)) _bbTopicLbl='';
         var _bbRootIdForLbl=(typeof _bbIdeaStoryboardsRootId!=='undefined')?_bbIdeaStoryboardsRootId:null;
+        // Oct 10 2026 -- a card WITH a project whose name just isn't loaded
+        // yet must not read MASTER (that told Larry his WEBSITE cards were
+        // still on MASTER); show no eyebrow until the name is known.
         var _bbProjLbl = c.projectHeaderId
-          ? (window.IDBand ? IDBand.projectLabel(_bbProjectNameById[c.projectHeaderId], c.projectHeaderId, _bbRootIdForLbl) : (_bbProjectNameById[c.projectHeaderId]||''))
+          ? ((!_bbProjectNameById[c.projectHeaderId] && c.projectHeaderId!==_bbRootIdForLbl) ? '' : window.IDBand ? IDBand.projectLabel(_bbProjectNameById[c.projectHeaderId], c.projectHeaderId, _bbRootIdForLbl) : (_bbProjectNameById[c.projectHeaderId]||''))
           : (c._foreign ? '' : 'MASTER');
         var topicEyebrowText = _bbTopicLbl || _bbProjLbl;
         // SUBJECT, Sept 22 2026 (Larry) -- the card's optional headline
