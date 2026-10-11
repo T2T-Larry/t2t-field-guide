@@ -709,7 +709,8 @@
         // On a Plan board the TOPIC is the topic the plan serves (its place
         // in the one tree), not the plan's own parentless root.
         var row=id ? _sboardAllRowsById[id] : null;
-        if(row && row.storyboard_kind==='PLAN' && row.source_project_id) return row.source_project_id;
+        var planSrc=_sboardPlanSourceFor(row);
+        if(planSrc) return planSrc.id;
         return id;
       },
       getTopic:function(){
@@ -725,8 +726,8 @@
         // found no ancestors and a Plan board could never move up to
         // MASTER. On a Plan board TOPIC now reads the SOURCE topic's place
         // in the one tree instead, same as every other board.
-        if(curRow.storyboard_kind==='PLAN' && curRow.source_project_id && _sboardAllRowsById[curRow.source_project_id]){
-          var srcRow=_sboardAllRowsById[curRow.source_project_id];
+        var srcRow=_sboardPlanSourceFor(curRow);
+        if(srcRow){
           return {ancestors:_sboardPyramidAncestors(srcRow.id),
                   current:{id:srcRow.id, name:srcRow.text_content||'(untitled)', priority:srcRow.priority||''}};
         }
@@ -1135,6 +1136,22 @@
   // time as each row's arrow is opened) its descendants below. Both
   // read off the same already-cached _sboardAllRowsById the old flat
   // list did -- no extra fetch, any depth, instantly.
+  // Oct 11 2026 (Larry: "what happened to the topic selector?? I cannot return to another topic from the library plan"): the TOPIC side of the
+  // ID BAND must show the one Blue Sky tree on a Plan board even when the traveler has drilled INTO a header or step inside the plan. The plan
+  // root is the row with storyboard_kind 'PLAN'; a drilled-into row belongs to it through project_id (or by climbing cluster_id). Returns the
+  // Blue Sky topic the plan serves (its source_project_id row), or null when this row is not part of a plan.
+  function _sboardPlanSourceFor(row){
+    if(!row) return null;
+    var root=null;
+    if(row.storyboard_kind==='PLAN') root=row;
+    else if(row.project_id && _sboardAllRowsById[row.project_id] && _sboardAllRowsById[row.project_id].storyboard_kind==='PLAN') root=_sboardAllRowsById[row.project_id];
+    else {
+      var cur=row, guard=0;
+      while(cur && cur.cluster_id && guard<50){ guard++; cur=_sboardAllRowsById[cur.cluster_id]; if(cur && cur.storyboard_kind==='PLAN'){ root=cur; break; } }
+    }
+    if(!root || !root.source_project_id) return null;
+    return _sboardAllRowsById[root.source_project_id] || null;
+  }
   function _sboardPyramidAncestors(topicId){
     var chain=[], guard=0;
     var curRow=topicId?_sboardAllRowsById[topicId]:null;
