@@ -434,7 +434,16 @@
         freshIdea=ir.data;
       }
       if(!freshIdea){ _sboardShowToast('Could not open that topic.'); return; }
-      _sboardOpenPlanStartChoice(freshIdea);
+      // Oct 11 2026 -- Larry: "I tried to go to MASTER BLUE SKY board but
+      // clicking MASTER from BLUE SKY PLAN would not let me... It should not
+      // matter whether one starts by selecting the TOPIC or the Board Type."
+      // A topic with no Plan board yet used to throw the Start-this-Plan popup
+      // at you, which felt like being blocked. Topic and Board Type are two
+      // independent choices: move to the topic first (its Blue Sky board
+      // always exists), and picking PLAN there offers the same start choice.
+      _sboardAllRowsById[freshIdea.id]=freshIdea;
+      _sboardDrillInto(freshIdea);
+      _sboardShowToast('No Plan board here yet — pick PLAN to start one.');
     }catch(err){
       _sboardShowToast('Could not open that Plan board — '+(err&&err.message?err.message:'try again'));
     }
