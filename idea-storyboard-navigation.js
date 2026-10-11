@@ -2095,7 +2095,10 @@
   var _SBOARD_AZ_AUTO=['NEW','New Additions','Parking Lot','MISC','Purpose','Trash'];
   function _sboardAzIsAuto(h){
     var t=String(h && h.text_content || '').trim();
-    return _SBOARD_AZ_AUTO.indexOf(t)!==-1 || /^\(.*\)$/.test(t);
+    if(_SBOARD_AZ_AUTO.indexOf(t)!==-1) return true;
+    // Oct 11 2026: a card with a Subject was named by a person -- parentheses in its Contents don't make it auto-managed.
+    if(h && String(h.subject||'').trim()) return false;
+    return /^\(.*\)$/.test(t);
   }
   function _sboardAzEntryName(r){
     if(!r) return '';

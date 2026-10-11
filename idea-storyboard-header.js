@@ -1427,14 +1427,11 @@
       .filter(Boolean);
     var parentSet={};
     parentIds.forEach(function(id){ parentSet[String(id)]=true; });
-    var _sbReservedAutoNames=['NEW','New Additions','Parking Lot','MISC','Purpose'];
     return Object.keys(_sboardAllRowsById).filter(function(id){
       var r=_sboardAllRowsById[id];
       if(!(r && r.cluster_id!=null && parentSet[String(r.cluster_id)])) return false;
       if(r.content_type!=='header') return true; // a plain card -- on screen the moment it exists
-      var isAutoManaged=_sbReservedAutoNames.indexOf(r.text_content)!==-1
-        || /^\(.*\)$/.test(String(r.text_content||'').trim());
-      if(!isAutoManaged) return true;
+      if(!_sboardIsAutoManagedHeader(r)) return true;
       return (_sboardChildCountById[r.id]||0)>0;
     });
   }

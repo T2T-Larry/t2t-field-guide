@@ -22,6 +22,22 @@
    idea-storyboard-9710.js (boot -- loads last)
    ============================================================ */
 
+  // Oct 11 2026 (Larry: "Parentheses makes content disappear? Contents should just be text"):
+  // ONE place that decides whether a header is an app-managed placeholder (the reserved
+  // landing-zone names, or the legacy auto-made "(Topic name)" header) that stays hidden
+  // while it is empty. Before this, three files each tested the text for "(...)" on its own,
+  // so a card a person titled with a Subject and whose Contents happened to be wrapped in
+  // parentheses (e.g. "(for non-philosophy majors)") vanished from its column. A card that
+  // carries a Subject was named by a person, never auto-made, so it is never auto-managed.
+  var _SBOARD_AUTO_RESERVED_NAMES=['NEW','New Additions','Parking Lot','MISC','Purpose'];
+  function _sboardIsAutoManagedHeader(r){
+    if(!r) return false;
+    var t=String(r.text_content||'').trim();
+    if(_SBOARD_AUTO_RESERVED_NAMES.indexOf(r.text_content)!==-1) return true;
+    if(String(r.subject||'').trim()) return false;
+    return /^\(.*\)$/.test(t);
+  }
+
   var _sboardTrashId = null;
   var _sboardMiscId = null;
   var _sboardPurposeId = null;

@@ -67,11 +67,10 @@ function _sboardRenderGroup(ctx, headerRow, depth){
     // (Larry + Bill's rename, see the ensure-call above) so a board
     // that hasn't reopened this Topic since still hides its
     // auto-managed placeholder correctly under either name.
-    var _sbReservedAutoNames=['NEW','New Additions','Parking Lot','MISC','Purpose'];
+    // Oct 11 2026: the "is this an auto-managed placeholder?" test now lives in ONE helper
+    // (_sboardIsAutoManagedHeader, idea-storyboard-shared.js); a card with a Subject is never one.
     subs=subs.filter(function(s){
-      var _sbAutoManaged=_sbReservedAutoNames.indexOf(s.text_content)!==-1
-        || /^\(.*\)$/.test(String(s.text_content||'').trim());
-      if(!_sbAutoManaged) return true;
+      if(!_sboardIsAutoManagedHeader(s)) return true;
       return (_sboardChildCountById[s.id]||0)>0;
     });
     var directItems=(childrenOfHeader[headerRow.id]||[]).slice().sort(_sboardBySortOrder);
