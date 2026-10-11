@@ -44,6 +44,49 @@
   function $(id){ return id ? document.getElementById(id) : null; }
   function el(v){ return typeof v==='function' ? v() : (typeof v==='string' ? (document.getElementById(v) || document.querySelector(v)) : v); }
 
+
+  // ---- ONE TREE (Oct 11 2026) ---------------------------------------------
+  // Larry: "TOPIC selector must always be the same on every ID BAND" -- the
+  // full one tree (MASTER at the top, a caret on every row to open any topic or
+  // subtopic), never a shortened path. Every board used to hand in its own
+  // getTopic/getChildren, so the three menus could drift apart (the Plan board
+  // showed only MASTER > Blue Sky with nothing to open). The tree is now read
+  // here, once, from the same ideas.cluster_id chain for every board; a board
+  // only says WHICH topic it is standing on (cfg.topicId). The board's own
+  // getTopic/getChildren remain only as a fallback when this can't load.
+  var TREE_RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  var treeRows={};
+  function treeSb(){ return window.T2T && window.T2T.sb; }
+  async function treeRow(id){
+    if(!id) return null;
+    if(treeRows[id]) return treeRows[id];
+    var sb=treeSb(); if(!sb) return null;
+    var res=await sb.from('ideas').select('id,cluster_id,text_content,priority').eq('id',id).maybeSingle();
+    if(res.error || !res.data) return null;
+    treeRows[id]=res.data;
+    return res.data;
+  }
+  function treeNode(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; }
+  async function treeTopic(id){
+    var cur=await treeRow(id);
+    if(!cur) return null;
+    var chain=[], guard=0, pid=cur.cluster_id;
+    while(pid && guard<50){
+      guard++;
+      var p=await treeRow(pid);
+      if(!p) break;
+      chain.unshift(treeNode(p));
+      pid=p.cluster_id;
+    }
+    return {ancestors:chain, current:treeNode(cur)};
+  }
+  async function treeChildren(id){
+    var sb=treeSb(); if(!sb) throw new Error('no connection');
+    var res=await sb.from('ideas').select('id,cluster_id,text_content,priority,sort_order').eq('cluster_id',id).eq('content_type','header').order('sort_order',{ascending:true});
+    if(res.error) throw res.error;
+    return (res.data||[]).filter(function(r){ return !TREE_RESERVED[r.text_content]; }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
+  }
+
   function mountControls(cfg){
     var ids = cfg.ids || {};
     var GAP = cfg.gap || 10;
@@ -106,13 +149,19 @@
       var openSeq=0;
       function openPyramid(){
         var seq=++openSeq;
-        Promise.resolve(cfg.getTopic ? cfg.getTopic() : null).then(function(t){
+        var tid=cfg.topicId ? cfg.topicId() : null;
+        Promise.resolve(tid ? treeTopic(tid).catch(function(){ return null; }) : null).then(function(t){
+          return t || (cfg.getTopic ? cfg.getTopic() : null);
+        }).then(function(t){
           if(!t || !t.current || !window.TopicPyramid) return;
           if(seq!==openSeq) return;   // closed or re-opened while we waited
           var rowEl=window.TopicPyramid.render(menu, {
+            fullTree:true,
             ancestors:t.ancestors || [],
             current:t.current,
-            getChildren:cfg.getChildren,
+            getChildren:function(id){
+              return treeChildren(id).catch(function(){ return cfg.getChildren ? cfg.getChildren(id) : []; });
+            },
             onAdd:addTopic,
             onNavigate:function(id){
               menu.hidden=true;

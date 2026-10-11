@@ -705,7 +705,12 @@
       hideOrg:function(){ return _sboardIsAtMasterRoot; },
       topicId:function(){
         var castRow=_sboardCurrentProjectRow();
-        return T2TShared.currentTopicId || (castRow ? castRow.id : null);
+        var id=T2TShared.currentTopicId || (castRow ? castRow.id : null);
+        // On a Plan board the TOPIC is the topic the plan serves (its place
+        // in the one tree), not the plan's own parentless root.
+        var row=id ? _sboardAllRowsById[id] : null;
+        if(row && row.storyboard_kind==='PLAN' && row.source_project_id) return row.source_project_id;
+        return id;
       },
       getTopic:function(){
         var curId=T2TShared.currentTopicId;

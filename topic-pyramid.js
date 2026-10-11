@@ -147,6 +147,7 @@
   // so a descendant's nested children can step in further than the
   // ancestor trail (which never indents; it's a single vertical line).
   function _tpMakeRow(node, depth, indentPx, isCurrent, opts){
+    if(opts.fullTree && opts.current && String(node.id)===String(opts.current.id)) isCurrent=true;
     var row=document.createElement('div');
     row.className='tp-row'+(isCurrent?' tp-current':'');
     if(node.id!=null) row.setAttribute('data-tp-id', String(node.id));
@@ -240,6 +241,7 @@
             _tpAutoExpand(built.arrow, kid, opts);
           });
           _tpDecorate(made);
+          if(opts.fullTree && opts._menuEl){ var cr=opts._menuEl.querySelector('.tp-current'); if(cr && cr.scrollIntoView) cr.scrollIntoView({block:'center'}); }
         }, function(){
           childWrap.innerHTML='<div class="tp-loading">Couldn\'t load — try again.</div>';
         });
@@ -295,6 +297,25 @@
     _tpEnsureStyles();
     menuEl.innerHTML='';
     opts.checkedIds=opts.checkedIds||new Set();
+
+    // fullTree (Oct 11 2026, Larry: "the full one tree with carrots to expand
+    // to any topic or subtopic ... the same on every ID BAND"): the whole tree
+    // from its top row, a caret on every row, the path to the current topic
+    // already open and the current topic highlighted. Same rows, same carets
+    // on every board.
+    if(opts.fullTree){
+      opts._menuEl=menuEl;
+      var path=(opts.ancestors||[]).concat([opts.current]);
+      opts.expandPath=path.map(function(n){ return String(n.id); });
+      var top=path[0];
+      var topBuilt=_tpMakeRow(top, 0, 0, false, opts);
+      menuEl.appendChild(topBuilt.row);
+      _tpWireExpand(topBuilt.arrow, topBuilt.row, top, 0, 0, opts);
+      _tpDecorate([topBuilt.row]);
+      _tpAddRow(menuEl, opts);
+      _tpAutoExpand(topBuilt.arrow, top, opts);
+      return topBuilt.row;
+    }
 
     (opts.ancestors||[]).forEach(function(a, i){
       var built=_tpMakeRow(a, i, 0, false, opts);
