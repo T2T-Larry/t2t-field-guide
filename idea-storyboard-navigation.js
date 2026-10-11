@@ -703,11 +703,29 @@
         if(!curId) return null;                       // root prompt -- nothing to show
         var curRow=_sboardAllRowsById[curId];
         if(!curRow) return null;
+        // Oct 11 2026 -- Larry: "The cascade one tree is built on the BLUE
+        // SKY topics for every member. That is the one tree which is always
+        // displayed in the TOPIC side of the ID BAND!" A Plan board is its
+        // own parentless root (storyboard_kind 'PLAN', pointing back at its
+        // topic through source_project_id), so climbing its own cluster_id
+        // found no ancestors and a Plan board could never move up to
+        // MASTER. On a Plan board TOPIC now reads the SOURCE topic's place
+        // in the one tree instead, same as every other board.
+        if(curRow.storyboard_kind==='PLAN' && curRow.source_project_id && _sboardAllRowsById[curRow.source_project_id]){
+          var srcRow=_sboardAllRowsById[curRow.source_project_id];
+          return {ancestors:_sboardPyramidAncestors(srcRow.id),
+                  current:{id:srcRow.id, name:srcRow.text_content||'(untitled)', priority:srcRow.priority||''}};
+        }
         return {ancestors:_sboardPyramidAncestors(curId),
                 current:{id:curRow.id, name:curRow.text_content||'(untitled)', priority:curRow.priority||''}};
       },
       getChildren:function(id){ return Promise.resolve(_sboardPyramidChildren(id)); },
-      goToTopic:function(id){ if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]); },
+      // Picking a topic from a Plan board stays on the PLAN kind: opens that
+      // topic's Plan board, or offers Duplicate / Start Blank when it has none.
+      goToTopic:function(id){
+        if(_sboardIsPlanBoard){ _sboardSwitchToRootBoardPreservingKind(id); return; }
+        if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]);
+      },
       onTopicAdded:function(row){ _sboardAllRowsById[row.id]=row; },   // so the new topic shows in the list at once
       closeOthers:_sboardCloseAllDropdowns,
       toast:_sboardShowToast,
