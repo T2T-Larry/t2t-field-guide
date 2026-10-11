@@ -231,7 +231,8 @@
             arrowEl.replaceWith(arrowEl.cloneNode(true)); // drop the click handler, nothing to open
             return;
           }
-          kids=T2TPriority.sort(kids, function(k){ return k.priority; });
+          // fullTree (Oct 11 2026, Larry: "A-Z makes finding the desired topic easier"): always A to Z; priority stays a badge, never an order.
+          kids=opts.fullTree ? kids.slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''), undefined, {sensitivity:'base'}); }) : T2TPriority.sort(kids, function(k){ return k.priority; });
           var made=[];
           kids.forEach(function(kid){
             var built=_tpMakeRow(kid, depth+1, indentPx+14, false, opts);
