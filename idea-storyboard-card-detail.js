@@ -328,6 +328,10 @@
       + '<div class="bb-field sb-subject-field"><label>Subject</label>'
       +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
       + '</div>'
+      // Plan step time, Oct 11 2026 (Larry, Plan card corners): PLAN boards only. Plain text like "1 day" / "1-2 days"; shows lower right on the face.
+      + ((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)
+          ? '<div class="bb-field sb-steptime-field"><label>Time</label><input type="text" id="sb-steptime-input" autocomplete="off" placeholder="1 day" maxlength="20" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.step_time||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>'
+          : '')
       + '</div>'
       + apexTag
       // SUBJECT + contents on face, Sept 22 2026 (Larry: "Idea Board
@@ -1255,6 +1259,27 @@
       })();
       paint();
       paintFront();
+    })();
+
+    // Plan step time field, Oct 11 2026 -- saves on change/blur, undoable like the other back-of-card edits.
+    (function(){
+      var inp=document.getElementById('sb-steptime-input');
+      if(!inp) return;
+      inp.addEventListener('click', function(e){ e.stopPropagation(); });
+      inp.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter'){ inp.blur(); } });
+      inp.addEventListener('change', async function(){
+        var next=inp.value.trim(), before={step_time:item.step_time||''};
+        if(next===before.step_time) return;
+        try{
+          var upd=await _sb.from('ideas').update({step_time:next}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.step_time=next;
+          _sboardPatchRow(item.id, {step_time:next});
+          var itemId=item.id;
+          _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, {step_time:next}); }});
+          renderSeaBoard(true);
+        }catch(err){ if(statusBox) statusBox.textContent='Could not save time: '+err.message; }
+      });
     })();
 
     T().wire('sb-people-btn', function(e){

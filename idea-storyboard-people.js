@@ -354,7 +354,10 @@
     // Default is no initials on the front of ideas cards whether in SEA or BLUE SKY." So an Idea card shows its
     // PRIMARY's initials only when a member opted in (ideas.show_primary_badge = true, set by the eye in the TEAM
     // list or the Call Sheet's Initials ON). Nothing opted in = nothing shown; no bulk change to old rows needed.
-    if(!item || !item.show_primary_badge) return '';
+    // Oct 11 2026 (Larry, Plan card corners): on a PLAN board the PRIMARY shows in the upper right by default (a plan step with an owner
+    // should say so); the eye still wins -- an explicit OFF is stored as false, only never-touched (null) cards get the plan default.
+    var _sbPlanDefault=(typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard && item && item.show_primary_badge==null);
+    if(!item || (!item.show_primary_badge && !_sbPlanDefault)) return '';
     // Aug 29 2026, Larry: a board-wide master switch (Utility -> Preferences
     // -> Initials) -- "if I am the only person on the project, there is no
     // need to have initials on any cards." Lives on the project's own root
@@ -386,6 +389,45 @@
     var fg=(typeof PRI_TEXT!=='undefined' && PRI_TEXT[item.priority]) || '#fff';
     var cls='sb-pri-badge'+((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)?' sb-pri-after-order':'');
     return '<span class="'+cls+'" title="Priority '+_sboardEsc(item.priority)+'" style="background:'+bg+';color:'+fg+'">'+_sboardEsc(item.priority)+'</span>';
+  }
+  // PLAN step time, Oct 11 2026 (Larry, Plan card corners): lower right corner of a plan step shows its time plainly ("1 day", "2 days");
+  // upper right is the PRIMARY. The card named ETC is the plan total -- it sums its siblings' times, so the word ETC lives on one card only.
+  function _sboardParseStepDays(txt){
+    var t=String(txt||'').toLowerCase().replace(/\u00bd/g,' .5').replace(/\u00bc/g,' .25').replace(/\u00be/g,' .75');
+    var m=t.match(/(\d*\.?\d+(?:\s*\.\d+)?)\s*(?:-|to|\u2013)?\s*(\d*\.?\d+(?:\s*\.\d+)?)?\s*day/);
+    if(!m){ var h=t.match(/^\s*(\.\d+)\s*day/); if(!h) return null; m=[null,h[1],null]; }
+    var num=function(x){ return x==null?null:parseFloat(String(x).replace(/\s+/g,'')); };
+    var a=num(m[1]), b=num(m[2]);
+    if(a==null||isNaN(a)) return null;
+    return {lo:a, hi:(b==null||isNaN(b))?a:b};
+  }
+  function _sboardFmtDays(n){
+    var whole=Math.floor(n+1e-9), frac=Math.round((n-whole)*4)/4, fs={0:'',0.25:'\u00bc',0.5:'\u00bd',0.75:'\u00be',1:''};
+    if(frac===1){ whole+=1; frac=0; }
+    return (whole||!fs[frac]?String(whole):'')+fs[frac];
+  }
+  function _sboardFmtDayRange(lo,hi){
+    var a=_sboardFmtDays(lo), b=_sboardFmtDays(hi);
+    var one=(a===b)?a:a+'-'+b;
+    return one+((a===b && (a==='1'||a==='\u00bd'||a==='\u00bc'||a==='\u00be'))?' day':' days');
+  }
+  function _sboardStepTimeBadgeHTML(item){
+    if(!item || typeof _sboardIsPlanBoard==='undefined' || !_sboardIsPlanBoard) return '';
+    var label=String(item.subject||item.text_content||item.idea_text||'').trim();
+    var txt=String(item.step_time||'').trim();
+    if(/^etc\b/i.test(label)){
+      var lo=0, hi=0, any=false;
+      for(var id in _sboardAllRowsById){
+        var r=_sboardAllRowsById[id];
+        if(!r || r.id===item.id || r.cluster_id!==item.cluster_id) continue;
+        var d=_sboardParseStepDays(r.step_time);
+        if(d){ lo+=d.lo; hi+=d.hi; any=true; }
+      }
+      if(!any) return '';
+      txt=_sboardFmtDayRange(lo,hi);
+    }
+    if(!txt) return '';
+    return '<div class="sb-step-time" title="Time for this step">'+_sboardEsc(txt)+'</div>';
   }
   function _sboardNotesBadgeHTML(item){
     if(!item || !item.notes || !item.notes.trim()) return '';

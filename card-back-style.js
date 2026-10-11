@@ -226,6 +226,11 @@
       +'.fg-back-toprow .sb-subject-field{grid-column:2;width:100%;max-width:none;min-width:0;justify-self:stretch}'
       +'#sb-subject-input,#bb-d-subject{font-size:calc(16px * var(--fg-text-scale,1));padding:6px 8px;font-family:var(--bb-head-font,Georgia,serif)}'
       +'.fg-back-toprow .bb-field.sb-order-top{grid-column:3;justify-self:end;width:auto;max-width:none;min-width:0}'
+      // Plan step Time field (Oct 11 2026): PLAN boards only; takes a 4th, narrow column beside ORDER.
+      +'.fg-back-toprow:has(.sb-steptime-field){grid-template-columns:auto minmax(0,1fr) 72px auto}'
+      +'.fg-back-toprow .sb-steptime-field{grid-column:3;width:72px;min-width:0}'
+      +'.fg-back-toprow:has(.sb-steptime-field) .bb-field.sb-order-top{grid-column:4}'
+      +'#sb-steptime-input{font-size:calc(14px * var(--fg-text-scale,1));padding:6px 8px;font-family:inherit}'
       +'.fg-back-toprow .sb-order-top .bb-priorities{pointer-events:auto}'
       +'.sb-order-num{cursor:default;pointer-events:none}'
       // Header/Subber toggle sits dead center on the bottom row (Larry: "such a key choice").

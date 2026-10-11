@@ -83,6 +83,8 @@
         // Top-left; steps right of the PLAN board's step number.
         +'.sb-pri-badge{position:absolute;top:3px;left:3px;font-size:calc(10px * var(--fg-text-scale,1));line-height:1.35;font-weight:700;font-family:sans-serif;padding:1px 5px;border-radius:4px;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.3)}'
         +'.sb-pri-badge.sb-pri-after-order{left:24px}'
+        // Plan step time, Oct 11 2026: lower right corner (the signal flags own the lower left).
+        +'.sb-step-time{position:absolute;bottom:2px;right:3px;font-size:calc(9px * var(--fg-text-scale,1));line-height:1;font-weight:700;font-family:sans-serif;color:#5a4a30;background:rgba(255,255,255,.82);border-radius:6px;padding:2px 5px;pointer-events:none;z-index:6;white-space:nowrap}'
         +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:calc(7px * var(--fg-text-scale,1));font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
         // Notes badge (Larry, Aug 11 2026: "pencil as signal flag on the
         // front of any card if there are Notes inside") -- a plain flex

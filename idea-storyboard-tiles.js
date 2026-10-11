@@ -484,6 +484,7 @@
     // with the initials on the front."
     tile.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(item));
     tile.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(item));
+    tile.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(item));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes, Link --
     // Aug 15 2026 (Larry: "is the LOCK not just another FLAG? ... all
     // signal flags are added to the lower left corner on all types of
@@ -783,6 +784,7 @@
     }
     front.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
     front.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));
+    front.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow));
     // Bottom-left signal cluster: Lock, Signal Flags, Notes -- same
     // order and reasoning as the plain-card tile above (no Link here,
     // matching this tile's behavior before the Aug 15 2026 refactor).
