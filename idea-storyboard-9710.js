@@ -30,34 +30,6 @@
    idea-storyboard-header.js, idea-storyboard-card-detail.js
    ============================================================ */
 
-/* ============================================================
-   idea-storyboard-9710.js — T2T Field Guide · ISB STORYBOARD (9710)
-   + legacy 9220/9221 SEA OF IDEAS grid/cluster views.
-
-   Split out of sea-of-ideas.js on July 17, 2026 (Session 118) once
-   that file passed the 3,500-line threshold (was 4,325 lines).
-   Behavior is UNCHANGED — this is a structural split, not a rebuild.
-
-   Part of the three-file ISB split:
-     idea-media-shared.js   (loads FIRST  — shared state + capture/media)
-     idea-storyboard-9710.js (loads SECOND — this file, plus its nine
-                               new siblings above, all loading before it)
-     session.js              (loads THIRD  — 9711 SESSION + public API)
-   Script tag order in every phase file matters — T2TShared and
-   T2TMedia must exist before this file's top-level code runs, and
-   this file's T2TStoryboard must exist before session.js runs.
-
-   Talks to backpack.js ONLY through window.T2T. Talks to the other
-   two ISB files ONLY through window.T2TShared (shared mutable state)
-   and window.T2TMedia (exposed media/capture functions) — never
-   reaches into their closures directly.
-
-   Exposes window.T2TStoryboard = {
-     ensureMiscHeader, ensureTrashHeader, moveCard,
-     isAutoHeaderText, getRow
-   } for idea-media-shared.js and session.js to call.
-   ============================================================ */
-
   var _sboardRtPendingRender = false, _sboardRtTimer = null;
   function _sboardRtSafeRefresh(){
     if (T().isDragActive()) { _sboardRtPendingRender = true; return; }
