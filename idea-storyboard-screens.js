@@ -917,6 +917,30 @@
         var directIdeas=(childrenOfHeader[T2TShared.currentTopicId]||[]).slice().sort(_sboardBySortOrder);
         _sboardIdeaOrderByParent[T2TShared.currentTopicId]=directIdeas.map(function(r){ return r.id; });
         var childHeaders=subHeadersOf[T2TShared.currentTopicId]||[];
+        // PLAN boards are a FILTER of the one tree, not a place (Larry, Oct 12 2026: "This is all one tree, so plans should appear in their
+        // TOPIC categories"). At a plan board's root, also show every plan header from ANY plan board whose TOPIC (source_project_id) is this
+        // board's topic or sits beneath it -- the same "a parent shows its children's cards" rule the BB follows. MASTER PLAN is the same rule
+        // at the top of the tree. Read-only union over the already-cached rows: nothing is copied or moved, a plan keeps its one home.
+        if(_sboardIsPlanBoard && isAtProjectRoot && currentProjectRowForScope && currentProjectRowForScope.source_project_id){
+          var _planTopicIds={}; _planTopicIds[String(currentProjectRowForScope.source_project_id)]=true;
+          var _topicKids={};
+          headerRows.forEach(function(h){ if(h.cluster_id && h.storyboard_kind!=='PLAN') (_topicKids[h.cluster_id]=_topicKids[h.cluster_id]||[]).push(h.id); });
+          var _tFrontier=[String(currentProjectRowForScope.source_project_id)], _tGuard=0;
+          while(_tFrontier.length && _tGuard<60){
+            _tGuard++; var _tNext=[];
+            _tFrontier.forEach(function(pid){ (_topicKids[pid]||[]).forEach(function(cid){ if(!_planTopicIds[String(cid)]){ _planTopicIds[String(cid)]=true; _tNext.push(String(cid)); } }); });
+            _tFrontier=_tNext;
+          }
+          var _planRootIds={};
+          headerRows.forEach(function(h){ if(h.storyboard_kind==='PLAN' && !h.cluster_id) _planRootIds[String(h.id)]=true; });
+          var _haveIds={}; childHeaders.forEach(function(h){ _haveIds[String(h.id)]=true; });
+          var _filtered=headerRows.filter(function(h){
+            return h.cluster_id && _planRootIds[String(h.cluster_id)] && String(h.cluster_id)!==String(T2TShared.currentTopicId)
+              && h.source_project_id && _planTopicIds[String(h.source_project_id)] && !_haveIds[String(h.id)]
+              && reservedNames.indexOf(h.text_content)===-1;
+          });
+          if(_filtered.length) childHeaders=childHeaders.concat(_filtered);
+        }
         var childHeadersSorted=childHeaders.slice().sort(_sboardBySortOrder);
 
         // Unified row — added July 12, 2026. Purpose, the Ideas bucket,
