@@ -434,16 +434,11 @@
         freshIdea=ir.data;
       }
       if(!freshIdea){ _sboardShowToast('Could not open that topic.'); return; }
-      // Oct 11 2026 -- Larry: "I tried to go to MASTER BLUE SKY board but
-      // clicking MASTER from BLUE SKY PLAN would not let me... It should not
-      // matter whether one starts by selecting the TOPIC or the Board Type."
-      // A topic with no Plan board yet used to throw the Start-this-Plan popup
-      // at you, which felt like being blocked. Topic and Board Type are two
-      // independent choices: move to the topic first (its Blue Sky board
-      // always exists), and picking PLAN there offers the same start choice.
-      _sboardAllRowsById[freshIdea.id]=freshIdea;
-      _sboardDrillInto(freshIdea);
-      _sboardShowToast('No Plan board here yet — pick PLAN to start one.');
+      // Oct 12 2026 (Larry: "Selecting a TOPIC should filter the view to that topic and board type"): every topic has a PLAN view. A topic
+      // with no Plan board yet gets a blank one made silently -- it is only the container; the plans themselves are the filtered view.
+      var madePlan=await _sboardCreateBlankPlanBoard(freshIdea);
+      _sboardAllRowsById[madePlan.id]=madePlan;
+      _sboardDrillInto(madePlan);
     }catch(err){
       _sboardShowToast('Could not open that Plan board — '+(err&&err.message?err.message:'try again'));
     }
@@ -1201,9 +1196,11 @@
   // Plan board -- later Idea-board edits are never pulled in automatically
   // (Larry's call), so nothing done there is ever silently overwritten.
   async function _sboardOpenOrCreatePlanBoard(){
-    var ideaRow=_sboardCurrentProjectRow();
+    // Oct 12 2026 (Larry: clicked PLAN on CONCEPTS and landed on LIBRARY plan): the plan is for the TOPIC being viewed, not the project
+    // ancestor _sboardCurrentProjectRow climbs to.
+    var ideaRow=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || _sboardCurrentProjectRow();
     if(!ideaRow){ _sboardShowToast('Open a topic first.'); return; }
-    if(ideaRow.storyboard_kind==='PLAN') return; // already there -- no-op, matches IDEA's own re-pick behavior
+    if(ideaRow.storyboard_kind==='PLAN' || _sboardPlanSourceFor(ideaRow)) return; // already there -- no-op, matches IDEA's own re-pick behavior
     var _sb=T().sb;
     try{
       var existing=await _sb.from('ideas').select('id').eq('content_type','header').is('cluster_id',null)
@@ -1237,7 +1234,9 @@
       // by Idea and Plan) with no cards under it. Same "duplicates/creates
       // once, then only reopens" rule either way -- this choice only shows
       // when no Plan board exists yet for this project.
-      _sboardOpenPlanStartChoice(ideaRow);
+      var madeBlank=await _sboardCreateBlankPlanBoard(ideaRow);   // no chooser: a PLAN view always exists for a topic (see _sboardSwitchToRootBoardPreservingKind)
+      _sboardAllRowsById[madeBlank.id]=madeBlank;
+      _sboardDrillInto(madeBlank);
     }catch(err){
       _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
     }
