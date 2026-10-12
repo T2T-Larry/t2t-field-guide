@@ -415,19 +415,29 @@
     if(!item || typeof _sboardIsPlanBoard==='undefined' || !_sboardIsPlanBoard) return '';
     var label=String(item.subject||item.text_content||item.idea_text||'').trim();
     var txt=String(item.step_time||'').trim();
+    var doneMark='';
     if(/^etc\b/i.test(label)){
-      var lo=0, hi=0, any=false;
+      var lo=0, hi=0, any=false, steps=0, stepsDone=0;
       for(var id in _sboardAllRowsById){
         var r=_sboardAllRowsById[id];
         if(!r || r.id===item.id || r.cluster_id!==item.cluster_id) continue;
         var d=_sboardParseStepDays(r.step_time);
         if(d){ lo+=d.lo; hi+=d.hi; any=true; }
+        // Oct 12 2026 -- plan progress: a step with a time estimate is a real work step (same rule the BB PLAN n/m marker uses).
+        if(String(r.step_time||'').trim()){ steps++; if(r.step_done) stepsDone++; }
       }
-      if(!any) return '';
-      txt=_sboardFmtDayRange(lo,hi);
+      if(!any && !steps) return '';
+      txt=any?_sboardFmtDayRange(lo,hi):'';
+      if(steps) txt+=(txt?' · ':'')+stepsDone+'/'+steps+' done';
     }
-    if(!txt) return '';
-    return '<div class="sb-step-time" title="Time for this step">'+_sboardEsc(txt)+'</div>';
+    // Oct 12 2026 (Larry: "a giant checkmark on the step completed") -- a finished PLAN step wears a big green check over a
+    // softened face. step_done is set by the database when the step's BB card reaches DONE, or by hand from the card back.
+    // pointer-events:none so clicks pass straight through to the card; z-index sits under the time badge so the time stays readable.
+    if(item.step_done && !/^etc\b/i.test(label)){
+      doneMark='<div class="sb-step-done" title="Step done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#2e9e5b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+    }
+    if(!txt) return doneMark;
+    return doneMark+'<div class="sb-step-time" title="Time for this step">'+_sboardEsc(txt)+'</div>';
   }
   function _sboardNotesBadgeHTML(item){
     if(!item || !item.notes || !item.notes.trim()) return '';

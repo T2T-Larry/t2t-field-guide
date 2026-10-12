@@ -331,6 +331,8 @@
       // Plan step time, Oct 11 2026 (Larry, Plan card corners): PLAN boards only. Plain text like "1 day" / "1-2 days"; shows lower right on the face.
       + ((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)
           ? '<div class="bb-field sb-steptime-field"><label>Time</label><input type="text" id="sb-steptime-input" autocomplete="off" placeholder="1 day" maxlength="20" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.step_time||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>'
+            // Oct 12 2026: tap-to-check for steps that never become BB cards (decisions, approvals). BB-linked steps are set by the database.
+            + '<div class="bb-field sb-stepdone-field"><label class="bb-front-check"><input type="checkbox" id="sb-stepdone-input"'+(item.step_done?' checked':'')+'><span>Step done</span></label></div>'
           : '')
       + '</div>'
       + apexTag
@@ -1279,6 +1281,26 @@
           _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, {step_time:next}); }});
           renderSeaBoard(true);
         }catch(err){ if(statusBox) statusBox.textContent='Could not save time: '+err.message; }
+      });
+    })();
+
+    // Plan step done checkbox, Oct 12 2026 -- same save/undo pattern as the Time field just above.
+    (function(){
+      var cb=document.getElementById('sb-stepdone-input');
+      if(!cb) return;
+      cb.addEventListener('click', function(e){ e.stopPropagation(); });
+      cb.addEventListener('change', async function(){
+        var next=!!cb.checked, before={step_done:!!item.step_done};
+        if(next===before.step_done) return;
+        try{
+          var upd=await _sb.from('ideas').update({step_done:next}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.step_done=next;
+          _sboardPatchRow(item.id, {step_done:next});
+          var itemId=item.id;
+          _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, {step_done:next}); }});
+          renderSeaBoard(true);
+        }catch(err){ cb.checked=!next; if(statusBox) statusBox.textContent='Could not save: '+err.message; }
       });
     })();
 
