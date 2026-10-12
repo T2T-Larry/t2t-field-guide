@@ -230,6 +230,7 @@ if(_sboardIsPlanBoard || headerRow.show_order_front){
 if(_sboardIsPlanBoard && headerRow.source_project_id && _sboardAllRowsById[headerRow.source_project_id]){
   var _eyeT=_sboardAllRowsById[headerRow.source_project_id];
   var _eyeN=String(_eyeT.text_content||_eyeT.subject||'').trim();
+  if(_eyeN){ hd.style.paddingTop='13px'; hd.style.boxSizing='border-box'; }
   if(_eyeN) hd.insertAdjacentHTML('afterbegin','<div class="sb-plan-eyebrow">'+_sboardEsc(_eyeN)+'</div>');
 }
 hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));

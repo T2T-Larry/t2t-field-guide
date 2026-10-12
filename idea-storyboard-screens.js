@@ -982,6 +982,17 @@
         // itself -- the real order everything else (badges, drag-reorder)
         // reads from -- is untouched either way.
         var displayMergedRow=mergedRow;
+        // PLAN boards: Parking Lot first, then plans High -> Low (stable), no priority last.
+        // Larry, Oct 12 2026. The # badges follow this order, since priority IS the order here.
+        if(_sboardIsPlanBoard && !_sboardAlphaHeaderView && !_sboardAzLetterView){
+          var _PRk={HH:0,H:1,MH:2,M:3,ML:4,L:5};
+          var _rkp=function(h){ return _PRk.hasOwnProperty(h.priority)?_PRk[h.priority]:6; };
+          var _pin=mergedRow.filter(function(h){ return (purposeRow&&h.id===purposeRow.id)||(newAdditionsRow&&h.id===newAdditionsRow.id); });
+          var _rest=mergedRow.filter(function(h){ return _pin.indexOf(h)===-1; }).map(function(h,i){ return {h:h,i:i}; })
+            .sort(function(a,b){ return (_rkp(a.h)-_rkp(b.h))||(a.i-b.i); }).map(function(x){ return x.h; });
+          displayMergedRow=_pin.concat(_rest);
+          _sboardTopLevelOrder=displayMergedRow.map(function(h){ return h.id; });
+        }
         var _azGroups=null;
         if(_sboardAzLetterView && _sboardAzApplies()){
           // A-Z letter view: Purpose/NEW (Parking Lot) stay pinned first and MISC
