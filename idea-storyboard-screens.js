@@ -848,6 +848,15 @@
       _sboardBackfillSortOrder(orderedTop);
       _sboardTopLevelOrder=orderedTop.map(function(h){ return h.id; });
       var displayTop=_sboardAlphaHeaderView ? orderedTop.slice().sort(_sboardByAlpha) : orderedTop;
+      // PLAN boards: plans run High -> Low across the board; changing a plan's
+      // priority moves it. Stable sort, unprioritised plans last (Larry, Oct 12 2026).
+      if(_sboardIsPlanBoard){
+        var _PR={HH:0,H:1,MH:2,M:3,ML:4,L:5};
+        var _rk=function(h){ return _PR.hasOwnProperty(h.priority)?_PR[h.priority]:6; };
+        displayTop=displayTop.map(function(h,i){ return {h:h,i:i}; })
+          .sort(function(a,b){ return (_rk(a.h)-_rk(b.h))||(a.i-b.i); })
+          .map(function(x){ return x.h; });
+      }
       if(_sboardAlphaHeaderView){ // Oct 10 2026 (Larry): LIBRARY is the last header in A to Z, in spite of alpha order (display only)
         var _libTop=displayTop.filter(function(h){ return String(h.text_content||'').trim().toUpperCase()==='LIBRARY'; });
         if(_libTop.length) displayTop=displayTop.filter(function(h){ return _libTop.indexOf(h)===-1; }).concat(_libTop);

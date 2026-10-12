@@ -226,6 +226,12 @@ function _sboardRenderGroup(ctx, headerRow, depth){
 if(_sboardIsPlanBoard || headerRow.show_order_front){
   hd.insertAdjacentHTML('beforeend', _sboardOrderBadgeHTML(_sboardTopLevelOrder, headerRow.id, !_sboardIsPlanBoard));
 }
+// TOPIC eyebrow on plan headers, like the BB card eyebrow (Larry, Oct 12 2026).
+if(_sboardIsPlanBoard && headerRow.source_project_id && _sboardAllRowsById[headerRow.source_project_id]){
+  var _eyeT=_sboardAllRowsById[headerRow.source_project_id];
+  var _eyeN=String(_eyeT.text_content||_eyeT.subject||'').trim();
+  if(_eyeN) hd.insertAdjacentHTML('afterbegin','<div class="sb-plan-eyebrow">'+_sboardEsc(_eyeN)+'</div>');
+}
 hd.insertAdjacentHTML('beforeend', _sboardAssignedBadgeHTML(headerRow));
 hd.insertAdjacentHTML('beforeend', _sboardPriorityBadgeHTML(headerRow));
 hd.insertAdjacentHTML('beforeend', _sboardStepTimeBadgeHTML(headerRow));

@@ -86,6 +86,7 @@
         // Plan step time, Oct 11 2026: lower right corner (the signal flags own the lower left).
         +'.sb-step-time{position:absolute;bottom:2px;right:3px;font-size:calc(9px * var(--fg-text-scale,1));line-height:1;font-weight:700;font-family:sans-serif;color:#5a4a30;background:rgba(255,255,255,.82);border-radius:6px;padding:2px 5px;pointer-events:none;z-index:6;white-space:nowrap}'
         // Finished PLAN step, Oct 12 2026: soft white wash with a big green check, under the time badge (z 6) and the other badges.
+        +'.sb-plan-eyebrow{position:absolute;top:3px;left:0;right:0;text-align:center;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(0,0,0,.55);pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 28px}'
         +'.sb-step-done{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55);border-radius:inherit;pointer-events:none;z-index:5}'
         +'.sb-step-done svg{height:72%;width:auto;max-width:90%;filter:drop-shadow(0 1px 1px rgba(255,255,255,.9))}'
         +'.sb-person-badge{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#9c8b73;color:#fff;font-size:calc(7px * var(--fg-text-scale,1));font-weight:700;font-family:sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:6;box-shadow:0 1px 2px rgba(0,0,0,.35)}'
