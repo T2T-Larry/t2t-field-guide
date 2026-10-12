@@ -436,6 +436,8 @@
     if(item.step_done && !/^etc\b/i.test(label)){
       doneMark='<div class="sb-step-done" title="Step done"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#2e9e5b" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
     }
+    // Oct 12 2026 (Larry): a step's own time shows on the face only when its eye is on (default off); the ETC total card always shows.
+    if(!/^etc\b/i.test(label) && !item.show_time_front) txt='';
     if(!txt) return doneMark;
     return doneMark+'<div class="sb-step-time" title="Time for this step">'+_sboardEsc(txt)+'</div>';
   }

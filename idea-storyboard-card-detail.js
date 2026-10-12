@@ -330,7 +330,9 @@
       + '</div>'
       // Plan step time, Oct 11 2026 (Larry, Plan card corners): PLAN boards only. Plain text like "1 day" / "1-2 days"; shows lower right on the face.
       + ((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)
-          ? '<div class="bb-field sb-steptime-field"><label>Time</label><input type="text" id="sb-steptime-input" autocomplete="off" placeholder="1 day" maxlength="20" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.step_time||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'"></div>'
+          ? '<div class="bb-field sb-steptime-field"><label>Time</label><input type="text" id="sb-steptime-input" autocomplete="off" placeholder="1 day" maxlength="20" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.step_time||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
+            // Oct 12 2026 (Larry): TIME gets the eye like every other option; default is back only. Becomes the eye beside the label via eyeBesideLabels.
+            + '<label class="bb-front-check" id="sb-steptime-front-row"><input type="checkbox" id="sb-steptime-front"'+(item.show_time_front?' checked':'')+'><span>Show on front</span></label></div>'
             // Oct 12 2026: tap-to-check for steps that never become BB cards (decisions, approvals). BB-linked steps are set by the database.
             + '<div class="bb-field sb-stepdone-field"><label class="bb-front-check"><input type="checkbox" id="sb-stepdone-input"'+(item.step_done?' checked':'')+'><span>Step done</span></label></div>'
           : '')
@@ -1281,6 +1283,27 @@
           _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, {step_time:next}); }});
           renderSeaBoard(true);
         }catch(err){ if(statusBox) statusBox.textContent='Could not save time: '+err.message; }
+      });
+    })();
+
+    // Time eye, Oct 12 2026 -- checked = the step's time shows lower right on the face; default off (back only).
+    (function(){
+      var cb=document.getElementById('sb-steptime-front'), row=document.getElementById('sb-steptime-front-row');
+      if(!cb) return;
+      function tip(){ if(row) row.title = cb.checked ? 'Time shows on the card face \u2014 click to hide it' : 'Time is back only \u2014 click to show it on the card face'; }
+      tip();
+      cb.addEventListener('change', async function(){
+        tip();
+        var show=cb.checked, before={show_time_front:!show};
+        try{
+          var upd=await _sb.from('ideas').update({show_time_front:show}).eq('id',item.id);
+          if(upd.error) throw upd.error;
+          item.show_time_front=show;
+          _sboardPatchRow(item.id, {show_time_front:show});
+          var itemId=item.id;
+          _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, {show_time_front:show}); }});
+          renderSeaBoard(true);
+        }catch(err){ cb.checked=!show; tip(); if(statusBox) statusBox.textContent='Could not save: '+err.message; }
       });
     })();
 
