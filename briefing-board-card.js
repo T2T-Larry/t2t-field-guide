@@ -1001,7 +1001,11 @@
       // the missing link that let a Briefing Card's own tile actually read it
       // back out. Without it the checkbox saved fine but never changed what
       // the card's corner badge showed.
-      hidePrimaryBadge: !!row.hide_primary_badge
+      hidePrimaryBadge: !!row.hide_primary_badge,
+      // Oct 12 2026 -- the PLAN step this card carries out (task_fields.plan_step_id via the
+      // briefing_cards view). Read-only here, like projectHeaderId: deliberately NOT in
+      // _bbCardToRow, so a routine whole-board save can never change or clear the link.
+      planStepId: row.plan_step_id || null
     };
   }
   function _bbSafeIdList(rows){
