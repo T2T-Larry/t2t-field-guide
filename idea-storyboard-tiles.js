@@ -217,7 +217,8 @@
   //    see FGFitFontSize's own comment for why that's a separate check
   //    from the per-word width one this function already did.
   function _sboardFitFontSize(text, base, min, maxWidthPx, maxHeightPx, lineHeight, oneLine){
-    if(!maxWidthPx){
+    // Oct 14 2026: also take the character-count estimate when text-fit.js (window.FGFitFontSize) hasn't loaded, instead of throwing "not a function".
+    if(!maxWidthPx || typeof window.FGFitFontSize!=='function'){
       var len=(text||'').length;
       if(len<=14) return base;
       var reduced=base-Math.floor((len-14)/5);
