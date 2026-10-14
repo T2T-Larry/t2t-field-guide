@@ -82,7 +82,6 @@
   }
 
   window.T2TStoryboard = {
-    ensureMiscHeader: T2TData.ensureMiscHeader,
     ensureTrashHeader: T2TData.ensureTrashHeader,
     moveCard: _sboardMoveCard,
     isAutoHeaderText: _sboardIsAutoHeaderText,

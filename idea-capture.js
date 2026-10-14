@@ -443,9 +443,9 @@
     // (briefing-board-public-api.js) instead of its private _bb* helpers.
     // Oct 10 2026 (Larry: "Clicked (+) from a BS header. Added task but it disappeared"): a task
     // entered from a Blue Sky header's (+) belongs to THAT header, so it is filed under the
-    // header you clicked, not just the open topic. Loose buckets (Parking Lot, MISC...) keep
+    // header you clicked, not just the open topic. Loose buckets (Parking Lot...) keep
     // the old behavior and file under the topic.
-    var _icLooseNames=['NEW','New Additions','Parking Lot','MISC','Purpose','Trash'];
+    var _icLooseNames=['NEW','New Additions','Parking Lot','Purpose','Trash'];
     var _icTaskHeader=(_icMode!=='bb' && _icHeaderId && _icLooseNames.indexOf(_icHeaderLabel)===-1) ? _icHeaderId : null;
     var created=window.T2TBriefingBoard.createNewCard({task:text, subject:subject, projectHeaderId:_icTaskHeader||_icBoardId||null});
     if(!created) return;
@@ -1315,7 +1315,7 @@
     var topicEl=document.getElementById('isx-p-topic');
     if(!topicEl) return;
     var MASTER_ID='__master__';
-    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Purpose':1,'Trash':1,'Archived':1};
     var names={};
 
     function fetchRow(id){

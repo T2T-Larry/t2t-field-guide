@@ -56,7 +56,7 @@
   // name yet -- or an old per-Topic "(Thumb Rest)"-style catch-all, see
   // ensureNewAdditionsHeader below -- still gets excluded from ordinary
   // header listings, not just the current name.
-  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','MISC','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
+  var RESERVED_HEADERS = ['NEW','New Additions','Parking Lot','Purpose','Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
 
   /* Oct 6 2026 (Master BB bug): a header whose title sits only in idea_text (older Library filing) read as
      "(untitled)" everywhere. Fill text_content from idea_text / link_title once, as the rows load. */
@@ -232,7 +232,7 @@
       var candidates=await sb.from('ideas').select('id,text_content,storyboard_kind')
         .eq('user_id',u.id).eq('content_type','header').is('cluster_id',null).neq('id',rootId);
       if(!candidates.error && candidates.data && candidates.data.length){
-        var EXCLUDE={'Trash':1,'Archived':1,'MISC':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'MASTER':1};
+        var EXCLUDE={'Trash':1,'Archived':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'MASTER':1};
         var toMove=candidates.data.filter(function(r){
           return !EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA';
         }).map(function(r){ return r.id; });
@@ -402,20 +402,20 @@
     }).catch(function(e){ console.warn('ensureHeaderNamed exception:', e); return null; });
   }
 
-  /* Deletion-sticks backstop, Aug 18 2026 -- Larry: "Allow NEW and MISC
+  /* Deletion-sticks backstop, Aug 18 2026 -- Larry: "Allow NEW and Parking Lot
      headers to be deleted like any other header. Adding headers is only
      a default. If headers already exist, do not add any default
-     headers." Before this, ensureMiscHeader/ensureNewAdditionsHeader/
+     headers." Before this, ensureNewAdditionsHeader/
      ensurePurposeHeader ran on every render and silently recreated
-     whichever default was missing -- so trashing NEW or MISC never
+     whichever default was missing -- so trashing NEW or Parking Lot never
      actually stuck, it just came back on the next render.
      First attempt checked "does this parent currently have any header
      at all" -- but that breaks the instant a traveler deletes the LAST
      header standing on an otherwise-empty board (a very common shape:
-     most boards start with only NEW+MISC and nothing else), because at
+     most boards start with only NEW and nothing else), because at
      that instant the count legitimately hits zero and looks exactly
      like a genuinely brand-new board again. Larry hit this directly:
-     deleting MISC "did nothing" because it came right back.
+     deleting Parking Lot "did nothing" because it came right back.
      Fixed properly with a persisted per-parent flag
      (header_defaults_seeded column, migrated Aug 18 2026) instead of a
      point-in-time count: once a parent has ever had its defaults
@@ -429,11 +429,11 @@
     if(res.data[0].header_defaults_seeded) return true;
     // Session 231 (Aug 20) gap -- Larry: "DO NOT ADD ANY HEADERS
     // AUTOMATICALLY TO ANY BOARD THAT ALREADY HAS HEADERS." The flag
-    // above only gets set the first time ONE of NEW/MISC/Purpose is
+    // above only gets set the first time ONE of NEW/Purpose is
     // actually auto-inserted -- so a board Larry built by hand (headers
-    // with names other than NEW/MISC/Purpose, flag never touched) still
+    // with names other than NEW/Purpose, flag never touched) still
     // looked "unseeded" to this check, and the very next render happily
-    // inserted a fresh NEW/MISC/Purpose default into a board that
+    // inserted a fresh NEW/Purpose default into a board that
     // already had real content. Self-heal here instead: if the flag
     // isn't set yet but this parent already has ANY header at all,
     // that's proof it's not a brand-new board -- mark it seeded now
@@ -453,26 +453,8 @@
     try{ await _sb().from('ideas').update({header_defaults_seeded:true}).eq('id',parentId); }catch(e){}
   }
 
-  async function ensureMiscHeader(parentId){
-    // Sept 13 2026 -- Larry: "I no longer want Purpose and MISC to
-    // autogenerate on boards." Lookup-only now: if a MISC header already
-    // exists on this parent, it's still found and used exactly as before
-    // (nothing changes for boards that already have one). What's removed
-    // is the insert-if-missing branch below it -- a board with no MISC
-    // simply gets none, no default ever created. Left _parentDefaultsSeeded
-    // untouched (still used by ensureNewAdditionsHeader's own flag check)
-    // rather than deleting it here.
-    var sb=_sb();
-    var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','MISC');
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q.limit(1);
-    if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-    return null;
-  }
-
   async function ensurePurposeHeader(parentId){
-    // Sept 13 2026 -- same change as ensureMiscHeader above: lookup-only,
-    // no more auto-create. See that function's comment.
+    // Sept 13 2026 -- lookup-only, no auto-create.
     var sb=_sb();
     var q=sb.from('ideas').select('id').eq('content_type','header').eq('text_content','Purpose');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
@@ -999,7 +981,6 @@
     topLevelBoards: topLevelBoards,
     ensureHeaderNamed: ensureHeaderNamed,
     ensureArchivedHeader: ensureArchivedHeader,
-    ensureMiscHeader: ensureMiscHeader,
     ensurePurposeHeader: ensurePurposeHeader,
     ensureCollaboratorHeader: ensureCollaboratorHeader,
     collaboratorEntries: collaboratorEntries,

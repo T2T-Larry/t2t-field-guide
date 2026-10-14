@@ -92,7 +92,7 @@
       if(!wt || !wt.id){
         // Wish Tank lookup failed (auth/Supabase not ready yet) — retry once
         // after a short delay rather than silently proceeding with a null id,
-        // which was creating orphaned root-level Purpose/MISC/NEW headers.
+        // which was creating orphaned root-level Purpose/NEW headers.
         await new Promise(function(r){ setTimeout(r,400); });
         wt=await T2TMedia.ensureWishTank();
       }
@@ -773,7 +773,6 @@
   // gap being hidden. Single-step only: one action deep each way, not a
   // full history stack.
   var _isxTrashId = null;
-  var _isxMiscId = null;
   var _isxPurposeId = null;
   var _isxLastAction = null;
   var _isxLastUndone = null;
@@ -910,7 +909,7 @@
   // fresh from the current clusterId rather than reading 9710's globals
   // (_sboardVisibleHeaders etc.), which may be stale or scoped to a
   // different Topic if 9710 hasn't been opened this session. Covers every
-  // content subheader plus MISC; Trash is excluded — it's a global bucket,
+  // content subheader plus Parking Lot; Trash is excluded — it's a global bucket,
   // not "on this board" — matching 9710's own exclusion. July 14, 2026.
   // Gear menu — mirrors 9710's own Options consolidation (see
   // _sboardOpenGearMenu in idea-storyboard-9710.js): moves the 🎨 Recolor
@@ -988,7 +987,7 @@
   }
 
   // Factory reset — headers only, current board only (Locked July 18,
-  // 2026). Clears canvas_x/canvas_y on every content header + MISC on THIS
+  // 2026). Clears canvas_x/canvas_y on every content header + Parking Lot on THIS
   // Topic so they fall back to the alpha ring on next render. Never touches
   // Trash (separate global bucket, not part of the ring) and never touches
   // card CONTENTS inside a header — only where the header itself sits.
@@ -1043,21 +1042,20 @@
     try{
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) throw new Error('Not signed in.');
-      var miscId=await T2TStoryboard.ensureMiscHeader(clusterId);
       var res=await _sb.from('ideas').select('id,text_content')
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
       if(window.T2TGroups) await T2TGroups.load(clusterId);
       var excludedNames=['Purpose','NEW','New Additions','Parking Lot'];
       var ids=(res.data||[]).filter(function(r){ return excludedNames.indexOf(r.text_content)===-1; })
-        .map(function(r){ return r.id; }).concat(miscId?[miscId]:[]);
+        .map(function(r){ return r.id; });
       var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
       var swatches=_isxColorSwatches.map(function(c){
         return '<button class="sb-swatch" data-c="'+c+'" style="width:26px;height:26px;border-radius:50%;background:'+c+';border:1px solid #cfe4f2;cursor:pointer"></button>';
       }).join('');
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
         +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this Topic, including MISC, gets it.</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this Topic gets it.</div>'
         +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
         +'<button class="sc-ov-btn" id="isx-recolor-close" style="width:100%">Cancel</button>'
         +'</div>';
@@ -1118,18 +1116,18 @@
     // picks up everything fresh. Aug 9 2026 (Supabase egress fix).
     if(fromCache && !_isxCacheReady) return;
     try{
-      // miscId/purposeId/trashId default to whatever this tab last
+      // purposeId/trashId default to whatever this tab last
       // resolved them to -- only actually recomputed below when this
       // render does a real fetch. A cache-only patch render reuses them
       // as-is, same reasoning as idea-storyboard-9710.js's renderSeaBoard.
-      var miscId=_isxMiscId, purposeId=_isxPurposeId, trashId=_isxTrashId;
+      var purposeId=_isxPurposeId, trashId=_isxTrashId;
 
       if(!fromCache){
         var _sb=T().sb;
         var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
         if(!user||!clusterId) return;
 
-        // MISC is per-Topic (same ensure-call 9710 uses); Trash is a single
+        // Parking Lot is per-Topic (same ensure-call 9710 uses); Trash is a single
         // global bucket for the whole account. Both are always shown, even
         // empty — permanent slots, not something that only appears once it
         // has content. July 14, 2026.
@@ -1140,13 +1138,12 @@
         var isAtProjectRoot = !!(T2TShared.isxPath && T2TShared.isxPath.length===1);
         var projectId = (T2TShared.isxPath && T2TShared.isxPath[0]) ? T2TShared.isxPath[0].id : null;
         var _ensureResults=await Promise.all([
-          T2TStoryboard.ensureMiscHeader(clusterId),
           T2TStoryboard.ensureTrashHeader(),
           (isAtProjectRoot && projectId && window.T2TData && window.T2TData.ensurePurposeHeader)
             ? window.T2TData.ensurePurposeHeader(projectId) : Promise.resolve(null)
         ]);
-        miscId=_ensureResults[0]; trashId=_ensureResults[1]; purposeId=_ensureResults[2];
-        _isxTrashId=trashId; _isxMiscId=miscId; _isxPurposeId=purposeId;
+        trashId=_ensureResults[0]; purposeId=_ensureResults[1];
+        _isxTrashId=trashId; _isxPurposeId=purposeId;
 
         // Cluster-scoped fetch (only this Topic's own direct children, not
         // the whole account like 9710's board-wide fetch) -- still a real
@@ -1196,8 +1193,7 @@
         T2TStoryboard.ensureAssignedInitials(allRows).then(function(fetchedSomething){ if(fetchedSomething) _isxRenderBoard(true); });
       }
       var ideaRows=allRows.filter(function(r){ return r.content_type!=='header'; });
-      var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(miscId) && String(r.id)!==String(purposeId); });
-      var miscRow=allRows.find(function(r){ return String(r.id)===String(miscId); }) || (miscId ? _isxAllRowsById[miscId] : null) || ((fromCache || !miscId) ? null : await _isxFetchRow(miscId));
+      var contentHeaders=allRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(purposeId); });
       var purposeRow=purposeId ? allRows.find(function(r){ return String(r.id)===String(purposeId); }) : null;
 
       // July 18, 2026 (Larry): the board used to wipe to blank the instant
@@ -1224,9 +1220,9 @@
       // (canvas_x/canvas_y still null). The instant a traveler drags one,
       // it persists a real position and moves to the freeform canvas below
       // — permanently, until a factory reset (see _isxResetHeadersToAlpha)
-      // sends it back. MISC participates like any ordinary header; Trash
+      // sends it back. Parking Lot participates like any ordinary header; Trash
       // is its own fixed icon, never part of the ring or the canvas.
-      var ringCandidates=contentHeaders.concat(miscRow?[miscRow]:[]).concat(purposeRow?[purposeRow]:[]);
+      var ringCandidates=contentHeaders.concat(purposeRow?[purposeRow]:[]);
       var untouchedRing=ringCandidates.filter(function(r){ return r.canvas_x==null || r.canvas_y==null; })
         .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'}); });
       var canvasHeaders=ringCandidates.filter(function(r){ return !(r.canvas_x==null || r.canvas_y==null); });
@@ -1245,7 +1241,7 @@
         // this loop still runs them in order — only the (usually invisible)
         // children fetch behind each pile now happens concurrently.
         await Promise.all(untouchedRing.map(function(rr, ri){
-          // MISC's box-emoji prefix removed July 18, 2026 — rendered as a
+          // Parking Lot's box-emoji prefix removed July 18, 2026 — rendered as a
           // stray gold dot on Larry's system (same tofu-style emoji-font
           // issue already fixed for Trash's icon earlier today).
           return _isxBuildHeaderPile(rr, '', boardW, boardH, ringLayer, null, true, ringPts[ri]);
@@ -1287,11 +1283,10 @@
           topicText: (T2TShared.isxPath && T2TShared.isxPath.length) ? _isxLabel(T2TShared.isxPath[T2TShared.isxPath.length-1]) : '',
           parentText: (T2TShared.isxPath && T2TShared.isxPath.length>1) ? _isxLabel(T2TShared.isxPath[T2TShared.isxPath.length-2]) : null,
           // Card-details sweep, July 19, 2026: DETAILS also reads
-          // _sboardMiscId/_sboardTrashId/_sboardPurposeId directly for the
-          // trash/misc button states and the Purpose row in the Move list --
+          // _sboardTrashId/_sboardPurposeId directly for the
+          // trash button states and the Purpose row in the Move list --
           // same 9710-only-state bug class as Current Location, just not
           // caught in the July 18 pass. Hand these over too.
-          miscId: miscId,
           trashId: trashId,
           purposeId: purposeId
         });
@@ -1397,7 +1392,7 @@
   // Fixed Trash icon (July 18, 2026) — small, pinned to the bottom-right of
   // the board viewport regardless of scroll, replacing the old "Trash is a
   // pile like any other header" treatment. Direct-drop fast lane: dropping
-  // a loose (non-header) card here bypasses MISC entirely, with a single
+  // a loose (non-header) card here bypasses Parking Lot entirely, with a single
   // skippable confirm (localStorage "don't ask me again", separate from the
   // factory-reset one). Dropping a HEADER here keeps a heavier, non-
   // skippable confirm — trashing a whole header takes its contents with it,
@@ -1645,7 +1640,7 @@
   // plain reposition drop just persists its new spot. Single click
   // toggles the pile open/closed (see _isxBuildHeaderPile); double-click
   // still drills straight into it as a Topic. Always a valid drop target
-  // for loose ideas. MISC is an ordinary header now (July 18, 2026 —
+  // for loose ideas. Parking Lot is an ordinary header now (July 18, 2026 —
   // fully in the ring/canvas rotation like any content header). Trash is
   // its own fixed icon (see _isxBuildTrashIcon), no longer a stack tile.
   function _isxMakeHeaderStackTile(row, iconPrefix, w, h, anchor, ephemeral, forcedPos){
@@ -2224,7 +2219,7 @@
         var tid=_isxCurrentTopicId(), out=[];
         Object.keys(_isxAllRowsById).forEach(function(k){
           var r=_isxAllRowsById[k];
-          if(r && r.content_type==='header' && String(r.cluster_id)===String(tid) && k!==_isxTrashId && k!==_isxMiscId && !(window.T2TPlan && T2TPlan.isContainer(r)))
+          if(r && r.content_type==='header' && String(r.cluster_id)===String(tid) && k!==_isxTrashId && !(window.T2TPlan && T2TPlan.isContainer(r)))
             out.push({id:r.id, name:r.text_content||'(untitled)'});
         });
         out.sort(function(a,b){ return a.name.localeCompare(b.name); });

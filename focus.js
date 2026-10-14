@@ -12,7 +12,7 @@
      ACTIVE (non-reserved) direct children of wherever you
      currently stand — one real level, never the whole tree.
      Picking one, or creating a new one, steps you one level
-     deeper. Reserved headers (Purpose/MISC/NEW/Trash) never
+     deeper. Reserved headers (Purpose/NEW/Trash) never
      appear as choices at any depth — they're content buckets,
      not destinations.
    - PARENT: whatever is one level directly above TOPIC. Tap it
@@ -21,7 +21,7 @@
    - Begin: opens the shotgun board for whatever TOPIC currently
      is, at whatever depth that happens to be.
 
-   No separate HEADER rung — Purpose/MISC/NEW/custom headers are
+   No separate HEADER rung — Purpose/NEW/custom headers are
    the board's concern once you're inside a TOPIC, not FOCUS's.
    ============================================================ */
 
@@ -180,7 +180,6 @@
           state.projects.push(row);
           return Promise.all([
             window.T2TData.ensurePurposeHeader(row.id),
-            window.T2TData.ensureMiscHeader(row.id),
             window.T2TData.ensureNewAdditionsHeader(row.id)
           ]).catch(function(e){ console.warn('Default header seed failed for new project:', e); })
             .then(function(){ return row; });

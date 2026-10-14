@@ -37,27 +37,26 @@
     var ov=document.getElementById('sb-detail-overlay');
     var _sb=T().sb;
     // Card-details sweep, July 19, 2026: hoisted up from further down so
-    // isTrashed/isMisc/the Purpose row below can also be screen-aware, not
+    // isTrashed/isthe Purpose row below can also be screen-aware, not
     // just the Current Location breadcrumb.
     var isxScreenEl=document.getElementById('s-idea-session');
     var isOn9711=!!(isxScreenEl && isxScreenEl.classList.contains('active'));
     var isHeaderType=item.content_type==='header';
-    // Reserved system headers (Trash/MISC/NEW) used to short-circuit here
+    // Reserved system headers (Trash/NEW) used to short-circuit here
     // into a stripped-down "Shape" card (color + notes only, no rename/
     // move/trash) while Purpose and ordinary headers got the full DETAILS
-    // card below. Larry, Aug 16 2026: "New, Purpose and MISC headers are
+    // card below. Larry, Aug 16 2026: "New, Purpose and Parking Lot headers are
     // headers and should have insides just like any other card... on
     // every board. SOP." -- removed the special case entirely. All
     // headers, reserved or not, now render the same full DETAILS card
     // and can be renamed, moved, and trashed like any other card.
 
-    // Card-details sweep, July 19, 2026: _sboardTrashId/_sboardMiscId/
+    // Card-details sweep, July 19, 2026: _sboardTrashId/
     // _sboardPurposeId are only ever populated by 9710's own renderSeaBoard
     // fetch -- stale or unset entirely if 9710 never rendered this session.
     // Same bug class as Current Location (fixed July 18); prefer 9711's own
     // context (setIsxContext) when it's the active screen.
     var _effTrashId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.trashId : _sboardTrashId;
-    var _effMiscId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.miscId : _sboardMiscId;
     var _effPurposeId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.purposeId : _sboardPurposeId;
     // Aug 25 2026 -- same reasoning as the three above. Needed once the
     // landing-zone header could be named something other than literally
@@ -67,11 +66,10 @@
     // match that no longer holds.
     var _effNewAdditionsId=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.newAdditionsId : _sboardNewAdditionsId;
     var isTrashed=String(item.cluster_id)===String(_effTrashId) && _effTrashId;
-    var isMisc=String(item.cluster_id)===String(_effMiscId) && _effMiscId;
-    // Oct 10 2026 -- Larry: no more automatic Purpose/MISC headers; "Parking Lot
-    // replaces MISC need." The old Send to Misc button went through
-    // ensureMiscHeader, which has been lookup-only since Sept 13, so on any board
-    // without a MISC it resolved to null and quietly moved the card OUT to the
+    // Oct 10 2026 -- Larry: no more automatic Purpose headers; "Parking Lot
+    // replaces Parking Lot need." The old Send to Parking Lot button went through
+    // the retired ensure-call, which has been lookup-only since Sept 13, so on any board
+    // without a Parking Lot it resolved to null and quietly moved the card OUT to the
     // loose root. The button now targets the Parking Lot (isParked = already in it).
     var isParked=!!_effNewAdditionsId && String(item.cluster_id)===String(_effNewAdditionsId);
     var heartCount=item.heart_count||0;
@@ -212,7 +210,7 @@
     var orderCanDown=(_sbOrderList && _sbOrderIdx>-1 && _sbOrderIdx<_sbOrderList.length-1);
 
     // MOVE column retired Sept 30 2026 (Larry: TOPIC and board type on the ID Band should always let a card move, so "MOVE field ... might not
-    // be needed any more"). The TOPIC box now opens the same pyramid (openMoveAnywherePicker: any topic or header, Misc, + New header) and the
+    // be needed any more"). The TOPIC box now opens the same pyramid (openMoveAnywherePicker: any topic or header, Parking Lot, + New header) and the
     // board-type box moves the card to another board. Alt+M still opens the pyramid.
     var topRowHTML='<div class="sb-eyebrow-row">'
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
@@ -232,7 +230,7 @@
     // card_roles.is_primary, which is what the corner badge and the Team
     // filter read now (see _sboardEnsureCardPrimary / _csSetPrimary).
 
-    // The old move panel (headers on this board, Misc, + new header,
+    // The old move panel (headers on this board, Parking Lot, + new header,
     // Different Topic, Different Project, Anywhere) was retired Sept 22
     // 2026 when the PARENT field became MOVE -- everything it offered now
     // lives in the one project pyramid (openMoveAnywherePicker below).
@@ -766,7 +764,7 @@
     async function openMoveAnywherePicker(){
       var ov2=document.getElementById('sb-detail-overlay');
       if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
-      // Parking Lot / NEW / Purpose / MISC are real places a card can go (the
+      // Parking Lot / NEW / Purpose / Parking Lot are real places a card can go (the
       // old move panel offered them), so they stay in the list; only the
       // system buckets that aren't destinations are hidden.
       var ANYWHERE_RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
@@ -785,7 +783,7 @@
       // Sept 22 2026 (PARENT became MOVE) -- the pyramid now opens already
       // expanded down to where this card lives (expandPath), with that
       // spot marked "here" (hereId), so nearby headers are one tap away
-      // and every other project is still one expand away. Misc and
+      // and every other project is still one expand away. Parking Lot and
       // "+ New header" (the two things the old move panel had that the
       // pyramid didn't) sit underneath it.
       var _sbTopicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
@@ -794,7 +792,7 @@
         +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Tap any project or topic to move this card there. ▸ opens a level.</div>'
         +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:300px;overflow-y:auto;margin-bottom:8px"></div>'
         +'<div style="display:flex;gap:6px;margin-bottom:6px">'
-        +  '<button class="sc-ov-btn" id="sb-anywhere-misc" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot')+'</button>'
+        +  '<button class="sc-ov-btn" id="sb-anywhere-park" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot')+'</button>'
         +  (_sbTopicForNew ? '<button class="sc-ov-btn" id="sb-anywhere-newh" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">+ New header here</button>' : '')
         +'</div>'
         +'<div id="sb-newheader-row" style="display:none;margin-bottom:6px"><input id="sb-newheader-input" type="text" autocomplete="off" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
@@ -849,7 +847,7 @@
           }catch(err){ console.error(err); }
         }
       });
-      T().wire('sb-anywhere-misc', function(){ _sbMoveFromBoard=false; _sbSendToMisc(); });
+      T().wire('sb-anywhere-park', function(){ _sbMoveFromBoard=false; _sbSendToParkingLot(); });
       T().wire('sb-anywhere-newh', function(){
         var row=document.getElementById('sb-newheader-row'); if(!row) return;
         row.style.display='block';
@@ -895,7 +893,7 @@
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      var extras=[{label:(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot'), fn:function(){ _sbMoveFromBoard=false; _sbSendToMisc(); }}];
+      var extras=[{label:(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot'), fn:function(){ _sbMoveFromBoard=false; _sbSendToParkingLot(); }}];
       if(topicForNew) extras.push({label:'+ New header here', fn:function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); }});
       FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:item.cluster_id, excludeId:item.id, onPick:moveCardToHeader, extras:extras});
     }
@@ -1473,8 +1471,8 @@
     })();
 
     // Send to Parking Lot -- offered at the bottom of the MOVE pyramid.
-    // (Function keeps its old name, _sbSendToMisc, so the three call sites stay put.)
-    async function _sbSendToMisc(){
+    // (Function keeps its old name, _sbSendToParkingLot, so the three call sites stay put.)
+    async function _sbSendToParkingLot(){
       try{
         // Card-details sweep, July 19, 2026: T2TShared.currentTopicId is
         // 9710-only (never set by 9711's own navigation) -- use 9711's

@@ -924,7 +924,7 @@
   }
 
   // [+] control — adds a new header at whatever board is currently open,
-  // landing right where MISC sits (far right). Simpler and more direct
+  // landing right where Parking Lot sits (far right). Simpler and more direct
   // than routing through the 💡 idea-capture flow just to make a header.
   // Kept small and understated (a control, not a card) after feedback
   // that a full card-sized dashed box felt cluttered. Locked July 16, 2026.

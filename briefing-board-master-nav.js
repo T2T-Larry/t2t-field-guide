@@ -1010,7 +1010,7 @@
   // briefing-board.js doesn't keep the Idea Board's account-wide
   // _sboardAllRowsById around, and this is only needed the moment the
   // caret is actually pressed.
-  var BB_RESERVED_HEADER_NAMES = {'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  var BB_RESERVED_HEADER_NAMES = {'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Purpose':1,'Trash':1,'Archived':1};
   async function _bbTopicChildChoices(headerId){
     if(!headerId) return [];
     var sb=T().sb;
@@ -1029,7 +1029,7 @@
   // header at the top, every header beneath it indented by depth, the
   // header currently in TOPIC highlighted. Click any row to jump there
   // (same jumpToTopic the old arrows used). Same ideas.cluster_id tree
-  // and same reserved-name exclusion (Parking Lot, MISC, Trash...) the
+  // and same reserved-name exclusion (Parking Lot, Trash...) the
   // arrows already read. Capped at 8 levels / 400 headers so a huge
   // account root (the Master board) can never lock the page up.
   async function _bbTopicTreeRows(){

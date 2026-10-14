@@ -22,8 +22,8 @@
 function _sboardRenderGroup(ctx, headerRow, depth){
   var subHeadersOf=ctx.subHeadersOf, childrenOfHeader=ctx.childrenOfHeader, HEADER_W=ctx.HEADER_W, _tsMult=ctx._tsMult, HEADER_H=ctx.HEADER_H, SUBBER_W=ctx.SUBBER_W, SUBBER_H=ctx.SUBBER_H;
     var name=headerRow.text_content||'(untitled cluster)';
-    var isReserved=(name==='Trash'||name==='MISC'||name==='Purpose'||name==='NEW'||name==='Parking Lot');
-    // MISC can take a new card just as freely as any content header —
+    var isReserved=(name==='Trash'||name==='Purpose'||name==='NEW'||name==='Parking Lot');
+    // Parking Lot can take a new card just as freely as any content header —
     // it's specifically for ideas that don't relate to the current
     // TOPIC, so excluding it from the [+] made no sense. Purpose picked
     // up the same [+] on Aug 4, 2026 per Larry -- it's still a
@@ -218,7 +218,7 @@ function _sboardRenderGroup(ctx, headerRow, depth){
 // two paths.
 // Reinstated on PLAN boards only, Aug 26 2026 (Session 251, Larry:
 // "every card needs a number on a planning board -- those are the
-// steps!") -- top-level column headers (Purpose, CONTENT, MISC...)
+// steps!") -- top-level column headers (Purpose, CONTENT...)
 // are their own render path (see the matching Person Assigned note
 // just above), so they need their own badge call too, reading
 // _sboardTopLevelOrder -- the one place that already tracks this
@@ -363,7 +363,7 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
         scroll.appendChild(window.T2TTaskMarker.makeTile(headerRow.id, HEADER_W));
       }
       // [+] under each header adds a new subber directly here — mirrors
-      // the [+] after MISC for headers. MISC included now too (any
+      // the [+] after Parking Lot for headers. Parking Lot included now too (any
       // idea can land there, on-topic or not); Purpose joined them
       // Aug 4, 2026. NEW/Trash stay excluded.
       if(!blocksNewSubbers && !headerRow.locked){

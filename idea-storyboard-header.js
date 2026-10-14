@@ -1286,7 +1286,7 @@
   }
 
   // One click, one swatch — recolors every header currently on this board
-  // level (Purpose, MISC, NEW, and every visible content header) instead of
+  // level (Purpose, NEW, and every visible content header) instead of
   // opening each one's SHAPING card individually.
   // Fix orphaned Purpose/Ideas headers — added July 12, 2026. Purpose and
   // the Ideas bucket used to be scoped to cluster_id=null, back when there
@@ -1311,7 +1311,7 @@
       if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
       var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id)
         .eq('content_type','header').is('cluster_id',null)
-        .in('text_content',['Purpose','NEW','New Additions','Parking Lot','MISC']);
+        .in('text_content',['Purpose','NEW','New Additions','Parking Lot']);
       if(res.error) throw new Error(res.error.message);
       var orphans=(res.data||[]).filter(function(r){ return String(r.id)!==String(wt.id); });
       var ov2=document.getElementById('sb-detail-overlay');
@@ -1337,7 +1337,7 @@
         try{
           for(var i=0;i<orphans.length;i++){
             var o=orphans[i];
-            var newName=(o.text_content==='Purpose')?'Purpose':(o.text_content==='MISC'?'MISC':'Wish Tank Ideas');
+            var newName=(o.text_content==='Purpose')?'Purpose':'Wish Tank Ideas';
             var upd=await _sb.from('ideas').update({cluster_id:wt.id,text_content:newName}).eq('id',o.id);
             if(upd.error) throw upd.error;
             _sboardPatchRow(o.id, {cluster_id:wt.id,text_content:newName});
@@ -1375,7 +1375,7 @@
     // (right below) is its own separate, real action.
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Recolor all headers</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this board, including Purpose, MISC and NEW, gets it. Subbers (nested inside a header) and individually-colored cards are untouched.</div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Pick one — every header on this board, including Purpose and NEW, gets it. Subbers (nested inside a header) and individually-colored cards are untouched.</div>'
       +'<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:10px">'+swatches+'</div>'
       +'<button class="sc-ov-btn" id="sb-recolor-close" style="width:100%">Cancel</button>'
       +'</div>';
@@ -1384,7 +1384,7 @@
     ov.querySelectorAll('.sb-swatch').forEach(function(sw){
       sw.onclick=async function(){
         var c=sw.getAttribute('data-c');
-        var ids=[_sboardPurposeId,_sboardMiscId,_sboardNewAdditionsId]
+        var ids=[_sboardPurposeId,_sboardNewAdditionsId]
           .concat((_sboardVisibleHeaders||[]).map(function(h){ return h.id; }))
           .filter(Boolean);
         var uniq=ids.filter(function(id,idx){ return ids.indexOf(id)===idx; });
@@ -1416,13 +1416,13 @@
   // Sub-Header clusters at all, so the content_type:'header'-only
   // version had nothing to touch there. Gathers every row (any
   // content_type) whose cluster_id points at a Header actually showing
-  // on this screen right now (Purpose/MISC/any visible content header).
-  // Still excludes an auto-managed bucket (NEW/MISC/a parenthetical
+  // on this screen right now (Purpose/any visible content header).
+  // Still excludes an auto-managed bucket (NEW/a parenthetical
   // auto-name) while it's genuinely empty -- same hidden-until-used
   // rule renderGroup itself follows -- since that one specific row type
   // is never actually on screen to look recolored either way.
   function _sboardVisibleSubberIds(){
-    var parentIds=[_sboardPurposeId,_sboardMiscId]
+    var parentIds=[_sboardPurposeId]
       .concat((_sboardVisibleHeaders||[]).map(function(h){ return h.id; }))
       .filter(Boolean);
     var parentSet={};
@@ -1485,7 +1485,7 @@
   // sequential Supabase writes run.
   //
   // Only the real content headers move -- Purpose, NEW ("New Additions"),
-  // and MISC are auto-managed, reserved headers with their own fixed
+  // and Parking Lot are auto-managed, reserved headers with their own fixed
   // conventional spots (first, second, and always-last respectively —
   // see _rowPriority in renderSeaBoard) and are deliberately left exactly
   // where they already sit.
@@ -1879,9 +1879,9 @@
      would just get silently recreated on the next render.
      First cut checked "does this parent currently have any header at
      all" -- broke the instant a traveler deleted the LAST header on an
-     otherwise-empty board (the common NEW+MISC-only shape), since the
+     otherwise-empty board (the common NEW-only shape), since the
      count legitimately hits zero right when a deletion should be
-     sticking. Larry hit exactly this trying to delete MISC. Fixed with
+     sticking. Larry hit exactly this trying to delete Parking Lot. Fixed with
      the same persisted header_defaults_seeded column header-data.js
      uses -- once a parent's defaults have ever been seeded, that stays
      true forever, independent of how many headers remain. */
@@ -1914,9 +1914,9 @@
   }
 
   async function _sboardEnsurePurposeHeader(parentId){
-    // Sept 13 2026 -- Larry: "I no longer want Purpose and MISC to
+    // Sept 13 2026 -- Larry: "I no longer want Purpose and Parking Lot to
     // autogenerate on boards." Lookup-only now, same change as
-    // header-data.js's ensurePurposeHeader/ensureMiscHeader (see those
+    // header-data.js's ensurePurposeHeader/the retired ensure-call (see those
     // comments): an existing Purpose header is still found and used
     // exactly as before; the insert-if-missing branch is removed, so a
     // project with no Purpose header simply gets none.

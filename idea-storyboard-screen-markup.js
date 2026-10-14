@@ -123,7 +123,6 @@
         +'.sb-key-lib-row{display:flex;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid #e3d9c6;border-radius:8px;background:#fff;margin-bottom:6px}'
         +'.sb-icon-btn{flex:1;background:#d6eaf8;border:1px solid #a9cce3;border-radius:10px;box-shadow:0 3px 8px rgba(26,58,92,0.15);padding:10px 0;font-size:calc(19px * var(--fg-text-scale,1));line-height:1;cursor:pointer;text-align:center;color:#1a3a5c;transition:transform .1s}'
         +'.sb-icon-btn:active{transform:scale(0.93)}'
-        +'.sb-icon-btn.misc{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.4px;padding:14px 0}'
         // Sept 5 2026, Larry: "increase text size of Idea Board TOPIC
         // field to stand out" (paired with deleting the Topic eyebrow
         // above it, see the header markup) -- 23px -> 30px.
@@ -682,7 +681,6 @@
         +'.sb-blue-row{display:flex;gap:6px;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0;border-top:1.5px solid #B4B2A9;padding-top:10px}'
         +'.sb-blue-btn{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:calc(14px * var(--fg-text-scale,1));cursor:pointer;flex:1 1 auto;min-width:36px}'
         +'.sb-blue-btn:active{transform:scale(0.95)}'
-        +'.sb-blue-btn.misc-on{background:#EEECE4}'
         +'.sb-blue-row-sm{display:flex;gap:6px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;flex-shrink:0}'
         +'.sb-blue-btn-sm{box-sizing:border-box;background:#fff;color:#2C2C2A;border:0.5px solid #B4B2A9;border-radius:8px;padding:6px 10px;font-size:calc(12px * var(--fg-text-scale,1));cursor:pointer;flex:1 1 auto}'
         +'.sb-blue-btn-sm:active{transform:scale(0.95)}'

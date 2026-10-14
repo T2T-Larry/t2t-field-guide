@@ -172,7 +172,7 @@
     if(!_sb || !ids || !ids.length) return out;
     // Aug 29 2026 fix: this used to be one .in('card_id', ids) call built
     // from every idea in the whole account -- fine at small scale, but
-    // once a traveler's library grows into the thousands (bookmarks, MISC
+    // once a traveler's library grows into the thousands (bookmarks
     // piles, etc., not just the board actually on screen) the id list
     // makes a request URL far past what Supabase's API gateway accepts.
     // That request was failing outright, and because both the try/catch

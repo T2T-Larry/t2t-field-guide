@@ -469,13 +469,13 @@
       // painted at screen-open/header time, so it could keep the previous board's color. Repaint right after the flag + band label are set so all three agree.
       if(typeof _sboardApplyBoardBg==='function') _sboardApplyBoardBg();
 
-      // miscId/purposeId/newAdditionsId default to whatever this tab last
+      // purposeId/newAdditionsId default to whatever this tab last
       // resolved them to (Aug 9 2026) -- only actually recomputed below
       // when this render does a real fetch. A cache-only patch render
       // (see fromCache) reuses them as-is: they're per-Topic and this
       // tab can't be looking at a different Topic than the one its last
       // real render resolved these for.
-      var miscId=_sboardMiscId, purposeId=_sboardPurposeId, newAdditionsId=_sboardNewAdditionsId;
+      var purposeId=_sboardPurposeId, newAdditionsId=_sboardNewAdditionsId;
 
       if(!fromCache){
         var user=(await _sb.auth.getUser()).data.user;
@@ -496,19 +496,19 @@
         // per-Topic "(...)" name from that scheme).
         //
         // Idea Storyboards root resolved FIRST and on its own, Sept 2
-        // 2026 -- deliberately NOT folded into the NEW/Purpose/MISC
+        // 2026 -- deliberately NOT folded into the NEW/Purpose
         // Promise.all just below, for two reasons. (1) COLLABORATOR/
         // STAKEHOLDER (right after this) need to know the root id before
         // they can even ask, so they can't start concurrently with it
-        // anyway. (2) A real bug this avoids: NEW/Purpose/MISC share one
+        // anyway. (2) A real bug this avoids: NEW/Purpose share one
         // per-parent header_defaults_seeded flag with COLLABORATOR/
         // STAKEHOLDER (see ensureCollaboratorHeader's own comment in
-        // header-data.js) -- if MISC's ensure-call for this same brand-
+        // header-data.js) -- if Parking Lot's ensure-call for this same brand-
         // new root won that race and flipped the flag first, COLLABORATOR/
         // STAKEHOLDER's OWN "not seeded yet" check would then read it as
         // already-seeded and silently skip creating them, forever (the
         // flag never unflips). Ensuring COLLABORATOR/STAKEHOLDER to
-        // completion before NEW/Purpose/MISC even start avoids that race
+        // completion before NEW/Purpose even start avoids that race
         // outright instead of hoping to win it. Only costs real latency
         // on the rare first-ever visit to a brand new root (creating it);
         // every later render is one cheap indexed select before the rest
@@ -518,7 +518,7 @@
         // COLLABORATOR/STAKEHOLDER, Sept 2 2026 -- Larry: "The HEADERS
         // for that board are the PROJECTS plus COLLABORATOR and
         // STAKEHOLDER" -- same always-present-landing-bucket treatment
-        // as MISC/Purpose below (ensured on demand, never respawned once
+        // as Purpose below (ensured on demand, never respawned once
         // removed -- see _parentDefaultsSeeded). Originally gated to fire
         // only while actually standing on the Idea Storyboards root
         // itself -- removed Sept 3 2026, Larry: "Missing Collaborator and
@@ -535,7 +535,7 @@
         // header-data.js), so calling them on every board render
         // regardless of which topic is on screen costs one indexed
         // select per render, not a repeat insert -- same reasoning
-        // already applied to NEW/Purpose/MISC just below, which never
+        // already applied to NEW/Purpose just below, which never
         // had this restriction.
         // Sept 13 2026 -- Larry: "if alfred is not on any other boards,
         // he is not a collaborator on anybody's board, nor is he a
@@ -570,12 +570,10 @@
               return (q.data && q.data[0]) ? q.data[0].id : null;
             }catch(e){ return null; }
           })(),
-          Promise.resolve(null),
           Promise.resolve(null)
         ]) : await Promise.all([
           T2TShared.currentTopicId ? _sboardEnsureNewAdditionsHeader(T2TShared.currentTopicId) : Promise.resolve(null),
-          currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null),
-          T2TData.ensureMiscHeader(T2TShared.currentTopicId)
+          currentProjectRowForScope ? _sboardEnsurePurposeHeader(currentProjectRowForScope.id) : Promise.resolve(null)
         ]);
         newAdditionsId=_ensureResults[0];
         _sboardNewAdditionsId=newAdditionsId;
@@ -584,7 +582,6 @@
         // and never shown when no project is selected at all.
         purposeId=_ensureResults[1];
         _sboardPurposeId=purposeId;
-        miscId=_ensureResults[2];
 
         // Whole-account fetch (every header, idea, image and link this user
         // owns, across every board) -- unlike the cluster-scoped fetches
@@ -686,11 +683,9 @@
       var headerRows=rows.filter(function(r){ return r.content_type==='header'; });
       _sboardHeadersById={}; headerRows.forEach(function(r){ _sboardHeadersById[r.id]=r; });
       var trashRow=headerRows.find(function(r){ return r.text_content==='Trash'; });
-      var miscRow=headerRows.find(function(r){ return String(r.id)===String(miscId); });
       var purposeRow=headerRows.find(function(r){ return String(r.id)===String(purposeId); });
       var newAdditionsRow=headerRows.find(function(r){ return String(r.id)===String(newAdditionsId); });
       _sboardTrashId = trashRow ? trashRow.id : null;
-      _sboardMiscId = miscRow ? miscRow.id : null;
       _sboardPurposeId = purposeRow ? purposeRow.id : null;
 
       // Idea Storyboards role shortcuts, Sept 2 2026 -- the three screens
@@ -733,10 +728,10 @@
         }
       }
 
-      var reservedIds=[_sboardTrashId,_sboardMiscId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
-      var reservedNames=['Trash','MISC','Purpose','NEW','New Additions','Parking Lot'];
+      var reservedIds=[_sboardTrashId,_sboardPurposeId,newAdditionsId].filter(Boolean).map(String);
+      var reservedNames=['Trash','Purpose','NEW','New Additions','Parking Lot'];
       // Name-based backstop, added July 12, 2026 — id-based exclusion above
-      // only catches Purpose/MISC/Ideas rows this exact render already
+      // only catches Purpose/Ideas rows this exact render already
       // resolved for the current project. Any orphaned row still carrying
       // one of these reserved names (pre-cleanup data, or any future
       // drift) is excluded here too, so it can never masquerade as a
@@ -746,7 +741,7 @@
       // named a real header "Purpose" underneath an existing board and it
       // never appeared, three tries in a row, refresh included. Root
       // cause: the name backstop above was excluding EVERY header named
-      // Trash/MISC/Purpose/NEW/New Additions anywhere in the account, not
+      // Trash/Purpose/NEW/New Additions anywhere in the account, not
       // just the orphaned top-level ones it was written to catch -- a
       // header nested under a real cluster can't "masquerade as a
       // top-level project" (the thing this backstop guards against), so
@@ -947,11 +942,11 @@
         var childHeadersSorted=childHeaders.slice().sort(_sboardBySortOrder);
 
         // Unified row — added July 12, 2026. Purpose, the Ideas bucket,
-        // ordinary content headers, and MISC now all live in one
+        // ordinary content headers, and Parking Lot now all live in one
         // reorderable row instead of three fixed islands with only the
         // middle section movable. A row member without a real sort_order
         // yet falls back to the familiar default arrangement (Purpose,
-        // Ideas, content, MISC) via priority tie-break; the first drag
+        // Ideas, content) via priority tie-break; the first drag
         // anywhere in the row gives every member a real sort_order and
         // the fallback stops mattering from then on.
         // Purpose shows only on the project's own top-level board — never
@@ -962,7 +957,6 @@
         if(purposeRow && isAtProjectRoot) mergedRow.push(purposeRow);
         if(newAdditionsRow) mergedRow.push(newAdditionsRow);
         mergedRow=mergedRow.concat(childHeadersSorted);
-        if(miscRow) mergedRow.push(miscRow);
         // Fallback priority for a row member with no real sort_order yet.
         // Used to be a flat 0 for every ordinary content header, which
         // only matched the "default arrangement" on a totally fresh board
@@ -971,19 +965,18 @@
         // with real sort_order values, a flat 0 loses that tie-break to
         // any header whose real value is >0 -- so a header added via [+]
         // after that point sorted itself in near the front instead of at
-        // the true end of the row, next to MISC, as the [+] control is
+        // the true end of the row, next to as the [+] control is
         // documented to do. Now scaled to land after every already-real
         // value in this row instead. Fixed Aug 6, 2026.
         var _rowMaxRealSortOrder=-1;
         mergedRow.forEach(function(h){
-          if((h.sort_order!==null&&h.sort_order!==undefined) && !(miscRow&&String(h.id)===String(miscRow.id)) && h.sort_order>_rowMaxRealSortOrder){
+          if((h.sort_order!==null&&h.sort_order!==undefined) && h.sort_order>_rowMaxRealSortOrder){
             _rowMaxRealSortOrder=h.sort_order;
           }
         });
         var _rowPriority=function(h){
           if(purposeRow && String(h.id)===String(purposeRow.id)) return -2;
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)) return -1;
-          if(miscRow && String(h.id)===String(miscRow.id)) return 999;
           return _rowMaxRealSortOrder+1;
         };
         mergedRow.sort(function(a,b){
@@ -1003,7 +996,7 @@
         if(statusEl) statusEl.textContent=(directIdeas.length===0 && childHeaders.length===0) ? 'Nothing under this Header yet.' : '';
 
         // Alphabetical view, Aug 3 2026 -- Purpose/NEW stay pinned first
-        // and MISC stays pinned last (their real, backfilled relative
+        // and Parking Lot stays pinned last (their real, backfilled relative
         // order is kept exactly as-is); only the content headers between
         // them get rearranged alphabetically for DISPLAY. mergedRow
         // itself -- the real order everything else (badges, drag-reorder)
@@ -1022,28 +1015,24 @@
         }
         var _azGroups=null;
         if(_sboardAzLetterView && _sboardAzApplies()){
-          // A-Z letter view: Purpose/NEW (Parking Lot) stay pinned first and MISC
+          // A-Z letter view: Purpose/NEW (Parking Lot) stay pinned first and Parking Lot
           // last, exactly like the gear's A -> Z; everything between is replaced
           // by the letter columns. mergedRow (the real order) is untouched.
           var _azFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
-          var _azLastId=miscRow?String(miscRow.id):null;
           var _azPinFirst=mergedRow.filter(function(h){ return _azFirstIds.indexOf(String(h.id))!==-1; });
-          var _azPinLast=mergedRow.filter(function(h){ return _azLastId && String(h.id)===_azLastId; });
           var _azEntries=_sboardAzCollectEntries(T2TShared.currentTopicId, subHeadersOf, childrenOfHeader);
           _azGroups=T2TAZ.groupLetters(_azEntries, _sboardAzEntryName, T2TAZ.MIN_GROUP);
           _azActive=true;
-          displayMergedRow=_azPinFirst.concat([{__azLetters:true}]).concat(_azPinLast);
+          displayMergedRow=_azPinFirst.concat([{__azLetters:true}]);
         } else if(_sboardAlphaHeaderView){
           var _pinFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
-          var _pinLastId=miscRow?String(miscRow.id):null;
           var _pinFirst=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))!==-1; });
-          var _pinLast=mergedRow.filter(function(h){ return _pinLastId && String(h.id)===_pinLastId; });
           // Oct 10 2026 (Larry): in A to Z the LIBRARY header is the last header -- the reference shelf closes the board, the way
           // Parking Lot opens it -- "in spite of alpha order". Display only; MY ORDER is untouched (the traveler's own order stands).
-          var _middleAlpha=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))===-1 && !(_pinLastId && String(h.id)===_pinLastId); }).sort(_sboardByAlpha);
+          var _middleAlpha=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))===-1; }).sort(_sboardByAlpha);
           var _libLast=_middleAlpha.filter(function(h){ return String(h.text_content||'').trim().toUpperCase()==='LIBRARY'; });
           if(_libLast.length) _middleAlpha=_middleAlpha.filter(function(h){ return _libLast.indexOf(h)===-1; }).concat(_libLast);
-          displayMergedRow=_pinFirst.concat(_middleAlpha).concat(_pinLast);
+          displayMergedRow=_pinFirst.concat(_middleAlpha);
         }
 
         displayMergedRow.forEach(function(h){
@@ -1062,9 +1051,8 @@
         displayTop.forEach(function(h){ groupsWrap.appendChild(renderGroup(h, 0)); });
         _sboardVisibleHeaders=(newAdditionsRow?[newAdditionsRow]:[]).concat(orderedTop);
         if(statusEl) statusEl.textContent='';
-        if(miscRow) groupsWrap.appendChild(renderGroup(miscRow, 0));
       }
-      // [+] after MISC — adds a new header at this board's level. Simpler,
+      // [+] after Parking Lot — adds a new header at this board's level. Simpler,
       // more discoverable than the 💡 button for this one job. Locked
       // July 16, 2026.
       if(!_azActive) groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));

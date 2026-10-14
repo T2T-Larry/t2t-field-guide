@@ -260,13 +260,13 @@
   // per traveler across both boards).
   var _sboardHiddenTypesCache = [];
   var _sboardHiddenTypesLoaded = false;
-  // Reserved/nested names, Aug 13 2026 -- Larry: NEW, MISC and Trash are
+  // Reserved/nested names, Aug 13 2026 -- Larry: NEW and Trash are
   // consistent bucket elements every board gets, not boards themselves;
   // Purpose and Idea Session Protocol are real headers that live nested
   // inside a board, not independent boards either. None of the five
   // should ever show up as a Type/Title picker option, no matter whose
   // account they're under -- exact-name match, case-insensitive.
-  var IB_RESERVED_ROOT_NAMES = {'new':1,'misc':1,'trash':1,'purpose':1,'idea session protocol':1};
+  var IB_RESERVED_ROOT_NAMES = {'new':1,'trash':1,'purpose':1,'idea session protocol':1};
   function _sboardIsRealBoard(r){
     var name=String((r&&r.text_content)||'').trim().toLowerCase();
     return !IB_RESERVED_ROOT_NAMES[name];
@@ -797,13 +797,13 @@
   // it straight off the whole-account cache instead of requiring you to
   // actually be standing there is what makes the arrow useful anywhere in
   // the app, not just from the Idea Storyboards board itself. COLLABORATOR/
-  // STAKEHOLDER/NEW/MISC/Purpose are real Headers under that same root too,
+  // STAKEHOLDER/NEW/Purpose are real Headers under that same root too,
   // but they're reserved buckets, not "other PROJECTS" -- excluded here as
   // with everywhere else.
   function _sboardProjectHeaderChoices(){
     var rootId=_sboardIdeaStoryboardsRootId;
     if(!rootId) return [];
-    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Purpose':1,'Trash':1,'Archived':1};
     // Sept 8 2026, Larry: "Idea Board PROJECT LIST is not alphabetical."
     // This used to sort by _sboardBySortOrder (on-board tile order), which
     // made sense back when the arrow's own comment described the goal as
@@ -1024,7 +1024,7 @@
   // query -- BB has to query live since it doesn't keep this board's
   // whole-account cache around, but Idea Board already does (same
   // shortcut _sboardParentAncestorChoices takes for the up-arrow).
-  var SBOARD_TOPIC_CHILD_RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  var SBOARD_TOPIC_CHILD_RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Purpose':1,'Trash':1,'Archived':1};
   function _sboardTopicChildChoices(){
     var topicId=T2TShared.currentTopicId;
     if(!topicId) return [];
@@ -1782,7 +1782,7 @@
 
   // TITLE picker, Aug 13 2026 -- Larry: "the next field is TITLE." Lists
   // this traveler's real boards (headers already filtered through
-  // _sboardIsRealBoard, so NEW/MISC/Trash/Purpose/Idea Session Protocol
+  // _sboardIsRealBoard, so NEW/Trash/Purpose/Idea Session Protocol
   // never show up here) scoped to whichever Type is currently selected --
   // same relationship Briefing Board's Title/Type pair already has.
   // Adopted children of a given board (Aug 16 2026), resolved through
@@ -2147,9 +2147,9 @@
   //   - a header that has sub-headers is walked into, and any loose cards on it
   //     are entries too.
   // Cards sitting loose directly on the open Topic stay in the Parking Lot
-  // column, and auto-managed buckets (Parking Lot, NEW, MISC, Purpose, Trash,
+  // column, and auto-managed buckets (Parking Lot, NEW, Purpose, Trash,
   // "(...)") are never listed. Pure read: nothing here writes anything.
-  var _SBOARD_AZ_AUTO=['NEW','New Additions','Parking Lot','MISC','Purpose','Trash'];
+  var _SBOARD_AZ_AUTO=['NEW','New Additions','Parking Lot','Purpose','Trash'];
   function _sboardAzIsAuto(h){
     var t=String(h && h.text_content || '').trim();
     if(_SBOARD_AZ_AUTO.indexOf(t)!==-1) return true;
@@ -2219,7 +2219,7 @@
   // Stakeholder (one-click fast access, per the design lock -- plain
   // Stakeholder and Cast Member placements still require opening the
   // STAKEHOLDER/COLLABORATOR group below). Both group rows are always
-  // shown, same as any other reserved header (Purpose, MISC) always
+  // shown, same as any other reserved header (Purpose) always
   // being present, so they're a predictable, discoverable part of the
   // list rather than appearing only once something lands in them.
   async function openProjectSwitcher(){

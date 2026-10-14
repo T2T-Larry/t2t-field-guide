@@ -29,7 +29,7 @@
   // so a card a person titled with a Subject and whose Contents happened to be wrapped in
   // parentheses (e.g. "(for non-philosophy majors)") vanished from its column. A card that
   // carries a Subject was named by a person, never auto-made, so it is never auto-managed.
-  var _SBOARD_AUTO_RESERVED_NAMES=['NEW','New Additions','Parking Lot','MISC','Purpose'];
+  var _SBOARD_AUTO_RESERVED_NAMES=['NEW','New Additions','Parking Lot','Purpose'];
   function _sboardIsAutoManagedHeader(r){
     if(!r) return false;
     var t=String(r.text_content||'').trim();
@@ -39,7 +39,6 @@
   }
 
   var _sboardTrashId = null;
-  var _sboardMiscId = null;
   var _sboardPurposeId = null;
   var _sboardNewAdditionsId = null;
   var _sboardActiveId = null;
@@ -64,7 +63,7 @@
   // per real render (see renderSeaBoard) and read again on a cache-only
   // patch render of the SAME Topic so the strip doesn't flicker away
   // during a live update. _sboardIdeaStoryboardsRootId mirrors the
-  // _sboardPurposeId/_sboardMiscId caching pattern just above; the other
+  // _sboardPurposeId caching pattern just above; the other
   // three only apply when the current Topic is one of the three screens
   // these shortcuts belong on (see _sboardComputeRoleShortcuts).
   var _sboardIdeaStoryboardsRootId = null;

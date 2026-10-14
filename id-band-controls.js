@@ -54,7 +54,7 @@
   // here, once, from the same ideas.cluster_id chain for every board; a board
   // only says WHICH topic it is standing on (cfg.topicId). The board's own
   // getTopic/getChildren remain only as a fallback when this can't load.
-  var TREE_RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'MISC':1,'Purpose':1,'Trash':1,'Archived':1};
+  var TREE_RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Purpose':1,'Trash':1,'Archived':1};
   var treeRows={};
   function treeSb(){ return window.T2T && window.T2T.sb; }
   async function treeRow(id){
