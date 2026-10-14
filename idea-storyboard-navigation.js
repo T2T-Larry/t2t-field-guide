@@ -1306,7 +1306,7 @@
     if(!user) throw new Error('not signed in');
     var rootIns=await _sb.from('ideas').insert({
       user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
-      cluster_id:null, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
+      cluster_id:ideaRoot.id /* Oct 14 2026: a Plan container lives UNDER the Topic it serves -- never parentless */, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
       org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
       logo_url:ideaRoot.logo_url||null, logo_w:ideaRoot.logo_w||null, logo_h:ideaRoot.logo_h||null,
       storyboard_kind:'PLAN', source_project_id:ideaRoot.id,
@@ -1418,7 +1418,7 @@
 
     var rootIns=await _sb.from('ideas').insert({
       user_id:user.id, content_type:'header', text_content:ideaRoot.text_content||'(untitled)',
-      cluster_id:null, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
+      cluster_id:ideaRoot.id /* Oct 14 2026: a Plan container lives UNDER the Topic it serves -- never parentless */, color:ideaRoot.color||null, board_type:ideaRoot.board_type||null,
       org_name:ideaRoot.org_name||null, locked:!!ideaRoot.locked,
       // Logo/artwork, Aug 26 2026 -- carried over at duplicate time same as
       // color/board_type/org_name above, so a brand-new Plan board opens

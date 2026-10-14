@@ -1078,7 +1078,7 @@
       if(!planRoot){
         var mk=await sb.from('ideas').insert({
           user_id:uid, content_type:'header', text_content:proj.text_content||'(untitled)',
-          cluster_id:null, color:proj.color||null, board_type:proj.board_type||null,
+          cluster_id:proj.id /* Oct 14 2026: a Plan container lives UNDER the Topic it serves -- never parentless */, color:proj.color||null, board_type:proj.board_type||null,
           org_name:proj.org_name||null, locked:!!proj.locked,
           logo_url:proj.logo_url||null, logo_w:proj.logo_w||null, logo_h:proj.logo_h||null,
           storyboard_kind:'PLAN', source_project_id:proj.id,
