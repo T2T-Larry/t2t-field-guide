@@ -730,6 +730,11 @@
     renderBoard();
   });
 
+  // Fail-safe wrappers for the shared Subject-only flag (subject-only-view.js, window.T2TViewPrefs);
+  // same localStorage key, so a missing/stale module degrades gracefully instead of throwing (Oct 14 2026).
+  function _bbIsSubjectOnly(){ var vp=window.T2TViewPrefs; if(vp) return vp.isSubjectOnly(); try{ return localStorage.getItem('t2t-subject-only-view')==='1'; }catch(e){ return false; } }
+  function _bbSetSubjectOnly(on){ var vp=window.T2TViewPrefs; if(vp){ vp.setSubjectOnly(on); return; } try{ localStorage.setItem('t2t-subject-only-view', on?'1':'0'); }catch(e){} }
+
   function renderBoard(){
     var wrap=document.getElementById('bb-cols'); if(!wrap) return;
     try{ _bbSyncScopeButton(); }catch(e){ console.warn('scope eyeball sync failed', e); }
@@ -1009,7 +1014,7 @@
         // Sept 27 2026 -- universal Subject-only view (Utility button)
         // overrides each card's own per-card "Show contents" choice while
         // on. Shared flag with Storyboard/Session -- idea-storyboard-shared.js.
-        var _bbShowTask=!_bbSubject || (c.hideContentsFront===false && !window.T2TViewPrefs.isSubjectOnly());
+        var _bbShowTask=!_bbSubject || (c.hideContentsFront===false && !_bbIsSubjectOnly());
         var _bbHeadline=(_bbSubject||String(c.task||'')).trim().toLowerCase();
         var topicEyebrow = (topicEyebrowText && topicEyebrowText.toLowerCase()!==_bbHeadline)
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
@@ -1778,10 +1783,10 @@
       // Sept 27 2026 -- universal Subject-only view (shared with
       // Storyboard/Session, idea-storyboard-shared.js).
       var subjBtns=document.querySelectorAll('#bb-settings-body [data-subj-on]');
-      subjBtns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute('data-subj-on')==='1')===window.T2TViewPrefs.isSubjectOnly()); });
+      subjBtns.forEach(function(b){ b.classList.toggle('bb-flag-active', (b.getAttribute('data-subj-on')==='1')===_bbIsSubjectOnly()); });
       subjBtns.forEach(function(b){ b.addEventListener('click', function(){
         var on=(b.getAttribute('data-subj-on')==='1');
-        window.T2TViewPrefs.setSubjectOnly(on);
+        _bbSetSubjectOnly(on);
         subjBtns.forEach(function(bb){ bb.classList.toggle('bb-flag-active', bb===b); });
         renderBoard();
       }); });

@@ -57,8 +57,8 @@
   // Oct 10 2026: the flag itself moved to subject-only-view.js (window.T2TViewPrefs),
   // a public module shared with the Briefing Board. These two names stay as thin
   // wrappers so the Storyboard/Session callers below keep working unchanged.
-  function _sboardIsSubjectOnlyView(){ return window.T2TViewPrefs.isSubjectOnly(); }
-  function _sboardSetSubjectOnlyView(on){ window.T2TViewPrefs.setSubjectOnly(on); }
+  function _sboardIsSubjectOnlyView(){ var vp=window.T2TViewPrefs; if(vp) return vp.isSubjectOnly(); try{ return localStorage.getItem('t2t-subject-only-view')==='1'; }catch(e){ return false; } } // fail-safe if subject-only-view.js is missing/stale (Oct 14 2026)
+  function _sboardSetSubjectOnlyView(on){ var vp=window.T2TViewPrefs; if(vp){ vp.setSubjectOnly(on); return; } try{ localStorage.setItem('t2t-subject-only-view', on?'1':'0'); }catch(e){} }
 
   // Idea Storyboards role-based shortcuts (Sept 2 2026) -- resolved once
   // per real render (see renderSeaBoard) and read again on a cache-only
