@@ -465,6 +465,9 @@
       // at any depth.
       _sboardIsPlanBoard = !!(currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN');
       _sboardSyncBoardKindChrome();
+      // Oct 14 2026 (Larry: "screen color is PLAN but ID BAND says Blue Sky"): the board color is also derived from _sboardIsPlanBoard, but was only
+      // painted at screen-open/header time, so it could keep the previous board's color. Repaint right after the flag + band label are set so all three agree.
+      if(typeof _sboardApplyBoardBg==='function') _sboardApplyBoardBg();
 
       // miscId/purposeId/newAdditionsId default to whatever this tab last
       // resolved them to (Aug 9 2026) -- only actually recomputed below
