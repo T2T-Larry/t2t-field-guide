@@ -197,7 +197,6 @@
       if(cfg.onPick && cfg.onPick(k)===true) return;
       var here=kindNow();
       if(k.value===here) return;
-      if(k.value==='SHARE'){ toast(k.soon || 'Coming soon'); return; }
       // NOTES -> the Notebook. It floats over whatever is showing and never
       // changes the screen, so there is no topic to carry and nothing to RETURN to.
       if(k.value==='NOTEBOOK'){
@@ -223,7 +222,8 @@
         else if(window.T2T && window.T2T.nav) window.T2T.nav('s-briefing-board');
         return;
       }
-      if((k.value==='IDEA' || k.value==='PLAN') && window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
+      // Oct 14 2026: SHARE (shown as STORY) is a real board now, opened the same way as IDEA and PLAN.
+      if((k.value==='IDEA' || k.value==='PLAN' || k.value==='SHARE') && window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
         Promise.resolve(window.T2TStoryboard.jumpToProjectKind(topicId, k.value)).then(function(ok){
           if(ok===false) toast('Could not open that board.');
         });

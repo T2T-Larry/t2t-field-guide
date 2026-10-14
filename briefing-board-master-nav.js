@@ -1136,7 +1136,7 @@
       toast:_bbShowToast,
       onPick:function(k){
         if(k.value==='CAST' && !(window.CastRoster && _bbCurrentTopicHeaderId)){ openTeamRoster(); return true; }
-        if(k.value==='IDEA' || k.value==='PLAN'){
+        if(k.value==='IDEA' || k.value==='PLAN' || k.value==='SHARE'){
           var board=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
           // One-board model (Sept 8 2026): board.storyboard_project_id is
           // always the account root, so in single-board mode read whichever

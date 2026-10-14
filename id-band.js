@@ -163,7 +163,7 @@
     {value:'IDEA',           label:'BLUE SKY',     soon:null},
     {value:'PLAN',           label:'PLAN',         soon:null},
     {value:'BRIEFING BOARD', label:'BRIEFING',     soon:null},
-    {value:'SHARE',          label:'STORY',        soon:'STORY BOARD coming soon'},
+    {value:'SHARE',          label:'STORY',        soon:null},   // Oct 14 2026: the STORY board exists now (a 'SHARE' container under the Topic)
     {value:'CAST',           label:'CAST',         soon:null}
   ];
   // What each BOARD calls itself in its own band. The dropdown offers the
@@ -193,7 +193,7 @@
       if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(v.topicId);
       return true;
     }
-    if(v.kind==='IDEA' || v.kind==='PLAN'){
+    if(v.kind==='IDEA' || v.kind==='PLAN' || v.kind==='SHARE'){
       if(window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) window.T2TStoryboard.jumpToProjectKind(v.topicId, v.kind);
       return true;
     }

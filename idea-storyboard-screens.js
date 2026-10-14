@@ -464,6 +464,9 @@
       // IDEA/PLAN dropdown chrome (_sboardSyncBoardKindChrome) stay right
       // at any depth.
       _sboardIsPlanBoard = !!((currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN') || (currentTopicRowForProject && _sboardPlanSourceFor(currentTopicRowForProject))); // Oct 14 2026: also true when the viewed row sits under a Plan root, so a thin/cold project row can't flip a Plan board to Blue Sky
+      // Oct 14 2026 (STORY board): true anywhere inside a Topic's STORY board, set from the same two facts as the Plan flag above -- the
+      // project row on screen is a STORY container, or the viewed row sits under one. Never true together with the Plan flag.
+      _sboardIsShareBoard = !_sboardIsPlanBoard && !!((currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='SHARE') || (currentTopicRowForProject && _sboardShareSourceFor(currentTopicRowForProject)));
       _sboardSyncBoardKindChrome();
       // Oct 14 2026 (Larry: "screen color is PLAN but ID BAND says Blue Sky"): the board color is also derived from _sboardIsPlanBoard, but was only
       // painted at screen-open/header time, so it could keep the previous board's color. Repaint right after the flag + band label are set so all three agree.
@@ -922,7 +925,7 @@
         if(_sboardIsPlanBoard && isAtProjectRoot && currentProjectRowForScope && currentProjectRowForScope.source_project_id){
           var _planTopicIds={}; _planTopicIds[String(currentProjectRowForScope.source_project_id)]=true;
           var _topicKids={};
-          headerRows.forEach(function(h){ if(h.cluster_id && h.storyboard_kind!=='PLAN') (_topicKids[h.cluster_id]=_topicKids[h.cluster_id]||[]).push(h.id); });
+          headerRows.forEach(function(h){ if(h.cluster_id && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE') (_topicKids[h.cluster_id]=_topicKids[h.cluster_id]||[]).push(h.id); });   // a STORY container is not a sub-topic (Oct 14 2026)
           var _tFrontier=[String(currentProjectRowForScope.source_project_id)], _tGuard=0;
           while(_tFrontier.length && _tGuard<60){
             _tGuard++; var _tNext=[];

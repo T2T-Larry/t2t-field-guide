@@ -84,6 +84,8 @@
   // Share/Journey/Dare/Cast intentionally left alone -- see the do-m
   // card's notes for what's still open there.
   function _sboardDefaultBoardBg(){
+    // Oct 14 2026: STORY board = yellow, from the same Sept 20 list (Share=yellow). Decided from the same flag set that picks the band label.
+    if(_sboardIsShareBoard) return '#e8c547';
     return _sboardIsPlanBoard ? '#c9a876' /* light brown, "down to earth" */ : '#5b9bd5' /* blue sky */;
   }
   function _sboardGetBoardBg(){
@@ -560,7 +562,7 @@
     var root=roots.filter(function(r){ return String(r.id)===String(rootId); })[0];
     if(!root){
       var planRow=_sboardAllRowsById[rootId];
-      if(planRow && planRow.storyboard_kind==='PLAN' && planRow.source_project_id){
+      if(planRow && (planRow.storyboard_kind==='PLAN' || planRow.storyboard_kind==='SHARE') && planRow.source_project_id){
         root=roots.filter(function(r){ return String(r.id)===String(planRow.source_project_id); })[0];
       }
     }
@@ -687,7 +689,7 @@
     if(_sboardIdBand || !window.IDBand || !window.IDBand.mountControls) return;
     _sboardIdBand=window.IDBand.mountControls({
       screenId:'s-sea-of-ideas-cluster',
-      kind:function(){ return _sboardIsPlanBoard?'PLAN':'IDEA'; },
+      kind:function(){ return _sboardBoardKindNow(); },
       setTriggerLabel:true,
       rowClass:'sc-cdrop-row',
       fitBaseSize:36,
@@ -704,7 +706,7 @@
         // On a Plan board the TOPIC is the topic the plan serves (its place
         // in the one tree), not the plan's own parentless root.
         var row=id ? _sboardAllRowsById[id] : null;
-        var planSrc=_sboardPlanSourceFor(row);
+        var planSrc=_sboardPlanSourceFor(row) || _sboardShareSourceFor(row);   // a STORY board's TOPIC is the Topic it serves too (Oct 14 2026)
         if(planSrc) return planSrc.id;
         return id;
       },
@@ -721,7 +723,7 @@
         // found no ancestors and a Plan board could never move up to
         // MASTER. On a Plan board TOPIC now reads the SOURCE topic's place
         // in the one tree instead, same as every other board.
-        var srcRow=_sboardPlanSourceFor(curRow);
+        var srcRow=_sboardPlanSourceFor(curRow) || _sboardShareSourceFor(curRow);
         if(srcRow){
           return {ancestors:_sboardPyramidAncestors(srcRow.id),
                   current:{id:srcRow.id, name:srcRow.text_content||'(untitled)', priority:srcRow.priority||''}};
@@ -734,6 +736,7 @@
       // topic's Plan board, or offers Duplicate / Start Blank when it has none.
       goToTopic:function(id){
         if(_sboardIsPlanBoard){ _sboardSwitchToRootBoardPreservingKind(id); return; }
+        if(_sboardIsShareBoard){ _sboardOpenOrCreateStoryBoard(_sboardAllRowsById[id]); return; }   // stays on STORY, same as PLAN stays on PLAN
         if(_sboardAllRowsById[id]) _sboardDrillInto(_sboardAllRowsById[id]);
       },
       onTopicAdded:function(row){ _sboardAllRowsById[row.id]=row; },   // so the new topic shows in the list at once
@@ -742,7 +745,10 @@
       // The two choices that are this board's own flow: switching between
       // the Blue Sky board and its one-time Pathfinder copy.
       onPick:function(k){
-        if(k.value==='PLAN'){ IDBand.recordReturn('IDEA', T2TShared.currentTopicId); _sboardOpenOrCreatePlanBoard(); return true; }
+        // RETURN goes back to the board you were on: a Blue Sky board unless you came from STORY (for PLAN) or from PLAN (for STORY).
+        // The topic recorded is the one the board serves, never a Plan or STORY container's own id.
+        if(k.value==='PLAN'){ var _servedP=_sboardServedTopicRow(); IDBand.recordReturn(_sboardIsShareBoard?'SHARE':'IDEA', _servedP?_servedP.id:T2TShared.currentTopicId); _sboardOpenOrCreatePlanBoard(); return true; }
+        if(k.value==='SHARE'){ var _servedS=_sboardServedTopicRow(); IDBand.recordReturn(_sboardIsPlanBoard?'PLAN':'IDEA', _servedS?_servedS.id:T2TShared.currentTopicId); _sboardOpenOrCreateStoryBoard(); return true; }
         if(k.value==='IDEA'){ _sboardReturnToIdeaBoard(); return true; }
         return false;
       }
@@ -758,7 +764,7 @@
   // PROJECT switcher, a TOC link...).
   function _sboardSyncBoardKindChrome(){
     var trigger=document.getElementById('sc-board-kind-trigger'), menu=document.getElementById('sc-board-kind-menu');
-    var kindNow=_sboardIsPlanBoard?'PLAN':'IDEA';
+    var kindNow=_sboardBoardKindNow();
     // Sept 6 2026, Larry: "change IDEA to IDEAS" -- kindNow stays 'IDEA'
     // internally (matches storyboard_kind and every k.value comparison
     // above), only the displayed word changes. Sept 26 2026 -- IDEAS ->
@@ -1156,6 +1162,28 @@
     if(!srcId) return null;
     return _sboardAllRowsById[srcId] || null;
   }
+  // Oct 14 2026 (STORY board): the Topic a STORY board serves, found by climbing from any row inside it (the container itself, one of its
+  // headers, a card). A STORY container is tagged (source_project_id) to its Topic exactly like a Plan container; null when this row is
+  // not part of a STORY board. Kept apart from _sboardPlanSourceFor on purpose: that one decides _sboardIsPlanBoard, and a STORY board
+  // must never turn Plan behavior on.
+  function _sboardShareSourceFor(row){
+    var cur=row, guard=0;
+    while(cur && guard<50){
+      if(cur.storyboard_kind==='SHARE' && cur.source_project_id) return _sboardAllRowsById[cur.source_project_id] || null;
+      if(!cur.cluster_id) return null;
+      guard++; cur=_sboardAllRowsById[cur.cluster_id];
+    }
+    return null;
+  }
+  // The Topic whatever board is on screen is about: the Topic itself on a Blue Sky board, the Topic a Plan or STORY board serves otherwise.
+  function _sboardServedTopicRow(){
+    var cur=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || _sboardCurrentProjectRow();
+    if(!cur) return null;
+    return _sboardPlanSourceFor(cur) || _sboardShareSourceFor(cur) || cur;
+  }
+  function _sboardBoardKindNow(){
+    return _sboardIsShareBoard ? 'SHARE' : (_sboardIsPlanBoard ? 'PLAN' : 'IDEA');
+  }
   function _sboardPyramidAncestors(topicId){
     var chain=[], guard=0;
     var curRow=topicId?_sboardAllRowsById[topicId]:null;
@@ -1209,6 +1237,9 @@
     // ancestor _sboardCurrentProjectRow climbs to.
     var ideaRow=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || _sboardCurrentProjectRow();
     if(!ideaRow){ _sboardShowToast('Open a topic first.'); return; }
+    // Oct 14 2026: from a STORY board, PLAN means the Plan of the Topic the STORY board serves, never of the STORY container itself.
+    var _fromStory=_sboardShareSourceFor(ideaRow);
+    if(_fromStory) ideaRow=_fromStory;
     if(ideaRow.storyboard_kind==='PLAN' || _sboardPlanSourceFor(ideaRow)) return; // already there -- no-op, matches IDEA's own re-pick behavior
     var _sb=T().sb;
     try{
@@ -1249,6 +1280,88 @@
     }catch(err){
       _sboardShowToast('Could not open the Plan board — '+(err&&err.message?err.message:'try again'));
     }
+  }
+
+  // STORY board, Oct 14 2026 (Larry: "build a draft of the STORY board so that we do not need the coming soon message any more").
+  // Picking STORY opens the Topic's STORY board, the same way picking PLAN opens its Plan board: a container row (storyboard_kind 'SHARE',
+  // tagged to the Topic, living under it) whose child headers are the columns. Every Topic has one. A Topic with none yet gets one made
+  // silently from the generic template (story-board-template.js), Parking Lot first -- no chooser, nothing to decide. After that the board
+  // is the traveler's own: the template is never applied to it again. With no argument it serves the Topic on screen (and does nothing when
+  // already standing on that Topic's STORY board); goToTopic and jumpToProjectKind hand it the Topic row.
+  async function _sboardOpenOrCreateStoryBoard(topicRowArg){
+    var topicRow=topicRowArg || _sboardServedTopicRow();
+    if(!topicRow){ _sboardShowToast('Open a topic first.'); return; }
+    if(!topicRowArg){
+      var curNow=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || null;
+      if(curNow && _sboardShareSourceFor(curNow)) return;   // already on that STORY board: same no-op as re-picking PLAN or BLUE SKY
+    }
+    // A Plan or STORY container is never itself the Topic: serve the Topic it points to.
+    var src=_sboardPlanSourceFor(topicRow) || _sboardShareSourceFor(topicRow);
+    if(src) topicRow=src;
+    var _sb=T().sb;
+    try{
+      var existing=await _sb.from('ideas').select('*').eq('content_type','header')
+        .eq('storyboard_kind','SHARE').eq('source_project_id', topicRow.id).limit(1);
+      if(existing.error) throw existing.error;
+      if(existing.data && existing.data.length){
+        _sboardAllRowsById[existing.data[0].id]=existing.data[0];   // cache before drilling in, or the chrome cannot find the board (see the Sept 21 2026 note above)
+        _sboardDrillInto(existing.data[0]);
+        return;
+      }
+      var made=await _sboardCreateStoryBoard(topicRow);
+      _sboardAllRowsById[made.id]=made;
+      _sboardDrillInto(made);
+    }catch(err){
+      _sboardShowToast('Could not open the STORY board — '+(err&&err.message?err.message:'try again'));
+    }
+  }
+
+  // Makes a Topic's STORY board: the container row, then the Parking Lot and the template headers in one insert, then the template cards in
+  // one insert -- three round trips however long the template grows. Same identity carried from the Topic as a blank Plan board (name,
+  // color, board type, org, logo). track_on_briefing_board stays false on every row: a header with it on would spawn a Briefing Board card.
+  async function _sboardCreateStoryBoard(topicRow){
+    var _sb=T().sb;
+    var authRes=await _sb.auth.getUser();
+    var user=authRes && authRes.data && authRes.data.user;
+    if(!user) throw new Error('not signed in');
+    var now=new Date().toISOString();
+    var rootIns=await _sb.from('ideas').insert({
+      user_id:user.id, content_type:'header', text_content:topicRow.text_content||'(untitled)',
+      cluster_id:topicRow.id, color:topicRow.color||null, board_type:topicRow.board_type||null,
+      org_name:topicRow.org_name||null, locked:!!topicRow.locked,
+      logo_url:topicRow.logo_url||null, logo_w:topicRow.logo_w||null, logo_h:topicRow.logo_h||null,
+      storyboard_kind:'SHARE', source_project_id:topicRow.id,
+      track_on_briefing_board:false, created_at:now
+    }).select().single();
+    if(rootIns.error) throw rootIns.error;
+    var root=rootIns.data;
+
+    var tpl=window.T2TStoryTemplate || {headers:[]};
+    var headerColor=tpl.headerColor || T().getDefaultHeaderColor();
+    var headerRows=[{ user_id:user.id, content_type:'header', text_content:'Parking Lot', cluster_id:root.id, sort_order:0,
+                      color:T().getDefaultHeaderColor(), track_on_briefing_board:false, created_at:now }];
+    var cardRows=[];
+    tpl.headers.forEach(function(h,i){
+      headerRows.push({ user_id:user.id, content_type:'header', text_content:h.name, cluster_id:root.id, sort_order:i+1,
+                        color:headerColor, track_on_briefing_board:false, created_at:now });
+      (h.cards||[]).forEach(function(txt,j){
+        cardRows.push({ _headerIndex:headerRows.length-1, user_id:user.id, content_type:'text', text_content:txt, sort_order:j,
+                        track_on_briefing_board:false, created_at:now });
+      });
+    });
+    var hdrIns=await _sb.from('ideas').insert(headerRows).select('id,sort_order');
+    if(hdrIns.error) throw hdrIns.error;
+    var idBySort={}; (hdrIns.data||[]).forEach(function(r){ idBySort[r.sort_order]=r.id; });
+    var cards=cardRows.map(function(c){
+      var parentId=idBySort[headerRows[c._headerIndex].sort_order];
+      return { user_id:c.user_id, content_type:c.content_type, text_content:c.text_content, cluster_id:parentId,
+               sort_order:c.sort_order, track_on_briefing_board:false, created_at:c.created_at };
+    });
+    if(cards.length){
+      var cardIns=await _sb.from('ideas').insert(cards);
+      if(cardIns.error) throw cardIns.error;
+    }
+    return root;
   }
 
   // Reusable first-time "how do you want to start this board" chooser.
@@ -1323,7 +1436,7 @@
   // IDEA's original "needs no action when re-picked" behavior.
   async function _sboardReturnToIdeaBoard(){
     var row=_sboardCurrentProjectRow();
-    if(!row || row.storyboard_kind!=='PLAN' || !row.source_project_id) return;
+    if(!row || (row.storyboard_kind!=='PLAN' && row.storyboard_kind!=='SHARE') || !row.source_project_id) return;   // a STORY board returns to its Topic's Blue Sky board the same way (Oct 14 2026)
     var cached=_sboardAllRowsById[row.source_project_id];
     if(cached){ _sboardDrillInto(cached); return; }
     try{
@@ -1373,6 +1486,7 @@
       _sboardDrillInto(row);
       if(kind==='CAST') await openCallSheet(row, null, 'idea', null, null, null);
       if(kind==='PLAN') await _sboardOpenOrCreatePlanBoard();
+      if(kind==='SHARE') await _sboardOpenOrCreateStoryBoard(row);   // the STORY board of the project row just opened (Oct 14 2026)
       return true;
     }catch(err){ return false; }
   }

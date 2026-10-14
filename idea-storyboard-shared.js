@@ -726,6 +726,9 @@
   // currently anywhere inside, so it stays right no matter how deep a
   // Header/Subber they've drilled into.
   var _sboardIsPlanBoard = false;
+  // Oct 14 2026 -- STORY board (storyboard_kind 'SHARE' container). Refreshed every render next to _sboardIsPlanBoard. Never true together
+  // with _sboardIsPlanBoard: a STORY board has none of a Plan's step numbers, times or checkmarks, it only has its own band label and color.
+  var _sboardIsShareBoard = false;
   // Alphabetical header view -- Larry, Aug 3 2026: "If headers or subbers
   // are sorted alphabetically the order number does NOT change, allowing
   // to resort to number order." This is a pure DISPLAY toggle, never

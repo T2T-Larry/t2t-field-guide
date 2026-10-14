@@ -488,9 +488,23 @@
           }
         }
       } },
-    // Matches the in-board board-kind dropdown's own "coming soon" SHARE
-    // row -- not a new gap, same placeholder everywhere SHARE shows up.
-    { id: 'share',          label: 'Share',           action: function(){ showZeroToast('Share — coming soon.'); } },
+    // Oct 14 2026 -- the STORY board (kind 'SHARE') exists now: same "last active project" resolve as Plan and Cast, then
+    // the existing jumpToProjectKind bridge opens (or starts) that topic's STORY board.
+    { id: 'share',          label: 'Share',           action: function(){
+        var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
+        if (!pid) { showZeroToast('Start an Idea Storyboard first, then the STORY board can build off it.'); return; }
+        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) {
+          var failed = function(err){
+            if (err) console.error('STORY board failed to open:', err);
+            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+            showZeroToast('The STORY board had trouble opening -- please try again.');
+          };
+          try {
+            var p = window.T2TStoryboard.jumpToProjectKind(pid, 'SHARE');
+            if (p && typeof p.then === 'function') p.then(function(ok){ if (ok === false) failed(); }, failed);
+          } catch(err) { failed(err); }
+        }
+      } },
     { id: 'briefing-board', label: 'Briefing Board',  action: wireToggleNav('s-briefing-board', function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); }) }
   ];
 
