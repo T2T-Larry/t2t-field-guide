@@ -229,6 +229,9 @@
   async function _bbLogCardMove(c, before){
     if(!_bbCurrentBoardId) return;
     if(before.col===c.col && before.priority===c.priority && before.sortOrder===c.sortOrder) return;
+    // Oct 14 2026 -- finishing a plan step makes the database add the next step's
+    // card; see briefing-board-live-refresh.js.
+    if(typeof window._bbRefreshAfterPlanDone==='function') window._bbRefreshAfterPlanDone(c, before);
     (function(){
       var cardId=c.id, beforeSnap=before, afterSnap=_bbSnapshotCard(c);
       _bbPushAction({
