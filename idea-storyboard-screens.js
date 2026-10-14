@@ -772,7 +772,7 @@
       }
       var subHeadersOf={};
       contentHeaders.forEach(function(h){
-        if(h.cluster_id){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }
+        if(h.cluster_id && !T2TPlan.isContainer(h)){ (subHeadersOf[h.cluster_id]=subHeadersOf[h.cluster_id]||[]).push(h); }   // a Topic's plan container is not a column
       });
       // "Borrow" a nested row into the current Topic's own column row for
       // this render only -- Aug 23 2026, the "ONE level ONLY" PgUp fix
@@ -935,7 +935,7 @@
             _tFrontier=_tNext;
           }
           var _planRootIds={};
-          headerRows.forEach(function(h){ if(h.storyboard_kind==='PLAN' && !h.cluster_id) _planRootIds[String(h.id)]=true; });
+          headerRows.forEach(function(h){ if(h.storyboard_kind==='PLAN' && (!h.cluster_id || T2TPlan.isContainer(h))) _planRootIds[String(h.id)]=true; });
           var _haveIds={}; childHeaders.forEach(function(h){ _haveIds[String(h.id)]=true; });
           var _filtered=headerRows.filter(function(h){
             return h.cluster_id && _planRootIds[String(h.cluster_id)] && String(h.cluster_id)!==String(T2TShared.currentTopicId)

@@ -216,7 +216,7 @@
   // reached.
   function _sboardProjectRowFor(row){
     var cur=row, guard=0;
-    while(cur && !(cur.topic_scope_id && String(cur.topic_scope_id)===String(cur.id)) && cur.cluster_id && guard<25){
+    while(cur && !(cur.topic_scope_id && String(cur.topic_scope_id)===String(cur.id)) && !T2TPlan.isContainer(cur) && cur.cluster_id && guard<25){   // a plan container is its own project root even when it sits under its Topic
       if(_sboardIdeaStoryboardsRootId && String(cur.cluster_id)===String(_sboardIdeaStoryboardsRootId)) break;
       var parent=_sboardAllRowsById[cur.cluster_id];
       if(!parent) break;
@@ -419,7 +419,7 @@
     _sboardPendingTypeOverride=null;
     var _sb=T().sb;
     try{
-      var existing=await _sb.from('ideas').select('id').eq('content_type','header').is('cluster_id',null)
+      var existing=await _sb.from('ideas').select('id').eq('content_type','header')
         .eq('storyboard_kind','PLAN').eq('source_project_id', rootId).limit(1);
       if(existing.error) throw existing.error;
       if(existing.data && existing.data.length){
@@ -816,7 +816,7 @@
     // case-insensitive localeCompare every other project picker uses.
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
-      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(rootId) && !RESERVED[r.text_content]; })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(rootId) && !RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
       .sort(function(a,b){ return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase()); });
   }
   function _sboardWireProjectHeaderDropdown(){
@@ -1030,7 +1030,7 @@
     if(!topicId) return [];
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
-      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(topicId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content]; })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(topicId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
       .sort(_sboardBySortOrder);
   }
   function _sboardWireTopicChildDropdown(){
@@ -1115,7 +1115,7 @@
       total++;
       var children=Object.keys(_sboardAllRowsById)
         .map(function(k){ return _sboardAllRowsById[k]; })
-        .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(id) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content]; })
+        .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(id) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
         .sort(_sboardBySortOrder);
       children.forEach(function(c){ walk(c.id, depth+1); });
     })(rootId, 0);
@@ -1172,7 +1172,7 @@
   function _sboardPyramidChildren(parentId){
     return Object.keys(_sboardAllRowsById)
       .map(function(k){ return _sboardAllRowsById[k]; })
-      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(parentId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content]; })
+      .filter(function(r){ return r && r.content_type==='header' && String(r.cluster_id)===String(parentId) && !SBOARD_TOPIC_CHILD_RESERVED[r.text_content] && !T2TPlan.isContainer(r); })
       .sort(_sboardBySortOrder)
       .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
   }
@@ -1212,7 +1212,7 @@
     if(ideaRow.storyboard_kind==='PLAN' || _sboardPlanSourceFor(ideaRow)) return; // already there -- no-op, matches IDEA's own re-pick behavior
     var _sb=T().sb;
     try{
-      var existing=await _sb.from('ideas').select('id').eq('content_type','header').is('cluster_id',null)
+      var existing=await _sb.from('ideas').select('id').eq('content_type','header')
         .eq('storyboard_kind','PLAN').eq('source_project_id', ideaRow.id).limit(1);
       if(existing.error) throw existing.error;
       if(existing.data && existing.data.length){

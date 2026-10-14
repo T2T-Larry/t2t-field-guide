@@ -1900,8 +1900,8 @@
     // default header shoved into it. If this parent already has ANY
     // header at all, that's proof it's not brand-new -- mark it seeded
     // and stop inserting.
-    var kids=await _sb.from('ideas').select('id').eq('content_type','header').eq('cluster_id',parentId).limit(1);
-    if(!kids.error && kids.data && kids.data.length){
+    var kids=await _sb.from('ideas').select('id,cluster_id,storyboard_kind,source_project_id').eq('content_type','header').eq('cluster_id',parentId).limit(5);   // a Plan container alone does not make a Topic 'seeded'
+    if(!kids.error && kids.data && T2TPlan.withoutContainers(kids.data).length){
       _sboardMarkParentDefaultsSeeded(parentId);
       return true;
     }

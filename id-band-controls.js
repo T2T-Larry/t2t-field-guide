@@ -82,9 +82,9 @@
   }
   async function treeChildren(id){
     var sb=treeSb(); if(!sb) throw new Error('no connection');
-    var res=await sb.from('ideas').select('id,cluster_id,text_content,priority,sort_order').eq('cluster_id',id).eq('content_type','header').order('sort_order',{ascending:true});
+    var res=await sb.from('ideas').select('id,cluster_id,text_content,priority,sort_order,storyboard_kind,source_project_id').eq('cluster_id',id).eq('content_type','header').order('sort_order',{ascending:true});
     if(res.error) throw res.error;
-    return (res.data||[]).filter(function(r){ return !TREE_RESERVED[r.text_content]; }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
+    return (res.data||[]).filter(function(r){ return !TREE_RESERVED[r.text_content] && !(window.T2TPlan && T2TPlan.isContainer(r)); }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
   }
 
   function mountControls(cfg){

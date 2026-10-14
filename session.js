@@ -2224,7 +2224,7 @@
         var tid=_isxCurrentTopicId(), out=[];
         Object.keys(_isxAllRowsById).forEach(function(k){
           var r=_isxAllRowsById[k];
-          if(r && r.content_type==='header' && String(r.cluster_id)===String(tid) && k!==_isxTrashId && k!==_isxMiscId)
+          if(r && r.content_type==='header' && String(r.cluster_id)===String(tid) && k!==_isxTrashId && k!==_isxMiscId && !(window.T2TPlan && T2TPlan.isContainer(r)))
             out.push({id:r.id, name:r.text_content||'(untitled)'});
         });
         out.sort(function(a,b){ return a.name.localeCompare(b.name); });

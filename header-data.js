@@ -127,9 +127,9 @@
     if(!parentId) return [];
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
-      var res=await sb.from('ideas').select('id,text_content,idea_text,link_title,priority').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',parentId);
+      var res=await sb.from('ideas').select('id,text_content,idea_text,link_title,priority,cluster_id,storyboard_kind,source_project_id').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',parentId);
       if(res.error){ console.warn('childHeaders error:', res.error); return []; }
-      return _fillHeaderTitles(res.data||[]);
+      return _fillHeaderTitles(window.T2TPlan ? T2TPlan.withoutContainers(res.data) : (res.data||[]));
     }catch(e){ console.warn('childHeaders exception:', e); return []; }
   }
 
@@ -440,8 +440,8 @@
     // (so this only ever costs one extra query, not one per render) and
     // treat it as already seeded. A genuinely empty/new parent still
     // correctly falls through to false and gets its defaults.
-    var kids=await sb.from('ideas').select('id').eq('content_type','header').eq('cluster_id',parentId).limit(1);
-    if(!kids.error && kids.data && kids.data.length){
+    var kids=await sb.from('ideas').select('id,cluster_id,storyboard_kind,source_project_id').eq('content_type','header').eq('cluster_id',parentId).limit(5);   // a Plan container alone does not make a Topic 'seeded'
+    if(!kids.error && kids.data && (window.T2TPlan ? T2TPlan.withoutContainers(kids.data) : kids.data).length){
       _markParentDefaultsSeeded(parentId);
       return true;
     }

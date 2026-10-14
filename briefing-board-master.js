@@ -1071,8 +1071,8 @@
         cur=row.cluster_id;
       }
       if(!proj){ _bbShowToast('Could not find that Topic.'); return; }
-      var pl=await sb.from('ideas').select('*').eq('content_type','header').is('cluster_id',null)
-        .eq('storyboard_kind','PLAN').eq('source_project_id',proj.id).limit(1);
+      var pl=await sb.from('ideas').select('*').eq('content_type','header')
+        .eq('storyboard_kind','PLAN').eq('source_project_id',proj.id).limit(1);   // parentless OR under its Topic (Oct 14 2026)
       if(pl.error) throw pl.error;
       var planRoot=pl.data && pl.data[0];
       if(!planRoot){
@@ -1626,10 +1626,10 @@
     for(var depth=0; depth<maxDepth && frontier.length; depth++){
       var next=[];
       try{
-        var res=await sb.from('ideas').select('id,cluster_id,text_content').in('cluster_id',frontier).eq('content_type','header');
+        var res=await sb.from('ideas').select('id,cluster_id,text_content,storyboard_kind,source_project_id').in('cluster_id',frontier).eq('content_type','header');
         if(!res.error){
           (res.data||[]).forEach(function(row){
-            if(seen[row.id] || BB_RESERVED_HEADER_NAMES[row.text_content]) return;
+            if(seen[row.id] || BB_RESERVED_HEADER_NAMES[row.text_content] || (window.T2TPlan && T2TPlan.isContainer(row))) return;
             seen[row.id]=true; next.push(row.id); descendantIds.push(row.id);
           });
         }
