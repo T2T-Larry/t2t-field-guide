@@ -463,7 +463,7 @@
       // root, so the front-of-card number badge (_sboardMakeTile) and the
       // IDEA/PLAN dropdown chrome (_sboardSyncBoardKindChrome) stay right
       // at any depth.
-      _sboardIsPlanBoard = !!(currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN');
+      _sboardIsPlanBoard = !!((currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN') || (currentTopicRowForProject && _sboardPlanSourceFor(currentTopicRowForProject))); // Oct 14 2026: also true when the viewed row sits under a Plan root, so a thin/cold project row can't flip a Plan board to Blue Sky
       _sboardSyncBoardKindChrome();
       // Oct 14 2026 (Larry: "screen color is PLAN but ID BAND says Blue Sky"): the board color is also derived from _sboardIsPlanBoard, but was only
       // painted at screen-open/header time, so it could keep the previous board's color. Repaint right after the flag + band label are set so all three agree.
