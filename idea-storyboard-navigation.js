@@ -1137,15 +1137,24 @@
   // Blue Sky topic the plan serves (its source_project_id row), or null when this row is not part of a plan.
   function _sboardPlanSourceFor(row){
     if(!row) return null;
-    var root=null;
+    var root=null, nearestSrc=null;
     if(row.storyboard_kind==='PLAN') root=row;
     else if(row.project_id && _sboardAllRowsById[row.project_id] && _sboardAllRowsById[row.project_id].storyboard_kind==='PLAN') root=_sboardAllRowsById[row.project_id];
-    else {
-      var cur=row, guard=0;
-      while(cur && cur.cluster_id && guard<50){ guard++; cur=_sboardAllRowsById[cur.cluster_id]; if(cur && cur.storyboard_kind==='PLAN'){ root=cur; break; } }
+    // Oct 14 2026 (Larry: picking MASTER from the INVITATIONS plan did nothing): a plan header such as INVITATIONS sits inside the MASTER plan container
+    // but is tagged (source_project_id) to its own topic. The NEAREST tag, walking up from the viewed row, is the topic being viewed; only fall back
+    // to the container's tag when nothing nearer is tagged.
+    var cur=row, guard=0;
+    while(cur && guard<50){
+      if(!nearestSrc && cur.source_project_id) nearestSrc=cur.source_project_id;
+      if(!root && cur.storyboard_kind==='PLAN') root=cur;
+      if(root && cur===root) break;
+      if(!cur.cluster_id) break;
+      guard++; cur=_sboardAllRowsById[cur.cluster_id];
     }
-    if(!root || !root.source_project_id) return null;
-    return _sboardAllRowsById[root.source_project_id] || null;
+    if(!root) return null;
+    var srcId=nearestSrc || root.source_project_id;
+    if(!srcId) return null;
+    return _sboardAllRowsById[srcId] || null;
   }
   function _sboardPyramidAncestors(topicId){
     var chain=[], guard=0;
