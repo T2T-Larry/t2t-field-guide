@@ -264,7 +264,7 @@
     // Oct 10 2026 (Wish Tank opens as Sea of Ideas): a header marked opens_as_sea opens
     // the freeform Sea board for that header instead of Blue Sky columns. It is a marker
     // on the header itself, not a name check, so any Sea works the same.
-    if(headerRow.opens_as_sea && window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); return; }
+    if(headerRow.opens_as_sea && !T2TPlan.isContainer(headerRow) && window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); return; }   // a Plan container never opens as the Sea (Oct 14 2026)
     _sboardSpinWhile(renderSeaBoard());
   }
 
