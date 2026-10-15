@@ -1027,30 +1027,20 @@
     trigger.textContent=label||'TOPIC';
     trigger.title=label||'TOPIC';
     var hereId=(pv.value && String(pv.value).indexOf('hdr:')===0) ? String(pv.value).slice(4) : null;
-    var addTopicFn=async function(){
-      var name=window.prompt('Name for the new topic:');
-      if(!name || !name.trim()) return;
-      if(_bbSingleBoardMode()){
-        var rootId=_bbIdeaStoryboardsRootId;
-        if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
-        if(!rootId){ window.alert('Could not add a topic right now. Try again in a moment.'); return; }
-        var hdr;
-        try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
-        catch(e){ console.error('Briefing Board: could not add topic header', e); window.alert('Could not add the topic "'+name.trim()+'". Try again.'); return; }
-        _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
-        await _bbSetCardProjectHeader(c.id, hdr.id);
-        return;
-      }
-      var ok=await _bbCreateBoard(name.trim(), 'project');
-      if(!ok) return;
-      var targetBoard=_bbBoards.filter(function(b){ return b.id===_bbCurrentBoardId; })[0];
-      if(targetBoard) await _bbMoveCardObjectToBoard(c, targetBoard);
-      closeCardDetail();
-      renderBoard();
+    // Oct 15 2026: the (+) is the shared one (IDBand.addTopicUnder via the TOPIC list). The new topic goes under the Idea Storyboards root.
+    var addParent=async function(){
+      var rootId=_bbIdeaStoryboardsRootId;
+      if(!rootId){ try{ rootId=await T2TData.ensureIdeaStoryboardsRoot(); }catch(e){} }
+      if(!rootId) window.alert('Could not add a topic right now. Try again in a moment.');
+      return rootId;
+    };
+    var addedTopic=async function(hdr){
+      _bbProjectNameById[hdr.id]=hdr.text_content||'';
+      await _bbSetCardProjectHeader(c.id, hdr.id);
     };
     trigger.onclick=function(e){
       e.stopPropagation();
-      FGCardBack.openTopicMenu(trigger, {theme:'bb', sb:T().sb, hereId:hereId, excludeId:null, onAdd:addTopicFn, onPick:function(hid){
+      FGCardBack.openTopicMenu(trigger, {theme:'bb', sb:T().sb, hereId:hereId, excludeId:null, addParentId:(_bbSingleBoardMode() ? addParent : null), onAdded:(_bbSingleBoardMode() ? addedTopic : null), onPick:function(hid){
         if(_bbSingleBoardMode()) _bbSetCardProjectHeader(c.id, hid);
         else _bbMoveCardToProject(c.id, 'hdr:'+hid);
       }});

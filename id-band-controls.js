@@ -95,8 +95,21 @@
   // draws through this ONE routine: the real one tree from its MASTER row,
   // everything closed except the path down to the topic you are standing on.
   // opts: {topicId (where you are, may be null = MASTER), excludeId, hereId,
-  //        onAdd, onNavigate(id, isRoot, name), fallback()->{ancestors,current}}
+  //        onAdded(row, parentId)  -- the (+) at the bottom: the routine asks for a name and creates the topic, the caller says what happens next
+  //        addParentId             -- optional id (or function -> id / Promise) of the parent the new topic goes under; default = the current topic
+  //        onNavigate(id, isRoot, name), fallback()->{ancestors,current}}
   // Resolves to the current row element (for scrolling) or null.
+  // The ONE way a topic is added from any TOPIC list (Oct 15 2026, Larry: the (+) must work the same everywhere).
+  // Resolves to the new header row, or null if cancelled or it failed (the failure is shown).
+  async function addTopicUnder(parentId, label){
+    if(!window.T2TData || !window.T2TData.createHeader){ window.alert('Adding topics isn\u2019t available right now.'); return null; }
+    var name=window.prompt(label || 'Name for the new topic:');
+    if(!name || !name.trim()) return null;
+    try{ return await window.T2TData.createHeader(name.trim(), parentId); }
+    catch(err){ console.error('ID BAND: could not add topic', err); window.alert('Could not add the topic. ' + ((err && err.message) || '')); return null; }
+  }
+  window.IDBand.addTopicUnder = addTopicUnder;
+
   async function renderTopicTree(menu, opts){
     if(!window.TopicPyramid) return null;
     var t=null;
@@ -126,7 +139,13 @@
           return exclude ? kids.filter(function(k){ return String(k.id)!==exclude; }) : kids;
         });
       },
-      onAdd:opts.onAdd,
+      onAdd:opts.onAdded ? async function(pid){
+        var parent=opts.addParentId!=null ? opts.addParentId : pid;
+        if(typeof parent==='function') parent=await parent();
+        if(!parent) return;
+        var row=await addTopicUnder(parent, opts.addLabel);
+        if(row) opts.onAdded(row, parent);
+      } : null,
       onNavigate:function(id){
         // The MASTER row itself is where you are going from, never a place a card is filed.
         var isRoot=String(id)===rootId;
@@ -205,7 +224,10 @@
         renderTopicTree(menu, {
           topicId:tid,
           fallback:function(){ return cfg.getTopic ? cfg.getTopic() : null; },
-          onAdd:addTopic,
+          onAdded:function(row){
+            if(cfg.onTopicAdded) cfg.onTopicAdded(row);
+            menu.hidden=true; openPyramid();
+          },
           onNavigate:function(id){
             menu.hidden=true;
             if(cfg.goToTopic && (!tid || String(id)!==String(tid))) cfg.goToTopic(id);
@@ -216,17 +238,6 @@
           placeMenu(menu, trigger, 200);
           if(rowEl && rowEl.scrollIntoView) rowEl.scrollIntoView({block:'center'});
         });
-      }
-      // (+) at the bottom: name it, create it under the current Topic, then
-      // show the list again with the new topic in it.
-      function addTopic(parentId){
-        if(!window.T2TData || !window.T2TData.createHeader){ toast('Adding topics isn’t available right now.'); return; }
-        var name=window.prompt('Name for the new topic:');
-        if(!name || !name.trim()) return;
-        window.T2TData.createHeader(name.trim(), parentId).then(function(row){
-          if(cfg.onTopicAdded) cfg.onTopicAdded(row);
-          menu.hidden=true; openPyramid();
-        }, function(err){ toast('Could not add the topic. ' + ((err && err.message) || '')); });
       }
       trigger.addEventListener('click', function(e){
         e.stopPropagation();

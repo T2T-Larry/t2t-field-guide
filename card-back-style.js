@@ -359,7 +359,8 @@
       hereId: opts.hereId || null,
       noRootPick: true,
       // Oct 15 2026 (Larry): the same single centered (+) the board's list ends with, instead of extra text rows.
-      onAdd: opts.onAdd ? function(pid){ closeMenus(); opts.onAdd(pid); } : null,
+      onAdded: opts.onAdded ? function(row, pid){ closeMenus(); opts.onAdded(row, pid); } : null,
+      addParentId: opts.addParentId,
       onNavigate: function(hid){
         closeMenus();
         if(opts.onPick) opts.onPick(hid);

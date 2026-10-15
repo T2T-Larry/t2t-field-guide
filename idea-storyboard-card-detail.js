@@ -777,9 +777,7 @@
         +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:300px;overflow-y:auto;margin-bottom:8px"></div>'
         +'<div style="display:flex;gap:6px;margin-bottom:6px">'
         +  '<button class="sc-ov-btn" id="sb-anywhere-park" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot')+'</button>'
-        +  (_sbTopicForNew ? '<button class="sc-ov-btn" id="sb-anywhere-newh" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">+ New header here</button>' : '')
         +'</div>'
-        +'<div id="sb-newheader-row" style="display:none;margin-bottom:6px"><input id="sb-newheader-input" type="text" autocomplete="off" placeholder="New header name…" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));box-sizing:border-box;margin-bottom:6px"><button class="sb-blue-btn" id="sb-newheader-go" style="width:100%">Create &amp; move here</button></div>'
         +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov2.classList.add('active');
@@ -790,6 +788,8 @@
         excludeId: (item.content_type==='header') ? item.id : null,
         hereId: item.cluster_id ? String(item.cluster_id) : null,
         noRootPick: true,
+        addParentId: _sbTopicForNew,
+        onAdded: _sbTopicForNew ? _sbMoveIntoNewHeader : null,
         onNavigate: async function(hid){
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
           var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
@@ -810,18 +810,6 @@
         }
       });
       T().wire('sb-anywhere-park', function(){ _sbMoveFromBoard=false; _sbSendToParkingLot(); });
-      T().wire('sb-anywhere-newh', function(){
-        var row=document.getElementById('sb-newheader-row'); if(!row) return;
-        row.style.display='block';
-        var nh=document.getElementById('sb-newheader-input'); if(nh) setTimeout(function(){ nh.focus(); }, 50);
-      });
-      T().wire('sb-newheader-go', function(){ _sbNewHeaderGo(_sbTopicForNew); });
-      (function(){
-        var nhInput=document.getElementById('sb-newheader-input');
-        if(nhInput) nhInput.addEventListener('keydown', function(e){
-          if(e.key==='Enter'){ e.preventDefault(); _sbNewHeaderGo(_sbTopicForNew); }
-        });
-      })();
       T().wire('sb-anywhere-cancel', function(){
         // Opened with Alt+M from the board: Cancel goes back to the board,
         // not to the card's back.
@@ -917,7 +905,7 @@
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, onPick:moveCardToHeader, onAdd:(topicForNew ? function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); } : null)});
+      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, onPick:moveCardToHeader, addParentId:topicForNew, onAdded:(topicForNew ? _sbMoveIntoNewHeader : null)});
     }
     function openKindPicker(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();
@@ -985,27 +973,17 @@
     // "+ New header here" (inside the MOVE pyramid): creates a header on
     // the board being viewed and moves this card into it. Same ENTER +
     // Saving… feedback as the standalone New Header prompt.
-    async function _sbNewHeaderGo(parentId, nameOverride){
-      var goBtn=document.getElementById('sb-newheader-go');
-      var name=nameOverride || (document.getElementById('sb-newheader-input')||{}).value||'';
-      name=name.trim() || ('Cluster '+_sboardNextClusterNumber());
-      if(goBtn){ goBtn.disabled=true; goBtn.textContent='Saving...'; }
+    async function _sbMoveIntoNewHeader(row){
       try{
-        var user=(await _sb.auth.getUser()).data.user;
-        if(!user) throw new Error('Not signed in.');
-        var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
-        if(ins.error) throw new Error(ins.error.message);
-        _sboardAddRow(ins.data);
-        var upd=await _sb.from('ideas').update({cluster_id:ins.data.id}).eq('id',item.id);
+        _sboardAddRow(row);
+        var upd=await _sb.from('ideas').update({cluster_id:row.id}).eq('id',item.id);
         if(upd.error) throw upd.error;
-        item.cluster_id=ins.data.id;
-        _sboardPatchRow(item.id, {cluster_id:ins.data.id});
+        item.cluster_id=row.id;
+        _sboardPatchRow(item.id, {cluster_id:row.id});
         _sbMoveFromBoard=false;
         closeSbDetail();
         renderSeaBoard(true);
-      }catch(err){
-        if(goBtn){ goBtn.disabled=false; goBtn.textContent=(err&&err.message)||'Try again'; }
-      }
+      }catch(err){ console.error(err); _sboardShowToast((err&&err.message)||'Could not move the card.'); }
     }
 
     // Text editing (auto-promotes to header if punctuation says so)
