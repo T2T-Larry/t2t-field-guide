@@ -889,7 +889,9 @@
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
-        var needsPlanBadge = c.needsPlan ? '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>' : '';
+        var needsPlanBadge = c.needsPlan ? (c.goalHeaderId
+          ? '<span class="bb-needs-plan-badge bb-goal-badge" title="This task is the GOAL of a plan being built on the PLAN board.">GOAL</span>'
+          : '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine

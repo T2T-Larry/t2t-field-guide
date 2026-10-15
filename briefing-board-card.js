@@ -968,6 +968,7 @@
       // already had real content in the matching field, so nothing
       // already on a card goes invisible just because this shipped.
       needsPlan: !!row.needs_plan,
+      goalHeaderId: row.goal_header_id||null,
       addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
       addStart: !!row.adds_start, addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
       addRelated: !!row.adds_related, addFlags: !!row.adds_flags,

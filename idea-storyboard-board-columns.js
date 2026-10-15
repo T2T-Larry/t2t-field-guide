@@ -353,6 +353,13 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
       // per-item instead of pre-filtering a separate list.
       var _sbAllowedDirectIds={};
       _sboardFilterByPerson(directItems).forEach(function(r){ _sbAllowedDirectIds[r.id]=true; });
+      // Oct 15 2026: a NEEDS PLAN card filed under this plan header is its GOAL, shown first (needs-plan-goals.js).
+      if(!isReserved && typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard && window.T2TNeedsPlanGoals){
+        var _goalHost=document.createElement('div');
+        _goalHost.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px';
+        scroll.appendChild(_goalHost);
+        T2TNeedsPlanGoals.fillHeader(_goalHost, headerRow.id, SUBBER_W);
+      }
       combined.forEach(function(r){
         if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }
         else if(_sbAllowedDirectIds[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, straight, headerRow.id, SUBBER_H)); }

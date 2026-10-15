@@ -910,6 +910,7 @@
       function renderLetterGroup(group){ return _sboardRenderLetterGroup(_colCtx, group); }
 
       var groupsWrap=document.createElement('div');
+      groupsWrap.setAttribute('data-sb-groups','1');   // drop target for needs-plan-goals.js (open space = new plan)
       groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
       var _azActive=false;   // true only while the A-Z letter view is actually drawn this render
