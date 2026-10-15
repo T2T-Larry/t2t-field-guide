@@ -873,9 +873,41 @@
     // uses, drawn with this board's own dropdown look. What a pick does is this card's part: move under a header, or go to another board.
     // Oct 15 2026 -- Larry's rule: changing the ID BAND moves the card and all its children (a header's subbers and sub-headers hang under it by
     // cluster_id, so they travel with it), and a note records where it came from: "Moved from TOPIC: <old header>."
+    // Oct 15 2026 (Larry: STORY PRESENTATION MODE and PRIMARY Control never left WEBSITE): a PLAN header belongs to the TOPIC it is tagged to
+    // (source_project_id), and its plan board is the one inside that TOPIC. Changing the TOPIC on its back has to retag it AND file it in the
+    // new TOPIC's own PLAN container (made if the TOPIC has none yet); changing only cluster_id left the tag on WEBSITE, so it kept showing there.
+    // Its steps and Parking Lot cards hang under it by cluster_id and travel with it.
+    function _sbIsPlanHeader(){
+      if(!item || item.content_type!=='header' || !item.source_project_id) return false;
+      if(window.T2TPlan && T2TPlan.isContainer(item)) return false;
+      return true;
+    }
+    async function _sbPlanContainerFor(topicId){
+      var q=await _sb.from('ideas').select('*').eq('content_type','header').eq('storyboard_kind','PLAN').eq('source_project_id',topicId).limit(1);
+      if(q.error) throw q.error;
+      if(q.data && q.data[0]) return q.data[0];
+      var tr=await _sb.from('ideas').select('*').eq('id',topicId).maybeSingle();
+      if(tr.error) throw tr.error;
+      var proj=tr.data; if(!proj) throw new Error('Topic not found');
+      var uid=(await _sb.auth.getUser()).data.user.id;
+      var mk=await _sb.from('ideas').insert({
+        user_id:uid, content_type:'header', text_content:proj.text_content||'(untitled)', cluster_id:proj.id, color:proj.color||null,
+        board_type:proj.board_type||null, org_name:proj.org_name||null, locked:!!proj.locked, logo_url:proj.logo_url||null,
+        logo_w:proj.logo_w||null, logo_h:proj.logo_h||null, storyboard_kind:'PLAN', source_project_id:proj.id,
+        track_on_briefing_board:false, created_at:new Date().toISOString()
+      }).select().single();
+      if(mk.error) throw mk.error;
+      try{ if(window._sboardPatchRow) _sboardPatchRow(mk.data.id, mk.data); }catch(e){}
+      return mk.data;
+    }
     async function _sbMovedFromNote(){
       try{
         if(!item.cluster_id) return null;
+        if(_sbIsPlanHeader()){
+          var sr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id', item.source_project_id).maybeSingle();
+          var sd=sr && sr.data; var sn=sd && ((sd.subject||'').trim() || (sd.idea_text||'').trim() || (sd.text_content||'').trim());
+          if(sn){ var sl='Moved from TOPIC: '+sn+'.', so=(item.notes||'').trim(); return so ? (so+'\n'+sl) : sl; }
+        }
         var pr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id', item.cluster_id).maybeSingle();
         var d=pr && pr.data; var nm=d && ((d.subject||'').trim() || (d.idea_text||'').trim() || (d.text_content||'').trim());
         if(!nm) return null;
@@ -884,19 +916,33 @@
       }catch(e){ return null; }
     }
     async function moveCardToHeader(hid){
-      if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
+      // A plan header is "here" by its TOPIC tag, not by where its row happens to sit (a header whose row already sits under STORY but is still
+      // tagged to WEBSITE must be movable to STORY).
+      if(_sbIsPlanHeader() ? String(hid||'')===String(item.source_project_id||'') : String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
       var before={cluster_id:item.cluster_id, sort_order:item.sort_order, notes:item.notes||null, adds_notes:!!item.adds_notes};
+      var isPlanHdr=_sbIsPlanHeader();
+      if(isPlanHdr) before.source_project_id=item.source_project_id;
       try{
         var newNotes=await _sbMovedFromNote();
         var f={cluster_id:hid};
+        if(isPlanHdr){
+          var tgt=_sboardAllRowsById[hid];
+          // Picking a TOPIC re-homes the plan into that TOPIC's PLAN board; picking a place inside a plan board just moves it there.
+          if(!(tgt && (T2TPlan.isContainer(tgt) || tgt.storyboard_kind==='PLAN'))){
+            var pc=await _sbPlanContainerFor(hid);
+            f.cluster_id=pc.id; f.source_project_id=hid;
+          }
+        }
         if(newNotes){ f.notes=newNotes; f.adds_notes=true; }
         var upd=await _sb.from('ideas').update(f).eq('id',item.id).select();
         if(upd.error) throw upd.error;
-        item.cluster_id=hid;
+        item.cluster_id=f.cluster_id;
+        if(f.source_project_id) item.source_project_id=f.source_project_id;
         if(newNotes){ item.notes=newNotes; item.adds_notes=true; }
         _sboardPatchRow(item.id, f);
         (function(){
-          var itemId=item.id, after={cluster_id:hid, sort_order:before.sort_order, notes:newNotes||before.notes, adds_notes:newNotes?true:before.adds_notes};
+          var itemId=item.id, after={cluster_id:f.cluster_id, sort_order:before.sort_order, notes:newNotes||before.notes, adds_notes:newNotes?true:before.adds_notes};
+          if(isPlanHdr) after.source_project_id=f.source_project_id||item.source_project_id;
           _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
         })();
         _sbMoveFromBoard=false;
@@ -911,7 +957,7 @@
       var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
       var extras=[{label:(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot'), fn:function(){ _sbMoveFromBoard=false; _sbSendToParkingLot(); }}];
       if(topicForNew) extras.push({label:'+ New header here', fn:function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); }});
-      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:item.cluster_id, excludeId:item.id, onPick:moveCardToHeader, extras:extras});
+      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, onPick:moveCardToHeader, extras:extras});
     }
     function openKindPicker(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();
