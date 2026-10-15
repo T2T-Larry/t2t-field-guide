@@ -42,6 +42,8 @@
   // switch to the card's board if the card sits on a different one. Redraws the PLAN board when the back closes, so a
   // TOPIC / Board Type change made there shows right away.
   async function _openCard(cardId){
+    var _st=document.getElementById('sc-status');
+    if(_st){ _st.classList.remove('err'); _st.textContent='Opening card…'; }
     try{
       var ready=(typeof openCardDetail==='function' && typeof _bbFindCardAnywhere==='function');
       if(!ready) throw new Error('Briefing Board code is not loaded on this page');
@@ -61,6 +63,7 @@
         openCardDetail(cardId);
       }
       try{ sessionStorage.removeItem('fg_open_card_id'); }catch(x){}
+      if(_st && _st.textContent==='Opening card…') _st.textContent='';
       var ov=document.getElementById('bb-detail-overlay');
       if(ov && window.MutationObserver){
         var mo=new MutationObserver(function(){
