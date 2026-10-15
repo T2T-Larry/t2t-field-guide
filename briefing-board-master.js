@@ -952,13 +952,30 @@
   // never touches source_header_id/topic_label -- picking a project by
   // hand here is independent of whatever topic a header-linked card is
   // still standing in for.
+  // Oct 15 2026 -- Larry's rule: "When someone changes the ID BAND on a card, move that card and all its children to the new location."
+  // The TOPIC half now goes through ONE database function (move_card_to_topic, runs as the signed-in user) that moves the card AND the plan
+  // it is the GOAL of (the plan header, with every step under it, unless another card shares that plan) AND the Briefing cards that carry
+  // out that plan's steps -- all or nothing. The old stampCardProject write swallowed every error, so a blocked move looked like "nothing
+  // happened"; this one tells the traveler when it did not work.
   async function _bbSetCardProjectHeader(cardId, headerId){
     var c=_bbFindCardAnywhere(cardId);
     if(!c || !headerId) return;
-    await T2TData.stampCardProject('briefing_cards', cardId, headerId);
+    var sb=T().sb, res=null;
+    try{
+      if(!sb) throw new Error('Not signed in');
+      var r=await sb.rpc('move_card_to_topic', {p_card_id:cardId, p_topic_id:headerId});
+      if(r.error) throw r.error;
+      res=r.data||{};
+    }catch(err){
+      console.error('Briefing Board: could not move the card to that topic', err);
+      _bbShowToast('Could not move the card: '+((err && err.message) ? err.message : 'unknown error'));
+      return;
+    }
     c.projectHeaderId=headerId;
+    (res.step_card_ids||[]).forEach(function(id){ var s=_bbFindCardAnywhere(id); if(s) s.projectHeaderId=headerId; });
     closeCardDetail();
     renderBoard();
+    if(res.moved_plan) _bbShowToast('Moved the card and its plan.');
   }
 
   async function _bbMoveCardToProject(cardId, value){
