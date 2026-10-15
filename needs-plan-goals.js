@@ -42,10 +42,22 @@
     t.className='np-goal-tile';
     t.setAttribute('draggable','true');
     t.setAttribute('data-np-card', c.id);
-    t.title=isGoal ? 'GOAL of this plan (Briefing Board card, same card). Drag to the Parking Lot to unfile.' : 'NEEDS PLAN (Briefing Board card, same card). Drag onto a header to make it that plan\'s GOAL, or onto open space to start a new plan.';
+    t.title=isGoal ? 'GOAL of this plan (Briefing Board card, same card). Click to open its card back. Drag to the Parking Lot to unfile.' : 'NEEDS PLAN (Briefing Board card, same card). Click to open its card back. Drag onto a header to make it that plan\'s GOAL, or onto open space to start a new plan.';
     t.style.cssText='width:'+tileW+'px;box-sizing:border-box;border-radius:8px;background:rgba(255,255,255,.92);cursor:grab;padding:6px 8px 8px;font-size:13px;line-height:1.25;color:#222;text-align:left;'
       +(isGoal ? 'box-shadow:inset 0 3px 0 rgba(13,148,136,.7),0 2px 6px rgba(0,0,0,.25)' : 'box-shadow:inset 0 3px 0 rgba(236,72,153,.6),0 2px 6px rgba(0,0,0,.25)');
     t.addEventListener('dragstart', function(e){ e.dataTransfer.setData(MIME, PREFIX+c.id); e.dataTransfer.effectAllowed='move'; e.stopPropagation(); });
+    // Oct 15 2026 (Larry: these are BB cards, but on the PLAN board they could not be opened, so the ID BAND was
+    // out of reach). A click opens the card's back -- the Briefing Card, same card -- using the same by-id handoff
+    // the Blue Sky "also on the Briefing Board" list uses (briefing-board-master.js consumes fg_open_card_id).
+    // A drag never fires a click, so filing a tile is unaffected.
+    t.addEventListener('click', function(e){
+      e.stopPropagation();
+      try{
+        sessionStorage.setItem('bp_target','4010');
+        sessionStorage.setItem('fg_open_card_id', c.id);
+      }catch(x){}
+      window.open(location.pathname+location.search, '_blank');
+    });
     var eb=document.createElement('div');
     eb.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px';
     var b=document.createElement('span');
