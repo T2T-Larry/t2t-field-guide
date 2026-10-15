@@ -22,7 +22,7 @@
   async function _load(){
     var sb=_sb(); if(!sb) return [];
     var res=await sb.from('briefing_cards').select('id,project_header_id,col,subject,task,goal_header_id')
-      .eq('needs_plan', true).neq('archived', true).is('trashed_at', null).neq('col','done');
+      .or('needs_plan.eq.true,goal_header_id.not.is.null').neq('archived', true).is('trashed_at', null).neq('col','done');
     if(res.error || !res.data) return [];
     var cards=res.data, prim={}, init={};
     try{
