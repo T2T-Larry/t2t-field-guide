@@ -3,12 +3,12 @@
 
    CARD. Everything about one card's own lifecycle: the data model
    and its local + Supabase persistence, undo/redo and the Recent
-   Moves log, the checklist, trash/Recently-Deleted, the Archive +
+   Moves log, trash/Recently-Deleted, the Archive +
    History + Briefing Log panels (what an earlier attempt called
    briefing-board-archive.js -- folded in here instead of its own
    file), Review/PRO/GROW, the card-detail lock and link-preview and
    Additions and Routine controls, and applying incoming live-sync
-   updates to a card or its checklist.
+   updates to a card.
 
    Split out of briefing-board.js Sept 9, 2026 -- the file had grown
    past 8,000 lines (Code Growth Watch flags a split well before
@@ -163,7 +163,6 @@
   // checking/unchecking one saves and takes effect immediately, it
   // isn't part of "everything this form changed on close."
   var BB_ADDITIONS = [
-    {flag:'addChecklist', cb:'bb-d-add-checklist', body:'bb-d-checklist-body'},
     {flag:'addRoutine', cb:'bb-d-add-routine', body:'bb-d-routine-body'},
     {flag:'addStart', cb:'bb-d-add-start', body:'bb-d-start-body'},
     {flag:'addDue', cb:'bb-d-add-due', body:'bb-d-due-body'},
@@ -662,7 +661,6 @@
   var _bbCards = null;
   var _bbTrashPendingId = null;
 
-  var _bbChecklistCache = [];
   // Per-key link counts, Aug 4 2026 -- Larry: "Links are Key related...
   // One key on a card might have 7 links; another only 3." Same shape
   // Keyed two levels deep: {cardId: {keyId: n}}.
@@ -929,7 +927,7 @@
       situation: c.situation||null, hangup_since: _bbToISODate(c.hangupSince), hangup_header_id: c.hangupHeaderId||null,
       link_url: c.linkUrl||null, link_title: c.linkTitle||null, link_thumb: c.linkThumb||null,
       // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below.
-      adds_checklist: !!c.addChecklist, adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
+      adds_due: !!c.addDue, adds_routine: !!c.addRoutine,
       adds_start: !!c.addStart, adds_budget: !!c.addBudget, adds_notes: !!c.addNotes, adds_links: !!c.addLinks,
       adds_related: !!c.addRelated, adds_flags: !!c.addFlags,
       // Organization, Sept 26 2026 -- see the Idea Card's own matching
@@ -969,7 +967,8 @@
       // Aug 27 migration backfilled these true for any card that
       // already had real content in the matching field, so nothing
       // already on a card goes invisible just because this shipped.
-      addChecklist: !!row.adds_checklist, addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
+      needsPlan: !!row.needs_plan,
+      addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
       addStart: !!row.adds_start, addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,
       addRelated: !!row.adds_related, addFlags: !!row.adds_flags,
       addOrg: !!row.adds_org, orgName: row.org_name||'', orgEyebrow: row.org_eyebrow||'',
@@ -1043,203 +1042,6 @@
     }catch(e){ console.error('Briefing Board: Supabase card sync failed', e); }
   }
 
-  // Checklist, added July 21, 2026 (evening) -- sub-steps under a card.
-  // Lives in its own briefing_checklist_items table (one row per step),
-  // loaded/saved per open card rather than riding along with the card's
-  // own row. Same local-fallback shape as everything else: sessionStorage
-  // (keyed per card id) when there's no Supabase board active.
-  function _bbChecklistLocalKey(cardId){ return 'bbChecklist_'+cardId; }
-  function _bbLoadChecklistLocal(cardId){
-    try{ var r=sessionStorage.getItem(_bbChecklistLocalKey(cardId)); return r?JSON.parse(r):[]; }catch(e){ return []; }
-  }
-  function _bbSaveChecklistLocal(cardId, items){
-    try{ sessionStorage.setItem(_bbChecklistLocalKey(cardId), JSON.stringify(items)); }catch(e){}
-  }
-  async function _bbSyncChecklistToSupabase(cardId, items){
-    if(!_bbCurrentBoardId) return;
-    var sb=T().sb; if(!sb) return;
-    try{
-      var rows=items.map(function(it,i){ var st=it.status||(it.done?'done':'todo'); return {id:it.id, card_id:cardId, item_text:it.text||'', status:st, done:st==='done', sort_order:i, assignee_id:it.assigneeId||null}; });
-      if(rows.length){
-        var res=await sb.from('briefing_checklist_items').upsert(rows);
-        if(res.error) throw res.error;
-        await sb.from('briefing_checklist_items').delete().eq('card_id', cardId).not('id','in','('+_bbSafeIdList(rows).join(',')+')');
-      } else {
-        await sb.from('briefing_checklist_items').delete().eq('card_id', cardId);
-      }
-    }catch(e){ console.error('Briefing Board: checklist sync failed', e); }
-  }
-  function _bbSaveChecklist(cardId, items){
-    _bbChecklistCache = items;
-    _bbSaveChecklistLocal(cardId, items);
-    _bbSyncChecklistToSupabase(cardId, items);
-  }
-  async function _bbLoadChecklistForCard(cardId){
-    if(_bbCurrentBoardId){
-      var sb=T().sb;
-      try{
-        var res=await sb.from('briefing_checklist_items').select('*').eq('card_id',cardId).order('sort_order',{ascending:true});
-        if(!res.error){
-          var items=(res.data||[]).map(function(r){ var st=r.status||(r.done?'done':'todo'); return {id:r.id, text:r.item_text||'', status:st, done:st==='done', assigneeId:r.assignee_id||null}; });
-          if(_bbOpenCardId===cardId){ _bbChecklistCache=items; _bbRenderChecklist(); }
-          return;
-        }
-      }catch(e){ console.error('Briefing Board: checklist load failed', e); }
-    }
-    var local=_bbLoadChecklistLocal(cardId);
-    if(_bbOpenCardId===cardId){ _bbChecklistCache=local; _bbRenderChecklist(); }
-  }
-  function _bbRenderChecklist(){
-    var list=document.getElementById('bb-d-checklist-list'); if(!list) return;
-    if(!_bbChecklistCache.length){
-      list.innerHTML='';
-      return;
-    }
-    // Three-state toggle, Sept 2026 (Larry: "How to distinguish a
-    // checklist item in DOING from a checked item as DONE? Three click
-    // toggle?") -- cycles todo -> doing -> done -> todo on each click,
-    // replacing the old plain checked/unchecked box. todo shows an
-    // empty box, doing an open/hollow check, done a solid filled check
-    // (with the existing strike-through text treatment).
-    var CL_GLYPH={todo:'', doing:'&#10003;', done:'&#10003;'};
-    // Tiny head-icon button, Sept 13 2026, Master BB card (do-m): "Add
-    // option to assign a person to a checklist item." Sits between the
-    // task text and the remove (x), same 14px round "register" as the
-    // checkbox at the other end of the row. Shows initials once someone
-    // is picked (via _bbChecklistAssigneeInitials below); click opens a
-    // small roster popup (_bbOpenChecklistAssigneeMenu).
-    list.innerHTML=_bbChecklistCache.map(function(it){
-      var st=it.status||(it.done?'done':'todo');
-      var hasAssignee=!!it.assigneeId;
-      var initials=hasAssignee?_bbChecklistAssigneeInitials(it.assigneeId):'';
-      return '<div class="bb-checklist-row">'
-        +'<button type="button" class="bb-checklist-check bb-checklist-'+st+'" data-id="'+_esc(it.id)+'" title="'+st+' — click to advance">'+CL_GLYPH[st]+'</button>'
-        +'<span class="bb-checklist-text'+(st==='done'?' bb-checklist-done':'')+'">'+_esc(it.text)+'</span>'
-        // Sept 22 2026 -- Larry, Master BB: "Change 'O' to head icon to
-        // select Cast PRIMARY just like on New card." Unassigned now shows
-        // a real 👤 head (was a blank circle); once someone is picked it
-        // shows their initials, same as before.
-        +'<button type="button" class="bb-checklist-assignee'+(hasAssignee?' bb-checklist-assignee-set':'')+'" data-id="'+_esc(it.id)+'" title="'+(hasAssignee?_esc(_bbChecklistAssigneeName(it.assigneeId)):'Assign to…')+'">'+(hasAssignee?_esc(initials):'👤')+'</button>'
-        +'<button class="bb-checklist-remove" data-id="'+_esc(it.id)+'" title="Remove">&#10005;</button>'
-        +'</div>';
-    }).join('');
-    list.querySelectorAll('.bb-checklist-check').forEach(function(cb){
-      cb.addEventListener('click', function(){
-        var id=cb.getAttribute('data-id');
-        var it=_bbChecklistCache.filter(function(x){ return x.id===id; })[0];
-        if(it && _bbOpenCardId){
-          var cur=it.status||(it.done?'done':'todo');
-          var next={todo:'doing', doing:'done', done:'todo'}[cur];
-          it.status=next;
-          it.done=(next==='done');
-          _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
-          _bbRenderChecklist();
-          // Sept 13 2026, Master BB card (do-h): "When all items on a
-          // checklist are completed, move the card to DONE." Forward-only
-          // -- taking an item back out of Done never pulls the card back
-          // OUT of Done, same one-way "mark Done" shape as the Lock
-          // button's own is-it-actually-finished path just below
-          // (wireLockButton). Mutate + _bbSaveLocal/renderBoard mirrors
-          // wirePriorityButtons' own pattern for changing a card's
-          // column live while its detail overlay is still open.
-          if(_bbChecklistCache.length && _bbChecklistCache.every(function(x){ return (x.status||(x.done?'done':'todo'))==='done'; })){
-            var card=_bbFindCardAnywhere(_bbOpenCardId);
-            if(card && card.col!=='done'){
-              card.col='done';
-              if(!card.completedDate) card.completedDate=_bbToday();
-              _bbUpdateReviewUI(card);
-              _bbSaveLocal(_bbCardsList());
-              renderBoard();
-            }
-          }
-        }
-      });
-    });
-    list.querySelectorAll('.bb-checklist-remove').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        if(!_bbOpenCardId) return;
-        var id=btn.getAttribute('data-id');
-        _bbChecklistCache=_bbChecklistCache.filter(function(x){ return x.id!==id; });
-        _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
-        _bbRenderChecklist();
-      });
-    });
-    list.querySelectorAll('.bb-checklist-assignee').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        var id=btn.getAttribute('data-id');
-        _bbOpenChecklistAssigneeMenu(id, btn);
-      });
-    });
-  }
-  // Roster lookups for the checklist head-icon, Sept 13 2026 -- same
-  // roster source as the VIEW dropdown and the Add-a-Card "Assign to"
-  // field (_bbAllRosterRows, briefing-board-master-nav.js), so all three
-  // "who is this for" pickers on the board agree on the same name list.
-  // Falls back to a blank/"(unassigned)" rather than throwing if the
-  // roster hasn't loaded yet -- the button itself always renders either way.
-  // _bbClNameCache (Sept 22 2026): the shared Cast picker can hand back
-  // someone who isn't on this board's roster (anyone on any card, or any
-  // T2T member via its (+)), so remember the name it picked, and fall
-  // back to the all-members list, before giving up with "(unknown)".
-  var _bbClNameCache={};
-  function _bbChecklistAssigneeName(uid){
-    if(!uid) return '';
-    var row=(typeof _bbAllRosterRows==='function'?_bbAllRosterRows():[]).filter(function(m){ return String(m.user_id)===String(uid); })[0];
-    if(row) return row.name||row.email||'(unnamed)';
-    if(_bbClNameCache[uid]) return _bbClNameCache[uid];
-    var m=(typeof _bbAllMembersCache!=='undefined' && _bbAllMembersCache ? _bbAllMembersCache : []).filter(function(p){ return String(p.user_id)===String(uid); })[0];
-    return m ? (m.name||m.email) : '(unknown)';
-  }
-  function _bbChecklistAssigneeInitials(uid){
-    var name=_bbChecklistAssigneeName(uid);
-    if(!name || name==='(unknown)') return '?';
-    var parts=name.trim().split(/\s+/);
-    var initials=parts.length>1 ? (parts[0][0]+parts[parts.length-1][0]) : name.slice(0,2);
-    return initials.toUpperCase();
-  }
-  var _bbClAssigneeMenuEl=null;
-  function _bbCloseChecklistAssigneeMenu(){
-    if(_bbClAssigneeMenuEl){ _bbClAssigneeMenuEl.remove(); _bbClAssigneeMenuEl=null; }
-    document.removeEventListener('mousedown', _bbClAssigneeMenuOutsideClick, true);
-  }
-  function _bbClAssigneeMenuOutsideClick(e){
-    if(_bbClAssigneeMenuEl && !_bbClAssigneeMenuEl.contains(e.target)) _bbCloseChecklistAssigneeMenu();
-  }
-  // Sept 22 2026 -- now opens the one shared CAST PICK list
-  // (_bbOpenCastPickMenu, briefing-board-master-nav.js), the same list
-  // the New Card 👤 and the back-of-card PRIMARY 👤 open: VIEW's look,
-  // everyone on any card, (+) to find any T2T member. Unchecking the
-  // checked name clears the assignment.
-  async function _bbOpenChecklistAssigneeMenu(itemId, anchorBtn){
-    _bbCloseChecklistAssigneeMenu();
-    var it=_bbChecklistCache.filter(function(x){ return x.id===itemId; })[0];
-    if(!it) return;
-    // No bb-cl-assignee-menu class any more: that old skin restyled the
-    // rows, and this list has to look exactly like VIEW (the shared
-    // picker adds bb-cdrop-menu itself).
-    var menu=document.createElement('div');
-    document.body.appendChild(menu);
-    _bbClAssigneeMenuEl=menu;
-    function save(uid, name){
-      if(uid && name) _bbClNameCache[uid]=name;
-      it.assigneeId=uid||null;
-      _bbCloseChecklistAssigneeMenu();
-      if(_bbOpenCardId) _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
-      _bbRenderChecklist();
-    }
-    setTimeout(function(){ document.addEventListener('mousedown', _bbClAssigneeMenuOutsideClick, true); }, 0);
-    // Project-level Cast (Sept 23 2026): the list is this card's own
-    // project level.
-    var _clCard=(typeof _bbFindCardAnywhere==='function' && _bbOpenCardId) ? _bbFindCardAnywhere(_bbOpenCardId) : null;
-    await _bbOpenCastPickMenu(menu, anchorBtn, {
-      level: _clCard ? (_clCard.projectHeaderId||null) : null,
-      selectedUid: it.assigneeId,
-      onPick: function(p){ save(p.user_id, p.name); },
-      onClear: function(){ save(null); },
-      onClose: function(){ _bbCloseChecklistAssigneeMenu(); }
-    });
-  }
   // Small calendar popup for the date fields (Due date / Start date),
   // Aug 7 2026 -- Larry: pick from a calendar instead of typing
   // MM/DD/YYYY by hand, today's date should stand out. Reads/writes the
@@ -1327,17 +1129,6 @@
   function wireDatePickers(){
     _bbAttachDatePicker('bb-d-due', 'bb-d-due-cal');
     _bbAttachDatePicker('bb-d-start', 'bb-d-start-cal');
-  }
-  function wireChecklist(){
-    T().wire('bb-d-checklist-add-btn', function(){
-      var input=document.getElementById('bb-d-checklist-new');
-      var text=input?input.value.trim():'';
-      if(!text || !_bbOpenCardId) return;
-      _bbChecklistCache.push({id:_bbUUID(), text:text, status:'todo', done:false});
-      _bbSaveChecklist(_bbOpenCardId, _bbChecklistCache);
-      if(input) input.value='';
-      _bbRenderChecklist();
-    });
   }
 
   // Two queries instead of one GROUP BY (supabase-js has no
@@ -2202,6 +1993,42 @@
       });
     }
   }
+  // NEEDS PLAN, Oct 15 2026 (Larry: "delete checklist, if card has a checklist now, it obviously needs a plan"; "any card
+  // signaled as NEEDS PLAN moves to HANG-UP from which it might be moved into DOING to say it is time to build the plan").
+  // The switch on the card back replaces Checklist. A task that cannot be finished as written is a hang-up whose way out is a
+  // PLAN, so flagging it puts it in HANG-UPS (DOING stays put: a NEEDS PLAN card in DOING means the plan is being built now).
+  // The database does the same routing (trigger task_fields_needs_plan_route), so any writer gets it; this keeps the screen in step.
+  // The flag clears by hand for now (switch off when the plan is approved).
+  function _bbRouteNeedsPlan(c){
+    if(c && c.needsPlan && typeof _bbIsDoCol==='function' && _bbIsDoCol(c.col)) c.col='hangups';
+  }
+  function wireNeedsPlanSwitch(){
+    var cb=document.getElementById('bb-d-needs-plan');
+    if(!cb) return;
+    cb.addEventListener('change', async function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c) return;
+      var on=cb.checked, wasCol=c.col;
+      c.needsPlan=on;
+      if(on){
+        _bbRouteNeedsPlan(c);
+        if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
+      }
+      // Narrow write of the flag itself (same treatment as plan_step_id / project_header_id: a routine whole-card save must never
+      // be able to set or clear it by accident). Done before the card save so the database routing and the screen agree.
+      try{
+        var sb=T().sb;
+        if(sb){
+          var res=await sb.from('task_fields').update({needs_plan:on}).eq('idea_id', c.id);
+          if(res.error) console.error('Briefing Board: NEEDS PLAN save failed', res.error);
+        }
+      }catch(e){ console.error('Briefing Board: NEEDS PLAN save failed', e); }
+      _bbSaveLocal(_bbCardsList());
+      _bbPersistMergedCardById(_bbOpenCardId);
+      openCardDetail(c.id);
+      renderBoard();
+    });
+  }
   // Additions, Aug 27 2026 -- checking a box opens its section and
   // saves immediately (matching the routine-card 🔄 toggle just below,
   // not the bundled Edit-on-close fields); unchecking just hides the
@@ -2465,8 +2292,4 @@
       _bbCards = list;
     }
     _bbRtSafeRender();
-  }
-  function _bbApplyRemoteChecklist(evt, row, oldRow){
-    var cardId = (row && row.card_id) || (oldRow && oldRow.card_id);
-    if (cardId && cardId === _bbOpenCardId) _bbLoadChecklistForCard(cardId);
   }

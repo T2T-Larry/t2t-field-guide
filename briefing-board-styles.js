@@ -805,50 +805,6 @@
       +'.bb-key-pick-swatch{width:12px;height:12px;flex-shrink:0}'
       +'.bb-key-pick-disabled{opacity:.35;pointer-events:none}'
       +'.bb-key-pick-empty-msg{font-size:calc(12px * var(--fg-text-scale,1));color:var(--bb-sub);font-style:italic;text-align:center;padding:6px 0}'
-      // Sept 13 2026 (Master BB card, do-m: "Tighten checklist spacing --
-      // there is currently room for a check box between the checkboxes.
-      // Move check boxes up next to each other and fix the register so
-      // words align up center of boxes.") -- row padding dropped to 0 and
-      // an explicit 14px line-height (matching the checkbox's own 14px
-      // height, below) added so nothing but the checkbox itself sets each
-      // row's height. Browser default line-height on 13px text runs
-      // noticeably taller than 14px, so without this every row carried
-      // several extra px of invisible space above/below its checkbox --
-      // stacked across rows, that's what read as "room for a checkbox
-      // between the checkboxes." Matching line-height to checkbox height
-      // also IS the fix for "register" -- text and checkbox now share the
-      // same box height, so align-items:center lines their middles up
-      // exactly instead of the text's (taller) line-box nudging it off.
-      +'.bb-checklist-row{display:flex;align-items:center;gap:6px;padding:0;line-height:14px;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));color:var(--bb-ink)}'
-      // Three-state toggle button, Sept 2026 (replaces the old plain
-      // checkbox) -- todo: empty box. doing: amber outline with a
-      // hollow check. done: solid green fill with a white check,
-      // matching the existing strike-through green (--bb-sub-ish) tone
-      // used elsewhere for "finished."
-      +'.bb-checklist-row .bb-checklist-check{flex:0 0 auto;width:14px;height:14px;margin:0;padding:0;box-sizing:border-box;border-radius:3px;border:1.5px solid var(--bb-accent);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(10px * var(--fg-text-scale,1));line-height:1;color:transparent}'
-      +'.bb-checklist-row .bb-checklist-check.bb-checklist-doing{border-color:#b8860b;color:#b8860b;background:#fff}'
-      +'.bb-checklist-row .bb-checklist-check.bb-checklist-done{border-color:#3F6B3A;background:#3F6B3A;color:#fff}'
-      +'.bb-checklist-text{flex:1;line-height:14px}'
-      +'.bb-checklist-text.bb-checklist-done{text-decoration:line-through;color:var(--bb-sub)}'
-      +'.bb-checklist-remove{background:none;border:none;color:var(--bb-sub);cursor:pointer;font-size:calc(12px * var(--fg-text-scale,1));padding:0 4px}'
-      // Tiny head-icon button, Sept 13 2026 -- Master BB card (do-m):
-      // "assign a person to a checklist item ... tiny head button at end
-      // of checklist task." Same 14px "register" as the checkbox on the
-      // other end of the row (see the checkbox comment above) so the row
-      // stays visually level. Plain outline/grey when unassigned, filled
-      // accent + white initials once someone's picked -- same at-a-glance
-      // language as a "primary" card_roles dot elsewhere on the board.
-      // Sept 22 2026: unassigned shows a 👤 head now (was an empty circle),
-      // so the circle border is dropped for that state; 18px so the head
-      // reads at a glance. Assigned keeps the filled accent circle + initials.
-      +'.bb-checklist-assignee{flex:0 0 auto;width:18px;height:18px;margin:0;padding:0;box-sizing:border-box;border-radius:50%;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:calc(12px * var(--fg-text-scale,1));line-height:1;color:var(--bb-sub);font-weight:600}'
-      +'.bb-checklist-assignee.bb-checklist-assignee-set{border:1.5px solid var(--bb-accent);background:var(--bb-accent);color:#fff;font-size:calc(8px * var(--fg-text-scale,1))}'
-      +'.bb-cl-assignee-menu{position:fixed;z-index:9999;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);padding:4px;min-width:120px;max-height:220px;overflow-y:auto}'
-      +'.bb-cl-assignee-menu .bb-cdrop-row{padding:5px 8px;font-size:calc(12px * var(--fg-text-scale,1));font-family:var(--bb-body-font);color:var(--bb-ink);cursor:pointer;border-radius:4px;white-space:nowrap}'
-      +'.bb-cl-assignee-menu .bb-cdrop-row:hover{background:rgba(0,0,0,.06)}'
-      +'.bb-cl-assignee-menu .bb-cdrop-row.active{font-weight:700}'
-      +'.bb-checklist-add-row{display:flex;gap:6px;margin-top:4px}'
-      +'.bb-checklist-add-row input{flex:1;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink)}'
       +'.bb-links-empty{font-size:calc(12px * var(--fg-text-scale,1));font-style:italic;color:var(--bb-sub);padding:2px 0}'
       // Signal Flags manager (9397), Aug 3 2026 -- same row shape as
       // Linked Items/Checklist just above, pencil then trash per row.
@@ -972,6 +928,10 @@
       +'.bb-dp-day.bb-dp-selected{background:var(--bb-accent);color:#fff}'
       +'.bb-routine-custom{margin-top:6px;width:100%;font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));border:1.5px solid var(--bb-accent);border-radius:4px;padding:5px 8px;background:#fff;color:var(--bb-ink);box-sizing:border-box}'
       +'.bb-routine-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1}'
+      // NEEDS PLAN, Oct 15 2026 -- pink, see-through eyebrow (the card text stays readable under it); a faint pink top edge on the card.
+      +'.bb-needs-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 5px;border-radius:3px;background:rgba(236,72,153,.28);border:1px solid rgba(219,39,119,.75);color:#9d174d;white-space:nowrap}'
+      +'.bb-card.bb-needs-plan{box-shadow:inset 0 3px 0 rgba(236,72,153,.6),1px 2px 4px rgba(59,37,16,0.18)}'
+      +'.bb-needs-plan-eyebrow{color:#9d174d;font-weight:700}'
       +'.bb-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 4px;border-radius:3px;background:#c9a876;color:#3b2a00;white-space:nowrap}'
       +'.bb-lock-badge{font-size:calc(11px * var(--fg-text-scale,1));line-height:1;pointer-events:auto;cursor:default}'
       // pointer-events:auto here, Aug 11 2026 -- same fix as

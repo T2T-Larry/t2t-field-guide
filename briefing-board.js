@@ -400,7 +400,7 @@
     wireRelationsManager();
     wireProjectHub();
     wireTeamRoster();
-    wireChecklist();
+    wireNeedsPlanSwitch();
     wireDatePickers();
 
     T().wire('bb-trash-yes', doTrashCard);
@@ -444,7 +444,6 @@
           if(r && r.data) _bbApplyRemoteCard(evt, r.data, null);
         }catch(e){ console.error('Briefing Board: task_fields live update failed', e); }
       });
-      T().onRealtimeChange('briefing_checklist_items', _bbApplyRemoteChecklist);
       T().onRealtimeChange('custom_keys', _bbApplyRemoteKey);
     }
   });

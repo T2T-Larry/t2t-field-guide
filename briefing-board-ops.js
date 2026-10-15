@@ -842,7 +842,8 @@
         var cardJustWentOverdue=_bbOverdueFlashIds.indexOf(c.id)!==-1;
         el.className='bb-card'+(c._foreign?' bb-card-foreign':'')
           +(cardIsOverdue?' bb-overdue':'')+(cardJustWentOverdue?' bb-overdue-flash':'')
-          +(_bbLassoSelected[c.id]?' bb-lasso-selected':'');
+          +(_bbLassoSelected[c.id]?' bb-lasso-selected':'')
+          +(c.needsPlan?' bb-needs-plan':'');
         el.draggable=true;
         el.setAttribute('data-id', c.id);
         if(c.color) el.style.background=c.color;
@@ -887,6 +888,8 @@
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
+        // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
+        var needsPlanBadge = c.needsPlan ? '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>' : '';
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine
@@ -1020,7 +1023,7 @@
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject">'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+planBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +subjectHTML
@@ -1087,6 +1090,7 @@
           var wasCol=c.col;
           var _bbMoveBefore=_bbSnapshotCard(c);
           c.col=zone.getAttribute('data-col');
+          _bbRouteNeedsPlan(c); // NEEDS PLAN cards cannot land in New/DO columns -- they are hang-ups (Oct 15 2026)
           // July 22, 2026: dropping a card into one of the 3 Do columns
           // sets its priority to match (coarse -- H DO/M DO/L DO), same
           // as the H/M/L buttons but reachable by drag now too. Doesn't
@@ -1221,6 +1225,7 @@
       var wasCol=c.col;
       if(wasCol===targetCol) return;
       c.col=targetCol;
+      _bbRouteNeedsPlan(c);
       if(_bbIsDoCol(c.col)) c.priority=_bbPriorityForDrop(c.col, c.priority);
       if(c.col==='doing' && _bbIsDoCol(wasCol) && !c.startDate){ c.startDate=_bbToday(); c.addStart=true; }
       if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
@@ -1558,10 +1563,8 @@
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
     _bbRenderKeyRow(c);
-    _bbChecklistCache=[];
-    var clInput=document.getElementById('bb-d-checklist-new'); if(clInput) clInput.value='';
-    _bbRenderChecklist();
-    _bbLoadChecklistForCard(id);
+    // NEEDS PLAN switch (replaces Checklist), Oct 15 2026 -- mirrors the card's own flag.
+    var _bbNpCb=document.getElementById('bb-d-needs-plan'); if(_bbNpCb) _bbNpCb.checked=!!c.needsPlan;
     // Additions, Aug 27 2026 -- each checkbox/body pair just mirrors
     // this card's own addFlag; values were already written into their
     // fields above, so this only ever controls whether that section is

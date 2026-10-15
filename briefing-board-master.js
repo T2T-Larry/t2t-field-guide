@@ -561,6 +561,8 @@
     var wasCol=rc.col;
     if(wasCol===newCol) return;
     rc.col=newCol;
+    _bbRouteNeedsPlan(rc);
+    newCol=rc.col;
     if(_bbIsDoCol(newCol)) rc.priority=_bbPriorityForDrop(newCol, rc.priority);
     if(newCol==='doing' && _bbIsDoCol(wasCol) && !rc.startDate){ rc.startDate=_bbToday(); rc.addStart=true; }
     if(newCol==='done' && wasCol!=='done') rc.completedDate=_bbToday();

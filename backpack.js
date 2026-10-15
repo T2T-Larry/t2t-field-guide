@@ -101,7 +101,7 @@
   // once and only ever saw a fresh copy again after its own save. This
   // adds one shared Supabase Realtime channel, listening for row
   // changes on every table either board reads (ideas, briefing_cards,
-  // briefing_checklist_items, briefing_card_links, custom_keys), and a
+  // briefing_card_links, custom_keys), and a
   // tiny pub/sub (onRealtimeChange) so briefing-board.js and
   // idea-storyboard-9710.js can each react in their own way without
   // reaching into each other's code -- same "talk only through
@@ -123,7 +123,7 @@
     });
   }
   var _rtChannel = null, _rtStarted = false;
-  var LIVE_SYNC_TABLES = ['ideas','briefing_cards','briefing_checklist_items','briefing_card_links','custom_keys','gems'];
+  var LIVE_SYNC_TABLES = ['ideas','briefing_cards','briefing_card_links','custom_keys','gems'];
   // One-tree (Oct 10 2026): once briefing_cards becomes a view over the tree it
   // can't be listened to; the cards then arrive on task_fields (MASTER) and
   // briefing_cards_legacy (every other board). bb_cards_is_view() says which.

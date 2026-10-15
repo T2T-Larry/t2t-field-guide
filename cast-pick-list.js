@@ -2,7 +2,7 @@
    cast-pick-list.js -- T2T Field Guide -- the one shared CAST PICK list
 
    The single-head 👤 button's list, used by the New Card popup (both
-   boards), the back-of-card PRIMARY, and checklist-step assignees.
+   boards) and the back-of-card PRIMARY.
 
    Moved out of briefing-board-master-nav.js Sept 23 2026, when the list
    became project-level (Larry: "Cast options are project level") --

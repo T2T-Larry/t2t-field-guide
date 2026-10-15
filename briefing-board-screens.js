@@ -507,7 +507,7 @@
             // this -- Larry's list never included it, so it stays
             // permanently visible, just below the divider that closes
             // out this whole section.
-            +'<div class="bb-field bb-addition" id="bb-d-add-checklist-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-checklist"><span class="bb-addition-eyebrow">Checklist</span></label><div class="bb-addition-body" id="bb-d-checklist-body" style="display:none"><div id="bb-d-checklist-list"></div><div class="bb-checklist-add-row"><input id="bb-d-checklist-new" type="text" placeholder="Add steps..."><button class="bb-icon-btn bb-icon-btn-add" id="bb-d-checklist-add-btn" title="Add step">+</button></div></div></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-needs-plan-wrap"><label class="bb-addition-label" title="This task cannot be finished until a PLAN exists. Flagging it puts it in HANG-UPS."><input type="checkbox" id="bb-d-needs-plan"><span class="bb-addition-eyebrow bb-needs-plan-eyebrow">NEEDS PLAN</span></label></div>'
             // "Also show on," retired in place Sept 19 2026 (Master BB
             // card): Larry wants it off the card entirely. The reveal
             // logic that used to show this for a card native to a
