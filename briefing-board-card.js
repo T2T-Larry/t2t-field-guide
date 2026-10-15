@@ -1996,11 +1996,15 @@
   // NEEDS PLAN, Oct 15 2026 (Larry: "delete checklist, if card has a checklist now, it obviously needs a plan"; "any card
   // signaled as NEEDS PLAN moves to HANG-UP from which it might be moved into DOING to say it is time to build the plan").
   // The switch on the card back replaces Checklist. A task that cannot be finished as written is a hang-up whose way out is a
-  // PLAN, so flagging it puts it in HANG-UPS (DOING stays put: a NEEDS PLAN card in DOING means the plan is being built now).
+  // PLAN, so flagging it puts it in HANG-UPS from any column but DONE, DOING included. Larry then drags it back to DOING when it is time to build the plan.
   // The database does the same routing (trigger task_fields_needs_plan_route), so any writer gets it; this keeps the screen in step.
   // The flag clears by hand for now (switch off when the plan is approved).
-  function _bbRouteNeedsPlan(c){
-    if(c && c.needsPlan && typeof _bbIsDoCol==='function' && _bbIsDoCol(c.col)) c.col='hangups';
+  // fromFlag = true only at the moment the switch is turned on: then a card in DOING goes to HANG-UPS too. A drag or bulk move
+  // passes nothing, so a flagged card can still be dragged back INTO Doing (that is how Larry says "build the plan now").
+  function _bbRouteNeedsPlan(c, fromFlag){
+    if(!c || !c.needsPlan) return;
+    if(typeof _bbIsDoCol==='function' && _bbIsDoCol(c.col)) c.col='hangups';
+    else if(fromFlag && c.col==='doing') c.col='hangups';
   }
   function wireNeedsPlanSwitch(){
     var cb=document.getElementById('bb-d-needs-plan');
@@ -2011,7 +2015,7 @@
       var on=cb.checked, wasCol=c.col;
       c.needsPlan=on;
       if(on){
-        _bbRouteNeedsPlan(c);
+        _bbRouteNeedsPlan(c, true);
         if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
       }
       // Narrow write of the flag itself (same treatment as plan_step_id / project_header_id: a routine whole-card save must never
