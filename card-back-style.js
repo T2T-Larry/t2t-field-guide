@@ -305,7 +305,6 @@
   // drift. The menu shell and rows reuse each board's OWN classes (theme 'bb' = .bb-cdrop-menu/.bb-cdrop-row, theme 'idea' =
   // .sc-cdrop-menu/.sc-cdrop-row), so a back's dropdown looks like its board's dropdown. What a pick DOES is handed in by the card.
   // ============================================================
-  var TOPIC_ROOT_ID = '__fg_all_topics__';
   function _cls(theme){ return theme==='bb' ? {menu:'bb-cdrop-menu', row:'bb-cdrop-row'} : {menu:'sc-cdrop-menu', row:'sc-cdrop-row'}; }
   function closeMenus(){
     ['fg-back-topic-menu','fg-back-kind-menu'].forEach(function(id){ var m=document.getElementById(id); if(m) m.remove(); });
@@ -347,51 +346,24 @@
       menu.appendChild(row);
     });
   }
-  // Children source for the topic pyramid: top level = this member's topics, below = that header's child headers (system buckets hidden).
-  // opts: {sb, excludeId (the card's own id, if it is itself a header)}
-  function _pyramidChildren(opts){
-    var RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
-    function node(h){ return {id:h.id, name:h.text_content||h.text||'(untitled)', priority:h.priority||''}; }
-    return function(id){
-      if(id===TOPIC_ROOT_ID) return T2TData.topLevelBoards().then(function(b){ return b.filter(function(x){ return String(x.id)!==String(opts.excludeId); }).map(node); });
-      return T2TData.childHeaders(id).then(function(kids){ return kids.filter(function(h){ return RESERVED.indexOf(h.text_content)===-1 && String(h.id)!==String(opts.excludeId); }).map(node); });
-    };
-  }
-  // Ids from the top down to startId (so the pyramid opens already showing where the card lives).
-  async function _pyramidPath(sb, startId){
-    var path=[];
-    try{
-      var cur=startId, guard=0;
-      while(cur && guard<30){
-        guard++;
-        var rr=await sb.from('ideas').select('id,cluster_id').eq('id',cur).maybeSingle();
-        var row=rr && rr.data; if(!row) break;
-        if(!row.cluster_id) break;   // that is the MASTER root itself
-        path.unshift(String(row.id));
-        cur=row.cluster_id;
-      }
-    }catch(e){}
-    return path;
-  }
   // opts: {theme, sb, hereId (header the card lives under, or null), excludeId, onPick(headerId), extras:[{label, fn}]}
   async function openTopicMenu(trigger, opts){
-    if(!trigger || !window.TopicPyramid || !window.T2TData) return;
+    if(!trigger || !window.TopicPyramid || !window.T2TData || !window.IDBand || !IDBand.renderTopicTree) return;
     var menu=_openShell(trigger, 'fg-back-topic-menu', opts.theme, 220);
     if(!menu) return;
-    var path=opts.hereId ? await _pyramidPath(opts.sb, opts.hereId) : [];
-    if(!document.getElementById('fg-back-topic-menu')) return;   // closed while the path loaded
-    window.TopicPyramid.render(menu, {
-      ancestors: [],
-      current: {id:TOPIC_ROOT_ID, name:'All Topics'},
-      getChildren: _pyramidChildren({excludeId:opts.excludeId}),
-      expandPath: path,
-      hereId: opts.hereId ? String(opts.hereId) : null,
+    // Oct 15 2026 (Larry): the same one-tree list as the board ID BAND -- MASTER at the top, everything closed
+    // except the path down to where this card lives. One shared routine (id-band-controls.js), no list of its own.
+    await IDBand.renderTopicTree(menu, {
+      topicId: opts.hereId || null,
+      excludeId: opts.excludeId,
+      hereId: opts.hereId || null,
+      noRootPick: true,
       onNavigate: function(hid){
-        if(hid===TOPIC_ROOT_ID) return;
         closeMenus();
         if(opts.onPick) opts.onPick(hid);
       }
     });
+    if(!document.getElementById('fg-back-topic-menu')) return;   // closed while the tree loaded
     var cls=_cls(opts.theme);
     (opts.extras||[]).forEach(function(x){
       var row=document.createElement('div');

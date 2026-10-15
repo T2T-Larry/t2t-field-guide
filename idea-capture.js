@@ -1321,49 +1321,9 @@
   function _icWireTopicPicker(){
     var topicEl=document.getElementById('isx-p-topic');
     if(!topicEl) return;
-    var MASTER_ID='__master__';
-    var RESERVED={'NEW':1,'New Additions':1,'Parking Lot':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Purpose':1,'Trash':1,'Archived':1};
-    var names={};
-
-    function fetchRow(id){
-      return T().sb.from('ideas').select('id,text_content,cluster_id,priority').eq('id',id).limit(1)
-        .then(function(res){ return (!res.error && res.data && res.data[0]) || null; });
-    }
-    async function loadAncestors(row){
-      var chain=[], parentId=row.cluster_id, guard=0;
-      while(parentId && guard<50){
-        guard++;
-        var p=await fetchRow(parentId);
-        if(!p) break;
-        if(window.IDBand && IDBand.isNonProjectName(p.text_content)) break; // the account root -- shown as MASTER below
-        chain.unshift({id:p.id, name:p.text_content||'(untitled)', priority:p.priority||''});
-        parentId=p.cluster_id;
-      }
-      chain.unshift({id:MASTER_ID, name:'MASTER', priority:''});
-      return chain;
-    }
-    async function loadChildren(id){
-      var kids;
-      if(id===MASTER_ID){
-        var roots=[];
-        try{ roots=(typeof _sboardLoadMyRoots==='function') ? (await _sboardLoadMyRoots())||[] : []; }
-        catch(e){ console.warn('NEW card: could not load top-level topics', e); }
-        kids=roots.filter(function(r){ return !(window.IDBand && IDBand.isNonProjectName(r.text_content)); })
-          .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
-      } else {
-        var res=await T().sb.from('ideas').select('id,text_content,priority,storyboard_kind')
-          .eq('content_type','header').eq('cluster_id',id).order('sort_order',{ascending:true}).order('text_content');
-        if(res.error) throw res.error;
-        kids=(res.data||[])
-          .filter(function(r){ return !RESERVED[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA'; })
-          .map(function(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; });
-      }
-      kids.forEach(function(k){ names[k.id]=k.name; });
-      return kids;
-    }
-    function pick(id){
-      var isMaster=(id===MASTER_ID);
-      var label=isMaster ? 'MASTER' : (names[id]||'(untitled)');
+    function pick(id, isRoot, nm){
+      var isMaster=!!isRoot;
+      var label=isMaster ? 'MASTER' : (nm||'(untitled)');
       _icBoardId=isMaster?null:id; _icProjectId=isMaster?null:id; _icHeaderId=null;
       _icTopicLabel=label; _icProjectLabel=label;
       var tt=document.getElementById('isx-p-topic-txt'); if(tt) tt.textContent=label;
@@ -1371,7 +1331,7 @@
 
     topicEl.addEventListener('click', async function(ev){
       ev.stopPropagation();
-      if(!window.TopicPyramid) return;
+      if(!window.TopicPyramid || !window.IDBand || !IDBand.renderTopicTree) return;
       var old=document.getElementById('isx-p-field-menu'); if(old) old.remove();
       var menu=document.createElement('div');
       menu.id='isx-p-field-menu';
@@ -1384,28 +1344,19 @@
       menu.style.left=r.left+'px'; menu.style.top=(r.bottom+4)+'px';
       menu.style.minWidth=Math.max(220,r.width)+'px';
 
-      var curId=_icBoardId||_icProjectId||null, current, ancestors=[];
+      // Oct 15 2026 (Larry): the same one-tree list as every ID BAND -- MASTER at the top, closed except the path to the
+      // current topic. One shared routine (id-band-controls.js); MASTER here still means "no Topic yet".
+      var curId=_icBoardId||_icProjectId||null;
+      var currentRow=null;
       try{
-        if(curId){
-          var row=await fetchRow(curId);
-          current={id:curId, name:(row&&row.text_content)||(_icTopicLabel!=='-'?_icTopicLabel:_icProjectLabel)||'(untitled)', priority:(row&&row.priority)||''};
-          ancestors=row ? await loadAncestors(row) : [{id:MASTER_ID, name:'MASTER', priority:''}];
-        } else {
-          current={id:MASTER_ID, name:'MASTER', priority:''};
-        }
+        currentRow=await IDBand.renderTopicTree(menu, {
+          topicId:curId,
+          onNavigate:function(id, isRoot, nm){ menu.remove(); pick(id, isRoot, nm); }
+        });
       }catch(e){
-        console.warn('NEW card: could not load topic pyramid', e);
-        menu.textContent='Couldn’t load — try again.';
-        return;
+        console.warn('NEW card: could not load topic tree', e);
       }
-      names[current.id]=current.name;
-      ancestors.forEach(function(a){ names[a.id]=a.name; });
-      var currentRow=window.TopicPyramid.render(menu, {
-        ancestors:ancestors,
-        current:current,
-        getChildren:loadChildren,
-        onNavigate:function(id){ menu.remove(); pick(id); }
-      });
+      if(!currentRow && !menu.querySelector('.tp-row')){ menu.textContent='Couldn’t load — try again.'; }
       var mr=menu.getBoundingClientRect();
       if(mr.right>window.innerWidth-8) menu.style.left=Math.max(8,window.innerWidth-8-mr.width)+'px';
       if(currentRow && currentRow.scrollIntoView) currentRow.scrollIntoView({block:'center'});

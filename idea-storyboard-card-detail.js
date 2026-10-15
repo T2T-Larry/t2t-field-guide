@@ -764,22 +764,6 @@
     async function openMoveAnywherePicker(){
       var ov2=document.getElementById('sb-detail-overlay');
       if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
-      // Parking Lot / NEW / Purpose / Parking Lot are real places a card can go (the
-      // old move panel offered them), so they stay in the list; only the
-      // system buckets that aren't destinations are hidden.
-      var ANYWHERE_RESERVED=['Trash','Archived','COLLABORATOR','STAKEHOLDER','Idea Storyboards','MASTER'];
-      var ROOT_ID='__anywhere_root__';
-      function nodeFrom(h){ return {id:h.id, name:h.text_content||h.text||'(untitled)', priority:h.priority||''}; } // priority: Sept 23 2026, shown on every Pyramid
-      function getChildren(id){
-        if(id===ROOT_ID){
-          return T2TData.topLevelBoards().then(function(boards){
-            return boards.filter(function(b){ return String(b.id)!==String(item.id); }).map(nodeFrom);
-          });
-        }
-        return T2TData.childHeaders(id).then(function(kids){
-          return kids.filter(function(h){ return ANYWHERE_RESERVED.indexOf(h.text_content)===-1 && String(h.id)!==String(item.id); }).map(nodeFrom);
-        });
-      }
       // Sept 22 2026 (PARENT became MOVE) -- the pyramid now opens already
       // expanded down to where this card lives (expandPath), with that
       // spot marked "here" (hereId), so nearby headers are one tap away
@@ -799,36 +783,14 @@
         +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov2.classList.add('active');
-      // Path from the top down to this card's current spot. Walked with a
-      // plain lookup per level (no owner filter, so a shared project works
-      // too); stops at the MASTER root, which the pyramid shows as "All
-      // Projects".
-      var path=[];
-      try{
-        var cur=item.cluster_id, guard=0;
-        while(cur && guard<30){
-          guard++;
-          var known=_sboardAllRowsById[cur];
-          var rowP=known ? {id:known.id, cluster_id:known.cluster_id} : null;
-          if(!rowP){
-            var rr=await _sb.from('ideas').select('id,cluster_id').eq('id',cur).maybeSingle();
-            if(rr.error || !rr.data) break;
-            rowP=rr.data;
-          }
-          if(!rowP.cluster_id) break; // that's the MASTER root itself
-          path.unshift(String(rowP.id));
-          cur=rowP.cluster_id;
-        }
-      }catch(e){}
       var menuEl=document.getElementById('sb-anywhere-pyramid');
-      window.TopicPyramid.render(menuEl, {
-        ancestors: [],
-        current: {id:ROOT_ID, name:'All Topics'},
-        getChildren: getChildren,
-        expandPath: path,
+      // Oct 15 2026 (Larry): same one-tree list as every ID BAND -- MASTER at the top, closed except the path to where this card lives.
+      await window.IDBand.renderTopicTree(menuEl, {
+        topicId: item.cluster_id || null,
+        excludeId: (item.content_type==='header') ? item.id : null,
         hereId: item.cluster_id ? String(item.cluster_id) : null,
+        noRootPick: true,
         onNavigate: async function(hid){
-          if(hid===ROOT_ID) return; // "All Topics" itself isn't a place a card can live
           if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
           var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
           try{

@@ -87,6 +87,58 @@
     return (res.data||[]).filter(function(r){ return !TREE_RESERVED[r.text_content] && !(window.T2TPlan && T2TPlan.isContainer(r)); }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
   }
 
+  // ---- ONE TOPIC LIST FOR EVERY ID BAND (Oct 15 2026) ----------------------
+  // Larry: the card ID BAND showed "All Topics" while the board ID BAND showed
+  // MASTER -- "They should all look like the board ID BAND and all the child
+  // topics should default to closed unless the current topic is a child."
+  // Every TOPIC list (boards, card backs, the NEW card, the MOVE picker) now
+  // draws through this ONE routine: the real one tree from its MASTER row,
+  // everything closed except the path down to the topic you are standing on.
+  // opts: {topicId (where you are, may be null = MASTER), excludeId, hereId,
+  //        onAdd, onNavigate(id, isRoot, name), fallback()->{ancestors,current}}
+  // Resolves to the current row element (for scrolling) or null.
+  async function renderTopicTree(menu, opts){
+    if(!window.TopicPyramid) return null;
+    var t=null;
+    try{ if(opts.topicId) t=await treeTopic(opts.topicId); }catch(e){}
+    if(!t && opts.fallback){ try{ t=await opts.fallback(); }catch(e){} }
+    if(!t){
+      // No topic to stand on (or it did not load): start at the one tree's top row.
+      var sb=treeSb(), root=null;
+      if(sb){
+        try{
+          var q=await sb.from('ideas').select('id,cluster_id,text_content,priority').is('cluster_id',null).eq('content_type','header').limit(1);
+          if(q && q.data && q.data[0]){ treeRows[q.data[0].id]=q.data[0]; root=treeNode(q.data[0]); }
+        }catch(e){}
+      }
+      if(!root) return null;
+      t={ancestors:[], current:root};
+    }
+    var rootId=String((t.ancestors && t.ancestors.length ? t.ancestors[0] : t.current).id);
+    var exclude=opts.excludeId!=null ? String(opts.excludeId) : null;
+    return window.TopicPyramid.render(menu, {
+      fullTree:true,
+      ancestors:t.ancestors||[],
+      current:t.current,
+      hereId:opts.hereId ? String(opts.hereId) : null,
+      getChildren:function(id){
+        return treeChildren(id).then(function(kids){
+          return exclude ? kids.filter(function(k){ return String(k.id)!==exclude; }) : kids;
+        });
+      },
+      onAdd:opts.onAdd,
+      onNavigate:function(id){
+        // The MASTER row itself is where you are going from, never a place a card is filed.
+        var isRoot=String(id)===rootId;
+        if(opts.noRootPick && isRoot) return;
+        var r=treeRows[id];
+        var nm=isRoot ? 'MASTER' : ((r && r.text_content) || (String(id)===String(t.current.id) ? t.current.name : '') || '(untitled)');
+        if(opts.onNavigate) opts.onNavigate(id, isRoot, nm);
+      }
+    });
+  }
+  window.IDBand.renderTopicTree = renderTopicTree;
+
   function mountControls(cfg){
     var ids = cfg.ids || {};
     var GAP = cfg.gap || 10;
@@ -150,24 +202,17 @@
       function openPyramid(){
         var seq=++openSeq;
         var tid=cfg.topicId ? cfg.topicId() : null;
-        Promise.resolve(tid ? treeTopic(tid).catch(function(){ return null; }) : null).then(function(t){
-          return t || (cfg.getTopic ? cfg.getTopic() : null);
-        }).then(function(t){
-          if(!t || !t.current || !window.TopicPyramid) return;
+        renderTopicTree(menu, {
+          topicId:tid,
+          fallback:function(){ return cfg.getTopic ? cfg.getTopic() : null; },
+          onAdd:addTopic,
+          onNavigate:function(id){
+            menu.hidden=true;
+            if(cfg.goToTopic && (!tid || String(id)!==String(tid))) cfg.goToTopic(id);
+          }
+        }).then(function(rowEl){
           if(seq!==openSeq) return;   // closed or re-opened while we waited
-          var rowEl=window.TopicPyramid.render(menu, {
-            fullTree:true,
-            ancestors:t.ancestors || [],
-            current:t.current,
-            getChildren:function(id){
-              return treeChildren(id).catch(function(){ return cfg.getChildren ? cfg.getChildren(id) : []; });
-            },
-            onAdd:addTopic,
-            onNavigate:function(id){
-              menu.hidden=true;
-              if(String(id)!==String(t.current.id) && cfg.goToTopic) cfg.goToTopic(id);
-            }
-          });
+          if(!menu.firstChild) return;
           placeMenu(menu, trigger, 200);
           if(rowEl && rowEl.scrollIntoView) rowEl.scrollIntoView({block:'center'});
         });
