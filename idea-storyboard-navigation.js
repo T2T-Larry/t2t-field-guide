@@ -1437,11 +1437,16 @@
   async function _sboardReturnToIdeaBoard(){
     var row=_sboardCurrentProjectRow();
     if(!row || (row.storyboard_kind!=='PLAN' && row.storyboard_kind!=='SHARE') || !row.source_project_id) return;   // a STORY board returns to its Topic's Blue Sky board the same way (Oct 14 2026)
-    var cached=_sboardAllRowsById[row.source_project_id];
+    // Oct 15 2026 (Larry: moving from a Plan board to BLUE SKY landed on the MASTER Blue Sky board): a plan header such as INVITATIONS sits
+    // inside the MASTER plan container but is tagged to its own Topic. The container's own tag (MASTER) is the wrong target; the Topic the
+    // band is showing (the nearest tag, via _sboardServedTopicRow) is the right one. Fall back to the container's tag only when nothing nearer exists.
+    var _served=_sboardServedTopicRow();
+    var targetId=(_served && _served.storyboard_kind!=='PLAN' && _served.storyboard_kind!=='SHARE') ? _served.id : row.source_project_id;
+    var cached=_sboardAllRowsById[targetId];
     if(cached){ _sboardDrillInto(cached); return; }
     try{
       var _sb=T().sb;
-      var fresh=await _sb.from('ideas').select('*').eq('id', row.source_project_id).maybeSingle();
+      var fresh=await _sb.from('ideas').select('*').eq('id', targetId).maybeSingle();
       if(fresh.data) _sboardDrillInto(fresh.data);
       else _sboardShowToast('Could not find the original Idea board.');
     }catch(err){ _sboardShowToast('Could not find the original Idea board.'); }
