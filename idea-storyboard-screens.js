@@ -923,11 +923,15 @@
         // TOPIC categories"). At a plan board's root, also show every plan header from ANY plan board whose TOPIC (source_project_id) is this
         // board's topic or sits beneath it -- the same "a parent shows its children's cards" rule the BB follows. MASTER PLAN is the same rule
         // at the top of the tree. Read-only union over the already-cached rows: nothing is copied or moved, a plan keeps its one home.
-        if(_sboardIsPlanBoard && isAtProjectRoot && currentProjectRowForScope && currentProjectRowForScope.source_project_id){
-          var _planTopicIds={}; _planTopicIds[String(currentProjectRowForScope.source_project_id)]=true;
+        // Oct 15 2026: the project row can arrive WITHOUT source_project_id (the light fallback built from the chain when the full-row read is
+        // slow or fails), which made every plan tagged to this topic vanish until the next full render. Fall back to the topic's own plan source.
+        var _planSrcId=(currentProjectRowForScope && currentProjectRowForScope.source_project_id) || null;
+        if(!_planSrcId && _sboardIsPlanBoard && currentTopicRowForProject){ var _psr=_sboardPlanSourceFor(currentTopicRowForProject); if(_psr) _planSrcId=_psr.id; }
+        if(_sboardIsPlanBoard && isAtProjectRoot && currentProjectRowForScope && _planSrcId){
+          var _planTopicIds={}; _planTopicIds[String(_planSrcId)]=true;
           var _topicKids={};
           headerRows.forEach(function(h){ if(h.cluster_id && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE') (_topicKids[h.cluster_id]=_topicKids[h.cluster_id]||[]).push(h.id); });   // a STORY container is not a sub-topic (Oct 14 2026)
-          var _tFrontier=[String(currentProjectRowForScope.source_project_id)], _tGuard=0;
+          var _tFrontier=[String(_planSrcId)], _tGuard=0;
           while(_tFrontier.length && _tGuard<60){
             _tGuard++; var _tNext=[];
             _tFrontier.forEach(function(pid){ (_topicKids[pid]||[]).forEach(function(cid){ if(!_planTopicIds[String(cid)]){ _planTopicIds[String(cid)]=true; _tNext.push(String(cid)); } }); });
