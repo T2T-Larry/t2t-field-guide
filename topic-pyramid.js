@@ -307,7 +307,9 @@
     if(opts.fullTree){
       opts._menuEl=menuEl;
       var path=(opts.ancestors||[]).concat([opts.current]);
-      opts.expandPath=path.map(function(n){ return String(n.id); });
+      // Oct 15 2026 (Larry: "all topics should remain collapsed unless the current topic is a child"): open only the line of ANCESTORS
+      // down to the current topic, so it shows among its siblings with its own children closed. At the very top (MASTER) the top row opens.
+      opts.expandPath=(opts.ancestors && opts.ancestors.length ? opts.ancestors : [opts.current]).map(function(n){ return String(n.id); });
       var top=path[0];
       var topBuilt=_tpMakeRow(top, 0, 0, false, opts);
       menuEl.appendChild(topBuilt.row);

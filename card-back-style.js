@@ -358,19 +358,14 @@
       excludeId: opts.excludeId,
       hereId: opts.hereId || null,
       noRootPick: true,
+      // Oct 15 2026 (Larry): the same single centered (+) the board's list ends with, instead of extra text rows.
+      onAdd: opts.onAdd ? function(pid){ closeMenus(); opts.onAdd(pid); } : null,
       onNavigate: function(hid){
         closeMenus();
         if(opts.onPick) opts.onPick(hid);
       }
     });
     if(!document.getElementById('fg-back-topic-menu')) return;   // closed while the tree loaded
-    var cls=_cls(opts.theme);
-    (opts.extras||[]).forEach(function(x){
-      var row=document.createElement('div');
-      row.className=cls.row; row.style.borderTop='1px solid rgba(128,128,128,.35)'; row.textContent=x.label;
-      row.addEventListener('click', function(e){ e.stopPropagation(); closeMenus(); x.fn(); });
-      menu.appendChild(row);
-    });
   }
 
   injectShape();

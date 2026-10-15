@@ -1027,7 +1027,7 @@
     trigger.textContent=label||'TOPIC';
     trigger.title=label||'TOPIC';
     var hereId=(pv.value && String(pv.value).indexOf('hdr:')===0) ? String(pv.value).slice(4) : null;
-    var extras=[{label:'+ Add a project', fn:async function(){
+    var addTopicFn=async function(){
       var name=window.prompt('Name for the new topic:');
       if(!name || !name.trim()) return;
       if(_bbSingleBoardMode()){
@@ -1047,10 +1047,10 @@
       if(targetBoard) await _bbMoveCardObjectToBoard(c, targetBoard);
       closeCardDetail();
       renderBoard();
-    }}];
+    };
     trigger.onclick=function(e){
       e.stopPropagation();
-      FGCardBack.openTopicMenu(trigger, {theme:'bb', sb:T().sb, hereId:hereId, excludeId:null, extras:extras, onPick:function(hid){
+      FGCardBack.openTopicMenu(trigger, {theme:'bb', sb:T().sb, hereId:hereId, excludeId:null, onAdd:addTopicFn, onPick:function(hid){
         if(_bbSingleBoardMode()) _bbSetCardProjectHeader(c.id, hid);
         else _bbMoveCardToProject(c.id, 'hdr:'+hid);
       }});

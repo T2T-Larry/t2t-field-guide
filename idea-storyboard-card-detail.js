@@ -917,9 +917,7 @@
       if(ev && ev.stopPropagation) ev.stopPropagation();
       if(!window.FGCardBack) return;
       var topicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      var extras=[{label:(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot'), fn:function(){ _sbMoveFromBoard=false; _sbSendToParkingLot(); }}];
-      if(topicForNew) extras.push({label:'+ New header here', fn:function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); }});
-      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, onPick:moveCardToHeader, extras:extras});
+      FGCardBack.openTopicMenu(document.getElementById('sb-d-topic-btn'), {theme:'idea', sb:_sb, hereId:(_sbIsPlanHeader()?item.source_project_id:item.cluster_id), excludeId:item.id, onPick:moveCardToHeader, onAdd:(topicForNew ? function(){ var nm=window.prompt('Name for the new header:'); if(nm===null) return; _sbNewHeaderGo(topicForNew, nm); } : null)});
     }
     function openKindPicker(ev){
       if(ev && ev.stopPropagation) ev.stopPropagation();
