@@ -815,6 +815,12 @@ body.t2t-bare-screen{background:#d0d0d0!important}
     border-radius:8px;background:transparent;cursor:pointer;color:var(--isx-navy);font-weight:700;letter-spacing:.5px}
   .isx-p-attach-btn:hover{background:rgba(0,0,0,.04);border-color:var(--isx-navy)}
   .isx-p-kindline{font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:1px;text-transform:uppercase;color:#7a90a8;text-align:center;line-height:1.4;margin:0 0 10px}
+  /* Oct 15 2026 -- Header/Subber switch between ATTACH A FILE and SAVE; same look as the card back's one-click switch */
+  .isx-p-viewrow{display:flex;justify-content:center;margin:0 0 8px}
+  .isx-p-viewbtn{background:#fff;color:#2C2C2A;border:1.5px solid var(--isx-paleblue);border-radius:8px;padding:3px 14px;cursor:pointer;
+    font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;font-family:'Playfair Display',serif}
+  .isx-p-viewbtn:hover{border-color:var(--isx-navy)}
+  .isx-pcard-uni .isx-p-viewbtn{border-color:var(--uni-accent);border-radius:4px}
   /* Universal input card, round 2 (Sept 28 2026, Larry) -- same shape as
      the Idea / Briefing card back (.bb-overlay-card + .fg-cardback-idea:
      340px, 8px corners, colored top stripe, no thin rim), and its top is

@@ -580,6 +580,7 @@
     }
     ta.value=''; ta.focus();
     _icIdeaMode='idea';
+    _icSyncIdeaModeBtn();
     _icClearPendingImage();
     _icClearPendingFile();
     // Sept 27 2026 fix (Larry: subject carried over into the next add) --
@@ -894,6 +895,12 @@
   // hint, so it's only shown while the card is empty -- once there's text or
   // something attached, the entry itself is the message. Larry, Sept 27
   // 2026: "I also like the input options visible until an entry is made."
+  // Repaints the Header/Subber switch on the New card from _icIdeaMode.
+  function _icSyncIdeaModeBtn(){
+    var tg=document.getElementById('isx-p-header-toggle');
+    if(tg) tg.textContent=(_icIdeaMode==='header')?'Header':'Subber';
+  }
+
   function _icSyncKindLine(){
     var el=document.getElementById('isx-p-kindline');
     if(!el) return;
@@ -1472,6 +1479,9 @@
       +'<div class="isx-p-attach-row"><button class="isx-p-attach-btn" type="button" id="isx-p-attach-btn">📎 ATTACH A FILE</button>'
         +'<input type="file" id="isx-p-file-input" style="display:none"></div>'
       +'<div class="isx-p-kindline" id="isx-p-kindline">text · image · document · sheet · slide · audio · video · link</div>'
+      // Oct 15 2026 (Larry: add the header toggle between attach file and Save) -- the same one-click switch the card back has: no label, the
+      // button just shows what the entry will be (Subber or Header) and a click flips it. A trailing ? or : still makes a header on its own.
+      +'<div class="isx-p-viewrow"><button class="isx-p-viewbtn" type="button" id="isx-p-header-toggle" title="Header: something to think or talk about. Subber: a thought that sits under a header. Click to switch.">Subber</button></div>'
       +'<div class="isx-save-row">'
         +'<button class="isx-save" id="isx-p-save">SAVE</button>'
         +'<button class="isx-cancel" id="isx-p-cancel" type="button">CANCEL</button>'
@@ -1509,6 +1519,17 @@
         inp.value='';
       });
     })();
+
+    // HEADER/SUBBER switch (Oct 15 2026) -- flips _icIdeaMode, which the save and commit paths already honor.
+    (function(){
+      var tg=document.getElementById('isx-p-header-toggle');
+      if(!tg) return;
+      tg.onclick=function(){
+        _icIdeaMode=(_icIdeaMode==='header')?'idea':'header';
+        _icSyncIdeaModeBtn();
+      };
+    })();
+    _icSyncIdeaModeBtn();
 
     // Cast, Sept 19 2026 round 5 -- one button: opens the same roster
     // the VIEW button lists, styled exactly like VIEW's own dropdown
