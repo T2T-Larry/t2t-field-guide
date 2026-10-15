@@ -473,6 +473,16 @@ function _sboardRenderLocalNewAdditions(ctx, directItems, parentIdForDrop, newRo
       }
     });
     block.appendChild(hd);
+    // Oct 15 2026: NEEDS PLAN cards are the GOALs of this plan; shown first in the Parking Lot (see needs-plan-goals.js).
+    if(typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard && window.T2TNeedsPlanGoals){
+      var _npRow=_sboardAllRowsById[T2TShared.currentTopicId], _npSrc=_npRow ? _sboardPlanSourceFor(_npRow) : null;
+      if(_npSrc){
+        var _npHost=document.createElement('div');
+        _npHost.style.cssText='display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 2px';
+        block.appendChild(_npHost);
+        T2TNeedsPlanGoals.fill(_npHost, _npSrc.id, SUBBER_W);
+      }
+    }
     // Aug 7 2026, Larry: NEW should be able to take a new idea directly,
     // same [+] every other header gets (mirrors renderGroup's own
     // !blocksNewSubbers tile below) -- not just something things land
