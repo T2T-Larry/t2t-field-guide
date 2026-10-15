@@ -303,9 +303,12 @@
     if(!snap) return;
     var _sb=T().sb; if(!_sb) return;
     try{
-      var upd=await _sb.from('ideas').update({cluster_id:snap.cluster_id, sort_order:snap.sort_order}).eq('id',id);
+      var f={cluster_id:snap.cluster_id, sort_order:snap.sort_order};
+      // Oct 15 2026 -- a move also leaves a "Moved from" note; when the snapshot carries notes, undo/redo restores them with the location.
+      if(Object.prototype.hasOwnProperty.call(snap,'notes')){ f.notes=snap.notes; f.adds_notes=!!snap.adds_notes; }
+      var upd=await _sb.from('ideas').update(f).eq('id',id);
       if(upd.error) throw upd.error;
-      _sboardPatchRow(id, {cluster_id:snap.cluster_id, sort_order:snap.sort_order});
+      _sboardPatchRow(id, f);
       renderSeaBoard(true);
     }catch(e){ console.error('Storyboard: undo/redo write failed', e); }
   }

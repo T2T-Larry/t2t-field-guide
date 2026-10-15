@@ -871,16 +871,32 @@
     // ID Band on the back (Sept 30 2026, Larry: "All TOPIC and Board type should work and look the same on all boards and cards").
     // Both boxes open the SHARED menus in card-back-style.js (FGCardBack.openTopicMenu / openKindMenu) -- the same code the Briefing Card back
     // uses, drawn with this board's own dropdown look. What a pick does is this card's part: move under a header, or go to another board.
+    // Oct 15 2026 -- Larry's rule: changing the ID BAND moves the card and all its children (a header's subbers and sub-headers hang under it by
+    // cluster_id, so they travel with it), and a note records where it came from: "Moved from TOPIC: <old header>."
+    async function _sbMovedFromNote(){
+      try{
+        if(!item.cluster_id) return null;
+        var pr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id', item.cluster_id).maybeSingle();
+        var d=pr && pr.data; var nm=d && ((d.subject||'').trim() || (d.idea_text||'').trim() || (d.text_content||'').trim());
+        if(!nm) return null;
+        var line='Moved from TOPIC: '+nm+'.', old=(item.notes||'').trim();
+        return old ? (old+'\n'+line) : line;
+      }catch(e){ return null; }
+    }
     async function moveCardToHeader(hid){
       if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
-      var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
+      var before={cluster_id:item.cluster_id, sort_order:item.sort_order, notes:item.notes||null, adds_notes:!!item.adds_notes};
       try{
-        var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
+        var newNotes=await _sbMovedFromNote();
+        var f={cluster_id:hid};
+        if(newNotes){ f.notes=newNotes; f.adds_notes=true; }
+        var upd=await _sb.from('ideas').update(f).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.cluster_id=hid;
-        _sboardPatchRow(item.id, {cluster_id:hid});
+        if(newNotes){ item.notes=newNotes; item.adds_notes=true; }
+        _sboardPatchRow(item.id, f);
         (function(){
-          var itemId=item.id, after={cluster_id:hid, sort_order:before.sort_order};
+          var itemId=item.id, after={cluster_id:hid, sort_order:before.sort_order, notes:newNotes||before.notes, adds_notes:newNotes?true:before.adds_notes};
           _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
         })();
         _sbMoveFromBoard=false;
@@ -905,7 +921,7 @@
         _sboardShowToast('Moving a card to '+k.label+' is not built yet.');
       }});
     }
-    // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. The Blue Sky card is kept.
+    // Blue Sky card -> new Briefing card in the Parking Lot (col 'new', no Signal Flag), tagged with this card's topic. A move (see below).
     async function sendToBriefingBoard(){
       try{
         if(item.content_type==='header'){ _sboardShowToast('Headers reach the Briefing Board through their own assign button.'); openSbDetail(item); return; }
@@ -922,12 +938,32 @@
         if(!board){ _sboardShowToast('Open the Briefing Board once first, so it has a board to receive this.'); openSbDetail(item); return; }
         var top=await _sb.from('briefing_cards').select('sort_order').eq('board_id',board.id).eq('col','new').order('sort_order',{ascending:true,nullsFirst:false}).limit(1);
         var minSort=(top.data && top.data[0] && typeof top.data[0].sort_order==='number') ? top.data[0].sort_order : 1;
-        var row={board_id:board.id, col:'new', task:text||subj, subject:subj||null, hide_contents_front:!!item.hide_contents_front, priority:'', sort_order:minSort-1};
+        // Oct 15 2026 (Larry: "This is a move request"): the Blue Sky card is MOVED, not copied. The new Briefing card carries this card's Notes plus
+        // a "Moved from the Blue Sky board (TOPIC: ...)" line, and only after it is safely written does this card go to the Trash header
+        // (recoverable there, same as the Trash button).
+        var fromName='';
+        try{
+          if(topicId){
+            var tr=await _sb.from('ideas').select('text_content,subject,idea_text').eq('id',topicId).maybeSingle();
+            var td=tr && tr.data; fromName=td ? ((td.subject||'').trim()||(td.idea_text||'').trim()||(td.text_content||'').trim()) : '';
+          }
+        }catch(e){}
+        var moveLine='Moved from the Blue Sky board'+(fromName?(' (TOPIC: '+fromName+')'):'')+'.', oldNotes=(item.notes||'').trim();
+        var row={board_id:board.id, col:'new', task:text||subj, subject:subj||null, hide_contents_front:!!item.hide_contents_front, priority:'', sort_order:minSort-1,
+                 notes:(oldNotes?(oldNotes+'\n'):'')+moveLine, adds_notes:true};
         if(topicId) row.project_header_id=topicId;
         var ins=await _sb.from('briefing_cards').insert(row).select('id').single();
         if(ins.error) throw ins.error;
+        var trashId=await T2TData.ensureTrashHeader();
+        if(trashId){
+          var tup=await _sb.from('ideas').update({cluster_id:trashId}).eq('id',item.id);
+          if(tup.error) throw tup.error;
+          item.cluster_id=trashId;
+          _sboardPatchRow(item.id, {cluster_id:trashId});
+        }
         closeSbDetail();
-        _sboardShowToast('Sent to the Briefing Board Parking Lot. The Blue Sky card stays here.');
+        renderSeaBoard(true);
+        _sboardShowToast('Moved to the Briefing Board Parking Lot. The Trash keeps the Blue Sky card.');
       }catch(err){
         console.error('Send to Briefing Board failed', err);
         _sboardShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));
