@@ -667,6 +667,19 @@
         try{ if(window.T2TLibraryView && T2TLibraryView.overlay) T2TLibraryView.overlay(_sboardAllRowsById); }catch(e){ console.warn('library overlay failed', e); }
         try{ document.body.classList.toggle('fg-readonly', _sboardIsReadOnly()); }catch(e){}
         _sboardCacheReady=true;
+        // Oct 15 2026 (WEBSITE PLAN opened with only its Parking Lot + Telephone App until a second render): the project row, the
+        // "at project root" fact and the Plan/Story flags above were resolved BEFORE this fetch, from a cold cache, so a Plan board
+        // opened first thing in a session resolved to the wrong row and skipped the filter that gathers its plans. Re-resolve them now
+        // that every row is in hand.
+        try{
+          currentTopicRowForProject=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
+          if(currentTopicRowForProject){
+            currentProjectRowForScope=_sboardProjectRowFor(currentTopicRowForProject) || currentProjectRowForScope;
+            isAtProjectRoot=!!(currentProjectRowForScope && String(currentProjectRowForScope.id)===String(T2TShared.currentTopicId));
+            _sboardIsPlanBoard = !!((currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='PLAN') || _sboardPlanSourceFor(currentTopicRowForProject));
+            _sboardIsShareBoard = !_sboardIsPlanBoard && !!((currentProjectRowForScope && currentProjectRowForScope.storyboard_kind==='SHARE') || _sboardShareSourceFor(currentTopicRowForProject));
+          }
+        }catch(e){ console.warn('post-fetch project re-resolve failed', e); }
       }
 
       // Derived fresh from _sboardAllRowsById either way -- after a real
