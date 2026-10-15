@@ -936,7 +936,9 @@
           headerRows.forEach(function(h){ if(h.storyboard_kind==='PLAN' && (!h.cluster_id || T2TPlan.isContainer(h))) _planRootIds[String(h.id)]=true; });
           var _haveIds={}; childHeaders.forEach(function(h){ _haveIds[String(h.id)]=true; });
           var _filtered=headerRows.filter(function(h){
-            return h.cluster_id && _planRootIds[String(h.cluster_id)] && String(h.cluster_id)!==String(T2TShared.currentTopicId)
+            // Oct 15 2026: a plan header tagged to this topic still counts when it sits under an ordinary topic (INVITATIONS under CAST,
+              // STORY PRESENTATION MODE under STORY) rather than inside a plan container -- they flashed on first paint and vanished here.
+              return h.cluster_id && (_planRootIds[String(h.cluster_id)] || (!T2TPlan.isContainer(h) && h.storyboard_kind!=='PLAN' && h.storyboard_kind!=='SHARE')) && String(h.cluster_id)!==String(T2TShared.currentTopicId)
               && h.source_project_id && _planTopicIds[String(h.source_project_id)] && !_haveIds[String(h.id)]
               && reservedNames.indexOf(h.text_content)===-1;
           });
