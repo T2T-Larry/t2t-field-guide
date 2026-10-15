@@ -1429,6 +1429,48 @@
     return rootIns.data;
   }
 
+  // Oct 15 2026: the plan header (a direct child of the plan container) the traveler is standing in or under; null when viewing the whole plan board.
+  function _sboardPlanHeaderInView(){
+    var node=T2TShared.currentTopicId ? _sboardAllRowsById[T2TShared.currentTopicId] : null, guard=0;
+    while(node && guard<50){
+      guard++;
+      var parent=node.cluster_id ? _sboardAllRowsById[node.cluster_id] : null;
+      if(!parent) return null;
+      var grand=parent.cluster_id ? _sboardAllRowsById[parent.cluster_id] : null;
+      if(parent.storyboard_kind==='PLAN' && !(grand && grand.storyboard_kind==='PLAN')) return node;   // parent is the plan container
+      node=parent;
+    }
+    return null;
+  }
+  function _sboardBlueSkyNameKey(t){ return String(t||'').replace(/[:?\s]+$/,'').trim().toUpperCase(); }
+  // The Blue Sky header under topicRow that matches this plan header (same name, or one name starts with the other); creates it when missing
+  // (red = "Blue Sky header not yet built", Larry Oct 14 2026) so every plan has one.
+  async function _sboardEnsureBlueSkyHeaderFor(planHeader, topicRow){
+    if(!planHeader || !topicRow) return null;
+    var key=_sboardBlueSkyNameKey(planHeader.text_content);
+    if(!key) return null;
+    var kids=Object.keys(_sboardAllRowsById).map(function(id){ return _sboardAllRowsById[id]; }).filter(function(r){
+      return r && r.cluster_id===topicRow.id && r.content_type==='header' && r.storyboard_kind!=='PLAN' && r.storyboard_kind!=='SHARE';
+    });
+    var i, k2, found=null;
+    for(i=0;i<kids.length && !found;i++) if(_sboardBlueSkyNameKey(kids[i].text_content)===key) found=kids[i];
+    for(i=0;i<kids.length && !found;i++){
+      k2=_sboardBlueSkyNameKey(kids[i].text_content);
+      if(k2.length>=6 && key.length>=6 && (k2.indexOf(key)===0 || key.indexOf(k2)===0)) found=kids[i];
+    }
+    if(found) return found;
+    var _sb=T().sb;
+    var authRes=await _sb.auth.getUser();
+    var user=authRes && authRes.data && authRes.data.user;
+    if(!user) return null;
+    var maxSort=0; kids.forEach(function(r){ if((r.sort_order||0)>maxSort) maxSort=r.sort_order||0; });
+    var ins=await _sb.from('ideas').insert({user_id:user.id, content_type:'header', text_content:planHeader.text_content, cluster_id:topicRow.id,
+      sort_order:maxSort+1, color:'#ff6b6b', created_at:new Date().toISOString()}).select().single();
+    if(ins.error || !ins.data) return null;
+    _sboardAllRowsById[ins.data.id]=ins.data;
+    return ins.data;
+  }
+
   // Picking IDEA while standing on a PLAN board jumps back to the IDEA
   // project it was duplicated from (the only way back in, since PLAN
   // boards are deliberately left out of the PROJECT switcher -- see
@@ -1442,6 +1484,16 @@
     // band is showing (the nearest tag, via _sboardServedTopicRow) is the right one. Fall back to the container's tag only when nothing nearer exists.
     var _served=_sboardServedTopicRow();
     var targetId=(_served && _served.storyboard_kind!=='PLAN' && _served.storyboard_kind!=='SHARE') ? _served.id : row.source_project_id;
+    // Oct 15 2026 (Larry: "IMAGE and VIDEO STORAGE PLAN changed to MASTER BLUE SKY ... but there is one in RED"; "If there is no BLUE SKY topic
+    // for a given topic, make one"): a plan header has its own Blue Sky header (red = not yet built) under the Topic it serves. Land on THAT
+    // header's board, and create it when the Topic has none.
+    var _ph=_sboardPlanHeaderInView();
+    if(_ph && _sboardAllRowsById[targetId]){
+      try{
+        var _bs=await _sboardEnsureBlueSkyHeaderFor(_ph, _sboardAllRowsById[targetId]);
+        if(_bs){ _sboardDrillInto(_bs); return; }
+      }catch(err){ /* fall through to the Topic's own board */ }
+    }
     var cached=_sboardAllRowsById[targetId];
     if(cached){ _sboardDrillInto(cached); return; }
     try{
