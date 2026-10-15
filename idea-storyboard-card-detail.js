@@ -210,7 +210,7 @@
     var orderCanDown=(_sbOrderList && _sbOrderIdx>-1 && _sbOrderIdx<_sbOrderList.length-1);
 
     // MOVE column retired Sept 30 2026 (Larry: TOPIC and board type on the ID Band should always let a card move, so "MOVE field ... might not
-    // be needed any more"). The TOPIC box now opens the same pyramid (openMoveAnywherePicker: any topic or header, Parking Lot, + New header) and the
+    // be needed any more"). The TOPIC box now opens the same pyramid (FGCardBack.openTopicMenu, the one shared TOPIC list) and the
     // board-type box moves the card to another board. Alt+M still opens the pyramid.
     var topRowHTML='<div class="sb-eyebrow-row">'
       + '<div class="sb-eyebrow-col">'+viewWidgetHTML+'</div>'
@@ -233,7 +233,7 @@
     // The old move panel (headers on this board, Parking Lot, + new header,
     // Different Topic, Different Project, Anywhere) was retired Sept 22
     // 2026 when the PARENT field became MOVE -- everything it offered now
-    // lives in the one project pyramid (openMoveAnywherePicker below).
+    // lives in the one project pyramid (FGCardBack.openTopicMenu).
     var headerListHTML='';
 
     // Body: always the same fixed size and shape, whether it holds an image
@@ -746,78 +746,6 @@
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
     });
 
-    // Move Anywhere, Sept 22 2026 (Master BB DOING card, HH priority) --
-    // Larry: "need to be able to move card to new location (vs change
-    // the view). Use project pyramid like on TOPIC card to choose
-    // location anywhere." Different Topic (above) only searches the
-    // current project; Different Project (above) only lands at that
-    // project's own top level, never nested. This is the one-step
-    // version: rooted at a virtual "All Projects" node exactly the way
-    // TOPIC's own pyramid behaves once TOPIC is set to MASTER (its
-    // children are every real project; from there each row's own arrow
-    // lazily fetches ITS children, any depth, same window.TopicPyramid
-    // widget topic-pyramid.js already renders for TOPIC) -- so any
-    // project and any topic inside it is reachable by expanding down to
-    // it and tapping its name. onNavigate here does the actual move
-    // (writes cluster_id) instead of just changing what's on screen,
-    // which is TOPIC's own onNavigate job.
-    async function openMoveAnywherePicker(){
-      var ov2=document.getElementById('sb-detail-overlay');
-      if(!ov2 || !window.TopicPyramid || !window.T2TData) return;
-      // Sept 22 2026 (PARENT became MOVE) -- the pyramid now opens already
-      // expanded down to where this card lives (expandPath), with that
-      // spot marked "here" (hereId), so nearby headers are one tap away
-      // and every other project is still one expand away. Parking Lot and
-      // "+ New header" (the two things the old move panel had that the
-      // pyramid didn't) sit underneath it.
-      var _sbTopicForNew=(isOn9711 && _isxDetailCtx) ? _isxDetailCtx.topicId : (T2TShared.filter||T2TShared.currentTopicId||null);
-      ov2.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Move "'+_sboardEsc(item.text_content||'(untitled)')+'"</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">Tap any project or topic to move this card there. ▸ opens a level.</div>'
-        +'<div id="sb-anywhere-pyramid" style="text-align:left;max-height:300px;overflow-y:auto;margin-bottom:8px"></div>'
-        +'<div style="display:flex;gap:6px;margin-bottom:6px">'
-        +  '<button class="sc-ov-btn" id="sb-anywhere-park" style="flex:1;font-size:calc(10px * var(--fg-text-scale,1))">'+(isParked?'📦 Take out of Parking Lot':'📦 Send to Parking Lot')+'</button>'
-        +'</div>'
-        +'<button class="sc-ov-btn" id="sb-anywhere-cancel" style="width:100%">Cancel</button>'
-        +'</div>';
-      ov2.classList.add('active');
-      var menuEl=document.getElementById('sb-anywhere-pyramid');
-      // Oct 15 2026 (Larry): same one-tree list as every ID BAND -- MASTER at the top, closed except the path to where this card lives.
-      await window.IDBand.renderTopicTree(menuEl, {
-        topicId: item.cluster_id || null,
-        excludeId: (item.content_type==='header') ? item.id : null,
-        hereId: item.cluster_id ? String(item.cluster_id) : null,
-        noRootPick: true,
-        addParentId: _sbTopicForNew,
-        onAdded: _sbTopicForNew ? _sbMoveIntoNewHeader : null,
-        onNavigate: async function(hid){
-          if(String(hid||'')===String(item.cluster_id||'')){ closeSbDetail(); return; }
-          var before={cluster_id:item.cluster_id, sort_order:item.sort_order};
-          try{
-            var upd=await _sb.from('ideas').update({cluster_id:hid}).eq('id',item.id).select();
-            if(upd.error) throw upd.error;
-            item.cluster_id=hid;
-            _sboardPatchRow(item.id, {cluster_id:hid});
-            (function(){
-              var itemId=item.id, after={cluster_id:hid, sort_order:before.sort_order};
-              _sboardPushAction({label:'Move', undo:function(){ return _sboardApplyRowSnapshot(itemId, before); }, redo:function(){ return _sboardApplyRowSnapshot(itemId, after); }});
-            })();
-            _sbMoveFromBoard=false;
-            closeSbDetail();
-            renderSeaBoard(true);
-            _sboardShowToast('Moved — Ctrl/Cmd+Z to undo.');
-          }catch(err){ console.error(err); }
-        }
-      });
-      T().wire('sb-anywhere-park', function(){ _sbMoveFromBoard=false; _sbSendToParkingLot(); });
-      T().wire('sb-anywhere-cancel', function(){
-        // Opened with Alt+M from the board: Cancel goes back to the board,
-        // not to the card's back.
-        if(_sbMoveFromBoard){ _sbMoveFromBoard=false; closeSbDetail(); return; }
-        openSbDetail(item);
-      });
-    }
-
     // ID Band on the back (Sept 30 2026, Larry: "All TOPIC and Board type should work and look the same on all boards and cards").
     // Both boxes open the SHARED menus in card-back-style.js (FGCardBack.openTopicMenu / openKindMenu) -- the same code the Briefing Card back
     // uses, drawn with this board's own dropdown look. What a pick does is this card's part: move under a header, or go to another board.
@@ -966,10 +894,9 @@
     }
     T().wire('sb-d-topic-btn', openTopicPicker);
     T().wire('sb-d-kind-btn', openKindPicker);
-    T().wire('sb-move-btn', openMoveAnywherePicker);
     // Alt+M from the board (idea-storyboard-shared.js) opens the card and
     // then asks for the move picker straight away.
-    if(_sbOpenMoveOnOpen){ _sbOpenMoveOnOpen=false; openMoveAnywherePicker(); }
+    if(_sbOpenMoveOnOpen){ _sbOpenMoveOnOpen=false; openTopicPicker(); }
     // "+ New header here" (inside the MOVE pyramid): creates a header on
     // the board being viewed and moves this card into it. Same ENTER +
     // Saving… feedback as the standalone New Header prompt.
