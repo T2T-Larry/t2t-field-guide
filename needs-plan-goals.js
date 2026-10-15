@@ -94,8 +94,8 @@
     var hdr=el.closest('[data-header-id]');
     if(hdr) return {header:hdr.getAttribute('data-header-id')};
     if(el.closest('[data-idea-id]') || el.closest('.np-goal-tile')) return null;
-    var wrap=document.querySelector('[data-sb-groups]');
-    if(wrap && (wrap.contains(el) || (wrap.parentElement && wrap.parentElement===el))) return {space:true};
+    // Open space anywhere on the board (the groups wrap is only as wide as its columns, so use the whole viewport).
+    if(el.closest('#sc-board-viewport') || el.closest('[data-sb-groups]')) return {space:true};
     return null;
   }
   document.addEventListener('dragover', function(e){
