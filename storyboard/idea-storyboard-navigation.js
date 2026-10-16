@@ -2199,6 +2199,23 @@
       var projectRow=_sboardCurrentProjectRow();
       if(projectRow) await _tmLoadRoster(projectRow);
       var rows=projectRow ? _tmAllRosterRows(projectRow) : [];
+      // Oct 16 2026, Larry: the top of the page showed Claude as this topic's PRIMARY, yet TEAM
+      // listed only him ("there you are at the top... something needs to be fixed"). The badge
+      // resolves PRIMARY down from the level above (WEBSITE); this list only read the board's own
+      // seats, so the two disagreed. One person, one list: whoever the topic on screen resolves to
+      // as PRIMARY is always a row here, gold-starred when carried down from above.
+      try{
+        var _tmTopicRow=(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]) || null;
+        if(_tmTopicRow){
+          await _sboardEnsureCardPrimary([_tmTopicRow]);
+          var _tmPrimUid=_sboardCardPrimaryUid(_tmTopicRow);
+          if(_tmPrimUid && !rows.some(function(r){ return String(r.user_id)===String(_tmPrimUid); })){
+            await _tmFetchAllMembers();
+            var _tmPm=(_tmAllMembersCache||[]).filter(function(m){ return String(m.user_id)===String(_tmPrimUid); })[0];
+            if(_tmPm) rows=rows.concat([{user_id:_tmPm.user_id, name:_tmPm.name, email:_tmPm.email, isOwner:false, role:null, fromAbove:true, tip:(_tmPm.name||'They')+' — PRIMARY for this topic, carried down from the level above'}]);
+          }
+        }
+      }catch(err){ console.warn('TEAM: could not add the topic PRIMARY', err); }
       _sboardViewMenuRowsCache=rows;
       // The menu body (TEAM title, All, one row per person, the (+) and its
       // add form) is the shared T2TTeam (team-button.js) -- the Briefing
