@@ -304,6 +304,9 @@
         return t===vp || t===wrap || t.id==='sc-groups-wrap' || t.id==='sc-role-shortcuts-wrap' || t.id==='sc-pending-collab-wrap';
       }
     });
+    // Oct 16 2026: the drag-with-arrows layer (idea-storyboard-drag-with-arrows.js)
+    // slides the board through this same camera while a card is held.
+    window.T2TStoryboardCamera=_sboardCam;
   }
 
   function _sboardWireAutoScroll(){
