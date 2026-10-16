@@ -388,6 +388,20 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
 // are ever filed under its own id — but it borrows color from the real
 // per-level NEW row _sboardEnsureNewAdditionsHeader already ensures exists,
 // so the color picker has something real to save to.
+// Parking Lot as a computed view (Larry, Oct 10 2026): the column shows only while something is unfiled on this board.
+// True = leave the column out. It always stays on: Plan boards (NEEDS PLAN goals are filled in after the paint),
+// the Library's read-only view, and a board with no other headers yet (otherwise an empty topic would have no way to add its first card).
+function _sboardParkingLotIsEmpty(row, directItems, childrenOfHeader, subHeadersOf, mergedRow){
+  if(!row) return false;
+  if(typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard) return false;
+  if(directItems && directItems.length) return false;
+  if(((childrenOfHeader||{})[row.id]||[]).length) return false;
+  if(((subHeadersOf||{})[row.id]||[]).length) return false;
+  var others=(mergedRow||[]).filter(function(h){ return h && h.id!==undefined && String(h.id)!==String(row.id); });
+  if(!others.length) return false;
+  return true;
+}
+
 function _sboardRenderLocalNewAdditions(ctx, directItems, parentIdForDrop, newRow){
   var HEADER_W=ctx.HEADER_W, HEADER_H=ctx.HEADER_H, _tsMult=ctx._tsMult, childrenOfHeader=ctx.childrenOfHeader, subHeadersOf=ctx.subHeadersOf, SUBBER_W=ctx.SUBBER_W, SUBBER_H=ctx.SUBBER_H;
     // Oct 4 2026, Larry: "the Parking Lot flashed into view and then

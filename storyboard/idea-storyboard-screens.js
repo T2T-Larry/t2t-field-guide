@@ -1064,6 +1064,10 @@
             return;
           }
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)){
+            // Oct 16 2026 (Larry, Oct 10: Parking Lot appears only while something is unfiled and disappears when nothing is):
+            // an empty Parking Lot column is not drawn. Display only -- the stored row stays as the filing target, so
+            // Send to Parking Lot, card moves and Plan goals work unchanged and the column returns the moment a card lands in it.
+            if(_sboardParkingLotIsEmpty(h, directIdeas, childrenOfHeader, subHeadersOf, mergedRow)) return;
             groupsWrap.appendChild(renderLocalNewAdditions(directIdeas, T2TShared.currentTopicId, h));
           } else {
             groupsWrap.appendChild(renderGroup(h, 0));
