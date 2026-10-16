@@ -1722,7 +1722,7 @@
       // Oct 10 2026: an invitation, not a seat -- they join on Accept.
       var inv=await T().invitations.invite('board', board.id, match.user_id, 'edit');
       if(!inv.ok) return {ok:false,msg:inv.msg||'Could not invite them.'};
-      return {ok:true, invited:true};
+      return {ok:true, invited:inv.invited!==false, seated:!!inv.seated};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
   }
 

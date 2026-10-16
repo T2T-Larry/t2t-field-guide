@@ -2266,7 +2266,7 @@
           var inv=(projectRow.briefing_board_id)
             ? await T().invitations.invite('board', projectRow.briefing_board_id, person.user_id, 'edit')
             : await T().invitations.invite('topic', projectRow.id, person.user_id, 'edit');
-          return inv.ok ? {ok:true, invited:true} : {ok:false,msg:inv.msg||'Could not invite them.'};
+          return inv.ok ? {ok:true, invited:inv.invited!==false, seated:!!inv.seated} : {ok:false,msg:inv.msg||'Could not invite them.'};
         },
         rebuild:openMenu,
         close:function(){ menu.hidden=true; }

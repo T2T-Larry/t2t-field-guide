@@ -673,7 +673,7 @@
         ? await T().invitations.invite('board', projectRow.briefing_board_id, match.user_id, 'edit')
         : await T().invitations.invite('topic', projectRow.id, match.user_id, 'edit');
       if(!inv.ok) return {ok:false,msg:inv.msg||'Could not invite them.'};
-      return {ok:true, invited:true};
+      return {ok:true, invited:inv.invited!==false, seated:!!inv.seated};
     }catch(e){ return {ok:false,msg:'Could not add them.'}; }
   }
 

@@ -30,7 +30,16 @@
     try{
       var res=await sb.rpc('invite_member', {p_target_type: targetType, p_target_id: targetId, p_invitee: userId, p_access: access||'edit'});
       if(res.error) return {ok:false,msg:res.error.message||'Could not send the invitation.'};
-      return {ok:true, id:res.data, invited:true};
+      // Oct 16 2026: a member with no login (Claude) has nobody to press Accept,
+      // so the database seats them at once and records the invitation as
+      // already accepted. Ask which happened so the page tells the truth
+      // ("Invitation sent" vs. a seat that is already there).
+      var seated=false;
+      try{
+        var st=await sb.from('membership_invitations').select('status').eq('id', res.data).maybeSingle();
+        seated = !!(st && st.data && st.data.status==='accepted');
+      }catch(e2){}
+      return {ok:true, id:res.data, invited:!seated, seated:seated};
     }catch(e){ return {ok:false,msg:'Could not send the invitation.'}; }
   }
 

@@ -199,7 +199,16 @@
       var listed = {}; rows.forEach(function(r){ listed[String(r.user_id)] = true; });
       var pool = [];
       try { pool = (await cfg.loadPool()) || []; } catch (err) { pool = []; }
-      function say(text, bad){ msg.style.display = text ? 'block' : 'none'; msg.textContent = text || ''; msg.style.color = bad ? '#ffb4a2' : '#b7e4c7'; }
+      // Oct 16 2026: a failed add used to print pale 10px text that vanished on
+      // the card ("I clicked the (+) and nothing happened"). Failures are now a
+      // solid red band, successes a solid green one, both readable on any card.
+      function say(text, bad){
+        msg.style.display = text ? 'block' : 'none';
+        msg.textContent = text || '';
+        msg.style.cssText = (text ? 'display:block;' : 'display:none;')
+          + 'margin-top:6px;padding:6px 9px;border-radius:5px;font-size:12px;line-height:1.3;font-weight:bold;'
+          + (bad ? 'background:#a3372b;color:#fff;' : 'background:#2d6a4f;color:#fff;');
+      }
       function grew(){ if (cfg.onResize) cfg.onResize(); }
       function renderSuggest(){
         var q = input.value.trim().toLowerCase();
@@ -243,14 +252,16 @@
           say('“' + (person.name || 'That person') + '” is not a T2T member yet, so they can’t be seated on the board itself. Assign them to a card and they will show up here.', true);
           return;
         }
-        var res = await cfg.seatMember(person);
+        var res;
+        try { res = await cfg.seatMember(person); }
+        catch (err) { say('Could not add them: ' + ((err && err.message) || 'something went wrong') + '.', true); return; }
         if (!res || !res.ok) { say((res && res.msg) || 'Could not add them.', true); return; }
-        if (res.invited) {       // Oct 10 2026: invited, not seated -- they join when they accept
+        if (res.invited && !res.seated) {   // Oct 10 2026: invited, not seated -- they join when they accept
           say('Invitation sent to “' + (person.name || person.email || 'them') + '”. They join when they accept.', false);
           input.value = ''; renderSuggest();
           return;
         }
-        cfg.rebuild();           // rebuild so the new name shows as a row
+        cfg.rebuild();           // seated already (a no-login member like Claude): rebuild so the new name shows as a row
       });
       input.addEventListener('input', renderSuggest);
       input.addEventListener('keydown', function(ev){
