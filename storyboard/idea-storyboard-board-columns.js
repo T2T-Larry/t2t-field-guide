@@ -274,9 +274,16 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
       e.preventDefault();
       var rect=hd.getBoundingClientRect();
       var frac=rect.width?(e.clientX-rect.left)/rect.width:0.5;
-      if(frac<0.3){ hd.style.outline='none'; hd.style.boxShadow='inset 4px 0 0 0 #22c55e'; hd._dropSide='before'; }
-      else if(frac>0.7){ hd.style.outline='none'; hd.style.boxShadow='inset -4px 0 0 0 #22c55e'; hd._dropSide='after'; }
-      else { hd.style.boxShadow='none'; hd.style.outline='2px solid #22c55e'; hd._dropSide='nest'; }
+      // Oct 16 2026 (Larry: dragging the red headers into GOALS "would not
+      // go"): the drops landed on the left/right thirds, which only reorder
+      // -- the NEEDS PLAN headers just shuffled next to GOALS. The nest
+      // zone was only the middle 40% with a thin 2px outline, easy to
+      // miss. Edges are now 20% each (nest = middle 60%) and the nest cue
+      // matches the thick green used on the card tiles, so "this will go
+      // INSIDE" reads differently from the thin reorder line.
+      if(frac<0.2){ hd.style.outline='none'; hd.style.boxShadow='inset 4px 0 0 0 #22c55e'; hd._dropSide='before'; }
+      else if(frac>0.8){ hd.style.outline='none'; hd.style.boxShadow='inset -4px 0 0 0 #22c55e'; hd._dropSide='after'; }
+      else { hd.style.boxShadow='0 0 0 9px rgba(34,197,94,.28)'; hd.style.outline='4px solid #22c55e'; hd._dropSide='nest'; }
     }
     function hdDragLeave(){ hd.style.boxShadow='none'; hd.style.outline='none'; hd._dropSide=null; }
     function hdDrop(e){
