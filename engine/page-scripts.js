@@ -40,7 +40,7 @@
   ['people-team/cast-pick-list.js','20261006d'],
   ['people-team/cast-roster.js','20260927hub'],
   ['briefing-board/operations.js','20261015e'],
-  ['briefing-board/live-refresh.js','20261014a'],
+  ['briefing-board/live-refresh.js','20261016a'],
   ['briefing-board/board.js','20261010j'],
   ['briefing-board/public-api.js','20261010e'],
   ['storyboard/sea-of-ideas-cluster-groups.js','20261007a'],

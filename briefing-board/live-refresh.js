@@ -25,6 +25,16 @@
 (function(){
   var _inFlight = false, _timer = null, _pendingAfterDrag = false;
 
+  var _lastUserAction = 0;
+  ['pointerdown', 'keydown', 'dragstart', 'dragend', 'change'].forEach(function(evt){
+    document.addEventListener(evt, function(){ _lastUserAction = Date.now(); }, true);
+  });
+
+  // The fields that decide where a card sits and what its face shows.
+  function _cardSignature(c){
+    return [c.col, c.priority, c.person, c.completedDate, c.subject, c.archived ? 1 : 0, c.trashedAt || '', c.verified ? 1 : 0].join('|');
+  }
+
   function _boardOnScreen(){
     var w = document.getElementById('bb-board-wrap');
     return !!(w && w.offsetParent !== null && !document.hidden);
@@ -44,13 +54,28 @@
       var list = _bbCardsList();
       var have = {};
       list.forEach(function(c){ have[c.id] = true; });
-      var added = 0;
+      var added = 0, changed = 0;
+      var recentlyTouched = (Date.now() - _lastUserAction) < 8000;
       res.data.forEach(function(row){
-        if (have[row.id]) return;
-        list.push(_bbRowToCard(row));
-        added++;
+        if (!have[row.id]) {
+          list.push(_bbRowToCard(row));
+          added++;
+          return;
+        }
+        // Oct 16 2026 -- Larry: a card moved to DONE from outside this tab
+        // did not move until he reloaded. Cards already on the board now
+        // follow the server too, but only for the fields that decide where
+        // a card sits and how it reads, and never while the person is
+        // mid-edit (a card is open, a drag is active, or they just clicked).
+        if (recentlyTouched || (typeof _bbOpenCardId !== 'undefined' && _bbOpenCardId === row.id)) return;
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].id !== row.id) continue;
+          var srv = _bbRowToCard(row), loc = list[i];
+          if (_cardSignature(srv) !== _cardSignature(loc)) { list[i] = srv; changed++; }
+          break;
+        }
       });
-      if (added) { _bbCards = list; _bbRtSafeRender(); }
+      if (added || changed) { _bbCards = list; _bbRtSafeRender(); }
     } catch (e) {
       console.error('Briefing Board: live refresh failed', e);
     } finally {
@@ -75,6 +100,9 @@
     if (!document.hidden) _refreshSoon(400);
   });
   window.addEventListener('focus', function(){ _refreshSoon(400); });
+  // A light check every 20 seconds while the board is on screen, for the
+  // times the live channel has quietly dropped (sleeping laptop, bad wifi).
+  setInterval(function(){ if (_boardOnScreen()) _refreshFromServer(); }, 20000);
   window.addEventListener('t2t:drag-end', function(){
     if (_pendingAfterDrag) { _pendingAfterDrag = false; _refreshSoon(300); }
   });
