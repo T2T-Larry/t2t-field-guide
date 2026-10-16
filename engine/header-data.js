@@ -234,7 +234,8 @@
       if(!candidates.error && candidates.data && candidates.data.length){
         var EXCLUDE={'Trash':1,'Archived':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'MASTER':1};
         var toMove=candidates.data.filter(function(r){
-          return !EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA';
+          // Oct 16 2026: a parentless Trash/Archived is filed under MASTER too (one tree per member).
+          return r.text_content==='Trash' || r.text_content==='Archived' || (!EXCLUDE[r.text_content] && (r.storyboard_kind||'IDEA')==='IDEA');
         }).map(function(r){ return r.id; });
         if(toMove.length){
           var mig=await sb.from('ideas').update({cluster_id:rootId}).in('id',toMove);
@@ -733,31 +734,41 @@
   // Sept 15 2026 -- same lock; no parentId here (Trash is always the
   // account's own single top-level bucket), so one constant key covers
   // it, same reasoning as ensureIdeaStoryboardsRoot's 'PROJECTS_ROOT' key.
+  /* Oct 16 2026 (Larry: "one tree per member"): Trash and Archived used to be created as their own parentless roots,
+     a second hidden tree for every member. They now live INSIDE the member's own MASTER like any other reserved header
+     (the topic lists and Briefing Board walkers already skip them by name). An old parentless or self-parented one is
+     moved under MASTER the first time it is looked up, so nothing is lost and nothing respawns. */
+  async function _ensureReservedUnderMaster(name){
+    var sb=_sb(); var u=await _currentUser();
+    if(!u) throw new Error('Not signed in.');
+    var rootId=await ensureIdeaStoryboardsRoot();
+    var existing=await sb.from('ideas').select('id,cluster_id').eq('user_id',u.id).eq('content_type','header').eq('text_content',name).limit(10);
+    if(!existing.error && existing.data && existing.data.length){
+      var rows=existing.data;
+      var inTree=rootId ? rows.filter(function(r){ return String(r.cluster_id)===String(rootId); })[0] : null;
+      if(inTree) return inTree.id;
+      var row=rows[0];
+      var loose=!row.cluster_id || String(row.cluster_id)===String(row.id);
+      if(rootId && loose){
+        var mv=await sb.from('ideas').update({cluster_id:rootId}).eq('id',row.id);
+        if(mv.error) console.warn(name+' header could not be filed under MASTER:', mv.error);
+      }
+      return row.id;
+    }
+    var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:name,cluster_id:rootId||null,created_at:new Date().toISOString()}).select().single();
+    if(ins.error) throw new Error(name+' setup failed: '+ins.error.message);
+    return ins.data.id;
+  }
+
   function ensureTrashHeader(){
-    return _headerEnsureOnce('TRASH', async function(){
-      var sb=_sb(); var u=await _currentUser();
-      if(!u) throw new Error('Not signed in.');
-      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Trash').limit(1);
-      if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Trash',created_at:new Date().toISOString()}).select().single();
-      if(ins.error) throw new Error('Trash setup failed: '+ins.error.message);
-      return ins.data.id;
-    });
+    return _headerEnsureOnce('TRASH', function(){ return _ensureReservedUnderMaster('Trash'); });
   }
 
   /* Archived mirrors Trash exactly (same reserved-bucket mechanic, same
      recoverability) but means "finished, not wrong" rather than "shouldn't
      exist" — added August 1, 2026 for Project Selection archive/delete. */
   function ensureArchivedHeader(){
-    return _headerEnsureOnce('ARCHIVED', async function(){
-      var sb=_sb(); var u=await _currentUser();
-      if(!u) throw new Error('Not signed in.');
-      var existing=await sb.from('ideas').select('id').eq('user_id',u.id).eq('content_type','header').eq('text_content','Archived').limit(1);
-      if(!existing.error && existing.data && existing.data.length) return existing.data[0].id;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Archived',created_at:new Date().toISOString()}).select().single();
-      if(ins.error) throw new Error('Archived setup failed: '+ins.error.message);
-      return ins.data.id;
-    });
+    return _headerEnsureOnce('ARCHIVED', function(){ return _ensureReservedUnderMaster('Archived'); });
   }
 
   /* Sept 2, 2026 -- resolves through the Idea Storyboards root now, not
