@@ -300,8 +300,22 @@
       },
       // Empty board: the viewport past the columns, the wrap, and the row
       // or strip containers that only hold cards.
+      // Oct 16 2026 (Larry: click-and-drag pans everywhere except the gaps
+      // between rows of cards, which should show the hand too): the empty
+      // space inside a column is just as much "background" as the space
+      // between columns. Anything that is a card, a pill, a control, a
+      // link, a field, or carries its own words keeps handling its own
+      // mouse; only bare layout space pans.
       isBackground:function(t){
-        return t===vp || t===wrap || t.id==='sc-groups-wrap' || t.id==='sc-role-shortcuts-wrap' || t.id==='sc-pending-collab-wrap';
+        if(t===vp || t===wrap || t.id==='sc-groups-wrap' || t.id==='sc-role-shortcuts-wrap' || t.id==='sc-pending-collab-wrap') return true;
+        if(!wrap.contains(t)) return false;
+        if(t.closest('[data-idea-id],[data-header-id],[draggable="true"],.sc-pill,.sc-tile,.sc-stack-tile,button,a,input,textarea,select,label,[contenteditable="true"]')) return false;
+        var cur=window.getComputedStyle(t).cursor;
+        if(cur==='pointer' || cur==='text') return false;
+        for(var i=0;i<t.childNodes.length;i++){
+          if(t.childNodes[i].nodeType===3 && t.childNodes[i].textContent.trim()) return false;
+        }
+        return true;
       }
     });
     // Oct 16 2026: the drag-with-arrows layer (idea-storyboard-drag-with-arrows.js)

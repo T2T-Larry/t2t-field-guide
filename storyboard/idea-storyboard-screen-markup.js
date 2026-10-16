@@ -298,7 +298,7 @@
         +'#sc-board-viewport.isx-camera{display:flex;flex:1;min-height:0;position:relative;overflow:hidden;cursor:grab}'
         +'#sc-board-viewport.isx-camera.isx-panning{cursor:grabbing}'
         +'#sc-board-viewport.isx-camera #sc-board-wrap{flex:0 0 auto;position:relative;overflow:visible;width:max-content;min-width:100%;align-self:stretch;transform-origin:0 0;padding-bottom:0}'
-        +'#sc-board-viewport.isx-camera #sc-board-wrap>*{cursor:auto}'
+        +'#sc-board-viewport.isx-camera #sc-board-wrap>*{cursor:grab}'
         +'#sc-controls{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:4px 0 0}'
         +'#sc-controls .sc-ov-btn{padding:4px 10px;font-size:calc(10px * var(--fg-text-scale,1))}'
         // Sept 5 2026 -- found the real source of Larry's "still see a
