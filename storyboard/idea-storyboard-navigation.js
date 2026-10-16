@@ -2214,6 +2214,24 @@
             var _tmPm=(_tmAllMembersCache||[]).filter(function(m){ return String(m.user_id)===String(_tmPrimUid); })[0];
             if(_tmPm) rows=rows.concat([{user_id:_tmPm.user_id, name:_tmPm.name, email:_tmPm.email, isOwner:false, role:null, fromAbove:true, tip:(_tmPm.name||'They')+' — PRIMARY for this topic, carried down from the level above'}]);
           }
+          // Oct 16 2026 (later), Larry: "I should not be a team member on this board unless Claude
+          // needs me to do something. The PRIMARY makes assignments." On a PLAN board the team is the
+          // PRIMARY plus whoever the PRIMARY has put on a card in this plan -- not every seat on the
+          // project. Everyone else (the project owner included) drops off until they are assigned.
+          if(_sboardIsPlanBoard){
+            var _tmIds=[_tmTopicRow.id], _tmSeen={}; _tmSeen[_tmTopicRow.id]=true;
+            for(var _tmI=0; _tmI<_tmIds.length; _tmI++){
+              Object.keys(_sboardAllRowsById).forEach(function(k){ var r=_sboardAllRowsById[k]; if(r && r.cluster_id===_tmIds[_tmI] && !_tmSeen[r.id]){ _tmSeen[r.id]=true; _tmIds.push(r.id); } });
+            }
+            var _tmAssigned={};
+            if(_tmPrimUid) _tmAssigned[String(_tmPrimUid)]=true;
+            var _tmSb=T().sb;
+            for(var _tmJ=0; _tmSb && _tmJ<_tmIds.length; _tmJ+=200){
+              var _tmRes=await _tmSb.from('card_roles').select('user_id').eq('card_type','idea').in('card_id', _tmIds.slice(_tmJ,_tmJ+200));
+              (_tmRes.data||[]).forEach(function(r){ if(r.user_id) _tmAssigned[String(r.user_id)]=true; });
+            }
+            rows=rows.filter(function(r){ return _tmAssigned[String(r.user_id)]; });
+          }
         }
       }catch(err){ console.warn('TEAM: could not add the topic PRIMARY', err); }
       _sboardViewMenuRowsCache=rows;
