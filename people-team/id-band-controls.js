@@ -61,12 +61,14 @@
     if(!id) return null;
     if(treeRows[id]) return treeRows[id];
     var sb=treeSb(); if(!sb) return null;
-    var res=await sb.from('ideas').select('id,cluster_id,text_content,priority').eq('id',id).maybeSingle();
+    var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,priority').eq('id',id).maybeSingle();
     if(res.error || !res.data) return null;
     treeRows[id]=res.data;
     return res.data;
   }
-  function treeNode(r){ return {id:r.id, name:r.text_content||'(untitled)', priority:r.priority||''}; }
+  // Oct 17 2026 (Larry): the TOPIC list shows the SUBJECT only, or the content when there is no subject.
+  function treeLabel(r){ return String((r && r.subject)||'').trim() || String((r && r.text_content)||'').trim(); }
+  function treeNode(r){ return {id:r.id, name:treeLabel(r)||'(untitled)', priority:r.priority||''}; }
   async function treeTopic(id){
     var cur=await treeRow(id);
     if(!cur) return null;
@@ -82,7 +84,7 @@
   }
   async function treeChildren(id){
     var sb=treeSb(); if(!sb) throw new Error('no connection');
-    var res=await sb.from('ideas').select('id,cluster_id,text_content,priority,sort_order,storyboard_kind,source_project_id').eq('cluster_id',id).eq('content_type','header').order('sort_order',{ascending:true});
+    var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,priority,sort_order,storyboard_kind,source_project_id').eq('cluster_id',id).eq('content_type','header').order('sort_order',{ascending:true});
     if(res.error) throw res.error;
     return (res.data||[]).filter(function(r){ return !TREE_RESERVED[r.text_content] && !(window.T2TPlan && T2TPlan.isContainer(r)); }).map(function(r){ treeRows[r.id]=r; return treeNode(r); });
   }
@@ -120,7 +122,7 @@
       var sb=treeSb(), root=null;
       if(sb){
         try{
-          var q=await sb.from('ideas').select('id,cluster_id,text_content,priority').is('cluster_id',null).eq('content_type','header').limit(1);
+          var q=await sb.from('ideas').select('id,cluster_id,text_content,subject,priority').is('cluster_id',null).eq('content_type','header').limit(1);
           if(q && q.data && q.data[0]){ treeRows[q.data[0].id]=q.data[0]; root=treeNode(q.data[0]); }
         }catch(e){}
       }
@@ -151,7 +153,7 @@
         var isRoot=String(id)===rootId;
         if(opts.noRootPick && isRoot) return;
         var r=treeRows[id];
-        var nm=isRoot ? 'MASTER' : ((r && r.text_content) || (String(id)===String(t.current.id) ? t.current.name : '') || '(untitled)');
+        var nm=isRoot ? 'MASTER' : (treeLabel(r) || (String(id)===String(t.current.id) ? t.current.name : '') || '(untitled)');
         if(opts.onNavigate) opts.onNavigate(id, isRoot, nm);
       }
     });

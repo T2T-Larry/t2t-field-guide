@@ -22,7 +22,7 @@
   ['controls/shortcuts-list.js','20260922p'],
   ['people-team/id-band.js','20261014n'],
   ['controls/card-order.js','20261017a'],
-  ['people-team/id-band-controls.js','20261015v'],
+  ['people-team/id-band-controls.js','20261017a'],
   ['plans-and-tasks/plan-container.js','20261014n'],
   ['controls/subject-only-view.js','20261010a'],
   ['engine/header-data.js','20261016a'],
