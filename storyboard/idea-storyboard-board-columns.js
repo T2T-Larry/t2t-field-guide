@@ -1,9 +1,11 @@
 /* ============================================================
    idea-storyboard-board-columns.js -- T2T Field Guide - IDEA STORYBOARD (9710)
-   BOARD COLUMNS. The three column builders renderSeaBoard uses:
-   _sboardRenderGroup (one Header column with its sub-headers and cards),
+   BOARD COLUMNS. The two column builders renderSeaBoard uses:
+   _sboardRenderGroup (one Header column with its sub-headers and cards) and
    _sboardRenderLocalNewAdditions (the local NEW / Parking Lot column of a
-   nested board) and _sboardRenderLetterGroup (an A-Z letter column).
+   nested board). The A-Z letter column was retired Oct 17 2026 with the old
+   ID Band A-Z button; a header's own A-Z toggle (card-order.js) now orders
+   the cards in its column.
 
    Split out of idea-storyboard-screens.js on Oct 10, 2026 (screens.js
    split, step 2 of the plan on the Code Efficiency Maintenance card).
@@ -78,8 +80,8 @@ function _sboardRenderGroup(ctx, headerRow, depth){
     // makes each Subber's/idea's ORDER # a real, permanent number
     // instead of a fallback guess, the moment either list still has
     // one relying on it. Subbers/ideas render vertically top to
-    // bottom, always in this real order -- there's no alphabetical
-    // view for this level (yet), so no separate display copy needed.
+    // bottom in this real order, unless this header's A-Z toggle is on
+    // (Oct 17 2026): then a separate, sorted display copy is drawn below.
     // Oct 2 2026, Larry: "ALL NEW ADDITIONS need to start at the bottom."
     // ROOT CAUSE of new headers landing above everything: these two calls
     // numbered each kind SEPARATELY (a brand-new header with no order got
@@ -367,7 +369,11 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
         scroll.appendChild(_goalHost);
         T2TNeedsPlanGoals.fillHeader(_goalHost, headerRow.id, SUBBER_W);
       }
-      combined.forEach(function(r){
+      // Oct 17 2026 (A-Z feature): this header's own A-Z toggle (card-order.js) orders the cards directly
+      // under it for DISPLAY only. `combined` -- the real order the ORDER # badges and drag-reorder read
+      // from -- is never touched. Parking Lot, Purpose, NEW and Trash are not affected by a toggle.
+      var displayCombined=(!isReserved && window.T2TCardOrder && T2TCardOrder.isAlpha(headerRow.id)) ? T2TCardOrder.sorted(combined) : combined;
+      displayCombined.forEach(function(r){
         if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, straight)); }
         else if(_sbAllowedDirectIds[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, straight, headerRow.id, SUBBER_H)); }
       });
@@ -526,94 +532,9 @@ function _sboardRenderLocalNewAdditions(ctx, directItems, parentIdForDrop, newRo
         else if(_lnaAllowed[item.id]){ scroll.appendChild(_sboardMakeTile(item, SUBBER_W, true, (item.cluster_id||parentIdForDrop), SUBBER_H)); }
       });
       if(newRow && !newRow.locked){
-        // Oct 9 2026 (Larry: "into alpha list and never to Parking Lot in A-Z view"): while the A-Z
-        // letter view is on, this (+) must not file a loose card into the Parking Lot -- it opens the
-        // same "New concept" prompt as the letter columns' (+), so the new entry sorts into its own
-        // letter on redraw. Outside A-Z it is unchanged (full capture card, filed here).
-        if(_sboardAzLetterView && _sboardAzApplies() && window.T2TAddControl && T2TAddControl.make){
-          var _lnaAz=T2TAddControl.make({title:'Add a new concept (it sorts into its letter)', onClick:function(){ _sboardOpenAddHeaderPrompt({azLabel:'A–Z'}); }, sense:block});
-          _lnaAz.style.margin='4px auto 8px';
-          scroll.appendChild(_lnaAz);
-        } else if(!(_sboardAzLetterView && _sboardAzApplies())){
-          scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
-        }
+        scroll.appendChild(_sboardMakeAddSubberTile(parentIdForDrop, SUBBER_W, SUBBER_H));
       }
       block.appendChild(scroll);
     }
     return block;
 }
-
-// A-Z letter view column, Oct 4 2026 -- one column per letter group (a
-// single letter, or a range like "X-Z" for thin letters), built from the
-// flat entry list _sboardAzCollectEntries returns. The letter label is inert;
-// tiles drag and drop INTO another card (see the handlers below), and each
-// column ends in a (+) that adds a new concept.
-function _sboardRenderLetterGroup(ctx, group){
-  var HEADER_W=ctx.HEADER_W, HEADER_H=ctx.HEADER_H, _tsMult=ctx._tsMult, SUBBER_W=ctx.SUBBER_W, SUBBER_H=ctx.SUBBER_H;
-    var block=document.createElement('div');
-    block.style.cssText='flex:0 0 auto;display:flex;flex-direction:column;width:'+HEADER_W+'px';
-    var hd=document.createElement('div');
-    hd.className='sc-pill named';
-    hd.setAttribute('data-az-letter', group.label);
-    hd.style.cssText='position:relative;transform:none;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:100%;height:'+HEADER_H+'px;box-sizing:border-box;padding:6px 10px;font-family:inherit;font-size:'+Math.round(30*_tsMult)+'px;font-weight:400;margin-bottom:2px;cursor:default;text-align:center;white-space:normal;line-height:1.2;border-radius:0';
-    hd.textContent=group.label;
-    block.appendChild(hd);
-    var scroll=document.createElement('div');
-    scroll.style.cssText='display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px';
-    var _azAllowed={};
-    _sboardFilterByPerson(group.entries.filter(function(r){ return r.content_type!=='header'; })).forEach(function(r){ _azAllowed[r.id]=true; });
-    group.entries.forEach(function(r){
-      if(r.content_type==='header'){ scroll.appendChild(_sboardMakeHeaderStackTile(r, SUBBER_W, SUBBER_H, true)); }
-      else if(_azAllowed[r.id]){ scroll.appendChild(_sboardMakeTile(r, SUBBER_W, true, r.cluster_id, SUBBER_H)); }
-    });
-    // Oct 4 2026 (Larry: "I cannot move or drop them into another card in alpha view"):
-    // tiles stay draggable here. A-Z has no manual order to reorder (it is alphabetical),
-    // so the top/bottom "reorder" edges the normal tiles use are meaningless; instead the
-    // WHOLE card is one drop target that files the dragged card/header IN UNDER it
-    // (a plain card is promoted to a header first, same as the middle zone on the normal
-    // board). Capture phase, so these run before -- and replace -- each tile's own handlers.
-    function _azTargetOf(e){
-      var el=e.target && e.target.closest ? e.target.closest('[data-idea-id],[data-header-id]') : null;
-      if(!el || !scroll.contains(el)) return null;
-      return el;
-    }
-    function _azClear(el){ if(el){ el.style.outline='none'; el.style.boxShadow='0 3px 10px rgba(0,0,0,0.28)'; } }
-    scroll.addEventListener('dragover', function(e){
-      var el=_azTargetOf(e); if(!el) return;
-      e.preventDefault(); e.stopPropagation();
-      el.style.outline='5px solid #22c55e'; el.style.boxShadow='0 0 0 11px rgba(34,197,94,.28)';
-    }, true);
-    scroll.addEventListener('dragleave', function(e){
-      var el=_azTargetOf(e); if(!el) return;
-      e.stopPropagation(); _azClear(el);
-    }, true);
-    scroll.addEventListener('drop', function(e){
-      var el=_azTargetOf(e); if(!el) return;
-      e.preventDefault(); e.stopPropagation(); _azClear(el);
-      var raw=e.dataTransfer.getData('text/plain');
-      if(!raw || raw==='sb-goup') return;
-      var draggedId=raw.indexOf('header:')===0 ? raw.slice(7) : raw;
-      var targetId=el.getAttribute('data-header-id') || el.getAttribute('data-idea-id');
-      var target=_sboardAllRowsById[targetId];
-      if(!target || String(draggedId)===String(targetId)) return;
-      // never file something inside its own descendant (would orphan both)
-      var up=target, guard=0;
-      while(up && guard++<50){
-        if(String(up.id)===String(draggedId)) return;
-        up=up.cluster_id ? _sboardAllRowsById[up.cluster_id] : null;
-      }
-      if(target.content_type==='header') _sboardMoveCard(draggedId, target.id);
-      else _sboardStackIntoHeader(draggedId, target);
-    }, true);
-    // (+) at the bottom of each letter column -- a new concept can be added right where
-    // you are looking (Larry, Oct 4 2026). It is created as a header under the open Topic
-    // and sorts into its own letter on its own; the prompt says where it will land.
-    var _azAdd=(window.T2TAddControl && T2TAddControl.make)
-      ? T2TAddControl.make({title:'Add a new concept under '+group.label, onClick:function(){ _sboardOpenAddHeaderPrompt({azLabel:group.label}); }, sense:block})
-      : _sboardMakeAddSubberTile(T2TShared.currentTopicId, SUBBER_W, SUBBER_H);
-    if(window.T2TAddControl && T2TAddControl.make){ _azAdd.style.margin='4px auto 8px'; scroll.appendChild(_azAdd); }
-    else { _azAdd.onclick=null; scroll.appendChild(_azAdd); }
-    block.appendChild(scroll);
-    return block;
-}
-

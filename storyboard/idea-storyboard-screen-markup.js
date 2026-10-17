@@ -978,12 +978,8 @@
         // state, the same state the Cast popup's checkboxes
         // (idea-storyboard-people.js) already write to, rather than
         // building a second, separate filter.
-        // A-Z, Oct 4 2026 -- Larry: one button in every board's ID Band icon
-        // row, leftmost (left of TEAM). Gray when off, lit when on; on boards
-        // where it does not apply it looks the same as off and only the hover
-        // tooltip explains. Markup, look and letter grouping: az-toggle.js.
-        // Wiring on this board: _sboardWireAzButton, idea-storyboard-navigation.js.
-      +(window.T2TAZ ? T2TAZ.buttonHTML('sc-az-btn','sc-hdr-btn-muted sc-hdr-btn-icon') : '')
+        // (The old A-Z button that sat here was retired Oct 17 2026 -- A-Z now lives in each card's Gear
+        // and the board Gear; see controls/card-order.js.)
       +'<div class="sc-cdrop" id="sc-view-cdrop" style="position:relative"><button type="button" class="sc-hdr-btn-muted sc-hdr-btn-icon" id="sc-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="sc-cdrop-menu" id="sc-view-menu" hidden></div></div>'
         // RETURN, Sept 15 2026 -- Bill: "a RETURN button to jump back to
         // the last screen." Same muted-icon family as Utility, mirrors
@@ -1048,7 +1044,6 @@
     // just like STORYBOARD field").
     _sboardWireProjectHeaderDropdown();
     _sboardWireViewFilterDropdown();
-    _sboardWireAzButton();
     // _sboardWireParentAncestorDropdown()/_sboardWireTopicChildDropdown()
     // no longer wired at boot, Sept 19 2026 -- TOPIC's up/down arrow chips
     // are gone (matching BB's own Sept 19 ID Band redesign); a single

@@ -2290,122 +2290,6 @@
     _sboardSyncViewTriggerLabel();
   }
 
-  // A-Z button (ID Band), Oct 4 2026 -- Larry: "toggle between this view and a
-  // single alpha order with headers of a single letter or group of letters",
-  // a button that is only ever on or off, or N/A on a board where it does not
-  // apply. Markup/look/grouping live in az-toggle.js (T2TAZ), shared by every
-  // board's band; this is the Blue Sky side: where it applies, how it toggles,
-  // and which rows the letter view lists.
-  //
-  // Applies on Blue Sky only. A PLAN board's order IS its steps, so it is N/A
-  // there (same gray as off, click does nothing, tooltip explains).
-  function _sboardAzApplies(){
-    return !!(window.T2TAZ && !_sboardIsPlanBoard);
-  }
-  function _sboardSyncAzButton(){
-    var btn=document.getElementById('sc-az-btn');
-    if(!btn || !window.T2TAZ) return;
-    T2TAZ.sync(btn, {applies:_sboardAzApplies(), on:_sboardAzLetterView});
-  }
-  // Oct 9 2026: A-Z is now saved in Supabase (az-toggle.js). When the saved settings arrive after
-  // the board has already drawn (another device turned it on, or this one just signed in), pick up
-  // the open Topic's state and redraw once so the button and columns match.
-  window.addEventListener('t2t-az-synced', function(){
-    if(!window.T2TAZ) return;
-    var now=!!T2TAZ.isOn(T2TShared.currentTopicId);
-    if(now===_sboardAzLetterView) return;
-    _sboardAzLetterView=now;
-    if(now) _sboardAlphaHeaderView=false;
-    _sboardSyncAzButton();
-    if(typeof renderSeaBoard==='function') renderSeaBoard(true);
-  });
-  // Oct 10 2026: same for Header order (header-order.js) -- saved settings that arrive after the
-  // board has drawn (another device changed it, or this one just signed in) redraw it once.
-  window.addEventListener('t2t-header-order-synced', function(){
-    if(!window.T2THeaderOrder) return;
-    var now=!!T2THeaderOrder.isAlpha(T2TShared.currentTopicId);
-    if(now===_sboardAlphaHeaderView) return;
-    _sboardAlphaHeaderView=now;
-    if(typeof renderSeaBoard==='function') renderSeaBoard(true);
-  });
-  function _sboardWireAzButton(){
-    var btn=document.getElementById('sc-az-btn');
-    if(!btn || !window.T2TAZ) return;
-    btn.onclick=function(e){
-      e.stopPropagation();
-      if(!_sboardAzApplies()) return;   // N/A: nothing happens, the tooltip says why
-      _sboardAzLetterView=!_sboardAzLetterView;
-      T2TAZ.setOn(T2TShared.currentTopicId, _sboardAzLetterView);
-      if(_sboardAzLetterView) _sboardAlphaHeaderView=false;   // one A-Z at a time
-      _sboardSyncAzButton();
-      renderSeaBoard(true);
-    };
-    _sboardSyncAzButton();
-  }
-
-  // The rows the letter view lists. Everything under the open Topic that is a
-  // "concept" in its own right, in one flat list:
-  //   - a header with no sub-headers whose cards carry no Subject is ONE concept
-  //     (its sentences stay inside it);
-  //   - a header with no sub-headers whose cards DO carry a Subject is only a
-  //     cluster of concepts, so each such card is its own entry and the cluster
-  //     name drops out (that is what A-Z replaces);
-  //   - a header that has sub-headers is walked into, and any loose cards on it
-  //     are entries too.
-  // Cards sitting loose directly on the open Topic stay in the Parking Lot
-  // column, and auto-managed buckets (Parking Lot, NEW, Purpose, Trash,
-  // "(...)") are never listed. Pure read: nothing here writes anything.
-  var _SBOARD_AZ_AUTO=['NEW','New Additions','Parking Lot','Purpose','Trash'];
-  function _sboardAzIsAuto(h){
-    var t=String(h && h.text_content || '').trim();
-    if(_SBOARD_AZ_AUTO.indexOf(t)!==-1) return true;
-    // Oct 11 2026: a card with a Subject was named by a person -- parentheses in its Contents don't make it auto-managed.
-    if(h && String(h.subject||'').trim()) return false;
-    return /^\(.*\)$/.test(t);
-  }
-  function _sboardAzEntryName(r){
-    if(!r) return '';
-    // Oct 4 2026 fix (Larry: "Persuasion" filed under W-Y, "No Magic Formula" under T): a header with a
-    // Subject shows that Subject as its bold headline (_sboardPaintHeaderFace), so the A-Z sort has to
-    // use the Subject too -- it was sorting by the header's long text instead. Same rule as cards below.
-    var s=String(r.subject||'').trim();
-    if(s) return s;
-    if(r.content_type==='header') return r.text_content||'';
-    var t=String(r.text_content||r.idea_text||r.link_title||'').trim();
-    return t.length>60 ? t.slice(0,60) : t;
-  }
-  function _sboardAzCollectEntries(rootId, subHeadersOf, childrenOfHeader){
-    var out=[], seen={};
-    function add(r){ if(r && !seen[r.id]){ seen[r.id]=true; out.push(r); } }
-    function walk(id){
-      (subHeadersOf[id]||[]).forEach(function(h){
-        if(_sboardAzIsAuto(h)) return;
-        var realKids=(subHeadersOf[h.id]||[]).filter(function(k){ return !_sboardAzIsAuto(k); });
-        var cards=childrenOfHeader[h.id]||[];
-        // Oct 4 2026 (Larry dropped Aspirational Values into Values and Values vanished from A-Z): a header that
-        // carries its own Subject is a concept in its own right -- e.g. a card promoted to a header by
-        // dropping another card into it -- so it is listed itself AND its contents are still walked below.
-        // Subject-less headers are plain clusters and keep dropping out, as before.
-        // Larry, same day: a concept filed under another is a SUBSET of it, not a concept of its own ("Aspirational
-        // Values" under "Values"), so a Subject-carrying header lists only itself -- everything inside it is its
-        // children, reached by opening it, and does not also get its own A-Z entry.
-        if(String(h.subject||'').trim()){ add(h); return; }
-        if(realKids.length){
-          walk(h.id);
-          cards.forEach(add);
-        } else if(!cards.length){
-          add(h);
-        } else if(cards.some(function(c){ return String(c.subject||'').trim(); })){
-          cards.forEach(add);
-        } else {
-          add(h);
-        }
-      });
-    }
-    walk(rootId);
-    return out;
-  }
-
   // Project switcher — added July 12, 2026. PROJECT was previously a
   // fixed-anchor label only; this makes it a real lateral jump between
   // top-level projects (the flat Top Banana root list), not just a return
@@ -2745,8 +2629,12 @@
     return ao-bo;
   }
 
+  // Oct 17 2026 (A-Z feature): one comparison for every A-Z order, in card-order.js -- it sorts by what
+  // the card SHOWS (its Subject, else its text), ignores a leading The/A/An and accents.
   function _sboardByAlpha(a,b){
-    return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase(), undefined, {numeric:true, sensitivity:'base'});
+    return window.T2TCardOrder
+      ? T2TCardOrder.compare(a,b)
+      : (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase(), undefined, {numeric:true, sensitivity:'base'});
   }
 
   // Makes a sibling group's ORDER # real and permanent -- Larry, Aug 3

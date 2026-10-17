@@ -513,6 +513,12 @@
       })();
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc) ux.appendChild(lw);
+      // A-Z (Oct 17 2026): every card that can hold cards has an A-Z / CUSTOM toggle in its Gear. It orders the cards directly under it
+      // (display only). A card with nothing under it can still be set; its tooltip says why nothing moves yet.
+      if(ux && isHeaderType && window.T2TCardOrder){
+        var _azEmpty=!Object.keys(_sboardAllRowsById||{}).some(function(k){ var r=_sboardAllRowsById[k]; return r && String(r.cluster_id)===String(item.id); });
+        ux.appendChild(T2TCardOrder.makeToggle(item.id, {empty:_azEmpty, onChange:function(){ if(typeof renderSeaBoard==='function') renderSeaBoard(true); }}));
+      }
       // Oct 7 2026 (Larry): an image's SOURCE is a popup, only on the back, opened by its own button. The eye inside it puts a source
       // symbol on the front (default: nothing on the front). The block is moved onto the card as a floating panel; ids and saving are untouched.
       if(isImgSrc && lw){

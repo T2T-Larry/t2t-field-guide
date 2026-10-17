@@ -1475,75 +1475,81 @@
     });
   }
 
-  // Sort headers — Larry, Aug 3 2026: "I would like to toggle headers into
-  // alphabetical order or number order in gear." Dragging one header at a
-  // time already works but is slow to arrange a whole row by hand; this
-  // computes the full order in one pass and writes it in one bulk
-  // operation, wrapped in the same pocket-watch spinner
-  // _sboardSpinWhile already gives every screen change (see the header
-  // drag-drop handlers above) so a long row doesn't look frozen while the
-  // sequential Supabase writes run.
-  //
-  // Only the real content headers move -- Purpose, NEW ("New Additions"),
-  // and Parking Lot are auto-managed, reserved headers with their own fixed
-  // conventional spots (first, second, and always-last respectively —
-  // see _rowPriority in renderSeaBoard) and are deliberately left exactly
-  // where they already sit.
-  function _sboardOpenSortHeadersPicker(){
-    var ov=document.getElementById('sb-detail-overlay');
-    if(!ov) return;
+  // A-Z (board Gear), Oct 17 2026 -- the A-Z feature (story: WEBSITE > FEATURES > A-Z). Every card has an A-Z /
+  // CUSTOM toggle in its own Gear that orders the cards directly under it (controls/card-order.js); this
+  // is the BOARD's side of it: a 2-item checklist, ALL HEADERS or ALL SUBBERS -- check both for the entire board.
+  //   ALL HEADERS  turns A-Z on for the board card itself (the headers across the board) and for every header on it.
+  //   ALL SUBBERS  turns A-Z on for every sub-header nested below those headers.
+  // Each card keeps its OWN toggle (one source of truth); the checklist just flips them together, and unchecking
+  // returns them to CUSTOM. Display only -- ORDER # is never written. Parking Lot is not affected by a toggle.
+  // Replaces the old "Header order: My order / A to Z" picker and the ID Band A-Z button.
+  function _sboardAzBoardTargets(){
+    var topicId=T2TShared.currentTopicId;
     var headers=(_sboardVisibleHeaders||[]).filter(function(h){
-      return String(h.id)!==String(_sboardNewAdditionsId);
+      return h && !_sboardIsAutoManagedHeader(h) && String(h.id)!==String(_sboardNewAdditionsId);
     });
-    if(headers.length<2){
-      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">Nothing to sort</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">This board needs at least two headers before an order means anything.</div>'
-        +'<button class="sc-ov-btn" id="sb-sort-close" style="width:100%" aria-label="Close">✕</button></div>';
-      ov.classList.add('active');
-      T().wire('sb-sort-close', closeSbDetail);
-      return;
+    var headerIds=headers.map(function(h){ return String(h.id); });
+    // every header-type card nested below those headers (loaded rows only), depth-limited
+    var kidsOf={};
+    Object.keys(_sboardAllRowsById||{}).forEach(function(k){
+      var r=_sboardAllRowsById[k];
+      if(r && r.content_type==='header' && r.cluster_id && !_sboardIsAutoManagedHeader(r)) (kidsOf[r.cluster_id]=kidsOf[r.cluster_id]||[]).push(String(r.id));
+    });
+    var subberIds=[], seen={}, frontier=headerIds.slice(), depth=0;
+    headerIds.forEach(function(id){ seen[id]=true; });
+    while(frontier.length && depth<8){
+      depth++;
+      var next=[];
+      frontier.forEach(function(pid){
+        (kidsOf[pid]||[]).forEach(function(cid){
+          if(seen[cid]) return;
+          seen[cid]=true; subberIds.push(cid); next.push(cid);
+        });
+      });
+      frontier=next;
     }
-    // Larry, Aug 3 2026: "If headers or subbers are sorted alphabetically
-    // the order number does NOT change, allowing to resort to number
-    // order." Redesigned around that: A -> Z is now a temporary, unsaved
-    // DISPLAY-only rearrangement (_sboardAlphaHeaderView, consulted by
-    // renderSeaBoard) -- it never writes sort_order, so every card's real
-    // ORDER # badge keeps showing its true position the whole time it's
-    // active. Number order simply switches that view back off -- also no
-    // write, since the real order was never touched to begin with.
-    // Oct 10 2026, Larry: "Parking Lot is always the first header. After that
-    // what if they are in alpha order from left to right?" -- and "yes add it"
-    // when asked whether that is a gear option. Relabeled Header order / My
-    // order / A to Z, remembered per TOPIC, current choice shown lit.
-    var _hoAlphaNow=!!_sboardAlphaHeaderView;
+    return {headerIds:(topicId?[String(topicId)]:[]).concat(headerIds), subberIds:subberIds};
+  }
+  function _sboardOpenAzGear(){
+    var ov=document.getElementById('sb-detail-overlay');
+    if(!ov || !window.T2TCardOrder) return;
+    var t=_sboardAzBoardTargets();
+    function allOn(ids){ return ids.length>0 && ids.every(function(id){ return T2TCardOrder.isAlpha(id); }); }
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:6px">Header order</div>'
-      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">Parking Lot is always first. A to Z is just a look -- it never changes anyone\'s ORDER #, and My order always brings back your own arrangement. Remembered for this board.</div>'
-      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-      +'<button class="sc-ov-btn'+(_hoAlphaNow?'':' save')+'" id="sb-sort-number" style="width:100%">My order</button>'
-      +'<button class="sc-ov-btn'+(_hoAlphaNow?' save':'')+'" id="sb-sort-alpha" style="width:100%">A to Z</button>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700">A-Z</span><button class="sc-ov-btn" id="sb-az-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
+      +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">A-Z is just a look -- it never changes anyone\'s ORDER #. Unchecking brings back CUSTOM, your own order. Parking Lot is not affected. Each card also has its own A-Z toggle in its Gear.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;text-align:left">'
+        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-headers" style="margin-top:3px"><span>ALL HEADERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040">The headers across this board, and the cards under each header</span></span></label>'
+        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-subbers" style="margin-top:3px"><span>ALL SUBBERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040" id="sb-az-subbers-note">Sub-headers nested below the headers</span></span></label>'
       +'</div>'
-      +'<button class="sc-ov-btn" id="sb-sort-close" style="width:100%">Cancel</button>'
+      +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">Check both for the entire board.</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-sort-close', closeSbDetail);
-    T().wire('sb-sort-alpha', function(){ closeSbDetail(); _sboardSetAlphaHeaderView(true); });
-    T().wire('sb-sort-number', function(){ closeSbDetail(); _sboardSetAlphaHeaderView(false); });
+    var cbH=document.getElementById('sb-az-headers'), cbS=document.getElementById('sb-az-subbers');
+    function paint(){
+      if(cbH) cbH.checked=allOn(t.headerIds);
+      if(cbS){
+        cbS.checked=allOn(t.subberIds);
+        cbS.disabled=!t.subberIds.length;
+        var n=document.getElementById('sb-az-subbers-note');
+        if(n) n.textContent=t.subberIds.length ? 'Sub-headers nested below the headers' : 'None on this board yet';
+      }
+    }
+    paint();
+    function flip(ids, on){
+      T2TCardOrder.setMany(ids, on);
+      paint();
+      renderSeaBoard(true);
+    }
+    if(cbH) cbH.addEventListener('change', function(){ flip(t.headerIds, cbH.checked); });
+    if(cbS) cbS.addEventListener('change', function(){ flip(t.subberIds, cbS.checked); });
+    T().wire('sb-az-close', closeSbDetail);
   }
-
-  // No Supabase round trip either way now, so no spinner needed -- this
-  // is purely an in-memory view flag plus a re-render, done before the
-  // click handler above even returns.
-  // Oct 10 2026: the choice is now remembered per TOPIC (header-order.js --
-  // cache first, Supabase right after), so it survives changing boards and
-  // follows the traveler to other devices. Still display-only: no sort_order
-  // is ever written.
-  function _sboardSetAlphaHeaderView(on){
-    _sboardAlphaHeaderView=!!on;
-    if(window.T2THeaderOrder) T2THeaderOrder.setAlpha(T2TShared.currentTopicId, !!on);
-    renderSeaBoard(true);
-  }
+  // Saved choices that arrive after the board has drawn (another device changed one, or this one just
+  // signed in) redraw the open board once.
+  window.addEventListener('t2t-card-order-synced', function(){
+    if(typeof renderSeaBoard==='function') renderSeaBoard(true);
+  });
 
   // Gear menu — consolidates the traveler options that used to be separate
   // top-row buttons (recolor all headers, fix orphaned Purpose/Ideas
@@ -1812,7 +1818,7 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c">Preferences</span><button class="sc-ov-btn" id="sb-preferences-close" aria-label="Close" style="padding:4px 10px">\u2715</button></div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">'
-        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 Header order</button>'
+        +'<button class="sc-ov-btn" id="sb-gear-sort" style="width:100%">🔤 A-Z</button>'
         +'<button class="sc-ov-btn" id="sb-gear-keys" style="width:100%">🚩 Signal Flags</button>'
         +'<button class="sc-ov-btn" id="sb-gear-fix-orphans" style="width:100%">🔧 Fix Purpose/Ideas headers</button>'
         +'<button class="sc-ov-btn" id="sb-gear-decompose" style="width:100%">📄 Decompose a document</button>'
@@ -1833,7 +1839,7 @@
       +'</div>'
       +'</div>';
     ov.classList.add('active');
-    T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenSortHeadersPicker(); });
+    T().wire('sb-gear-sort', function(){ closeSbDetail(); _sboardOpenAzGear(); });
     T().wire('sb-gear-keys', function(){ closeSbDetail(); _sboardOpenKeyLibraryManager(); });
     T().wire('sb-gear-fix-orphans', function(){ closeSbDetail(); _sboardOpenFixOrphansConfirm(); });
     // Sept 27 2026 -- Master BB "Document Decomposition" card. Clusters

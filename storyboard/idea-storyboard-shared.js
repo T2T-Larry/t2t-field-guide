@@ -737,18 +737,10 @@
   // Alphabetical header view -- Larry, Aug 3 2026: "If headers or subbers
   // are sorted alphabetically the order number does NOT change, allowing
   // to resort to number order." This is a pure DISPLAY toggle, never
-  // written anywhere -- true by default means "showing A-Z instead of
-  // the real order," reset to false any time the traveler leaves this
-  // board (see _sboardDrillInto/_sboardGoUpOneLevel) so a freshly opened
-  // board never inherits a leftover alphabetical view from somewhere else.
+  // written anywhere -- true means "showing A-Z instead of the real order."
+  // Oct 17 2026 (A-Z feature): this is the BOARD card's own A-Z / CUSTOM toggle,
+  // re-read from card-order.js (T2TCardOrder.isAlpha, per card) on every render.
   var _sboardAlphaHeaderView = false;
-  // A-Z letter view, Oct 4 2026 -- Larry: toggle between the clustered view and
-  // ONE alphabetical list under letter headers (a single letter or a group of
-  // letters), from the A-Z button in the ID Band (az-toggle.js). Also a pure
-  // DISPLAY mode, never written to sort_order. Unlike the gear's A -> Z above
-  // it is remembered per TOPIC (T2TAZ.isOn), restored whenever the board lands
-  // on a different Topic (see renderSeaBoard).
-  var _sboardAzLetterView = false;
   var _sboardLastRenderedTopicId = undefined;
   // Signal Flags, Aug 3 2026 -- Larry: "We use red hearts to mean I like
   // this one. What about a blue heart? or a yellow triangle with custom

@@ -335,7 +335,7 @@
               // A-Z, Oct 4 2026 -- Larry: the same A-Z button on every board's ID
               // Band, leftmost (left of TEAM). Not available on the Briefing Board
               // (DO/DOING/DONE is the order), so it stays in its N/A state: looks
-              // like off, does nothing on click, tooltip says why. See az-toggle.js.
+              // like off, does nothing on click, tooltip says why. See controls/card-order.js.
               // EYEBALL, Oct 10 2026 -- Larry: "I am good with the eyeball on the BB where
               // A-Z is now" ... "eyeball means show me more." Takes A-Z's place on the BB
               // (A-Z never applied here). Open eye = this topic PLUS everything under it

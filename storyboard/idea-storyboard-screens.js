@@ -422,14 +422,11 @@
     // same-board refresh (recoloring, saving Notes, etc.) leaves it alone
     // -- only landing on a genuinely different board snaps back to the
     // real order.
+    // Oct 17 2026 (A-Z feature): the board card's own A-Z / CUSTOM choice orders the headers
+    // across the board. It is remembered per card (card-order.js), so it is read on EVERY render
+    // -- landing on a Topic restores its choice, and a change made in the Gear shows at once.
+    _sboardAlphaHeaderView=!!(window.T2TCardOrder && T2TCardOrder.isAlpha(T2TShared.currentTopicId));
     if(_sboardLastRenderedTopicId!==T2TShared.currentTopicId){
-      // Header order (gear -> Preferences) is remembered per TOPIC too
-      // (header-order.js, Oct 10 2026), so landing on a Topic restores its
-      // saved MY ORDER / A to Z choice instead of always snapping back.
-      _sboardAlphaHeaderView=!!(window.T2THeaderOrder && T2THeaderOrder.isAlpha(T2TShared.currentTopicId));
-      // A-Z letter view is remembered per TOPIC (az-toggle.js), so landing on a
-      // Topic restores whatever that Topic was last set to.
-      _sboardAzLetterView=!!(window.T2TAZ && T2TAZ.isOn(T2TShared.currentTopicId));
       _sboardLastRenderedTopicId=T2TShared.currentTopicId;
       if(_sboardCam) _sboardCam.reset(false);   // a different board starts from the top-left, same as Sea of Ideas
     }
@@ -919,9 +916,10 @@
       // are untouched.
       var HEADER_H=Math.round(84*_tsMult);
 
-      // Oct 10 2026 (screens.js split, step 2): renderGroup / renderLocalNewAdditions /
-      // renderLetterGroup now live in idea-storyboard-board-columns.js and take this
-      // explicit context instead of closing over renderSeaBoard's locals. Getters, so
+      // Oct 10 2026 (screens.js split, step 2): renderGroup and renderLocalNewAdditions
+      // live in idea-storyboard-board-columns.js and take this
+      // explicit context instead of closing over renderSeaBoard's locals. (The A-Z letter-group
+      // column was retired Oct 17 2026 with the old ID Band A-Z button.) Getters, so
       // each call reads the CURRENT value, exactly like the old closures did.
       var _colCtx={
         get HEADER_H(){ return HEADER_H; },
@@ -937,13 +935,10 @@
 
       function renderLocalNewAdditions(directItems, parentIdForDrop, newRow){ return _sboardRenderLocalNewAdditions(_colCtx, directItems, parentIdForDrop, newRow); }
 
-      function renderLetterGroup(group){ return _sboardRenderLetterGroup(_colCtx, group); }
-
       var groupsWrap=document.createElement('div');
       groupsWrap.setAttribute('data-sb-groups','1');   // drop target for needs-plan-goals.js (open space = new plan)
       groupsWrap.id='sc-groups-wrap';
       groupsWrap.style.cssText='display:flex;flex-wrap:nowrap;gap:2px;align-items:flex-start';
-      var _azActive=false;   // true only while the A-Z letter view is actually drawn this render
 
       if(T2TShared.currentTopicId && _sboardAllRowsById[T2TShared.currentTopicId]){
         var directIdeas=(childrenOfHeader[T2TShared.currentTopicId]||[]).slice().sort(_sboardBySortOrder);
@@ -1044,7 +1039,7 @@
         var displayMergedRow=mergedRow;
         // PLAN boards: Parking Lot first, then plans High -> Low (stable), no priority last.
         // Larry, Oct 12 2026. The # badges follow this order, since priority IS the order here.
-        if(_sboardIsPlanBoard && !_sboardAlphaHeaderView && !_sboardAzLetterView){
+        if(_sboardIsPlanBoard && !_sboardAlphaHeaderView){
           var _PRk={HH:0,H:1,MH:2,M:3,ML:4,L:5};
           var _rkp=function(h){ return _PRk.hasOwnProperty(h.priority)?_PRk[h.priority]:6; };
           var _pin=mergedRow.filter(function(h){ return (purposeRow&&h.id===purposeRow.id)||(newAdditionsRow&&h.id===newAdditionsRow.id); });
@@ -1053,18 +1048,9 @@
           displayMergedRow=_pin.concat(_rest);
           _sboardTopLevelOrder=displayMergedRow.map(function(h){ return h.id; });
         }
-        var _azGroups=null;
-        if(_sboardAzLetterView && _sboardAzApplies()){
-          // A-Z letter view: Purpose/NEW (Parking Lot) stay pinned first and Parking Lot
-          // last, exactly like the gear's A -> Z; everything between is replaced
-          // by the letter columns. mergedRow (the real order) is untouched.
-          var _azFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
-          var _azPinFirst=mergedRow.filter(function(h){ return _azFirstIds.indexOf(String(h.id))!==-1; });
-          var _azEntries=_sboardAzCollectEntries(T2TShared.currentTopicId, subHeadersOf, childrenOfHeader);
-          _azGroups=T2TAZ.groupLetters(_azEntries, _sboardAzEntryName, T2TAZ.MIN_GROUP);
-          _azActive=true;
-          displayMergedRow=_azPinFirst.concat([{__azLetters:true}]);
-        } else if(_sboardAlphaHeaderView){
+        // Oct 17 2026 (A-Z feature): this is the BOARD card's own toggle (card-order.js) -- A-Z orders the
+        // headers across the board; Parking Lot (and Purpose) are not affected by a toggle and stay first.
+        if(_sboardAlphaHeaderView){
           var _pinFirstIds=[purposeRow&&String(purposeRow.id), newAdditionsRow&&String(newAdditionsRow.id)];
           var _pinFirst=mergedRow.filter(function(h){ return _pinFirstIds.indexOf(String(h.id))!==-1; });
           // Oct 10 2026 (Larry): in A to Z the LIBRARY header is the last header -- the reference shelf closes the board, the way
@@ -1076,10 +1062,6 @@
         }
 
         displayMergedRow.forEach(function(h){
-          if(h.__azLetters){
-            (_azGroups||[]).forEach(function(g){ groupsWrap.appendChild(renderLetterGroup(g)); });
-            return;
-          }
           if(newAdditionsRow && String(h.id)===String(newAdditionsRow.id)){
             // Oct 16 2026 (Larry, Oct 10: Parking Lot appears only while something is unfiled and disappears when nothing is):
             // an empty Parking Lot column is not drawn. Display only -- the stored row stays as the filing target, so
@@ -1099,8 +1081,7 @@
       // [+] after Parking Lot — adds a new header at this board's level. Simpler,
       // more discoverable than the 💡 button for this one job. Locked
       // July 16, 2026.
-      if(!_azActive) groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));
-      _sboardSyncAzButton();
+      groupsWrap.appendChild(_sboardMakeAddHeaderTile(HEADER_W, HEADER_H));
 
       wrap.appendChild(groupsWrap);
 
