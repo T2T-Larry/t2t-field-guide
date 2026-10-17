@@ -1480,7 +1480,7 @@
   // is the BOARD's side of it: a 2-item checklist, ALL HEADERS or ALL SUBBERS -- check both for the entire board.
   //   ALL HEADERS  puts the headers across the board in A-Z order (the board card's own toggle).
   //   ALL SUBBERS  puts the cards under every header in A-Z order, whether those cards are headers or just subbers
-  //                (turns on every header's toggle and every nested sub-header's toggle).
+  //                (turns on the toggle of each header showing on the board; cards nested deeper are not touched).
   // Each card keeps its OWN toggle (one source of truth); the checklist just flips them together, and unchecking
   // returns them to CUSTOM. Display only -- ORDER # is never written. Parking Lot is not affected by a toggle.
   // Replaces the old "Header order: My order / A to Z" picker and the ID Band A-Z button.
@@ -1490,26 +1490,7 @@
       return h && !_sboardIsAutoManagedHeader(h) && String(h.id)!==String(_sboardNewAdditionsId);
     });
     var headerIds=headers.map(function(h){ return String(h.id); });
-    // every header-type card nested below those headers (loaded rows only), depth-limited
-    var kidsOf={};
-    Object.keys(_sboardAllRowsById||{}).forEach(function(k){
-      var r=_sboardAllRowsById[k];
-      if(r && r.content_type==='header' && r.cluster_id && !_sboardIsAutoManagedHeader(r)) (kidsOf[r.cluster_id]=kidsOf[r.cluster_id]||[]).push(String(r.id));
-    });
-    var subberIds=[], seen={}, frontier=headerIds.slice(), depth=0;
-    headerIds.forEach(function(id){ seen[id]=true; });
-    while(frontier.length && depth<8){
-      depth++;
-      var next=[];
-      frontier.forEach(function(pid){
-        (kidsOf[pid]||[]).forEach(function(cid){
-          if(seen[cid]) return;
-          seen[cid]=true; subberIds.push(cid); next.push(cid);
-        });
-      });
-      frontier=next;
-    }
-    return {headerIds:(topicId?[String(topicId)]:[]), subberIds:headerIds.concat(subberIds)};
+    return {headerIds:(topicId?[String(topicId)]:[]), subberIds:headerIds};
   }
   function _sboardOpenAzGear(){
     var ov=document.getElementById('sb-detail-overlay');
