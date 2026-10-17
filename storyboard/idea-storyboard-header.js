@@ -1478,8 +1478,9 @@
   // A-Z (board Gear), Oct 17 2026 -- the A-Z feature (story: WEBSITE > FEATURES > A-Z). Every card has an A-Z /
   // CUSTOM toggle in its own Gear that orders the cards directly under it (controls/card-order.js); this
   // is the BOARD's side of it: a 2-item checklist, ALL HEADERS or ALL SUBBERS -- check both for the entire board.
-  //   ALL HEADERS  turns A-Z on for the board card itself (the headers across the board) and for every header on it.
-  //   ALL SUBBERS  turns A-Z on for every sub-header nested below those headers.
+  //   ALL HEADERS  puts the headers across the board in A-Z order (the board card's own toggle).
+  //   ALL SUBBERS  puts the cards under every header in A-Z order, whether those cards are headers or just subbers
+  //                (turns on every header's toggle and every nested sub-header's toggle).
   // Each card keeps its OWN toggle (one source of truth); the checklist just flips them together, and unchecking
   // returns them to CUSTOM. Display only -- ORDER # is never written. Parking Lot is not affected by a toggle.
   // Replaces the old "Header order: My order / A to Z" picker and the ID Band A-Z button.
@@ -1508,7 +1509,7 @@
       });
       frontier=next;
     }
-    return {headerIds:(topicId?[String(topicId)]:[]).concat(headerIds), subberIds:subberIds};
+    return {headerIds:(topicId?[String(topicId)]:[]), subberIds:headerIds.concat(subberIds)};
   }
   function _sboardOpenAzGear(){
     var ov=document.getElementById('sb-detail-overlay');
@@ -1519,8 +1520,8 @@
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700">A-Z</span><button class="sc-ov-btn" id="sb-az-close" aria-label="Close" style="padding:4px 10px">✕</button></div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#888;font-style:italic;margin-bottom:10px">A-Z is just a look -- it never changes anyone\'s ORDER #. Unchecking brings back CUSTOM, your own order. Parking Lot is not affected. Each card also has its own A-Z toggle in its Gear.</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;text-align:left">'
-        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-headers" style="margin-top:3px"><span>ALL HEADERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040">The headers across this board, and the cards under each header</span></span></label>'
-        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-subbers" style="margin-top:3px"><span>ALL SUBBERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040" id="sb-az-subbers-note">Sub-headers nested below the headers</span></span></label>'
+        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-headers" style="margin-top:3px"><span>ALL HEADERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040">The headers across the top of this board</span></span></label>'
+        +'<label style="display:flex;align-items:flex-start;gap:8px;font-size:calc(13px * var(--fg-text-scale,1));color:#1a3a5c;cursor:pointer"><input type="checkbox" id="sb-az-subbers" style="margin-top:3px"><span>ALL SUBBERS<br><span style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040" id="sb-az-subbers-note">The cards under every header, in A-Z order</span></span></label>'
       +'</div>'
       +'<div style="font-size:calc(10px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:8px">Check both for the entire board.</div>'
       +'</div>';
@@ -1532,7 +1533,7 @@
         cbS.checked=allOn(t.subberIds);
         cbS.disabled=!t.subberIds.length;
         var n=document.getElementById('sb-az-subbers-note');
-        if(n) n.textContent=t.subberIds.length ? 'Sub-headers nested below the headers' : 'None on this board yet';
+        if(n) n.textContent=t.subberIds.length ? 'The cards under every header, in A-Z order' : 'None on this board yet';
       }
     }
     paint();
