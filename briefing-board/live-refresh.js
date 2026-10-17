@@ -40,8 +40,12 @@
     return !!(w && w.offsetParent !== null && !document.hidden);
   }
 
+  // Oct 16 2026 -- a check that stalls on a bad connection must not block
+  // every later check: after 15 seconds an unfinished check is written off.
+  var _inFlightSince = 0;
   async function _refreshFromServer(){
-    if (_inFlight) return;
+    if (_inFlight && (Date.now() - _inFlightSince) < 15000) return;
+    _inFlightSince = Date.now();
     if (typeof _bbCurrentBoardId === 'undefined' || !_bbCurrentBoardId) return;
     if (typeof T !== 'function' || !T().sb) return;
     if (!_boardOnScreen()) return;
@@ -100,6 +104,8 @@
     if (!document.hidden) _refreshSoon(400);
   });
   window.addEventListener('focus', function(){ _refreshSoon(400); });
+  // The live channel just came back after a drop: read what it missed.
+  window.addEventListener('t2t:realtime-reconnected', function(){ _refreshSoon(300); });
   // A light check every 20 seconds while the board is on screen, for the
   // times the live channel has quietly dropped (sleeping laptop, bad wifi).
   setInterval(function(){ if (_boardOnScreen()) _refreshFromServer(); }, 20000);

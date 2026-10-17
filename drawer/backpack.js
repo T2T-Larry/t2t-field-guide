@@ -136,10 +136,27 @@
     }catch(e){}
     return LIVE_SYNC_TABLES;
   }
+  // Oct 16 2026 -- Larry: a card moved by the database did not move on his
+  // open board until he reloaded. The channel used to give up for good on its
+  // first error ("retry on next profile load" never came), so a sleeping
+  // laptop or a wifi blip left the board deaf. It now reconnects by itself
+  // (waiting a little longer after each failure, up to 30 seconds) and, once
+  // it is back, announces t2t:realtime-reconnected so the boards re-read
+  // whatever they missed while it was down.
+  var _rtRetryMs = 2000, _rtRetryTimer = null, _rtHadProblem = false;
+  function _rtScheduleRetry(){
+    if (_rtRetryTimer) return;
+    _rtRetryTimer = setTimeout(function(){
+      _rtRetryTimer = null;
+      startRealtimeSync();
+    }, _rtRetryMs);
+    _rtRetryMs = Math.min(_rtRetryMs * 2, 30000);
+  }
   async function startRealtimeSync(){
     if (_rtStarted || !_member.user_id) return;
     _rtStarted = true;
     try {
+      if (_rtChannel) { try { _sb.removeChannel(_rtChannel); } catch(e){} _rtChannel = null; }
       var tables = await _rtTables();
       var ch = _sb.channel('t2t-live-sync');
       tables.forEach(function(t){
@@ -148,14 +165,30 @@
         });
       });
       ch.subscribe(function(status, err){
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (status === 'SUBSCRIBED') {
+          _rtRetryMs = 2000;
+          if (_rtHadProblem) {
+            _rtHadProblem = false;
+            window.dispatchEvent(new CustomEvent('t2t:realtime-reconnected'));
+          }
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           console.error('T2T: live-sync channel problem', status, err);
-          _rtStarted = false; // allow a retry on next profile load / nav
+          _rtHadProblem = true;
+          _rtStarted = false;
+          _rtScheduleRetry();
         }
       });
       _rtChannel = ch;
-    } catch(e) { console.error('T2T: could not start live sync', e); _rtStarted = false; }
+    } catch(e) {
+      console.error('T2T: could not start live sync', e);
+      _rtStarted = false; _rtHadProblem = true;
+      _rtScheduleRetry();
+    }
   }
+  window.addEventListener('online', function(){
+    _rtHadProblem = true; _rtStarted = false; _rtRetryMs = 2000;
+    startRealtimeSync();
+  });
   // Native HTML5 drag-and-drop breaks if the dragged element gets
   // removed from the DOM mid-drag -- exactly what a remote-change
   // re-render would do to a card/idea currently being dragged. Both
