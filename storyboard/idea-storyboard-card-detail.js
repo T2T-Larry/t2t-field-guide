@@ -128,14 +128,14 @@
       // Topic it lives on ("The Parent of any Header is the TOPIC" --
       // Larry's own Briefing Board card, Aug 9). Loose idea cards keep
       // the "NEW" fallback unchanged.
-      curHeaderLabel=curHeaderRow9711?(curHeaderRow9711.text_content||'(untitled)'):(isHeaderType?topicLabel:'Parking Lot');
+      curHeaderLabel=curHeaderRow9711?((curHeaderRow9711.subject||curHeaderRow9711.text_content)||'(untitled)'):(isHeaderType?topicLabel:'Parking Lot');
     } else {
       var topicRow=T2TShared.currentTopicId?_sboardAllRowsById[T2TShared.currentTopicId]:null;
-      topicLabel=(T2TShared.currentTopicId && topicRow)?(topicRow.text_content||'(untitled)'):_sboardGetRootPrompt();
+      topicLabel=(T2TShared.currentTopicId && topicRow)?((topicRow.subject||topicRow.text_content)||'(untitled)'):_sboardGetRootPrompt();
       var parentIdCrumb=topicRow?(topicRow.cluster_id||null):null;
       var parentRowCrumb=parentIdCrumb?_sboardAllRowsById[parentIdCrumb]:null;
       var parentFallbackCrumb=(topicRow&&topicRow.content_type==='header')?_sboardGetRootPrompt():(_sboardNewAdditionsId&&_sboardAllRowsById[_sboardNewAdditionsId]?_sboardAllRowsById[_sboardNewAdditionsId].text_content:'Parking Lot');
-      parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?(parentRowCrumb.text_content||'(untitled)'):parentFallbackCrumb):'Wish Tank';
+      parentLabelCrumb=(T2TShared.currentTopicId && topicRow)?(parentRowCrumb?((parentRowCrumb.subject||parentRowCrumb.text_content)||'(untitled)'):parentFallbackCrumb):'Wish Tank';
 
       // HEADER: "NEW" here means whichever board's own uncategorized bucket is
       // active: null at the root ISB, or the current topic id when working
@@ -144,7 +144,7 @@
       isInLocalNewAdditions=String(item.cluster_id||'')===String(localNewAdditionsTarget||'');
       var curHeaderRow=(item.cluster_id && !isInLocalNewAdditions)?_sboardAllRowsById[item.cluster_id]:null;
       // Same Header-vs-loose-card fix as the 9711 branch above.
-      curHeaderLabel=curHeaderRow?(curHeaderRow.text_content||'(untitled)'):(isHeaderType?topicLabel:'Parking Lot');
+      curHeaderLabel=curHeaderRow?((curHeaderRow.subject||curHeaderRow.text_content)||'(untitled)'):(isHeaderType?topicLabel:'Parking Lot');
     }
 
     // TOP ROW -- PARENT / VIEW / ORDER, Aug 7 2026 (Larry). Replaces the

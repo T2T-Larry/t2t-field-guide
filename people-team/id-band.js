@@ -263,6 +263,8 @@
   // which Topic you're viewing, never MASTER-prefixed) -- it just reads
   // MASTER instead of TOPICS once you're standing at the very top of the
   // pyramid, same as PROJECT's own root label always has.
+  // Oct 17 2026 (Larry): a topic is shown by its SUBJECT, or its content when it has no subject. The one place that rule lives.
+  window.IDBand.rowName = function(row){ return String((row && row.subject)||'').trim() || String((row && row.text_content)||'').trim(); };
   window.IDBand.topicLabel = function(name, id, rootId){
     if(id && rootId && String(id)===String(rootId)) return 'MASTER';
     var n=String(name==null?'':name).trim();

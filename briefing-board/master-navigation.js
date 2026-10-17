@@ -918,7 +918,7 @@
     }
     try{
       var sb=T().sb;
-      var res=await sb.from('ideas').select('id,cluster_id,text_content').eq('id',headerId).maybeSingle();
+      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject').eq('id',headerId).maybeSingle();
       if(res.error || !res.data){
         hit.textContent=board.name||'(untitled)';
         _bbFitTopicText();
@@ -941,7 +941,7 @@
         ? IDBand.isAccountRoot({id:headerId, cluster_id:res.data.cluster_id}, _bbIdeaStoryboardsRootId)
         : (_bbIdeaStoryboardsRootId ? (String(headerId)===String(_bbIdeaStoryboardsRootId)) : !res.data.cluster_id);
       hit.textContent = window.IDBand
-        ? IDBand.topicLabel(res.data.text_content, headerId, _bbIdeaStoryboardsRootId)
+        ? IDBand.topicLabel(IDBand.rowName(res.data), headerId, _bbIdeaStoryboardsRootId)
         : (res.data.text_content || board.name || '(untitled)');
       _bbSyncMasterSubtitle(_bbCurrentTopicIsRoot);
       _bbSyncTopicUpCaret(_bbCurrentTopicIsRoot);
