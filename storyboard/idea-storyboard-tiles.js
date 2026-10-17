@@ -191,7 +191,8 @@
   function _sboardIsNonStepName(id){
     var r=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[id] : null;
     var n=r ? String(r.text_content||r.subject||'').trim().toUpperCase() : '';
-    return n==='PARKING LOT' || n==='GOAL' || n==='ETC' || n==='CONTINGENCIES' || n==='PLAN ALIGN' || n==='RESOURCE PLAN' || n==='RESOURCE ALIGN';
+    var sj=r ? String(r.subject||'').trim().toUpperCase() : '';   // a GOAL keeps its name in subject and the goal sentence in text_content
+    return n==='PARKING LOT' || n==='GOAL' || sj==='GOAL' || n==='ETC' || n==='CONTINGENCIES' || n==='PLAN ALIGN' || n==='RESOURCE PLAN' || n==='RESOURCE ALIGN';
   }
   function _sboardOrderBadgeHTML(orderedIds, itemId, right){
     var idx=-1;
