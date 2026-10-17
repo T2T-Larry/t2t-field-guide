@@ -187,8 +187,18 @@
     return false;
   }
   // right=true puts it in the upper right (Oct 3 2026, Larry: eye on the card back -> card number on the face, for using a board as a presentation script).
+  // Oct 17 2026 (Larry): on a PLAN board the Parking Lot and the GOAL are not steps -- they carry no number and the steps count from 1.
+  function _sboardIsNonStepName(id){
+    var r=(typeof _sboardAllRowsById!=='undefined') ? _sboardAllRowsById[id] : null;
+    var n=r ? String(r.text_content||r.subject||'').trim().toUpperCase() : '';
+    return n==='PARKING LOT' || n==='GOAL';
+  }
   function _sboardOrderBadgeHTML(orderedIds, itemId, right){
     var idx=-1;
+    if(typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard){
+      if(_sboardIsNonStepName(itemId)) return '';
+      orderedIds=orderedIds.filter(function(x){ return !_sboardIsNonStepName(x); });
+    }
     for(var i=0;i<orderedIds.length;i++){ if(String(orderedIds[i])===String(itemId)){ idx=i; break; } }
     return idx===-1 ? '' : '<div class="sb-order-badge'+(right?' sb-order-right':'')+'">'+(idx+1)+'</div>';
   }
