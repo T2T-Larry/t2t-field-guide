@@ -934,7 +934,9 @@
         // show on a routine card's face, even if a startDate value is
         // still sitting on the row from before it became routine (see
         // _bbIsStartOverdue above for the matching escalation fix).
+        // Oct 18 2026 -- the traffic light rides at the top of this right-hand stack: below the assignee's initials, above the dates.
         var dateStackHTML = ''
+          + (window.T2TTrafficLight ? T2TTrafficLight.frontHTML(c) : '')
           + routineLineHTML
           + (c.startDate && !c.routine && !_bbBO('start') ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
           + (_bbStartIsOverdue && !_bbBO('start') ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
@@ -1567,6 +1569,7 @@
     _bbRenderKeyRow(c);
     // NEEDS PLAN switch (replaces Checklist), Oct 15 2026 -- mirrors the card's own flag.
     var _bbNpCb=document.getElementById('bb-d-needs-plan'); if(_bbNpCb) _bbNpCb.checked=!!c.needsPlan;
+    if(window.T2TTrafficLight) T2TTrafficLight.paintBack(c);   // traffic light, Oct 18 2026
     // Additions, Aug 27 2026 -- each checkbox/body pair just mirrors
     // this card's own addFlag; values were already written into their
     // fields above, so this only ever controls whether that section is

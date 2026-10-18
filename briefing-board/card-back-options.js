@@ -256,5 +256,5 @@
   }
 
   injectStyle();
-  window.FGCardBackOptions = { eyeBesideLabels: eyeBesideLabels, optionsRegion: optionsRegion, isBackOnly: isBackOnly, parseHidden: parseHidden, closePop: closePop };
+  window.FGCardBackOptions = { eyeBesideLabels: eyeBesideLabels, optionsRegion: optionsRegion, isBackOnly: isBackOnly, parseHidden: parseHidden, closePop: closePop, eyeIcons: {open: EYE_OPEN, slash: EYE_SLASH} };
 })();

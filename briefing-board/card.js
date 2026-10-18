@@ -968,6 +968,9 @@
       // already had real content in the matching field, so nothing
       // already on a card goes invisible just because this shipped.
       needsPlan: !!row.needs_plan,
+      // Oct 18 2026 -- traffic light ('red' | 'yellow' | 'green'; empty = green). Read-only here, like needsPlan: deliberately NOT in _bbCardToRow,
+      // so a routine whole-board save can never change it. traffic-light.js writes it straight to task_fields.
+      light: row.light || '',
       goalHeaderId: row.goal_header_id||null,
       addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
       addStart: !!row.adds_start, addBudget: !!row.adds_budget, addNotes: !!row.adds_notes, addLinks: !!row.adds_links,

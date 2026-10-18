@@ -688,6 +688,21 @@
           FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
         }
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Task's eye sits right of TASK
+        // Traffic light, Oct 18 2026 (Larry: lights live on the back, with an eyeball for the front). Built once per back; the eye uses the same back-only list as the options.
+        if(window.T2TTrafficLight && window.FGCardBackOptions){
+          T2TTrafficLight.wireBack(bbw, {
+            getCard: function(){ return _bbFindCardAnywhere(_bbOpenCardId); },
+            getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
+            setHidden: function(arr){
+              var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+              c.frontHidden=arr.join(',');
+              _bbSaveLocal(_bbCardsList());
+              _bbPersistMergedCardById(_bbOpenCardId);
+              renderBoard();
+            },
+            onChange: function(){ renderBoard(); }
+          });
+        }
         // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
         if(sb && db){
