@@ -82,6 +82,52 @@
     return {id:newCardId, ready:ready};
   };
 
+  // Open a Briefing Card's back in place from any screen (Oct 18 2026 -- moved here from
+  // plans-and-tasks/needs-plan-goals.js, which used to reach into the _bb* privates itself).
+  // The back's overlay lives in #fg-root on every page, but the Briefing Board's own data load
+  // only runs when its screen is first visited, so this loads it silently if it has not run yet,
+  // and switches to the card's board if the card sits on a different one.
+  // Resolves once the card is open; rejects (with a readable message) if it could not be.
+  BB.canOpenCard=function(){
+    return typeof openCardDetail==='function' && typeof _bbFindCardAnywhere==='function';
+  };
+  BB.openCard=async function(cardId){
+    if(!BB.canOpenCard()) throw new Error('Briefing Board code is not loaded on this page');
+    if(_bbFindCardAnywhere(cardId)){ openCardDetail(cardId); return; }
+    if(typeof _bbInitStarted!=='undefined' && !_bbInitStarted){
+      try{ sessionStorage.setItem('fg_open_card_id', cardId); }catch(x){}
+      _bbInitStarted=true;
+      await _bbInitBoardsAndData();   // consumes fg_open_card_id and opens the card
+      return;
+    }
+    var sb=window.T2T && window.T2T.sb;
+    var r=sb ? await sb.from('briefing_cards').select('id,board_id').eq('id', cardId).limit(1) : null;
+    var row=r && r.data && r.data[0];
+    if(!row) throw new Error('Card not found');
+    await _bbSwitchToBoard(row.board_id);
+    openCardDetail(cardId);
+  };
+
+  // Move every card currently selected on the open board to a column (Oct 18 2026 -- front door
+  // for the lasso; it used to call the private _bbBulkMoveSelectedTo directly).
+  BB.canBulkMoveSelected=function(){ return typeof _bbBulkMoveSelectedTo==='function'; };
+  // Keep the board's own lasso selection equal to this list of card ids (the shared lasso
+  // calls this as it selects). Returns false if the Briefing Board is not loaded here.
+  BB.setLassoSelection=function(ids){
+    if(typeof _bbLassoSelected==='undefined') return false;
+    _bbLassoSelected={}; (ids||[]).forEach(function(id){ _bbLassoSelected[id]=true; });
+    return true;
+  };
+  BB.isLassoSelected=function(id){
+    return typeof _bbLassoSelected!=='undefined' && !!_bbLassoSelected[id];
+  };
+  // Optional ids: when given, the selection is set to exactly those cards first.
+  BB.bulkMoveSelectedTo=function(col, ids){
+    if(typeof _bbBulkMoveSelectedTo!=='function') throw new Error('Board is not ready yet.');
+    if(ids) BB.setLassoSelection(ids);
+    return _bbBulkMoveSelectedTo(col);
+  };
+
   BB.hasCastPickMenu=function(){ return typeof _bbOpenCastPickMenu==='function'; };
 
   // The one shared CAST PICK list (same list the BB back-of-card head icon opens).

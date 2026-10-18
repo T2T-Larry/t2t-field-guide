@@ -86,6 +86,9 @@
     moveCard: _sboardMoveCard,
     isAutoHeaderText: _sboardIsAutoHeaderText,
     getRow: function(id){ return _sboardAllRowsById[id]; },
+    // Oct 18 2026 -- front door for a row another file just inserted (the lasso's "New header"),
+    // so it never has to call the private _sboardAddRow directly.
+    addRow: _sboardAddRow,
     openDetail: openSbDetail,
     closeDetail: closeSbDetail,
     applyBoardBg: _sboardApplyBoardBg,

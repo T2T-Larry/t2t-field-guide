@@ -79,7 +79,7 @@
         created_at: new Date().toISOString(), color: t2t.getDefaultHeaderColor ? t2t.getDefaultHeaderColor() : undefined
       }).select().single();
       if (ins.error) throw new Error(ins.error.message);
-      if (typeof _sboardAddRow === 'function') _sboardAddRow(ins.data);   // script-global in idea-storyboard-shared.js
+      if (window.T2TStoryboard && T2TStoryboard.addRow) T2TStoryboard.addRow(ins.data);   // the storyboard family's front door
       return ins.data;
     }
   });
@@ -102,16 +102,15 @@
     },
     headers: bbColumns,
     moveToHeader: function(ids, col){
-      // _bbBulkMoveSelectedTo reads the board's own selection map, which
-      // onSelect below keeps equal to this set.
-      if (typeof _bbBulkMoveSelectedTo !== 'function') throw new Error('Board is not ready yet.');
-      _bbLassoSelected = {}; ids.forEach(function(id){ _bbLassoSelected[id] = true; });
-      _bbBulkMoveSelectedTo(col);
+      // Goes through the Briefing Board's front door (briefing-board/public-api.js).
+      var BB = window.T2TBriefingBoard;
+      if (!BB || !BB.bulkMoveSelectedTo) throw new Error('Board is not ready yet.');
+      BB.bulkMoveSelectedTo(col, ids);
     },
     onSelect: function(ids){
-      if (typeof _bbLassoSelected === 'undefined') return;
-      _bbLassoSelected = {}; ids.forEach(function(id){ _bbLassoSelected[id] = true; });
-      qa('#bb-board-wrap .bb-card').forEach(function(el){ el.classList.toggle('bb-lasso-selected', !!_bbLassoSelected[el.getAttribute('data-id')]); });
+      var BB = window.T2TBriefingBoard;
+      if (!BB || !BB.setLassoSelection || !BB.setLassoSelection(ids)) return;
+      qa('#bb-board-wrap .bb-card').forEach(function(el){ el.classList.toggle('bb-lasso-selected', BB.isLassoSelected(el.getAttribute('data-id'))); });
     }
   });
 })();

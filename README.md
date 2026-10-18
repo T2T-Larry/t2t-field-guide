@@ -14,7 +14,7 @@ Pages stay at the top level (their web addresses never change). Everything else 
 | `maps-and-library/` | Traveler map, developer map, topic pyramid, stories, library, notebook, document decomposition |
 | `style/` | Site stylesheet |
 
-Pages: `index.html` (home), `dream.html`, `believe.html`, `dare.html`, `journey.html`, `idea-details.html`.
+Pages: `index.html` (home), `dream.html`, `believe.html`, `dare.html`, `journey.html`.
 
 Rule of thumb: one tree, one code. A shared behavior is built once, in one folder, and reused everywhere.
 

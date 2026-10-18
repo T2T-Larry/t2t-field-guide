@@ -45,23 +45,10 @@
     var _st=document.getElementById('sc-status');
     if(_st){ _st.classList.remove('err'); _st.textContent='Opening card…'; }
     try{
-      var ready=(typeof openCardDetail==='function' && typeof _bbFindCardAnywhere==='function');
-      if(!ready) throw new Error('Briefing Board code is not loaded on this page');
-      if(!_bbFindCardAnywhere(cardId)){
-        if(typeof _bbInitStarted!=='undefined' && !_bbInitStarted){
-          try{ sessionStorage.setItem('fg_open_card_id', cardId); }catch(x){}
-          _bbInitStarted=true;
-          await _bbInitBoardsAndData();   // consumes fg_open_card_id and opens the card
-        } else {
-          var r=await _sb().from('briefing_cards').select('id,board_id').eq('id', cardId).limit(1);
-          var row=r.data && r.data[0];
-          if(!row) throw new Error('Card not found');
-          await _bbSwitchToBoard(row.board_id);
-          openCardDetail(cardId);
-        }
-      } else {
-        openCardDetail(cardId);
-      }
+      // Oct 18 2026: goes through the Briefing Board's front door (briefing-board/public-api.js), never its _bb* privates.
+      var BB=window.T2TBriefingBoard;
+      if(!BB || !BB.openCard || !BB.canOpenCard()) throw new Error('Briefing Board code is not loaded on this page');
+      await BB.openCard(cardId);
       try{ sessionStorage.removeItem('fg_open_card_id'); }catch(x){}
       if(_st && _st.textContent==='Opening card…') _st.textContent='';
       var ov=document.getElementById('bb-detail-overlay');
