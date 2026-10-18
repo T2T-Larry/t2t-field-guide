@@ -28,6 +28,10 @@
   var ORDER = ['red','yellow','green'];
 
   function norm(v){ return LIGHTS[v] ? v : 'green'; }   // empty or unknown means green
+  // Larry, Oct 18 2026: "A hang up is a red light." A card sitting in HANG UPS always shows red, whatever is stored;
+  // when it leaves HANG UPS it goes back to its own stored light (green unless it was set otherwise).
+  function inHangups(c){ return !!(c && c.col==='hangups'); }
+  function effective(c){ return inHangups(c) ? 'red' : norm(c && c.light); }
 
   // A tiny real traffic light with side hoods (the "four way" look): black body, three round lamps, a hood beside each lamp.
   // Only the current lamp is lit; the other two stay visible but dimmed. One drawing for the card face and the back, so they always match.
@@ -50,6 +54,7 @@
 
   // Set a card's light (null/empty = green) and save it straight to task_fields; undo on a failed save.
   async function setLight(c, next, onChange){
+    if(inHangups(c)) return;   // a hang-up is red; move the card out of HANG UPS to change its light
     var prev=norm(c.light);
     next=norm(next);
     if(next===prev) return;
@@ -66,7 +71,7 @@
   }
   // One click on the light moves it on: green, then yellow, then red, then back to green.
   var CYCLE = { green:'yellow', yellow:'red', red:'green' };
-  function cycle(c, onChange){ return setLight(c, CYCLE[norm(c && c.light)], onChange); }
+  function cycle(c, onChange){ return setLight(c, CYCLE[norm(c && c.light)], onChange); }   // (does nothing in HANG UPS, where the light is always red)
 
   function injectStyle(){
     if(document.getElementById('fg-traffic-light-style')) return;
@@ -92,8 +97,8 @@
 
   function frontHTML(c){
     if(!c || c.col==='done' || hiddenOnFront(c)) return '';
-    var L=LIGHTS[norm(c.light)];
-    return '<span class="bb-light" title="'+L.tip+' Click to change."'+'>'+signalSVG(norm(c.light), 16, 19)+'</span>';
+    var L=LIGHTS[effective(c)];
+    return '<span class="bb-light" title="'+(inHangups(c) ? 'Red: a hang-up. The light is red while the card is in HANG UPS.' : L.tip+' Click to change.')+'"'+'>'+signalSVG(effective(c), 16, 19)+'</span>';
   }
 
   var _wired=null;   // the back control, built once per card back
@@ -143,7 +148,7 @@
 
   function paintBack(c){
     if(!_wired || !_wired.wrap || !document.body.contains(_wired.wrap)) return;
-    var cur=norm(c && c.light);
+    var cur=effective(c);
     Array.prototype.forEach.call(_wired.wrap.querySelectorAll('.fg-light-btn'), function(b){
       b.classList.toggle('fg-light-on', b.getAttribute('data-light')===cur);
     });
@@ -151,5 +156,5 @@
   }
 
   injectStyle();
-  window.T2TTrafficLight = { frontHTML: frontHTML, wireBack: wireBack, paintBack: paintBack, cycle: cycle, setLight: setLight, norm: norm };
+  window.T2TTrafficLight = { effective: effective, frontHTML: frontHTML, wireBack: wireBack, paintBack: paintBack, cycle: cycle, setLight: setLight, norm: norm };
 })();
