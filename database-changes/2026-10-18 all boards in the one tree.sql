@@ -1,0 +1,16 @@
+-- Oct 18 2026: every board with a home in the one tree keeps its cards there, not only MASTER.
+-- What ran in Supabase (one transaction, with checks that raise an error if anything differs):
+--   1. Backups: briefing_cards_legacy_backup_20261018 (all old-table cards) and
+--      function_def_backup_20261018 (the previous bb_cards_iud).
+--   2. bb_tree_home(board, header): the header a board's cards live under
+--      (the card's own header, else the board's storyboard project); null = no home yet.
+--   3. bb_cards_iud: "if NEW.board_id = c_master then" became
+--      "if public.bb_tree_home(NEW.board_id, NEW.project_header_id) is not null then"
+--      (insert and update), so cards on any board with a home go to ideas + task_fields.
+--   4. 101 cards moved from briefing_cards_legacy into the tree by inserting them through
+--      the briefing_cards view; content compared field by field; each board owner's card
+--      count through the view compared before and after.
+-- Left behind on purpose: the old table rows (hidden by the view once a card is in the
+-- tree, and kept as a safety copy) and 1 card on a board with no home (My Board, no project).
+-- Next: once Larry has checked the boards on the live site, delete the hidden old rows and
+-- remove the old-table branch from the view and the live-sync listeners.
