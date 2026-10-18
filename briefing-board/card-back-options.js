@@ -97,7 +97,7 @@
 
   /* cfg:
        universal:  ['flags','due','start',...]  option keys shown under "Every card"
-       ownLabel:   'Briefing card' | 'Blue Sky card'  heading for the board's own group
+       ownLabel:   'Briefing card' | 'Vision card'  heading for the board's own group
        skip:       wrapper ids that live somewhere else on the back (e.g. under the gear)
        noPopup:    keys driven by another control (BB Notes is the bottom pencil)
        frontKeys:  keys that draw something on the card face (they get the slashed eye)

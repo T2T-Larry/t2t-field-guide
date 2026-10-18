@@ -1160,7 +1160,7 @@
       _bbRetireMovedCard(c);
       closeCardDetail();
       renderBoard();
-      _bbShowToast('Moved to the Blue Sky Parking Lot. Recently Deleted keeps the Briefing card.');
+      _bbShowToast('Moved to the Vision Parking Lot. Recently Deleted keeps the Briefing card.');
     }catch(err){
       console.error('Send to Blue Sky failed', err);
       _bbShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));

@@ -306,7 +306,7 @@
       // Same ids (sb-close, sb-primary-trigger/-menu, sb-details-eyebrow) so every existing handler keeps working.
       + (window.FGCardBack
           ? FGCardBack.bandHTML({board:'idea', topicPicker:true, topicPickerId:'sb-d-topic-btn', kindPicker:true, kindPickerId:'sb-d-kind-btn', titleHTML:'<span id="sb-details-eyebrow">IDEA</span>', extraHTML:'<div class="bb-cdrop" id="sb-primary-cdrop" style="position:relative;flex-shrink:0"><button type="button" class="bb-icon-btn" id="sb-primary-trigger" title="PRIMARY: unassigned" aria-label="PRIMARY — who is accountable for this card">👤</button><div class="bb-cdrop-menu" id="sb-primary-menu" hidden></div></div><button id="sb-close" class="bb-close" aria-label="Close">✕</button>'})
-          : '<div id="sb-details-head" class="bb-overlay-head"><span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Blue Sky Card</span><button id="sb-close" class="bb-close" aria-label="Close">✕</button></div>')
+          : '<div id="sb-details-head" class="bb-overlay-head"><span id="sb-details-eyebrow" class="bb-overlay-title" style="cursor:default">Vision Card</span><button id="sb-close" class="bb-close" aria-label="Close">✕</button></div>')
       + '<div class="bbw">'
       + '<div id="sb-pagenum" style="font-size:calc(8px * var(--fg-text-scale,1));letter-spacing:2px;color:var(--bb-sub);height:10px;margin:-4px 0 4px;opacity:0;transition:opacity .3s">1011</div>'
       // Priority, Sept 22 2026 -- Larry, Master BB (DOING): "The BB cards
@@ -460,7 +460,7 @@
           skip: ['sb-add-links-wrap'],
           noPopup: ['notes'],
           universal: ['flags','org'],
-          ownLabel: 'Blue Sky card',
+          ownLabel: 'Vision card',
           // Oct 7 2026 (Larry): an image's Source sits on the back with an eye -- open eye = badge also shows on the front, slashed = back only.
           frontKeys: ['flags','notes'],
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
@@ -876,7 +876,7 @@
             var td=tr && tr.data; fromName=td ? ((td.subject||'').trim()||(td.idea_text||'').trim()||(td.text_content||'').trim()) : '';
           }
         }catch(e){}
-        var moveLine='Moved from the Blue Sky board'+(fromName?(' (TOPIC: '+fromName+')'):'')+'.', oldNotes=(item.notes||'').trim();
+        var moveLine='Moved from the Vision board'+(fromName?(' (TOPIC: '+fromName+')'):'')+'.', oldNotes=(item.notes||'').trim();
         var row={board_id:board.id, col:'new', task:text||subj, subject:subj||null, hide_contents_front:!!item.hide_contents_front, priority:'', sort_order:minSort-1,
                  notes:(oldNotes?(oldNotes+'\n'):'')+moveLine, adds_notes:true};
         if(topicId) row.project_header_id=topicId;
@@ -891,7 +891,7 @@
         }
         closeSbDetail();
         renderSeaBoard(true);
-        _sboardShowToast('Moved to the Briefing Board Parking Lot. The Trash keeps the Blue Sky card.');
+        _sboardShowToast('Moved to the Briefing Board Parking Lot. The Trash keeps the Vision card.');
       }catch(err){
         console.error('Send to Briefing Board failed', err);
         _sboardShowToast('Could not send it: '+(err && err.message ? err.message : 'unknown error'));
