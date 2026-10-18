@@ -15,6 +15,7 @@
 
    Public surface: window.T2TTrafficLight
      .frontHTML(c)       -> the small light for the card face ('' when the eye is off or the card is done)
+     .cycle(c, onChange) -> click on the face light: green, yellow, red, green
      .wireBack(bbw, cfg) -> builds the back control once; cfg = {getCard, getHidden, setHidden, onChange}
      .paintBack(c)       -> shows this card's light on the back (call every time a card back opens)
    ============================================================ */
@@ -28,37 +29,44 @@
 
   function norm(v){ return LIGHTS[v] ? v : 'green'; }   // empty or unknown means green
 
-  // A tiny real traffic light: dark housing, three lamps, only the current one lit (Larry, Oct 18 2026: "an actual tiny traffic light
-  // symbol"; a lone dot does not carry the meaning). One drawing used on the card face and on the back, so they always match.
-  var DIM = { red:'#4a1a16', yellow:'#4a4010', green:'#143a24' };
+  // A tiny real traffic light with side hoods (the "four way" look): black body, three round lamps, a hood beside each lamp.
+  // Only the current lamp is lit; the other two stay visible but dimmed. One drawing for the card face and the back, so they always match.
+  // (Larry, Oct 18 2026: "an actual tiny traffic light symbol"; clicking it changes the light.)
+  var DIM = { red:'#7a3a35', yellow:'#7a6a25', green:'#2d6a45' };
   function signalSVG(state, w, h){
-    var cy={red:4.5, yellow:12, green:19.5};
+    var cy={red:4.6, yellow:12, green:19.4};
+    var hoods=ORDER.map(function(k){
+      var y=cy[k];
+      return '<path d="M6.2 '+(y-3.5)+'H2.4Q2 '+(y+1)+' 6.2 '+(y+3.3)+'Z" fill="#111"/>'
+        +'<path d="M13.8 '+(y-3.5)+'H17.6Q18 '+(y+1)+' 13.8 '+(y+3.3)+'Z" fill="#111"/>';
+    }).join('');
     var lamps=ORDER.map(function(k){
       var lit = k===state;
-      return '<circle cx="5" cy="'+cy[k]+'" r="2.9" fill="'+(lit?LIGHTS[k].color:DIM[k])+'"'+(lit?' stroke="rgba(255,255,255,.55)" stroke-width=".5"':'')+'/>';
+      return '<circle cx="10" cy="'+cy[k]+'" r="2.8" fill="'+(lit?LIGHTS[k].color:DIM[k])+'"'+(lit?' stroke="#fff" stroke-opacity=".7" stroke-width=".6"':' fill-opacity=".75"')+'/>';
     }).join('');
-    return '<svg class="fg-signal" width="'+w+'" height="'+h+'" viewBox="0 0 10 24" aria-hidden="true">'
-      +'<rect x=".4" y=".4" width="9.2" height="23.2" rx="2.2" fill="#262626" stroke="#0d0d0d" stroke-width=".8"/>'
-      +lamps+'</svg>';
+    return '<svg class="fg-signal" width="'+w+'" height="'+h+'" viewBox="0 0 20 24" aria-hidden="true">'
+      +hoods+'<rect x="5.6" y=".3" width="8.8" height="23.4" rx="1.2" fill="#111"/>'+lamps+'</svg>';
   }
 
-  function injectStyle(){
-    if(document.getElementById('fg-traffic-light-style')) return;
-    var st=document.createElement('style'); st.id='fg-traffic-light-style';
-    st.textContent=''
-      // Card face: one small round light, sitting above the dates on the right edge (below the assignee's initials).
-      +'.bb-card .bb-light{display:inline-block;line-height:0;margin:0 0 3px;flex:0 0 auto}'
-      +'.bb-card .bb-light svg{display:block}'
-      // Card back: title row (same look as the option titles) and three dots with their words.
-      +'.fg-back-light{margin:0 0 8px}'
-      +'.fg-back-light-dots{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
-      +'.fg-light-btn{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 4px;background:transparent;border:1.5px solid transparent;border-radius:12px;cursor:pointer;color:var(--bb-ink);font-family:inherit;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1}'
-      +'.fg-light-btn:hover{background:var(--bb-bg)}'
-      +'.fg-light-btn svg{display:block;opacity:.55}'
-      +'.fg-light-btn.fg-light-on{border-color:var(--bb-ink)}'
-      +'.fg-light-btn.fg-light-on svg{opacity:1}';
-    document.head.appendChild(st);
+  // Set a card's light (null/empty = green) and save it straight to task_fields; undo on a failed save.
+  async function setLight(c, next, onChange){
+    var prev=norm(c.light);
+    next=norm(next);
+    if(next===prev) return;
+    c.light = next==='green' ? '' : next;
+    paintBack(c);
+    try{
+      var sb=window.T2T && window.T2T.sb;
+      if(sb){
+        var res=await sb.from('task_fields').update({light: next==='green' ? null : next}).eq('idea_id', c.id);
+        if(res.error){ console.error('Traffic light save failed', res.error); c.light = prev==='green' ? '' : prev; paintBack(c); }
+      }
+    }catch(err){ console.error('Traffic light save failed', err); c.light = prev==='green' ? '' : prev; paintBack(c); }
+    if(onChange) onChange(c);
   }
+  // One click on the light moves it on: green, then yellow, then red, then back to green.
+  var CYCLE = { green:'yellow', yellow:'red', red:'green' };
+  function cycle(c, onChange){ return setLight(c, CYCLE[norm(c && c.light)], onChange); }
 
   function hiddenOnFront(c){
     return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c && c.frontHidden, 'light'));
@@ -67,7 +75,7 @@
   function frontHTML(c){
     if(!c || c.col==='done' || hiddenOnFront(c)) return '';
     var L=LIGHTS[norm(c.light)];
-    return '<span class="bb-light" title="'+L.tip+'">'+signalSVG(norm(c.light), 9, 22)+'</span>';
+    return '<span class="bb-light" title="'+L.tip+' Click to change."'+'>'+signalSVG(norm(c.light), 16, 19)+'</span>';
   }
 
   var _wired=null;   // the back control, built once per card back
@@ -80,7 +88,7 @@
     var title='<div class="fg-back-opt-title"><span>Traffic light</span>'
       +'<button type="button" class="fg-back-eye" id="bb-d-light-eye"></button></div>';
     var dots='<div class="fg-back-light-dots">'+ORDER.map(function(k){
-      return '<button type="button" class="fg-light-btn" data-light="'+k+'" title="'+LIGHTS[k].tip+'">'+signalSVG(k, 12, 28)+'<span>'+LIGHTS[k].word+'</span></button>';
+      return '<button type="button" class="fg-light-btn" data-light="'+k+'" title="'+LIGHTS[k].tip+'">'+signalSVG(k, 20, 24)+'<span>'+LIGHTS[k].word+'</span></button>';
     }).join('')+'</div>';
     wrap.innerHTML=title+dots;
     var anchor=bbw.querySelector('.fg-back-selected') || (bbw.querySelector('#bb-d-needs-plan-wrap'));
@@ -105,22 +113,10 @@
     });
 
     Array.prototype.forEach.call(wrap.querySelectorAll('.fg-light-btn'), function(b){
-      b.addEventListener('click', async function(e){
+      b.addEventListener('click', function(e){
         e.stopPropagation();
         var c=cfg.getCard && cfg.getCard(); if(!c) return;
-        var next=b.getAttribute('data-light');
-        var prev=norm(c.light);
-        if(next===prev) return;
-        c.light = next==='green' ? '' : next;
-        paintBack(c);
-        try{
-          var sb=window.T2T && window.T2T.sb;
-          if(sb){
-            var res=await sb.from('task_fields').update({light: next==='green' ? null : next}).eq('idea_id', c.id);
-            if(res.error){ console.error('Traffic light save failed', res.error); c.light = prev==='green' ? '' : prev; paintBack(c); }
-          }
-        }catch(err){ console.error('Traffic light save failed', err); c.light = prev==='green' ? '' : prev; paintBack(c); }
-        if(cfg.onChange) cfg.onChange(c);
+        setLight(c, b.getAttribute('data-light'), cfg.onChange);
       });
     });
     _wired={wrap:wrap, paintEye:paintEye};
@@ -137,5 +133,5 @@
   }
 
   injectStyle();
-  window.T2TTrafficLight = { frontHTML: frontHTML, wireBack: wireBack, paintBack: paintBack, norm: norm };
+  window.T2TTrafficLight = { frontHTML: frontHTML, wireBack: wireBack, paintBack: paintBack, cycle: cycle, setLight: setLight, norm: norm };
 })();

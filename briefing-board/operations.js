@@ -1034,6 +1034,12 @@
           +taskHTML
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-date-stack">'+dateStackHTML+'</span></div>'
           +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '');
+        // Traffic light, Oct 18 2026 (Larry: "click it to change the light") -- one click moves it green, yellow, red, green. It never opens the card.
+        (function(){
+          var lt=el.querySelector('.bb-light'); if(!lt || !window.T2TTrafficLight) return;
+          ['mousedown','dblclick'].forEach(function(ev){ lt.addEventListener(ev, function(e){ e.stopPropagation(); }); });
+          lt.addEventListener('click', function(e){ e.stopPropagation(); e.preventDefault(); T2TTrafficLight.cycle(c, function(){ renderBoard(); }); });
+        })();
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click opens the card (Aug 11 2026, Larry). Used to be a
         // second, faster way in alongside a corner-flip triangle; the
