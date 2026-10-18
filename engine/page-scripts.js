@@ -69,7 +69,7 @@
   ['maps-and-library/document-decomposition.js','20261010j'],
   ['briefing-board/card-back-style.js','20261015v'],
   ['briefing-board/card-back-options.js','20261018b'],
-  ['briefing-board/traffic-light.js','20261018a'],
+  ['briefing-board/traffic-light.js','20261018b'],
   ['storyboard/idea-storyboard-card-detail.js','20261018a'],
   ['storyboard/idea-storyboard-startup.js','20261018a'],
   ['people-team/sea-of-ideas-id-band.js','20261003f',['index', 'dream']],

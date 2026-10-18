@@ -28,20 +28,35 @@
 
   function norm(v){ return LIGHTS[v] ? v : 'green'; }   // empty or unknown means green
 
+  // A tiny real traffic light: dark housing, three lamps, only the current one lit (Larry, Oct 18 2026: "an actual tiny traffic light
+  // symbol"; a lone dot does not carry the meaning). One drawing used on the card face and on the back, so they always match.
+  var DIM = { red:'#4a1a16', yellow:'#4a4010', green:'#143a24' };
+  function signalSVG(state, w, h){
+    var cy={red:4.5, yellow:12, green:19.5};
+    var lamps=ORDER.map(function(k){
+      var lit = k===state;
+      return '<circle cx="5" cy="'+cy[k]+'" r="2.9" fill="'+(lit?LIGHTS[k].color:DIM[k])+'"'+(lit?' stroke="rgba(255,255,255,.55)" stroke-width=".5"':'')+'/>';
+    }).join('');
+    return '<svg class="fg-signal" width="'+w+'" height="'+h+'" viewBox="0 0 10 24" aria-hidden="true">'
+      +'<rect x=".4" y=".4" width="9.2" height="23.2" rx="2.2" fill="#262626" stroke="#0d0d0d" stroke-width=".8"/>'
+      +lamps+'</svg>';
+  }
+
   function injectStyle(){
     if(document.getElementById('fg-traffic-light-style')) return;
     var st=document.createElement('style'); st.id='fg-traffic-light-style';
     st.textContent=''
       // Card face: one small round light, sitting above the dates on the right edge (below the assignee's initials).
-      +'.bb-card .bb-light{display:inline-block;width:11px;height:11px;border-radius:50%;margin:0 0 3px;border:1px solid rgba(0,0,0,.35);box-sizing:border-box;flex:0 0 auto}'
+      +'.bb-card .bb-light{display:inline-block;line-height:0;margin:0 0 3px;flex:0 0 auto}'
+      +'.bb-card .bb-light svg{display:block}'
       // Card back: title row (same look as the option titles) and three dots with their words.
       +'.fg-back-light{margin:0 0 8px}'
       +'.fg-back-light-dots{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
       +'.fg-light-btn{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 4px;background:transparent;border:1.5px solid transparent;border-radius:12px;cursor:pointer;color:var(--bb-ink);font-family:inherit;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1}'
       +'.fg-light-btn:hover{background:var(--bb-bg)}'
-      +'.fg-light-btn .fg-light-dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.35);box-sizing:border-box;opacity:.35}'
+      +'.fg-light-btn svg{display:block;opacity:.55}'
       +'.fg-light-btn.fg-light-on{border-color:var(--bb-ink)}'
-      +'.fg-light-btn.fg-light-on .fg-light-dot{opacity:1}';
+      +'.fg-light-btn.fg-light-on svg{opacity:1}';
     document.head.appendChild(st);
   }
 
@@ -52,7 +67,7 @@
   function frontHTML(c){
     if(!c || c.col==='done' || hiddenOnFront(c)) return '';
     var L=LIGHTS[norm(c.light)];
-    return '<span class="bb-light" style="background:'+L.color+'" title="'+L.tip+'"></span>';
+    return '<span class="bb-light" title="'+L.tip+'">'+signalSVG(norm(c.light), 9, 22)+'</span>';
   }
 
   var _wired=null;   // the back control, built once per card back
@@ -65,7 +80,7 @@
     var title='<div class="fg-back-opt-title"><span>Traffic light</span>'
       +'<button type="button" class="fg-back-eye" id="bb-d-light-eye"></button></div>';
     var dots='<div class="fg-back-light-dots">'+ORDER.map(function(k){
-      return '<button type="button" class="fg-light-btn" data-light="'+k+'" title="'+LIGHTS[k].tip+'"><span class="fg-light-dot" style="background:'+LIGHTS[k].color+'"></span><span>'+LIGHTS[k].word+'</span></button>';
+      return '<button type="button" class="fg-light-btn" data-light="'+k+'" title="'+LIGHTS[k].tip+'">'+signalSVG(k, 12, 28)+'<span>'+LIGHTS[k].word+'</span></button>';
     }).join('')+'</div>';
     wrap.innerHTML=title+dots;
     var anchor=bbw.querySelector('.fg-back-selected') || (bbw.querySelector('#bb-d-needs-plan-wrap'));
