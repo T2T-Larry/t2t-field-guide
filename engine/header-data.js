@@ -81,7 +81,7 @@
     while(guard<50){
       guard++;
       var run=function(){
-        return sb.from('ideas').select('id,text_content,idea_text,link_title,cluster_id')
+        return sb.from('ideas').select('id,subject,text_content,idea_text,link_title,cluster_id')
           .eq('user_id',u.id).eq('content_type','header').order('id',{ascending:true}).range(from, from+PAGE-1);
       };
       var res=await run();

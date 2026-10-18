@@ -1291,7 +1291,9 @@
       // topicLabel of its own.
       try{
         var _hdrs=await T2TData.fetchAllHeaders();
-        var _nameMap={}; (_hdrs||[]).forEach(function(h){ _nameMap[h.id]=h.text_content||''; });
+        // Oct 18 2026 (Larry): a header's SUBJECT is its name whenever the
+        // subject is not blank; its content only when there is no subject.
+        var _nameMap={}; (_hdrs||[]).forEach(function(h){ _nameMap[h.id]=String(h.subject||'').trim()||h.text_content||''; });
         _bbProjectNameById=_nameMap;
       }catch(e){ console.warn('Briefing Board: could not load project names for card eyebrows', e); }
       // Aug 16 2026 -- adopted parent-child edges, so the PROJECT
