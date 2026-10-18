@@ -85,7 +85,8 @@
   ['engine/desktop-screen.js','20260922a'],
   ['engine/tv-frame.js','20260801a'],
   ['controls/screen-fit.js','20260811c'],
-  ['drawer/bookmarks.js','20261010j']
+  ['drawer/bookmarks.js','20261010j'],
+  ['engine/update-watcher.js','20261018a']
   ];
   var out='';
   for(var i=0;i<LIST.length;i++){
