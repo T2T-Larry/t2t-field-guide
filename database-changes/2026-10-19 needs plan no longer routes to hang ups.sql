@@ -1,0 +1,4 @@
+-- Oct 19 2026 (Larry): NEEDS PLAN is the task itself, not a Hang Up. A Hang Up needs a sit rep before anything.
+-- task_fields_needs_plan_route() used to send a flagged card to HANG-UPS (from New, DO and DOING). It no longer moves anything.
+-- Kept: a card sitting in HANG-UPS that has a GOAL leaves HANG-UPS for TO DO by priority (Parking Lot when none).
+-- (function body re-created in Supabase; see the migration needs_plan_no_longer_routes_to_hangups)
