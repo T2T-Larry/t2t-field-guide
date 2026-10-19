@@ -934,9 +934,7 @@
         // show on a routine card's face, even if a startDate value is
         // still sitting on the row from before it became routine (see
         // _bbIsStartOverdue above for the matching escalation fix).
-        // Oct 18 2026 -- the traffic light rides at the top of this right-hand stack: below the assignee's initials, above the dates.
         var dateStackHTML = ''
-          + (window.T2TTrafficLight ? T2TTrafficLight.frontHTML(c) : '')
           + routineLineHTML
           + (c.startDate && !c.routine && !_bbBO('start') ? ('<div class="bb-date-line bb-date">'+_esc(c.startDate)+'</div>') : '')
           + (_bbStartIsOverdue && !_bbBO('start') ? ('<div class="bb-date-line bb-start-due">START DUE: '+_esc(c.startDate)+'</div>') : '')
@@ -1034,12 +1032,6 @@
           +taskHTML
           +'<div class="bb-bottom"><span>'+_esc(c.budget||'')+'</span><span class="bb-date-stack">'+dateStackHTML+'</span></div>'
           +((lockBadge || notesBadge || linkBadge || keyBadgesHTML) ? ('<div class="bb-key-badges">'+lockBadge+keyBadgesHTML+notesBadge+linkBadge+'</div>') : '');
-        // Traffic light, Oct 18 2026 (Larry: "click it to change the light") -- one click moves it green, yellow, red, green. It never opens the card.
-        (function(){
-          var lt=el.querySelector('.bb-light'); if(!lt || !window.T2TTrafficLight) return;
-          ['mousedown','dblclick'].forEach(function(ev){ lt.addEventListener(ev, function(e){ e.stopPropagation(); }); });
-          lt.addEventListener('click', function(e){ e.stopPropagation(); e.preventDefault(); T2TTrafficLight.cycle(c, function(){ renderBoard(); }); });
-        })();
         el.addEventListener('dragstart', function(e){ e.dataTransfer.setData('text/plain', String(c.id)); });
         // Double-click opens the card (Aug 11 2026, Larry). Used to be a
         // second, faster way in alongside a corner-flip triangle; the
@@ -1575,7 +1567,6 @@
     _bbRenderKeyRow(c);
     // NEEDS PLAN switch (replaces Checklist), Oct 15 2026 -- mirrors the card's own flag.
     var _bbNpCb=document.getElementById('bb-d-needs-plan'); if(_bbNpCb) _bbNpCb.checked=!!c.needsPlan;
-    if(window.T2TTrafficLight) T2TTrafficLight.paintBack(c);   // traffic light, Oct 18 2026
     // Additions, Aug 27 2026 -- each checkbox/body pair just mirrors
     // this card's own addFlag; values were already written into their
     // fields above, so this only ever controls whether that section is
