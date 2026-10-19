@@ -427,9 +427,8 @@
       T().onRealtimeChange('briefing_cards', _bbApplyRemoteCard);
       // One-tree (Oct 10 2026): MASTER cards now live in the tree, so their
       // changes arrive on task_fields (partial rows) and other boards' cards
-      // arrive from the renamed legacy table. Both are fed to the same
+      // used to arrive from the old table (retired Oct 19 2026). Both were fed to the same
       // handler; task_fields events are first turned back into a full card row.
-      T().onRealtimeChange('briefing_cards_legacy', _bbApplyRemoteCard);
       T().onRealtimeChange('task_fields', async function(evt, row, oldRow){
         try{
           if(evt==='DELETE'){

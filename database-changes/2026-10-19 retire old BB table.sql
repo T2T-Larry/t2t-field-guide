@@ -1,0 +1,15 @@
+-- Oct 19 2026 -- Retire the old BB table (briefing_cards_legacy).
+-- Larry approved ("run the old-table retirement migration").
+-- Why: every real card already lives in the one tree (task_fields + ideas);
+-- the old table held 102 rows, 101 already in the tree, the 102nd a trashed
+-- September starter card (kept in the backup).
+-- 1. Backup: briefing_cards_legacy_backup_20261019 (102 rows).
+-- 2. briefing_cards view rebuilt to read the one tree only (UNION branch removed).
+-- 3. bb_cards_iud save rules: every write to the old table removed; a board with
+--    no home in the tree now stops with "This board has no home in the one tree".
+-- 4. Old table taken out of live-sync and renamed briefing_cards_legacy_retired_20261019
+--    (renamed, not dropped; rename it back to undo).
+-- Applied through the migration tool (view and function were rewritten from
+-- their live definitions inside one block, with stop-if-unexpected checks).
+-- Checked after: 622 task rows, 102 backup rows, 102 retired rows, no mention of
+-- the old table left in the view or save function, and Larry's login sees 525 cards.

@@ -131,7 +131,7 @@
     try{
       var r = await _sb.rpc('bb_cards_is_view');
       if (r && r.data === true) {
-        return LIVE_SYNC_TABLES.filter(function(t){ return t !== 'briefing_cards'; }).concat(['task_fields','briefing_cards_legacy']);
+        return LIVE_SYNC_TABLES.filter(function(t){ return t !== 'briefing_cards'; }).concat(['task_fields']);
       }
     }catch(e){}
     return LIVE_SYNC_TABLES;
