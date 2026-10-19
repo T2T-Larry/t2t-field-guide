@@ -2000,49 +2000,13 @@
   // signaled as NEEDS PLAN moves to HANG-UP from which it might be moved into DOING to say it is time to build the plan").
   // The switch on the card back replaces Checklist. A task that cannot be finished as written is a hang-up whose way out is a
   // PLAN, so flagging it puts it in HANG-UPS from any column but DONE, DOING included. Larry then drags it back to DOING when it is time to build the plan.
-  // The database does the same routing (trigger task_fields_needs_plan_route), so any writer gets it; this keeps the screen in step.
+  // (Retired Oct 19 2026: the database trigger task_fields_needs_plan_route no longer routes either.)
   // The flag clears by hand for now (switch off when the plan is approved).
   // fromFlag = true only at the moment the switch is turned on: then a card in DOING goes to HANG-UPS too. A drag or bulk move
   // passes nothing, so a flagged card can still be dragged back INTO Doing (that is how Larry says "build the plan now").
-  function _bbRouteNeedsPlan(c, fromFlag){
-    if(!c || !c.needsPlan) return;
-    if(typeof _bbIsDoCol==='function' && _bbIsDoCol(c.col)) c.col='hangups';
-    else if(fromFlag && c.col==='doing') c.col='hangups';
-  }
-  // VISION, Oct 19 2026 (Larry: checking Vision adds a VISION badge, meaning this task needs a Vision statement, and adds a header with the SUBJECT to the VISION board).
-  // Narrow write of the flag (a routine whole-card save must never set or clear it), then the header on the VISION board if it is not there yet.
-  async function _bbAddVisionHeader(c, sb){
-    var ir=await sb.from('ideas').select('project_id,user_id').eq('id', c.id).single();
-    if(ir.error || !ir.data || !ir.data.project_id) return;
-    var root=ir.data.project_id;
-    var vt=await sb.from('ideas').select('id').eq('cluster_id', root).eq('content_type','header').eq('text_content','VISION').limit(1);
-    if(vt.error || !vt.data || !vt.data.length) return;
-    var name=String(c.subject||c.task||'').trim(); if(!name) return;
-    var ex=await sb.from('ideas').select('id').eq('cluster_id', vt.data[0].id).eq('content_type','header').eq('text_content', name).limit(1);
-    if(ex.data && ex.data.length) return;
-    var ins=await sb.from('ideas').insert({user_id: ir.data.user_id, content_type:'header', text_content:name, cluster_id: vt.data[0].id, project_id: root, topic_scope_id: root});
-    if(ins.error) console.error('Briefing Board: VISION header add failed', ins.error);
-  }
-  function wireNeedsVisionSwitch(){
-    var cb=document.getElementById('bb-d-needs-vision');
-    if(!cb) return;
-    cb.addEventListener('change', async function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      var on=cb.checked;
-      c.needsVision=on;
-      try{
-        var sb=T().sb;
-        if(sb){
-          var res=await sb.from('task_fields').update({needs_vision:on}).eq('idea_id', c.id);
-          if(res.error) console.error('Briefing Board: VISION save failed', res.error);
-          else if(on) await _bbAddVisionHeader(c, sb);
-        }
-      }catch(e){ console.error('Briefing Board: VISION save failed', e); }
-      _bbSaveLocal(_bbCardsList());
-      renderBoard();
-    });
-  }
+  // Oct 19 2026 (Larry): "NEEDS PLAN is OK but now this is the task, not a Hang Up. A Hang Up needs a sit rep before anything."
+  // Flagging NEEDS PLAN no longer moves a card anywhere: it stays in its column and shows the badge. Kept as a no-op because the drag/move code still calls it.
+  function _bbRouteNeedsPlan(c, fromFlag){ return; }
   function wireNeedsPlanSwitch(){
     var cb=document.getElementById('bb-d-needs-plan');
     if(!cb) return;
@@ -2051,10 +2015,6 @@
       if(!c) return;
       var on=cb.checked, wasCol=c.col;
       c.needsPlan=on;
-      if(on){
-        _bbRouteNeedsPlan(c, true);
-        if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
-      }
       // Narrow write of the flag itself (same treatment as plan_step_id / project_header_id: a routine whole-card save must never
       // be able to set or clear it by accident). Done before the card save so the database routing and the screen agree.
       try{

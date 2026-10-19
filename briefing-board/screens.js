@@ -670,7 +670,7 @@
         // Falls back to the old checkbox list if card-back-options.js did not load.
         if(window.FGCardBackOptions){
           FGCardBackOptions.optionsRegion(bbw, {
-            skip: ['bb-d-add-budget-wrap','bb-d-add-links-wrap'],
+            skip: ['bb-d-add-budget-wrap','bb-d-add-links-wrap','bb-d-add-org-wrap','bb-d-add-routine-wrap'],
             noPopup: ['notes'],
             universal: ['flags','start','due','org','review'],
             ownLabel: 'Briefing card',
@@ -686,7 +686,7 @@
             }
           });
         } else {
-          FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
+          FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap','bb-d-add-org-wrap','bb-d-add-routine-wrap']);
         }
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Task's eye sits right of TASK
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
@@ -713,7 +713,7 @@
         if(colorRow && dup){
           var ux=document.createElement('div'); ux.className='fg-back-util-extra';
           colorRow.parentNode.insertBefore(ux, colorRow.nextSibling); ux.appendChild(dup);
-          ['bb-d-add-budget-wrap','bb-d-add-links-wrap'].forEach(function(id){ var w=q(id); if(w) ux.appendChild(w); });
+          ['bb-d-add-budget-wrap','bb-d-add-links-wrap','bb-d-add-org-wrap','bb-d-add-routine-wrap'].forEach(function(id){ var w=q(id); if(w) ux.appendChild(w); });
         }
         // Notes = the pencil along the bottom; it drives the (hidden) Notes checkbox so all existing saving/showing keeps working.
         var pen=q('bb-d-notes-pencil'), ncb=q('bb-d-add-notes');
