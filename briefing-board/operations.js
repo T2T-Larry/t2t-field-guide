@@ -892,6 +892,8 @@
         var needsPlanBadge = (c.needsPlan || c.goalHeaderId) ? (c.goalHeaderId
           ? '<span class="bb-needs-plan-badge bb-goal-badge" title="This task is the GOAL of a plan being built on the PLAN board.">GOAL</span>'
           : '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
+        // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
+        var visionBadge = c.needsVision ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine
@@ -1025,7 +1027,7 @@
           ? ('<div class="bb-card-eyebrow">'+_esc(topicEyebrowText)+'</div>') : '';
         var subjectHTML = _bbSubject ? ('<div class="bb-card-subject">'+_esc(_bbSubject)+'</div>') : '';
         var taskHTML = _bbShowTask ? ('<div class="bb-task">'+_esc(c.task)+'</div>') : '';
-        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+'</div>'
+        el.innerHTML='<div class="bb-top"><span class="bb-top-left">'+priBadge+visionBadge+needsPlanBadge+planBadge+'</span>'+dotHTML+'</div>'
           +(foreignBadge ? ('<div class="bb-foreign-row">'+foreignBadge+'</div>') : '')
           +topicEyebrow
           +subjectHTML
@@ -1567,6 +1569,7 @@
     _bbRenderKeyRow(c);
     // NEEDS PLAN switch (replaces Checklist), Oct 15 2026 -- mirrors the card's own flag.
     var _bbNpCb=document.getElementById('bb-d-needs-plan'); if(_bbNpCb) _bbNpCb.checked=!!c.needsPlan;
+    var _bbNvCb=document.getElementById('bb-d-needs-vision'); if(_bbNvCb) _bbNvCb.checked=!!c.needsVision;
     // Additions, Aug 27 2026 -- each checkbox/body pair just mirrors
     // this card's own addFlag; values were already written into their
     // fields above, so this only ever controls whether that section is
@@ -1578,7 +1581,8 @@
     });
     // Review addition, Sept 29 2026 -- open whenever the card already carries review data (reviewer other than the default, PRO/GROW/Complete, or a GROW note).
     (function(){
-      var open=!!(c.pro||c.grow||c.verified||c.growNote||(c.reviewedBy && c.reviewedBy!==REVIEWERS[0]));
+      // Oct 19 2026 (Larry): Review shows only on DONE cards, open and ready to use.
+      var open=(c.col==='done');
       var rcb=document.getElementById('bb-d-add-review'); if(rcb) rcb.checked=open;
       var rbody=document.getElementById('bb-d-review-body'); if(rbody) rbody.style.display=open?'':'none';
     })();
@@ -1586,6 +1590,7 @@
       var pen=document.getElementById('bb-d-notes-pencil'), ncb=document.getElementById('bb-d-add-notes');
       if(pen) pen.classList.toggle('fg-on', !!(ncb && ncb.checked));
     })();
+    if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync();   // the four fixed rows, Oct 19 2026
     var ov=document.getElementById('bb-detail-overlay');
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }

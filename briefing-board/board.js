@@ -401,6 +401,7 @@
     wireProjectHub();
     wireTeamRoster();
     wireNeedsPlanSwitch();
+    wireNeedsVisionSwitch();
     wireDatePickers();
 
     T().wire('bb-trash-yes', doTrashCard);

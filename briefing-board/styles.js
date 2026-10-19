@@ -931,6 +931,7 @@
       // NEEDS PLAN, Oct 15 2026 -- pink, see-through eyebrow (the card text stays readable under it); a faint pink top edge on the card.
       +'.bb-needs-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 5px;border-radius:3px;background:rgba(236,72,153,.28);border:1px solid rgba(219,39,119,.75);color:#9d174d;white-space:nowrap}'
       +'.bb-card.bb-needs-plan{box-shadow:inset 0 3px 0 rgba(236,72,153,.6),1px 2px 4px rgba(59,37,16,0.18)}'
+      +'.bb-needs-plan-badge.bb-vision-badge{background:rgba(124,58,237,.22);border-color:rgba(109,40,217,.7);color:#5b21b6}'
       +'.bb-needs-plan-badge.bb-goal-badge{background:rgba(13,148,136,.25);border-color:rgba(13,148,136,.7);color:#115e59}'
       +'.bb-needs-plan-eyebrow{color:#9d174d;font-weight:700}'
       +'.bb-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 4px;border-radius:3px;background:#c9a876;color:#3b2a00;white-space:nowrap}'

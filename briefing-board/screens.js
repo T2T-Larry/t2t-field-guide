@@ -508,6 +508,7 @@
             // permanently visible, just below the divider that closes
             // out this whole section.
             +'<div class="bb-field bb-addition" id="bb-d-needs-plan-wrap"><label class="bb-addition-label" title="This task cannot be finished until a PLAN exists. Flagging it puts it in HANG-UPS."><input type="checkbox" id="bb-d-needs-plan"><span class="bb-addition-eyebrow bb-needs-plan-eyebrow">NEEDS PLAN</span></label></div>'
+            +'<div class="bb-field bb-addition" id="bb-d-needs-vision-wrap"><label class="bb-addition-label" title="This task needs a Vision statement."><input type="checkbox" id="bb-d-needs-vision"><span class="bb-addition-eyebrow">VISION</span></label></div>'
             // "Also show on," retired in place Sept 19 2026 (Master BB
             // card): Larry wants it off the card entirely. The reveal
             // logic that used to show this for a card native to a
@@ -688,6 +689,19 @@
           FGCardBack.checkRegion(bbw, ['bb-d-add-budget-wrap','bb-d-add-links-wrap']);
         }
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Task's eye sits right of TASK
+        // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
+        if(window.FGCardBackFixedRows && window.FGCardBackOptions){
+          FGCardBackFixedRows.build(bbw, {
+            getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
+            setHidden: function(arr){
+              var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+              c.frontHidden=arr.join(',');
+              _bbSaveLocal(_bbCardsList());
+              _bbPersistMergedCardById(_bbOpenCardId);
+              renderBoard();
+            }
+          });
+        }
         // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
         var sb=q('bb-d-start-body'), db=q('bb-d-due-body');
         if(sb && db){

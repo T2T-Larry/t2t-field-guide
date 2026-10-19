@@ -968,6 +968,7 @@
       // already had real content in the matching field, so nothing
       // already on a card goes invisible just because this shipped.
       needsPlan: !!row.needs_plan,
+      needsVision: !!row.needs_vision,
       // (traffic light retired Oct 19 2026 -- Larry: it added nothing; the task_fields.light column is no longer used)
       goalHeaderId: row.goal_header_id||null,
       addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
@@ -2007,6 +2008,40 @@
     if(!c || !c.needsPlan) return;
     if(typeof _bbIsDoCol==='function' && _bbIsDoCol(c.col)) c.col='hangups';
     else if(fromFlag && c.col==='doing') c.col='hangups';
+  }
+  // VISION, Oct 19 2026 (Larry: checking Vision adds a VISION badge, meaning this task needs a Vision statement, and adds a header with the SUBJECT to the VISION board).
+  // Narrow write of the flag (a routine whole-card save must never set or clear it), then the header on the VISION board if it is not there yet.
+  async function _bbAddVisionHeader(c, sb){
+    var ir=await sb.from('ideas').select('project_id,user_id').eq('id', c.id).single();
+    if(ir.error || !ir.data || !ir.data.project_id) return;
+    var root=ir.data.project_id;
+    var vt=await sb.from('ideas').select('id').eq('cluster_id', root).eq('content_type','header').eq('text_content','VISION').limit(1);
+    if(vt.error || !vt.data || !vt.data.length) return;
+    var name=String(c.subject||c.task||'').trim(); if(!name) return;
+    var ex=await sb.from('ideas').select('id').eq('cluster_id', vt.data[0].id).eq('content_type','header').eq('text_content', name).limit(1);
+    if(ex.data && ex.data.length) return;
+    var ins=await sb.from('ideas').insert({user_id: ir.data.user_id, content_type:'header', text_content:name, cluster_id: vt.data[0].id, project_id: root, topic_scope_id: root});
+    if(ins.error) console.error('Briefing Board: VISION header add failed', ins.error);
+  }
+  function wireNeedsVisionSwitch(){
+    var cb=document.getElementById('bb-d-needs-vision');
+    if(!cb) return;
+    cb.addEventListener('change', async function(){
+      var c=_bbFindCardAnywhere(_bbOpenCardId);
+      if(!c) return;
+      var on=cb.checked;
+      c.needsVision=on;
+      try{
+        var sb=T().sb;
+        if(sb){
+          var res=await sb.from('task_fields').update({needs_vision:on}).eq('idea_id', c.id);
+          if(res.error) console.error('Briefing Board: VISION save failed', res.error);
+          else if(on) await _bbAddVisionHeader(c, sb);
+        }
+      }catch(e){ console.error('Briefing Board: VISION save failed', e); }
+      _bbSaveLocal(_bbCardsList());
+      renderBoard();
+    });
   }
   function wireNeedsPlanSwitch(){
     var cb=document.getElementById('bb-d-needs-plan');
