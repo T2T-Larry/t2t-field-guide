@@ -886,7 +886,7 @@
         // A home board named PROJECTS is that traveler's MASTER board (Sept 22 2026 rule).
         var _bbHomeLbl = (window.IDBand && IDBand.isNonProjectName(c._homeBoardName)) ? 'MASTER' : (c._homeBoardName||'');
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
-        var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
+        var priBadge = (c.priority && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority'))) ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
         var needsPlanBadge = ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId) ? (c.goalHeaderId
@@ -1453,6 +1453,7 @@
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
     document.getElementById('bb-d-situation').value=c.situation||'';
+    _bbPaintPriorityEye(c);
     ['vision','plan','delay','issue'].forEach(function(k){
       var hb=document.getElementById('bb-d-hr-'+k);
       if(hb) hb.setAttribute('data-state', _bbHangupReasonState(c, k));

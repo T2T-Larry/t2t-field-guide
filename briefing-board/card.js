@@ -2050,6 +2050,13 @@
     if(l.indexOf(','+k+',')>=0) return '1';
     return '0';
   }
+  function _bbPaintPriorityEye(c){
+    var b=document.getElementById('bb-d-pri-eye'); if(!b || !window.FGCardBackOptions) return;
+    var off=FGCardBackOptions.isBackOnly(c.frontHidden,'priority'), ic=FGCardBackOptions.eyeIcons;
+    b.innerHTML = off ? ic.slash : ic.open;
+    b.classList.toggle('fg-eye-off', off);
+    b.title = off ? 'Back only: click to also show on the front' : 'Shows on the front: click for back only';
+  }
   function _bbPaintHangupEyes(c){
     if(!window.FGCardBackOptions) return;
     var hidden=FGCardBackOptions.parseHidden(c.frontHidden), ic=FGCardBackOptions.eyeIcons;

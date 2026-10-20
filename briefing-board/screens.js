@@ -675,6 +675,25 @@
         var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
         var row=document.createElement('div'); row.className='fg-back-toprow';
         priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
+        // Oct 20 2026 (Larry): the PRIORITY eyebrow sits level with SUBJECT and carries its own eyeball (shows the priority badge on the front, or back only).
+        var priLab=priF.querySelector('label');
+        if(priLab){
+          var labRow=document.createElement('div'); labRow.className='fg-back-labelrow';
+          priLab.parentNode.insertBefore(labRow, priLab); labRow.appendChild(priLab);
+          var priEye=document.createElement('button'); priEye.type='button'; priEye.className='fg-back-eye'; priEye.id='bb-d-pri-eye';
+          labRow.appendChild(priEye);
+          priEye.addEventListener('click', function(e){
+            e.stopPropagation();
+            var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c || !window.FGCardBackOptions) return;
+            var cur=FGCardBackOptions.parseHidden(c.frontHidden).slice(), i=cur.indexOf('priority');
+            if(i>=0) cur.splice(i,1); else cur.push('priority');
+            c.frontHidden=cur.join(',');
+            _bbPaintPriorityEye(c);
+            _bbSaveLocal(_bbCardsList());
+            _bbPersistMergedCardById(c.id);
+            renderBoard();
+          });
+        }
         // Show-on-front stays under Task (Larry, round 3: "show on front below task field").
         // Budget and Links live under the gear (Utility) now, not in the checkbox list (Larry, round 4).
         var taskF=q('bb-d-task').closest('.bb-field'); if(taskF) taskF.classList.add('fg-back-task');

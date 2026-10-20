@@ -764,6 +764,7 @@
       +'.bb-field.bb-addition,#bb-d-shared-wrap{margin-bottom:7px}'
       +'.bb-addition-body{margin-top:4px}'
       +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
+      +'#bb-d-hangup-wrap .bb-field-divider{max-width:none;width:100%}'
       // Quiet Added-date, Aug 27 2026 (Larry: "What if the date added is
       // quietly after the TASK Eyebrow?") -- rides on the Task label
       // itself now instead of its own "Dates" block; deliberately NOT
@@ -931,7 +932,6 @@
       // NEEDS PLAN, Oct 15 2026 -- pink, see-through eyebrow (the card text stays readable under it); a faint pink top edge on the card.
       +'.bb-needs-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 5px;border-radius:3px;background:rgba(236,72,153,.28);border:1px solid rgba(219,39,119,.75);color:#9d174d;white-space:nowrap}'
       +'.bb-card.bb-needs-plan{box-shadow:inset 0 3px 0 rgba(236,72,153,.6),1px 2px 4px rgba(59,37,16,0.18)}'
-      +'.bb-needs-plan-badge.bb-vision-badge{background:rgba(124,58,237,.22);border-color:rgba(109,40,217,.7);color:#5b21b6}'
       +'.bb-needs-plan-badge.bb-why-badge{background:rgba(220,38,38,.18);border-color:rgba(185,28,28,.7);color:#991b1b}'
       +'.bb-hangup-body{display:flex;gap:16px;align-items:stretch}'
       +'.bb-hangup-left{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}'
@@ -948,7 +948,6 @@
       +'.bb-hangup-sit{flex:1;min-width:0;display:flex;flex-direction:column}'
       +'.bb-hangup-sit label{white-space:nowrap}'
       +'.bb-hangup-sit textarea{flex:1 1 auto;width:100%;min-height:150px;height:100%;box-sizing:border-box;resize:vertical}'
-      +'.bb-needs-plan-badge.bb-reason-badge{background:rgba(120,113,108,.2);border-color:rgba(87,83,78,.7);color:#44403c}'
       +'.bb-needs-plan-badge.bb-goal-badge{background:rgba(13,148,136,.25);border-color:rgba(13,148,136,.7);color:#115e59}'
       +'.bb-needs-plan-eyebrow{color:#9d174d;font-weight:700}'
       +'.bb-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 4px;border-radius:3px;background:#c9a876;color:#3b2a00;white-space:nowrap}'
