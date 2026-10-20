@@ -936,7 +936,7 @@
       +'.bb-card.bb-needs-plan{box-shadow:inset 0 3px 0 rgba(236,72,153,.6),1px 2px 4px rgba(59,37,16,0.18)}'
       // Oct 20 2026 (Larry): Hang Up badge colors -- VISION light blue, PLAN the plan brown, DELAY pink (the base), ISSUE red with white text.
       +'.bb-needs-plan-badge.bb-vision-badge{background:rgba(125,190,240,.4);border-color:#4a90c8;color:#1e4f7a}'
-      +'.bb-needs-plan-badge.bb-plan-need{background:#c9a876;border-color:#a8864f;color:#3b2a00}'
+      +'.bb-needs-plan-badge.bb-plan-need{background:#4a2c12;border-color:#3b2210;color:#fff}'
       +'.bb-needs-plan-badge.bb-issue-badge{background:#c0392b;border-color:#991b1b;color:#fff}'
       // Briefing card back: PRIORITY and SUBJECT eyebrows on one level, Subject flush with Task, Hang Up section as wide as Task.
       +'#bb-detail-overlay .fg-back-toprow.bb-toprow-brief{grid-template-columns:auto minmax(0,1fr);align-items:start}'

@@ -889,10 +889,11 @@
         var foreignBadge = c._foreign ? ('<span class="bb-foreign-badge" title="From '+_esc(_bbHomeLbl)+' — open it there to edit. Priority here is independent; moving it into or out of Doing/Done/Hang-Ups updates both boards.">'+_esc(_bbHomeLbl)+'</span>') : '';
         var priBadge = (c.priority && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'priority'))) ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
+        // Oct 20 2026 (Larry): GOAL and NEEDS PLAN both show as one dark brown PLAN badge (white text); the plan steps keep their own tan marker.
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
         var needsPlanBadge = ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId) ? (c.goalHeaderId
-          ? '<span class="bb-needs-plan-badge bb-goal-badge" title="This task is the GOAL of a plan being built on the PLAN board.">GOAL</span>'
-          : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
+          ? '<span class="bb-needs-plan-badge bb-plan-need" title="This task has a plan on the PLAN board; its GOAL is one of the plan\'s checklist items.">PLAN</span>'
+          : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
         var visionBadge = (c.needsVision && !_bbHO('vision')) ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
