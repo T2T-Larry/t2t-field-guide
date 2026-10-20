@@ -2041,26 +2041,38 @@
   // multiple steps needed (NEEDS PLAN), waiting on a task, outside interference. Checking one saves it in hangup_reasons and turns on the matching
   // badge; VISION also adds the empty header on the VISION board (ensure_vision_header). The card stays in HANG-UPS until the PRIMARY moves it out
   // (a Priority decision, then Larry's DOING decision). A missing PRIMARY is never a reason: the next higher PRIMARY is in charge.
+  // Three states per reason, stored in the same comma list: 'vision' = selected (checked, not complete); 'vision:done' = complete (check + line-through).
+  // Click cycles empty -> selected -> complete -> empty. The PRIMARY is responsible for verifying completion, however reached; the second check confirms it.
+  // NEEDS VISION / NEEDS PLAN stay on while the reason is selected and clear when it is complete.
+  function _bbHangupReasonState(c, k){
+    var l=','+String(c.hangupReasons||'')+',';
+    if(l.indexOf(','+k+':done,')>=0) return '2';
+    if(l.indexOf(','+k+',')>=0) return '1';
+    return '0';
+  }
   function wireHangupReasons(){
     ['vision','plan','waiting','interference'].forEach(function(k){
-      var cb=document.getElementById('bb-d-hr-'+k);
-      if(!cb) return;
-      cb.addEventListener('change', async function(){
+      var btn=document.getElementById('bb-d-hr-'+k);
+      if(!btn) return;
+      btn.addEventListener('click', async function(){
         var c=_bbFindCardAnywhere(_bbOpenCardId);
         if(!c) return;
-        var on=cb.checked;
-        var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k; });
-        if(on) list.push(k);
+        var next=(parseInt(_bbHangupReasonState(c,k),10)+1)%3;
+        var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k && x!==k+':done'; });
+        if(next===1) list.push(k);
+        if(next===2) list.push(k+':done');
         c.hangupReasons=list.join(',');
+        btn.setAttribute('data-state', String(next));
+        var flagOn=(next===1);
         var upd={hangup_reasons:c.hangupReasons};
-        if(k==='plan'){ upd.needs_plan=on; c.needsPlan=on; }
-        if(k==='vision'){ upd.needs_vision=on; c.needsVision=on; }
+        if(k==='plan'){ upd.needs_plan=flagOn; c.needsPlan=flagOn; }
+        if(k==='vision'){ upd.needs_vision=flagOn; c.needsVision=flagOn; }
         try{
           var sb=T().sb;
           if(sb){
             var res=await sb.from('task_fields').update(upd).eq('idea_id', c.id);
             if(res.error) console.error('Briefing Board: Hang Up reason save failed', res.error);
-            else if(k==='vision' && on) await _bbAddVisionHeader(c, sb);
+            else if(k==='vision' && flagOn) await _bbAddVisionHeader(c, sb);
           }
         }catch(e){ console.error('Briefing Board: Hang Up reason save failed', e); }
         var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=!!c.needsVision;
@@ -2070,52 +2082,7 @@
       });
     });
   }
-  // Oct 20 2026 (Larry): "Consensus is the key!" A Vision Statement is complete when everyone working the task feels comfortable that the headers
-  // cover what they can think of, enough to take a shot; anything that arises later is fine, so a tick can be withdrawn. The PRIMARY assigns the
-  // team with the Key Stakeholder's approval. One row per member in hangup_vision_team; the database clears NEEDS VISION when all have agreed
-  // and brings it back if one withdraws or a member is added. A person ticks only their own box (named from the signed-in email).
-  async function _bbMyTeamName(sb){
-    try{
-      var u=await sb.auth.getUser(); var em=u&&u.data&&u.data.user&&u.data.user.email;
-      if(!em) return '';
-      var n=em.split('@')[0].split(/[._-]/)[0];
-      return n ? n.charAt(0).toUpperCase()+n.slice(1).toLowerCase() : '';
-    }catch(e){ return ''; }
-  }
-  async function _bbRenderVisionTeam(c){
-    var box=document.getElementById('bb-d-vteam');
-    if(!box) return;
-    box.style.display='none'; box.innerHTML='';
-    if(!c || c.col!=='hangups') return;
-    var sb=T().sb; if(!sb) return;
-    var res=await sb.from('hangup_vision_team').select('member,agreed').eq('idea_id', c.id).order('member');
-    if(res.error || !res.data || !res.data.length) return;
-    if(_bbOpenCardId!==c.id) return;
-    var me=await _bbMyTeamName(sb);
-    var all=res.data.every(function(r){ return r.agreed; });
-    var chips=res.data.map(function(r){
-      return '<span style="display:inline-block;margin:0 8px 4px 0;padding:2px 8px;border-radius:10px;border:1px solid rgba(109,40,217,.5);'
-        +(r.agreed?'background:rgba(34,197,94,.18)':'background:transparent')+'">'+(r.agreed?'&#10003; ':'&#9675; ')+r.member+'</span>';
-    }).join('');
-    var mine=res.data.filter(function(r){ return r.member===me; })[0];
-    var btn=mine ? '<button type="button" id="bb-d-vteam-btn" class="bb-btn">'+(mine.agreed?'Withdraw my agreement':'I agree: this Vision is enough to take a shot')+'</button>' : '';
-    box.innerHTML='<label>Vision agreed by the team'+(all?' &mdash; consensus reached':'')+'</label><div>'+chips+'</div>'+btn;
-    box.style.display='';
-    var b=document.getElementById('bb-d-vteam-btn');
-    if(b) b.addEventListener('click', async function(){
-      b.disabled=true;
-      var up=await sb.from('hangup_vision_team').update({agreed:!mine.agreed, agreed_at:(!mine.agreed?new Date().toISOString():null)}).eq('idea_id', c.id).eq('member', me);
-      if(up.error) console.error('Briefing Board: Vision agreement save failed', up.error);
-      var tf=await sb.from('task_fields').select('needs_vision').eq('idea_id', c.id).maybeSingle();
-      if(tf && tf.data){
-        c.needsVision=!!tf.data.needs_vision;
-        var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=c.needsVision;
-      }
-      _bbSaveLocal(_bbCardsList());
-      renderBoard();
-      _bbRenderVisionTeam(c);
-    });
-  }
+  // Oct 20 2026 (Larry): the VISION AGREED addition (team consensus ticks) is deleted. The PRIMARY verifies completion with the second check on the reason.
   function wireNeedsPlanSwitch(){
     var cb=document.getElementById('bb-d-needs-plan');
     if(!cb) return;

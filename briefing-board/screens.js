@@ -489,20 +489,22 @@
               +'<label class="bb-front-check" id="bb-d-contents-front-row"><input type="checkbox" id="bb-d-contents-front"><span>Show on front</span></label>'
             +'</div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
-              +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
-              // Oct 20 2026 (Larry): the reasons a task is a Hang Up are a checklist on the LEFT; the fill-in-the-blank situation moves to the RIGHT of it.
-              // The four frequent reasons: unclear what is needed (VISION), multiple steps needed (NEEDS PLAN), waiting on a task, outside interference.
+              // Oct 20 2026 (Larry): LEFT column = STUCK SINCE, then the reasons checklist directly under it; RIGHT column = SITUATION, level with STUCK SINCE and wide
+              // enough that its eyebrow stays on one line. Each reason has THREE states: empty, selected (checked, not complete), complete (checked and struck through).
+              // The PRIMARY is ultimately responsible for verifying completion, however it is reached; the second check is that confirmation.
               +'<div class="bb-hangup-body">'
-                +'<div class="bb-hangup-checks">'
-                  +'<label><input type="checkbox" id="bb-d-hr-vision"> Unclear what is needed</label>'
-                  +'<label><input type="checkbox" id="bb-d-hr-plan"> Multiple steps needed</label>'
-                  +'<label><input type="checkbox" id="bb-d-hr-waiting"> Waiting on a task</label>'
-                  +'<label><input type="checkbox" id="bb-d-hr-interference"> Outside interference</label>'
+                +'<div class="bb-hangup-left">'
+                  +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
+                  +'<div class="bb-hangup-checks">'
+                    +'<button type="button" class="bb-hr" id="bb-d-hr-vision" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Unclear what is needed</span></button>'
+                    +'<button type="button" class="bb-hr" id="bb-d-hr-plan" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Multiple steps needed</span></button>'
+                    +'<button type="button" class="bb-hr" id="bb-d-hr-waiting" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Waiting on a task</span></button>'
+                    +'<button type="button" class="bb-hr" id="bb-d-hr-interference" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Outside interference</span></button>'
+                  +'</div>'
                 +'</div>'
                 +'<div class="bb-field bb-hangup-sit"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
               +'</div>'
-              // Oct 20 2026 (Larry): a Vision Statement is complete by CONSENSUS of the team working the task (table hangup_vision_team). Filled by _bbRenderVisionTeam.
-              +'<div class="bb-field" id="bb-d-vteam" style="display:none"></div>'
+              +'<hr class="bb-field-divider">'
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
             // which open when checked and stay open when active"),
