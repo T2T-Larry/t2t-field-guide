@@ -933,6 +933,15 @@
       // NEEDS PLAN, Oct 15 2026 -- pink, see-through eyebrow (the card text stays readable under it); a faint pink top edge on the card.
       +'.bb-needs-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 5px;border-radius:3px;background:rgba(236,72,153,.28);border:1px solid rgba(219,39,119,.75);color:#9d174d;white-space:nowrap}'
       +'.bb-card.bb-needs-plan{box-shadow:inset 0 3px 0 rgba(236,72,153,.6),1px 2px 4px rgba(59,37,16,0.18)}'
+      // Oct 20 2026 (Larry): Hang Up badge colors -- VISION light blue, PLAN the plan brown, DELAY pink (the base), ISSUE red with white text.
+      +'.bb-needs-plan-badge.bb-vision-badge{background:rgba(125,190,240,.4);border-color:#4a90c8;color:#1e4f7a}'
+      +'.bb-needs-plan-badge.bb-plan-need{background:#c9a876;border-color:#a8864f;color:#3b2a00}'
+      +'.bb-needs-plan-badge.bb-issue-badge{background:#c0392b;border-color:#991b1b;color:#fff}'
+      // Briefing card back: PRIORITY and SUBJECT eyebrows on one level, Subject flush with Task, Hang Up section as wide as Task.
+      +'#bb-detail-overlay .fg-back-toprow.bb-toprow-brief{grid-template-columns:auto minmax(0,1fr);align-items:start}'
+      +'#bb-detail-overlay .bb-toprow-brief .bb-field:last-child{grid-column:2;width:100%;max-width:none}'
+      +'#bb-detail-overlay .bb-toprow-brief .bb-field>label,#bb-detail-overlay .bb-toprow-brief .fg-back-labelrow{min-height:18px;display:flex;align-items:center;margin:0 0 3px}'
+      +'#bb-detail-overlay #bb-d-hangup-wrap{width:100%;box-sizing:border-box}'
       +'.bb-needs-plan-badge.bb-why-badge{background:rgba(220,38,38,.18);border-color:rgba(185,28,28,.7);color:#991b1b}'
       +'.bb-hangup-body{display:flex;gap:16px;align-items:stretch}'
       +'.bb-hangup-left{flex:0 0 auto;display:flex;flex-direction:column;gap:8px}'

@@ -496,10 +496,10 @@
                 +'<div class="bb-hangup-left">'
                   +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
                   +'<div class="bb-hangup-checks">'
-                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-vision" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Unclear what is needed</span></button><span class="bb-needs-plan-badge bb-hr-badge">VISION</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-vision"></button></div>'
-                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-plan" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Multiple steps needed</span></button><span class="bb-needs-plan-badge bb-hr-badge">PLAN</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-plan"></button></div>'
+                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-vision" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Unclear what is needed</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-vision-badge">VISION</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-vision"></button></div>'
+                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-plan" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Multiple steps needed</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-plan-need">PLAN</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-plan"></button></div>'
                     +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-delay" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Delayed: outside my control</span></button><span class="bb-needs-plan-badge bb-hr-badge">DELAY</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-delay"></button></div>'
-                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-issue" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Something else</span></button><span class="bb-needs-plan-badge bb-hr-badge">ISSUE</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-issue"></button></div>'
+                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-issue" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Something else</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-issue-badge">ISSUE</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-issue"></button></div>'
                   +'</div>'
                 +'</div>'
                 +'<div class="bb-field bb-hangup-sit"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
@@ -673,7 +673,7 @@
         var q=function(id){ return detailOv.querySelector('#'+id); };
         // Priority + Subject on one line, Task full width below with its Show-on-front.
         var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
-        var row=document.createElement('div'); row.className='fg-back-toprow';
+        var row=document.createElement('div'); row.className='fg-back-toprow bb-toprow-brief';
         priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
         // Oct 20 2026 (Larry): the PRIORITY eyebrow sits level with SUBJECT and carries its own eyeball (shows the priority badge on the front, or back only).
         var priLab=priF.querySelector('label');

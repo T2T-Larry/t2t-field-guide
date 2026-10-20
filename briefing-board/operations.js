@@ -891,7 +891,7 @@
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
         var needsPlanBadge = ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId) ? (c.goalHeaderId
           ? '<span class="bb-needs-plan-badge bb-goal-badge" title="This task is the GOAL of a plan being built on the PLAN board.">GOAL</span>'
-          : '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
+          : '<span class="bb-needs-plan-badge bb-plan-need" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
         var visionBadge = (c.needsVision && !_bbHO('vision')) ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
@@ -902,7 +902,7 @@
           if(_hr.indexOf(',delay,')>=0 && !_bbHO('delay')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Delayed by something outside the PRIMARY\'s control.">DELAY</span>';
           // Oct 20 2026 (Larry): ISSUE is the default badge of a Hang Up: it shows even when no frequent reason is selected (it replaces WHY, OUTSIDE and CONFLICT).
           var _otherOn = c.needsVision || c.needsPlan || _hr.indexOf(',delay,')>=0;
-          if((_hr.indexOf(',issue,')>=0 || !_otherOn) && _hr.indexOf(',issue:done,')<0 && !_bbHO('issue')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Something is stopping this task: see Situation.">ISSUE</span>';
+          if((_hr.indexOf(',issue,')>=0 || !_otherOn) && _hr.indexOf(',issue:done,')<0 && !_bbHO('issue')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge bb-issue-badge" title="Something is stopping this task: see Situation.">ISSUE</span>';
         }
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
