@@ -630,8 +630,15 @@
             // Open state is derived (any review data on the card opens it); the checkbox itself is not stored on the card yet.
             +'<div class="bb-field bb-addition" id="bb-d-add-review-wrap"><label class="bb-addition-label"><input type="checkbox" id="bb-d-add-review"><span class="bb-addition-eyebrow">Review</span></label><div class="bb-addition-body" id="bb-d-review-body" style="display:none">'
               +'<div class="bb-field"><label>Reviewed by</label><select id="bb-d-reviewer">'+REVIEWERS.map(function(n){ return '<option value="'+n+'">'+n+'</option>'; }).join('')+'</select></div>'
-              +'<div class="bb-field"><div class="bb-flags"><button class="bb-flag-btn" id="bb-d-pro">&#11088; PRO</button><button class="bb-flag-btn" id="bb-d-grow">&#127793; GROW</button><button class="bb-flag-btn" id="bb-d-verify">&#10003; Complete</button></div></div>'
-              +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
+              // Oct 20 2026 (Larry): REVIEW opens an indented checklist -- PRO, GROW, COMPLETE. PRO and GROW each open a text field to the right,
+              // under REVIEWED BY. COMPLETE is the action: anywhere but DONE it moves the card to DONE, in DONE it moves it to the Archive.
+              // The rows are made by the shared checklist builder (card-back-fixed-rows.js); the real boxes below carry the PRO / GROW flags.
+              +'<input type="checkbox" id="bb-d-rv-pro" style="display:none"><input type="checkbox" id="bb-d-rv-grow" style="display:none">'
+              +'<button type="button" id="bb-d-verify" style="display:none">Complete</button>'
+              +'<div class="fg-review-grid"><div class="fg-review-left" id="bb-rv-left"></div><div class="fg-review-right">'
+                +'<div class="bb-field" id="bb-d-pro-note-wrap" style="display:none"><label>PRO comment</label><textarea id="bb-d-pro-note" placeholder="What went well?"></textarea></div>'
+                +'<div class="bb-field" id="bb-d-grow-note-wrap" style="display:none"><label>GROW comment &mdash; required</label><textarea id="bb-d-grow-note" placeholder="What would make this even better next time?"></textarea></div>'
+              +'</div></div>'
             +'</div></div>'
             // Bottom action row, Session 234 (Aug 21, Larry: "add the same
             // bottom row as on the IDEA CARD to the BB Cards? lock - twin
@@ -724,6 +731,26 @@
         // The four fixed rows, Oct 19 2026 (Larry): Dates, Signal Flags, Vision, Plan -- always on the back, each with its eye; replaces the OPTIONS popup.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions){
           FGCardBackFixedRows.build(bbw, {
+            getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
+            setHidden: function(arr){
+              var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+              c.frontHidden=arr.join(',');
+              _bbSaveLocal(_bbCardsList());
+              _bbPersistMergedCardById(_bbOpenCardId);
+              renderBoard();
+            }
+          });
+        }
+        // The Review's own indented checklist (PRO, GROW, COMPLETE), Oct 20 2026 -- same builder, same three-click rows.
+        if(window.FGCardBackFixedRows && window.FGCardBackOptions && q('bb-rv-left')){
+          FGCardBackFixedRows.build(bbw, {
+            key:'review', className:'fg-review-rows',
+            rows:[
+              { id:'pro',  label:'PRO',  boxes:['bb-d-rv-pro'],  eyeKeys:[], bodies:['bb-d-pro-note-wrap'] },
+              { id:'grow', label:'GROW', boxes:['bb-d-rv-grow'], eyeKeys:[], bodies:['bb-d-grow-note-wrap'] }
+            ],
+            mount:function(block){ q('bb-rv-left').appendChild(block); },
+            actions:[{ label:'Complete', title:'Complete: move to DONE (in DONE: move to the Archive)', icon:'&#10003;&nbsp;', run:function(){ var v=q('bb-d-verify'); if(v) v.click(); } }],
             getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
             setHidden: function(arr){
               var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;

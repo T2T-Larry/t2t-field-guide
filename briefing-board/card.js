@@ -1603,6 +1603,17 @@
     }
   }
 
+  // Review comments, Oct 20 2026. PRO and GROW each carry a comment, kept in the one text column the card already has (grow_note):
+  // plain text = the old GROW-only comment; a small packed record when a PRO comment exists. No database change needed.
+  function _bbReviewNotes(c){
+    var raw=String((c&&c.growNote)||'');
+    if(raw.indexOf('{"v":1')===0){ try{ var o=JSON.parse(raw); return {pro:o.pro||'', grow:o.grow||''}; }catch(e){} }
+    return {pro:'', grow:raw};
+  }
+  function _bbPackReviewNotes(pro, grow){
+    pro=String(pro||''); grow=String(grow||'');
+    return pro.trim() ? JSON.stringify({v:1, pro:pro, grow:grow}) : grow;
+  }
   function _bbUpdateReviewUI(c){
     var vBtn=document.getElementById('bb-d-verify');
     var pBtn=document.getElementById('bb-d-pro');
@@ -1625,24 +1636,18 @@
     // PRO and GROW are performance-eval tags -- click to flag, click
     // again to clear, same pattern as Signal flag. Neither one gates
     // anything; they just ride along on the card's history.
-    T().wire('bb-d-pro', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      c.pro=!c.pro;
-      _bbSaveLocal(_bbCardsList());
-      _bbUpdateReviewUI(c);
-    });
-    T().wire('bb-d-grow', function(){
-      var c=_bbFindCardAnywhere(_bbOpenCardId);
-      if(!c) return;
-      c.grow=!c.grow;
-      _bbSaveLocal(_bbCardsList());
-      _bbUpdateReviewUI(c);
-      var wrap=document.getElementById('bb-d-grow-note-wrap');
-      if(wrap){
-        wrap.style.display=c.grow?'':'none';
-        if(c.grow){ var ta=document.getElementById('bb-d-grow-note'); if(ta) ta.focus(); }
-      }
+    // PRO and GROW are the two review rows (shared checklist rows, see card-back-fixed-rows.js): their hidden boxes carry the flags,
+    // and opening a row shows its comment to the right under REVIEWED BY. Neither one gates anything.
+    [['bb-d-rv-pro','pro','bb-d-pro-note-wrap','bb-d-pro-note'],['bb-d-rv-grow','grow','bb-d-grow-note-wrap','bb-d-grow-note']].forEach(function(x){
+      var box=document.getElementById(x[0]); if(!box || box.__fgRv) return; box.__fgRv=true;
+      box.addEventListener('change', function(){
+        var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+        c[x[1]]=box.checked;
+        _bbSaveLocal(_bbCardsList());
+        _bbUpdateReviewUI(c);
+        var wrap=document.getElementById(x[2]); if(wrap) wrap.style.display=box.checked?'':'none';
+        if(box.checked){ var ta=document.getElementById(x[3]); if(ta) setTimeout(function(){ ta.focus(); },0); }
+      });
     });
     // Complete (renamed from "Verified", Sept 2026 -- Larry: two-step
     // meaning) now does double duty. Off of Done, checking it means the

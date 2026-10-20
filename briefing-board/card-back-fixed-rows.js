@@ -54,6 +54,12 @@
       +'@media (max-width:420px){.fg-back-split{grid-template-columns:1fr}}'
       +'.fg-fixed-row.fg-done label span{text-decoration:line-through;opacity:.6}'
       +'.fg-row-done-body{display:none!important}'
+      // Review's own checklist: indented, PRO / GROW / COMPLETE on the left, their comments to the right under REVIEWED BY (Oct 20 2026).
+      +'.fg-review-grid{display:grid;grid-template-columns:minmax(72px,34%) minmax(0,1fr);column-gap:8px;align-items:start;width:100%}'
+      +'.fg-review-left{padding-left:12px}'
+      +'.fg-review-left .fg-back-fixed{border-bottom:0;margin:0;padding:0}'
+      +'.fg-review-left .fg-fixed-row.fg-gear-action{grid-column:auto}'
+      +'.fg-review-right textarea{width:100%;box-sizing:border-box;min-height:44px}'
       // The OPTIONS (+) popup button is retired: the four rows replace it (Larry, Oct 19 2026).
       +'.fg-back-3x5 .bb-action-row .fg-opt-btn{display:none!important}';
     document.head.appendChild(st);

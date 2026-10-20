@@ -1656,8 +1656,15 @@
     if(_bbLinkTimer){ clearTimeout(_bbLinkTimer); _bbLinkTimer=null; }
     _bbRenderLinkPreview(_bbLinkPendingUrl, _bbLinkPendingThumb, _bbLinkPendingTitle);
     document.getElementById('bb-d-reviewer').value=c.reviewedBy||REVIEWERS[0];
-    document.getElementById('bb-d-grow-note').value=c.growNote||'';
-    document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
+    (function(){
+      var rn=_bbReviewNotes(c);
+      document.getElementById('bb-d-grow-note').value=rn.grow;
+      document.getElementById('bb-d-pro-note').value=rn.pro;
+      document.getElementById('bb-d-grow-note-wrap').style.display=c.grow?'':'none';
+      document.getElementById('bb-d-pro-note-wrap').style.display=c.pro?'':'none';
+      var rp=document.getElementById('bb-d-rv-pro'); if(rp) rp.checked=!!c.pro;
+      var rg=document.getElementById('bb-d-rv-grow'); if(rg) rg.checked=!!c.grow;
+    })();
     _bbUpdateReviewUI(c);
     _bbHighlightPriority(c.priority||'');
     _bbRenderKeyRow(c);
@@ -1739,7 +1746,7 @@
         else { c.linkUrl=val; c.linkTitle=val; c.linkThumb=null; }
       })();
       c.reviewedBy=document.getElementById('bb-d-reviewer').value;
-      c.growNote=document.getElementById('bb-d-grow-note').value;
+      c.growNote=_bbPackReviewNotes(document.getElementById('bb-d-pro-note').value, document.getElementById('bb-d-grow-note').value);
       var sharedWrap=document.getElementById('bb-d-shared-wrap');
       if(sharedWrap && sharedWrap.style.display!=='none'){
         var newSharedTo=document.getElementById('bb-d-shared-board').value || null;
