@@ -22,7 +22,6 @@
   var ROWS = [
     { id:'dates',  label:'Dates',        boxes:['bb-d-add-start','bb-d-add-due'], eyeKeys:['start','due'], bodies:['bb-d-start-body','bb-d-due-body'] },
     { id:'flags',  label:'Signal Flags', boxes:['bb-d-add-flags'],                eyeKeys:['flags'],       bodies:['bb-d-flags-body'] },
-    { id:'notes',  label:'Notes',        boxes:['bb-d-add-notes'],                eyeKeys:['notes'],       bodies:['bb-d-notes-body'] },
     { id:'review', label:'Review',       boxes:['bb-d-add-review'],               eyeKeys:[],              bodies:['bb-d-review-body'] }
   ];
   // The Gear's rows (Oct 20 2026). Routine is the only one that draws on the card face; the rest have no eye.

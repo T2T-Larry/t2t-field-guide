@@ -1533,7 +1533,8 @@
     _bbPaintSituationNeed(c);
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     // Oct 20 2026 (Larry): a card that bounced back wearing a VISION/PLAN badge keeps the reasons checklist on its back, so the PRIMARY can mark the need complete.
-    document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups' || c.needsVision || c.needsPlan) ? '' : 'none';
+    // Oct 20 2026 (Larry: "TASK card still contains Hang Up contents"): the Hang Up section belongs only to cards sitting in HANG-UPS.
+    document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
     (function(){ var sEl=document.getElementById('bb-d-hangup-since'); var f=sEl && sEl.closest('.bb-field'); if(f) f.style.display=(c.col==='hangups')?'':'none'; })();
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
     // one of two things depending on whether this card is already
@@ -1675,7 +1676,9 @@
     // Review addition, Sept 29 2026 -- open whenever the card already carries review data (reviewer other than the default, PRO/GROW/Complete, or a GROW note).
     (function(){
       // Oct 19 2026 (Larry): Review shows only on DONE cards, open and ready to use.
-      var open=(c.col==='done');
+      // Oct 20 2026 (Larry): Review works at any time (a PRO or GROW can be added whenever you think of it). It opens by itself on DONE cards
+      // and on any card that already carries review notes.
+      var open=(c.col==='done') || !!(c.pro || c.grow || c.verified || c.growNote || (c.reviewedBy && c.reviewedBy!==REVIEWERS[0]));
       var rcb=document.getElementById('bb-d-add-review'); if(rcb) rcb.checked=open;
       var rbody=document.getElementById('bb-d-review-body'); if(rbody) rbody.style.display=open?'':'none';
     })();
