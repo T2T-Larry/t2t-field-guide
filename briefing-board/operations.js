@@ -894,6 +894,8 @@
           : '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var visionBadge = c.needsVision ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
+        // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
+        if(c.col==='hangups' && !String(c.situation||'').trim()) visionBadge = '<span class="bb-needs-plan-badge bb-why-badge" title="This Hang Up has no reason yet. Open the card and say why.">WHY</span>' + visionBadge;
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine

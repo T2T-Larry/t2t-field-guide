@@ -2036,6 +2036,38 @@
       renderBoard();
     });
   }
+  // Oct 20 2026 (Larry): the two reasons for a Hang Up, "Unclear what is needed" (VISION) and "Multiple steps needed" (NEEDS PLAN).
+  // The PRIMARY picks; the pick writes the situation (so WHY goes away) and turns on the matching badge. The card stays in HANG-UPS
+  // until the PRIMARY moves it out (a Priority decision, then Larry's DOING decision).
+  function wireHangupReasons(){
+    [['bb-d-reason-vision','Unclear what is needed.','vision'],['bb-d-reason-plan','Multiple steps needed.','plan']].forEach(function(r){
+      var btn=document.getElementById(r[0]);
+      if(!btn) return;
+      btn.addEventListener('click', async function(){
+        var c=_bbFindCardAnywhere(_bbOpenCardId);
+        if(!c) return;
+        var ta=document.getElementById('bb-d-situation');
+        var txt=String((ta && ta.value) || c.situation || '').trim();
+        if(txt.indexOf(r[1])<0) txt=(txt?txt+' ':'')+r[1];
+        if(ta) ta.value=txt;
+        c.situation=txt;
+        try{
+          var sb=T().sb;
+          if(sb){
+            var upd={situation:txt}; if(r[2]==='plan') upd.needs_plan=true;
+            var res=await sb.from('task_fields').update(upd).eq('idea_id', c.id);
+            if(res.error) console.error('Briefing Board: Hang Up reason save failed', res.error);
+            else if(r[2]==='vision') await _bbAddVisionHeader(c, sb);
+          }
+        }catch(e){ console.error('Briefing Board: Hang Up reason save failed', e); }
+        if(r[2]==='vision') c.needsVision=true; else c.needsPlan=true;
+        var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=!!c.needsVision;
+        var np=document.getElementById('bb-d-needs-plan'); if(np) np.checked=!!c.needsPlan;
+        _bbSaveLocal(_bbCardsList());
+        renderBoard();
+      });
+    });
+  }
   function wireNeedsPlanSwitch(){
     var cb=document.getElementById('bb-d-needs-plan');
     if(!cb) return;

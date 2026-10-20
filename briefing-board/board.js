@@ -402,6 +402,7 @@
     wireTeamRoster();
     wireNeedsPlanSwitch();
     wireNeedsVisionSwitch();
+    wireHangupReasons();
     wireDatePickers();
 
     T().wire('bb-trash-yes', doTrashCard);
