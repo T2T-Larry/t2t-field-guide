@@ -490,9 +490,17 @@
             +'</div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
               +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
-              +'<div class="bb-field"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
-              // Oct 20 2026 (Larry): two simple reasons a task is a Hang Up. The PRIMARY picks one (or both); the pick fills the situation and replaces the WHY badge.
-              +'<div class="bb-hangup-reasons"><button type="button" class="bb-hangup-reason" id="bb-d-reason-vision">Unclear what is needed</button><button type="button" class="bb-hangup-reason" id="bb-d-reason-plan">Multiple steps needed</button></div>'
+              // Oct 20 2026 (Larry): the reasons a task is a Hang Up are a checklist on the LEFT; the fill-in-the-blank situation moves to the RIGHT of it.
+              // The four frequent reasons: unclear what is needed (VISION), multiple steps needed (NEEDS PLAN), waiting on a task, outside interference.
+              +'<div class="bb-hangup-body">'
+                +'<div class="bb-hangup-checks">'
+                  +'<label><input type="checkbox" id="bb-d-hr-vision"> Unclear what is needed</label>'
+                  +'<label><input type="checkbox" id="bb-d-hr-plan"> Multiple steps needed</label>'
+                  +'<label><input type="checkbox" id="bb-d-hr-waiting"> Waiting on a task</label>'
+                  +'<label><input type="checkbox" id="bb-d-hr-interference"> Outside interference</label>'
+                +'</div>'
+                +'<div class="bb-field bb-hangup-sit"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
+              +'</div>'
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
             // which open when checked and stay open when active"),

@@ -16,3 +16,7 @@
 --                  when 'ML' then 'do-m' when 'L' then 'do-l' else 'new' end;
 --     new.hangup_since := null;
 --   end if;
+
+-- Later Oct 20 2026 (Larry): the Hang Up reasons became a checklist (vision, plan, waiting, interference).
+alter table public.task_fields add column if not exists hangup_reasons text not null default '';
+-- briefing_cards view re-created with the previous column list plus tf.hangup_reasons at the end (trigger bb_cards_iud unchanged).

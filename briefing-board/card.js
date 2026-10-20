@@ -969,6 +969,7 @@
       // already on a card goes invisible just because this shipped.
       needsPlan: !!row.needs_plan,
       needsVision: !!row.needs_vision,
+      hangupReasons: String(row.hangup_reasons||''),   // Oct 20 2026: comma list of vision, plan, waiting, interference
       // (traffic light retired Oct 19 2026 -- Larry: it added nothing; the task_fields.light column is no longer used)
       goalHeaderId: row.goal_header_id||null,
       addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
@@ -2036,31 +2037,32 @@
       renderBoard();
     });
   }
-  // Oct 20 2026 (Larry): the two reasons for a Hang Up, "Unclear what is needed" (VISION) and "Multiple steps needed" (NEEDS PLAN).
-  // The PRIMARY picks; the pick writes the situation (so WHY goes away) and turns on the matching badge. The card stays in HANG-UPS
-  // until the PRIMARY moves it out (a Priority decision, then Larry's DOING decision).
+  // Oct 20 2026 (Larry): the Hang Up reasons are a checklist (left of the situation field). Four frequent reasons: unclear what is needed (VISION),
+  // multiple steps needed (NEEDS PLAN), waiting on a task, outside interference. Checking one saves it in hangup_reasons and turns on the matching
+  // badge; VISION also adds the empty header on the VISION board (ensure_vision_header). The card stays in HANG-UPS until the PRIMARY moves it out
+  // (a Priority decision, then Larry's DOING decision). A missing PRIMARY is never a reason: the next higher PRIMARY is in charge.
   function wireHangupReasons(){
-    [['bb-d-reason-vision','Unclear what is needed.','vision'],['bb-d-reason-plan','Multiple steps needed.','plan']].forEach(function(r){
-      var btn=document.getElementById(r[0]);
-      if(!btn) return;
-      btn.addEventListener('click', async function(){
+    ['vision','plan','waiting','interference'].forEach(function(k){
+      var cb=document.getElementById('bb-d-hr-'+k);
+      if(!cb) return;
+      cb.addEventListener('change', async function(){
         var c=_bbFindCardAnywhere(_bbOpenCardId);
         if(!c) return;
-        var ta=document.getElementById('bb-d-situation');
-        var txt=String((ta && ta.value) || c.situation || '').trim();
-        if(txt.indexOf(r[1])<0) txt=(txt?txt+' ':'')+r[1];
-        if(ta) ta.value=txt;
-        c.situation=txt;
+        var on=cb.checked;
+        var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k; });
+        if(on) list.push(k);
+        c.hangupReasons=list.join(',');
+        var upd={hangup_reasons:c.hangupReasons};
+        if(k==='plan'){ upd.needs_plan=on; c.needsPlan=on; }
+        if(k==='vision'){ upd.needs_vision=on; c.needsVision=on; }
         try{
           var sb=T().sb;
           if(sb){
-            var upd={situation:txt}; if(r[2]==='plan') upd.needs_plan=true;
             var res=await sb.from('task_fields').update(upd).eq('idea_id', c.id);
             if(res.error) console.error('Briefing Board: Hang Up reason save failed', res.error);
-            else if(r[2]==='vision') await _bbAddVisionHeader(c, sb);
+            else if(k==='vision' && on) await _bbAddVisionHeader(c, sb);
           }
         }catch(e){ console.error('Briefing Board: Hang Up reason save failed', e); }
-        if(r[2]==='vision') c.needsVision=true; else c.needsPlan=true;
         var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=!!c.needsVision;
         var np=document.getElementById('bb-d-needs-plan'); if(np) np.checked=!!c.needsPlan;
         _bbSaveLocal(_bbCardsList());

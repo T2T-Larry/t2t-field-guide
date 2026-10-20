@@ -895,7 +895,13 @@
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var visionBadge = c.needsVision ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
         // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
-        if(c.col==='hangups' && !String(c.situation||'').trim()) visionBadge = '<span class="bb-needs-plan-badge bb-why-badge" title="This Hang Up has no reason yet. Open the card and say why.">WHY</span>' + visionBadge;
+        // Oct 20 2026: WHY shows until a reason is checked or the situation says why; WAITING and OUTSIDE are the other two reasons (VISION and NEEDS PLAN have their own badges).
+        if(c.col==='hangups'){
+          var _hr=','+(c.hangupReasons||'')+',';
+          if(_hr.indexOf(',waiting,')>=0) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Waiting on a task: someone else, or a planned step.">WAITING</span>';
+          if(_hr.indexOf(',interference,')>=0) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Outside interference.">OUTSIDE</span>';
+          if(!String(c.situation||'').trim() && !(c.hangupReasons||'') && !c.needsVision && !c.needsPlan) visionBadge = '<span class="bb-needs-plan-badge bb-why-badge" title="This Hang Up has no reason yet. Open the card and say why.">WHY</span>' + visionBadge;
+        }
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
         // day (Larry: "in the interest of simplicity, delete the routine
@@ -1445,6 +1451,10 @@
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
     document.getElementById('bb-d-situation').value=c.situation||'';
+    ['vision','plan','waiting','interference'].forEach(function(k){
+      var hb=document.getElementById('bb-d-hr-'+k);
+      if(hb) hb.checked=(','+(c.hangupReasons||'')+',').indexOf(','+k+',')>=0;
+    });
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
