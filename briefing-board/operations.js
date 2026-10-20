@@ -900,8 +900,9 @@
         if(c.col==='hangups'){
           var _hr=','+(c.hangupReasons||'')+',';
           if(_hr.indexOf(',delay,')>=0 && !_bbHO('delay')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Delayed by something outside the PRIMARY\'s control.">DELAY</span>';
-          if(_hr.indexOf(',issue,')>=0 && !_bbHO('issue')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Something else is stopping this task: see Situation.">ISSUE</span>';
-          if(!String(c.situation||'').trim() && !(c.hangupReasons||'') && !c.needsVision && !c.needsPlan) visionBadge = '<span class="bb-needs-plan-badge bb-why-badge" title="This Hang Up has no reason yet. Open the card and say why.">WHY</span>' + visionBadge;
+          // Oct 20 2026 (Larry): ISSUE is the default badge of a Hang Up: it shows even when no frequent reason is selected (it replaces WHY, OUTSIDE and CONFLICT).
+          var _otherOn = c.needsVision || c.needsPlan || _hr.indexOf(',delay,')>=0;
+          if((_hr.indexOf(',issue,')>=0 || !_otherOn) && _hr.indexOf(',issue:done,')<0 && !_bbHO('issue')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Something is stopping this task: see Situation.">ISSUE</span>';
         }
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
         // ROUTINE front-face indicator, added Sept 26 2026, removed same
