@@ -22,4 +22,4 @@ alter table public.task_fields add column if not exists hangup_reasons text not 
 -- briefing_cards view re-created with the previous column list plus tf.hangup_reasons at the end (trigger bb_cards_iud unchanged).
 
 -- Later Oct 20 2026 (Larry): a missed due date is an AUTOMATIC move to HANG-UPS and writes "Missed due date: <date>." into the situation (the WHY field).
--- Function hangup_missed_due(), scheduled hourly at :05 by pg_cron job "hangup-missed-due". Scope for now: boards owned by Larry; routine, done, archived and trashed cards are skipped.
+-- Function hangup_missed_due(), scheduled hourly at :05 by pg_cron job "hangup-missed-due". Applies to everyone (Larry, Oct 20: it is a website system). Routine, done, archived and trashed cards are skipped.
