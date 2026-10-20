@@ -1459,6 +1459,7 @@
       if(hb) hb.setAttribute('data-state', _bbHangupReasonState(c, k));
     });
     _bbPaintHangupEyes(c);
+    _bbPaintSituationNeed(c);
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
