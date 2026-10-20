@@ -1,0 +1,6 @@
+-- Oct 20 2026 (Larry): when a card enters HANG-UPS, search the VISION board for a header matching the card SUBJECT.
+-- None: NEEDS VISION badge + empty header with that subject under the card's topic. Header exists but empty: badge only.
+-- Header exists and has content: card left alone. One function (ensure_vision_header) used by the trigger AND the card-back Vision switch.
+-- Applied through Supabase SQL (apply_migration kept being cancelled). Functions: ensure_vision_header(uuid), task_fields_hangup_vision().
+-- Triggers: task_fields_hangup_vision_ins (insert into hangups), task_fields_hangup_vision_upd (col changes into hangups).
+-- A card that already has a GOAL still leaves HANG-UPS first (task_fields_needs_plan_route), so the check never runs for it.
