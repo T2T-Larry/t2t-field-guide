@@ -969,7 +969,7 @@
       // already on a card goes invisible just because this shipped.
       needsPlan: !!row.needs_plan,
       needsVision: !!row.needs_vision,
-      hangupReasons: String(row.hangup_reasons||''),   // Oct 20 2026: comma list of vision, plan, waiting, interference
+      hangupReasons: String(row.hangup_reasons||''),   // Oct 20 2026: comma list of vision, plan, delay, issue
       // (traffic light retired Oct 19 2026 -- Larry: it added nothing; the task_fields.light column is no longer used)
       goalHeaderId: row.goal_header_id||null,
       addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
@@ -2053,7 +2053,7 @@
   function _bbPaintHangupEyes(c){
     if(!window.FGCardBackOptions) return;
     var hidden=FGCardBackOptions.parseHidden(c.frontHidden), ic=FGCardBackOptions.eyeIcons;
-    ['vision','plan','waiting','interference'].forEach(function(k){
+    ['vision','plan','delay','issue'].forEach(function(k){
       var b=document.getElementById('bb-d-hr-eye-'+k); if(!b) return;
       var off=hidden.indexOf(k)>=0;
       b.innerHTML = off ? ic.slash : ic.open;
@@ -2062,7 +2062,7 @@
     });
   }
   function wireHangupReasons(){
-    ['vision','plan','waiting','interference'].forEach(function(k){
+    ['vision','plan','delay','issue'].forEach(function(k){
       var btn=document.getElementById('bb-d-hr-'+k);
       if(!btn) return;
       // Eyeball beside the badge: shows the badge on the card front (open eye) or on the back only (slashed eye). Same stored list and keys as the four fixed rows.

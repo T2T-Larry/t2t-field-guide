@@ -896,11 +896,11 @@
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
         var visionBadge = (c.needsVision && !_bbHO('vision')) ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
         // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
-        // Oct 20 2026: WHY shows until a reason is checked or the situation says why; WAITING and OUTSIDE are the other two reasons (VISION and NEEDS PLAN have their own badges).
+        // Oct 20 2026: WHY shows until a reason is checked or the situation says why; DELAY (outside the PRIMARY's control) and ISSUE (anything else, explained in Situation) are the other two reasons; WAITING is not a Hang Up, it is only priority (VISION and NEEDS PLAN have their own badges).
         if(c.col==='hangups'){
           var _hr=','+(c.hangupReasons||'')+',';
-          if(_hr.indexOf(',waiting,')>=0 && !_bbHO('waiting')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Waiting on a task: someone else, or a planned step.">WAITING</span>';
-          if(_hr.indexOf(',interference,')>=0 && !_bbHO('interference')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Outside interference.">OUTSIDE</span>';
+          if(_hr.indexOf(',delay,')>=0 && !_bbHO('delay')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Delayed by something outside the PRIMARY\'s control.">DELAY</span>';
+          if(_hr.indexOf(',issue,')>=0 && !_bbHO('issue')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Something else is stopping this task: see Situation.">ISSUE</span>';
           if(!String(c.situation||'').trim() && !(c.hangupReasons||'') && !c.needsVision && !c.needsPlan) visionBadge = '<span class="bb-needs-plan-badge bb-why-badge" title="This Hang Up has no reason yet. Open the card and say why.">WHY</span>' + visionBadge;
         }
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
@@ -1452,7 +1452,7 @@
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
     document.getElementById('bb-d-situation').value=c.situation||'';
-    ['vision','plan','waiting','interference'].forEach(function(k){
+    ['vision','plan','delay','issue'].forEach(function(k){
       var hb=document.getElementById('bb-d-hr-'+k);
       if(hb) hb.setAttribute('data-state', _bbHangupReasonState(c, k));
     });
