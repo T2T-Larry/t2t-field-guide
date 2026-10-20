@@ -8,7 +8,9 @@
      PLAN         -- the NEEDS PLAN switch: the card goes to the PLAN Parking Lot to become a GOAL
    Each row has the slashed eye: it chooses whether that item also shows on the card front.
    Nothing new is stored here: each row drives the real checkbox that already exists on the back (same ids, same saving).
-   Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden}   .sync()
+   Oct 20 2026 (Larry: "redesign the Gear to test our system"): the SAME builder now also makes the Gear's rows --
+     ORGANIZATION, ROUTINE, BUDGET, LINKS (each with its eye where it draws on the front), plus Duplicate -- so one tree, one code.
+   Public surface: window.FGCardBackFixedRows  .build(bbw, cfg)   cfg = {getHidden, setHidden, rows?, mount?, key?, className?, extra?}   .sync()
    ============================================================ */
 (function(){
   var ROWS = [
@@ -17,13 +19,26 @@
     { id:'vision', label:'Vision',       boxes:['bb-d-needs-vision'],             eyeKeys:['vision'] },
     { id:'plan',   label:'Plan',         boxes:['bb-d-needs-plan'],               eyeKeys:['plan'] }
   ];
-  var built=null;
+  // The Gear's rows (Oct 20 2026). Routine is the only one that draws on the card face; the rest have no eye.
+  var GEAR_ROWS = [
+    { id:'org',     label:'Organization', boxes:['bb-d-add-org'],     eyeKeys:[] },
+    { id:'routine', label:'Routine',      boxes:['bb-d-add-routine'], eyeKeys:['routine'] },
+    { id:'budget',  label:'Budget',       boxes:['bb-d-add-budget'],  eyeKeys:[] },
+    { id:'links',   label:'Links',        boxes:['bb-d-add-links'],   eyeKeys:[] }
+  ];
+  var instances={};
 
   function injectStyle(){
     if(document.getElementById('fg-fixed-rows-style')) return;
     var st=document.createElement('style'); st.id='fg-fixed-rows-style';
     st.textContent=''
       +'.fg-back-fixed{display:flex;flex-direction:column;gap:2px;width:100%;margin:2px 0 8px;padding:4px 0 6px;border-bottom:1px dotted var(--bb-accent)}'
+      // Gear panel (Oct 20 2026): the rows sit two across so the whole Gear stays short; opened bodies follow underneath at full width.
+      +'.fg-back-fixed.fg-gear-rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;margin:4px 0 4px;padding:4px 0}'
+      +'.fg-gear-rows .fg-fixed-row.fg-gear-action{grid-column:1 / -1;justify-content:flex-start}'
+      +'.fg-fixed-row .fg-fixed-btn{display:flex;align-items:center;gap:7px;cursor:pointer;background:transparent;border:0;padding:0;font:inherit;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
+      +'.fg-back-util-extra>.bb-addition>.bb-addition-label{display:none}'
+      +'.fg-back-util-extra>.bb-addition{margin:0}'
       +'.fg-fixed-row{display:flex;align-items:center;gap:6px;min-height:24px}'
       +'.fg-fixed-row label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
@@ -44,25 +59,31 @@
   }
 
   function build(bbw, cfg){
-    if(!bbw || bbw.querySelector('.fg-back-fixed')) return;
+    var key=cfg.key||'main', rowsDef=cfg.rows||ROWS;
+    if(!bbw || instances[key] && instances[key].block.isConnected) return;
     injectStyle();
-    var block=document.createElement('div'); block.className='fg-back-fixed';
+    var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'');
     var rows=[];
-    ROWS.forEach(function(row){
+    rowsDef.forEach(function(row){
       var d=document.createElement('div'); d.className='fg-fixed-row';
       var lab=document.createElement('label');
       var cb=document.createElement('input'); cb.type='checkbox';
       var tx=document.createElement('span'); tx.textContent=row.label;
       lab.appendChild(cb); lab.appendChild(tx);
-      var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye';
-      d.appendChild(lab); d.appendChild(eye); block.appendChild(d);
+      d.appendChild(lab);
+      var eye=null;
+      if(row.eyeKeys && row.eyeKeys.length){
+        eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye';
+        d.appendChild(eye);
+      }
+      block.appendChild(d);
       cb.addEventListener('change', function(){
         row.boxes.forEach(function(id){
           var b=real(id); if(!b || b.checked===cb.checked) return;
           b.checked=cb.checked; b.dispatchEvent(new Event('change',{bubbles:true}));
         });
       });
-      eye.addEventListener('click', function(e){
+      if(eye) eye.addEventListener('click', function(e){
         e.stopPropagation();
         var cur=(cfg.getHidden()||[]).slice();
         var backOnly=row.eyeKeys.every(function(k){ return cur.indexOf(k)>=0; });
@@ -75,19 +96,32 @@
       });
       rows.push({row:row, cb:cb, eye:eye});
     });
-    // Sits above the opened items, right under Priority / Subject / Task.
-    var anchor=bbw.querySelector('.fg-back-selected');
-    if(anchor) anchor.parentNode.insertBefore(block, anchor); else bbw.appendChild(block);
-    built={rows:rows, cfg:cfg};
-    // Any change to a real box (from here, from older code, or from a card opening) re-reads all four.
-    ROWS.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
+    // Action rows (e.g. Duplicate): a plain button on its own full-width line, no checkbox.
+    (cfg.actions||[]).forEach(function(a){
+      var d=document.createElement('div'); d.className='fg-fixed-row fg-gear-action';
+      var btn=document.createElement('button'); btn.type='button'; btn.className='fg-fixed-btn'; btn.title=a.title||a.label;
+      btn.innerHTML=(a.icon||'')+'<span>'+a.label+'</span>';
+      btn.addEventListener('click', function(e){ e.stopPropagation(); a.run(); });
+      d.appendChild(btn); block.appendChild(d);
+    });
+    if(cfg.mount) cfg.mount(block);
+    else {
+      // Sits above the opened items, right under Priority / Subject / Task.
+      var anchor=bbw.querySelector('.fg-back-selected');
+      if(anchor) anchor.parentNode.insertBefore(block, anchor); else bbw.appendChild(block);
+    }
+    instances[key]={rows:rows, cfg:cfg, block:block};
+    // Any change to a real box (from here, from older code, or from a card opening) re-reads the rows.
+    rowsDef.forEach(function(r){ r.boxes.forEach(function(id){ var b=real(id); if(b) b.addEventListener('change', sync); }); });
     sync();
   }
 
   function sync(){
-    if(!built) return;
-    built.rows.forEach(function(x){ x.cb.checked=isOn(x.row); paintEye(x.eye, x.row, built.cfg); });
+    Object.keys(instances).forEach(function(k){
+      var inst=instances[k];
+      inst.rows.forEach(function(x){ x.cb.checked=isOn(x.row); if(x.eye) paintEye(x.eye, x.row, inst.cfg); });
+    });
   }
 
-  window.FGCardBackFixedRows = { build:build, sync:sync };
+  window.FGCardBackFixedRows = { build:build, sync:sync, GEAR_ROWS:GEAR_ROWS };
 })();

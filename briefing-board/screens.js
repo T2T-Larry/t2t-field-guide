@@ -745,7 +745,25 @@
         if(colorRow && dup){
           var ux=document.createElement('div'); ux.className='fg-back-util-extra';
           colorRow.parentNode.insertBefore(ux, colorRow.nextSibling); ux.appendChild(dup);
-          ['bb-d-add-budget-wrap','bb-d-add-links-wrap','bb-d-add-org-wrap','bb-d-add-routine-wrap'].forEach(function(id){ var w=q(id); if(w) ux.appendChild(w); });
+          ['bb-d-add-org-wrap','bb-d-add-routine-wrap','bb-d-add-budget-wrap','bb-d-add-links-wrap'].forEach(function(id){ var w=q(id); if(w) ux.appendChild(w); });
+          // Oct 20 2026 (Larry: "redesign the Gear to test our system"): the Gear's items are checkbox rows built by the SAME code as the four
+          // fixed rows (card-back-fixed-rows.js) -- Organization, Routine (with its eye), Budget, Links, then Duplicate. Opened bodies drop in underneath.
+          if(window.FGCardBackFixedRows && window.FGCardBackOptions){
+            dup.style.display='none';   // the real button stays (it carries the saving); the Duplicate row below clicks it
+            FGCardBackFixedRows.build(bbw, {
+              key:'gear', rows:FGCardBackFixedRows.GEAR_ROWS, className:'fg-gear-rows',
+              mount:function(block){ ux.insertBefore(block, ux.firstChild); },
+              actions:[{ label:'Duplicate card', title:'Duplicate this card', icon:dup.innerHTML, run:function(){ dup.click(); } }],
+              getHidden: function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); return c ? FGCardBackOptions.parseHidden(c.frontHidden) : []; },
+              setHidden: function(arr){
+                var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+                c.frontHidden=arr.join(',');
+                _bbSaveLocal(_bbCardsList());
+                _bbPersistMergedCardById(_bbOpenCardId);
+                renderBoard();
+              }
+            });
+          }
         }
         // Notes = the pencil along the bottom; it drives the (hidden) Notes checkbox so all existing saving/showing keeps working.
         var pen=q('bb-d-notes-pencil'), ncb=q('bb-d-add-notes');
