@@ -848,6 +848,8 @@
       +'.bb-overlay{position:fixed;inset:0;z-index:200;background:rgba(59,37,16,0.45);display:none;align-items:center;justify-content:center;padding:20px;box-sizing:border-box}'
       +'.bb-overlay.active{display:flex}'
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
+      +'@keyframes bbLand{0%{box-shadow:0 0 0 0 rgba(255,196,40,0)}25%{box-shadow:0 0 0 5px rgba(255,196,40,.95)}100%{box-shadow:0 0 0 0 rgba(255,196,40,0)}}'
+      +'.bb-card.bb-card-landed{animation:bbLand 1.2s ease-out}'
       +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
       +'.bb-overlay-card.bb-hangup-active .fg-back-fixed,.bb-overlay-card.bb-hangup-active .fg-back-selected,.bb-overlay-card.bb-hangup-active .fg-back-region,.bb-overlay-card.bb-hangup-active .fg-back-daterow{display:none!important}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'

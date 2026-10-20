@@ -961,7 +961,7 @@
       locked: !!row.locked, lockReason: row.lock_reason||'',
       sharedToBoardId: row.shared_to_board_id||null,
       color: row.color||'',
-      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null,
+      situation: row.situation||'', hangupSince: _bbFromISODate(row.hangup_since), hangupHeaderId: row.hangup_header_id||null, hangupFrom: row.hangup_from||'',
       linkUrl: row.link_url||'', linkTitle: row.link_title||'', linkThumb: row.link_thumb||'',
       // Addition toggles, Aug 27 2026 -- see BB_ADDITIONS below. The
       // Aug 27 migration backfilled these true for any card that
@@ -2055,6 +2055,58 @@
     if(k==='issue' && !c.needsVision && !c.needsPlan && l.indexOf(',vision,')<0 && l.indexOf(',plan,')<0 && l.indexOf(',delay,')<0 && l.indexOf(',vision:done,')<0 && l.indexOf(',plan:done,')<0 && l.indexOf(',delay:done,')<0) return '1';
     return '0';
   }
+
+  // Oct 20 2026 (Larry): ONE place for what a column change does to the Hang Up bookkeeping -- every way a card can move (drag, lasso, rollup,
+  // reason bounce-back) calls this. Entering HANG-UPS stamps the date and remembers the column it CAME FROM; leaving clears the date.
+  function _bbNoteColumnMove(c, wasCol){
+    if(c.col==='hangups' && wasCol!=='hangups'){
+      c.hangupSince=_bbToday();
+      c.hangupFrom=wasCol||'';
+      _bbSaveHangupFrom(c.id, c.hangupFrom);
+    }
+    if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
+  }
+  // Narrow write (same treatment as hangup_reasons / needs_vision): a routine whole-card save never touches it.
+  function _bbSaveHangupFrom(cardId, from){
+    try{
+      var sb=T().sb; if(!sb) return;
+      sb.from('task_fields').update({hangup_from: from||null}).eq('idea_id', cardId).then(function(res){
+        if(res && res.error) console.error('Briefing Board: could not save where the Hang Up came from', res.error);
+      });
+    }catch(e){ console.error('Briefing Board: could not save where the Hang Up came from', e); }
+  }
+  // Oct 20 2026 (Larry): a Hang Up whose only active reasons are VISION and/or PLAN is a momentary stop -- the card goes straight back to the
+  // column it came from, wearing its VISION/PLAN badge, and the work on it is now to develop that vision or plan. DELAY or ISSUE keeps it here.
+  function _bbShouldBounceBack(c){
+    if(c.col!=='hangups') return false;
+    if(_bbHangupReasonState(c,'delay')==='1' || _bbHangupReasonState(c,'issue')==='1') return false;
+    return _bbHangupReasonState(c,'vision')==='1' || _bbHangupReasonState(c,'plan')==='1';
+  }
+  function _bbBounceBackColumn(c){
+    var from=String(c.hangupFrom||'');
+    var valid=['new','do-h','do-m','do-l','doing'];
+    if(valid.indexOf(from)>=0) return from;
+    return _bbDoColKey(c.priority||'');
+  }
+  function _bbEnterHangup(c){
+    var wasCol=c.col;
+    c.col='hangups';
+    c.sortOrder=Date.now();
+    _bbNoteColumnMove(c, wasCol);
+    _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(c.id);
+  }
+  function _bbBounceBack(c){
+    var wasCol=c.col, dest=_bbBounceBackColumn(c);
+    if(dest===wasCol) return;
+    c.col=dest;
+    if(_bbIsDoCol(dest)) c.priority=_bbPriorityForDrop(dest, c.priority);
+    c.sortOrder=Date.now();
+    _bbNoteColumnMove(c, wasCol);
+    _bbSaveLocal(_bbCardsList());
+    _bbPersistMergedCardById(c.id);
+    if(typeof _bbShowToast==='function') _bbShowToast('Back to '+(BB_MOVE_COL_LABEL[dest]||'where it came from')+' with its badge.');
+  }
   // Oct 20 2026 (Larry): VISION and PLAN need no extra words (the checked reason says it), but DELAY and ISSUE must be explained in Situation.
   function _bbPaintSituationNeed(c){
     var ta=document.getElementById('bb-d-situation'); if(!ta) return;
@@ -2137,6 +2189,10 @@
         var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=!!c.needsVision;
         var np=document.getElementById('bb-d-needs-plan'); if(np) np.checked=!!c.needsPlan;
         _bbSaveLocal(_bbCardsList());
+        // DELAY or ISSUE checked on a card that is not in HANG-UPS: it really is stuck, so it goes there (remembering where it came from).
+        if(next===1 && (k==='delay' || k==='issue') && c.col!=='hangups'){ _bbEnterHangup(c); closeCardDetail(); }
+        // Bounce-back: only VISION/PLAN active -> straight back to the column it came from, badge on.
+        if(_bbShouldBounceBack(c)){ _bbBounceBack(c); closeCardDetail(); }
         renderBoard();
       });
     });

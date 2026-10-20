@@ -748,6 +748,7 @@
     wrap.querySelectorAll('.bb-col-cards[data-col]').forEach(function(el){
       _bbScrollByCol[el.getAttribute('data-col')]=el.scrollTop;
     });
+    var _bbPrevCardPos=_bbCaptureCardPositions(wrap);
     wrap.innerHTML='';
     // Board-name eyebrow fallback, Sept 5 2026 -- the currently-open
     // board's own name, used below so a plain hand-typed card (no
@@ -1121,8 +1122,7 @@
           // when it leaves -- the stamp tracks the *current* stuck streak.
           // Situation and the linked storyboard Header are left alone on
           // exit (that record stays even after it's unstuck).
-          if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
-          if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
+          _bbNoteColumnMove(c, wasCol);
           // Land it at the exact drop position, then renumber this
           // column's sortOrder sequentially so everyone's position is
           // consistent (avoids float-precision drift from repeated
@@ -1200,6 +1200,71 @@
       var key=el.getAttribute('data-col');
       if(_bbScrollByCol.hasOwnProperty(key)) el.scrollTop=_bbScrollByCol[key];
     });
+    _bbPlayCardMoves(wrap, _bbPrevCardPos);
+  }
+
+  // Oct 20 2026 (Larry): "an animation showing the card movement whenever it moves, even if we move it manually." Every move -- drag, lasso, the
+  // H/M/L buttons, a Hang Up bouncing back, a teammate's change arriving -- ends in renderBoard, so this one pair of helpers covers them all.
+  // Before the rebuild we note where every card sits; after it, a card that landed somewhere else glides there (a ghost copy flies across
+  // columns, so no column edge can clip it), cards that merely shift within their own column slide, and the arrival gets a brief glow.
+  function _bbCaptureCardPositions(wrap){
+    var map={};
+    try{
+      wrap.querySelectorAll('.bb-col-cards[data-col] .bb-card[data-id]').forEach(function(el){
+        var r=el.getBoundingClientRect();
+        if(r.width>0) map[el.getAttribute('data-id')]={left:r.left, top:r.top, col:el.parentNode.getAttribute('data-col')};
+      });
+    }catch(e){}
+    return map;
+  }
+  function _bbPlayCardMoves(wrap, prev){
+    try{
+      if(!prev || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+      var moves=[];
+      wrap.querySelectorAll('.bb-col-cards[data-col] .bb-card[data-id]').forEach(function(el){
+        var old=prev[el.getAttribute('data-id')]; if(!old) return;
+        var zone=el.parentNode, col=zone.getAttribute('data-col');
+        if(col!==old.col){
+          // Make sure the landing spot is actually in view inside its column.
+          var zr=zone.getBoundingClientRect(), er=el.getBoundingClientRect();
+          if(er.bottom>zr.bottom || er.top<zr.top) zone.scrollTop += (er.top-zr.top)-8;
+        }
+        var nr=el.getBoundingClientRect(); if(nr.width<=0) return;
+        var dx=old.left-nr.left, dy=old.top-nr.top;
+        if(Math.abs(dx)<2 && Math.abs(dy)<2) return;
+        moves.push({el:el, dx:dx, dy:dy, nr:nr, crossed:(col!==old.col)});
+      });
+      if(!moves.length || moves.length>30) return;
+      moves.forEach(function(m){
+        var el=m.el;
+        if(m.crossed){
+          var g=el.cloneNode(true);
+          g.removeAttribute('id'); g.classList.add('bb-card-ghost');
+          g.style.cssText='position:fixed;left:'+(m.nr.left)+'px;top:'+(m.nr.top)+'px;width:'+m.nr.width+'px;height:'+m.nr.height+'px;margin:0;z-index:100000;pointer-events:none;'
+            +'transform:translate('+m.dx+'px,'+m.dy+'px);transition:none;box-shadow:0 12px 30px rgba(0,0,0,.35)';
+          document.body.appendChild(g);
+          el.style.visibility='hidden';
+          requestAnimationFrame(function(){ requestAnimationFrame(function(){
+            g.style.transition='transform .7s cubic-bezier(.22,.8,.3,1)';
+            g.style.transform='translate(0,0)';
+          }); });
+          setTimeout(function(){
+            if(g.parentNode) g.parentNode.removeChild(g);
+            el.style.visibility='';
+            el.classList.add('bb-card-landed');
+            setTimeout(function(){ el.classList.remove('bb-card-landed'); }, 1300);
+          }, 760);
+        } else {
+          el.style.transition='none';
+          el.style.transform='translate(0,'+m.dy+'px)';
+          requestAnimationFrame(function(){ requestAnimationFrame(function(){
+            el.style.transition='transform .45s ease';
+            el.style.transform='';
+            setTimeout(function(){ el.style.transition=''; }, 500);
+          }); });
+        }
+      });
+    }catch(e){ console.warn('Briefing Board: card move animation skipped', e); }
   }
 
   // Lasso helpers -- see _bbLassoSelected's own comment (top of file)
@@ -1244,8 +1309,7 @@
       if(c.col==='doing' && _bbIsDoCol(wasCol) && !c.startDate){ c.startDate=_bbToday(); c.addStart=true; }
       if(c.col==='done' && wasCol!=='done') c.completedDate=_bbToday();
       if(wasCol==='done' && c.col!=='done'){ c.completedDate=''; c.verified=false; c.pro=false; c.grow=false; }
-      if(c.col==='hangups' && wasCol!=='hangups') c.hangupSince=_bbToday();
-      if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
+      _bbNoteColumnMove(c, wasCol);
       c.sortOrder=nextSort++;
     });
     _bbSaveLocal(allCards);
@@ -1461,7 +1525,9 @@
     _bbPaintHangupEyes(c);
     _bbPaintSituationNeed(c);
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
-    document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
+    // Oct 20 2026 (Larry): a card that bounced back wearing a VISION/PLAN badge keeps the reasons checklist on its back, so the PRIMARY can mark the need complete.
+    document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups' || c.needsVision || c.needsPlan) ? '' : 'none';
+    (function(){ var sEl=document.getElementById('bb-d-hangup-since'); var f=sEl && sEl.closest('.bb-field'); if(f) f.style.display=(c.col==='hangups')?'':'none'; })();
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
     // one of two things depending on whether this card is already
     // linked (c.sourceHeaderId): a linked card opens its existing

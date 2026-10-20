@@ -441,7 +441,7 @@
     if(realNewCol==='doing' && _bbIsDoCol(wasRealCol) && !realRow.startDate){ upd.startDate=_bbToday(); upd.addStart=true; }
     if(realNewCol==='done' && wasRealCol!=='done') upd.completedDate=_bbToday();
     if(wasRealCol==='done' && realNewCol!=='done'){ upd.completedDate=''; upd.verified=false; upd.pro=false; upd.grow=false; }
-    if(realNewCol==='hangups' && wasRealCol!=='hangups') upd.hangupSince=_bbToday();
+    if(realNewCol==='hangups' && wasRealCol!=='hangups'){ upd.hangupSince=_bbToday(); upd.hangupFrom=wasRealCol; }
     if(wasRealCol==='hangups' && realNewCol!=='hangups') upd.hangupSince='';
     return upd;
   }
@@ -455,6 +455,7 @@
     if('addStart' in upd) row.adds_start=upd.addStart;
     if('completedDate' in upd) row.completed_date=upd.completedDate?_bbToISODate(upd.completedDate):null;
     if('hangupSince' in upd) row.hangup_since=upd.hangupSince?_bbToISODate(upd.hangupSince):null;
+    if('hangupFrom' in upd) row.hangup_from=upd.hangupFrom||null;
     if('verified' in upd) row.verified=upd.verified;
     if('pro' in upd) row.pro=upd.pro;
     if('grow' in upd) row.grow=upd.grow;
@@ -567,8 +568,7 @@
     if(newCol==='doing' && _bbIsDoCol(wasCol) && !rc.startDate){ rc.startDate=_bbToday(); rc.addStart=true; }
     if(newCol==='done' && wasCol!=='done') rc.completedDate=_bbToday();
     if(wasCol==='done' && newCol!=='done'){ rc.completedDate=''; rc.verified=false; rc.pro=false; rc.grow=false; }
-    if(newCol==='hangups' && wasCol!=='hangups') rc.hangupSince=_bbToday();
-    if(wasCol==='hangups' && newCol!=='hangups') rc.hangupSince='';
+    rc.col=newCol; _bbNoteColumnMove(rc, wasCol);
     rc.sortOrder=Date.now();
     _bbPersistRollupCard(rc).then(renderBoard);
   }
