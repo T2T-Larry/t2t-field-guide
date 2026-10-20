@@ -764,7 +764,6 @@
       +'.bb-field.bb-addition,#bb-d-shared-wrap{margin-bottom:7px}'
       +'.bb-addition-body{margin-top:4px}'
       +'.bb-field-divider{border:none;border-top:1px solid var(--bb-accent);width:100%;max-width:280px;margin:4px 0 12px}'
-      +'#bb-d-hangup-wrap .bb-field-divider{max-width:none;width:100%}'
       // Quiet Added-date, Aug 27 2026 (Larry: "What if the date added is
       // quietly after the TASK Eyebrow?") -- rides on the Task label
       // itself now instead of its own "Dates" block; deliberately NOT
@@ -956,6 +955,8 @@
       +'.bb-hr-badge{justify-self:center;text-align:center;min-width:60px;box-sizing:border-box}'
       +'.bb-hr-eye{justify-self:center}'
       +'#bb-detail-overlay .bb-hangup-sit textarea{font-family:var(--bb-body-font);font-size:calc(13px * var(--fg-text-scale,1));line-height:1.35}'
+      +'#bb-detail-overlay .bb-hangup-sit textarea::placeholder{color:#a8998a;font-style:italic;opacity:1}'
+      +'#bb-detail-overlay .bb-hangup-sit textarea.bb-sit-required::placeholder{color:#c0392b}'
       +'#bb-detail-overlay .bb-hangup-sit textarea.bb-sit-required{border-color:#c0392b;background:#fff7f6}'
       +'#bb-detail-overlay .bb-hangup-sit label{min-height:18px;display:flex;align-items:center;margin:0 0 3px}'
       +'#bb-detail-overlay .bb-hangup-left{gap:0}'

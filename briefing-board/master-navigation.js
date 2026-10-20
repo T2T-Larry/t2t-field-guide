@@ -320,7 +320,7 @@
       return (a.text_content||'').toLowerCase().localeCompare((b.text_content||'').toLowerCase());
     });
     realProjects=realProjects.filter(function(h){ return !(window.IDBand && IDBand.isNonProjectName(h.text_content)) && h.id!==_bbIdeaStoryboardsRootId; });
-    var opts=realProjects.map(function(h){ return {value:'hdr:'+h.id, label:h.text_content||'(untitled)'}; });
+    var opts=realProjects.map(function(h){ return {value:'hdr:'+h.id, label:String(h.subject||'').trim()||h.text_content||'(untitled)'}; });   // Oct 17 rule: a header's name is its SUBJECT when it has one
     // MASTER, pinned first, Sept 6 2026 -- Larry: "What used to be Idea
     // Storyboards is now PROJECTS and should top the projects list..."
     // The shared root every real project nests under

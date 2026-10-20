@@ -2051,6 +2051,8 @@
     // A card flagged NEEDS VISION / NEEDS PLAN (badge on the front) always shows that reason as selected on the back, even if the reason was never ticked here.
     if(k==='vision' && c.needsVision) return '1';
     if(k==='plan' && c.needsPlan) return '1';
+    // ISSUE is the default reason of a Hang Up: with no other reason selected it reads as selected (same rule as the ISSUE badge on the front).
+    if(k==='issue' && !c.needsVision && !c.needsPlan && l.indexOf(',vision,')<0 && l.indexOf(',plan,')<0 && l.indexOf(',delay,')<0 && l.indexOf(',vision:done,')<0 && l.indexOf(',plan:done,')<0 && l.indexOf(',delay:done,')<0) return '1';
     return '0';
   }
   // Oct 20 2026 (Larry): VISION and PLAN need no extra words (the checked reason says it), but DELAY and ISSUE must be explained in Situation.
@@ -2058,8 +2060,7 @@
     var ta=document.getElementById('bb-d-situation'); if(!ta) return;
     var need=(_bbHangupReasonState(c,'delay')==='1' || _bbHangupReasonState(c,'issue')==='1') && !String(ta.value||'').trim();
     ta.classList.toggle('bb-sit-required', need);
-    var lab=ta.closest('.bb-field') && ta.closest('.bb-field').querySelector('label');
-    if(lab) lab.innerHTML = need ? 'Situation &mdash; required: say what the delay or issue is' : 'Situation &mdash; what&rsquo;s stuck, and why';
+    ta.placeholder = need ? 'Required: what\'s stuck and why?' : 'What\'s stuck and why?';
   }
   function _bbPaintPriorityEye(c){
     var b=document.getElementById('bb-d-pri-eye'); if(!b || !window.FGCardBackOptions) return;

@@ -502,9 +502,8 @@
                     +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-issue" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Something else</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-issue-badge">ISSUE</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-issue"></button></div>'
                   +'</div>'
                 +'</div>'
-                +'<div class="bb-field bb-hangup-sit"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
+                +'<div class="bb-field bb-hangup-sit"><label>Situation</label><textarea id="bb-d-situation" placeholder="What&rsquo;s stuck and why?"></textarea></div>'
               +'</div>'
-              +'<hr class="bb-field-divider">'
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
             // which open when checked and stay open when active"),
