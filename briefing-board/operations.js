@@ -889,17 +889,18 @@
         var priBadge = c.priority ? '<span class="bb-pri-badge" style="background:'+PRI_COLOR[c.priority]+';color:'+PRI_TEXT[c.priority]+'">'+c.priority+'</span>' : '';
         // Oct 12 2026 -- PLAN marker: this card is one step of a plan (plan-step-marker.js fills in "n/m" and the tooltip).
         // Oct 15 2026 -- NEEDS PLAN eyebrow: pink and see-through, same spot as the brown PLAN step marker, so the card stays readable.
-        var needsPlanBadge = (c.needsPlan || c.goalHeaderId) ? (c.goalHeaderId
+        var needsPlanBadge = ((c.needsPlan && !(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,'plan'))) || c.goalHeaderId) ? (c.goalHeaderId
           ? '<span class="bb-needs-plan-badge bb-goal-badge" title="This task is the GOAL of a plan being built on the PLAN board.">GOAL</span>'
           : '<span class="bb-needs-plan-badge" title="This task cannot be finished until a plan exists.">NEEDS PLAN</span>') : '';
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
-        var visionBadge = c.needsVision ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
+        var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
+        var visionBadge = (c.needsVision && !_bbHO('vision')) ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
         // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
         // Oct 20 2026: WHY shows until a reason is checked or the situation says why; WAITING and OUTSIDE are the other two reasons (VISION and NEEDS PLAN have their own badges).
         if(c.col==='hangups'){
           var _hr=','+(c.hangupReasons||'')+',';
-          if(_hr.indexOf(',waiting,')>=0) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Waiting on a task: someone else, or a planned step.">WAITING</span>';
-          if(_hr.indexOf(',interference,')>=0) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Outside interference.">OUTSIDE</span>';
+          if(_hr.indexOf(',waiting,')>=0 && !_bbHO('waiting')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Waiting on a task: someone else, or a planned step.">WAITING</span>';
+          if(_hr.indexOf(',interference,')>=0 && !_bbHO('interference')) visionBadge += '<span class="bb-needs-plan-badge bb-reason-badge" title="Outside interference.">OUTSIDE</span>';
           if(!String(c.situation||'').trim() && !(c.hangupReasons||'') && !c.needsVision && !c.needsPlan) visionBadge = '<span class="bb-needs-plan-badge bb-why-badge" title="This Hang Up has no reason yet. Open the card and say why.">WHY</span>' + visionBadge;
         }
         var planBadge = c.planStepId ? '<span class="bb-plan-badge" data-plan-step="'+_esc(c.planStepId)+'" title="Part of a plan">▣ PLAN</span>' : '';
@@ -1455,6 +1456,7 @@
       var hb=document.getElementById('bb-d-hr-'+k);
       if(hb) hb.setAttribute('data-state', _bbHangupReasonState(c, k));
     });
+    _bbPaintHangupEyes(c);
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
     // Idea Board button, Aug 11 2026 -- one button, every card, doing

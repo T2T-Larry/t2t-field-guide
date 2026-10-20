@@ -2050,10 +2050,37 @@
     if(l.indexOf(','+k+',')>=0) return '1';
     return '0';
   }
+  function _bbPaintHangupEyes(c){
+    if(!window.FGCardBackOptions) return;
+    var hidden=FGCardBackOptions.parseHidden(c.frontHidden), ic=FGCardBackOptions.eyeIcons;
+    ['vision','plan','waiting','interference'].forEach(function(k){
+      var b=document.getElementById('bb-d-hr-eye-'+k); if(!b) return;
+      var off=hidden.indexOf(k)>=0;
+      b.innerHTML = off ? ic.slash : ic.open;
+      b.classList.toggle('fg-eye-off', off);
+      b.title = off ? 'Back only: click to also show on the front' : 'Shows on the front: click for back only';
+    });
+  }
   function wireHangupReasons(){
     ['vision','plan','waiting','interference'].forEach(function(k){
       var btn=document.getElementById('bb-d-hr-'+k);
       if(!btn) return;
+      // Eyeball beside the badge: shows the badge on the card front (open eye) or on the back only (slashed eye). Same stored list and keys as the four fixed rows.
+      var eyeBtn=document.getElementById('bb-d-hr-eye-'+k);
+      if(eyeBtn){
+        eyeBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c || !window.FGCardBackOptions) return;
+          var cur=FGCardBackOptions.parseHidden(c.frontHidden).slice();
+          var i=cur.indexOf(k);
+          if(i>=0) cur.splice(i,1); else cur.push(k);
+          c.frontHidden=cur.join(',');
+          _bbPaintHangupEyes(c);
+          _bbSaveLocal(_bbCardsList());
+          _bbPersistMergedCardById(c.id);
+          renderBoard();
+        });
+      }
       btn.addEventListener('click', async function(){
         var c=_bbFindCardAnywhere(_bbOpenCardId);
         if(!c) return;
