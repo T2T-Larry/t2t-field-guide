@@ -501,6 +501,8 @@
                 +'</div>'
                 +'<div class="bb-field bb-hangup-sit"><label>Situation &mdash; what&rsquo;s stuck, and why</label><textarea id="bb-d-situation" placeholder="What seems to be the problem? Help us understand what&rsquo;s going on."></textarea></div>'
               +'</div>'
+              // Oct 20 2026 (Larry): a Vision Statement is complete by CONSENSUS of the team working the task (table hangup_vision_team). Filled by _bbRenderVisionTeam.
+              +'<div class="bb-field" id="bb-d-vteam" style="display:none"></div>'
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes
             // which open when checked and stay open when active"),

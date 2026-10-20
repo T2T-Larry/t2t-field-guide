@@ -2070,6 +2070,52 @@
       });
     });
   }
+  // Oct 20 2026 (Larry): "Consensus is the key!" A Vision Statement is complete when everyone working the task feels comfortable that the headers
+  // cover what they can think of, enough to take a shot; anything that arises later is fine, so a tick can be withdrawn. The PRIMARY assigns the
+  // team with the Key Stakeholder's approval. One row per member in hangup_vision_team; the database clears NEEDS VISION when all have agreed
+  // and brings it back if one withdraws or a member is added. A person ticks only their own box (named from the signed-in email).
+  async function _bbMyTeamName(sb){
+    try{
+      var u=await sb.auth.getUser(); var em=u&&u.data&&u.data.user&&u.data.user.email;
+      if(!em) return '';
+      var n=em.split('@')[0].split(/[._-]/)[0];
+      return n ? n.charAt(0).toUpperCase()+n.slice(1).toLowerCase() : '';
+    }catch(e){ return ''; }
+  }
+  async function _bbRenderVisionTeam(c){
+    var box=document.getElementById('bb-d-vteam');
+    if(!box) return;
+    box.style.display='none'; box.innerHTML='';
+    if(!c || c.col!=='hangups') return;
+    var sb=T().sb; if(!sb) return;
+    var res=await sb.from('hangup_vision_team').select('member,agreed').eq('idea_id', c.id).order('member');
+    if(res.error || !res.data || !res.data.length) return;
+    if(_bbOpenCardId!==c.id) return;
+    var me=await _bbMyTeamName(sb);
+    var all=res.data.every(function(r){ return r.agreed; });
+    var chips=res.data.map(function(r){
+      return '<span style="display:inline-block;margin:0 8px 4px 0;padding:2px 8px;border-radius:10px;border:1px solid rgba(109,40,217,.5);'
+        +(r.agreed?'background:rgba(34,197,94,.18)':'background:transparent')+'">'+(r.agreed?'&#10003; ':'&#9675; ')+r.member+'</span>';
+    }).join('');
+    var mine=res.data.filter(function(r){ return r.member===me; })[0];
+    var btn=mine ? '<button type="button" id="bb-d-vteam-btn" class="bb-btn">'+(mine.agreed?'Withdraw my agreement':'I agree: this Vision is enough to take a shot')+'</button>' : '';
+    box.innerHTML='<label>Vision agreed by the team'+(all?' &mdash; consensus reached':'')+'</label><div>'+chips+'</div>'+btn;
+    box.style.display='';
+    var b=document.getElementById('bb-d-vteam-btn');
+    if(b) b.addEventListener('click', async function(){
+      b.disabled=true;
+      var up=await sb.from('hangup_vision_team').update({agreed:!mine.agreed, agreed_at:(!mine.agreed?new Date().toISOString():null)}).eq('idea_id', c.id).eq('member', me);
+      if(up.error) console.error('Briefing Board: Vision agreement save failed', up.error);
+      var tf=await sb.from('task_fields').select('needs_vision').eq('idea_id', c.id).maybeSingle();
+      if(tf && tf.data){
+        c.needsVision=!!tf.data.needs_vision;
+        var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=c.needsVision;
+      }
+      _bbSaveLocal(_bbCardsList());
+      renderBoard();
+      _bbRenderVisionTeam(c);
+    });
+  }
   function wireNeedsPlanSwitch(){
     var cb=document.getElementById('bb-d-needs-plan');
     if(!cb) return;

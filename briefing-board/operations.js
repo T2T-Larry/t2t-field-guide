@@ -1457,6 +1457,7 @@
     });
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
+    if(typeof _bbRenderVisionTeam==='function') _bbRenderVisionTeam(c);
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
     // one of two things depending on whether this card is already
     // linked (c.sourceHeaderId): a linked card opens its existing
