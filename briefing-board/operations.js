@@ -1489,6 +1489,9 @@
     var _bbDetailCard=document.querySelector('#bb-detail-overlay .bb-overlay-card');
     if(_bbDetailCard && window.FGCardBack) FGCardBack.paintBand(_bbDetailCard, 'bb');
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-hangup-active', c.col==='hangups');
+    // Oct 20 2026 (Larry): while a task is a Hang Up the upper-left title reads HANG UP and the standard checklist is dropped; it all returns when the card is a TASK again.
+    var _bbTitleEl=_bbDetailCard && _bbDetailCard.querySelector('.fg-back-title');
+    if(_bbTitleEl) _bbTitleEl.textContent = (c.col==='hangups') ? 'HANG UP' : 'TASK';
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
     // SUBJECT + contents-on-front, Sept 22 2026 -- see briefing-board-screens.js.

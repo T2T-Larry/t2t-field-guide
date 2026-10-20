@@ -850,6 +850,7 @@
       +'.bb-overlay.active{display:flex}'
       +'.bb-overlay-card{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:#FFFDF7;border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(59,37,16,0.35);box-sizing:border-box;padding:18px 22px 22px}'
       +'.bb-overlay-card.bb-hangup-active{border-top-color:#a3372b;background:#FFF4F2}'
+      +'.bb-overlay-card.bb-hangup-active .fg-back-fixed,.bb-overlay-card.bb-hangup-active .fg-back-selected,.bb-overlay-card.bb-hangup-active .fg-back-region,.bb-overlay-card.bb-hangup-active .fg-back-daterow{display:none!important}'
       +'.bb-overlay-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:grab;user-select:none}'
       +'.bb-overlay-title{font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.bb-overlay-card.bb-hangup-active .bb-overlay-title{color:#a3372b}'
