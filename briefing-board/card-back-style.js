@@ -153,6 +153,9 @@
       +'.fg-back-util-extra .bb-field{margin:0;width:100%}'
       +'.fg-back-util-extra .bb-addition-body{margin-top:3px}'
       +'#bb-d-color-row[style*="display: flex"] + .fg-back-util-extra{display:flex}'
+      // Lock, People and Calendar live at the top of the Gear (Oct 20 2026), same 24px icon buttons as the bottom row.
+      +'.fg-gear-iconrow{display:flex;gap:6px;align-items:center;position:relative}'
+      +'.fg-gear-iconrow .bb-icon-btn{flex:0 0 auto;width:24px;height:24px;min-width:0;padding:0;font-size:calc(11px * var(--fg-text-scale,1));border-width:1px}'
       // Checkbox list: smaller and darker (Larry, Sept 29 2026).
       +'.fg-back-3x5 .bb-addition-eyebrow{font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;color:var(--bb-ink);opacity:1}'
       +'.fg-back-3x5 .bb-addition-label{gap:4px;line-height:12px;color:var(--bb-ink)}'

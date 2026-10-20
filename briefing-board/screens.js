@@ -764,6 +764,13 @@
               }
             });
           }
+          // Oct 20 2026 (Larry: "do we lose anything by moving the lock, the people and the calendar into the Gear?" -- yes, build it):
+          // the bottom row keeps only Gear, Notes (and Duplicate/Trash); Lock, People and Calendar ride a small icon row at the top of the Gear.
+          // Same buttons, same ids, so all their wiring and saving is untouched. The front of the card still shows the lock mark,
+          // the PRIMARY initials and the date chip whenever they are set, so nothing is hidden by the move.
+          var gearIcons=document.createElement('div'); gearIcons.className='fg-gear-iconrow';
+          ['bb-d-lock','bb-d-people','bb-people-menu','bb-d-calendar'].forEach(function(id){ var el=q(id); if(el) gearIcons.appendChild(el); });
+          ux.insertBefore(gearIcons, ux.firstChild);
         }
         // Notes = the pencil along the bottom; it drives the (hidden) Notes checkbox so all existing saving/showing keeps working.
         var pen=q('bb-d-notes-pencil'), ncb=q('bb-d-add-notes');
