@@ -38,7 +38,7 @@
   ['briefing-board/master-navigation.js','20261020m'],
   ['people-team/cast-pick-list.js','20261006d'],
   ['people-team/cast-roster.js','20260927hub'],
-  ['briefing-board/operations.js','20261020p'],
+  ['briefing-board/operations.js','20261020q'],
   ['briefing-board/live-refresh.js','20261016b'],
   ['briefing-board/board.js','20261020c'],
   ['briefing-board/public-api.js','20261018a'],

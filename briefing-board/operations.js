@@ -820,6 +820,12 @@
       if(!target) return;
       var colCards=cards.filter(function(c){ return c.col===cd.key; });
       colCards.sort(function(a,b){
+        // Oct 20 2026 (Larry: "DOING should be viewed in H-M-L order"): DOING always shows by priority (HH, H, MH, M, ML, L, none last); hand order only breaks ties.
+        if(cd.key==='doing'){
+          var pa=PRI_ORDER.hasOwnProperty(a.priority)?PRI_ORDER[a.priority]:7;
+          var pb=PRI_ORDER.hasOwnProperty(b.priority)?PRI_ORDER[b.priority]:7;
+          if(pa!==pb) return pa-pb;
+        }
         var soa=(typeof a.sortOrder==='number')?a.sortOrder:Infinity;
         var sob=(typeof b.sortOrder==='number')?b.sortOrder:Infinity;
         if(soa!==sob) return soa-sob;
