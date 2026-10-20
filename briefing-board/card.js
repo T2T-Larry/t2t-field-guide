@@ -2106,6 +2106,16 @@
         var c=_bbFindCardAnywhere(_bbOpenCardId);
         if(!c) return;
         var next=(parseInt(_bbHangupReasonState(c,k),10)+1)%3;
+        // Oct 20 2026 (Larry): "You cannot check ISSUE without a situation statement." DELAY is the same: no check, and no completion, until Situation says what is going on.
+        if((k==='delay' || k==='issue') && next!==0){
+          var _sit=document.getElementById('bb-d-situation');
+          if(_sit && !String(_sit.value||'').trim()){
+            _sit.classList.add('bb-sit-required'); _sit.placeholder='Required: what\'s stuck and why?';
+            try{ _sit.focus(); }catch(e){}
+            if(typeof _bbShowToast==='function') _bbShowToast('Write the situation first: say what is stuck and why.');
+            return;
+          }
+        }
         var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k && x!==k+':done'; });
         if(next===1) list.push(k);
         if(next===2) list.push(k+':done');
