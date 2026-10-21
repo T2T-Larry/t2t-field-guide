@@ -19,7 +19,9 @@
   // Vision board on just that header (found by name when clicked, so every member's own tree works).
   var QUESTIONS = [
     { id: 'hub-what-is-t2t', label: 'What is T2T?' },
-    { id: 'hub-how-thought-becomes-thing', label: 'How does a thought become a thing?' }
+    { id: 'hub-how-thought-becomes-thing', label: 'How does a thought become a thing?' },
+    // Oct 21 2026, Larry: the Tutorial template draft sits under the TUTORIAL header in JOURNEY and, for now, opens from the HUB.
+    { id: 'hub-tutorial', label: 'Tutorial' }
   ];
   var POS_KEY = 't2t_hubTilePositions';
 
