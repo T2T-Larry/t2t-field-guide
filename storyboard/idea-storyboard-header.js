@@ -1684,6 +1684,8 @@
   function _sboardOpenGearMenu(){
     var ov=document.getElementById('sb-detail-overlay');
     if(!ov) return;
+    // Oct 21 2026: in the read-only Library view the gear offers just A-Z (a look only; it never edits the Library).
+    if(typeof _sboardIsReadOnly==='function' && _sboardIsReadOnly()){ _sboardOpenAzGear(); return; }
     var built = window.T2TSettingsMenu.renderHomeHTML({
       // People/Guests retired Sept 12 2026, Larry: "remove the People
       // screen ... CAST is our source of truth." No onClick passed here
