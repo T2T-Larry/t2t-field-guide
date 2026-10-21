@@ -1401,10 +1401,9 @@
       +'<div class="isx-p-band-rule"></div>'
       // Oct 21 2026 (Larry): the band is where the card lands (TOPIC, BOARD, and the header it goes under); the two fields wear the card back's
       // names -- HEADER (optional) and CONTENTS -- so the form and the back agree.
-      +((_icHeaderLabel && _icHeaderLabel!=='New' && _icMode!=='bb') ? '<div class="isx-p-landing" id="isx-p-landing">UNDER <b>'+_icEsc(_icHeaderLabel)+'</b></div>' : '')
       +'<div class="isx-p-eyebrow">HEADER <span class="isx-p-eyebrow-opt">(optional)</span></div>'
       +'<div class="isx-p-subject-row">'
-        +'<input type="text" id="isx-p-subject" autocomplete="off" autocorrect="off" spellcheck="true" placeholder="Header">'
+        +'<input type="text" id="isx-p-subject" autocomplete="off" autocorrect="off" spellcheck="true" placeholder="">'
       +'</div>'
       +'<div id="isx-paste-preview" style="display:none"></div>'
       // A trailing ? or : makes the entry a header (see _icIsAutoHeaderText)
@@ -1412,7 +1411,7 @@
       // and subber distinguished only by ? and :"), so the placeholder
       // carries the habit. Briefing Board has no headers, so no hint there.
       +'<div class="isx-p-eyebrow">CONTENTS</div>'
-      +'<textarea id="isx-idea-text" placeholder="Contents"></textarea>'
+      +'<textarea id="isx-idea-text" placeholder=""></textarea>'
       +'<div id="isx-doc-banner" style="display:none;font-size:11px;color:#1a3a5c;background:#eaf3fb;border:1px solid #cfe4f2;border-radius:8px;padding:6px 8px;margin:-4px 0 6px;text-align:center">'
         +'That looks like a whole document. '
         +'<button type="button" id="isx-doc-decompose" style="border:none;background:none;color:#1a3a5c;font-weight:700;text-decoration:underline;cursor:pointer;padding:0">Split it into cards instead?</button>'
