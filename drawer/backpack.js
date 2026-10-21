@@ -849,7 +849,6 @@
      desktop's board buttons are what's left. One function for every board's
      home button (Sea of Ideas, Vision/Plan/Story/Journey, Briefing). */
   function goHome(){
-    if(window.IDBand && window.IDBand.snapshotCurrentBoard){ try{ window.IDBand.snapshotCurrentBoard(); }catch(e){} }   // remember where you were, for the HUB's Return button
     var fgr=document.getElementById('fg-root');
     if(fgr){ fgr.classList.remove('cl-widescreen'); fgr.classList.remove('isx-full'); }
     if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }

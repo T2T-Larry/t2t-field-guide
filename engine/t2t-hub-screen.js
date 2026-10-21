@@ -29,9 +29,6 @@
       +   'font-size:min(9vw,84px);letter-spacing:0.12em;line-height:1;color:rgba(0,0,0,.55)}'
       + '#t2t-hub-screen .hub-sub{font-family:"Playfair Display",Georgia,serif;font-size:min(2.6vw,24px);'
       +   'letter-spacing:0.08em;color:rgba(0,0,0,.45);margin-top:-12px}'
-      + '#t2t-hub-screen .hub-return{padding:10px 22px;background:#1a3a5c;color:#fff;border:0;border-radius:999px;'
-      +   'cursor:pointer;font-family:inherit;font-size:16px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.25)}'
-      + '#t2t-hub-screen .hub-return:hover{background:#24507e}'
       + '#t2t-hub-screen .hub-boards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%}'
       + '#t2t-hub-screen .hub-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;'
       +   'gap:6px;padding:16px 8px;background:rgba(255,255,255,.7);border:1.5px solid rgba(0,0,0,.18);'
@@ -77,34 +74,6 @@
     var title = document.createElement('div'); title.className = 'hub-title'; title.textContent = 'T2T';
     var sub = document.createElement('div'); sub.className = 'hub-sub'; sub.textContent = 'Thoughts to Things';
     wrap.appendChild(title); wrap.appendChild(sub);
-
-    // Return to where you were (set when HOME is pressed on a board). Shown only when there is somewhere to return to.
-    var ret = document.createElement('button');
-    ret.type = 'button'; ret.className = 'hub-return'; ret.style.display = 'none';
-    function labelFor(kind){
-      var n = window.IDBand && window.IDBand.boardName ? window.IDBand.boardName(kind) : kind;
-      return '\u21A9\uFE0E Return to ' + n;
-    }
-    function refreshReturn(){
-      var saved = window.IDBand && window.IDBand.savedHubReturn && window.IDBand.savedHubReturn();
-      if (!saved) { ret.style.display = 'none'; return; }
-      ret.textContent = labelFor(saved.kind);
-      ret.style.display = '';
-    }
-    ret.addEventListener('click', function(){
-      var saved = window.IDBand.savedHubReturn();
-      if (!saved) return;
-      if (window.T2T && window.T2T.showTravelSpinner) window.T2T.showTravelSpinner();
-      Promise.resolve(saved.topicId || window.IDBand.hubTopicId()).then(function(tid){
-        return window.IDBand.goToBoard(saved.kind, tid);
-      }).then(function(ok){
-        if (ok === false) { if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner(); toast('Could not open that board.'); }
-      });
-    });
-    wrap.appendChild(ret);
-    refreshReturn();
-    // The desk is shown again after HOME is pressed (body class changes) -- refresh then.
-    new MutationObserver(refreshReturn).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
     var grid = document.createElement('div'); grid.className = 'hub-boards';
     sys.hubBoards.forEach(function(entry){
