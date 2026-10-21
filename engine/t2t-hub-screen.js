@@ -83,9 +83,8 @@
       + '#t2t-hub-help-card .hh-title{font-family:"Playfair Display",Georgia,serif;font-size:24px;font-weight:700;margin:0 0 10px}'
       + '#t2t-hub-help-card .hh-line{font-size:16px;line-height:1.5;margin:0 0 8px}'
       + '#t2t-hub-help-card .hh-x{position:absolute;top:8px;right:10px;border:none;background:none;font-size:20px;cursor:pointer;color:#1a3a5c}'
-      // Oct 21 2026, Larry: "no X and no Notebook on the T2T HUB!" -- the sign-out X and the Notebook step aside while the HUB shows.
-      + 'body.t2t-desk-closed:not(.t2t-bare-screen):not(:has(#fg-root.isx-full)) #sz-close-x,'
-      +   'body.t2t-desk-closed:not(.t2t-bare-screen):not(:has(#fg-root.isx-full)) #sz-notebook{display:none!important}'
+      // Oct 21 2026, Larry: no Notebook on the T2T HUB. (The sign-out X stays: it is how you leave.)
+      + 'body.t2t-desk-closed:not(.t2t-bare-screen):not(:has(#fg-root.isx-full)) #sz-notebook{display:none!important}'
       // The hub carries its own T2T title, so the faint embossed one steps aside when it shows.
       + 'body.t2t-desk-closed:not(.t2t-bare-screen) #sz-t2t-watermark{display:none}';
     var style = document.createElement('style');
