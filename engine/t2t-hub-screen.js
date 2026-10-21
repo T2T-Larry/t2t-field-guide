@@ -70,9 +70,19 @@
       // The Notebook sits on the desk, not on a hub (Oct 21 2026: it showed up over the Library hub).
       + 'body:has(#t2t-topic-hub) #sz-notebook{display:none!important}'
       // Only on the open desk: not under the Field Guide widget, not over a full-screen board.
-      + 'body:not(.t2t-desk-closed) #t2t-hub-screen,'
-      +   'body:has(#fg-root.isx-full) #t2t-hub-screen,'
-      +   'body.t2t-bare-screen #t2t-hub-screen{display:none!important}'
+      + 'body:not(.t2t-desk-closed) #t2t-hub-screen,body:not(.t2t-desk-closed) #t2t-hub-help,'
+      +   'body:has(#fg-root.isx-full) #t2t-hub-screen,body:has(#fg-root.isx-full) #t2t-hub-help,'
+      +   'body:has(#t2t-topic-hub) #t2t-hub-help,'
+      +   'body.t2t-bare-screen #t2t-hub-screen,body.t2t-bare-screen #t2t-hub-help{display:none!important}'
+      // The HELP button: upper right, the same corner slot the home symbol holds on every board (Oct 21 2026).
+      + '#t2t-hub-help{position:fixed;top:10px;right:16px;z-index:5;width:30px;height:30px;padding:0;background:#fff;'
+      +   'border:1.5px solid #1a3a5c;border-radius:6px;cursor:pointer;font-family:inherit;font-size:16px;font-weight:700;color:#1a3a5c}'
+      + '#t2t-hub-help:hover{background:#eef4fb}'
+      + '#t2t-hub-help-card{position:fixed;inset:0;z-index:100000;background:rgba(20,40,70,.5);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}'
+      + '#t2t-hub-help-card .hh-card{background:#fff;border:3px solid #1a3a5c;box-shadow:0 10px 40px rgba(0,0,0,.4);width:min(520px,100%);padding:22px 26px;box-sizing:border-box;position:relative;color:#1a3a5c}'
+      + '#t2t-hub-help-card .hh-title{font-family:"Playfair Display",Georgia,serif;font-size:24px;font-weight:700;margin:0 0 10px}'
+      + '#t2t-hub-help-card .hh-line{font-size:16px;line-height:1.5;margin:0 0 8px}'
+      + '#t2t-hub-help-card .hh-x{position:absolute;top:8px;right:10px;border:none;background:none;font-size:20px;cursor:pointer;color:#1a3a5c}'
       // The hub carries its own T2T title, so the faint embossed one steps aside when it shows.
       + 'body.t2t-desk-closed:not(.t2t-bare-screen) #sz-t2t-watermark{display:none}';
     var style = document.createElement('style');
@@ -212,6 +222,33 @@
     document.addEventListener('keydown', onTopicKey, true);
   }
 
+  /* HELP: the visible ? in the upper right of the T2T HUB. One sentence per line; Larry edits the words. */
+  var HELP_LINES = [
+    'Each symbol is a door: tap one to go to that board.',
+    'Drag any symbol or question to where you want it; it stays there on this device.',
+    'The Library book opens a hub of the Library headers.',
+    'On every board, the home symbol (top right) brings you back here.'
+  ];
+  function closeHelp(){
+    var el = document.getElementById('t2t-hub-help-card');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    document.removeEventListener('keydown', onHelpKey, true);
+  }
+  function onHelpKey(e){ if (e.key === 'Escape') { e.stopPropagation(); closeHelp(); } }
+  function openHelp(){
+    closeHelp();
+    var ov = document.createElement('div'); ov.id = 't2t-hub-help-card';
+    var card = document.createElement('div'); card.className = 'hh-card';
+    var x = document.createElement('button'); x.type = 'button'; x.className = 'hh-x'; x.textContent = '\u2715'; x.title = 'Close'; x.addEventListener('click', closeHelp);
+    var h = document.createElement('div'); h.className = 'hh-title'; h.textContent = 'Using the T2T HUB';
+    card.appendChild(x); card.appendChild(h);
+    HELP_LINES.forEach(function(t){ var p = document.createElement('p'); p.className = 'hh-line'; p.textContent = t; card.appendChild(p); });
+    ov.appendChild(card);
+    ov.addEventListener('click', function(e){ if (e.target === ov) closeHelp(); });
+    document.body.appendChild(ov);
+    document.addEventListener('keydown', onHelpKey, true);
+  }
+
   function build(){
     if (document.getElementById('t2t-hub-screen')) return;
     var sys = window.SZDrawerSystem;
@@ -246,6 +283,11 @@
     wrap.appendChild(qs);
 
     document.body.insertBefore(wrap, document.body.children[1] || null);
+
+    var help = document.createElement('button');
+    help.type = 'button'; help.id = 't2t-hub-help'; help.textContent = '?'; help.title = 'Help'; help.setAttribute('aria-label', 'Help');
+    help.addEventListener('click', openHelp);
+    document.body.appendChild(help);
   }
 
   window.T2THubScreen = { build: build, showTopicHub: showTopicHub, closeTopicHub: closeTopicHub };
