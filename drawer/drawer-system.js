@@ -396,12 +396,12 @@
   // play, else the last one worked in, else MASTER (IDBand.hubTopicId).
   // Replaces the old Idea / Plan / Cast / Share / Briefing Board buttons.
   var HUB_BOARDS = [
-    { id: 'hub-sea',      kind: 'SEA',            label: 'Sea of Ideas' },
-    { id: 'hub-vision',   kind: 'IDEA',           label: 'Vision' },
-    { id: 'hub-plan',     kind: 'PLAN',           label: 'Plan' },
-    { id: 'hub-briefing', kind: 'BRIEFING BOARD', label: 'Briefing' },
-    { id: 'hub-story',    kind: 'SHARE',          label: 'Story' },
-    { id: 'hub-journey',  kind: 'CAST',           label: 'Journey' }
+    { id: 'hub-sea', symbol: '🌊',      kind: 'SEA',            label: 'Sea of Ideas' },
+    { id: 'hub-vision', symbol: '🔭',   kind: 'IDEA',           label: 'Vision' },
+    { id: 'hub-plan', symbol: '🗺️',     kind: 'PLAN',           label: 'Plan' },
+    { id: 'hub-briefing', symbol: '📋', kind: 'BRIEFING BOARD', label: 'Briefing' },
+    { id: 'hub-story', symbol: '📖',    kind: 'SHARE',          label: 'Story' },
+    { id: 'hub-journey', symbol: '🧭',  kind: 'CAST',           label: 'Journey' }
   ];
 
   function openHubBoard(entry){
@@ -1643,7 +1643,10 @@
   // file's own module vars -- see that file's own comment.
   window.SZDrawerSystem = {
     buildNavBar: buildNavBar,
-    buildRightDrawer: buildRightDrawer
+    buildRightDrawer: buildRightDrawer,
+    // Oct 21 2026: the T2T HUB screen's board tiles reuse the tray's list and opener (one tree, one code).
+    hubBoards: HUB_BOARDS,
+    openHubBoard: openHubBoard
   };
 
 })();

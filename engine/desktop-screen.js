@@ -590,6 +590,8 @@
     window.SZDrawerSystem.buildNavBar();
     window.SZDrawerSystem.buildRightDrawer();
     retireDrawersToDesk();
+    // Oct 21 2026: the T2T HUB's contents (title, board symbols, questions) on the open desk.
+    if (window.T2THubScreen) window.T2THubScreen.build();
     // The real Field Guide tool button (in Drawer System's tray) is
     // the reopen/close handle for mid-session clicks. Here at boot,
     // re-apply whatever was saved last (see the persisted
