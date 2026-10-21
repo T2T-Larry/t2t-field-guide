@@ -74,9 +74,9 @@
       +   'body:has(#fg-root.isx-full) #t2t-hub-screen,body:has(#fg-root.isx-full) #t2t-hub-help,'
       +   'body:has(#t2t-topic-hub) #t2t-hub-help,'
       +   'body.t2t-bare-screen #t2t-hub-screen,body.t2t-bare-screen #t2t-hub-help{display:none!important}'
-      // The HELP button: upper right, the same corner slot the home symbol holds on every board (Oct 21 2026).
-      + '#t2t-hub-help{position:fixed;top:10px;right:16px;z-index:5;width:30px;height:30px;padding:0;background:#fff;'
-      +   'border:1.5px solid #1a3a5c;border-radius:6px;cursor:pointer;font-family:inherit;font-size:16px;font-weight:700;color:#1a3a5c}'
+      // The COMPASS guide button: upper right, in the same row as the gear and the sign-out X (Oct 21 2026: a compass anywhere means guidance).
+      + '#t2t-hub-help{position:fixed;top:16px;right:110px;z-index:5;width:36px;height:36px;padding:0;background:#fff;'
+      +   'border:1.5px solid #1a3a5c;border-radius:50%;cursor:pointer;font-family:inherit;font-size:20px;line-height:1;color:#1a3a5c}'
       + '#t2t-hub-help:hover{background:#eef4fb}'
       + '#t2t-hub-help-card{position:fixed;inset:0;z-index:100000;background:rgba(20,40,70,.5);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}'
       + '#t2t-hub-help-card .hh-card{background:#fff;border:3px solid #1a3a5c;box-shadow:0 10px 40px rgba(0,0,0,.4);width:min(520px,100%);padding:22px 26px;box-sizing:border-box;position:relative;color:#1a3a5c}'
@@ -222,7 +222,7 @@
     document.addEventListener('keydown', onTopicKey, true);
   }
 
-  /* HELP: the visible ? in the upper right of the T2T HUB. One sentence per line; Larry edits the words. */
+  /* GUIDE: the visible compass in the upper right of the T2T HUB. One sentence per line; Larry edits the words. */
   var HELP_LINES = [
     'Each symbol is a door: tap one to go to that board.',
     'Drag any symbol or question to where you want it; it stays there on this device.',
@@ -240,7 +240,7 @@
     var ov = document.createElement('div'); ov.id = 't2t-hub-help-card';
     var card = document.createElement('div'); card.className = 'hh-card';
     var x = document.createElement('button'); x.type = 'button'; x.className = 'hh-x'; x.textContent = '\u2715'; x.title = 'Close'; x.addEventListener('click', closeHelp);
-    var h = document.createElement('div'); h.className = 'hh-title'; h.textContent = 'Using the T2T HUB';
+    var h = document.createElement('div'); h.className = 'hh-title'; h.textContent = 'Your guide to the T2T HUB';
     card.appendChild(x); card.appendChild(h);
     HELP_LINES.forEach(function(t){ var p = document.createElement('p'); p.className = 'hh-line'; p.textContent = t; card.appendChild(p); });
     ov.appendChild(card);
@@ -285,9 +285,20 @@
     document.body.insertBefore(wrap, document.body.children[1] || null);
 
     var help = document.createElement('button');
-    help.type = 'button'; help.id = 't2t-hub-help'; help.textContent = '?'; help.title = 'Help'; help.setAttribute('aria-label', 'Help');
+    help.type = 'button'; help.id = 't2t-hub-help'; help.textContent = '\uD83E\uDDED'; help.title = 'Guide'; help.setAttribute('aria-label', 'Guide');
     help.addEventListener('click', openHelp);
     document.body.appendChild(help);
+    // Sit just left of the gear, wherever the gear is (same row, same size).
+    function placeGuide(){
+      var g = document.getElementById('sz-gear');
+      if (!g) return;
+      var r = g.getBoundingClientRect();
+      if (!r.width) return;
+      help.style.top = r.top + 'px'; help.style.right = (window.innerWidth - r.left + 8) + 'px';
+      help.style.width = r.width + 'px'; help.style.height = r.height + 'px';
+    }
+    placeGuide(); setTimeout(placeGuide, 500); setTimeout(placeGuide, 2000);
+    window.addEventListener('resize', placeGuide);
   }
 
   window.T2THubScreen = { build: build, showTopicHub: showTopicHub, closeTopicHub: closeTopicHub };
