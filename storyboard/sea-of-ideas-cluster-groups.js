@@ -101,6 +101,25 @@
       made++;
     }
     cache[topicId] = [];
+    // Oct 21 2026 (Larry): "The VISION board of that sea would place all the ideas in the
+    // Parking Lot." Every idea still loose on the Topic itself lands in its Parking Lot;
+    // clusters and headers are introduced from there. Positions on the Sea are kept.
+    try {
+      var loose = await sb().from('ideas').select('id,canvas_x,canvas_y').eq('cluster_id', topicId).in('content_type', ['image', 'text', 'link']);
+      if (!loose.error && loose.data && loose.data.length) {
+        var pid = await window.T2TData.ensureNewAdditionsHeader(topicId);
+        if (pid) {
+          var order = loose.data.slice().sort(function(a, b){
+            var ay = Number(a.canvas_y) || 0, by = Number(b.canvas_y) || 0;
+            if (Math.abs(ay - by) > 60) return ay - by;
+            return (Number(a.canvas_x) || 0) - (Number(b.canvas_x) || 0);
+          });
+          var ids = order.map(function(r){ return r.id; });
+          var mv = await sb().from('ideas').update({ cluster_id: pid }).in('id', ids);
+          if (mv.error) throw mv.error;
+        }
+      }
+    } catch (e) { console.warn('loose ideas to Parking Lot failed', e); }
     return made;
   }
 

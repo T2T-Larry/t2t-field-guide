@@ -1157,6 +1157,18 @@
         if(res.error) throw res.error;
         var _freshRows=(res&&res.data)||[];
         _freshRows.forEach(function(r){ _isxAllRowsById[r.id]=r; });
+        // Oct 21 2026 (Larry): "Sea of Ideas boards should have no headers. They are a
+        // collection field for ideas related to whatever topic is selected." The Sea
+        // shows every idea of the Topic, including the ones filed inside its headers
+        // (Parking Lot included), but never draws a header. One level down only.
+        var _seaHeaderIds=_freshRows.filter(function(r){ return r.content_type==='header' && String(r.id)!==String(trashId); }).map(function(r){ return r.id; });
+        if(_seaHeaderIds.length){
+          var nres=await _sb.from('ideas').select('id,user_id,content_type,image_url,text_content,color,cluster_id,heart_count,notes,sort_order,locked,canvas_x,canvas_y,assigned_user_id,key_slot_1,key_slot_2,key_slot_3,topic_owner_user_id,topic_scope_id,link_url,link_title,link_thumb,hide_primary_badge,show_primary_badge,priority,hide_priority_front,subject,hide_contents_front,front_hidden,tile_w,group_id')
+            .in('cluster_id',_seaHeaderIds).in('content_type',['image','text','link'])
+            .order('created_at',{ascending:true}).limit(1000);
+          if(nres.error) throw nres.error;
+          ((nres&&nres.data)||[]).forEach(function(r){ _isxAllRowsById[r.id]=r; });
+        }
         _isxCacheReady=true;
       }
 
@@ -1168,7 +1180,15 @@
       // down to this Topic's own direct children the same way the network
       // query itself always scoped to (.eq('cluster_id', clusterId)).
       var excludedNames=['Purpose','NEW','New Additions','Parking Lot'];
+      // Oct 21 2026: ideas filed inside this Topic's headers (Parking Lot included) belong
+      // to the Sea too; the headers themselves stay off the board.
+      var _seaHdrSet={};
+      Object.keys(_isxAllRowsById).forEach(function(k){
+        var hr=_isxAllRowsById[k];
+        if(hr.content_type==='header' && String(hr.cluster_id)===String(clusterId) && String(hr.id)!==String(trashId)) _seaHdrSet[hr.id]=true;
+      });
       var allRows=Object.keys(_isxAllRowsById).map(function(k){ return _isxAllRowsById[k]; }).filter(function(r){
+        if(r.content_type!=='header' && _seaHdrSet[r.cluster_id]) return true;
         if(String(r.cluster_id)!==String(clusterId)) return false;
         if(r.content_type!=='header') return true;
         // Let OUR ensured Purpose row through even though its name is in
@@ -1206,7 +1226,7 @@
       if(empty) canvas.appendChild(empty);
       if(T2TStoryboard.applyBoardBg) T2TStoryboard.applyBoardBg();
 
-      if(empty) empty.style.display = (ideaRows.length||contentHeaders.length) ? 'none' : 'block';
+      if(empty) empty.style.display = ideaRows.length ? 'none' : 'block';
 
       var w=Math.max(canvas.clientWidth,600), h=Math.max(canvas.clientHeight,600);
       var boardW=boardEl?Math.max(boardEl.clientWidth,300):w, boardH=boardEl?Math.max(boardEl.clientHeight,300):h;
@@ -1218,7 +1238,9 @@
       // — permanently, until a factory reset (see _isxResetHeadersToAlpha)
       // sends it back. Parking Lot participates like any ordinary header; Trash
       // is its own fixed icon, never part of the ring or the canvas.
-      var ringCandidates=contentHeaders.concat(purposeRow?[purposeRow]:[]);
+      // Oct 21 2026 (Larry): the Sea has no headers -- none are drawn, in the ring or on
+      // the canvas. They are still listed for DETAILS (moveList below) and live on VISION.
+      var ringCandidates=[];
       var untouchedRing=ringCandidates.filter(function(r){ return r.canvas_x==null || r.canvas_y==null; })
         .sort(function(a,b){ return (a.text_content||'').localeCompare(b.text_content||'', undefined, {sensitivity:'base'}); });
       var canvasHeaders=ringCandidates.filter(function(r){ return !(r.canvas_x==null || r.canvas_y==null); });

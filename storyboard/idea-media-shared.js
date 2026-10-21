@@ -168,7 +168,8 @@
     // Oct 7 2026: named groups on the Sea of Ideas become real headers the
     // moment Blue Sky opens (sea-cluster-groups.js). Only gate the navigation
     // when this topic actually has groups waiting, so every other entry stays instant.
-    if(window.T2TGroups && T2TGroups.has(boardId)){
+    // Oct 21 2026: always run it -- loose Sea ideas go to the Parking Lot on VISION.
+    if(window.T2TGroups){
       T2TGroups.commit(boardId).catch(function(e){ console.warn('group commit failed', e); }).then(function(){ T().nav('s-sea-of-ideas-cluster', push); });
       return;
     }
