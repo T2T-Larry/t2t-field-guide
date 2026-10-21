@@ -995,7 +995,7 @@
         // elsewhere in this file), not this row's own icon-button family.
         // That's why Close sat differently shaped from its three
         // siblings; matches them now (same class VIEW/RETURN/GEAR use).
-        +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-close" title="Return">✕</button>'
+        +'<button class="sc-hdr-btn-muted sc-hdr-btn-icon" id="b-sc-close" title="T2T HUB (home)" aria-label="Home">🏠</button>'
       +'</div>'
       +'</div>'
       +'<div id="sc-divider"></div>'
@@ -1032,7 +1032,7 @@
     }
     T().registerPageNum('s-sea-of-ideas-cluster', '1010'); // Larry, July 29 2026: renumbered from 9710 -- Idea Storyboard now reads as 1010 in the Dream Phase sequence, not the 9700s Storyboard-family block.
     T().registerCtx('s-sea-of-ideas-cluster', 'Storyboard');
-    T().wire('b-sc-close', _sboardCloseBoard);
+    T().wire('b-sc-close', function(){ T().goHome(); });   // Oct 21 2026: X became HOME (T2T HUB)
     T().wire('b-sc-gear', _sboardOpenGearMenu);
     T2TLogo.wire(_sboardLogoCfg);
     _sboardMountIdBand();   // TOPIC pyramid, Board Type, RETURN, row layout -- shared (id-band-controls.js)

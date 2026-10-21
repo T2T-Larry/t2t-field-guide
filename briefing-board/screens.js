@@ -346,7 +346,7 @@
               +'<div class="bb-cdrop" id="bb-view-cdrop" style="position:relative"><button type="button" class="bb-icon-btn" id="bb-view-trigger" title="TEAM: showing everyone \u2014 click to show only one person&#39;s cards." aria-label="TEAM — filter by person">👤</button><div class="bb-cdrop-menu" id="bb-view-menu" hidden></div></div>'
               +'<button class="bb-icon-btn" id="bb-return" title="Return to previous screen">↩︎</button>'
               +'<button class="bb-icon-btn" id="bb-gear" title="Utility">⚙️</button>'
-              +'<button class="bb-icon-btn" id="bb-close-x" title="Close">✕</button>'
+              +'<button class="bb-icon-btn" id="bb-close-x" title="T2T HUB (home)" aria-label="Home">🏠</button>'
             +'</div>'
           +'</div>'
         +'</div>'

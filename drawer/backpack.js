@@ -843,6 +843,21 @@
     else { goBack(); }
   }
 
+  /* ── GO HOME ── Oct 21 2026, Larry: "Change the X on the ID BAND to a home
+     symbol that takes us to the T2T HUB screen." The HUB is the desktop: the
+     full-screen board steps aside, the Field Guide widget closes, and the
+     desktop's board buttons are what's left. One function for every board's
+     home button (Sea of Ideas, Vision/Plan/Story/Journey, Briefing). */
+  function goHome(){
+    var fgr=document.getElementById('fg-root');
+    if(fgr){ fgr.classList.remove('cl-widescreen'); fgr.classList.remove('isx-full'); }
+    if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+    if(window.SZDesk && window.SZDesk.close) window.SZDesk.close();
+    stack.length = 0;
+    var dest = primaryPage || _primaryPages[0];
+    if (dest) nav(dest, false); else goBack();
+  }
+
   function goMap() {
     closeMG();
     var srcNum=_pageNums[cur]||null;
@@ -1544,7 +1559,7 @@
   // same object) ever loaded first, its properties would have been wiped
   // silently. Same defensive pattern traveler-map.js already uses.
   window.T2T = Object.assign(window.T2T || {}, {
-    nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG, goBackStack:goBackStack,
+    nav:nav, goBack:goBack, goMG:goMG, closeMG:closeMG, returnToMG:returnToMG, goHome:goHome, goBackStack:goBackStack,
     goPhase:goPhase, wire:wire, togglePh:togglePh,
     showTravelSpinner:showTravelSpinner, hideTravelSpinner:hideTravelSpinner,
     markSeaChapterEntry:function(){ seaChapterEntry = true; },

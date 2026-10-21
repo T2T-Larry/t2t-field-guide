@@ -2078,10 +2078,8 @@
     // Organization's Name click-to-edit is wired fresh on every render
     // in _bbRenderOrgName() itself (bb-org-name-trigger.onclick), same
     // pattern as the Type dropdown -- nothing to wire once here anymore.
-    T().wire('bb-close-x', function(){
-      var fgr=document.getElementById('fg-root'); if(fgr) fgr.classList.remove('isx-full');
-      T().returnToMG();
-    });
+    // Oct 21 2026: the X is now the HOME button -- straight to the T2T HUB (desktop).
+    T().wire('bb-close-x', function(){ T().goHome(); });
     // bb-hx-btn (the standalone header icon) is gone, Aug 30 2026 --
     // History now opens from Utility instead (bb-settings-go-history).
     T().wire('bb-hx-close', closeHX);

@@ -209,12 +209,8 @@
         var menu=document.getElementById('isx-view-menu');
         if(wrap && menu && menu.classList.contains('open') && !wrap.contains(e.target)) menu.classList.remove('open');
       });
-      T().wire('isx-end-btn', function(){
-        var fgr=document.getElementById('fg-root');
-        if(fgr) fgr.classList.remove('isx-full');
-        if(document.fullscreenElement){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
-        T().goBackStack();
-      });
+      // Oct 21 2026: the X is now the HOME button -- straight to the T2T HUB (desktop).
+      T().wire('isx-end-btn', function(){ T().goHome(); });
       // PROJECT — July 14, 2026: was display-only/inert on this screen;
       // now a real lateral jump between top-level projects, same intent
       // as 9710's own PROJECT chrome, but isx-scoped (updates T2TShared.isxPath,
