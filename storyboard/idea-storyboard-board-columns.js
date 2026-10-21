@@ -23,7 +23,7 @@
 
 function _sboardRenderGroup(ctx, headerRow, depth){
   var subHeadersOf=ctx.subHeadersOf, childrenOfHeader=ctx.childrenOfHeader, HEADER_W=ctx.HEADER_W, _tsMult=ctx._tsMult, HEADER_H=ctx.HEADER_H, SUBBER_W=ctx.SUBBER_W, SUBBER_H=ctx.SUBBER_H;
-    var name=headerRow.text_content||'(untitled cluster)';
+    var name=(window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled cluster)';
     var isReserved=(name==='Trash'||name==='Purpose'||name==='NEW'||name==='Parking Lot');
     // Parking Lot can take a new card just as freely as any content header —
     // it's specifically for ideas that don't relate to the current

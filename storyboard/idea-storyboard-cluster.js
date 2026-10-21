@@ -48,7 +48,7 @@
     _clusterWide=false;
     _clusterCardPos={};
     _clusterSelected={};
-    var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="cl-card">'
       +'<div class="cl-topbar"><div class="cl-title">'+safeName+'</div><div class="cl-topbar-btns"><button class="cl-close" id="cl-full" title="Full screen">⛶</button><button class="cl-close" id="cl-close">✕</button></div></div>'
       +'<div class="cl-hint">Drag one card onto a bucket to sort it in. Drag on empty space to lasso-select several, then move them together. Positions stay put once set.</div>'

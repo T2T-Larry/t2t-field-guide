@@ -766,13 +766,13 @@
     var front=document.createElement('div');
     front.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:'+bg+';border:2px solid #1a3a5c;border-radius:0;box-shadow:0 3px 10px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;text-align:center;overflow:hidden';
     var p=document.createElement('p');
-    p.textContent=headerRow.text_content||'(untitled)';
+    p.textContent=(window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)';
     // Floor lowered Aug 21 2026, same reasoning as the idea/link tiles --
     // a long single word (a Subber name) shrinking further beats it
     // wrapping in this small, fixed, overflow-hidden card.
-    var fitSize=_sboardFitFontSize(headerRow.text_content, Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
+    var fitSize=_sboardFitFontSize((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content)), Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     p.style.cssText='margin:0;font-weight:400;line-height:1.15;color:'+(_libLook?_libLook.fg:'#1a3a5c')+';'+'white-space:normal;word-break:break-word;font-size:'+fitSize+'px';
-    _sboardPaintHeaderFace(p, headerRow, headerRow.text_content||'(untitled)', Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
+    _sboardPaintHeaderFace(p, headerRow, (window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)', Math.round((height>=60?17:14)*_stMult), Math.max(6,Math.round(8*_stMult)), width-18, height-14, 1.15);
     front.appendChild(p);
     // Lock badge moved to the bottom-left signal cluster below, Aug 15
     // 2026 (Larry: "is the LOCK not just another FLAG?") -- was a

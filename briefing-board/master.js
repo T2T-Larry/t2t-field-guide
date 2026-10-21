@@ -834,7 +834,7 @@
       // _bbRootHeaderIdSet (PROJECT's own root-vs-layer filter, above)
       // current without a second round-trip.
       _bbRootHeaderIdSet[headerId] = _bbIsProjectRoot(hdr.cluster_id||null);
-      _bbHeaderInfoById[headerId] = {clusterId:hdr.cluster_id||null, name:hdr.text_content||'(untitled)'};
+      _bbHeaderInfoById[headerId] = {clusterId:hdr.cluster_id||null, name:(window.IDBand?IDBand.rowName(hdr):(hdr.subject||hdr.text_content))||'(untitled)'};
       // This Header may already point at a board this traveler's own
       // _bbBoards fetch didn't happen to include (shouldn't normally
       // happen -- RLS scopes both the same way -- but cheap to check
@@ -843,7 +843,7 @@
         var already=_bbBoards.filter(function(b){ return b.id===hdr.briefing_board_id; })[0];
         if(already) return already;
       }
-      var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:hdr.board_type||'personal', name:hdr.text_content||'Untitled', storyboard_project_id:headerId}).select().single();
+      var ins=await sb.from('briefing_boards').insert({user_id:uid, board_type:hdr.board_type||'personal', name:(window.IDBand?IDBand.rowName(hdr):(hdr.subject||hdr.text_content))||'Untitled', storyboard_project_id:headerId}).select().single();
       if(ins.error || !ins.data){ console.error('Briefing Board: could not create linked board for this layer', ins.error); return null; }
       _bbBoards.push(ins.data);
       try{ await sb.from('ideas').update({briefing_board_id:ins.data.id}).eq('id',headerId); }catch(e){ console.warn('Briefing Board: could not link board back onto its layer', e); }
@@ -1035,7 +1035,7 @@
       return rootId;
     };
     var addedTopic=async function(hdr){
-      _bbProjectNameById[hdr.id]=hdr.text_content||'';
+      _bbProjectNameById[hdr.id]=(window.IDBand?IDBand.rowName(hdr):(hdr.subject||hdr.text_content))||'';
       await _bbSetCardProjectHeader(c.id, hdr.id);
     };
     trigger.onclick=function(e){
@@ -1133,7 +1133,7 @@
       _bbRetireMovedCard(c);
       closeCardDetail();
       renderBoard();
-      _bbShowToast('Moved to the Plan board Parking Lot for '+(proj.text_content||'this topic')+'. Recently Deleted keeps the Briefing card.');
+      _bbShowToast('Moved to the Plan board Parking Lot for '+((window.IDBand?IDBand.rowName(proj):(proj.subject||proj.text_content))||'this topic')+'. Recently Deleted keeps the Briefing card.');
     }catch(err){
       console.error('Move to Plan failed', err);
       _bbShowToast('Could not move it: '+(err && err.message ? err.message : 'unknown error'));

@@ -155,7 +155,7 @@
         if(T2TShared.ideaCaptureCtx.headerId){
           var _explicitHeaderRow=await _isxFetchRow(T2TShared.ideaCaptureCtx.headerId);
           T2TShared.isxHeaderId=T2TShared.ideaCaptureCtx.headerId;
-          T2TShared.isxHeaderLabel=_explicitHeaderRow?(_explicitHeaderRow.text_content||'(untitled)'):'New';
+          T2TShared.isxHeaderLabel=_explicitHeaderRow?((window.IDBand?IDBand.rowName(_explicitHeaderRow):(_explicitHeaderRow.subject||_explicitHeaderRow.text_content))||'(untitled)'):'New';
         } else {
           T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
         }

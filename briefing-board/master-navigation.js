@@ -438,7 +438,7 @@
       var hdr;
       try{ hdr=await T2TData.createHeader(name.trim(), rootId); }
       catch(e){ console.error('Briefing Board: could not add topic header', e); window.alert('Could not add the topic "'+name.trim()+'". Try again.'); return; }
-      _bbProjectNameById[hdr.id]=hdr.text_content||name.trim();
+      _bbProjectNameById[hdr.id]=(window.IDBand?IDBand.rowName(hdr):(hdr.subject||hdr.text_content))||name.trim();
       var board=await _bbResolveOrCreateBoardForHeader(hdr.id);
       if(board) await _bbSwitchToBoard(board.id);
     } : async function(){

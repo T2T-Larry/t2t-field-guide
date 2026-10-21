@@ -28,7 +28,7 @@
     var opts='<option value="'+currentValue+'">Topic ('+currentLabel+')</option>';
     opts+=_sboardHeaderList
       .filter(function(h){ return String(h.id)!==String(excludeId) && String(h.id)!==String(currentValue); })
-      .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
+      .map(function(h){ return '<option value="'+h.id+'">'+(window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))+'</option>'; }).join('');
     return opts;
   }
 
@@ -58,7 +58,7 @@
       :'<button class="sc-ov-btn" id="sb-hq-trash" style="width:100%;margin-bottom:6px;color:#b8562f;border-color:#e0b8a8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg> Trash this header</button>';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +apexTag
-      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">'+headerRow.text_content+'</div>'
+      +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(15px * var(--fg-text-scale,1));color:#1a3a5c;font-weight:700;margin-bottom:10px">'+(window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))+'</div>'
       +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">Move under</label>'
       +'<select id="sb-hq-parent" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(12px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'+options+'</select>'
       +'<div id="sb-hq-err" style="font-size:calc(10px * var(--fg-text-scale,1));color:#b8562f;margin-bottom:6px;min-height:12px"></div>'
@@ -145,7 +145,7 @@
   }
   function _sboardConfirmTrashHeader(headerRow){
     var ov=document.getElementById('sb-detail-overlay');
-    var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
     var kids=Object.keys(_sboardAllRowsById||{}).filter(function(k){
       var r=_sboardAllRowsById[k]; return r && String(r.cluster_id)===String(headerRow.id);
     }).length;
@@ -504,8 +504,8 @@
       titleTrigger.textContent='MASTER';
       titleTrigger.title='Click to open your topics; double-click for the fast-jump list';
     } else {
-      titleTrigger.textContent=projRow.text_content||'(untitled)';
-      titleTrigger.title='Click to open '+(projRow.text_content||'this topic')+'; double-click for the fast-jump list';
+      titleTrigger.textContent=(window.IDBand?IDBand.rowName(projRow):(projRow.subject||projRow.text_content))||'(untitled)';
+      titleTrigger.title='Click to open '+((window.IDBand?IDBand.rowName(projRow):(projRow.subject||projRow.text_content))||'this topic')+'; double-click for the fast-jump list';
     }
     // _sboardRenderMemberName already ran earlier in this same chrome
     // refresh (_sboardUpdateHeaderChrome calls it before this function),
@@ -976,7 +976,7 @@
     var _sb=T().sb;
     var options='<option value="">— Top level —</option>'+_sboardHeaderList
       .filter(function(h){ return String(h.id)!==String(headerRow.id); })
-      .map(function(h){ return '<option value="'+h.id+'">'+h.text_content+'</option>'; }).join('');
+      .map(function(h){ return '<option value="'+h.id+'">'+(window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))+'</option>'; }).join('');
     var safeName=(headerRow.text_content||'').replace(/"/g,'&quot;');
     var apexTag=(!headerRow.cluster_id)?'<div style="font-size:calc(9px * var(--fg-text-scale,1));letter-spacing:2px;text-transform:uppercase;color:#c9a87c;margin-bottom:2px">Top Level</div>':'';
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
@@ -1013,7 +1013,7 @@
 
   async function openSbHeaderPeek(headerRow, onBack){
     var ov=document.getElementById('sb-detail-overlay');
-    var safeName=(headerRow.text_content||'(untitled)').replace(/</g,'&lt;');
+    var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
     ov.innerHTML='<div class="sc-peek-card">'
       +'<div class="sc-peek-topbar"><button id="sb-peek-back">⬅️</button><div class="sc-peek-title">'+safeName+'</div><button id="sb-peek-edit" title="Rename or move">✏️</button></div>'
       +'<div id="sb-peek-body" style="text-align:center;font-size:calc(11px * var(--fg-text-scale,1));font-style:italic;color:#999;padding:20px 0">Loading…</div>'
@@ -1991,7 +1991,7 @@
   function _sboardMoveOptionsHTML(excludeId, currentClusterId){
     var opts='<option value=""'+(!currentClusterId?' selected':'')+'>Parking Lot</option>';
     opts+=_sboardHeaderList.filter(function(h){ return String(h.id)!==String(excludeId); })
-      .map(function(h){ var sel=(currentClusterId && String(h.id)===String(currentClusterId))?' selected':''; return '<option value="'+h.id+'"'+sel+'>'+(h.text_content||'(untitled)')+'</option>'; }).join('');
+      .map(function(h){ var sel=(currentClusterId && String(h.id)===String(currentClusterId))?' selected':''; return '<option value="'+h.id+'"'+sel+'>'+((window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))||'(untitled)')+'</option>'; }).join('');
     opts+='<option value="__new__">+ Create new header…</option>';
     return opts;
   }

@@ -881,7 +881,7 @@
         choices.forEach(function(h){
           var row=document.createElement('div');
           row.className='sc-cdrop-row';
-          row.textContent=h.text_content||'(untitled)';
+          row.textContent=(window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))||'(untitled)';
           row.addEventListener('click', function(ev){
             ev.stopPropagation();
             menu.hidden=true;
@@ -997,7 +997,7 @@
         choices.forEach(function(h){
           var row=document.createElement('div');
           row.className='sc-cdrop-row';
-          row.textContent=h.text_content||'(untitled)';
+          row.textContent=(window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))||'(untitled)';
           row.addEventListener('click', function(ev){
             ev.stopPropagation();
             menu.hidden=true;
@@ -1059,7 +1059,7 @@
         choices.forEach(function(h){
           var row=document.createElement('div');
           row.className='sc-cdrop-row';
-          row.textContent=h.text_content||'(untitled)';
+          row.textContent=(window.IDBand?IDBand.rowName(h):(h.subject||h.text_content))||'(untitled)';
           row.addEventListener('click', function(ev){
             ev.stopPropagation();
             menu.hidden=true;
