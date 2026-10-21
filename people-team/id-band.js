@@ -233,6 +233,27 @@
     return false;
   };
 
+  // Home button memory, Oct 21 2026 -- Larry: "when I open the website, I am sent to the last
+  // screen I had opened. Can that happen from the HUB?" Pressing HOME remembers which board and
+  // topic you were on (saved on this device, so it survives a reload); the HUB offers a button
+  // that takes you straight back. Whichever board's band is showing right now is the one saved.
+  var HUB_RETURN_KEY='t2t_hubReturn';
+  window.IDBand.snapshotCurrentBoard = function(){
+    var list=window.IDBand.boardReaders||[], i, el, snap=null;
+    for(i=0;i<list.length && !snap;i++){
+      el=document.getElementById(list[i].trigger);
+      if(el && el.offsetParent!==null){
+        var kind=list[i].kind(), topicId=list[i].topicId();
+        if(kind) snap={ kind:kind, topicId:topicId||null };
+      }
+    }
+    if(snap){ try{ localStorage.setItem(HUB_RETURN_KEY, JSON.stringify(snap)); }catch(e){} }
+    return snap;
+  };
+  window.IDBand.savedHubReturn = function(){
+    try{ var v=JSON.parse(localStorage.getItem(HUB_RETURN_KEY)); return (v && v.kind) ? v : null; }catch(e){ return null; }
+  };
+
   // Which TOPIC a HUB button opens: the topic already in play, else the last
   // one the traveler worked in, else MASTER (the top of the one tree).
   window.IDBand.hubTopicId = async function(){

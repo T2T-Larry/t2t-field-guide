@@ -321,6 +321,12 @@
       });
     }
 
+    // Oct 21 2026: every board's band registers how to read "which board and topic am I
+    // showing", so the HOME button can remember where you were (IDBand.snapshotCurrentBoard).
+    (window.IDBand.boardReaders=window.IDBand.boardReaders||[]).push({
+      trigger: ids.kindTrigger, kind: kindNow, topicId: function(){ return cfg.topicId ? cfg.topicId() : null; }
+    });
+
     wireTopic();
     wireKind();
     wireReturn();
