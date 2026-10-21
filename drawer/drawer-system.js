@@ -1475,8 +1475,7 @@
     var mode1 = document.createElement('div');
     mode1.id = 'sz-navmid-tools';
     // Oct 21 2026: no T2T HUB tray any more -- the board buttons live on the HUB screen itself (engine/t2t-hub-screen.js).
-    var libraryTray = buildTools(bar, { trayId: 'library', defaultLabel: 'LIBRARY', items: LIBRARY_ITEMS, orderKey: 't2t_toolOrder_library', stackKey: 't2t_toolStackPos_library' });
-    mode1.appendChild(libraryTray);
+    // Oct 21 2026, Larry: "remove library tray from T2T HUB" -- the Library is the Library tile on the HUB screen (it opens the Library hub).
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = window.SZSurpriseTray.buildCustomTraySlot('left');
     var surprise = window.SZSurpriseTray.buildSurprisePanel(bar, 'left');
