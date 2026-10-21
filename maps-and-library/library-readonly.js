@@ -33,7 +33,7 @@
     if (document.getElementById(STYLE_ID)) return;
     var scope = 'body.fg-readonly:has(#' + SCREEN + '.active) ';
     var css = ''
-      + scope + '.t2t-add,' + scope + '.sc-add-subber-tile,' + scope + '#sc-board-kind-trigger,' + scope + '#t2t-lasso-bar{display:none!important}'
+      + scope + '#sc-return,' + scope + '.t2t-add,' + scope + '.sc-add-subber-tile,' + scope + '#sc-board-kind-trigger,' + scope + '#t2t-lasso-bar{display:none!important}'
       + '#' + CARD_ID + '{position:fixed;inset:0;z-index:100000;background:rgba(20,40,70,.5);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}'
       + '#' + CARD_ID + ' .lr-card{background:#fff;border:3px solid #1a3a5c;box-shadow:0 10px 40px rgba(0,0,0,.4);width:min(640px,100%);max-height:86vh;overflow:auto;padding:22px 26px;box-sizing:border-box;position:relative}'
       + '#' + CARD_ID + ' .lr-kind{font-size:11px;letter-spacing:3px;color:#5b7fa3;margin-bottom:8px}'

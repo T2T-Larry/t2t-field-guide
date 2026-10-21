@@ -70,6 +70,9 @@
       + '#t2t-topic-hub .hub-back{position:absolute;top:18px;left:22px;padding:8px 16px;background:rgba(255,255,255,.7);'
       +   'border:1.5px solid rgba(0,0,0,.18);border-radius:999px;cursor:pointer;font-family:inherit;font-size:15px;color:#1a3a5c}'
       + '#t2t-topic-hub .hub-back:hover{background:#fff}'
+      + '#t2t-topic-hub .hub-back{font-size:20px;line-height:1;padding:8px 12px}'
+      // The Notebook sits on the desk, not on a hub (Oct 21 2026: it showed up over the Library hub).
+      + 'body:has(#t2t-topic-hub) #sz-notebook{display:none!important}'
       // Only on the open desk: not under the Field Guide widget, not over a full-screen board.
       + 'body:not(.t2t-desk-closed) #t2t-hub-screen,'
       +   'body:has(#fg-root.isx-full) #t2t-hub-screen,'
@@ -180,7 +183,7 @@
     injectStyle();
     closeTopicHub();
     var ov = document.createElement('div'); ov.id = 't2t-topic-hub';
-    var back = document.createElement('button'); back.type = 'button'; back.className = 'hub-back'; back.textContent = '\u2190 T2T HUB';
+    var back = document.createElement('button'); back.type = 'button'; back.className = 'hub-back'; back.textContent = '\uD83C\uDFE0'; back.title = 'T2T HUB (home)'; back.setAttribute('aria-label', 'Home');
     back.addEventListener('click', closeTopicHub);
     var inner = document.createElement('div'); inner.className = 'hub-inner';
     var title = document.createElement('div'); title.className = 'hub-title'; title.textContent = opts.title || '';
