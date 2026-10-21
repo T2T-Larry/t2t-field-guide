@@ -269,23 +269,9 @@
         return;
       }
       window.IDBand.recordReturn(here, topicId);
-      if(k.value==='SEA'){
-        if(window.T2TShared) window.T2TShared.currentTopicId=topicId;
-        if(window.T2TMedia && window.T2TMedia.openIdeaSession) window.T2TMedia.openIdeaSession();
-        else toast('Sea of Ideas isn’t available right now.');
-        return;
-      }
-      if(k.value==='BRIEFING BOARD'){
-        if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(topicId);
-        else if(window.T2T && window.T2T.nav) window.T2T.nav('s-briefing-board');
-        return;
-      }
-      // Oct 14 2026: SHARE (shown as STORY) is a real board now, opened the same way as IDEA and PLAN.
-      if((k.value==='IDEA' || k.value==='PLAN' || k.value==='SHARE') && window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
-        Promise.resolve(window.T2TStoryboard.jumpToProjectKind(topicId, k.value)).then(function(ok){
-          if(ok===false) toast('Could not open that board.');
-        });
-      }
+      Promise.resolve(window.IDBand.goToBoard(k.value, topicId)).then(function(ok){
+        if(ok===false) toast('Could not open that board.');
+      });
     }
 
     function markActive(){

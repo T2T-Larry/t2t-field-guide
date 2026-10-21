@@ -388,125 +388,42 @@
   // too -- Planning's job is now just the real Plan button, and
   // Organization was already folded into Plan's own category, never a
   // separate button of its own.
-  var STORYBOARD_ITEMS = [
-    // Larry, July 29 2026: was pointing at the archived 9220 legacy grid
-    // -- routes to the current 1010 Idea Storyboard now. Larry, August 1
-    // 2026: plain nav() left currentTopicId null, landing on 1010's
-    // confusing blank-project fallback -- now resumes the last real
-    // topic instead, same as 9711 already does.
-    // Sept 4 2026 (later same day) -- Larry hit a real stuck-screen bug:
-    // clicking Idea cleared the desk (nav() had already landed and added
-    // isx-full) but the board's own async resume chain (openBoardResume,
-    // a chain of Supabase awaits before it ever calls nav) apparently
-    // stalled or threw without ever finishing -- no spinner, no board
-    // content, and no way back short of a hard browser reload. Whatever
-    // the root network-timing cause turns out to be, a promise
-    // rejection here was going uncaught (openBoardResume/jumpToProjectKind
-    // are async functions called and never awaited or watched), so any
-    // failure was completely silent. Wrapping every one of these calls
-    // so a rejection surfaces as a real toast instead of a silent stuck
-    // screen -- doesn't fix a slow/stuck network call by itself, but it
-    // guarantees the traveler gets told something instead of just
-    // staring at an empty board with the drawers gone. Larry, right
-    // after: "we need to jump to the idea board instantly with the
-    // spinning clock if needed for now" -- openBoardResume itself
-    // (idea-media-shared.js) now shows the spinner as its very first
-    // synchronous step, so the click gives instant feedback even before
-    // this promise settles either way; this handler also hides it
-    // immediately on a genuine failure instead of leaving it to the 5-
-    // second safety-net timeout.
-    { id: 'idea',           label: 'Idea',            action: wireToggleNav('s-sea-of-ideas-cluster', function(){
-        if (window.T2TMedia && window.T2TMedia.openBoardResume) {
-          try {
-            var p = window.T2TMedia.openBoardResume();
-            if (p && typeof p.catch === 'function') p.catch(function(err){
-              console.error('Idea Storyboard failed to open:', err);
-              if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-              showZeroToast('The Storyboard had trouble opening -- please try again.');
-            });
-          } catch(err) {
-            console.error('Idea Storyboard failed to open:', err);
-            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-            showZeroToast('The Storyboard had trouble opening -- please try again.');
-          }
-        } else if (window.T2T) { window.T2T.nav('s-sea-of-ideas-cluster'); }
-      }, function(){ if (window.T2TStoryboard && window.T2TStoryboard.closeBoard) window.T2TStoryboard.closeBoard(); else if (window.T2T) window.T2T.goBack(); }) },
-    // Sept 4 2026 -- opens (or starts) the Plan board for whichever
-    // project this traveler had open last (same "last active project"
-    // memory the Idea button's own resume already reads), via the
-    // existing jumpToProjectKind bridge briefing-board.js's board-kind
-    // dropdown already uses for this same job.
-    { id: 'plan',           label: 'Plan',            action: function(){
-        var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
-        if (!pid) { showZeroToast('Start an Idea Storyboard first, then Plan can build off it.'); return; }
-        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) {
-          try {
-            var p = window.T2TStoryboard.jumpToProjectKind(pid, 'PLAN');
-            if (p && typeof p.then === 'function') p.then(function(ok){
-              // jumpToProjectKind resolves false (never throws) on a
-              // failed fetch -- catch() alone would miss this, since
-              // the promise still resolves successfully.
-              if (ok === false) {
-                if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-                showZeroToast('Plan had trouble opening -- please try again.');
-              }
-            }, function(err){
-              console.error('Plan failed to open:', err);
-              if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-              showZeroToast('Plan had trouble opening -- please try again.');
-            });
-          } catch(err) {
-            console.error('Plan failed to open:', err);
-            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-            showZeroToast('Plan had trouble opening -- please try again.');
-          }
-        }
-      } },
-    // Sept 4 2026 -- same "last active project" resolve as Plan, then
-    // opens that project's Cast (team roster) popup -- the CAST branch
-    // added to jumpToProjectKind alongside this.
-    { id: 'cast',           label: 'Cast',            action: function(){
-        var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
-        if (!pid) { showZeroToast('Start an Idea Storyboard first, then Cast can build off it.'); return; }
-        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) {
-          try {
-            var p = window.T2TStoryboard.jumpToProjectKind(pid, 'CAST');
-            if (p && typeof p.then === 'function') p.then(function(ok){
-              if (ok === false) {
-                if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-                showZeroToast('Cast had trouble opening -- please try again.');
-              }
-            }, function(err){
-              console.error('Cast failed to open:', err);
-              if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-              showZeroToast('Cast had trouble opening -- please try again.');
-            });
-          } catch(err) {
-            console.error('Cast failed to open:', err);
-            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-            showZeroToast('Cast had trouble opening -- please try again.');
-          }
-        }
-      } },
-    // Oct 14 2026 -- the STORY board (kind 'SHARE') exists now: same "last active project" resolve as Plan and Cast, then
-    // the existing jumpToProjectKind bridge opens (or starts) that topic's STORY board.
-    { id: 'share',          label: 'Share',           action: function(){
-        var pid = (window.T2TMedia && window.T2TMedia.recallProject) ? window.T2TMedia.recallProject() : null;
-        if (!pid) { showZeroToast('Start an Idea Storyboard first, then the STORY board can build off it.'); return; }
-        if (window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind) {
-          var failed = function(err){
-            if (err) console.error('STORY board failed to open:', err);
-            if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
-            showZeroToast('The STORY board had trouble opening -- please try again.');
-          };
-          try {
-            var p = window.T2TStoryboard.jumpToProjectKind(pid, 'SHARE');
-            if (p && typeof p.then === 'function') p.then(function(ok){ if (ok === false) failed(); }, failed);
-          } catch(err) { failed(err); }
-        }
-      } },
-    { id: 'briefing-board', label: 'Briefing Board',  action: wireToggleNav('s-briefing-board', function(){ if (window.T2T) window.T2T.nav('s-briefing-board'); }) }
+  // Oct 21 2026, Larry: "put a button that travels to each of the board
+  // types on the DESKTOP, making it now the T2T HUB. If no topic is
+  // selected, go to the MASTER for each board." One button per board type,
+  // built from the same BOARD_KINDS list the ID BAND uses, and opened by the
+  // same IDBand.goToBoard -- one tree, one code. Topic = the one already in
+  // play, else the last one worked in, else MASTER (IDBand.hubTopicId).
+  // Replaces the old Idea / Plan / Cast / Share / Briefing Board buttons.
+  var HUB_BOARDS = [
+    { id: 'hub-sea',      kind: 'SEA',            label: 'Sea of Ideas' },
+    { id: 'hub-vision',   kind: 'IDEA',           label: 'Vision' },
+    { id: 'hub-plan',     kind: 'PLAN',           label: 'Plan' },
+    { id: 'hub-briefing', kind: 'BRIEFING BOARD', label: 'Briefing' },
+    { id: 'hub-story',    kind: 'SHARE',          label: 'Story' },
+    { id: 'hub-journey',  kind: 'CAST',           label: 'Journey' }
   ];
+
+  function openHubBoard(entry){
+    if (!window.IDBand || !window.IDBand.goToBoard) { showZeroToast(entry.label + ' had trouble opening -- please try again.'); return; }
+    if (window.T2T && window.T2T.showTravelSpinner) window.T2T.showTravelSpinner();
+    var failed = function(err){
+      if (err) console.error(entry.label + ' failed to open:', err);
+      if (window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner();
+      showZeroToast(entry.label + ' had trouble opening -- please try again.');
+    };
+    window.IDBand.hubTopicId().then(function(topicId){
+      if (!topicId) { failed(); return; }
+      return window.IDBand.goToBoard(entry.kind, topicId).then(function(ok){
+        if (ok === false) failed();
+        else if (entry.kind === 'CAST' && window.T2T && window.T2T.hideTravelSpinner) window.T2T.hideTravelSpinner(); // Journey is a popup, no screen change to clear the spinner
+      });
+    }).catch(failed);
+  }
+
+  var STORYBOARD_ITEMS = HUB_BOARDS.map(function(entry){
+    return { id: entry.id, label: entry.label, action: function(){ openHubBoard(entry); } };
+  });
 
   var LIBRARY_ITEMS = [
     // Larry, July 31 2026: "Closing the Field Guide ONLY makes
@@ -1561,7 +1478,7 @@
     // hides as a unit.
     var mode1 = document.createElement('div');
     mode1.id = 'sz-navmid-tools';
-    var storyboardsTray = buildTools(bar, { trayId: 'storyboards', defaultLabel: 'STORYBOARDS', items: STORYBOARD_ITEMS, orderKey: 't2t_toolOrder_storyboards', stackKey: 't2t_toolStackPos_storyboards' });
+    var storyboardsTray = buildTools(bar, { trayId: 'storyboards', defaultLabel: 'T2T HUB', items: STORYBOARD_ITEMS, orderKey: 't2t_toolOrder_hub', stackKey: 't2t_toolStackPos_storyboards' });
     var libraryTray = buildTools(bar, { trayId: 'library', defaultLabel: 'LIBRARY', items: LIBRARY_ITEMS, orderKey: 't2t_toolOrder_library', stackKey: 't2t_toolStackPos_library' });
     mode1.appendChild(storyboardsTray);
     mode1.appendChild(libraryTray);

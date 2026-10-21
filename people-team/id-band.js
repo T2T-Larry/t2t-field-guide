@@ -207,6 +207,46 @@
     return false;
   };
 
+  // goToBoard, Oct 21 2026 -- Larry: put a button on the DESKTOP (the T2T HUB)
+  // that travels to each board type. One shared dispatcher so the ID BAND's
+  // BOARD TYPE picker and the HUB buttons open boards the exact same way
+  // ("one tree, one code"). Returns a promise: true if the board opened.
+  window.IDBand.goToBoard = async function(kind, topicId){
+    if(!kind || !topicId) return false;
+    if(kind==='CAST'){
+      if(window.CastRoster && window.CastRoster.open){ window.CastRoster.open(topicId); return true; }
+      return false;
+    }
+    if(kind==='SEA'){
+      if(window.T2TShared) window.T2TShared.currentTopicId=topicId;
+      if(window.T2TMedia && window.T2TMedia.openIdeaSession){ window.T2TMedia.openIdeaSession(); return true; }
+      return false;
+    }
+    if(kind==='BRIEFING BOARD'){
+      if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) return (await window.T2TBriefingBoard.jumpToTopic(topicId))!==false;
+      if(window.T2T && window.T2T.nav){ window.T2T.nav('s-briefing-board'); return true; }
+      return false;
+    }
+    if((kind==='IDEA' || kind==='PLAN' || kind==='SHARE') && window.T2TStoryboard && window.T2TStoryboard.jumpToProjectKind){
+      return (await window.T2TStoryboard.jumpToProjectKind(topicId, kind))!==false;
+    }
+    return false;
+  };
+
+  // Which TOPIC a HUB button opens: the topic already in play, else the last
+  // one the traveler worked in, else MASTER (the top of the one tree).
+  window.IDBand.hubTopicId = async function(){
+    var sh=window.T2TShared, d=window.T2TData, m=window.T2TMedia;
+    if(sh && sh.currentTopicId) return sh.currentTopicId;
+    var pid=(m && m.recallProject) ? m.recallProject() : null;
+    if(pid && d && d.getLastInputTopic){
+      try{ var last=await d.getLastInputTopic(pid); if(last) return last; }catch(e){}
+    }
+    if(pid) return pid;
+    if(d && d.ensureIdeaStoryboardsRoot){ try{ return await d.ensureIdeaStoryboardsRoot(); }catch(e){} }
+    return null;
+  };
+
   // isAccountRoot, Sept 22 2026 -- Larry, after the MASTER-mislabel bug
   // report: "Does it have its own files? Do we have duplicate files?"
   // This file already stopped the visual numbers (fontSize, radius, etc.)
