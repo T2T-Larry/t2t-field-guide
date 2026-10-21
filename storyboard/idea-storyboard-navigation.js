@@ -1540,7 +1540,11 @@
       var row=res.data;
       if(window.T2T && window.T2T.nav) window.T2T.nav('s-sea-of-ideas-cluster');
       _sboardAllRowsById[row.id]=row;
+      // Oct 21 2026: opening a plain VISION board must not inherit the PLAN or STORY look of whatever board was open before it
+      // (HUB: STORY, then HOME, then "What is T2T?" came up as a STORY board). The flags are set again by the render for PLAN/STORY.
+      if(kind==='IDEA'){ _sboardIsPlanBoard=false; _sboardIsShareBoard=false; }
       _sboardDrillInto(row);
+      if(kind==='IDEA' && typeof _sboardSyncBoardKindChrome==='function') _sboardSyncBoardKindChrome();
       if(kind==='CAST') await openCallSheet(row, null, 'idea', null, null, null);
       if(kind==='PLAN') await _sboardOpenOrCreatePlanBoard();
       if(kind==='SHARE') await _sboardOpenOrCreateStoryBoard(row);   // the STORY board of the project row just opened (Oct 14 2026)

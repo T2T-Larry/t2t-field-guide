@@ -61,7 +61,7 @@
   ['storyboard/idea-storyboard-people.js','20261016a'],
   ['storyboard/idea-storyboard-cluster.js','20261012d'],
   ['storyboard/story-board-template.js','20261014n'],
-  ['storyboard/idea-storyboard-navigation.js','20261017a'],
+  ['storyboard/idea-storyboard-navigation.js','20261021k'],
   ['briefing-board/board-canvas-camera.js','20260929j'],
   ['storyboard/idea-storyboard-tiles.js','20261021b'],
   ['storyboard/idea-storyboard-header.js','20261017d'],
