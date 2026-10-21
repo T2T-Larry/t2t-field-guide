@@ -125,7 +125,7 @@
     if(ctx && ctx.boardId){
       var boards=await T2TData.topLevelBoards();
       var match=boards.filter(function(b){ return String(b.id)===String(ctx.boardId); })[0];
-      T2TShared.isxPath=[{id:ctx.boardId, text: match?match.text_content:'Board'}];
+      T2TShared.isxPath=[{id:ctx.boardId, text: match?((window.IDBand?IDBand.rowName(match):(match.subject||match.text_content))):'Board'}];
     }
     T2TShared.isxHeaderId = null;
     T2TShared.isxHeaderLabel='New';
@@ -150,7 +150,7 @@
         if(_explicitChain && _explicitChain.length){ T2TShared.isxPath=_explicitChain; }
         else {
           var _explicitRow=await _isxFetchRow(T2TShared.ideaCaptureCtx.boardId);
-          T2TShared.isxPath=[{id:T2TShared.ideaCaptureCtx.boardId, text:_explicitRow?(_explicitRow.text_content||'(untitled)'):'(untitled)'}];
+          T2TShared.isxPath=[{id:T2TShared.ideaCaptureCtx.boardId, text:_explicitRow?(((window.IDBand?IDBand.rowName(_explicitRow):(_explicitRow.subject||_explicitRow.text_content)))||'(untitled)'):'(untitled)'}];
         }
         if(T2TShared.ideaCaptureCtx.headerId){
           var _explicitHeaderRow=await _isxFetchRow(T2TShared.ideaCaptureCtx.headerId);
@@ -644,7 +644,7 @@
         var boardRow=boards.find(function(b){ return String(b.id)===String(pid); });
         T2TStoryboard.closeDetail();
         if(boardRow){
-          T2TShared.isxPath=[{id:boardRow.id, text:boardRow.text_content||'(untitled)'}];
+          T2TShared.isxPath=[{id:boardRow.id, text:((window.IDBand?IDBand.rowName(boardRow):(boardRow.subject||boardRow.text_content)))||'(untitled)'}];
           T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
           _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
         }
@@ -672,7 +672,7 @@
         var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:_isxRootId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
-        T2TShared.isxPath=[{id:ins.data.id, text:ins.data.text_content}];
+        T2TShared.isxPath=[{id:ins.data.id, text:((window.IDBand?IDBand.rowName(ins.data):(ins.data.subject||ins.data.text_content)))}];
         T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
         _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
       }catch(err){ if(errEl) errEl.textContent=err.message; }
@@ -723,7 +723,7 @@
         var sib=siblings.find(function(s){ return String(s.id)===String(tid); });
         T2TStoryboard.closeDetail();
         if(sib){
-          T2TShared.isxPath[T2TShared.isxPath.length-1]={id:sib.id, text:sib.text_content||'(untitled)'};
+          T2TShared.isxPath[T2TShared.isxPath.length-1]={id:sib.id, text:((window.IDBand?IDBand.rowName(sib):(sib.subject||sib.text_content)))||'(untitled)'};
           T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
           _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
         }
@@ -741,7 +741,7 @@
         var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentEntry?parentEntry.id:null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
         if(ins.error) throw ins.error;
         T2TStoryboard.closeDetail();
-        T2TShared.isxPath[T2TShared.isxPath.length-1]={id:ins.data.id, text:ins.data.text_content};
+        T2TShared.isxPath[T2TShared.isxPath.length-1]={id:ins.data.id, text:((window.IDBand?IDBand.rowName(ins.data):(ins.data.subject||ins.data.text_content)))};
         T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
         _isxRenderLadder(); _isxRenderBoard(); _isxPersistLastTopic();
       }catch(err){ if(errEl) errEl.textContent=err.message; }
@@ -2001,7 +2001,7 @@
     if(!row) return;
     delete _isxCardPos[rowId];
     delete _isxFanned[rowId];
-    T2TShared.isxPath.push({id:row.id, text:row.text_content||'(untitled)'});
+    T2TShared.isxPath.push({id:row.id, text:((window.IDBand?IDBand.rowName(row):(row.subject||row.text_content)))||'(untitled)'});
     T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
     await _isxRenderLadder();
     await _isxRenderBoard();
@@ -2028,7 +2028,7 @@
       }
     }
     delete _isxCardPos[rowId];
-    T2TShared.isxHeaderId=row.id; T2TShared.isxHeaderLabel=row.text_content||'(untitled)';
+    T2TShared.isxHeaderId=row.id; T2TShared.isxHeaderLabel=((window.IDBand?IDBand.rowName(row):(row.subject||row.text_content)))||'(untitled)';
     await _isxRenderLadder();
     await _isxRenderBoard();
   }
@@ -2078,7 +2078,7 @@
     function keyOf(idPath){ return idPath.join('/'); }
     function renderNode(idPath){
       var id=idPath[idPath.length-1];
-      var name=byId[id]?byId[id].text_content:T2TShared.isxPath[0].text;
+      var name=byId[id]?((window.IDBand?IDBand.rowName(byId[id]):(byId[id].subject||byId[id].text_content))):T2TShared.isxPath[0].text;
       var isHere = keyOf(idPath)===keyOf(T2TShared.isxPath.map(function(p){return p.id;}));
       var html='<div class="isx-tnode'+(isHere?' here':'')+'" data-path="'+idPath.join('|')+'">'+(isHere?'\ud83d\udccd ':'')+name+'</div>';
       var kids=kidsOf[id]||[];
@@ -2105,7 +2105,7 @@
     layer.querySelectorAll('.isx-tnode').forEach(function(el){
       el.onclick=async function(){
         var ids=el.getAttribute('data-path').split('|');
-        var chain=ids.map(function(id, i){ return {id:id, text: i===0?T2TShared.isxPath[0].text:(byId[id]?byId[id].text_content:'')}; });
+        var chain=ids.map(function(id, i){ return {id:id, text: i===0?T2TShared.isxPath[0].text:(byId[id]?((window.IDBand?IDBand.rowName(byId[id]):(byId[id].subject||byId[id].text_content))):'')}; });
         T2TShared.isxPath=chain; T2TShared.isxHeaderId=null; T2TShared.isxHeaderLabel='New';
         _isxCloseCompass();
         await _isxRenderLadder(); await _isxRenderBoard();

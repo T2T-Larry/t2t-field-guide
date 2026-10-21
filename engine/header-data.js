@@ -873,7 +873,7 @@
         guard++;
         var res=await sb.from('ideas').select('id,text_content,subject,cluster_id').eq('id',curId).eq('user_id',u.id).single();
         if(res.error || !res.data) break;
-        chain.unshift({id:res.data.id, text:res.data.text_content});
+        chain.unshift({id:res.data.id, text:((window.IDBand?IDBand.rowName(res.data):(res.data.subject||res.data.text_content)))});
         curId=res.data.cluster_id;
       }
     }catch(e){ console.warn('ancestorChain exception:', e); }
