@@ -1567,6 +1567,8 @@
     // Oct 20 2026 (Larry): while a task is a Hang Up the upper-left title reads HANG UP and the standard checklist is dropped; it all returns when the card is a TASK again.
     var _bbTitleEl=_bbDetailCard && _bbDetailCard.querySelector('.fg-back-title');
     if(_bbTitleEl) _bbTitleEl.textContent = (c.col==='hangups') ? 'HANG UP' : 'TASK';
+    // Oct 21 2026 (Larry): VISION and PLAN cards get their own checklist back, color and band title (card-type-checklists.js).
+    if(_bbDetailCard && window.FGCardBackType) FGCardBackType.sync(c, _bbDetailCard, {changed:function(){ _bbSaveLocal(_bbCardsList()); renderBoard(); }});
     if(_bbDetailCard) _bbDetailCard.classList.toggle('bb-overdue-active', _bbIsOverdue(c)||_bbIsStartOverdue(c));
     document.getElementById('bb-d-task').value=c.task||'';
     // SUBJECT + contents-on-front, Sept 22 2026 -- see briefing-board-screens.js.
