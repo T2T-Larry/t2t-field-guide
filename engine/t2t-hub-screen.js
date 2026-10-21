@@ -67,10 +67,6 @@
     var css = rules + topicRules
       + '#t2t-topic-hub{position:fixed;inset:0;z-index:9000;background:#efe8d6;display:flex;align-items:center;justify-content:center}'
       + '#t2t-topic-hub .hub-inner{z-index:1}'
-      + '#t2t-topic-hub .hub-back{position:absolute;top:18px;left:22px;padding:8px 16px;background:rgba(255,255,255,.7);'
-      +   'border:1.5px solid rgba(0,0,0,.18);border-radius:999px;cursor:pointer;font-family:inherit;font-size:15px;color:#1a3a5c}'
-      + '#t2t-topic-hub .hub-back:hover{background:#fff}'
-      + '#t2t-topic-hub .hub-back{font-size:20px;line-height:1;padding:8px 12px}'
       // The Notebook sits on the desk, not on a hub (Oct 21 2026: it showed up over the Library hub).
       + 'body:has(#t2t-topic-hub) #sz-notebook{display:none!important}'
       // Only on the open desk: not under the Field Guide widget, not over a full-screen board.
@@ -172,7 +168,7 @@
   }
 
   /* A topic hub: the same hub screen, opened on any topic whose children are headers (Oct 21 2026: the Library button).
-     opts = { title, sub, items: [{ id, symbol, label, go }] }. Back (or Esc) returns to the T2T HUB. */
+     opts = { title, sub, items: [{ id, symbol, label, go }] }. The ID BAND's HOME (or Esc) returns to the T2T HUB. */
   function closeTopicHub(){
     var el = document.getElementById('t2t-topic-hub');
     if (el && el.parentNode) el.parentNode.removeChild(el);
@@ -183,18 +179,35 @@
     injectStyle();
     closeTopicHub();
     var ov = document.createElement('div'); ov.id = 't2t-topic-hub';
-    var back = document.createElement('button'); back.type = 'button'; back.className = 'hub-back'; back.textContent = '\uD83C\uDFE0'; back.title = 'T2T HUB (home)'; back.setAttribute('aria-label', 'Home');
-    back.addEventListener('click', closeTopicHub);
+    // The ID BAND, same as every board (Oct 21 2026, Larry: "ALL BOARDS now means even the HUBS"): identity top-left,
+    // TOPIC and board type centered, the icon row top-right ending in HOME. Built with the board band's own classes and rules.
+    var band = document.createElement('div'); band.className = 'hub-band';
+    band.style.cssText = 'position:absolute;top:0;left:0;right:0;background:#1a3a5c;padding:10px 16px 4px;min-height:70px;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.15)';
+    var idn = document.createElement('div'); idn.className = 'sc-idn';
+    var who = document.createElement('div'); who.className = 'sc-traveler-eyebrow';
+    var member = (window.T2T && window.T2T.getMember) ? window.T2T.getMember() : null;
+    who.textContent = member && member.display_name ? member.display_name.toUpperCase() : '';
+    idn.appendChild(who);
+    var mid = document.createElement('div');
+    mid.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px';
+    var topicBox = document.createElement('div'); topicBox.id = 'hub-topic-box'; topicBox.textContent = opts.title || '';
+    var kindBox = document.createElement('div'); kindBox.id = 'hub-board-kind-trigger'; kindBox.className = 'sc-cdrop-trigger'; kindBox.textContent = 'HUB';
+    mid.appendChild(topicBox); mid.appendChild(kindBox);
+    var side = document.createElement('div'); side.className = 'sc-hdr-side';
+    side.style.cssText = 'position:absolute;top:10px;right:16px;display:flex;flex-direction:row;gap:6px;align-items:flex-end';
+    var home = document.createElement('button'); home.type = 'button'; home.className = 'sc-hdr-btn-muted sc-hdr-btn-icon';
+    home.id = 'hub-home'; home.title = 'T2T HUB (home)'; home.setAttribute('aria-label', 'Home'); home.textContent = '\uD83C\uDFE0';
+    home.addEventListener('click', function(){ closeTopicHub(); if (window.T2T && window.T2T.goHome) window.T2T.goHome(); });
+    side.appendChild(home);
+    band.appendChild(idn); band.appendChild(mid); band.appendChild(side);
     var inner = document.createElement('div'); inner.className = 'hub-inner';
-    var title = document.createElement('div'); title.className = 'hub-title'; title.textContent = opts.title || '';
-    inner.appendChild(title);
     if (opts.sub) { var sub = document.createElement('div'); sub.className = 'hub-sub'; sub.textContent = opts.sub; inner.appendChild(sub); }
     var grid = document.createElement('div'); grid.className = 'hub-boards';
     (opts.items || []).forEach(function(it){
       grid.appendChild(makeTile({ id: 'topic-' + it.id, symbol: it.symbol, label: it.label, go: function(){ closeTopicHub(); it.go(); } }));
     });
     inner.appendChild(grid);
-    ov.appendChild(back); ov.appendChild(inner);
+    ov.appendChild(band); ov.appendChild(inner);
     document.body.appendChild(ov);
     document.addEventListener('keydown', onTopicKey, true);
   }
