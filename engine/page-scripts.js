@@ -81,7 +81,7 @@
   ['drawer/drawer-style.js','20260904b'],
   ['engine/desktop-style.js','20261021i'],
   ['drawer/drawer-surprise-tray.js','20260906a'],
-  ['maps-and-library/library-readonly.js','20261006a'],
+  ['maps-and-library/library-readonly.js','20261021j'],
   ['drawer/drawer-system.js','20261021i'],
   ['engine/t2t-hub-screen.js','20261021i'],
   ['engine/desktop-screen.js','20261021i'],

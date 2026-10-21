@@ -102,12 +102,12 @@
       var client = sb();
       if (!client || !window.T2TMedia || !window.T2TMedia.openBoard || !window.T2TShared) throw new Error('not ready');
       var libs = await client.from('ideas').select('id')
-        .eq('library_shared', true).eq('content_type', 'header').ilike('text_content', 'library').limit(50);
+        .eq('library_shared', true).eq('content_type', 'header').or('subject.ilike.library,text_content.ilike.library').limit(50);   // Oct 21 2026: a header is named by its SUBJECT when it has one (LIBRARY now reads "A collection of resources" underneath)
       if (libs.error) throw libs.error;
       var libIds = (libs.data || []).map(function(r){ return r.id; });
       if (!libIds.length) throw new Error('Library is not shared with this account');
       var cands = await client.from('ideas').select('id')
-        .eq('library_shared', true).eq('content_type', 'header').ilike('text_content', 'concepts').in('cluster_id', libIds).limit(5);
+        .eq('library_shared', true).eq('content_type', 'header').or('subject.ilike.concepts,text_content.ilike.concepts').in('cluster_id', libIds).limit(5);
       if (cands.error) throw cands.error;
       var root = (cands.data || [])[0];
       if (!root) throw new Error('Concepts not found');
