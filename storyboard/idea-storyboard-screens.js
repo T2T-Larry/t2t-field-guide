@@ -123,7 +123,7 @@
     try{
       var u = (await _sb.auth.getUser()).data.user;
       if(!u) return;
-      var res = await _sb.from('ideas').select('content_type,image_url,text_content').eq('user_id', u.id).order('created_at', {ascending:false});
+      var res = await _sb.from('ideas').select('content_type,image_url,text_content,subject').eq('user_id', u.id).order('created_at', {ascending:false});
       var rows = res.data || [];
       if(rows.length === 0){ if(empty) empty.style.display='block'; return; }
       if(empty) empty.style.display='none';
@@ -466,7 +466,7 @@
             // (and topic_owner_user_id, for a delegated Topic) to recognize
             // the Owner at all -- a stub without them made Larry look like a
             // stranger on his own project. Fetch the real row instead.
-            var _fullRootRes = _sb ? await _sb.from('ideas').select('id,user_id,text_content,cluster_id,content_type,board_type,org_name,topic_owner_user_id,topic_scope_id,briefing_board_id,owner_notes,assigned_user_id,storyboard_kind,source_project_id').eq('id',_chainForProject[0].id).maybeSingle() : null;
+            var _fullRootRes = _sb ? await _sb.from('ideas').select('id,user_id,text_content,subject,cluster_id,content_type,board_type,org_name,topic_owner_user_id,topic_scope_id,briefing_board_id,owner_notes,assigned_user_id,storyboard_kind,source_project_id').eq('id',_chainForProject[0].id).maybeSingle() : null;
             currentProjectRowForScope = (_fullRootRes && !_fullRootRes.error && _fullRootRes.data) ? _fullRootRes.data : {id:_chainForProject[0].id, text_content:_chainForProject[0].text};
           }
         }catch(e){ /* leave null — ensure-calls below just skip Purpose this render */ }
@@ -583,7 +583,7 @@
         var _ensureResults=_roView ? await Promise.all([
           (async function(){
             try{
-              var q=await _sb.from('ideas').select('id,text_content').eq('content_type','header').eq('cluster_id',T2TShared.currentTopicId).in('text_content',['Parking Lot','NEW','New Additions']).limit(1);
+              var q=await _sb.from('ideas').select('id,text_content,subject').eq('content_type','header').eq('cluster_id',T2TShared.currentTopicId).in('text_content',['Parking Lot','NEW','New Additions']).limit(1);
               return (q.data && q.data[0]) ? q.data[0].id : null;
             }catch(e){ return null; }
           })(),

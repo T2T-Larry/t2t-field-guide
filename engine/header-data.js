@@ -127,7 +127,7 @@
     if(!parentId) return [];
     try{
       var sb=_sb(); var u=await _currentUser(); if(!u) return [];
-      var res=await sb.from('ideas').select('id,text_content,idea_text,link_title,priority,cluster_id,storyboard_kind,source_project_id').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',parentId);
+      var res=await sb.from('ideas').select('id,text_content,subject,idea_text,link_title,priority,cluster_id,storyboard_kind,source_project_id').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',parentId);
       if(res.error){ console.warn('childHeaders error:', res.error); return []; }
       return _fillHeaderTitles(window.T2TPlan ? T2TPlan.withoutContainers(res.data) : (res.data||[]));
     }catch(e){ console.warn('childHeaders exception:', e); return []; }
@@ -216,7 +216,7 @@
       // name so an account that still has the old row self-heals onto
       // the new one instead of spawning a second root; the insert path
       // below only ever creates 'PROJECTS' going forward.
-      var existing=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').in('text_content',['MASTER','Idea Storyboards']).is('cluster_id',null).limit(1);
+      var existing=await sb.from('ideas').select('id,text_content,subject').eq('user_id',u.id).eq('content_type','header').in('text_content',['MASTER','Idea Storyboards']).is('cluster_id',null).limit(1);
       if(existing.error){ console.warn('ensureIdeaStoryboardsRoot select error:', existing.error); return null; }
       var rootId;
       if(existing.data && existing.data.length){
@@ -229,7 +229,7 @@
         if(ins.error || !ins.data){ console.warn('ensureIdeaStoryboardsRoot insert error:', ins.error); return null; }
         rootId=ins.data.id;
       }
-      var candidates=await sb.from('ideas').select('id,text_content,storyboard_kind')
+      var candidates=await sb.from('ideas').select('id,text_content,subject,storyboard_kind')
         .eq('user_id',u.id).eq('content_type','header').is('cluster_id',null).neq('id',rootId);
       if(!candidates.error && candidates.data && candidates.data.length){
         var EXCLUDE={'Trash':1,'Archived':1,'Purpose':1,'COLLABORATOR':1,'STAKEHOLDER':1,'Idea Storyboards':1,'MASTER':1};
@@ -290,7 +290,7 @@
       if(roles.error){ console.warn('promotedPrimaryEntries card_roles error:', roles.error); return []; }
       var ids=(roles.data||[]).map(function(r){ return r.card_id; });
       if(!ids.length) return [];
-      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_scope_id,color').in('id',ids);
+      var proj=await sb.from('ideas').select('id,text_content,subject,user_id,topic_scope_id,color').in('id',ids);
       if(proj.error){ console.warn('promotedPrimaryEntries ideas error:', proj.error); return []; }
       return (proj.data||[])
         .filter(function(p){ return p.user_id!==u.id && p.topic_scope_id && String(p.topic_scope_id)===String(p.id); })
@@ -319,7 +319,7 @@
       var rows=roles.data||[];
       if(!rows.length) return [];
       var ids=rows.map(function(r){ return r.card_id; });
-      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_scope_id,color').in('id',ids);
+      var proj=await sb.from('ideas').select('id,text_content,subject,user_id,topic_scope_id,color').in('id',ids);
       if(proj.error){ console.warn('stakeholderEntries ideas error:', proj.error); return []; }
       var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
       var keyByCard={}; rows.forEach(function(r){ keyByCard[r.card_id]=!!r.is_key; });
@@ -557,7 +557,7 @@
       var ids=Object.keys(allIds);
       if(!ids.length) return [];
 
-      var proj=await sb.from('ideas').select('id,text_content,user_id,topic_owner_user_id,topic_scope_id,color').in('id',ids);
+      var proj=await sb.from('ideas').select('id,text_content,subject,user_id,topic_owner_user_id,topic_scope_id,color').in('id',ids);
       if(proj.error){ console.warn('collaboratorEntries ideas error:', proj.error); return []; }
       var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
       return ids
@@ -595,7 +595,7 @@
       if(!rows.length) return [];
 
       var ids=rows.map(function(r){ return r.card_id; });
-      var proj=await sb.from('ideas').select('id,text_content,user_id,color').in('id',ids);
+      var proj=await sb.from('ideas').select('id,text_content,subject,user_id,color').in('id',ids);
       if(proj.error){ console.warn('pendingCollaboratorEntries ideas error:', proj.error); return []; }
       var byId={}; (proj.data||[]).forEach(function(p){ byId[p.id]=p; });
 
@@ -710,7 +710,7 @@
       // Shared-project fix, Aug 14 2026 -- see ensurePurposeHeader above:
       // drop the user_id filter so every Cast member reuses the same
       // Parking Lot header instead of each person spawning their own.
-      var q=sb.from('ideas').select('id,text_content').eq('content_type','header');
+      var q=sb.from('ideas').select('id,text_content,subject').eq('content_type','header');
       q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
       var existing=await q;
       if(!existing.error && existing.data && existing.data.length){
@@ -803,7 +803,7 @@
            header of the root (PERSONAL first), then any other Wish Tank this
            traveler already owns. Only when the traveler owns no Wish Tank at
            all is a new one created. */
-        var kids=await sb.from('ideas').select('id,text_content').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',rootId);
+        var kids=await sb.from('ideas').select('id,text_content,subject').eq('user_id',u.id).eq('content_type','header').eq('cluster_id',rootId);
         if(!kids.error && kids.data && kids.data.length){
           kids.data.sort(function(a,b){ return (a.text_content==='PERSONAL'?0:1)-(b.text_content==='PERSONAL'?0:1); });
           var kidIds=kids.data.map(function(k){return k.id;});
@@ -871,7 +871,7 @@
       var curId=topicId, guard=0;
       while(curId && guard<50){
         guard++;
-        var res=await sb.from('ideas').select('id,text_content,cluster_id').eq('id',curId).eq('user_id',u.id).single();
+        var res=await sb.from('ideas').select('id,text_content,subject,cluster_id').eq('id',curId).eq('user_id',u.id).single();
         if(res.error || !res.data) break;
         chain.unshift({id:res.data.id, text:res.data.text_content});
         curId=res.data.cluster_id;

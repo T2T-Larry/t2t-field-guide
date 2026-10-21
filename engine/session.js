@@ -1015,7 +1015,7 @@
     try{
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,text_content')
+      var res=await _sb.from('ideas').select('id,text_content,subject')
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
       var excludedNames=['Purpose','NEW','New Additions','Parking Lot','Trash'];
@@ -1038,7 +1038,7 @@
     try{
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(!user) throw new Error('Not signed in.');
-      var res=await _sb.from('ideas').select('id,text_content')
+      var res=await _sb.from('ideas').select('id,text_content,subject')
         .eq('user_id',user.id).eq('cluster_id',clusterId).eq('content_type','header');
       if(res.error) throw res.error;
       if(window.T2TGroups) await T2TGroups.load(clusterId);
@@ -2070,7 +2070,7 @@
       var _sb=T().sb;
       var u=await _sb.auth.getUser(); var user=u&&u.data&&u.data.user;
       if(user){
-        var res=await _sb.from('ideas').select('id,text_content,cluster_id').eq('user_id',user.id).eq('content_type','header');
+        var res=await _sb.from('ideas').select('id,text_content,subject,cluster_id').eq('user_id',user.id).eq('content_type','header');
         (res.data||[]).forEach(function(r){ byId[r.id]=r; (kidsOf[r.cluster_id]=kidsOf[r.cluster_id]||[]).push(r.id); });
       }
     }catch(e){ console.warn('_isxOpenCompass fetch failed:', e); }

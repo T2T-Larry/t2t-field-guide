@@ -288,7 +288,7 @@
 
       var ideaRows=[];
       try{
-        var ideaRes=await sb.from('ideas').select('id,content_type,text_content,cluster_id,topic_scope_id')
+        var ideaRes=await sb.from('ideas').select('id,content_type,text_content,subject,cluster_id,topic_scope_id')
           .or('key_slot_1.eq.'+keyObj.id+',key_slot_2.eq.'+keyObj.id+',key_slot_3.eq.'+keyObj.id)
           .limit(200);
         if(!ideaRes.error) ideaRows=ideaRes.data||[];
@@ -357,7 +357,7 @@
         var scopeNameById={};
         if(scopeIds.length){
           try{
-            var scopeRes=await sb.from('ideas').select('id,text_content').in('id', scopeIds);
+            var scopeRes=await sb.from('ideas').select('id,text_content,subject').in('id', scopeIds);
             (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=s.text_content||'Untitled Board'; });
           }catch(e){}
         }

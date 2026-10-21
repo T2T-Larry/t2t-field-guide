@@ -763,7 +763,7 @@
     if(!linkedIds.length) return;
     try{
       var sb=T().sb;
-      var res=await sb.from('ideas').select('id,cluster_id,text_content').in('id',linkedIds);
+      var res=await sb.from('ideas').select('id,cluster_id,text_content,subject').in('id',linkedIds);
       if(res.error) return;
       (res.data||[]).forEach(function(r){
         _bbRootHeaderIdSet[r.id]=_bbIsProjectRoot(r.cluster_id||null);
@@ -826,7 +826,7 @@
     var sb=T().sb, uid=await _bbCurrentUserId();
     if(!uid || !sb) return null;
     try{
-      var hdrRes=await sb.from('ideas').select('id,cluster_id,text_content,board_type,briefing_board_id').eq('id',headerId).maybeSingle();
+      var hdrRes=await sb.from('ideas').select('id,cluster_id,text_content,subject,board_type,briefing_board_id').eq('id',headerId).maybeSingle();
       if(hdrRes.error || !hdrRes.data) return null;
       var hdr=hdrRes.data;
       // Sept 5 2026 -- known the moment we've fetched this Header at all,
@@ -1665,7 +1665,7 @@
     for(var depth=0; depth<maxDepth && frontier.length; depth++){
       var next=[];
       try{
-        var res=await sb.from('ideas').select('id,cluster_id,text_content,storyboard_kind,source_project_id').in('cluster_id',frontier).eq('content_type','header');
+        var res=await sb.from('ideas').select('id,cluster_id,text_content,subject,storyboard_kind,source_project_id').in('cluster_id',frontier).eq('content_type','header');
         if(!res.error){
           (res.data||[]).forEach(function(row){
             if(seen[row.id] || BB_RESERVED_HEADER_NAMES[row.text_content] || (window.T2TPlan && T2TPlan.isContainer(row))) return;

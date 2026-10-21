@@ -1015,7 +1015,7 @@
     if(!headerId) return [];
     var sb=T().sb;
     try{
-      var res=await sb.from('ideas').select('id,text_content,sort_order,priority,cluster_id,storyboard_kind,source_project_id').eq('cluster_id',headerId).eq('content_type','header').order('sort_order',{ascending:true});
+      var res=await sb.from('ideas').select('id,text_content,subject,sort_order,priority,cluster_id,storyboard_kind,source_project_id').eq('cluster_id',headerId).eq('content_type','header').order('sort_order',{ascending:true});
       if(res.error) return [];
       return (res.data||[]).filter(function(r){ return !BB_RESERVED_HEADER_NAMES[r.text_content] && !(window.T2TPlan && T2TPlan.isContainer(r)); });
     }catch(e){ return []; }
@@ -1054,7 +1054,7 @@
     var nodes={}; nodes[rootId]={id:rootId, name:(rootInfo&&rootInfo.name)||'(untitled)', children:[]};
     var level=[rootId], depth=0, total=1;
     while(level.length && depth<8 && total<400){
-      var res=await sb.from('ideas').select('id,text_content,cluster_id,sort_order,storyboard_kind,source_project_id').in('cluster_id',level).eq('content_type','header').order('sort_order',{ascending:true});
+      var res=await sb.from('ideas').select('id,text_content,subject,cluster_id,sort_order,storyboard_kind,source_project_id').in('cluster_id',level).eq('content_type','header').order('sort_order',{ascending:true});
       if(res.error) break;
       var next=[];
       (res.data||[]).forEach(function(r){

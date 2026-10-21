@@ -1162,7 +1162,7 @@
         var scopeNameById={};
         if(scopeIds.length){
           try{
-            var scopeRes=await _sb.from('ideas').select('id,text_content').in('id', scopeIds);
+            var scopeRes=await _sb.from('ideas').select('id,text_content,subject').in('id', scopeIds);
             (scopeRes.data||[]).forEach(function(s){ scopeNameById[s.id]=s.text_content||'Untitled Board'; });
           }catch(e){}
         }
@@ -1309,7 +1309,7 @@
       if(!user) throw new Error('Not signed in.');
       var wt=await T2TMedia.ensureWishTank();
       if(!wt || !wt.id) throw new Error('Wish Tank unavailable: '+(wt&&wt.error?wt.error:'unknown'));
-      var res=await _sb.from('ideas').select('id,text_content').eq('user_id',user.id)
+      var res=await _sb.from('ideas').select('id,text_content,subject').eq('user_id',user.id)
         .eq('content_type','header').is('cluster_id',null)
         .in('text_content',['Purpose','NEW','New Additions','Parking Lot']);
       if(res.error) throw new Error(res.error.message);
@@ -1939,7 +1939,7 @@
     // Shared-project fix, Aug 14 2026 -- see _sboardEnsurePurposeHeader
     // above: drop the user_id filter so every Cast member reuses the same
     // Parking Lot header instead of each person spawning their own.
-    var q=_sb.from('ideas').select('id,text_content').eq('content_type','header');
+    var q=_sb.from('ideas').select('id,text_content,subject').eq('content_type','header');
     q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
     var existing=await q;
     if(!existing.error && existing.data && existing.data.length){

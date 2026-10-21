@@ -148,12 +148,12 @@
       var client = window.T2T && window.T2T.sb;
       if (!client || !window.IDBand || !window.IDBand.goToBoard) throw new Error('not ready');
       if (window.T2T.showTravelSpinner) window.T2T.showTravelSpinner();
-      var found = await client.from('ideas').select('id,cluster_id,text_content')
+      var found = await client.from('ideas').select('id,cluster_id,text_content,subject')
         .eq('content_type', 'header').ilike('text_content', q.label).limit(20);
       if (found.error) throw found.error;
       var rows = found.data || [];
       var parentIds = rows.map(function(r){ return r.cluster_id; }).filter(Boolean);
-      var parents = parentIds.length ? await client.from('ideas').select('id,text_content').in('id', parentIds) : { data: [] };
+      var parents = parentIds.length ? await client.from('ideas').select('id,text_content,subject').in('id', parentIds) : { data: [] };
       var parentName = {};
       (parents.data || []).forEach(function(p){ parentName[p.id] = String(p.text_content || '').trim().toUpperCase(); });
       // The CONTENTS list on the T2T HUB topic holds empty copies of these names; the real header is the one that has content.
