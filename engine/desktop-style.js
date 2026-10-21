@@ -96,9 +96,11 @@
       +   'transform:translate(-50%,-50%);z-index:0;pointer-events:none;'
       +   'display:flex;flex-direction:column;align-items:center;'
       +   'user-select:none;-webkit-user-select:none}'
+      + '#sz-member-watermark{position:fixed;top:12px;left:16px;z-index:1;pointer-events:none;user-select:none;-webkit-user-select:none}'
+      + 'body:has(#fg-root.isx-full) #sz-member-watermark,body.t2t-bare-screen #sz-member-watermark{display:none!important}'
       + '#sz-member-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
-      +   'font-size:min(3vw,30px);letter-spacing:0.04em;color:rgba(0,0,0,.05);' /* Larry, August 3 2026: smaller + mixed case, so a tighter tracking than the all-caps T2T reads cleaner */
-      +   'text-shadow:2px 2px 3px rgba(255,255,255,.45),-2px -2px 3px rgba(0,0,0,.18);'
+      +   'font-size:20px;letter-spacing:0.04em;color:rgba(26,58,92,.8);' /* Oct 21 2026: now a readable name in the upper left corner, not an embossed caption */
+      +   'text-shadow:none;'
       +   'white-space:nowrap;margin-top:2px}'
       + '#sz-t2t-watermark{font-family:"Playfair Display",Georgia,serif;font-weight:700;'
       +   'font-size:min(11vw,110px);letter-spacing:0.12em;' /* Larry, July 31 2026: about half the original size */

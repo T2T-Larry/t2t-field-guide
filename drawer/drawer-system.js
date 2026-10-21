@@ -400,7 +400,7 @@
     { id: 'hub-vision', symbol: '🔭',   kind: 'IDEA',           label: 'Vision' },
     { id: 'hub-plan', symbol: '🗺️',     kind: 'PLAN',           label: 'Plan' },
     { id: 'hub-briefing', symbol: '📋', kind: 'BRIEFING BOARD', label: 'Briefing' },
-    { id: 'hub-story', symbol: '📖',    kind: 'SHARE',          label: 'Story' },
+    { id: 'hub-story', symbol: 'icon:stage-curtains',    kind: 'SHARE',          label: 'Story' },
     { id: 'hub-journey', symbol: '🧭',  kind: 'CAST',           label: 'Journey' }
   ];
 
@@ -420,10 +420,6 @@
       });
     }).catch(failed);
   }
-
-  var STORYBOARD_ITEMS = HUB_BOARDS.map(function(entry){
-    return { id: entry.id, label: entry.label, action: function(){ openHubBoard(entry); } };
-  });
 
   var LIBRARY_ITEMS = [
     // Larry, July 31 2026: "Closing the Field Guide ONLY makes
@@ -1478,9 +1474,8 @@
     // hides as a unit.
     var mode1 = document.createElement('div');
     mode1.id = 'sz-navmid-tools';
-    var storyboardsTray = buildTools(bar, { trayId: 'storyboards', defaultLabel: 'T2T HUB', items: STORYBOARD_ITEMS, orderKey: 't2t_toolOrder_hub', stackKey: 't2t_toolStackPos_storyboards' });
+    // Oct 21 2026: no T2T HUB tray any more -- the board buttons live on the HUB screen itself (engine/t2t-hub-screen.js).
     var libraryTray = buildTools(bar, { trayId: 'library', defaultLabel: 'LIBRARY', items: LIBRARY_ITEMS, orderKey: 't2t_toolOrder_library', stackKey: 't2t_toolStackPos_library' });
-    mode1.appendChild(storyboardsTray);
     mode1.appendChild(libraryTray);
     mode1.classList.add('sz-mode-panel', 'sz-mode-active');
     var mode2 = window.SZSurpriseTray.buildCustomTraySlot('left');

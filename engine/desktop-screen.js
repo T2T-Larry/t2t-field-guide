@@ -268,7 +268,9 @@
     mark.id = 'sz-t2t-watermark';
     mark.textContent = 'T2T';
     wrap.appendChild(mark);
-    wrap.appendChild(memberLine);
+    // Oct 21 2026, Larry: the member name moves to the upper left corner, like on every board
+    // (it must sit directly in <body>: the centered watermark wrapper is transformed, which would trap a fixed child).
+    document.body.appendChild(memberLine);
     // Inserted as the very FIRST child of <body> -- everything else on
     // the desk (the widget, both drawers, tools, notebook) either
     // carries an explicit high z-index or, for the widget itself,
