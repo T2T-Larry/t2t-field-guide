@@ -95,29 +95,67 @@
     document.addEventListener('keydown', onCardKey, true);
   }
 
-  /* Find the CONCEPTS header that sits directly under LIBRARY, then open the real board on it, read-only. */
-  async function open(){
+  /* The LIBRARY header itself (member-readable), found by its subject. */
+  async function findLibraryId(client){
+    var libs = await client.from('ideas').select('id')
+      .eq('library_shared', true).eq('content_type', 'header').or('subject.ilike.library,text_content.ilike.library').limit(50);   // Oct 21 2026: a header is named by its SUBJECT when it has one (LIBRARY now reads "A collection of resources" underneath)
+    if (libs.error) throw libs.error;
+    var libIds = (libs.data || []).map(function(r){ return r.id; });
+    if (!libIds.length) throw new Error('Library is not shared with this account');
+    return libIds;
+  }
+
+  /* Open the real board, read-only, on one header under LIBRARY. With no id it opens CONCEPTS (the old brass button). */
+  async function open(headerId){
     try {
       injectStyle();
       var client = sb();
       if (!client || !window.T2TMedia || !window.T2TMedia.openBoard || !window.T2TShared) throw new Error('not ready');
-      var libs = await client.from('ideas').select('id')
-        .eq('library_shared', true).eq('content_type', 'header').or('subject.ilike.library,text_content.ilike.library').limit(50);   // Oct 21 2026: a header is named by its SUBJECT when it has one (LIBRARY now reads "A collection of resources" underneath)
-      if (libs.error) throw libs.error;
-      var libIds = (libs.data || []).map(function(r){ return r.id; });
-      if (!libIds.length) throw new Error('Library is not shared with this account');
-      var cands = await client.from('ideas').select('id')
-        .eq('library_shared', true).eq('content_type', 'header').or('subject.ilike.concepts,text_content.ilike.concepts').in('cluster_id', libIds).limit(5);
-      if (cands.error) throw cands.error;
-      var root = (cands.data || [])[0];
-      if (!root) throw new Error('Concepts not found');
+      var rootId = (typeof headerId === 'string') ? headerId : null;
+      if (!rootId) {
+        var libIds = await findLibraryId(client);
+        var cands = await client.from('ideas').select('id')
+          .eq('library_shared', true).eq('content_type', 'header').or('subject.ilike.concepts,text_content.ilike.concepts').in('cluster_id', libIds).limit(5);
+        if (cands.error) throw cands.error;
+        var root = (cands.data || [])[0];
+        if (!root) throw new Error('Concepts not found');
+        rootId = root.id;
+      }
       var me = await client.auth.getUser();
       window.T2TShared._meId = (me && me.data && me.data.user) ? me.data.user.id : null;
-      window.T2TShared._libraryNext = root.id;
-      window.T2TMedia.openBoard(root.id, true);
+      window.T2TShared._libraryNext = rootId;
+      window.T2TMedia.openBoard(rootId, true);
     } catch (err) {
-      console.error('[library-readonly] could not open Concepts:', err);
-      toast('Concepts had trouble opening -- please try again.');
+      console.error('[library-readonly] could not open the Library board:', err);
+      toast('The Library had trouble opening -- please try again.');
+    }
+  }
+
+  var HUB_SYMBOLS = { CONCEPTS: '\uD83D\uDCA1', RESOURCES: '\uD83E\uDDF0', NOTES: '\uD83D\uDCDD', JOURNAL: '\uD83D\uDCD3', STORIES: '\uD83D\uDCD6', ARCHIVES: '\uD83D\uDDC4\uFE0F' };
+  function headerName(r){ return String(r.subject || r.text_content || '').trim(); }
+
+  /* Oct 21 2026 (Larry: "Library button should now display the LIBRARY headers"). The Library button on the T2T HUB opens the
+     shared hub screen on the headers directly under LIBRARY (read from the one tree, never a copy). Each header is a door
+     that opens that header's board read-only. */
+  async function openHub(){
+    try {
+      injectStyle();
+      var client = sb();
+      if (!client || !window.T2THubScreen || !window.T2THubScreen.showTopicHub) throw new Error('not ready');
+      var libIds = await findLibraryId(client);
+      var kids = await client.from('ideas').select('id,subject,text_content,sort_order,cluster_id')
+        .eq('content_type', 'header').in('cluster_id', libIds).order('sort_order', { ascending: true }).limit(60);
+      if (kids.error) throw kids.error;
+      var items = (kids.data || []).filter(function(r){ return headerName(r) && !/^library$/i.test(headerName(r)); })
+        .map(function(r){
+          var nm = headerName(r);
+          return { id: r.id, label: nm, symbol: HUB_SYMBOLS[nm.toUpperCase()] || '\uD83D\uDCDA', go: function(){ open(r.id); } };
+        });
+      if (!items.length) throw new Error('no Library headers visible');
+      window.T2THubScreen.showTopicHub({ title: 'LIBRARY', sub: 'A collection of resources', items: items });
+    } catch (err) {
+      console.error('[library-readonly] could not open the Library hub:', err);
+      toast('The Library had trouble opening -- please try again.');
     }
   }
 
@@ -130,6 +168,8 @@
     var S = window.T2TShared;
     if (!S || !S.libraryRootId || !rowsById) return;
     var root = S.libraryRootId;
+    var rr = rowsById[root];
+    if (!rr || !/^\s*concepts\s*$/i.test(String(rr.subject || rr.text_content || ''))) return;   /* only the CONCEPTS view regroups concept rows */
     Object.keys(rowsById).forEach(function(id){
       var r = rowsById[id];
       if (!r || id === root || !r.concept_group) return;
@@ -154,5 +194,5 @@
   }, true);
 
   injectStyle();
-  window.T2TLibraryView = { open: open, showCard: showCard, close: closeCard, overlay: overlay };
+  window.T2TLibraryView = { open: open, openHub: openHub, showCard: showCard, close: closeCard, overlay: overlay };
 })();

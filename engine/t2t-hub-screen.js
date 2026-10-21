@@ -9,6 +9,7 @@
      - the two questions: What is T2T? / How does a thought become a thing?
        (their headers on the board are still empty, so for now they say
        they are coming)
+   A topic hub (showTopicHub) is this same screen opened on any topic's headers; the Library button uses it.
    Shows only on the open desk: hidden while the Field Guide widget is
    open and while any full-screen board is up.
    ============================================================ */
@@ -38,7 +39,7 @@
 
   function injectStyle(){
     if (document.getElementById(STYLE_ID)) return;
-    var css = ''
+    var rules = ''
       + '#t2t-hub-screen{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);'
       +   'z-index:1;width:min(640px,calc(100vw - 460px));min-width:360px;display:flex;flex-direction:column;'
       +   'align-items:center;gap:22px;user-select:none;-webkit-user-select:none}'
@@ -60,7 +61,15 @@
       + '#t2t-hub-screen .hub-question{padding:10px 18px;background:rgba(255,255,255,.55);'
       +   'border:1.5px dashed rgba(0,0,0,.28);border-radius:999px;cursor:pointer;font-family:inherit;'
       +   'font-size:15px;color:#1a3a5c}'
-      + '#t2t-hub-screen .hub-question:hover{background:#fff}'
+      + '#t2t-hub-screen .hub-question:hover{background:#fff}';
+    // Oct 21 2026: a topic hub (the Library, and any topic later) is the SAME hub look in an overlay -- one set of rules, copied for its own root.
+    var topicRules = rules.split('#t2t-hub-screen').join('#t2t-topic-hub .hub-inner');
+    var css = rules + topicRules
+      + '#t2t-topic-hub{position:fixed;inset:0;z-index:9000;background:#efe8d6;display:flex;align-items:center;justify-content:center}'
+      + '#t2t-topic-hub .hub-inner{z-index:1}'
+      + '#t2t-topic-hub .hub-back{position:absolute;top:18px;left:22px;padding:8px 16px;background:rgba(255,255,255,.7);'
+      +   'border:1.5px solid rgba(0,0,0,.18);border-radius:999px;cursor:pointer;font-family:inherit;font-size:15px;color:#1a3a5c}'
+      + '#t2t-topic-hub .hub-back:hover{background:#fff}'
       // Only on the open desk: not under the Field Guide widget, not over a full-screen board.
       + 'body:not(.t2t-desk-closed) #t2t-hub-screen,'
       +   'body:has(#fg-root.isx-full) #t2t-hub-screen,'
@@ -146,6 +155,47 @@
     }
   }
 
+  /* One tile, used by the T2T HUB and by every topic hub. */
+  function makeTile(e){
+    var tile = document.createElement('button');
+    tile.type = 'button'; tile.className = 'hub-tile hub-move'; tile.title = 'Go to ' + e.label + ' (drag to move)';
+    var sym = document.createElement('span'); sym.className = 'hub-symbol';
+    if (typeof e.symbol === 'string' && e.symbol.indexOf('icon:') === 0) sym.innerHTML = ICONS[e.symbol.slice(5)] || '';
+    else sym.textContent = e.symbol || '';
+    var name = document.createElement('span'); name.className = 'hub-name'; name.textContent = e.label;
+    tile.appendChild(sym); tile.appendChild(name);
+    makeMovable(tile, e.id, e.go);
+    return tile;
+  }
+
+  /* A topic hub: the same hub screen, opened on any topic whose children are headers (Oct 21 2026: the Library button).
+     opts = { title, sub, items: [{ id, symbol, label, go }] }. Back (or Esc) returns to the T2T HUB. */
+  function closeTopicHub(){
+    var el = document.getElementById('t2t-topic-hub');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    document.removeEventListener('keydown', onTopicKey, true);
+  }
+  function onTopicKey(e){ if (e.key === 'Escape') { e.stopPropagation(); closeTopicHub(); } }
+  function showTopicHub(opts){
+    injectStyle();
+    closeTopicHub();
+    var ov = document.createElement('div'); ov.id = 't2t-topic-hub';
+    var back = document.createElement('button'); back.type = 'button'; back.className = 'hub-back'; back.textContent = '\u2190 T2T HUB';
+    back.addEventListener('click', closeTopicHub);
+    var inner = document.createElement('div'); inner.className = 'hub-inner';
+    var title = document.createElement('div'); title.className = 'hub-title'; title.textContent = opts.title || '';
+    inner.appendChild(title);
+    if (opts.sub) { var sub = document.createElement('div'); sub.className = 'hub-sub'; sub.textContent = opts.sub; inner.appendChild(sub); }
+    var grid = document.createElement('div'); grid.className = 'hub-boards';
+    (opts.items || []).forEach(function(it){
+      grid.appendChild(makeTile({ id: 'topic-' + it.id, symbol: it.symbol, label: it.label, go: function(){ closeTopicHub(); it.go(); } }));
+    });
+    inner.appendChild(grid);
+    ov.appendChild(back); ov.appendChild(inner);
+    document.body.appendChild(ov);
+    document.addEventListener('keydown', onTopicKey, true);
+  }
+
   function build(){
     if (document.getElementById('t2t-hub-screen')) return;
     var sys = window.SZDrawerSystem;
@@ -164,20 +214,10 @@
     });
     // The Library: a book that opens the read-only Library view (its ID BAND has the home button to leave it).
     entries.push({ id: 'hub-library', symbol: '\uD83D\uDCDA', label: 'Library', go: function(){
-      if (window.T2TLibraryView && window.T2TLibraryView.open) window.T2TLibraryView.open();
+      if (window.T2TLibraryView && window.T2TLibraryView.openHub) window.T2TLibraryView.openHub();
       else toast('The Library had trouble opening -- please try again.');
     } });
-    entries.forEach(function(e){
-      var tile = document.createElement('button');
-      tile.type = 'button'; tile.className = 'hub-tile hub-move'; tile.title = 'Go to ' + e.label + ' (drag to move)';
-      var sym = document.createElement('span'); sym.className = 'hub-symbol';
-      if (typeof e.symbol === 'string' && e.symbol.indexOf('icon:') === 0) sym.innerHTML = ICONS[e.symbol.slice(5)] || '';
-      else sym.textContent = e.symbol || '';
-      var name = document.createElement('span'); name.className = 'hub-name'; name.textContent = e.label;
-      tile.appendChild(sym); tile.appendChild(name);
-      makeMovable(tile, e.id, e.go);
-      grid.appendChild(tile);
-    });
+    entries.forEach(function(e){ grid.appendChild(makeTile(e)); });
     wrap.appendChild(grid);
 
     var qs = document.createElement('div'); qs.className = 'hub-questions';
@@ -192,5 +232,5 @@
     document.body.insertBefore(wrap, document.body.children[1] || null);
   }
 
-  window.T2THubScreen = { build: build };
+  window.T2THubScreen = { build: build, showTopicHub: showTopicHub, closeTopicHub: closeTopicHub };
 })();
