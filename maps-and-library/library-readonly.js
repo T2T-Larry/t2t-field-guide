@@ -152,10 +152,96 @@
           return { id: r.id, label: nm, symbol: HUB_SYMBOLS[nm.toUpperCase()] || '\uD83D\uDCDA', go: function(){ open(r.id); } };
         });
       if (!items.length) throw new Error('no Library headers visible');
+      // Oct 21 2026 (Larry): the Library card catalogue is one more door on the Library hub.
+      items.push({ id: 'catalogue', label: 'A-Z Catalogue', symbol: '🗂️', go: openCatalogue });
       window.T2THubScreen.showTopicHub({ title: 'LIBRARY', sub: 'A collection of resources', items: items });
     } catch (err) {
       console.error('[library-readonly] could not open the Library hub:', err);
       toast('The Library had trouble opening -- please try again.');
+    }
+  }
+
+  /* Oct 21 2026 (Larry: "Library card catalogue"): ONE A-Z list of every Library card, each entry showing the header it lives under.
+     Read from the one tree on the spot (level by level down from LIBRARY), never a copy. A click opens the card in the plain reader. */
+  var CAT_ID = 'sz-library-catalogue';
+  function closeCatalogue(backToHub){
+    var el = document.getElementById(CAT_ID);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    document.removeEventListener('keydown', onCatKey, true);
+    if (backToHub === true) openHub();
+  }
+  function onCatKey(e){ if (e.key === 'Escape' && !document.getElementById(CARD_ID)) { e.stopPropagation(); closeCatalogue(true); } }
+  function cardName(r){
+    var s = String(r.subject || '').trim();
+    if (!s) s = String(r.text_content || r.idea_text || r.link_title || '').trim().replace(/\s+/g, ' ');
+    if (!s && r.content_type === 'image') s = '(picture)';
+    return s.length > 110 ? s.slice(0, 107) + '...' : s;
+  }
+  async function openCatalogue(){
+    try {
+      injectStyle();
+      var client = sb();
+      if (!client) throw new Error('not ready');
+      var libIds = await findLibraryId(client);
+      var byId = {}, rows = [], level = libIds.slice(), depth = 0;
+      while (level.length && depth < 12) {
+        var next = [];
+        for (var i = 0; i < level.length; i += 80) {
+          var chunk = level.slice(i, i + 80);
+          var res = await client.from('ideas').select('id,subject,text_content,idea_text,link_title,content_type,image_url,cluster_id,sort_order')
+            .in('cluster_id', chunk).limit(1000);
+          if (res.error) throw res.error;
+          (res.data || []).forEach(function(r){
+            if (byId[r.id]) return;
+            byId[r.id] = r; rows.push(r);
+            if (r.content_type === 'header') next.push(r.id);
+          });
+        }
+        level = next; depth++;
+      }
+      var cards = rows.filter(function(r){ return r.content_type !== 'header' && cardName(r); }).map(function(r){
+        var p = r.cluster_id ? byId[r.cluster_id] : null;
+        return { row: r, name: cardName(r), under: p ? (headerName(p) || 'LIBRARY') : 'LIBRARY' };
+      });
+      cards.sort(function(a, b){ return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); });
+      var ov = document.createElement('div'); ov.id = CAT_ID;
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99990;background:#efe8d6;overflow:auto;padding:0 0 40px;box-sizing:border-box;color:#1a3a5c;font-family:inherit';
+      var bar = document.createElement('div');
+      bar.style.cssText = 'position:sticky;top:0;z-index:2;background:#1a3a5c;color:#fff;padding:12px 18px;display:flex;align-items:center;gap:14px';
+      var ttl = document.createElement('div'); ttl.style.cssText = 'flex:1;font-family:"Playfair Display",Georgia,serif;font-size:22px;font-weight:700'; ttl.textContent = 'LIBRARY A-Z CATALOGUE (' + cards.length + ')';
+      var home = document.createElement('button'); home.type = 'button'; home.textContent = '🏠'; home.title = 'T2T HUB (home)'; home.setAttribute('aria-label', 'Home');
+      home.style.cssText = 'font-size:20px;background:none;border:1px solid rgba(255,255,255,.5);border-radius:6px;color:#fff;cursor:pointer;padding:2px 10px';
+      home.addEventListener('click', function(){ closeCatalogue(false); if (window.T2T && window.T2T.goHome) window.T2T.goHome(); });
+      var back = document.createElement('button'); back.type = 'button'; back.textContent = 'Library'; back.title = 'Back to the Library hub';
+      back.style.cssText = 'font-size:14px;background:none;border:1px solid rgba(255,255,255,.5);border-radius:6px;color:#fff;cursor:pointer;padding:4px 12px';
+      back.addEventListener('click', function(){ closeCatalogue(true); });
+      bar.appendChild(ttl); bar.appendChild(back); bar.appendChild(home);
+      var list = document.createElement('div'); list.style.cssText = 'max-width:760px;margin:0 auto;padding:10px 18px';
+      var lastLetter = '';
+      cards.forEach(function(c){
+        var ch = c.name.charAt(0).toUpperCase(); if (!/[A-Z]/.test(ch)) ch = '#';
+        if (ch !== lastLetter) {
+          lastLetter = ch;
+          var h = document.createElement('div'); h.textContent = ch;
+          h.style.cssText = 'font-family:"Playfair Display",Georgia,serif;font-size:24px;font-weight:700;margin:18px 0 4px;border-bottom:2px solid #1a3a5c';
+          list.appendChild(h);
+        }
+        var b = document.createElement('button'); b.type = 'button';
+        b.style.cssText = 'display:block;width:100%;text-align:left;background:rgba(255,255,255,.65);border:1px solid rgba(26,58,92,.25);border-radius:8px;padding:8px 12px;margin:5px 0;cursor:pointer;font-family:inherit;color:#1a3a5c';
+        var n = document.createElement('div'); n.style.cssText = 'font-size:16px;font-weight:600'; n.textContent = c.name;
+        var u = document.createElement('div'); u.style.cssText = 'font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#5b7fa3;margin-top:2px'; u.textContent = 'Under: ' + c.under;
+        b.appendChild(n); b.appendChild(u);
+        b.addEventListener('click', function(){ showCard(c.row); });
+        list.appendChild(b);
+      });
+      if (!cards.length) { var e = document.createElement('div'); e.textContent = 'No cards are visible in the Library yet.'; e.style.cssText = 'padding:24px 0;font-size:16px'; list.appendChild(e); }
+      ov.appendChild(bar); ov.appendChild(list);
+      var old = document.getElementById(CAT_ID); if (old && old.parentNode) old.parentNode.removeChild(old);
+      document.body.appendChild(ov);
+      document.addEventListener('keydown', onCatKey, true);
+    } catch (err) {
+      console.error('[library-readonly] could not open the Library catalogue:', err);
+      toast('The Library catalogue had trouble opening -- please try again.');
     }
   }
 
@@ -194,5 +280,5 @@
   }, true);
 
   injectStyle();
-  window.T2TLibraryView = { open: open, openHub: openHub, showCard: showCard, close: closeCard, overlay: overlay };
+  window.T2TLibraryView = { open: open, openHub: openHub, openCatalogue: openCatalogue, showCard: showCard, close: closeCard, overlay: overlay };
 })();
