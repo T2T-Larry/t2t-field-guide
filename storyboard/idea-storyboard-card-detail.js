@@ -323,7 +323,7 @@
       +   '</div>'
       +   '<label class="bb-front-check" id="sb-pri-front-row"><input type="checkbox" id="sb-pri-front"><span>Show on front</span></label>'
       + '</div>'
-      + '<div class="bb-field sb-subject-field"><label>Subject</label>'
+      + '<div class="bb-field sb-subject-field"><label>Header</label>'
       +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
       + '</div>'
       // Plan step time, Oct 11 2026 (Larry, Plan card corners): PLAN boards only. Plain text like "1 day" / "1-2 days"; shows lower right on the face.

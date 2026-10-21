@@ -1108,11 +1108,11 @@
     var projectRow=(typeof _sboardCurrentProjectRow==='function')?_sboardCurrentProjectRow():null;
     window.IdeaCapture.open({
       headerId: headerId,
-      headerLabel: headerRow ? (headerRow.text_content||'(untitled)') : 'New',
+      headerLabel: headerRow ? ((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)') : 'New',   // Oct 21 2026: a header is named by its subject first
       boardId: T2TShared.currentTopicId,
-      projectLabel: projectRow ? (projectRow.text_content||null) : null,
+      projectLabel: projectRow ? ((window.IDBand?IDBand.rowName(projectRow):(projectRow.subject||projectRow.text_content))||null) : null,
       projectId: projectRow ? projectRow.id : null,
-      topicLabel: topicRow ? (topicRow.text_content||null) : null,
+      topicLabel: topicRow ? ((window.IDBand?IDBand.rowName(topicRow):(topicRow.subject||topicRow.text_content))||null) : null,   // Oct 21 2026 (Larry): was the content line, not the subject
       onSaved: async function(row){
         // Sept 13 2026 -- must happen before the render below, not after,
         // so the board that redraws already knows this card belongs to
