@@ -162,10 +162,15 @@
     var ta=document.getElementById('isx-idea-text');
     var rawText=(ta?ta.value:'').trim();
     // A Subject alone is a complete card (Larry, Sept 30 2026: "Subject without content refused to save") -- it shows as the bold
-    // headline. Headers still need their text, since a header's text is its name.
+    // headline. Oct 22 2026 (Larry: "a HEADER entry with no content is ignored"): the same holds for a
+    // header -- a header's title is its Subject whenever the Subject is not empty, so Subject alone saves it.
     var _icSubjOnlyEl=document.getElementById('isx-p-subject');
-    var _icSubjOnly=(_icSubjOnlyEl?_icSubjOnlyEl.value.trim():'') && _icIdeaMode!=='header';
-    if(!rawText && !imageUrl && !_icSubjOnly) return;
+    var _icSubjOnly=(_icSubjOnlyEl?_icSubjOnlyEl.value.trim():'');
+    if(!rawText && !imageUrl && !_icSubjOnly){
+      // Never fail silently (Larry, Oct 22 2026): say why nothing was saved.
+      _icShowFormatBoundaryMessage('Nothing was saved — type a title or some contents first.');
+      return;
+    }
     var text=_icComposeText(rawText);
     var savedOk=false, saveErr=null, row=null;
     try{
@@ -193,10 +198,12 @@
         // SUBJECT has its own column on ideas now (Sept 22 2026) -- it
         // rides the card face as a bold headline with the contents
         // optional underneath (see idea-storyboard-tiles.js). Headers
-        // keep the old folded-in text: a header's text IS its name.
+        // Oct 22 2026: a header now keeps its Subject in the subject column too (its title
+        // whenever the Subject is not empty -- IDBand.rowName reads subject first) with
+        // the contents, if any, as its explanation. With no Subject, the contents are the name.
         var _icSubjEl2=document.getElementById('isx-p-subject');
-        var _icSubject=(contentType!=='header' && _icSubjEl2) ? _icSubjEl2.value.trim() : '';
-        if(contentType!=='header') text=rawText;
+        var _icSubject=_icSubjEl2 ? _icSubjEl2.value.trim() : '';
+        text=rawText;
         var ins=await _sb.from('ideas').insert({
           user_id:user.id,
           content_type: contentType,
