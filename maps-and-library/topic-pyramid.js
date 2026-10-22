@@ -18,12 +18,13 @@
    thing read as a pyramid rather than three separate lists.
 
    Every row -- ancestor, current, or descendant, at any depth --
-   carries a small checkbox-shaped mark. Larry, Sept 20 2026: it's not
-   an interactive toggle with its own state, just a symbol meaning
-   "this can be chosen as a topic" -- reinforcing that any level, not
-   only a leaf header, is a valid pick. Choosing one is still done by
-   clicking its name (onNavigate below), same single-click gesture the
-   flat list already had -- the mark itself takes no click.
+   carries a small check box. Oct 22 2026, Larry: "the check boxes in the
+   topic selector [are] two click toggle boxes. Open or completed with a
+   checkmark." It is now a real two-state toggle: an empty box is OPEN, a
+   green box with a checkmark is COMPLETED, and each click flips it (the
+   state is the topic's own ideas.step_done, the same "done" flag every
+   card already has -- one flag, one meaning). Choosing a topic is still
+   done by clicking its name (onNavigate below); the box only toggles.
 
    This file knows nothing about Supabase, ideas.cluster_id, or
    either board's own data shape -- it only renders rows and reports
@@ -99,8 +100,49 @@
     return {fetch:fetch, invalidate:function(){ cache={}; at={}; }};
   })();
   window.T2TPrimaryStatus=T2TPrimaryStatus;
+
+  // COMPLETED / OPEN, Oct 22 2026 -- one shared lookup and one shared write for the check boxes.
+  // fetch(ids) -> Promise<{id: true|false}>; set(id, done) -> Promise<boolean saved>.
+  var T2TTopicDone=(function(){
+    var cache={};
+    function realIds(ids){ return (ids||[]).map(String).filter(function(id){ return id && id!=='null' && id.indexOf('__')!==0; }); }
+    function fetch(ids){
+      var sb=window.T2T && window.T2T.sb;
+      var need=realIds(ids).filter(function(id){ return !(id in cache); });
+      if(!sb || !need.length) return Promise.resolve(cache);
+      return Promise.resolve(sb.from('ideas').select('id,step_done').in('id',need)).then(function(res){
+        ((res&&res.data)||[]).forEach(function(r){ cache[String(r.id)]=!!r.step_done; });
+        return cache;
+      }, function(){ return cache; });
+    }
+    function set(id, done){
+      var sb=window.T2T && window.T2T.sb;
+      if(!sb) return Promise.resolve(false);
+      return Promise.resolve(sb.from('ideas').update({step_done:!!done}).eq('id',id).select('id')).then(function(res){
+        var ok=!!(res && !res.error && res.data && res.data.length);
+        if(ok) cache[String(id)]=!!done;
+        return ok;
+      }, function(){ return false; });
+    }
+    return {fetch:fetch, set:set, known:function(id){ return cache[String(id)]; }};
+  })();
+  window.T2TTopicDone=T2TTopicDone;
+
+  function _tpPaintCheck(box, done){
+    box.classList.toggle('tp-done', !!done);
+    box.setAttribute('aria-checked', done ? 'true' : 'false');
+    box.textContent=done ? '\u2713' : '';
+    box.title=done ? 'Completed \u2014 click to reopen' : 'Open \u2014 click to mark completed';
+  }
   function _tpDecorate(rows){
     if(!rows.length) return;
+    T2TTopicDone.fetch(rows.map(function(r){ return r.getAttribute('data-tp-id'); })).then(function(map){
+      rows.forEach(function(row){
+        var box=row.querySelector('.tp-check');
+        var id=row.getAttribute('data-tp-id');
+        if(box && id in map) _tpPaintCheck(box, map[id]);
+      });
+    });
     T2TPrimaryStatus.fetch(rows.map(function(r){ return r.getAttribute('data-tp-id'); })).then(function(map){
       rows.forEach(function(row){
         var st=map[row.getAttribute('data-tp-id')];
@@ -125,7 +167,9 @@
     var css=''
       +'.tp-row{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:5px;cursor:default}'
       +'.tp-row:hover{background:rgba(0,0,0,.05)}'
-      +'.tp-check{flex:none;width:9px;height:9px;margin:0 1px;border:1.5px solid currentColor;border-radius:2px;opacity:.55;box-sizing:border-box}'
+      +'.tp-check{flex:none;width:14px;height:14px;margin:0 1px;border:1.5px solid currentColor;border-radius:3px;opacity:.6;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;font-weight:700;color:inherit;user-select:none}'
+      +'.tp-check:hover{opacity:1}'
+      +'.tp-check.tp-done{background:#1f9d55;border-color:#1f9d55;color:#fff;opacity:1}'
       +'.tp-arrow{flex:none;width:14px;height:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;color:inherit;opacity:.7;transition:transform .15s;user-select:none}'
       +'.tp-arrow.tp-open{transform:rotate(90deg)}'
       +'.tp-arrow.tp-none{visibility:hidden;cursor:default}'
@@ -154,16 +198,22 @@
     row.style.paddingLeft=(6+indentPx)+'px';
     row.style.fontSize='calc('+_tpFontSize(depth)+'px * var(--fg-text-scale,1))';
 
-    // Sept 20 2026 -- Larry: the checkbox isn't a toggle with its own
-    // state, it's just a symbol on every row (ancestor, current, or
-    // descendant) marking "this can be chosen as a topic" -- picking
-    // one is still done by clicking its name (onNavigate below), same
-    // gesture as the flat list this replaced. A real <input> here would
-    // imply a check/uncheck state that does nothing when clicked, which
-    // reads as broken -- this is a plain non-interactive mark instead.
+    // Oct 22 2026 -- Larry: the box is a real two-state toggle, OPEN (empty) or COMPLETED (green with a checkmark);
+    // each click flips it and saves at once. (Sept 20 it was a plain symbol; he now wants it to do something.)
     var check=document.createElement('span');
     check.className='tp-check';
-    check.setAttribute('aria-hidden','true');
+    check.setAttribute('role','checkbox');
+    _tpPaintCheck(check, T2TTopicDone.known(node.id)===true);
+    if(node.id!=null && String(node.id).indexOf('__')!==0){
+      check.addEventListener('click', function(e){
+        e.stopPropagation();
+        var was=check.classList.contains('tp-done'), next=!was;
+        _tpPaintCheck(check, next);                       // shows at once
+        T2TTopicDone.set(node.id, next).then(function(ok){
+          if(!ok){ _tpPaintCheck(check, was); check.title='Could not save \u2014 try again'; }
+        });
+      });
+    } else { check.style.visibility='hidden'; }
     row.appendChild(check);
 
     var label=document.createElement('span');
