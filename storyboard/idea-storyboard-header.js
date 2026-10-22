@@ -1860,48 +1860,7 @@
     T().wire('sb-preferences-close', _sboardOpenGearMenu);
   }
 
-  /* Deletion-sticks backstop, Aug 18 2026 -- same rule as header-data.js's
-     _parentDefaultsSeeded (Larry: "adding headers is only a default; if
-     headers already exist, do not add any default headers"). This file
-     keeps its own local copy of the Purpose/NEW ensure-calls instead of
-     going through T2TData, so the guard has to be duplicated here too or
-     a deliberately-trashed Purpose/NEW header on the Idea Storyboard
-     would just get silently recreated on the next render.
-     First cut checked "does this parent currently have any header at
-     all" -- broke the instant a traveler deleted the LAST header on an
-     otherwise-empty board (the common NEW-only shape), since the
-     count legitimately hits zero right when a deletion should be
-     sticking. Larry hit exactly this trying to delete Parking Lot. Fixed with
-     the same persisted header_defaults_seeded column header-data.js
-     uses -- once a parent's defaults have ever been seeded, that stays
-     true forever, independent of how many headers remain. */
-  async function _sboardParentDefaultsSeeded(parentId){
-    if(parentId===null||parentId===undefined) return false;
-    var _sb=T().sb;
-    var res=await _sb.from('ideas').select('header_defaults_seeded').eq('id',parentId).limit(1);
-    if(res.error || !res.data || !res.data.length) return false;
-    if(res.data[0].header_defaults_seeded) return true;
-    // Session 231 (Aug 20) -- same gap and same self-heal as
-    // header-data.js's _parentDefaultsSeeded (this file keeps its own
-    // local copy of the Purpose/NEW ensure-calls instead of going
-    // through T2TData, so the fix has to be duplicated here too): the
-    // flag only gets set on an actual auto-insert, so a board Larry
-    // built by hand still read as "unseeded" and kept getting a fresh
-    // default header shoved into it. If this parent already has ANY
-    // header at all, that's proof it's not brand-new -- mark it seeded
-    // and stop inserting.
-    var kids=await _sb.from('ideas').select('id,cluster_id,storyboard_kind,source_project_id').eq('content_type','header').eq('cluster_id',parentId).limit(5);   // a Plan container alone does not make a Topic 'seeded'
-    if(!kids.error && kids.data && T2TPlan.withoutContainers(kids.data).length){
-      _sboardMarkParentDefaultsSeeded(parentId);
-      return true;
-    }
-    return false;
-  }
-
-  async function _sboardMarkParentDefaultsSeeded(parentId){
-    if(parentId===null||parentId===undefined) return;
-    try{ await T().sb.from('ideas').update({header_defaults_seeded:true}).eq('id',parentId); }catch(e){}
-  }
+  // (Oct 22 2026: the local 'defaults seeded' helpers that lived here were retired with the duplicate Parking Lot creator; header-data.js holds the one copy.)
 
   async function _sboardEnsurePurposeHeader(parentId){
     // Sept 13 2026 -- Larry: "I no longer want Purpose and Parking Lot to
@@ -1931,60 +1890,11 @@
   // per-Topic "(...)" name -- the last matched by shape (starts with
   // "(", ends with ")"), since nothing else in this app names a header
   // that way.
+  // Oct 22 2026 (one tree, one code): this used to be a second, separate copy of T2TData.ensureNewAdditionsHeader (no lock), and the
+  // two racing each other is how a topic ended up with two Parking Lots. It now just asks the shared one and remembers the answer.
   async function _sboardEnsureNewAdditionsHeader(parentId){
-    var _sb=T().sb;
-    var user=(await _sb.auth.getUser()).data.user;
-    if(!user) throw new Error('Not signed in.');
-    var name='Parking Lot';
-    // Shared-project fix, Aug 14 2026 -- see _sboardEnsurePurposeHeader
-    // above: drop the user_id filter so every Cast member reuses the same
-    // Parking Lot header instead of each person spawning their own.
-    var q=_sb.from('ideas').select('id,text_content,subject').eq('content_type','header');
-    q=(parentId===null||parentId===undefined)?q.is('cluster_id',null):q.eq('cluster_id',parentId);
-    var existing=await q;
-    if(!existing.error && existing.data && existing.data.length){
-      var row=existing.data.filter(function(r){
-        var t=r.text_content||'';
-        return t==='NEW'||t==='New Additions'||t==='Parking Lot'||(t.charAt(0)==='('&&t.charAt(t.length-1)===')');
-      })[0];
-      if(row){
-        _sboardNewAdditionsId=row.id;
-        if(row.text_content!==name){ try{ await _sb.from('ideas').update({text_content:name}).eq('id',row.id); }catch(e){} }
-        return _sboardNewAdditionsId;
-      }
-    }
-    // Bug fix, Aug 25 2026 (Larry: "Moved up 'People Too Busy' header but
-    // saw NO subbers as previously designed" -- really its own loose
-    // cards, which is worse: they weren't hidden, the whole board came up
-    // blank). Root cause: header_defaults_seeded is a one-way flag --
-    // once true, it never resets -- so a header whose auto-created NEW
-    // bucket ever got deleted (leftover from earlier testing, a manual
-    // cleanup) can never get a fresh one again, even much later when it's
-    // promoted to a real Topic with real loose content that genuinely
-    // needs a home. Direct loose content only ever displays THROUGH this
-    // bucket (see renderLocalNewAdditions in renderSeaBoard) -- with no
-    // bucket to hold it, it isn't just unlabeled, it's invisible. Found
-    // live on Larry's own account: "People Too Busy" and "Out of the
-    // Office" both already carry this flag with zero header children,
-    // meaning both would have gone blank the moment either was ever
-    // promoted. The seeded flag should only ever skip creating an EMPTY
-    // bucket nobody needs; it should never be able to make real,
-    // already-existing content vanish. So: if this parent already has
-    // loose, unbucketed content sitting directly on it, that alone is
-    // proof a bucket is needed right now, regardless of what the flag
-    // says.
-    var seeded=await _sboardParentDefaultsSeeded(parentId);
-    if(seeded){
-      var looseCheck=(parentId===null||parentId===undefined) ? null
-        : await _sb.from('ideas').select('id').eq('cluster_id',parentId).in('content_type',['image','text','link']).limit(1);
-      if(!(looseCheck && !looseCheck.error && looseCheck.data && looseCheck.data.length)){
-        _sboardNewAdditionsId=null; return null;
-      }
-    }
-    var ins=await _sb.from('ideas').insert({user_id:user.id,content_type:'header',text_content:name,cluster_id:parentId||null,created_at:new Date().toISOString(),color:T().getDefaultHeaderColor()}).select().single();
-    if(ins.error) throw new Error('Ideas header setup failed: '+ins.error.message);
-    _sboardNewAdditionsId=ins.data.id;
-    _sboardMarkParentDefaultsSeeded(parentId);
+    var id=await T2TData.ensureNewAdditionsHeader(parentId);
+    _sboardNewAdditionsId=id||null;
     return _sboardNewAdditionsId;
   }
 

@@ -723,10 +723,33 @@
           return row.id;
         }
       }
-      if(await _parentDefaultsSeeded(parentId)) return null;
-      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Parking Lot',cluster_id:parentId||null,created_at:new Date().toISOString()}).select().single();
+      if(await _parentDefaultsSeeded(parentId)){
+        // Oct 22 2026: moved here from the Idea Storyboard's own copy of this function (one code, Larry Oct 15). A seeded flag
+        // never hides real loose cards: if any sit directly on this parent, a Parking Lot is needed to show them.
+        var loose=(parentId===null||parentId===undefined) ? null
+          : await sb.from('ideas').select('id').eq('cluster_id',parentId).in('content_type',['image','text','link']).limit(1);
+        if(!(loose && !loose.error && loose.data && loose.data.length)) return null;
+      }
+      var _color=(window.T2T && T2T.getDefaultHeaderColor) ? T2T.getDefaultHeaderColor() : undefined;
+      var ins=await sb.from('ideas').insert({user_id:u.id,content_type:'header',text_content:'Parking Lot',cluster_id:parentId||null,created_at:new Date().toISOString(),color:_color}).select().single();
       if(ins.error) throw new Error('Parking Lot setup failed: '+ins.error.message);
       _markParentDefaultsSeeded(parentId);
+      // Oct 22 2026 (Larry: "I opened a VISION board to find 2 Parking Lot headers. Only need one."): the lock above only covers
+      // one browser tab, and two screens used to create their own, so two could land ~0.1s apart. After inserting, look again: if
+      // another Parking Lot now sits on this parent, the oldest one (ties broken by id) is the keeper and the later one removes itself.
+      if(parentId!==null && parentId!==undefined){
+        try{
+          var all=await sb.from('ideas').select('id,created_at').eq('content_type','header').eq('cluster_id',parentId).eq('text_content','Parking Lot');
+          if(!all.error && all.data && all.data.length>1){
+            var keeper=all.data.slice().sort(function(a,b){ return (String(a.created_at)<String(b.created_at)?-1:String(a.created_at)>String(b.created_at)?1:0)||(a.id<b.id?-1:1); })[0];
+            if(String(keeper.id)!==String(ins.data.id)){
+              var kids=await sb.from('ideas').select('id').eq('cluster_id',ins.data.id).limit(1);
+              if(!kids.error && kids.data && !kids.data.length) await sb.from('ideas').delete().eq('id',ins.data.id);
+              return keeper.id;
+            }
+          }
+        }catch(e){ console.warn('Parking Lot duplicate check failed:', e); }
+      }
       return ins.data.id;
     });
   }
