@@ -678,8 +678,10 @@
     }
     hS.style.fontSize=_sboardFitFontSize(subj, base, Math.max(6,Math.round(min*0.8)), maxW, Math.round(maxH*0.55), lineH)+'px';
     var hN=document.createElement('span');
-    hN.textContent=name;
-    hN.style.cssText='display:block;font-weight:400;line-height:'+lineH+';word-break:break-word;margin-top:2px;font-size:'+_sboardFitFontSize(name, Math.round(base*0.75), Math.max(6,Math.round(min*0.7)), maxW, Math.round(maxH*0.4), lineH)+'px';
+    // Oct 22 2026 (Larry): the open eye on CONTENTS showed a repeat of the header. `name` arrives as the Subject (IDBand.rowName), so the
+    // second line must draw the header's own contents (realName), never `name`.
+    hN.textContent=realName;
+    hN.style.cssText='display:block;font-weight:400;line-height:'+lineH+';word-break:break-word;margin-top:2px;font-size:'+_sboardFitFontSize(realName,Math.round(base*0.75), Math.max(6,Math.round(min*0.7)), maxW, Math.round(maxH*0.4), lineH)+'px';
     box.appendChild(hS); box.appendChild(hN); el.appendChild(box);
   }
 
