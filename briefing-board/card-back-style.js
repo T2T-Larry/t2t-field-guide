@@ -235,7 +235,11 @@
       +'.fg-back-toprow:has(.sb-steptime-field) .bb-field.sb-order-top{grid-column:4}'
       +'#sb-steptime-input{font-size:calc(14px * var(--fg-text-scale,1));padding:6px 8px;font-family:inherit}'
       +'.fg-back-toprow .sb-order-top .bb-priorities{pointer-events:auto}'
-      +'.sb-order-num{cursor:default;pointer-events:none}'
+      +'.sb-order-num{cursor:default}'
+      // Oct 22 2026 (Larry: "Make changing the order number also change the order"): the number is typed into, same move as the arrows.
+      +'.sb-order-num #sb-order-input{width:2.4em;border:0;background:transparent;text-align:center;font:inherit;color:inherit;padding:0;margin:0;-moz-appearance:textfield}'
+      +'.sb-order-num #sb-order-input::-webkit-outer-spin-button,.sb-order-num #sb-order-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}'
+      +'.sb-order-num #sb-order-input:disabled{opacity:.5}'
       // Header/Subber toggle sits dead center on the bottom row (Larry: "such a key choice").
       +'.fg-back-3x5 .bb-action-row{position:relative}'
       +'.fg-back-viewslot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;margin-top:1px;white-space:nowrap}'

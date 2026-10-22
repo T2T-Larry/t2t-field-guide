@@ -218,7 +218,9 @@
       + '<div class="sb-hdr-eyebrow2">Order</div>'
       + '<div style="display:flex;flex-wrap:nowrap;align-items:center;gap:4px;justify-content:center;width:100%">'
       + '<button id="sb-order-up" type="button" aria-label="Move earlier"'+(orderCanUp?'':' disabled')+' style="flex-shrink:0;border:0.5px solid #B4B2A9;background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;padding:0;font-size:inherit;color:inherit;cursor:'+(orderCanUp?'pointer':'default')+';opacity:'+(orderCanUp?'1':'0.3')+'">▲</button>'
-      + '<div class="sb-view-frame" style="cursor:default;padding:5px 8px;white-space:nowrap" title="Order #">🔢 <span id="sb-order-value">'+orderValueText+'</span></div>'
+      + '<div class="sb-view-frame" style="cursor:default;padding:5px 8px;white-space:nowrap" title="Order #">🔢 <span id="sb-order-value">'+(/^(\d+) of (\d+)$/.test(orderValueText)
+        ? '<input id="sb-order-input" type="number" min="1" max="'+RegExp.$2+'" value="'+RegExp.$1+'" aria-label="Order number"'+((_sbOrderList && _sbOrderIdx>-1 && !item.locked)?'':' disabled')+'> of '+RegExp.$2
+        : orderValueText)+'</span></div>'
       + '<button id="sb-order-down" type="button" aria-label="Move later"'+(orderCanDown?'':' disabled')+' style="flex-shrink:0;border:0.5px solid #B4B2A9;background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;padding:0;font-size:inherit;color:inherit;cursor:'+(orderCanDown?'pointer':'default')+';opacity:'+(orderCanDown?'1':'0.3')+'">▼</button>'
       + '</div>'
       + '</div>'
@@ -655,50 +657,62 @@
         btn.style.opacity=can?'1':'0.3';
         btn.style.cursor=can?'pointer':'default';
       }
-      async function nudgeOrder(dir){
+      // One move for everything (Oct 22 2026, Larry: "cards have an order. arrows change the order. Make changing the order number also change the
+      // order"): the arrows and the typed number both land here. The card goes to position newIdx, the cards between shift one place, and every
+      // sort_order that changed is rewritten so the list stays 0..n-1.
+      function showOrder(){
+        var inp=document.getElementById('sb-order-input'), valEl=document.getElementById('sb-order-value');
+        if(inp) inp.value=_sbOrderIdx+1;
+        else if(valEl) valEl.textContent=(_sbOrderIdx+1)+' of '+_sbOrderList.length;
+        setArrowState(upBtn, _sbOrderIdx>0);
+        setArrowState(downBtn, _sbOrderIdx<_sbOrderList.length-1);
+      }
+      async function moveToIndex(newIdx){
         if(!_sbOrderList || item.locked) return;
-        var swapIdx=_sbOrderIdx+dir;
-        if(swapIdx<0 || swapIdx>=_sbOrderList.length) return;
-        var ids=_sbOrderList.slice();
-        var tmp=ids[_sbOrderIdx]; ids[_sbOrderIdx]=ids[swapIdx]; ids[swapIdx]=tmp;
+        if(newIdx<0) newIdx=0;
+        if(newIdx>_sbOrderList.length-1) newIdx=_sbOrderList.length-1;
+        if(newIdx===_sbOrderIdx){ showOrder(); return; }
+        var oldIds=_sbOrderList.slice();
+        var ids=oldIds.slice();
+        ids.splice(_sbOrderIdx,1); ids.splice(newIdx,0,item.id);
         var before=_sboardSnapshotRow(item.id);
         try{
-          // .select() + row-count check added Aug 22 2026 -- Larry: "moved
-          // word wall sub-header to card order number 4. It did not
-          // move" -- the ORDER number on this very card was updating
-          // ("2 of 7") right after clicking, but the database never
-          // actually changed. Root cause: without .select(), Supabase
-          // reports success (no .error) even when a write matches zero
-          // rows -- so this always trusted the write and updated the
-          // on-screen number regardless of whether anything really
-          // saved. Now checks the actual row count and shows a real
-          // error via statusBox (below) instead of a number that lies.
-          var updA=await _sb.from('ideas').update({sort_order:_sbOrderIdx}).eq('id',ids[_sbOrderIdx]).select('id');
-          if(updA.error) throw updA.error;
-          if(!updA.data || !updA.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
-          var updB=await _sb.from('ideas').update({sort_order:swapIdx}).eq('id',ids[swapIdx]).select('id');
-          if(updB.error) throw updB.error;
-          if(!updB.data || !updB.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
-          _sboardPatchRow(ids[_sbOrderIdx], {sort_order:_sbOrderIdx});
-          _sboardPatchRow(ids[swapIdx], {sort_order:swapIdx});
-          // Aug 22 2026: was two separate maps depending on isHeaderType --
-          // now one shared column order, so a Subber can nudge past a
-          // card (or vice versa) the same way dragging can.
+          // .select() + row-count check (Aug 22 2026): Supabase reports success even when a write matches zero rows, so check the real count.
+          var lo=Math.min(_sbOrderIdx,newIdx), hi=Math.max(_sbOrderIdx,newIdx);
+          for(var k=lo;k<=hi;k++){
+            var upd=await _sb.from('ideas').update({sort_order:k}).eq('id',ids[k]).select('id');
+            if(upd.error) throw upd.error;
+            if(!upd.data || !upd.data.length) throw new Error('Save was blocked (no rows matched) -- order not changed.');
+          }
+          for(var j=lo;j<=hi;j++) _sboardPatchRow(ids[j], {sort_order:j});
           if(_sbOrderIsTopHeader) _sboardTopLevelOrder=ids;
           else _sboardColumnOrderByParent[item.cluster_id||'']=ids;
-          _sbOrderList=ids; _sbOrderIdx=swapIdx;
+          _sbOrderList=ids; _sbOrderIdx=newIdx;
           if(before){
             var after=_sboardSnapshotRow(item.id);
             _sboardPushAction({label:'Reorder', undo:function(){ return _sboardApplyRowSnapshot(item.id, before); }, redo:function(){ return _sboardApplyRowSnapshot(item.id, after); }});
           }
-          var valEl=document.getElementById('sb-order-value');
-          if(valEl) valEl.textContent=(swapIdx+1)+' of '+ids.length;
-          setArrowState(upBtn, _sbOrderIdx>0);
-          setArrowState(downBtn, _sbOrderIdx<ids.length-1);
+          showOrder();
           renderSeaBoard(true);
         }catch(err){
+          showOrder();
           if(statusBox) statusBox.textContent='Reordering needs the sort_order Supabase column: '+err.message;
         }
+      }
+      function nudgeOrder(dir){ return moveToIndex(_sbOrderIdx+dir); }
+      var numInp=document.getElementById('sb-order-input');
+      if(numInp){
+        numInp.addEventListener('click', function(e){ e.stopPropagation(); });
+        numInp.addEventListener('keydown', function(e){
+          e.stopPropagation();
+          if(e.key==='Enter'){ e.preventDefault(); numInp.blur(); }
+          else if(e.key==='Escape'){ numInp.value=_sbOrderIdx+1; numInp.blur(); }
+        });
+        numInp.addEventListener('change', function(){
+          var n=parseInt(numInp.value,10);
+          if(isNaN(n)){ showOrder(); return; }
+          moveToIndex(n-1);
+        });
       }
       if(upBtn) upBtn.addEventListener('click', function(){ nudgeOrder(-1); });
       if(downBtn) downBtn.addEventListener('click', function(){ nudgeOrder(1); });
