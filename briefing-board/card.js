@@ -2053,6 +2053,8 @@
     var l=','+String(c.hangupReasons||'')+',';
     if(l.indexOf(','+k+':done,')>=0) return '2';
     if(l.indexOf(','+k+',')>=0) return '1';
+    // Oct 23 2026 (Larry): ISSUE reset by hand is reset (key issue:off); the default-selected rule below only applies to a Hang Up nobody has touched yet.
+    if(k==='issue' && l.indexOf(',issue:off,')>=0) return '0';
     // A card flagged NEEDS VISION / NEEDS PLAN (badge on the front) always shows that reason as selected on the back, even if the reason was never ticked here.
     if(k==='vision' && c.needsVision) return '1';
     if(k==='plan' && c.needsPlan) return '1';
@@ -2224,9 +2226,10 @@
             return;
           }
         }
-        var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k && x!==k+':done'; });
+        var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k && x!==k+':done' && x!==k+':off'; });
         if(next===1) list.push(k);
         if(next===2) list.push(k+':done');
+        if(next===0 && k==='issue') list.push('issue:off');
         c.hangupReasons=list.join(',');
         btn.setAttribute('data-state', String(next));
         _bbPaintSituationNeed(c);
