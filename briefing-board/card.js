@@ -2068,6 +2068,32 @@
   // Oct 23 2026 (Larry): a Hang Up is something we need to talk about, so it is automatically a HEADER in the one tree and its TOPIC. The database does the
   // work (ensure_hangup_header: finds or creates a header named after the card, directly under the card's current topic, and points the card's TOPIC at it);
   // running it again changes nothing. Called when a card enters HANG-UPS and whenever a Hang Up card is opened.
+  // Oct 23 2026 (Larry): RESEARCH - OPTIONS - SOLUTION work happens on the Sea of Ideas board for the Hang Up's own TOPIC (same board-type switch as the ID BAND
+  // and the HUB: IDBand.goToBoard). The first time the board is opened, the Situation goes in as its first idea.
+  async function _bbOpenHangupSea(c){
+    try{
+      var sb=T().sb; if(!sb) return;
+      await _bbEnsureHangupHeader(c);
+      var topicId=c.projectHeaderId;
+      if(!topicId){ if(typeof _bbShowToast==='function') _bbShowToast('This Hang Up has no TOPIC yet.'); return; }
+      var sit=(document.getElementById('bb-d-situation')||{}).value||c.situation||'';
+      sit=String(sit).trim();
+      if(sit){
+        var have=await sb.from('ideas').select('id').eq('cluster_id', topicId).limit(1);
+        if(!have.error && (!have.data || !have.data.length)){
+          var ures=await sb.auth.getUser();
+          var uid=ures && ures.data && ures.data.user && ures.data.user.id;
+          if(uid) await sb.from('ideas').insert({user_id:uid, content_type:'text', text_content:sit, cluster_id:topicId, created_at:new Date().toISOString()});
+        }
+      }
+      closeCardDetail();
+      var ok=(window.IDBand && IDBand.goToBoard) ? await IDBand.goToBoard('SEA', topicId) : false;
+      if(!ok && typeof _bbShowToast==='function') _bbShowToast('The Sea of Ideas did not open. Try again in a moment.');
+    }catch(e){
+      console.error('Briefing Board: could not open the Sea of Ideas for this Hang Up', e);
+      if(typeof _bbShowToast==='function') _bbShowToast('The Sea of Ideas did not open. Try again in a moment.');
+    }
+  }
   async function _bbEnsureHangupHeader(c){
     try{
       var sb=T().sb; if(!sb || !c || c.col!=='hangups') return;
@@ -2171,8 +2197,10 @@
   function wireHangupReasons(){
     BB_HANGUP_STEPS.forEach(function(k){
       var sb_=document.getElementById('bb-d-hs-'+k); if(!sb_) return;
-      sb_.addEventListener('click', async function(){
+      sb_.addEventListener('click', async function(ev){
         var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+        // Oct 23 2026 (Larry): the word opens this Hang Up's TOPIC on the Sea of Ideas board; the box takes the three clicks.
+        if(ev && ev.target && ev.target.closest && ev.target.closest('.bb-hr-text')){ _bbOpenHangupSea(c); return; }
         // Same three clicks as the cause badges: empty -> check (doing) -> crossed out (done) -> empty (reset).
         var cur=parseInt(document.getElementById('bb-d-hs-'+k).getAttribute('data-state')||'0',10);
         var next=(cur+1)%3;
