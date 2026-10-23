@@ -806,12 +806,40 @@
     }catch(e){}
   });
 
+  // Oct 23 2026 (Larry: a subheader "needs to allow a child from any
+  // source"): ONE entry point for "file whatever was dragged INSIDE this
+  // header". Accepts every drag payload the board produces -- a plain card
+  // id, "header:<id>", or "group:<id>,<id>" from a lasso selection -- so no
+  // drop target has to parse them itself.
+  async function _sboardMoveIntoHeader(raw, headerId){
+    if(!raw) return;
+    var ids;
+    if(raw.indexOf('group:')===0) ids=raw.slice(6).split(',').filter(Boolean);
+    else if(raw.indexOf('header:')===0) ids=[raw.slice(7)];
+    else ids=[raw];
+    for(var i=0;i<ids.length;i++){ await _sboardMoveCard(ids[i], headerId); }
+  }
+
   async function _sboardMoveCard(itemId, headerId){
     // Locked no longer blocks moving, Aug 25 2026 -- see the note on
     // _sboardMakeTile above (this used to silently refuse to move a
     // locked card at all).
     var statusEl=document.getElementById('sc-status');
     var _sb=T().sb;
+    // Oct 23 2026: never file a header inside itself or inside one of its own
+    // descendants -- that would orphan the whole branch from the tree.
+    if(String(itemId)===String(headerId)) return;
+    try{
+      var _walk=headerId, _guard=0;
+      while(_walk && _sboardAllRowsById && _sboardAllRowsById[_walk] && _guard++<200){
+        var _up=_sboardAllRowsById[_walk].cluster_id;
+        if(_up && String(_up)===String(itemId)){
+          if(statusEl){ statusEl.textContent='A header can’t go inside its own child.'; statusEl.classList.add('err'); }
+          return;
+        }
+        _walk=_up;
+      }
+    }catch(e){}
     var before=_sboardSnapshotRow(itemId);
     try{
       // Aug 22 2026: was _sboardIdeaOrderByParent's own length (only

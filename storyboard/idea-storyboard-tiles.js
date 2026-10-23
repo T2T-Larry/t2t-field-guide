@@ -925,10 +925,10 @@
         // -- Larry's since asked for the direct drag gesture too, so the
         // top/bottom edges still just reorder, but the middle third now
         // nests, same 3-zone split every other tile on this board uses.
-        if(side==='bucket'){ _sboardMoveCard(draggedHeaderId, headerRow.id); }
+        if(side==='bucket'){ _sboardMoveIntoHeader(raw, headerRow.id); }
         else{ _sboardReorderOrMoveColumnItem(draggedHeaderId, headerRow.id, headerRow.cluster_id||null, side==='after'); }
       } else if(side==='bucket'){
-        _sboardMoveCard(raw, headerRow.id);
+        _sboardMoveIntoHeader(raw, headerRow.id);
       } else {
         _sboardReorderOrMoveColumnItem(raw, headerRow.id, headerRow.cluster_id||null, side==='after');
       }

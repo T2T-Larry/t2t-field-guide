@@ -297,7 +297,7 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
       if(raw.indexOf('header:')===0){
         var draggedHeaderId=raw.slice(7);
         if(String(draggedHeaderId)===String(headerRow.id)) return;
-        if(side==='nest'){ _sboardMoveCard(draggedHeaderId, headerRow.id); }
+        if(side==='nest'){ _sboardMoveIntoHeader(raw, headerRow.id); }
         // Larry, Aug 3 2026: "unless this happens faster, we need the
         // clock to feedback that action is happening" -- a header
         // reorder rewrites sort_order on every visible header
@@ -310,7 +310,7 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
         // new UI to build.
         else { _sboardSpinWhile(_sboardReorderHeader(draggedHeaderId, headerRow.id, side==='after')); }
       } else {
-        _sboardMoveCard(raw, headerRow.id);
+        _sboardMoveIntoHeader(raw, headerRow.id);
       }
     }
     hd.addEventListener('dragover', hdDragOver);
