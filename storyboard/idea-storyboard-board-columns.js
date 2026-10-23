@@ -336,6 +336,12 @@ hd.insertAdjacentHTML('beforeend', _sboardSignalRowHTML(headerRow, {lock:true, f
     var PROMOTE_ZONE_H = HEADER_H + 56;
     function inPromoteZone(e){
       if(!_sboardDraggingHeaderId) return false;
+      // Oct 23 2026 (Larry: a header could be moved beside a subheader but
+      // never INTO it): the first subheader in a column sits inside this top
+      // strip, so this catcher swallowed the drop before the subheader's own
+      // three-zone drop (edges reorder, middle nests) ever saw it. A drag that
+      // is over a subheader or card tile now belongs to that tile.
+      if(e.target && e.target.closest && e.target.closest('.sc-stack-tile, .sc-tile')) return false;
       var rect=block.getBoundingClientRect();
       return (e.clientY - rect.top) <= PROMOTE_ZONE_H * (_sboardCam ? _sboardCam.getScale() : 1);
     }
