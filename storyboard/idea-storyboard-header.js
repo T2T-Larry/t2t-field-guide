@@ -143,7 +143,105 @@
       if(up.error) throw up.error;
     }
   }
+  // Oct 23 2026 (Larry): ONE question for "what happens to the items inside
+  // this header?" -- used when a header is turned into a subber AND when a
+  // header is deleted. Four buttons: Trash - Parking Lot - Leave here -
+  // Cancel. "Leave here" keeps them at this level as siblings of the header
+  // (not offered on a master header, which has no header above it -- there the
+  // contents can only go to the Parking Lot or the Trash).
+  function _sboardChildRowsOf(parentId){
+    return Object.keys(_sboardAllRowsById||{}).map(function(k){ return _sboardAllRowsById[k]; }).filter(function(r){
+      return r && String(r.cluster_id||'')===String(parentId||'');
+    }).sort(function(a,b){ return (a.sort_order==null?1e9:a.sort_order)-(b.sort_order==null?1e9:b.sort_order); });
+  }
+  function _sboardHeaderIsMaster(headerRow){
+    var tid=(window.T2TShared && T2TShared.currentTopicId)||null;
+    return !headerRow.cluster_id || (!!tid && String(headerRow.cluster_id)===String(tid));
+  }
+  function _sboardAskContentsFate(headerRow){
+    return new Promise(function(resolve){
+      var ov=document.getElementById('sb-detail-overlay');
+      var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
+      var kids=_sboardChildRowsOf(headerRow.id).length;
+      var canLeave=!_sboardHeaderIsMaster(headerRow);
+      var btn='width:100%;margin-bottom:6px';
+      ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">"'+safeName+'" holds '+kids+' item'+(kids===1?'':'s')+'</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">What should happen to them?</div>'
+        +'<button class="sc-ov-btn save" id="sb-fate-trash" style="'+btn+';background:#b8562f;border-color:#b8562f">Trash them</button>'
+        +'<button class="sc-ov-btn save" id="sb-fate-park" style="'+btn+'">Move them to the Parking Lot</button>'
+        +(canLeave?'<button class="sc-ov-btn save" id="sb-fate-leave" style="'+btn+'">Leave them here, beside it</button>':'')
+        +'<button class="sc-ov-btn" id="sb-fate-cancel" style="width:100%">Cancel</button>'
+        +'</div>';
+      ov.classList.add('active');
+      T().wire('sb-fate-trash', function(){ resolve('trash'); });
+      T().wire('sb-fate-park', function(){ resolve('park'); });
+      if(canLeave) T().wire('sb-fate-leave', function(){ resolve('leave'); });
+      T().wire('sb-fate-cancel', function(){ resolve(null); });
+    });
+  }
+  // Does the move for the chosen fate. Returns {undo, redo} so the caller can
+  // put the whole change on the single Undo slot (Ctrl/Cmd+Z).
+  async function _sboardApplyContentsFate(headerRow, fate){
+    var _sb=T().sb;
+    var kidIds=_sboardChildRowsOf(headerRow.id).map(function(r){ return r.id; });
+    if(!kidIds.length) return {undo:async function(){}, redo:async function(){}};
+    var parentId=headerRow.cluster_id||null;
+    var targetId=null, newOrder=null;
+    if(fate==='trash'){
+      targetId=await T2TData.ensureTrashHeader();
+    } else if(fate==='park'){
+      var boardId=_sboardHeaderIsMaster(headerRow) ? parentId : ((window.T2TShared && T2TShared.currentTopicId)||parentId);
+      targetId=await T2TData.ensureNewAdditionsHeader(boardId);
+      if(!targetId && T2TData.ensureHeaderNamed) targetId=await T2TData.ensureHeaderNamed('Parking Lot', boardId);
+    } else {
+      targetId=parentId;
+      var col=_sboardChildRowsOf(parentId).map(function(r){ return r.id; }).filter(function(id){ return kidIds.indexOf(id)===-1; });
+      var at=col.findIndex(function(id){ return String(id)===String(headerRow.id); });
+      at=(at===-1)?col.length:at+1;
+      newOrder=col.slice(0,at).concat(kidIds, col.slice(at));
+    }
+    if(!targetId || String(targetId)===String(headerRow.id)) throw new Error('Could not find a place for those items.');
+    var touched=newOrder?newOrder:kidIds, snaps={};
+    touched.forEach(function(id){ snaps[id]=_sboardSnapshotRow(id); });
+    var upd=await _sb.from('ideas').update({cluster_id:targetId}).in('id',kidIds).select('id');
+    if(upd.error) throw upd.error;
+    if(!upd.data || upd.data.length!==kidIds.length) throw new Error('Save was blocked (not every item moved).');
+    kidIds.forEach(function(id){ _sboardPatchRow(id,{cluster_id:targetId}); });
+    if(newOrder){
+      for(var i=0;i<newOrder.length;i++){
+        var so=await _sb.from('ideas').update({sort_order:i}).eq('id',newOrder[i]).select('id');
+        if(so.error) throw so.error;
+        _sboardPatchRow(newOrder[i],{sort_order:i});
+      }
+    }
+    var afters={}; touched.forEach(function(id){ afters[id]=_sboardSnapshotRow(id); });
+    async function _restore(map){ for(var j=0;j<touched.length;j++){ await _sboardApplyRowSnapshot(touched[j], map[touched[j]]); } }
+    return {undo:function(){ return _restore(snaps); }, redo:function(){ return _restore(afters); }};
+  }
+
   function _sboardConfirmTrashHeader(headerRow){
+    // Oct 23 2026: a header that holds items asks the shared four-button
+    // question first, then deletes the (now empty) header itself.
+    if(_sboardChildRowsOf(headerRow.id).length){
+      _sboardAskContentsFate(headerRow).then(async function(fate){
+        if(!fate){ closeSbDetail(); return; }
+        try{
+          var res=await _sboardApplyContentsFate(headerRow, fate);
+          var _sb=T().sb;
+          await _sboardUnlinkDeadBoards(_sb, [String(headerRow.id)]);
+          var del=await _sb.from('ideas').delete().eq('id',headerRow.id);
+          if(del.error) throw del.error;
+          closeSbDetail();
+          renderSeaBoard(false);
+          _sboardShowToast(fate==='trash' ? 'Header deleted. Its items are in the Trash.' : 'Header deleted. Its items were kept.');
+        }catch(err){
+          var errBox=document.querySelector('.sc-overlay-card');
+          if(errBox) errBox.insertAdjacentHTML('beforeend','<div style="color:#b8562f;font-size:calc(10px * var(--fg-text-scale,1));margin-top:6px">'+(err.message||String(err))+'</div>');
+        }
+      });
+      return;
+    }
     var ov=document.getElementById('sb-detail-overlay');
     var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
     var kids=Object.keys(_sboardAllRowsById||{}).filter(function(k){

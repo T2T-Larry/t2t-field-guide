@@ -167,7 +167,9 @@
     // the board (_sboardOrderBadgeHTML) and in this file's own comments.
     // RANK would suggest importance, which isn't what this number means.
     var viewOtherLabel = isHeaderType ? 'Subber' : 'Header';
-    var viewSwitchDisabled = isHeaderType && isBucket;
+    // Oct 23 2026 (Larry): no longer grayed out when the header holds items -- turning it into a subber now asks what to do with them
+    // (Trash / Parking Lot / Leave here / Cancel), see _sboardAskContentsFate in idea-storyboard-header.js.
+    var viewSwitchDisabled = false;
     // Oct 3 2026 (Larry: "drop IS A completely. Click subber should change text to Header, no extra words. like an on off switch") -- the
     // button IS the switch: it shows what the card is now, one click flips it. No label, no menu. Hover explains the two choices.
     var viewWidgetHTML = '<div class="sb-view-wrap" id="sb-view-wrap">'
@@ -758,9 +760,23 @@
       if(viewSwitchDisabled) return;
       var newType = isHeaderType ? (item.image_url ? 'image' : 'text') : 'header';
       try{
+        var fateRes=null, oldType=item.content_type;
+        if(isHeaderType && isBucket){
+          var fate=await _sboardAskContentsFate(item);
+          if(!fate){ openSbDetail(item); return; }
+          fateRes=await _sboardApplyContentsFate(item, fate);
+        }
         var upd=await _sb.from('ideas').update({content_type:newType}).eq('id',item.id).select();
         if(upd.error) throw upd.error;
         item.content_type=newType;
+        if(fateRes){
+          var _itemId=item.id;
+          async function _setType(t){ var u=await _sb.from('ideas').update({content_type:t}).eq('id',_itemId).select(); if(!u.error){ _sboardPatchRow(_itemId,{content_type:t}); } }
+          _sboardPushAction({label:'Subber',
+            undo:async function(){ await _setType(oldType); await fateRes.undo(); renderSeaBoard(true); },
+            redo:async function(){ await fateRes.redo(); await _setType(newType); renderSeaBoard(true); }});
+          _sboardShowToast('Turned into a subber — Ctrl/Cmd+Z to undo.');
+        }
         renderSeaBoard(true);
         openSbDetail(item);   // reopen this card's back as its new type -- the button now reads the other word
       }catch(err){ if(statusBox) statusBox.textContent=err.message; }
