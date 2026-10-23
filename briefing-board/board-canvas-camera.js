@@ -263,6 +263,50 @@
       fitAll(true);
     }
 
+    // ---- edge auto-pan while dragging a card ---------------------------
+    // Oct 23 2026 (Larry): "Dragging a card to scroll beyond the visible
+    // window often sticks ... can we make the drag work smoothly?" Cards use
+    // the browser's native drag-and-drop, which never scrolls or pans a
+    // transformed canvas by itself. So while a drag that STARTED on this board
+    // is in flight, glide the camera whenever the pointer nears an edge of the
+    // view, faster the closer it gets. Every board on a camera gets this for free.
+    var EDGE_ZONE = 80;      // px from the view edge where the pan starts
+    var EDGE_MAX  = 22;      // px per frame at the very edge
+    var dragPan = { on:false, x:0, y:0, raf:0 };
+
+    function edgeSpeed(pos, lo, hi){
+      if (pos < lo + EDGE_ZONE) return  EDGE_MAX * clamp((lo + EDGE_ZONE - pos)/EDGE_ZONE, 0, 1);
+      if (pos > hi - EDGE_ZONE) return -EDGE_MAX * clamp((pos - (hi - EDGE_ZONE))/EDGE_ZONE, 0, 1);
+      return 0;
+    }
+
+    function dragPanTick(){
+      dragPan.raf = 0;
+      if (!dragPan.on) return;
+      var v = viewSize();
+      var dx = edgeSpeed(dragPan.x, v.left, v.left + v.w);
+      var dy = edgeSpeed(dragPan.y, v.top,  v.top  + v.h);
+      if (dx || dy){ cancelGlide(); panBy(dx, dy); }
+      dragPan.raf = requestAnimationFrame(dragPanTick);
+    }
+
+    function dragPanStop(){
+      dragPan.on = false;
+      if (dragPan.raf){ cancelAnimationFrame(dragPan.raf); dragPan.raf = 0; }
+    }
+
+    document.addEventListener('dragstart', function(e){
+      if (!els.board.contains(e.target)) return;
+      dragPan.on = true; dragPan.x = e.clientX; dragPan.y = e.clientY;
+      if (!dragPan.raf) dragPan.raf = requestAnimationFrame(dragPanTick);
+    }, true);
+    document.addEventListener('dragover', function(e){
+      if (!dragPan.on) return;
+      dragPan.x = e.clientX; dragPan.y = e.clientY;
+    }, true);
+    document.addEventListener('dragend', dragPanStop, true);
+    document.addEventListener('drop', dragPanStop, true);
+
     // ---- setup ---------------------------------------------------------
 
     // The class goes on first: a board's CSS may only give the scroller a
