@@ -2119,6 +2119,18 @@
     ta.classList.toggle('bb-sit-required', need);
     ta.placeholder = need ? 'Required: what\'s stuck and why?' : 'What\'s stuck and why?';
   }
+  // Oct 23 2026 (Larry): RESEARCH - OPTIONS - SOLUTION are the continuation of the Situation for an ISSUE: a horizontal checklist under STUCK SINCE.
+  // Two states each (empty / done, stored as research:done etc. in the same hangup_reasons list). Only shown while ISSUE is the cause.
+  var BB_HANGUP_STEPS=['research','options','solution'];
+  function _bbPaintHangupSteps(c){
+    var box=document.getElementById('bb-d-hangup-steps'); if(!box) return;
+    box.classList.toggle('bb-steps-off', _bbHangupReasonState(c,'issue')==='0');
+    var l=','+String(c.hangupReasons||'')+',';
+    BB_HANGUP_STEPS.forEach(function(k){
+      var b=document.getElementById('bb-d-hs-'+k);
+      if(b) b.setAttribute('data-state', l.indexOf(','+k+':done,')>=0 ? '2' : '0');
+    });
+  }
   function _bbPaintPriorityEye(c){
     var b=document.getElementById('bb-d-pri-eye'); if(!b || !window.FGCardBackOptions) return;
     var off=FGCardBackOptions.isBackOnly(c.frontHidden,'priority'), ic=FGCardBackOptions.eyeIcons;
@@ -2138,6 +2150,25 @@
     });
   }
   function wireHangupReasons(){
+    BB_HANGUP_STEPS.forEach(function(k){
+      var sb_=document.getElementById('bb-d-hs-'+k); if(!sb_) return;
+      sb_.addEventListener('click', async function(){
+        var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
+        var done=(','+String(c.hangupReasons||'')+',').indexOf(','+k+':done,')>=0;
+        var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k && x!==k+':done'; });
+        if(!done) list.push(k+':done');
+        c.hangupReasons=list.join(',');
+        _bbPaintHangupSteps(c);
+        try{
+          var sb=T().sb;
+          if(sb){
+            var res=await sb.from('task_fields').update({hangup_reasons:c.hangupReasons}).eq('idea_id', c.id);
+            if(res.error) console.error('Briefing Board: Hang Up step save failed', res.error);
+          }
+        }catch(e){ console.error('Briefing Board: Hang Up step save failed', e); }
+        _bbSaveLocal(_bbCardsList());
+      });
+    });
     var _sit=document.getElementById('bb-d-situation');
     if(_sit) _sit.addEventListener('input', function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); if(c) _bbPaintSituationNeed(c); });
     ['vision','plan','issue'].forEach(function(k){
@@ -2179,6 +2210,7 @@
         c.hangupReasons=list.join(',');
         btn.setAttribute('data-state', String(next));
         _bbPaintSituationNeed(c);
+        _bbPaintHangupSteps(c);
         var flagOn=(next===1);
         var upd={hangup_reasons:c.hangupReasons};
         if(k==='plan'){ upd.needs_plan=flagOn; c.needsPlan=flagOn; }

@@ -489,19 +489,28 @@
               +'<label class="bb-front-check" id="bb-d-contents-front-row"><input type="checkbox" id="bb-d-contents-front"><span>Show on front</span></label>'
             +'</div>'
             +'<div id="bb-d-hangup-wrap" style="display:none">'
-              // Oct 20 2026 (Larry): LEFT column = STUCK SINCE, then the reasons checklist directly under it; RIGHT column = SITUATION, level with STUCK SINCE and wide
-              // enough that its eyebrow stays on one line. Each reason has THREE states: empty, selected (checked, not complete), complete (checked and struck through).
+              // Oct 20 2026 (Larry): each reason has THREE states: empty, selected (checked, not complete), complete (checked and struck through).
               // The PRIMARY is ultimately responsible for verifying completion, however it is reached; the second check is that confirmation.
+              // Oct 23 2026 (Larry, redesign): LEFT = CAUSE eyebrow over the three badge choices (VISION, PLAN, ISSUE), each a checkbox + badge + eye; the old
+              // wording ("Unclear what is needed" etc.) now shows as a hover tooltip on the badge. RIGHT = SITUATION, with STUCK SINCE directly under it, then
+              // the three ISSUE steps (RESEARCH, OPTIONS, SOLUTION) as a horizontal checklist under STUCK SINCE.
               +'<div class="bb-hangup-body">'
                 +'<div class="bb-hangup-left">'
-                  +'<div class="bb-field bb-inline-field"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
+                  +'<div class="bb-hangup-cause"><label>Cause</label></div>'
                   +'<div class="bb-hangup-checks">'
-                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-vision" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Unclear what is needed</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-vision-badge">VISION</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-vision"></button></div>'
-                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-plan" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Multiple steps needed</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-plan-need">PLAN</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-plan"></button></div>'
-                                        +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-issue" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Something else</span></button><span class="bb-needs-plan-badge bb-hr-badge bb-issue-badge">ISSUE</span><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-issue"></button></div>'
+                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-vision" data-state="0" title="Unclear what is needed"><span class="bb-hr-box"></span><span class="bb-needs-plan-badge bb-hr-badge bb-vision-badge">VISION</span></button><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-vision"></button></div>'
+                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-plan" data-state="0" title="Multiple steps needed"><span class="bb-hr-box"></span><span class="bb-needs-plan-badge bb-hr-badge bb-plan-need">PLAN</span></button><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-plan"></button></div>'
+                    +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-issue" data-state="0" title="Something else is stopping this task: explain it in Situation"><span class="bb-hr-box"></span><span class="bb-needs-plan-badge bb-hr-badge bb-issue-badge">ISSUE</span></button><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-issue"></button></div>'
                   +'</div>'
                 +'</div>'
-                +'<div class="bb-field bb-hangup-sit"><label>Situation</label><textarea id="bb-d-situation" placeholder="What&rsquo;s stuck and why?"></textarea></div>'
+                +'<div class="bb-field bb-hangup-sit"><label>Situation</label><textarea id="bb-d-situation" placeholder="What&rsquo;s stuck and why?"></textarea>'
+                  +'<div class="bb-hangup-since"><label>Stuck since</label><span id="bb-d-hangup-since">&mdash;</span></div>'
+                  +'<div class="bb-hangup-steps" id="bb-d-hangup-steps">'
+                    +'<button type="button" class="bb-hr bb-hs" id="bb-d-hs-research" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Research</span></button>'
+                    +'<button type="button" class="bb-hr bb-hs" id="bb-d-hs-options" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Options</span></button>'
+                    +'<button type="button" class="bb-hr bb-hs" id="bb-d-hs-solution" data-state="0"><span class="bb-hr-box"></span><span class="bb-hr-text">Solution</span></button>'
+                  +'</div>'
+                +'</div>'
               +'</div>'
             +'</div>'
             // Additions, Aug 27 2026 (Larry: "all additions = checkboxes

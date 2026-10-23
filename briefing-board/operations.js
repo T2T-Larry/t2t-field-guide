@@ -1530,11 +1530,11 @@
     });
     _bbPaintHangupEyes(c);
     _bbPaintSituationNeed(c);
+    _bbPaintHangupSteps(c);
     document.getElementById('bb-d-hangup-since').textContent=c.hangupSince||'—';
     // Oct 20 2026 (Larry): a card that bounced back wearing a VISION/PLAN badge keeps the reasons checklist on its back, so the PRIMARY can mark the need complete.
     // Oct 20 2026 (Larry: "TASK card still contains Hang Up contents"): the Hang Up section belongs only to cards sitting in HANG-UPS.
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
-    (function(){ var sEl=document.getElementById('bb-d-hangup-since'); var f=sEl && sEl.closest('.bb-field'); if(f) f.style.display=(c.col==='hangups')?'':'none'; })();
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
     // one of two things depending on whether this card is already
     // linked (c.sourceHeaderId): a linked card opens its existing
