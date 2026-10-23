@@ -2063,11 +2063,28 @@
 
   // Oct 20 2026 (Larry): ONE place for what a column change does to the Hang Up bookkeeping -- every way a card can move (drag, lasso, rollup,
   // reason bounce-back) calls this. Entering HANG-UPS stamps the date and remembers the column it CAME FROM; leaving clears the date.
+  // Oct 23 2026 (Larry): a Hang Up is something we need to talk about, so it is automatically a HEADER in the one tree and its TOPIC. The database does the
+  // work (ensure_hangup_header: finds or creates a header named after the card, directly under the card's current topic, and points the card's TOPIC at it);
+  // running it again changes nothing. Called when a card enters HANG-UPS and whenever a Hang Up card is opened.
+  async function _bbEnsureHangupHeader(c){
+    try{
+      var sb=T().sb; if(!sb || !c || c.col!=='hangups') return;
+      var r=await sb.rpc('ensure_hangup_header', {p_idea:c.id});
+      if(r.error){ console.error('Briefing Board: Hang Up header failed', r.error); return; }
+      if(!r.data) return;
+      var nm=String(c.subject||c.task||'').trim().slice(0,80);
+      if(nm) _bbProjectNameById[r.data]=nm;
+      var changed=(c.projectHeaderId!==r.data);
+      c.projectHeaderId=r.data;
+      if(changed && _bbOpenCardId===c.id) _bbRenderCardProjectField(c);
+    }catch(e){ console.error('Briefing Board: Hang Up header failed', e); }
+  }
   function _bbNoteColumnMove(c, wasCol){
     if(c.col==='hangups' && wasCol!=='hangups'){
       c.hangupSince=_bbToday();
       c.hangupFrom=wasCol||'';
       _bbSaveHangupFrom(c.id, c.hangupFrom);
+      _bbEnsureHangupHeader(c);
     }
     if(wasCol==='hangups' && c.col!=='hangups') c.hangupSince='';
   }

@@ -1536,6 +1536,7 @@
     // Oct 20 2026 (Larry: "TASK card still contains Hang Up contents"): the Hang Up section belongs only to cards sitting in HANG-UPS.
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
     // Oct 23 2026 (Larry): on a Hang Up the TOPIC (ID BAND selector) is the thing, so the separate HEADER row is redundant and not shown; the Task description stays where it is. Nothing stored is cleared.
+    if(c.col==='hangups') _bbEnsureHangupHeader(c);
     var _bbSubjRow=document.getElementById('bb-d-subject-row'); if(_bbSubjRow) _bbSubjRow.style.display = (c.col==='hangups') ? 'none' : '';
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
     // one of two things depending on whether this card is already
