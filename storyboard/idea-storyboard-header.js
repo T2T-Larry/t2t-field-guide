@@ -158,7 +158,7 @@
     var tid=(window.T2TShared && T2TShared.currentTopicId)||null;
     return !headerRow.cluster_id || (!!tid && String(headerRow.cluster_id)===String(tid));
   }
-  function _sboardAskContentsFate(headerRow){
+  function _sboardAskContentsFate(headerRow, title){
     return new Promise(function(resolve){
       var ov=document.getElementById('sb-detail-overlay');
       var safeName=((window.IDBand?IDBand.rowName(headerRow):(headerRow.subject||headerRow.text_content))||'(untitled)').replace(/</g,'&lt;');
@@ -166,11 +166,11 @@
       var canLeave=!_sboardHeaderIsMaster(headerRow);
       var btn='width:100%;margin-bottom:6px';
       ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
-        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">"'+safeName+'" holds '+kids+' item'+(kids===1?'':'s')+'</div>'
-        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">What should happen to them?</div>'
-        +'<button class="sc-ov-btn save" id="sb-fate-trash" style="'+btn+';background:#b8562f;border-color:#b8562f">Trash them</button>'
-        +'<button class="sc-ov-btn save" id="sb-fate-park" style="'+btn+'">Move them to the Parking Lot</button>'
-        +(canLeave?'<button class="sc-ov-btn save" id="sb-fate-leave" style="'+btn+'">Leave them here, beside it</button>':'')
+        +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:8px">'+(title||'Make Header into Subber')+'</div>'
+        +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;margin-bottom:10px">"'+safeName+'" holds '+kids+' item'+(kids===1?'':'s')+'. Where do you want the current subbers?</div>'
+        +(canLeave?'<button class="sc-ov-btn save" id="sb-fate-leave" style="'+btn+'">Leave them here</button>':'')
+        +'<button class="sc-ov-btn save" id="sb-fate-park" style="'+btn+'">Parking Lot</button>'
+        +'<button class="sc-ov-btn save" id="sb-fate-trash" style="'+btn+';background:#b8562f;border-color:#b8562f">Trash</button>'
         +'<button class="sc-ov-btn" id="sb-fate-cancel" style="width:100%">Cancel</button>'
         +'</div>';
       ov.classList.add('active');
@@ -224,7 +224,7 @@
     // Oct 23 2026: a header that holds items asks the shared four-button
     // question first, then deletes the (now empty) header itself.
     if(_sboardChildRowsOf(headerRow.id).length){
-      _sboardAskContentsFate(headerRow).then(async function(fate){
+      _sboardAskContentsFate(headerRow, 'Delete Header').then(async function(fate){
         if(!fate){ closeSbDetail(); return; }
         try{
           var res=await _sboardApplyContentsFate(headerRow, fate);
