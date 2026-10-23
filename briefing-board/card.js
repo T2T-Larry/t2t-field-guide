@@ -2120,7 +2120,7 @@
     ta.placeholder = need ? 'Required: what\'s stuck and why?' : 'What\'s stuck and why?';
   }
   // Oct 23 2026 (Larry): RESEARCH - OPTIONS - SOLUTION are the continuation of the Situation for an ISSUE: a horizontal checklist under STUCK SINCE.
-  // Two states each (empty / done, stored as research:done etc. in the same hangup_reasons list). Only shown while ISSUE is the cause.
+  // Three clicks each, like the cause badges: empty -> check (doing) -> crossed out (done) -> reset; stored as research / research:done in the same hangup_reasons list. Only shown while ISSUE is the cause.
   var BB_HANGUP_STEPS=['research','options','solution'];
   function _bbPaintHangupSteps(c){
     var box=document.getElementById('bb-d-hangup-steps'); if(!box) return;
@@ -2128,7 +2128,7 @@
     var l=','+String(c.hangupReasons||'')+',';
     BB_HANGUP_STEPS.forEach(function(k){
       var b=document.getElementById('bb-d-hs-'+k);
-      if(b) b.setAttribute('data-state', l.indexOf(','+k+':done,')>=0 ? '2' : '0');
+      if(b) b.setAttribute('data-state', l.indexOf(','+k+':done,')>=0 ? '2' : (l.indexOf(','+k+',')>=0 ? '1' : '0'));
     });
   }
   function _bbPaintPriorityEye(c){
@@ -2154,9 +2154,12 @@
       var sb_=document.getElementById('bb-d-hs-'+k); if(!sb_) return;
       sb_.addEventListener('click', async function(){
         var c=_bbFindCardAnywhere(_bbOpenCardId); if(!c) return;
-        var done=(','+String(c.hangupReasons||'')+',').indexOf(','+k+':done,')>=0;
+        // Same three clicks as the cause badges: empty -> check (doing) -> crossed out (done) -> empty (reset).
+        var cur=parseInt(document.getElementById('bb-d-hs-'+k).getAttribute('data-state')||'0',10);
+        var next=(cur+1)%3;
         var list=String(c.hangupReasons||'').split(',').filter(function(x){ return x && x!==k && x!==k+':done'; });
-        if(!done) list.push(k+':done');
+        if(next===1) list.push(k);
+        if(next===2) list.push(k+':done');
         c.hangupReasons=list.join(',');
         _bbPaintHangupSteps(c);
         try{
