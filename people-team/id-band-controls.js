@@ -241,12 +241,30 @@
           if(rowEl && rowEl.scrollIntoView) rowEl.scrollIntoView({block:'center'});
         });
       }
+      // Oct 23 2026 (Larry: "one click to open the topic selector, two clicks to open the back of
+      // the card"). ONE rule for every board's TOPIC: a single click waits a moment (so a second
+      // click can cancel it), then opens the pyramid; a double click never opens the pyramid and
+      // opens the back of the TOPIC's own card (rename, notes...) through cfg.openTopicCard(id).
+      // A board that already wires its own double-click on the TOPIC box leaves cfg.openTopicCard
+      // out: this routine still cancels the pending single click for it.
+      var DBL_MS=260, clickTimer=null;
       trigger.addEventListener('click', function(e){
         e.stopPropagation();
-        var willOpen=menu.hidden;
-        beforeOpen(willOpen ? ids.topicMenu : null);
-        if(!willOpen){ openSeq++; menu.hidden=true; return; }
-        openPyramid();
+        if(clickTimer) return;   // the second click of a double click: the dblclick below handles it
+        clickTimer=setTimeout(function(){
+          clickTimer=null;
+          var willOpen=menu.hidden;
+          beforeOpen(willOpen ? ids.topicMenu : null);
+          if(!willOpen){ openSeq++; menu.hidden=true; return; }
+          openPyramid();
+        }, DBL_MS);
+      });
+      trigger.addEventListener('dblclick', function(e){
+        e.stopPropagation();
+        if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; }
+        openSeq++; menu.hidden=true;
+        var tid=cfg.topicId ? cfg.topicId() : null;
+        if(cfg.openTopicCard && tid) cfg.openTopicCard(tid);
       });
     }
 

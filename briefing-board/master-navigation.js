@@ -1131,6 +1131,17 @@
       goToTopic:function(id){
         if(window.T2TBriefingBoard && window.T2TBriefingBoard.jumpToTopic) window.T2TBriefingBoard.jumpToTopic(id);
       },
+      // Oct 23 2026 (Larry: double-click TOPIC opens the back of the card): the TOPIC is a header
+      // row in the one tree, so its back is the same header card the other boards open.
+      openTopicCard:async function(id){
+        try{
+          var sb=T().sb;
+          var res=sb ? await sb.from('ideas').select('*').eq('id',id).maybeSingle() : null;
+          if(!res || res.error || !res.data){ _bbShowToast('Could not open that topic card.'); return; }
+          if(window.T2TStoryboard && window.T2TStoryboard.openDetail && document.getElementById('sb-detail-overlay')) window.T2TStoryboard.openDetail(res.data);
+          else _bbShowToast('The topic card is not available on this board yet.');
+        }catch(e){ console.warn('Briefing Board: could not open the TOPIC card', e); _bbShowToast('Could not open that topic card.'); }
+      },
       closeOthers:_bbCloseAllDropdowns,
       prepareMenu:_bbSyncMenuTheme,
       toast:_bbShowToast,
