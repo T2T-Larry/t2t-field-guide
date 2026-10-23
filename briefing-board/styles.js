@@ -969,6 +969,7 @@
       +'.bb-hangup-since span{font-family:"Caveat",cursive;font-size:calc(16px * var(--fg-text-scale,1));color:var(--bb-sub)}'
       +'.bb-hangup-steps{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:8px;font-size:calc(12px * var(--fg-text-scale,1));color:#3b2a1a}'
       +'.bb-hangup-steps.bb-steps-off{display:none}'
+      +'#bb-detail-overlay .bb-hangup-steps .bb-hangup-steps-eyebrow{display:inline;margin:0;align-self:center}'
       +'.bb-hangup-sit{flex:1;min-width:0;display:flex;flex-direction:column}'
       +'.bb-hangup-sit label{white-space:nowrap}'
       +'.bb-hangup-sit textarea{flex:1 1 auto;width:100%;min-height:150px;height:100%;box-sizing:border-box;resize:vertical}'
