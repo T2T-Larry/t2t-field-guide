@@ -496,7 +496,7 @@
               // the three ISSUE steps (RESEARCH, OPTIONS, SOLUTION) as a horizontal checklist under STUCK SINCE.
               +'<div class="bb-hangup-body">'
                 +'<div class="bb-hangup-left">'
-                  +'<div class="bb-hangup-cause"><label>Cause</label></div>'
+                  +'<div class="bb-field bb-hangup-cause"><label>Cause</label></div>'
                   +'<div class="bb-hangup-checks">'
                     +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-vision" data-state="0" title="Unclear what is needed"><span class="bb-hr-box"></span><span class="bb-needs-plan-badge bb-hr-badge bb-vision-badge">VISION</span></button><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-vision"></button></div>'
                     +'<div class="bb-hr-row"><button type="button" class="bb-hr" id="bb-d-hr-plan" data-state="0" title="Multiple steps needed"><span class="bb-hr-box"></span><span class="bb-needs-plan-badge bb-hr-badge bb-plan-need">PLAN</span></button><button type="button" class="fg-back-eye bb-hr-eye" id="bb-d-hr-eye-plan"></button></div>'
