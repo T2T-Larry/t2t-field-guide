@@ -934,7 +934,7 @@
       // NEEDS PLAN, Oct 15 2026 -- pink, see-through eyebrow (the card text stays readable under it); a faint pink top edge on the card.
       +'.bb-needs-plan-badge{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:.5px;line-height:1;padding:2px 5px;border-radius:3px;background:rgba(236,72,153,.28);border:1px solid rgba(219,39,119,.75);color:#9d174d;white-space:nowrap}'
       +'.bb-card.bb-needs-plan{box-shadow:inset 0 3px 0 rgba(236,72,153,.6),1px 2px 4px rgba(59,37,16,0.18)}'
-      // Oct 20 2026 (Larry): Hang Up badge colors -- VISION light blue, PLAN the plan brown, DELAY pink (the base), ISSUE red with white text.
+      // Oct 20 2026 (Larry): Hang Up badge colors -- VISION light blue, PLAN the plan brown, ISSUE red with white text (DELAY was dropped Oct 23 2026).
       +'.bb-needs-plan-badge.bb-vision-badge{background:rgba(125,190,240,.4);border-color:#4a90c8;color:#1e4f7a}'
       +'.bb-needs-plan-badge.bb-plan-need{background:#4a2c12;border-color:#3b2210;color:#fff}'
       +'.bb-needs-plan-badge.bb-issue-badge{background:#c0392b;border-color:#991b1b;color:#fff}'

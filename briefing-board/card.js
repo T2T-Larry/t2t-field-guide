@@ -969,7 +969,7 @@
       // already on a card goes invisible just because this shipped.
       needsPlan: !!row.needs_plan,
       needsVision: !!row.needs_vision,
-      hangupReasons: String(row.hangup_reasons||''),   // Oct 20 2026: comma list of vision, plan, delay, issue
+      hangupReasons: String(row.hangup_reasons||''),   // Oct 20 2026: comma list of vision, plan, issue (delay was dropped Oct 23 2026)
       // (traffic light retired Oct 19 2026 -- Larry: it added nothing; the task_fields.light column is no longer used)
       goalHeaderId: row.goal_header_id||null,
       addDue: !!row.adds_due, addRoutine: !!row.adds_routine,
@@ -2057,7 +2057,7 @@
     if(k==='vision' && c.needsVision) return '1';
     if(k==='plan' && c.needsPlan) return '1';
     // ISSUE is the default reason of a Hang Up: with no other reason selected it reads as selected (same rule as the ISSUE badge on the front).
-    if(k==='issue' && !c.needsVision && !c.needsPlan && l.indexOf(',vision,')<0 && l.indexOf(',plan,')<0 && l.indexOf(',delay,')<0 && l.indexOf(',vision:done,')<0 && l.indexOf(',plan:done,')<0 && l.indexOf(',delay:done,')<0) return '1';
+    if(k==='issue' && !c.needsVision && !c.needsPlan && l.indexOf(',vision,')<0 && l.indexOf(',plan,')<0 && l.indexOf(',vision:done,')<0 && l.indexOf(',plan:done,')<0) return '1';
     return '0';
   }
 
@@ -2081,10 +2081,10 @@
     }catch(e){ console.error('Briefing Board: could not save where the Hang Up came from', e); }
   }
   // Oct 20 2026 (Larry): a Hang Up whose only active reasons are VISION and/or PLAN is a momentary stop -- the card goes straight back to the
-  // column it came from, wearing its VISION/PLAN badge, and the work on it is now to develop that vision or plan. DELAY or ISSUE keeps it here.
+  // column it came from, wearing its VISION/PLAN badge, and the work on it is now to develop that vision or plan. ISSUE keeps it here (Oct 23 2026: DELAY was dropped; a missed due date is an ISSUE).
   function _bbShouldBounceBack(c){
     if(c.col!=='hangups') return false;
-    if(_bbHangupReasonState(c,'delay')==='1' || _bbHangupReasonState(c,'issue')==='1') return false;
+    if(_bbHangupReasonState(c,'issue')==='1') return false;
     return _bbHangupReasonState(c,'vision')==='1' || _bbHangupReasonState(c,'plan')==='1';
   }
   function _bbBounceBackColumn(c){
@@ -2112,10 +2112,10 @@
     _bbPersistMergedCardById(c.id);
     if(typeof _bbShowToast==='function') _bbShowToast('Back to '+(BB_MOVE_COL_LABEL[dest]||'where it came from')+' with its badge.');
   }
-  // Oct 20 2026 (Larry): VISION and PLAN need no extra words (the checked reason says it), but DELAY and ISSUE must be explained in Situation.
+  // Oct 20 2026 (Larry): VISION and PLAN need no extra words (the checked reason says it), but ISSUE must be explained in Situation.
   function _bbPaintSituationNeed(c){
     var ta=document.getElementById('bb-d-situation'); if(!ta) return;
-    var need=(_bbHangupReasonState(c,'delay')==='1' || _bbHangupReasonState(c,'issue')==='1') && !String(ta.value||'').trim();
+    var need=(_bbHangupReasonState(c,'issue')==='1') && !String(ta.value||'').trim();
     ta.classList.toggle('bb-sit-required', need);
     ta.placeholder = need ? 'Required: what\'s stuck and why?' : 'What\'s stuck and why?';
   }
@@ -2129,7 +2129,7 @@
   function _bbPaintHangupEyes(c){
     if(!window.FGCardBackOptions) return;
     var hidden=FGCardBackOptions.parseHidden(c.frontHidden), ic=FGCardBackOptions.eyeIcons;
-    ['vision','plan','delay','issue'].forEach(function(k){
+    ['vision','plan','issue'].forEach(function(k){
       var b=document.getElementById('bb-d-hr-eye-'+k); if(!b) return;
       var off=hidden.indexOf(k)>=0;
       b.innerHTML = off ? ic.slash : ic.open;
@@ -2140,7 +2140,7 @@
   function wireHangupReasons(){
     var _sit=document.getElementById('bb-d-situation');
     if(_sit) _sit.addEventListener('input', function(){ var c=_bbFindCardAnywhere(_bbOpenCardId); if(c) _bbPaintSituationNeed(c); });
-    ['vision','plan','delay','issue'].forEach(function(k){
+    ['vision','plan','issue'].forEach(function(k){
       var btn=document.getElementById('bb-d-hr-'+k);
       if(!btn) return;
       // Eyeball beside the badge: shows the badge on the card front (open eye) or on the back only (slashed eye). Same stored list and keys as the four fixed rows.
@@ -2163,8 +2163,8 @@
         var c=_bbFindCardAnywhere(_bbOpenCardId);
         if(!c) return;
         var next=(parseInt(_bbHangupReasonState(c,k),10)+1)%3;
-        // Oct 20 2026 (Larry): "You cannot check ISSUE without a situation statement." DELAY is the same: no check, and no completion, until Situation says what is going on.
-        if((k==='delay' || k==='issue') && next!==0){
+        // Oct 20 2026 (Larry): "You cannot check ISSUE without a situation statement." 
+        if(k==='issue' && next!==0){
           var _sit=document.getElementById('bb-d-situation');
           if(_sit && !String(_sit.value||'').trim()){
             _sit.classList.add('bb-sit-required'); _sit.placeholder='Required: what\'s stuck and why?';
@@ -2194,8 +2194,8 @@
         var nv=document.getElementById('bb-d-needs-vision'); if(nv) nv.checked=!!c.needsVision;
         var np=document.getElementById('bb-d-needs-plan'); if(np) np.checked=!!c.needsPlan;
         _bbSaveLocal(_bbCardsList());
-        // DELAY or ISSUE checked on a card that is not in HANG-UPS: it really is stuck, so it goes there (remembering where it came from).
-        if(next===1 && (k==='delay' || k==='issue') && c.col!=='hangups'){ _bbEnterHangup(c); closeCardDetail(); }
+        // ISSUE checked on a card that is not in HANG-UPS: it really is stuck, so it goes there (remembering where it came from).
+        if(next===1 && k==='issue' && c.col!=='hangups'){ _bbEnterHangup(c); closeCardDetail(); }
         // Bounce-back: only VISION/PLAN active -> straight back to the column it came from, badge on.
         if(_bbShouldBounceBack(c)){ _bbBounceBack(c); closeCardDetail(); }
         renderBoard();
