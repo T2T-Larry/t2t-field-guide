@@ -531,8 +531,7 @@
       if(window.FGCardBackFixedRows && window.FGCardBackOptions && bbw.querySelector('.fg-back-selected')){
         var _idRows=[
           { id:'order', label:'Order',        boxes:['sb-add-order'], eyeKeys:[],        bodies:['sb-order-body'] },
-          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] },
-          { id:'org',   label:'Organization', boxes:['sb-add-org'],   eyeKeys:[],        bodies:['sb-org-body'] }
+          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] }
         ];
         if(document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
         FGCardBackFixedRows.build(bbw, {
@@ -561,6 +560,28 @@
       }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc) ux.appendChild(lw);
+      // The Gear's rows, same as the task card back (Oct 24 2026, Larry: "ALL CARDS are exactly the same EXCEPT for the OPTIONS"): Organization and Links
+      // are Gear rows, built by the same code; their opened bodies drop in underneath inside the Gear.
+      if(ux && window.FGCardBackFixedRows && window.FGCardBackOptions){
+        var _orgW=card.querySelector('#sb-add-org-wrap'), _orgBody=card.querySelector('#sb-org-body');
+        if(_orgBody) ux.appendChild(_orgBody);
+        var _gRows=[{ id:'org', label:'Organization', boxes:['sb-add-org'], eyeKeys:[], bodies:['sb-org-body'] }];
+        if(lw && !isImgSrc) _gRows.push({ id:'links', label:'Links', boxes:['sb-add-links'], eyeKeys:[], bodies:['sb-links-body'] });
+        FGCardBackFixedRows.build(bbw, {
+          key:'idea-gear', rows:_gRows, className:'fg-gear-rows',
+          mount:function(block){ ux.insertBefore(block, ux.firstChild); },
+          getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
+          setHidden: function(arr){
+            var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
+            item.front_hidden=v;
+            T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
+              if(r.error){ item.front_hidden=prev; var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
+              _sboardPatchRow(item.id, patch);
+              renderSeaBoard(true);
+            });
+          }
+        });
+      }
       // A-Z (Oct 17 2026): every card that can hold cards has an A-Z / CUSTOM toggle in its Gear. It orders the cards directly under it
       // (display only). A card with nothing under it can still be set; its tooltip says why nothing moves yet.
       if(ux && isHeaderType && window.T2TCardOrder){

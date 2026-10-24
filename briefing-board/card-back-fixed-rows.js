@@ -46,6 +46,7 @@
       +'.fg-back-util-extra>.bb-addition{margin:0}'
       +'.fg-fixed-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:2px}'
       +'.fg-fixed-row{display:flex;align-items:center;gap:6px;min-height:24px}'
+      +'.fg-back-fixed .fg-fixed-row>label{display:flex!important;align-items:center;gap:7px;margin:0}'
       +'.fg-fixed-row label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
       // Left = the checklist, right = whatever is open (Oct 20 2026). Narrow screens stack them.
