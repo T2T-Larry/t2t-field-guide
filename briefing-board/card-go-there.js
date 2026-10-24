@@ -129,5 +129,11 @@
     if(wrap.contains(e.target)) setGlow(null);
   }, true);
 
-  window.FGBBGoThere={ build:build, afterRender:afterRender };
+  // The card back is built once and reused for every card, so each time a card opens its rows are painted again for that card.
+  function refresh(){
+    var host=document.querySelector('.fg-go-there');
+    if(host) paint(host);
+  }
+
+  window.FGBBGoThere={ build:build, refresh:refresh, afterRender:afterRender };
 })();

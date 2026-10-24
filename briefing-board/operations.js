@@ -1523,6 +1523,7 @@
     document.getElementById('bb-d-added').textContent=c.assigned||'—';
     _bbRenderCardProjectField(c);
     _bbRenderCardPrimaryField(c);
+    if(window.FGBBGoThere) FGBBGoThere.refresh();   // GO THERE rows for this card's badges (Oct 24 2026)
     document.getElementById('bb-d-situation').value=c.situation||'';
     _bbPaintPriorityEye(c);
     ['vision','plan','issue'].forEach(function(k){
