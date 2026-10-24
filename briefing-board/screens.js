@@ -479,7 +479,7 @@
             // SUBJECT exists (no SUBJECT = Task always shows, so a card
             // is never blank). Same Yes/No pill as the Idea Card's own
             // Priority "Show on face of card".
-            +'<div class="bb-field" id="bb-d-subject-row"><label>Header</label><input type="text" id="bb-d-subject" autocomplete="off" placeholder="The header: the face of this card on the board"></div>'
+            +'<div class="bb-field" id="bb-d-subject-row"><label>Subject</label><input type="text" id="bb-d-subject" autocomplete="off" placeholder="The subject: the face of this card on the board"></div>'
             +'<div class="bb-field"><label>Task<span class="bb-added-quiet" id="bb-d-added">&mdash;</span></label><textarea id="bb-d-task"></textarea>'
               // "Show on front" checkbox, Sept 23 2026 -- Larry: "an
               // eyebrow: [checkbox] SHOW ON FRONT in the lower right corner
