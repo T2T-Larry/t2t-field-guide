@@ -180,8 +180,11 @@
     if(rowHidden && trig && trig.parentNode){ if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling); }
     else if(field && wrapEl.parentNode!==field) field.appendChild(wrapEl);
     var chip=document.createElement('button'); chip.type='button'; chip.className='fg-go-chip'+(def?' fg-go-has':'');
-    chip.title='Board type: click to choose where to go';
-    chip.innerHTML='<span>'+esc(def?def.label:'BOARD')+'</span><span aria-hidden="true">▾</span>';
+    if(!def) chip.classList.add('fg-go-empty');
+    chip.title='Workspace: choose a board type to go to, or to start one';
+    chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">\u25BE</span>';
+    var eb=document.createElement('span'); eb.className='fg-go-eyebrow'; eb.textContent='Workspace';
+    wrapEl.appendChild(eb);
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list); });
     wrapEl.appendChild(chip);
     if(def){
