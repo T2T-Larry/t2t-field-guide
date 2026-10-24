@@ -1,9 +1,9 @@
 /* ============================================================
    card-go-there.js -- T2T Field Guide - GO THERE (task card back -> its workspace) and the GLOW that marks where you started
 
-   Oct 24 2026 (Larry): a badge on the front of a task says "there is a workspace for this". The back of a badged task now shows it in
-   ID BAND style: the TASK as the topic, the BADGE as the board type (VISION, PLAN or SEA OF IDEAS), and a magnifying glass GO THERE button that
-   opens that workspace. A task with no badge needs no workspace, so it shows nothing.
+   Oct 24 2026 (Larry): a badge on the front of a task says "there is a workspace for this". The back of a badged task shows a magnifying glass
+   button to the right of the HEADER field (tooltip: Go there, with the board's name) that opens that workspace. A task with no badge needs no
+   workspace, so it shows nothing. A Hang Up hides its HEADER row (its TOPIC is the thing), so there the button sits beside the TOPIC.
    The RETURN button on every board already jumps back here (IDBand.recordReturn / jumpToRecorded), so GO THERE only records the Briefing Board
    as the place to return to. The card you left from GLOWS when you land back: the glow stays until you click anything else on the Briefing
    Board (or the glowing card). It lives in the page's memory only, so it lasts for the current visit and never longer.
@@ -21,12 +21,11 @@
     st.textContent=''
       +'.bb-card.bb-glow{outline:3px solid #f2b705;outline-offset:2px;box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 20px 8px rgba(242,183,5,.7);animation:fg-glow-pulse 2.4s ease-in-out infinite}'
       +'@keyframes fg-glow-pulse{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}'
-      +'.fg-go-there{display:flex;flex-direction:column;gap:3px;width:100%;margin:2px 0 6px}'
-      +'.fg-go-row{display:flex;align-items:center;gap:8px;min-height:28px;padding:3px 6px;border:1px dotted var(--bb-accent);border-radius:6px}'
-      +'.fg-go-topic{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;color:var(--bb-ink)}'
-      +'.fg-go-board{flex:0 0 auto;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
-      +'.fg-go-btn{flex:0 0 auto;display:flex;align-items:center;gap:5px;cursor:pointer;background:transparent;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 8px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
-      +'.fg-go-btn svg{width:14px;height:14px}';
+      +'.fg-go-field{display:flex;align-items:center;gap:6px;width:100%}'
+      +'.fg-go-field>input{flex:1 1 auto;min-width:0}'
+      +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:6px}'
+      +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
+      +'.fg-go-btn svg{width:15px;height:15px}';
     document.head.appendChild(st);
   }
 
@@ -84,32 +83,40 @@
     }
   }
 
-  // The rows on the card back: one per badge. Nothing at all when the task has no badge.
-  function paint(host){
+  // The magnifying glass button(s) on the card back: one per badge, none when the task has no badge.
+  var wrapEl=null;
+  function paint(){
+    if(!wrapEl) return;
     var c=(typeof _bbFindCardAnywhere==='function' && typeof _bbOpenCardId!=='undefined') ? _bbFindCardAnywhere(_bbOpenCardId) : null;
     var list=workspacesOf(c);
-    host.innerHTML='';
-    host.style.display=list.length ? '' : 'none';
-    var name=String((c && (c.subject||c.task))||'').trim()||'This task';
+    wrapEl.innerHTML='';
+    wrapEl.style.display=list.length ? '' : 'none';
+    // Normally right of the HEADER field; a Hang Up hides that row, so the button rides beside the TOPIC instead.
+    var row=document.getElementById('bb-d-subject-row'), field=document.getElementById('fg-go-field');
+    var rowHidden=!row || row.style.display==='none';
+    var trig=document.getElementById('bb-d-project-trigger');
+    if(rowHidden && trig && trig.parentNode){ if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling); }
+    else if(field && wrapEl.parentNode!==field) field.appendChild(wrapEl);
     list.forEach(function(ws){
-      var row=document.createElement('div'); row.className='fg-go-row';
-      row.innerHTML='<span class="fg-go-topic" title="'+esc(name)+'">'+esc(name)+'</span><span class="fg-go-board">'+esc(ws.label)+'</span>';
-      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go there: open this task’s '+ws.label+' workspace';
-      b.innerHTML=GLASS+'<span>Go there</span>';
+      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go there: '+ws.label;
+      b.setAttribute('aria-label','Go there: '+ws.label);
+      b.innerHTML=GLASS;
       b.addEventListener('click', function(e){ e.stopPropagation(); go(c, ws); });
-      row.appendChild(b); host.appendChild(row);
+      wrapEl.appendChild(b);
     });
   }
 
   function build(bbw){
-    if(!bbw || bbw.querySelector('.fg-go-there')) return;
+    if(!bbw || bbw.querySelector('.fg-go-field')) return;
+    var input=bbw.querySelector('#bb-d-subject');
+    if(!input || !input.parentNode) return;
     injectStyle();
-    var host=document.createElement('div'); host.className='fg-go-there';
-    var split=bbw.querySelector('.fg-back-split');
-    if(split && split.parentNode) split.parentNode.insertBefore(host, split); else bbw.appendChild(host);
-    paint(host);
-    // A badge switched on or off while the back is open changes the rows.
-    bbw.addEventListener('change', function(){ setTimeout(function(){ if(host.isConnected) paint(host); }, 60); });
+    var field=document.createElement('div'); field.className='fg-go-field'; field.id='fg-go-field';
+    input.parentNode.insertBefore(field, input); field.appendChild(input);
+    wrapEl=document.createElement('span'); wrapEl.className='fg-go-wrap'; field.appendChild(wrapEl);
+    paint();
+    // A badge switched on or off while the back is open changes the buttons.
+    bbw.addEventListener('change', function(){ setTimeout(paint, 60); });
   }
 
   // Called at the end of every Briefing Board draw: the glow follows its card, and scrolls it into view once after coming back.
@@ -130,10 +137,7 @@
   }, true);
 
   // The card back is built once and reused for every card, so each time a card opens its rows are painted again for that card.
-  function refresh(){
-    var host=document.querySelector('.fg-go-there');
-    if(host) paint(host);
-  }
+  function refresh(){ setTimeout(paint, 0); }   // after the card's other rows (a Hang Up hides the HEADER row) are set
 
   window.FGBBGoThere={ build:build, refresh:refresh, afterRender:afterRender };
 })();
