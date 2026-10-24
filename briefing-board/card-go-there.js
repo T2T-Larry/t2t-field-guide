@@ -1,8 +1,8 @@
 /* ============================================================
    card-go-there.js -- T2T Field Guide - GO THERE (task card back -> its workspace) and the GLOW that marks where you started
 
-   Oct 24 2026 (Larry): every task back looks the same. To the right of the HEADER sits the BOARD TYPE chip: the task's badge (VISION, PLAN or SEA OF
-   IDEAS) is its default board, or BOARD when it has none. Click the chip for the board type dropdown (same list as the ID BAND); picking one goes there and
+   Oct 24 2026 (Larry): every task back looks the same. To the right of the HEADER sits the WORKSPACE board type selector: the task's badge (VISION, PLAN or SEA OF
+   IDEAS) is its default board, or empty when it has none. Click the chip for the board type dropdown (same list as the ID BAND); picking one goes there and
    makes the task's own header on that board if it has none. A magnifying glass beside the chip (tooltip: Go to <board>) jumps straight to the default.
    A Hang Up hides its HEADER row (its TOPIC is the thing), so there the buttons sit beside the TOPIC.
    The RETURN button on every board already jumps back here (IDBand.recordReturn / jumpToRecorded), so GO THERE only records the Briefing Board
@@ -24,7 +24,9 @@
       +'@keyframes fg-glow-pulse{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}'
       +'.fg-go-field{display:flex;align-items:center;gap:6px;width:100%}'
       +'.fg-go-field>input{flex:1 1 auto;min-width:0}'
-      +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:6px}'
+      +'.fg-go-wrap{position:relative;display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:6px}'
+      +'.fg-go-eyebrow{position:absolute;left:0;bottom:100%;margin-bottom:2px;white-space:nowrap;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);pointer-events:none}'
+      +'.fg-go-chip.fg-go-empty{min-width:44px;justify-content:center}'
       +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
       +'.fg-go-btn svg{width:15px;height:15px}'
       +'.fg-go-chip{display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:transparent;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 7px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
@@ -161,7 +163,7 @@
   document.addEventListener('mousedown', function(e){ if(menuEl && !menuEl.contains(e.target) && !(e.target.closest && e.target.closest('.fg-go-chip'))) closeMenu(); }, true);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); }, true);
 
-  // Right of the HEADER: the board type chip (the task's default workspace, or BOARD when it has none) and, when it has one, the magnifying glass.
+  // Right of the HEADER: the board type chip (the task's default workspace, or empty when it has none) and, when it has one, the magnifying glass.
   var wrapEl=null;
   function paint(){
     if(!wrapEl) return;
