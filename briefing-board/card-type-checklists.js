@@ -89,14 +89,14 @@
     if(!card) return;
     _injectStyle();
     var t=typeOf(c), old=card.querySelector('#bb-ct-panel');
-    card.classList.toggle('bb-type-vision', t==='vision');
-    card.classList.toggle('bb-type-plan', t==='plan');
+    // Oct 24 2026 (Larry): the card's color and title say WHERE WE ARE (a Briefing Board task), not where the badge leads. A VISION or PLAN badge
+    // therefore no longer recolors or retitles the back; only the checklist below is added, and the standard rows stay.
+    card.classList.remove('bb-type-vision','bb-type-plan');
     if(t!=='vision' && t!=='plan'){ if(old) old.remove(); return; }
     var T=TYPES[t];
     card.style.setProperty('--ct-accent', T.accent);
     card.style.setProperty('--ct-bg', T.bg);
     card.style.setProperty('--ct-ink', T.ink);
-    var titleEl=card.querySelector('.fg-back-title'); if(titleEl) titleEl.textContent=T.title;
     var panel=old;
     if(!panel){
       panel=document.createElement('div'); panel.id='bb-ct-panel';
