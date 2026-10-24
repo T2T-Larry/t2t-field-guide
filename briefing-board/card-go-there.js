@@ -22,14 +22,18 @@
     st.textContent=''
       +'.bb-card.bb-glow{outline:3px solid #f2b705;outline-offset:2px;box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 20px 8px rgba(242,183,5,.7);animation:fg-glow-pulse 2.4s ease-in-out infinite}'
       +'@keyframes fg-glow-pulse{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}'
-      +'.fg-go-field{display:flex;align-items:center;gap:6px;width:100%}'
-      +'.fg-go-field>input{flex:1 1 auto;min-width:0}'
-      +'.fg-go-wrap{position:relative;display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:6px}'
-      +'.fg-go-eyebrow{position:absolute;left:0;bottom:100%;margin-bottom:2px;white-space:nowrap;font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--bb-sub);pointer-events:none}'
-      +'.fg-go-chip.fg-go-empty{min-width:44px;justify-content:center}'
-      +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
+      +'#bb-d-subject-row.fg-go-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:end}'
+      +'#bb-d-subject-row.fg-go-grid>label{grid-area:1/1}'
+      +'#bb-d-subject-row.fg-go-grid>input{grid-area:2/1;min-width:0}'
+      +'#bb-d-subject-row.fg-go-grid>.fg-go-eyebrow{grid-area:1/2}'
+      +'#bb-d-subject-row.fg-go-grid>.fg-go-wrap{grid-area:2/2}'
+      +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto}'
+      +'.fg-go-wrap.fg-go-float{position:relative;margin-left:6px}'
+      +'.fg-go-eyebrow{white-space:nowrap;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);pointer-events:none}'
+      +'.fg-go-eyebrow.fg-go-floating{position:absolute;left:0;bottom:100%;margin-bottom:2px;color:var(--bb-sub)}'
+      +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
       +'.fg-go-btn svg{width:15px;height:15px}'
-      +'.fg-go-chip{display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:transparent;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 7px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.fg-go-chip{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;background:#fff;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 7px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
       +'.fg-go-chip.fg-go-has{border-style:solid;color:var(--bb-ink)}'
       +'.fg-go-menu{position:fixed;z-index:100000;min-width:150px;display:flex;flex-direction:column;background:#fff;border:1px solid #bbb;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:4px}'
       +'.fg-go-item{display:flex;justify-content:space-between;gap:12px;cursor:pointer;background:transparent;border:0;padding:6px 8px;border-radius:5px;font:inherit;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#222;text-align:left}'
@@ -164,7 +168,18 @@
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); }, true);
 
   // Right of the HEADER: the board type chip (the task's default workspace, or empty when it has none) and, when it has one, the magnifying glass.
-  var wrapEl=null;
+  var wrapEl=null, ebEl=null;
+  // The selector and the glass copy the HEADER field's own box (height, border, corners, text) so they read as one row.
+  function matchField(el, input, minW){
+    try{
+      if(!input || !input.offsetHeight) return;
+      var cs=getComputedStyle(input);
+      el.style.height=cs.height; el.style.boxSizing=cs.boxSizing;
+      el.style.border=cs.border; el.style.borderRadius=cs.borderRadius; el.style.background=cs.backgroundColor||'#fff';
+      el.style.fontSize=cs.fontSize; el.style.fontFamily=cs.fontFamily; el.style.color=cs.color;
+      if(minW) el.style.minWidth=minW;
+    }catch(e){}
+  }
   function paint(){
     if(!wrapEl) return;
     var c=(typeof _bbFindCardAnywhere==='function' && typeof _bbOpenCardId!=='undefined') ? _bbFindCardAnywhere(_bbOpenCardId) : null;
@@ -173,37 +188,54 @@
     if(!c){ wrapEl.style.display='none'; return; }
     wrapEl.style.display='';
     var list=workspacesOf(c), def=list[0]||null;
-    // Normally right of the HEADER field; a Hang Up hides that row, so the buttons ride beside the TOPIC instead.
-    var row=document.getElementById('bb-d-subject-row'), field=document.getElementById('fg-go-field');
+    // Normally right of the HEADER field, with WORKSPACE on the HEADER label's line. A Hang Up hides that row, so the buttons ride beside the TOPIC instead.
+    var row=document.getElementById('bb-d-subject-row'), input=document.getElementById('bb-d-subject');
     var rowHidden=!row || row.style.display==='none';
     var trig=document.getElementById('bb-d-project-trigger');
-    if(rowHidden && trig && trig.parentNode){ if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling); }
-    else if(field && wrapEl.parentNode!==field) field.appendChild(wrapEl);
+    if(rowHidden && trig && trig.parentNode){
+      wrapEl.classList.add('fg-go-float'); ebEl.className='fg-go-eyebrow fg-go-floating';
+      if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling);
+      wrapEl.appendChild(ebEl);
+    } else if(row){
+      wrapEl.classList.remove('fg-go-float'); ebEl.className='fg-go-eyebrow';
+      if(wrapEl.parentNode!==row) row.appendChild(wrapEl);
+      row.appendChild(ebEl);
+      // WORKSPACE takes the HEADER label's own type so the two eyebrows match.
+      try{
+        var lab=row.querySelector('label');
+        if(lab && lab.offsetHeight){
+          var ls=getComputedStyle(lab);
+          ['fontSize','fontWeight','letterSpacing','textTransform','color','lineHeight','fontFamily','marginBottom'].forEach(function(k){ ebEl.style[k]=ls[k]; });
+        }
+      }catch(e){}
+    }
     var chip=document.createElement('button'); chip.type='button'; chip.className='fg-go-chip'+(def?' fg-go-has':'');
     if(!def) chip.classList.add('fg-go-empty');
     chip.title='Workspace: choose a board type to go to, or to start one';
-    chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">\u25BE</span>';
-    var eb=document.createElement('span'); eb.className='fg-go-eyebrow'; eb.textContent='Workspace';
-    wrapEl.appendChild(eb);
+    chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">▾</span>';
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list); });
     wrapEl.appendChild(chip);
+    matchField(chip, input, def?'132px':'60px');
     if(def){
       var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+def.label;
       b.setAttribute('aria-label','Go to '+def.label);
       b.innerHTML=GLASS;
       b.addEventListener('click', function(e){ e.stopPropagation(); go(c, def); });
       wrapEl.appendChild(b);
+      matchField(b, input, '');
+      b.style.background='#fff'; b.style.padding='0 7px';
     }
   }
 
   function build(bbw){
-    if(!bbw || bbw.querySelector('.fg-go-field')) return;
-    var input=bbw.querySelector('#bb-d-subject');
-    if(!input || !input.parentNode) return;
+    if(!bbw || bbw.querySelector('.fg-go-wrap')) return;
+    var input=bbw.querySelector('#bb-d-subject'), row=bbw.querySelector('#bb-d-subject-row');
+    if(!input || !row) return;
     injectStyle();
-    var field=document.createElement('div'); field.className='fg-go-field'; field.id='fg-go-field';
-    input.parentNode.insertBefore(field, input); field.appendChild(input);
-    wrapEl=document.createElement('span'); wrapEl.className='fg-go-wrap'; field.appendChild(wrapEl);
+    row.classList.add('fg-go-grid');
+    ebEl=document.createElement('span'); ebEl.className='fg-go-eyebrow'; ebEl.textContent='Workspace';
+    wrapEl=document.createElement('span'); wrapEl.className='fg-go-wrap';
+    row.appendChild(ebEl); row.appendChild(wrapEl);
     paint();
     // A badge switched on or off while the back is open changes the buttons.
     bbw.addEventListener('change', function(){ setTimeout(paint, 60); });
