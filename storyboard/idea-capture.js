@@ -902,13 +902,26 @@
     el.style.visibility = empty ? 'visible' : 'hidden'; // hidden, not display:none, so the card doesn't jump in height
   }
 
+  // Oct 24 2026 (Larry): the card's KIND (IDEA, TASK, NOTES) is the toggle in the upper left; the ID BAND keeps TOPIC and BOARD, because each kind can go
+  // to more than one board. IDEA: VISION, SEA OF IDEAS. TASK: BRIEFING, PLAN. NOTES: NOTEBOOK (JOURNAL), STORY, JOURNEY. Only the first of each saves today;
+  // the others are listed and say "soon" until their save path is built.
+  function _icLandingBoards(entry){
+    var m={
+      idea:[{label:'VISION'},{label:'SEA OF IDEAS', soon:'Saving straight to the Sea of Ideas is not built yet.'}],
+      task:[{label:'BRIEFING'},{label:'PLAN', soon:'Saving a task straight to a PLAN is not built yet.'}],
+      note:[{label:'NOTEBOOK'},{label:'STORY', soon:'Saving a note straight to a STORY is not built yet.'},{label:'JOURNEY', soon:'Saving a note straight to a JOURNEY is not built yet.'}]
+    };
+    return m[entry]||m.idea;
+  }
+
   // Keeps Board Type and the internal entry flavor in step -- see the
   // comment on _IC_BOARD_KINDS above.
   function _icSetBoardKind(value){
     var k=_IC_BOARD_KINDS.filter(function(x){ return x.value===value && !x.soon; })[0];
     if(!k) return false;
     _icBoardKind=k.value; _icEntryType=k.entry;
-    var txt=document.getElementById('isx-p-board-txt'); if(txt) txt.textContent=k.label;
+    var txt=document.getElementById('isx-p-kind-txt'); if(txt) txt.textContent=k.label;
+    var btxt=document.getElementById('isx-p-board-txt'); if(btxt) btxt.textContent=_icLandingBoards(k.entry)[0].label;
     // Live recolor (Sept 28 2026, Larry): the card wears the color of the
     // board it is going to -- light blue for Blue Sky, tan for Briefing,
     // green for Notebook -- so color always says where the entry lands.
@@ -1397,8 +1410,9 @@
         // Oct 24 2026 (Larry: "What if the NEW cards (+) are the backs of the cards? The title would be a toggle for the kind of card it is"):
         // the title IS the kind -- IDEA, TASK or NOTES -- and clicking it changes the kind (and the card's color). It replaces the old NEW
         // title and the separate board chip. The PRIMARY pick shows on the head button (its tooltip names the person).
-        +'<span class="isx-p-newtitle isx-p-title-toggle" id="isx-p-board" title="Kind of card: click to change"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span><span class="isx-p-caret">▾</span></span>'
+        +'<span class="isx-p-newtitle isx-p-title-toggle" id="isx-p-kind" title="Kind of card: click to change"><span id="isx-p-kind-txt">'+_icBoardKindNow.label+'</span><span class="isx-p-caret">▾</span></span>'
         +'<div class="isx-p-topic isx-p-idfield isx-p-head-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div>'
+        +'<div class="isx-p-idfield isx-p-head-board" id="isx-p-board"><span id="isx-p-board-txt">'+_icLandingBoards(_icEntryType)[0].label+'</span><span class="isx-p-caret">▾</span></div>'
         +'<div class="isx-p-head-btns">'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">👤</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-util-btn" title="Utility" aria-label="Utility">⚙️</button>'
@@ -1445,8 +1459,16 @@
     // card it is (see _IC_BOARD_KINDS). Boards with nothing to save into
     // yet are listed but explain themselves instead of saving elsewhere.
     (function(){
-      var boardEl=document.getElementById('isx-p-board');
+      var boardEl=document.getElementById('isx-p-kind');
       if(!boardEl) return;
+      var boardChip=document.getElementById('isx-p-board');
+      if(boardChip) boardChip.addEventListener('click', function(ev){
+        ev.stopPropagation();
+        var rows=_icLandingBoards(_icEntryType).map(function(b,i){ return {id:String(i), label:b.label+(b.soon?' · soon':''), b:b}; });
+        _icOpenFieldDropdown(boardChip, rows, function(picked){
+          if(picked.b.soon){ _icShowFormatBoundaryMessage(picked.b.soon); return; }
+        });
+      });
       boardEl.addEventListener('click', function(ev){
         ev.stopPropagation();
         var rows=_IC_BOARD_KINDS.map(function(k){ return {id:k.value, label:k.label+(k.soon?' · soon':''), kind:k}; });

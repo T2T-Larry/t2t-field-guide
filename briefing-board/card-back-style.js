@@ -40,10 +40,10 @@
   // decides the type. IDEA = blue sky, STORY = light yellow, JOURNEY = green, GEMS = purple, PLAN = brown. Adding a type = adding a line here.
   var TYPES = {
     idea:    { title:'IDEA',    paper:'#F2F8FD', bg:'#E3F0FA', accent:'#7FB2DD', ink:'#1A3A5C', sub:'#4A6D8C' },
-    story:   { title:'STORY',   paper:'#FFFBE3', bg:'#FFF4B8', accent:'#E3C650', ink:'#5A4A0A', sub:'#8A7420' },
-    journey: { title:'JOURNEY', paper:'#F1F9F1', bg:'#DDF0DD', accent:'#5FAE6A', ink:'#1F4D2A', sub:'#4A7A55' },
-    gems:    { title:'GEMS',    paper:'#F7F2FC', bg:'#E8DDF5', accent:'#9B7BC8', ink:'#3D2466', sub:'#6B5390' },
-    plan:    { title:'PLAN',    paper:'#FBF6EF', bg:'#F7EFE6', accent:'#4A2C12', ink:'#4A2C12', sub:'#7A5A3A' }
+    story:   { title:'NOTES',   paper:'#FFFBE3', bg:'#FFF4B8', accent:'#E3C650', ink:'#5A4A0A', sub:'#8A7420' },
+    journey: { title:'NOTES',   paper:'#F1F9F1', bg:'#DDF0DD', accent:'#5FAE6A', ink:'#1F4D2A', sub:'#4A7A55' },
+    gems:    { title:'NOTES',   paper:'#F7F2FC', bg:'#E8DDF5', accent:'#9B7BC8', ink:'#3D2466', sub:'#6B5390' },
+    plan:    { title:'TASK',    paper:'#FBF6EF', bg:'#F7EFE6', accent:'#4A2C12', ink:'#4A2C12', sub:'#7A5A3A' }
   };
   // What the board's own name (as its ID BAND shows it) means as a card type. A board with no entry here keeps the IDEA look.
   var KIND_TYPE = { 'VISION':'idea', 'IDEA':'idea', 'STORY':'story', 'JOURNEY':'journey', 'GEMS':'gems', 'LIBRARY':'gems', 'PLAN':'plan' };
