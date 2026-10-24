@@ -506,7 +506,15 @@
           var eyeRow=document.createElement('label'); eyeRow.className='bb-front-check'; eyeRow.id='sb-order-front-row';
           eyeRow.innerHTML='<input type="checkbox" id="sb-order-front"><span></span>';
           oc.appendChild(eyeRow);
-          toprow.appendChild(oc);
+          // Oct 24 2026 (Larry): ORDER is one of the OPTIONS, and OPTIONS is an eyebrow header (as on the task card back). That frees the
+          // Priority / Subject line for the WORKSPACE band. Same eyebrow look as the task card's OPTIONS block.
+          var optBlock=document.createElement('div'); optBlock.className='fg-back-fixed fg-idea-options';
+          optBlock.style.cssText='display:flex;flex-direction:column;gap:2px;width:100%;margin:2px 0 6px;padding:4px 0 4px';
+          var optEb=document.createElement('div'); optEb.className='fg-fixed-eyebrow'; optEb.textContent='Options';
+          optEb.style.cssText='font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:2px';
+          optBlock.appendChild(optEb); optBlock.appendChild(oc);
+          var optAnchor=bbw.querySelector('.fg-back-selected') || bbw.querySelector('#sb-swatch-row') || bbw.querySelector('.bb-action-row');
+          if(optAnchor && optAnchor.parentNode) optAnchor.parentNode.insertBefore(optBlock, optAnchor); else bbw.appendChild(optBlock);
         }
         if(viewWrap && arow){
           var slot=document.createElement('div'); slot.className='fg-back-viewslot';
