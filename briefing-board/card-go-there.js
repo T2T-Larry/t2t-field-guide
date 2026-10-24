@@ -216,6 +216,29 @@
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list); });
     wrapEl.appendChild(chip);
     matchField(chip, input, def?'132px':'60px');
+    // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. VISION and PLAN have front badges today.
+    var eyeKey=def ? ({IDEA:'vision', PLAN:'plan'})[def.kind] : null;
+    if(eyeKey && window.FGCardBackOptions){
+      var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-go-eye';
+      var paintEye=function(){
+        var hidden=FGCardBackOptions.parseHidden(c.frontHidden), off=hidden.indexOf(eyeKey)>=0, ic=FGCardBackOptions.eyeIcons;
+        eye.innerHTML=ic ? (off ? ic.slash : ic.open) : (off ? '\u2298' : '\u25C9');
+        eye.classList.toggle('fg-eye-off', off);
+        eye.title=off ? 'Back only: click to also show the badge on the front' : 'Shows on the front: click for back only';
+      };
+      eye.addEventListener('click', function(e){
+        e.stopPropagation();
+        var cur=FGCardBackOptions.parseHidden(c.frontHidden).slice(), i=cur.indexOf(eyeKey);
+        if(i>=0) cur.splice(i,1); else cur.push(eyeKey);
+        c.frontHidden=cur.join(',');
+        if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
+        if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
+        if(typeof renderBoard==='function') renderBoard();
+        paintEye();
+      });
+      paintEye();
+      wrapEl.appendChild(eye);
+    }
     if(def){
       var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+def.label;
       b.setAttribute('aria-label','Go to '+def.label);
