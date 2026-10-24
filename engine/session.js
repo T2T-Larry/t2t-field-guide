@@ -1955,7 +1955,7 @@
     ov.innerHTML='<div class="sc-overlay-card" style="text-align:center">'
       +'<div style="font-family:\'Playfair Display\',serif;font-size:calc(14px * var(--fg-text-scale,1));font-weight:700;color:#1a3a5c;margin-bottom:4px">Name this cluster</div>'
       +'<div style="font-size:calc(11px * var(--fg-text-scale,1));color:#7a6040;font-style:italic;margin-bottom:10px">Skip to keep \u201c'+targetName+'\u201d as the header name \u2014 rename anytime from DETAILS.</div>'
-      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">HEADER:</label>'
+      +'<label style="display:block;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;color:#7a6040;margin-bottom:4px;text-align:left">SUBJECT:</label>'
       +'<input id="isx-stack-name" type="text" placeholder="'+targetName+'" style="width:100%;border:1px solid #cfe4f2;border-radius:8px;padding:8px;font-family:inherit;font-size:calc(13px * var(--fg-text-scale,1));margin-bottom:10px;box-sizing:border-box">'
       +'<div style="display:flex;gap:6px"><button class="sc-ov-btn save" id="isx-stack-save" style="flex:1">Save</button><button class="sc-ov-btn" id="isx-stack-skip" style="flex:1">Skip</button></div>'
       +'</div>';
