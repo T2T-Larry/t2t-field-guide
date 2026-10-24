@@ -60,6 +60,24 @@
   }
   function toast(m){ if(typeof _bbShowToast==='function') _bbShowToast(m); }
 
+  // The header named after the task, searched up to three levels under the card's topic (same reach as ensure_vision_header). null if none.
+  async function findTaskHeader(sb, topicId, name){
+    try{
+      if(!name) return null;
+      var want=name.toLowerCase(), ids=[topicId];
+      for(var d=0; d<3 && ids.length; d++){
+        var r=await sb.from('ideas').select('id,subject,text_content').eq('content_type','header').in('cluster_id', ids);
+        if(r.error || !r.data || !r.data.length) return null;
+        var hit=r.data.filter(function(h){
+          return String(h.subject||'').trim().toLowerCase()===want || String(h.text_content||'').trim().toLowerCase()===want;
+        })[0];
+        if(hit) return hit.id;
+        ids=r.data.map(function(h){ return h.id; });
+      }
+    }catch(e){ console.error('Briefing Board: could not find the task header', e); }
+    return null;
+  }
+
   async function go(c, ws){
     try{
       if(!window.IDBand || !IDBand.goToBoard){ toast('The workspace is not ready yet. Try again in a moment.'); return; }
@@ -68,6 +86,12 @@
       if(ws.kind==='IDEA' && sb){ try{ await sb.rpc('ensure_vision_header', {p_idea:c.id}); }catch(e){} }
       var topicId=c.projectHeaderId;
       if(!topicId){ toast('This task has no TOPIC yet.'); return; }
+      // VISION and PLAN open on the header named after the task (the task is the topic there), not on the card's parent topic.
+      if((ws.kind==='IDEA' || ws.kind==='PLAN') && sb){
+        var own=await findTaskHeader(sb, topicId, String(c.subject||c.task||'').trim());
+        if(own) topicId=own;
+        else if(ws.kind==='IDEA'){ toast('The header for this task is not on the VISION board yet. Try again in a moment.'); return; }
+      }
       var back=returnProjectId();
       if(back) IDBand.recordReturn('BRIEFING BOARD', back);
       // Glow the card you are leaving from; it is still there when RETURN brings you back.
