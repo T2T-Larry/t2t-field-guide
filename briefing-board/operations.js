@@ -1541,9 +1541,10 @@
     // Oct 20 2026 (Larry): a card that bounced back wearing a VISION/PLAN badge keeps the reasons checklist on its back, so the PRIMARY can mark the need complete.
     // Oct 20 2026 (Larry: "TASK card still contains Hang Up contents"): the Hang Up section belongs only to cards sitting in HANG-UPS.
     document.getElementById('bb-d-hangup-wrap').style.display = (c.col==='hangups') ? '' : 'none';
-    // Oct 23 2026 (Larry): on a Hang Up the TOPIC (ID BAND selector) is the thing, so the separate HEADER row is redundant and not shown; the Task description stays where it is. Nothing stored is cleared.
+    // Oct 24 2026 (Larry): "HANG UP card: change it to look like the task card with the HEADER/WORKSPACE band." The HEADER row (with WORKSPACE beside it) now
+    // shows on a Hang Up exactly as on a task; it replaces the Oct 23 rule that hid it.
     if(c.col==='hangups') _bbEnsureHangupHeader(c);
-    var _bbSubjRow=document.getElementById('bb-d-subject-row'); if(_bbSubjRow) _bbSubjRow.style.display = (c.col==='hangups') ? 'none' : '';
+    var _bbSubjRow=document.getElementById('bb-d-subject-row'); if(_bbSubjRow) _bbSubjRow.style.display='';
     // Idea Board button, Aug 11 2026 -- one button, every card, doing
     // one of two things depending on whether this card is already
     // linked (c.sourceHeaderId): a linked card opens its existing

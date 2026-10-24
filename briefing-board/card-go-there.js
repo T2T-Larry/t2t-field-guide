@@ -28,9 +28,7 @@
       +'#bb-d-subject-row.fg-go-grid>.fg-go-eyebrow{grid-area:1/2}'
       +'#bb-d-subject-row.fg-go-grid>.fg-go-wrap{grid-area:2/2}'
       +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto}'
-      +'.fg-go-wrap.fg-go-float{position:relative;margin-left:6px}'
       +'.fg-go-eyebrow{white-space:nowrap;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);pointer-events:none}'
-      +'.fg-go-eyebrow.fg-go-floating{position:absolute;left:0;bottom:100%;margin-bottom:2px;color:var(--bb-sub)}'
       +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
       +'.fg-go-btn svg{width:15px;height:15px}'
       +'.fg-go-chip{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;background:#fff;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 7px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
@@ -207,16 +205,10 @@
     if(!c){ wrapEl.style.display='none'; return; }
     wrapEl.style.display='';
     var list=workspacesOf(c), def=list[0]||null;
-    // Normally right of the HEADER field, with WORKSPACE on the HEADER label's line. A Hang Up hides that row, so the buttons ride beside the TOPIC instead.
+    // Right of the HEADER field, with WORKSPACE on the HEADER label's line. Tasks and Hang Ups look the same (Oct 24 2026).
     var row=document.getElementById('bb-d-subject-row'), input=document.getElementById('bb-d-subject');
-    var rowHidden=!row || row.style.display==='none';
-    var trig=document.getElementById('bb-d-project-trigger');
-    if(rowHidden && trig && trig.parentNode){
-      wrapEl.classList.add('fg-go-float'); ebEl.className='fg-go-eyebrow fg-go-floating';
-      if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling);
-      wrapEl.appendChild(ebEl);
-    } else if(row){
-      wrapEl.classList.remove('fg-go-float'); ebEl.className='fg-go-eyebrow';
+    if(row){
+      ebEl.className='fg-go-eyebrow';
       if(wrapEl.parentNode!==row) row.appendChild(wrapEl);
       row.appendChild(ebEl);
       // WORKSPACE takes the HEADER label's own type so the two eyebrows match.
