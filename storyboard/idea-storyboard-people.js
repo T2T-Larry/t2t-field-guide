@@ -1286,7 +1286,7 @@
       var initials=(parts.length>1 ? parts[0][0]+parts[parts.length-1][0] : name.slice(0,2)).toUpperCase();
       var person={user_id:ins.data.id, name:ins.data.name, email:ins.data.email||'', phone:ins.data.phone||'', initials:initials, is_member:false};
       if(_tmAllMembersCache) _tmAllMembersCache.push(person);
-      if(typeof _bbAllMembersCache!=='undefined' && _bbAllMembersCache) _bbAllMembersCache.push(person);
+      if(window.T2TBriefingBoard && T2TBriefingBoard.pushMemberToCache) T2TBriefingBoard.pushMemberToCache(person);
       _sboardAssignedCache[person.user_id]={name:person.name, initials:initials};
       return {ok:true, person:person};
     }catch(e){ return {ok:false, msg:(e&&e.message)||'Could not add that person.'}; }

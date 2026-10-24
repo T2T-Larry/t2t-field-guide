@@ -9,14 +9,17 @@
    that file was brushing the 2,500-line watch mark, and this list is
    shared by both boards rather than being Master-nav screen code.
 
-   Same shared page scope as the Briefing Board files (no wrapper): it
-   uses T(), _esc, _bbSyncMenuTheme, _bbFetchAllMembers,
-   _bbCurrentUserId and _castAddPerson by their plain names, and every
-   caller reaches _bbOpenCastPickMenu the same way. Load it anywhere
+   Same shared page scope as the other files (no wrapper): it uses T(),
+   _esc and _castAddPerson by their plain names. Everything it needs from
+   the Briefing Board (the member list, who the traveler is, the menu
+   theme) comes through the Briefing Board's front door, public-api.js
+   (window.T2TBriefingBoard) -- Oct 24 2026. Its own names start with
+   _castPick, not the Briefing Board's private _bb prefix; every caller
+   reaches _castPickOpenMenu by that plain name. Load it anywhere
    after supabase-js.js; nothing here runs at load time.
 
    Data: public.cast_for_level(p_level) in Supabase -- see the notes on
-   _bbCastPickRows below.
+   _castPickRows below.
    ============================================================ */
 
   // CAST PICK list -- Sept 22 2026, Larry, Master BB (DOING): "Cast
@@ -66,9 +69,19 @@
   //                  (card_roles.pass_down, "PRIMARY's choice")
   // Plus the traveler themself, so "assign it to me" is always one tap.
   // level: a header id (PROJECT / TOPIC / sub-project); null = MASTER.
-  async function _bbCastPickRows(level){
+  // The Briefing Board's front door (public-api.js). Falls back to harmless
+  // empty answers if the Briefing Board code is not on this page.
+  function _castPickBB(){
+    var BB=window.T2TBriefingBoard||{};
+    return {
+      fetchAllMembers: BB.fetchAllMembers||function(){ return Promise.resolve([]); },
+      currentUserId:   BB.currentUserId||function(){ return Promise.resolve(null); },
+      syncMenuTheme:   BB.syncMenuTheme||function(){}
+    };
+  }
+  async function _castPickRows(level){
     var sb=T().sb; if(!sb) return [];
-    var pool=await _bbFetchAllMembers();
+    var pool=await _castPickBB().fetchAllMembers();
     function lookup(uid){ return (pool||[]).filter(function(p){ return String(p.user_id)===String(uid); })[0]; }
     var bySrc={};
     try{
@@ -76,14 +89,14 @@
       (res.data||[]).forEach(function(r){ if(r.user_id) bySrc[String(r.user_id)]=r.source; });
     }catch(e){ console.warn('Cast list: could not load this level', e); }
     try{
-      var me=(typeof _bbCurrentUserId==='function') ? await _bbCurrentUserId() : null;
+      var me=await _castPickBB().currentUserId();
       if(me && !bySrc[String(me)]) bySrc[String(me)]='here';
     }catch(e){}
     var rows=Object.keys(bySrc).map(function(uid){
       var m=lookup(uid);
       return {user_id:uid, name:m?(m.name||m.email):null, email:m?(m.email||''):'', source:bySrc[uid]};
     }).filter(function(r){ return r.name; });
-    _bbCastFirstNames(rows);
+    _castPickFirstNames(rows);
     rows.sort(function(a,b){
       var c=a.shortName.localeCompare(b.shortName, undefined, {sensitivity:'base'});
       return c || String(a.name).localeCompare(String(b.name));
@@ -93,7 +106,7 @@
   // First names only (Disney style). Two people sharing a first name get
   // their last initial so they can still be told apart ("Bill F." /
   // "Bill K."). An email-only person shows the part before the @.
-  function _bbCastFirstNames(rows){
+  function _castPickFirstNames(rows){
     function parts(r){
       var n=String(r.name||'').trim();
       if(n.indexOf('@')>0 && n.indexOf(' ')<0) n=n.split('@')[0];
@@ -150,14 +163,14 @@
     return {limit:LIMIT, fetch:fetchAll, badgeHTML:badgeHTML, invalidate:function(){ cache=null; }};
   })();
 
-  async function _bbOpenCastPickMenu(menu, anchorEl, opts){
+  async function _castPickOpenMenu(menu, anchorEl, opts){
     opts=opts||{};
     // The Idea Board can open this before the Briefing Board screen has
     // ever been built -- make sure the list's shared look is on the page.
     if(typeof injectBriefingBoardStyles==='function') injectBriefingBoardStyles();
     if(menu.parentElement!==document.body) document.body.appendChild(menu);
     menu.classList.add('bb-cdrop-menu');
-    _bbSyncMenuTheme(menu);
+    _castPickBB().syncMenuTheme(menu);
     // Clicks inside the list (checkboxes, the add form's input) must not
     // reach the page-level "click anywhere closes every dropdown" listener.
     menu.onclick=function(e){ e.stopPropagation(); };
@@ -174,17 +187,17 @@
     menu.innerHTML='<div class="bb-cdrop-row" style="cursor:default;opacity:.6">Loading…</div>';
     menu.hidden=false;
     position();
-    var rows=await _bbCastPickRows(opts.level||null);
+    var rows=await _castPickRows(opts.level||null);
     if(menu.hidden) return; // closed while loading
     var selected=opts.selectedUid ? String(opts.selectedUid) : null;
     // Whoever's already picked always shows (checked), even if they
     // don't otherwise belong to this level.
     if(selected && !rows.some(function(r){ return String(r.user_id)===selected; })){
-      var pool0=await _bbFetchAllMembers();
+      var pool0=await _castPickBB().fetchAllMembers();
       var pm=(pool0||[]).filter(function(p){ return String(p.user_id)===selected; })[0];
       if(pm){
         rows.push({user_id:selected, name:pm.name||pm.email, email:pm.email||'', source:'here'});
-        _bbCastFirstNames(rows);
+        _castPickFirstNames(rows);
         rows.sort(function(a,b){ return a.shortName.localeCompare(b.shortName, undefined, {sensitivity:'base'}) || String(a.name).localeCompare(String(b.name)); });
       }
     }
@@ -213,7 +226,7 @@
         if(opts.onPick) opts.onPick(person);
       },
       onClear: opts.onClear ? function(){ opts.onClear(); } : null,
-      loadPool: function(){ return _bbFetchAllMembers(); },
+      loadPool: function(){ return _castPickBB().fetchAllMembers(); },
       addPerson: (typeof _castAddPerson==='function') ? _castAddPerson : null,
       close: close,
       onResize: position

@@ -128,13 +128,32 @@
     return _bbBulkMoveSelectedTo(col);
   };
 
-  BB.hasCastPickMenu=function(){ return typeof _bbOpenCastPickMenu==='function'; };
+  // People helpers for the CAST side (Oct 24 2026 -- Master BB cards "_castAddPerson bypasses BB
+  // public-api" and "cast-pick-list.js uses BB's _bb prefix"). The CAST code used to reach the
+  // Briefing Board's private member list, user lookup and menu-theme helper by name; it now
+  // asks the front door, so a rename inside the Briefing Board only has to be followed here.
+  BB.fetchAllMembers=function(){
+    return (typeof _bbFetchAllMembers==='function') ? _bbFetchAllMembers() : Promise.resolve([]);
+  };
+  BB.currentUserId=function(){
+    return (typeof _bbCurrentUserId==='function') ? _bbCurrentUserId() : Promise.resolve(null);
+  };
+  BB.syncMenuTheme=function(menu){
+    if(typeof _bbSyncMenuTheme==='function') _bbSyncMenuTheme(menu);
+  };
+  // Add a freshly created person to the Briefing Board's member list, if it has been loaded.
+  BB.pushMemberToCache=function(person){
+    if(typeof _bbAllMembersCache!=='undefined' && _bbAllMembersCache){ _bbAllMembersCache.push(person); return true; }
+    return false;
+  };
+
+  BB.hasCastPickMenu=function(){ return typeof _castPickOpenMenu==='function'; };
 
   // The one shared CAST PICK list (same list the BB back-of-card head icon opens).
   // Returns false if the list isn't available on this page.
   BB.openCastPickMenu=function(menu, anchorEl, opts){
-    if(typeof _bbOpenCastPickMenu!=='function') return false;
-    _bbOpenCastPickMenu(menu, anchorEl, opts);
+    if(typeof _castPickOpenMenu!=='function') return false;
+    _castPickOpenMenu(menu, anchorEl, opts);
     return true;
   };
 

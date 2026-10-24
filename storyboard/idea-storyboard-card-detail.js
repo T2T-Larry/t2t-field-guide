@@ -351,7 +351,7 @@
       // button as the Briefing Card's own back-of-card PRIMARY
       // (bb-d-primary-trigger, briefing-board-master.js), same line as
       // SUBJECT, right after it. Reuses the one shared CAST PICK list
-      // (_bbOpenCastPickMenu, cast-pick-list.js) and the card-type-
+      // (_castPickOpenMenu, cast-pick-list.js) and the card-type-
       // agnostic T2TStoryboard.assignPrimaryDirect (defaults to 'idea')
       // -- see _sbRenderCardPrimaryField below, wired the same way
       // _bbRenderCardPrimaryField wires the Briefing Card's.
@@ -649,7 +649,7 @@
     // PRIMARY head icon, Sept 26 2026 -- see the HTML comment on the
     // SUBJECT field above for the "why." Mirrors _bbRenderCardPrimaryField
     // (briefing-board-master.js) as closely as possible: same shared CAST
-    // PICK list (_bbOpenCastPickMenu, cast-pick-list.js), same paint
+    // PICK list (_castPickOpenMenu, cast-pick-list.js), same paint
     // helper (_bbPaintPrimaryTrigger), same card-type-agnostic
     // T2TStoryboard.assignPrimaryDirect (defaults to 'idea'). Scoped by
     // this card's own PROJECT (_sboardCurrentProjectRow -- the same

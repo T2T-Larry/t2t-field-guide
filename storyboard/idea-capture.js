@@ -1151,7 +1151,7 @@
       // new card must look exactly like cast view dropdown on BB. Concept
       // is to include everyone who is currently on some card...and have
       // option to add name." Now opens the one shared CAST PICK list
-      // (_bbOpenCastPickMenu, briefing-board-master-nav.js) -- the same
+      // (_castPickOpenMenu, briefing-board-master-nav.js) -- the same
       // list the back-of-card PRIMARY head icon opens, so the two can't
       // drift apart again. VIEW's exact look (checkbox rows, dark board
       // skin), everyone who holds a role on any card, and a (+) that

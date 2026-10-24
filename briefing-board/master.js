@@ -1179,7 +1179,7 @@
   // pattern -- but single-select (picking a name assigns PRIMARY and
   // closes immediately) and reads/writes this one card's own PRIMARY
   // instead of the board-wide VIEW filter. (List itself moved into the
-  // shared _bbOpenCastPickMenu later on Sept 22 -- see openMenu below.)
+  // shared _castPickOpenMenu later on Sept 22 -- see openMenu below.)
   async function _bbRenderCardPrimaryField(c){
     var trigger=document.getElementById('bb-d-primary-trigger'), menu=document.getElementById('bb-d-primary-menu');
     if(!trigger || !menu) return;
@@ -1195,11 +1195,11 @@
     await _bbPaintPrimaryTrigger(trigger, currentUid);
 
     // Sept 22 2026 (later) -- now opens the one shared CAST PICK list
-    // (_bbOpenCastPickMenu, briefing-board-master-nav.js), the same one
+    // (_castPickOpenMenu, briefing-board-master-nav.js), the same one
     // the New Card popup uses: VIEW's exact look, everyone on any card,
     // plus a (+) to find any T2T member. See that function for the why.
     function openMenu(){
-      _bbOpenCastPickMenu(menu, trigger, {
+      _castPickOpenMenu(menu, trigger, {
         level: c.projectHeaderId||null,   // project-level Cast, Sept 23 2026
         selectedUid: currentUid,
         onPick: async function(person){

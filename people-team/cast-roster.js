@@ -61,7 +61,7 @@
    as PRIMARY.
 
    Self-contained (own IIFE, own styles). Uses window.T2T.sb,
-   T2TPriority, T2TLoad, _bbCastFirstNames and _bbOpenCastPickMenu
+   T2TPriority, T2TLoad, _castPickFirstNames and _castPickOpenMenu
    when loaded. Exposes window.CastRoster.open(topicId).
 
    Sept 26 2026 (Master BB "CAST Storyboard" card, first pass): added a
@@ -281,7 +281,7 @@
   }
   function _nameAndSortPeople(people){
     var rows=people.map(function(p){ return {name:p.name, _p:p}; });
-    if(typeof window._bbCastFirstNames==='function'){ try{ window._bbCastFirstNames(rows); }catch(e){} }
+    if(typeof window._castPickFirstNames==='function'){ try{ window._castPickFirstNames(rows); }catch(e){} }
     rows.forEach(function(r){ r._p.shortName=r.shortName||String(r.name).split(/\s+/)[0]; });
     people.sort(function(a,b){ return (_rank(a)-_rank(b)) || a.shortName.localeCompare(b.shortName, undefined, {sensitivity:'base'}); });
   }
@@ -818,13 +818,13 @@
   }
 
   function _addPerson(anchor, lv){
-    if(typeof window._bbOpenCastPickMenu!=='function'){ _flash('The Cast list isn\'t loaded on this page.'); return; }
+    if(typeof window._castPickOpenMenu!=='function'){ _flash('The Cast list isn\'t loaded on this page.'); return; }
     _closePop();
     var menu=document.createElement('div');
     menu.id='cr-pop'; menu.className='cr-pophost';
     menu.style.zIndex='10002';
     document.body.appendChild(menu);
-    window._bbOpenCastPickMenu(menu, anchor, {
+    window._castPickOpenMenu(menu, anchor, {
       level: lv.id,
       onPick: async function(person){
         try{ menu.remove(); }catch(e){}

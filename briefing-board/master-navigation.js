@@ -2072,7 +2072,7 @@
   }
 
   // CAST PICK list moved to cast-pick-list.js, Sept 23 2026 (project-level
-  // Cast). Same shared page scope -- _bbOpenCastPickMenu is still called
+  // Cast). Same shared page scope -- _castPickOpenMenu is still called
   // by its plain name from every file that used it.
 
   function wireTopicBar(){
