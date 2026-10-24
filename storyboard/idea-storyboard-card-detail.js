@@ -339,7 +339,7 @@
             + '<div class="bb-field sb-stepdone-field"><label class="bb-front-check"><input type="checkbox" id="sb-stepdone-input"'+(item.step_done?' checked':'')+'><span>Step done</span></label></div>'
           : '')
       + '</div>'
-      + apexTag
+      // The TOP LEVEL caption is gone from the back (Oct 24 2026, Larry: the Subject band is the same on every card); the ID Band's TOPIC already shows the root.
       // SUBJECT + contents on face, Sept 22 2026 (Larry: "Idea Board
       // should have the same Subject with optional content on face" --
       // same as the Briefing Card). Laid out exactly like the Briefing
