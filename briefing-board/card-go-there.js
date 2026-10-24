@@ -1,9 +1,10 @@
 /* ============================================================
    card-go-there.js -- T2T Field Guide - GO THERE (task card back -> its workspace) and the GLOW that marks where you started
 
-   Oct 24 2026 (Larry): a badge on the front of a task says "there is a workspace for this". The back of a badged task shows a magnifying glass
-   button to the right of the HEADER field (tooltip: Go there, with the board's name) that opens that workspace. A task with no badge needs no
-   workspace, so it shows nothing. A Hang Up hides its HEADER row (its TOPIC is the thing), so there the button sits beside the TOPIC.
+   Oct 24 2026 (Larry): every task back looks the same. To the right of the HEADER sits the BOARD TYPE chip: the task's badge (VISION, PLAN or SEA OF
+   IDEAS) is its default board, or BOARD when it has none. Click the chip for the board type dropdown (same list as the ID BAND); picking one goes there and
+   makes the task's own header on that board if it has none. A magnifying glass beside the chip (tooltip: Go to <board>) jumps straight to the default.
+   A Hang Up hides its HEADER row (its TOPIC is the thing), so there the buttons sit beside the TOPIC.
    The RETURN button on every board already jumps back here (IDBand.recordReturn / jumpToRecorded), so GO THERE only records the Briefing Board
    as the place to return to. The card you left from GLOWS when you land back: the glow stays until you click anything else on the Briefing
    Board (or the glowing card). It lives in the page's memory only, so it lasts for the current visit and never longer.
@@ -25,7 +26,13 @@
       +'.fg-go-field>input{flex:1 1 auto;min-width:0}'
       +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;margin-left:6px}'
       +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
-      +'.fg-go-btn svg{width:15px;height:15px}';
+      +'.fg-go-btn svg{width:15px;height:15px}'
+      +'.fg-go-chip{display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:transparent;border:1px dashed var(--bb-accent);border-radius:6px;padding:3px 7px;font:inherit;font-size:calc(10px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-sub)}'
+      +'.fg-go-chip.fg-go-has{border-style:solid;color:var(--bb-ink)}'
+      +'.fg-go-menu{position:fixed;z-index:100000;min-width:150px;display:flex;flex-direction:column;background:#fff;border:1px solid #bbb;border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.25);padding:4px}'
+      +'.fg-go-item{display:flex;justify-content:space-between;gap:12px;cursor:pointer;background:transparent;border:0;padding:6px 8px;border-radius:5px;font:inherit;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#222;text-align:left}'
+      +'.fg-go-item:hover{background:#eef3fb}'
+      +'.fg-go-tick{color:#2d7a3d}';
     document.head.appendChild(st);
   }
 
@@ -78,28 +85,52 @@
     return null;
   }
 
+  // The header named after the task: found, or made under the card's topic (same columns ensure_vision_header fills). null if it could not be made.
+  async function ensureOwnHeader(sb, c, topicId, name){
+    var have=await findTaskHeader(sb, topicId, name);
+    if(have) return have;
+    var me=await sb.from('ideas').select('user_id,project_id').eq('id', c.id).limit(1);
+    var row=me && me.data && me.data[0];
+    if(!row) return null;
+    var ins=await sb.from('ideas').insert({user_id:row.user_id, content_type:'header', text_content:name, cluster_id:topicId, project_id:row.project_id, topic_scope_id:row.project_id}).select('id').limit(1);
+    if(ins.error){ console.error('Briefing Board: could not add the task header', ins.error); return null; }
+    return (ins.data && ins.data[0] && ins.data[0].id) || null;
+  }
+
+  // Go to a board type for this task. ws = {kind, label}. A task with no workspace there gets one (its own header on that board), and VISION / PLAN
+  // also put their badge on the card, so the front always tells the truth about where the task has workspaces.
   async function go(c, ws){
     try{
       if(!window.IDBand || !IDBand.goToBoard){ toast('The workspace is not ready yet. Try again in a moment.'); return; }
       var sb=(typeof T==='function' && T().sb) || null;
-      if(c.col==='hangups' && typeof _bbEnsureHangupHeader==='function') await _bbEnsureHangupHeader(c);
-      if(ws.kind==='IDEA' && sb){ try{ await sb.rpc('ensure_vision_header', {p_idea:c.id}); }catch(e){} }
+      var isHang=(c.col==='hangups');
+      if(isHang && typeof _bbEnsureHangupHeader==='function') await _bbEnsureHangupHeader(c);
       var topicId=c.projectHeaderId;
       if(!topicId){ toast('This task has no TOPIC yet.'); return; }
-      // VISION and PLAN open on the header named after the task (the task is the topic there), not on the card's parent topic.
-      if((ws.kind==='IDEA' || ws.kind==='PLAN') && sb){
-        var own=await findTaskHeader(sb, topicId, String(c.subject||c.task||'').trim());
-        if(own) topicId=own;
-        else if(ws.kind==='IDEA'){ toast('The header for this task is not on the VISION board yet. Try again in a moment.'); return; }
+      var target=topicId;
+      // A Hang Up's TOPIC already is its own header. Any other task opens on the header named after it (the task is the topic there).
+      if(!isHang && sb){
+        var name=String(c.subject||c.task||'').trim();
+        if(!name){ toast('Give this task a header first.'); return; }
+        if(ws.kind==='IDEA'){ try{ await sb.rpc('ensure_vision_header', {p_idea:c.id}); }catch(e){} c.needsVision=true; }
+        var own=await ensureOwnHeader(sb, c, topicId, name);
+        if(!own){ toast('That workspace did not open. Try again in a moment.'); return; }
+        target=own;
+        if(ws.kind==='PLAN' && !c.needsPlan && !c.goalHeaderId){
+          c.needsPlan=true;
+          try{ await sb.from('task_fields').update({needs_plan:true}).eq('idea_id', c.id); }catch(e){ console.error('Briefing Board: PLAN badge save failed', e); }
+        }
+        if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
       }
       var back=returnProjectId();
       if(back) IDBand.recordReturn('BRIEFING BOARD', back);
       // Glow the card you are leaving from; it is still there when RETURN brings you back.
       if(typeof closeCardDetail==='function') closeCardDetail();
+      if(typeof renderBoard==='function') renderBoard();
       setGlow(c.id);
       var ok;
-      if(ws.kind==='SEA' && typeof _bbOpenHangupSea==='function'){ await _bbOpenHangupSea(c); ok=true; }
-      else ok=await IDBand.goToBoard(ws.kind, topicId);
+      if(isHang && ws.kind==='SEA' && typeof _bbOpenHangupSea==='function'){ await _bbOpenHangupSea(c); ok=true; }
+      else ok=await IDBand.goToBoard(ws.kind, target);
       if(ok===false){ setGlow(null); toast('That workspace did not open. Try again in a moment.'); }
     }catch(e){
       console.error('Briefing Board: GO THERE failed', e);
@@ -107,27 +138,57 @@
     }
   }
 
-  // The magnifying glass button(s) on the card back: one per badge, none when the task has no badge.
+  // The board type dropdown: the same list the ID BAND offers, minus the board we are standing on. A tick marks the ones this task already has.
+  var menuEl=null;
+  function closeMenu(){ if(menuEl){ menuEl.remove(); menuEl=null; } }
+  function openMenu(anchor, c, have){
+    closeMenu();
+    var kinds=(window.IDBand && IDBand.BOARD_KINDS ? IDBand.BOARD_KINDS : []).filter(function(k){ return k.value!=='BRIEFING BOARD'; });
+    if(!kinds.length) return;
+    menuEl=document.createElement('div'); menuEl.className='fg-go-menu';
+    kinds.forEach(function(k){
+      var on=have.some(function(w){ return w.kind===k.value; });
+      var it=document.createElement('button'); it.type='button'; it.className='fg-go-item';
+      it.innerHTML='<span>'+esc(k.label)+'</span>'+(on?'<span class="fg-go-tick">✓</span>':'');
+      it.addEventListener('click', function(e){ e.stopPropagation(); closeMenu(); go(c, {kind:k.value, label:k.label}); });
+      menuEl.appendChild(it);
+    });
+    document.body.appendChild(menuEl);
+    var r=anchor.getBoundingClientRect();
+    menuEl.style.left=Math.max(8, Math.min(r.left, window.innerWidth-menuEl.offsetWidth-8))+'px';
+    menuEl.style.top=(r.bottom+4)+'px';
+  }
+  document.addEventListener('mousedown', function(e){ if(menuEl && !menuEl.contains(e.target) && !(e.target.closest && e.target.closest('.fg-go-chip'))) closeMenu(); }, true);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); }, true);
+
+  // Right of the HEADER: the board type chip (the task's default workspace, or BOARD when it has none) and, when it has one, the magnifying glass.
   var wrapEl=null;
   function paint(){
     if(!wrapEl) return;
     var c=(typeof _bbFindCardAnywhere==='function' && typeof _bbOpenCardId!=='undefined') ? _bbFindCardAnywhere(_bbOpenCardId) : null;
-    var list=workspacesOf(c);
+    closeMenu();
     wrapEl.innerHTML='';
-    wrapEl.style.display=list.length ? '' : 'none';
-    // Normally right of the HEADER field; a Hang Up hides that row, so the button rides beside the TOPIC instead.
+    if(!c){ wrapEl.style.display='none'; return; }
+    wrapEl.style.display='';
+    var list=workspacesOf(c), def=list[0]||null;
+    // Normally right of the HEADER field; a Hang Up hides that row, so the buttons ride beside the TOPIC instead.
     var row=document.getElementById('bb-d-subject-row'), field=document.getElementById('fg-go-field');
     var rowHidden=!row || row.style.display==='none';
     var trig=document.getElementById('bb-d-project-trigger');
     if(rowHidden && trig && trig.parentNode){ if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling); }
     else if(field && wrapEl.parentNode!==field) field.appendChild(wrapEl);
-    list.forEach(function(ws){
-      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+ws.label;
-      b.setAttribute('aria-label','Go to '+ws.label);
+    var chip=document.createElement('button'); chip.type='button'; chip.className='fg-go-chip'+(def?' fg-go-has':'');
+    chip.title='Board type: click to choose where to go';
+    chip.innerHTML='<span>'+esc(def?def.label:'BOARD')+'</span><span aria-hidden="true">▾</span>';
+    chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list); });
+    wrapEl.appendChild(chip);
+    if(def){
+      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+def.label;
+      b.setAttribute('aria-label','Go to '+def.label);
       b.innerHTML=GLASS;
-      b.addEventListener('click', function(e){ e.stopPropagation(); go(c, ws); });
+      b.addEventListener('click', function(e){ e.stopPropagation(); go(c, def); });
       wrapEl.appendChild(b);
-    });
+    }
   }
 
   function build(bbw){
