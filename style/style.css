@@ -835,6 +835,8 @@ body.t2t-bare-screen{background:#d0d0d0!important}
   .isx-p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px;cursor:grab;user-select:none}
   .isx-p-newtitle{font-size:calc(13px * var(--fg-text-scale,1));font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--isx-navy);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .isx-p-title-toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .isx-p-title-toggle:hover{opacity:.7}
   .isx-p-head-btns{display:flex;align-items:center;gap:6px;flex-shrink:0}
   .isx-p-hbtn{width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;box-sizing:border-box;
     background:#fff;border:1.5px solid var(--isx-navy);border-radius:6px;cursor:pointer;color:var(--isx-navy);

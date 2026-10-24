@@ -76,9 +76,9 @@
     // Oct 2 2026 -- Board Type trial (Larry): the band's Board Type is the
     // kind of input, IDEA - TASK - NOTES, same three words as every board's
     // ID Band. Each still lands where it did: Blue Sky, Briefing, Notebook.
-    {value:'IDEA',           label:'VISION', entry:'idea'},   // Oct 21 2026 (Larry): the band names the board, and the Blue Sky board is VISION
+    {value:'IDEA',           label:'IDEA',   entry:'idea'},   // Oct 24 2026 (Larry): the title of the NEW card is the kind toggle -- IDEA, TASK or NOTES
     {value:'BRIEFING BOARD', label:'TASK',  entry:'task'},
-    {value:'NOTEBOOK',       label:'NOTES', entry:'note'}
+    {value:'NOTEBOOK',       label:'NOTES',  entry:'note'}
   ];
 
   // ── NEW card fields, Sept 19 2026 (Larry's "NEW CARD" spec) ──
@@ -585,8 +585,6 @@
     if(subjEl) subjEl.value='';
     // The head button's pick is spent once the entry is saved (see
     // _icMaybeApplyCast), so the band's NEW chip goes back to NEW too.
-    var newChip=document.getElementById('isx-p-newchip-txt');
-    if(newChip) newChip.textContent='NEW';
     var castBtnReset=document.getElementById('isx-p-cast-btn');
     if(castBtnReset){ castBtnReset.classList.remove('on'); castBtnReset.title='Pick who’s PRIMARY'; }
     _icSyncKindLine();
@@ -1396,9 +1394,11 @@
       // bb mode it is fixed to BRIEFING, since everything opened from
       // the Briefing Board saves to it.
       +'<div class="isx-p-head" id="isx-p-head">'
-        +'<span class="isx-p-newtitle" id="isx-p-newchip-txt">NEW</span>'
+        // Oct 24 2026 (Larry: "What if the NEW cards (+) are the backs of the cards? The title would be a toggle for the kind of card it is"):
+        // the title IS the kind -- IDEA, TASK or NOTES -- and clicking it changes the kind (and the card's color). It replaces the old NEW
+        // title and the separate board chip. The PRIMARY pick shows on the head button (its tooltip names the person).
+        +'<span class="isx-p-newtitle isx-p-title-toggle" id="isx-p-board" title="Kind of card: click to change"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span><span class="isx-p-caret">▾</span></span>'
         +'<div class="isx-p-topic isx-p-idfield isx-p-head-topic" id="isx-p-topic"><span id="isx-p-topic-txt">'+_icEsc(_icTopicLabel!=='-' ? _icTopicLabel : _icProjectLabel)+'</span><span class="isx-p-caret">▾</span></div>'
-        +'<div class="isx-p-idfield isx-p-head-board" id="isx-p-board"><span id="isx-p-board-txt">'+_icBoardKindNow.label+'</span><span class="isx-p-caret">▾</span></div>'
         +'<div class="isx-p-head-btns">'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-cast-btn" title="Pick who’s PRIMARY" aria-label="Pick who’s PRIMARY">👤</button>'
           +'<button class="isx-p-hbtn" type="button" id="isx-p-util-btn" title="Utility" aria-label="Utility">⚙️</button>'
@@ -1496,8 +1496,6 @@
         if(!castBtn) return;
         castBtn.classList.toggle('on', !!_icCastPersonId);
         castBtn.title=_icCastPersonId ? ('PRIMARY: '+_icCastPersonName+' — click to change') : 'Pick who’s PRIMARY';
-        var chip=document.getElementById('isx-p-newchip-txt');
-        if(chip) chip.textContent=_icCastPersonId ? String(_icCastPersonName||'NEW').trim().split(/\s+/)[0] : 'NEW';
       }
       if(castBtn) castBtn.onclick=function(ev){
         ev.stopPropagation();
