@@ -506,15 +506,15 @@
           var eyeRow=document.createElement('label'); eyeRow.className='bb-front-check'; eyeRow.id='sb-order-front-row';
           eyeRow.innerHTML='<input type="checkbox" id="sb-order-front"><span></span>';
           oc.appendChild(eyeRow);
-          // Oct 24 2026 (Larry): ORDER is one of the OPTIONS, and OPTIONS is an eyebrow header (as on the task card back). That frees the
-          // Priority / Subject line for the WORKSPACE band. Same eyebrow look as the task card's OPTIONS block.
-          var optBlock=document.createElement('div'); optBlock.className='fg-back-fixed fg-idea-options';
-          optBlock.style.cssText='display:flex;flex-direction:column;gap:2px;width:100%;margin:2px 0 6px;padding:4px 0 4px';
-          var optEb=document.createElement('div'); optEb.className='fg-fixed-eyebrow'; optEb.textContent='Options';
-          optEb.style.cssText='font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:2px';
-          optBlock.appendChild(optEb); optBlock.appendChild(oc);
-          var optAnchor=bbw.querySelector('.fg-back-selected') || bbw.querySelector('#sb-swatch-row') || bbw.querySelector('.bb-action-row');
-          if(optAnchor && optAnchor.parentNode) optAnchor.parentNode.insertBefore(optBlock, optAnchor); else bbw.appendChild(optBlock);
+          // Oct 24 2026 (Larry): ORDER is one of the OPTIONS -- a row in the OPTIONS checklist (built below, same builder as the task card back).
+          // Checked, its control opens on the right with the other opened options. That leaves Priority - Subject - Workspace alone on the top line.
+          var selReg=bbw.querySelector('.fg-back-selected'), optStore=bbw.querySelector('.fg-back-optstore');
+          if(selReg && optStore){
+            var ordBody=document.createElement('div'); ordBody.id='sb-order-body'; ordBody.className='bb-addition-body'; ordBody.style.display='none';
+            ordBody.appendChild(oc); selReg.insertBefore(ordBody, selReg.firstChild);
+            var ordCb=document.createElement('input'); ordCb.type='checkbox'; ordCb.id='sb-add-order'; optStore.appendChild(ordCb);
+            ordCb.addEventListener('change', function(){ ordBody.style.display=ordCb.checked?'':'none'; });
+          } else { toprow.appendChild(oc); }   // no options region on this back: keep ORDER on the top line as before
         }
         if(viewWrap && arow){
           var slot=document.createElement('div'); slot.className='fg-back-viewslot';
@@ -524,9 +524,40 @@
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
       // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js). An IDEA starts with its session steps in light text.
+      // OPTIONS checklist, Oct 24 2026 (Larry: "OPTIONS are in a checklist. When an OPTION is checked, it displays on the right half of the screen
+      // EXACTLY like on the TASK card which is the template"): the same builder as the task card back makes the checklist (eyebrow OPTIONS, three-click
+      // rows, slashed eyes); each row drives the real checkbox that was already on this back, and its body opens in the right-hand column.
+      var _optBlock=null;
+      if(window.FGCardBackFixedRows && window.FGCardBackOptions && bbw.querySelector('.fg-back-selected')){
+        var _idRows=[
+          { id:'order', label:'Order',        boxes:['sb-add-order'], eyeKeys:[],        bodies:['sb-order-body'] },
+          { id:'flags', label:'Signal Flags', boxes:['sb-add-flags'], eyeKeys:['flags'], bodies:['sb-flags-body'] },
+          { id:'org',   label:'Organization', boxes:['sb-add-org'],   eyeKeys:[],        bodies:['sb-org-body'] }
+        ];
+        if(document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
+        FGCardBackFixedRows.build(bbw, {
+          key:'main', className:'fg-idea-options', rows:_idRows,
+          getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
+          setHidden: function(arr){
+            var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};
+            item.front_hidden=v;
+            T().sb.from('ideas').update(patch).eq('id',item.id).then(function(r){
+              if(r.error){ item.front_hidden=prev; var sb0=document.getElementById('sb-note-status'); if(sb0) sb0.textContent=r.error.message; return; }
+              _sboardPatchRow(item.id, patch);
+              renderSeaBoard(true);
+            });
+          }
+        });
+        _optBlock=bbw.querySelector('.fg-back-fixed.fg-idea-options');
+      }
       if(window.FGCardProcess){
-        var _pAnchor=bbw.querySelector('#sb-swatch-row');
-        FGCardProcess.mount(bbw, {ideaId:item.id, kind:'idea', before:(_pAnchor && _pAnchor.parentNode===bbw)?_pAnchor:bbw.querySelector('.bb-action-row')});
+        var _pSel=bbw.querySelector('.fg-back-selected');
+        if(_optBlock && _pSel){
+          FGCardProcess.mount(_optBlock, {ideaId:item.id, kind:'idea', headParent:_optBlock, headBefore:null, bodyParent:_pSel, scope:bbw});
+        } else {
+          var _pAnchor=bbw.querySelector('#sb-swatch-row');
+          FGCardProcess.mount(bbw, {ideaId:item.id, kind:'idea', before:(_pAnchor && _pAnchor.parentNode===bbw)?_pAnchor:bbw.querySelector('.bb-action-row')});
+        }
       }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc) ux.appendChild(lw);
