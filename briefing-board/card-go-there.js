@@ -25,7 +25,8 @@
       +'#bb-d-subject-row.fg-go-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:end}'
       +'#bb-d-subject-row.fg-go-grid>label{grid-area:1/1}'
       +'#bb-d-subject-row.fg-go-grid>input{grid-area:2/1;min-width:0}'
-      +'#bb-d-subject-row.fg-go-grid>.fg-go-eyebrow{grid-area:1/2}'
+      +'#bb-d-subject-row.fg-go-grid>.fg-go-head{grid-area:1/2}'
+      +'.fg-go-head{display:inline-flex;align-items:center;gap:6px;justify-content:space-between}'
       +'#bb-d-subject-row.fg-go-grid>.fg-go-wrap{grid-area:2/2}'
       +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto}'
       +'.fg-go-eyebrow{white-space:nowrap;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);pointer-events:none}'
@@ -185,7 +186,7 @@
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); }, true);
 
   // Right of the HEADER: the board type chip (the task's default workspace, or empty when it has none) and, when it has one, the magnifying glass.
-  var wrapEl=null, ebEl=null;
+  var wrapEl=null, ebEl=null, headEl=null;
   // The selector and the glass copy the HEADER field's own box (height, border, corners, text) so they read as one row.
   function matchField(el, input, minW){
     try{
@@ -202,6 +203,7 @@
     var c=(typeof _bbFindCardAnywhere==='function' && typeof _bbOpenCardId!=='undefined') ? _bbFindCardAnywhere(_bbOpenCardId) : null;
     closeMenu();
     wrapEl.innerHTML='';
+    if(headEl){ while(headEl.lastChild && headEl.lastChild!==ebEl) headEl.removeChild(headEl.lastChild); }
     if(!c){ wrapEl.style.display='none'; return; }
     wrapEl.style.display='';
     var list=workspacesOf(c), def=list[0]||null;
@@ -210,7 +212,7 @@
     if(row){
       ebEl.className='fg-go-eyebrow';
       if(wrapEl.parentNode!==row) row.appendChild(wrapEl);
-      row.appendChild(ebEl);
+      if(headEl.parentNode!==row) row.appendChild(headEl);
       // WORKSPACE takes the HEADER label's own type so the two eyebrows match.
       try{
         var lab=row.querySelector('label');
@@ -248,7 +250,7 @@
         paintEye();
       });
       paintEye();
-      wrapEl.appendChild(eye);
+      headEl.appendChild(eye);   // up by the WORKSPACE label, beside the HEADER line (Oct 24 2026)
     }
     if(def){
       var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+def.label;
@@ -269,7 +271,8 @@
     row.classList.add('fg-go-grid');
     ebEl=document.createElement('span'); ebEl.className='fg-go-eyebrow'; ebEl.textContent='Workspace';
     wrapEl=document.createElement('span'); wrapEl.className='fg-go-wrap';
-    row.appendChild(ebEl); row.appendChild(wrapEl);
+    headEl=document.createElement('span'); headEl.className='fg-go-head'; headEl.appendChild(ebEl);
+    row.appendChild(headEl); row.appendChild(wrapEl);
     paint();
     // A badge switched on or off while the back is open changes the buttons.
     bbw.addEventListener('change', function(){ setTimeout(paint, 60); });
