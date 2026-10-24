@@ -536,7 +536,7 @@
         ];
         if(document.getElementById('sb-add-related')) _idRows.splice(2,0,{ id:'related', label:'Related Storyboards', boxes:['sb-add-related'], eyeKeys:[], bodies:['sb-related-body'] });
         FGCardBackFixedRows.build(bbw, {
-          key:'main', className:'fg-idea-options', rows:_idRows,
+          key:'idea', eyebrow:true, className:'fg-idea-options', rows:_idRows,
           getHidden: function(){ return FGCardBackOptions.parseHidden(item.front_hidden); },
           setHidden: function(arr){
             var prev=item.front_hidden==null?null:item.front_hidden, v=arr.join(','), patch={front_hidden:v};

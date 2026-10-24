@@ -84,7 +84,7 @@
     var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'');
     var rows=[];
     // OPTIONS eyebrow, Oct 24 2026 (Larry): the main checklist of a card back is headed OPTIONS.
-    if(!cfg.key || cfg.key==='main'){
+    if(!cfg.key || cfg.key==='main' || cfg.eyebrow){
       var eb=document.createElement('div'); eb.className='fg-fixed-eyebrow'; eb.textContent='Options'; block.appendChild(eb);
     }
     rowsDef.forEach(function(row){
