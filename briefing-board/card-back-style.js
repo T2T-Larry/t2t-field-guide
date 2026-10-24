@@ -35,6 +35,20 @@
     sub:    '#4A6D8C'    // labels, eyebrows
   };
 
+  // Oct 24 2026 (Larry): "consistent looks to all cards using task as template while adding custom contents and colors to differentiate them."
+  // ONE table of card types for the Story Board card backs: the band title and the five colors. The board the card sits on (read from its ID BAND)
+  // decides the type. IDEA = blue sky, STORY = light yellow, JOURNEY = green, GEMS = purple, PLAN = brown. Adding a type = adding a line here.
+  var TYPES = {
+    idea:    { title:'IDEA',    paper:'#F2F8FD', bg:'#E3F0FA', accent:'#7FB2DD', ink:'#1A3A5C', sub:'#4A6D8C' },
+    story:   { title:'STORY',   paper:'#FFFBE3', bg:'#FFF4B8', accent:'#E3C650', ink:'#5A4A0A', sub:'#8A7420' },
+    journey: { title:'JOURNEY', paper:'#F1F9F1', bg:'#DDF0DD', accent:'#5FAE6A', ink:'#1F4D2A', sub:'#4A7A55' },
+    gems:    { title:'GEMS',    paper:'#F7F2FC', bg:'#E8DDF5', accent:'#9B7BC8', ink:'#3D2466', sub:'#6B5390' },
+    plan:    { title:'PLAN',    paper:'#FBF6EF', bg:'#F7EFE6', accent:'#4A2C12', ink:'#4A2C12', sub:'#7A5A3A' }
+  };
+  // What the board's own name (as its ID BAND shows it) means as a card type. A board with no entry here keeps the IDEA look.
+  var KIND_TYPE = { 'VISION':'idea', 'IDEA':'idea', 'STORY':'story', 'JOURNEY':'journey', 'GEMS':'gems', 'LIBRARY':'gems', 'PLAN':'plan' };
+  function typeOfKindLabel(label){ return KIND_TYPE[String(label||'').trim().toUpperCase()] || 'idea'; }
+
   function inject(){
     if(document.getElementById('fg-cardback-style')) return;
     var st=document.createElement('style');
@@ -48,6 +62,11 @@
       // (.sc-overlay-card / .sb-details-card) can't win.
       +'.sc-overlay-card.sb-details-card.fg-cardback-idea{width:340px;max-width:90vw;max-height:min(640px,90vh);overflow-y:auto;background:'+c.paper+';border-radius:8px;border-top:6px solid var(--bb-accent);box-shadow:0 10px 30px rgba(26,58,92,0.30);box-sizing:border-box;padding:18px 22px 22px;text-align:left;display:block;font-family:var(--bb-body-font);color:var(--bb-ink)}'
       +'.sc-overlay-card.sb-details-card.fg-cardback-idea::after{display:none}'
+      // One color block per card type (TYPES above): same four variables, plus the paper.
+      +Object.keys(TYPES).map(function(k){ var t=TYPES[k];
+        return '.fg-cardback-idea.fg-type-'+k+'{--bb-bg:'+t.bg+';--bb-accent:'+t.accent+';--bb-ink:'+t.ink+';--bb-sub:'+t.sub+'}'
+          +'.sc-overlay-card.sb-details-card.fg-cardback-idea.fg-type-'+k+'{background:'+t.paper+'}';
+      }).join('')
       // Idea-only pieces, recolored to match.
       +'.fg-cardback-idea .sb-hdr-eyebrow2{font-size:calc(11px * var(--fg-text-scale,1));letter-spacing:1px;color:var(--bb-sub)}'
       +'.fg-cardback-idea .sb-view-frame{border:1.5px solid var(--bb-accent);color:var(--bb-ink);border-radius:4px}'
@@ -304,6 +323,13 @@
     if(t && !t.classList.contains('fg-back-own')){ t.textContent=tv; t.title=tv; t.classList.toggle('fg-back-empty', !tv); }
     if(k){ k.textContent=kv; k.title=kv; k.classList.toggle('fg-back-empty', !kv); }
     band.style.display = (tv||kv||(t&&t.classList.contains('fg-back-own'))) ? '' : 'none';
+    // Card type (Oct 24 2026): the Story Board card backs take their color and title from the board they sit on.
+    if(cardEl.classList.contains('fg-cardback-idea')){
+      var type=typeOfKindLabel(kv);
+      Object.keys(TYPES).forEach(function(n){ cardEl.classList.toggle('fg-type-'+n, n===type); });
+      var ttl=cardEl.querySelector('#sb-details-eyebrow') || cardEl.querySelector('.fg-back-title');
+      if(ttl) ttl.textContent=TYPES[type].title;
+    }
   }
 
   // ============================================================
@@ -378,5 +404,5 @@
 
   injectShape();
 
-  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA } };
+  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel };
 })();

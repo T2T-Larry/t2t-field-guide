@@ -67,7 +67,7 @@
   ['storyboard/idea-storyboard-header.js','20261023j'],
   ['storyboard/idea-storyboard-drag-with-arrows.js','20261016a'],
   ['maps-and-library/document-decomposition.js','20261010j'],
-  ['briefing-board/card-back-style.js','20261020a'],
+  ['briefing-board/card-back-style.js','20261024q'],
   ['briefing-board/card-back-options.js','20261018b'],
   ['briefing-board/card-back-fixed-rows.js','20261020e'],
   ['briefing-board/card-go-there.js','20261024o'],
