@@ -98,8 +98,8 @@
     if(rowHidden && trig && trig.parentNode){ if(wrapEl.previousSibling!==trig) trig.parentNode.insertBefore(wrapEl, trig.nextSibling); }
     else if(field && wrapEl.parentNode!==field) field.appendChild(wrapEl);
     list.forEach(function(ws){
-      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go there: '+ws.label;
-      b.setAttribute('aria-label','Go there: '+ws.label);
+      var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+ws.label;
+      b.setAttribute('aria-label','Go to '+ws.label);
       b.innerHTML=GLASS;
       b.addEventListener('click', function(e){ e.stopPropagation(); go(c, ws); });
       wrapEl.appendChild(b);
