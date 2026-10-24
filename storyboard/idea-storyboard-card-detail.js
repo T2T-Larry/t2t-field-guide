@@ -582,6 +582,13 @@
           }
         });
       }
+      // Lock and People ride a small icon row at the top of the Gear, exactly like the task card back (Oct 24 2026, Larry). Same buttons, same ids,
+      // so their wiring is untouched; the bottom row keeps only Gear, Notes and Trash.
+      if(ux){
+        var _gIcons=document.createElement('div'); _gIcons.className='fg-gear-iconrow';
+        ['sb-lock','sb-people-btn','sb-people-menu'].forEach(function(id){ var el=card.querySelector('#'+id); if(el) _gIcons.appendChild(el); });
+        ux.insertBefore(_gIcons, ux.firstChild);
+      }
       // A-Z (Oct 17 2026): every card that can hold cards has an A-Z / CUSTOM toggle in its Gear. It orders the cards directly under it
       // (display only). A card with nothing under it can still be set; its tooltip says why nothing moves yet.
       if(ux && isHeaderType && window.T2TCardOrder){
