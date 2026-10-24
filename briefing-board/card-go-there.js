@@ -52,7 +52,23 @@
     if(c.needsVision) out.push({kind:'IDEA', label:'VISION'});
     if(c.needsPlan || c.goalHeaderId) out.push({kind:'PLAN', label:'PLAN'});
     if(c.col==='hangups') out.push({kind:'SEA', label:'SEA OF IDEAS'});
+    else if(hasWs(c,'sea')) out.push({kind:'SEA', label:'SEA OF IDEAS'});
+    if(hasWs(c,'story')) out.push({kind:'SHARE', label:'STORY'});
+    if(hasWs(c,'journey')) out.push({kind:'CAST', label:'JOURNEY'});
     return out;
+  }
+  // Oct 24 2026 (Larry): every board type gets a badge. SEA, STORY and JOURNEY are remembered on the card as "ws:sea", "ws:story", "ws:journey" words in the
+  // same comma list the eyes use (front_hidden), the same way COMPLETE is remembered as "done:<row>", so no new database column is needed.
+  // VISION and PLAN keep their own flags. The eye key for each badge is the same word without "ws:" (sea, story, journey).
+  var WS_WORD={SEA:'sea', SHARE:'story', CAST:'journey'};
+  function hasWs(c, w){ return (','+String(c.frontHidden||'')+',').indexOf(',ws:'+w+',')>=0; }
+  function rememberWs(c, kind){
+    var w=WS_WORD[kind];
+    if(!w || hasWs(c,w)) return;
+    var cur=String(c.frontHidden||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
+    cur.push('ws:'+w);
+    c.frontHidden=cur.join(',');
+    if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
   }
 
   // The place RETURN should bring us back to: the Briefing Board on the topic we are viewing now (same rule as the Board Type picker).
@@ -126,6 +142,7 @@
           c.needsPlan=true;
           try{ await sb.from('task_fields').update({needs_plan:true}).eq('idea_id', c.id); }catch(e){ console.error('Briefing Board: PLAN badge save failed', e); }
         }
+        rememberWs(c, ws.kind);
         if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
       }
       var back=returnProjectId();
@@ -216,8 +233,8 @@
     chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list); });
     wrapEl.appendChild(chip);
     matchField(chip, input, def?'132px':'60px');
-    // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. VISION and PLAN have front badges today.
-    var eyeKey=def ? ({IDEA:'vision', PLAN:'plan'})[def.kind] : null;
+    // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. Every board type has a front badge (Oct 24 2026).
+    var eyeKey=def ? ({IDEA:'vision', PLAN:'plan', SEA:'sea', SHARE:'story', CAST:'journey'})[def.kind] : null;
     if(eyeKey && window.FGCardBackOptions){
       var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-go-eye';
       var paintEye=function(){

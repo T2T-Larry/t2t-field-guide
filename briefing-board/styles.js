@@ -937,6 +937,10 @@
       +'.bb-needs-plan-badge.bb-vision-badge{background:rgba(125,190,240,.4);border-color:#4a90c8;color:#1e4f7a}'
       +'.bb-needs-plan-badge.bb-plan-need{background:#4a2c12;border-color:#3b2210;color:#fff}'
       +'.bb-needs-plan-badge.bb-issue-badge{background:#c0392b;border-color:#991b1b;color:#fff}'
+      // Oct 24 2026 (Larry): every board type has a badge -- SEA teal, STORY gold, JOURNEY green.
+      +'.bb-needs-plan-badge.bb-sea-badge{background:rgba(64,190,190,.35);border-color:#2a9a9a;color:#145f5f}'
+      +'.bb-needs-plan-badge.bb-story-badge{background:rgba(242,183,5,.35);border-color:#b8860b;color:#6b4e00}'
+      +'.bb-needs-plan-badge.bb-journey-badge{background:rgba(120,190,110,.38);border-color:#4f9a45;color:#2a5f22}'
       // Briefing card back: PRIORITY and SUBJECT eyebrows on one level, Subject flush with Task, Hang Up section as wide as Task.
       +'#bb-detail-overlay .fg-back-toprow.bb-toprow-brief{grid-template-columns:auto minmax(0,1fr);align-items:start}'
       +'#bb-detail-overlay .bb-toprow-brief .bb-field:last-child{grid-column:2;width:100%;max-width:none}'

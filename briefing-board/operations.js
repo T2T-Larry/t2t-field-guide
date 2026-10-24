@@ -903,6 +903,10 @@
         // Oct 19 2026 -- VISION badge: this task needs a Vision statement.
         var _bbHO=function(k){ return !!(window.FGCardBackOptions && FGCardBackOptions.isBackOnly(c.frontHidden,k)); };
         var visionBadge = (c.needsVision && !_bbHO('vision')) ? '<span class="bb-needs-plan-badge bb-vision-badge" title="This task needs a Vision statement.">VISION</span>' : '';
+        // Oct 24 2026 (Larry): every board type has a badge. SEA, STORY and JOURNEY show when the task has a workspace there (the "ws:" word in front_hidden) and the eye is open.
+        [['sea','SEA','Has a workspace on the Sea of Ideas.'],['story','STORY','Has a workspace on the STORY board.'],['journey','JOURNEY','Has a workspace on the JOURNEY board.']].forEach(function(w){
+          if((','+String(c.frontHidden||'')+',').indexOf(',ws:'+w[0]+',')>=0 && !_bbHO(w[0])) visionBadge += '<span class="bb-needs-plan-badge bb-ws-badge bb-'+w[0]+'-badge" title="'+w[2]+'">'+w[1]+'</span>';
+        });
         // Oct 20 2026 (Larry): a Hang Up with nothing in its situation shows WHY until the PRIMARY says why (the pick fills the situation, so WHY is replaced by VISION or NEEDS PLAN).
         // Oct 20 2026: WHY shows until a reason is checked or the situation says why; ISSUE (anything else, explained in Situation; a delay or missed due date is an ISSUE, Oct 23 2026) is the other reason; WAITING is not a Hang Up, it is only priority (VISION and NEEDS PLAN have their own badges).
         if(c.col==='hangups'){
