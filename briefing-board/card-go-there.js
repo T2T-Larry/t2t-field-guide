@@ -22,12 +22,12 @@
     st.textContent=''
       +'.bb-card.bb-glow{outline:3px solid #f2b705;outline-offset:2px;box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 20px 8px rgba(242,183,5,.7);animation:fg-glow-pulse 2.4s ease-in-out infinite}'
       +'@keyframes fg-glow-pulse{0%,100%{box-shadow:0 0 0 5px rgba(242,183,5,.35),0 0 14px 5px rgba(242,183,5,.55)}50%{box-shadow:0 0 0 7px rgba(242,183,5,.4),0 0 24px 10px rgba(242,183,5,.85)}}'
-      +'#bb-d-subject-row.fg-go-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:end}'
-      +'#bb-d-subject-row.fg-go-grid>label{grid-area:1/1}'
-      +'#bb-d-subject-row.fg-go-grid>input{grid-area:2/1;min-width:0}'
-      +'#bb-d-subject-row.fg-go-grid>.fg-go-head{grid-area:1/2}'
+      +'.fg-go-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:end}'
+      +'.fg-go-grid>label{grid-area:1/1}'
+      +'.fg-go-grid>input{grid-area:2/1;min-width:0}'
+      +'.fg-go-grid>.fg-go-head{grid-area:1/2}'
       +'.fg-go-head{display:inline-flex;align-items:center;gap:4px;justify-content:flex-start}'
-      +'#bb-d-subject-row.fg-go-grid>.fg-go-wrap{grid-area:2/2}'
+      +'.fg-go-grid>.fg-go-wrap{grid-area:2/2}'
       +'.fg-go-wrap{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto}'
       +'.fg-go-eyebrow{white-space:nowrap;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);pointer-events:none}'
       +'.fg-go-btn{display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff;border:1px solid var(--bb-accent);border-radius:6px;padding:3px 5px;color:var(--bb-ink)}'
@@ -61,13 +61,14 @@
   // VISION and PLAN keep their own flags. The eye key for each badge is the same word without "ws:" (sea, story, journey).
   var WS_WORD={SEA:'sea', SHARE:'story', CAST:'journey'};
   function hasWs(c, w){ return (','+String(c.frontHidden||'')+',').indexOf(',ws:'+w+',')>=0; }
-  function rememberWs(c, kind){
+  function rememberWs(c, kind, ad){
     var w=WS_WORD[kind];
     if(!w || hasWs(c,w)) return;
     var cur=String(c.frontHidden||'').split(',').map(function(x){ return x.trim(); }).filter(Boolean);
     cur.push('ws:'+w);
     c.frontHidden=cur.join(',');
-    if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
+    if(ad && ad.persistHidden) ad.persistHidden(c);
+    else if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
   }
 
   // The place RETURN should bring us back to: the Briefing Board on the topic we are viewing now (same rule as the Board Type picker).
@@ -86,7 +87,7 @@
       if(el) el.classList.add('bb-glow');
     }
   }
-  function toast(m){ if(typeof _bbShowToast==='function') _bbShowToast(m); }
+  function toast(m){ if(typeof _bbShowToast==='function') _bbShowToast(m); else if(typeof _sboardShowToast==='function') _sboardShowToast(m); }
 
   // The header named after the task, searched up to three levels under the card's topic (same reach as ensure_vision_header). null if none.
   async function findTaskHeader(sb, topicId, name){
@@ -120,7 +121,8 @@
 
   // Go to a board type for this task. ws = {kind, label}. A task with no workspace there gets one (its own header on that board), and VISION / PLAN
   // also put their badge on the card, so the front always tells the truth about where the task has workspaces.
-  async function go(c, ws){
+  async function go(c, ws, inst){
+    if(inst && inst.adapter && inst.adapter.generic) return goGeneric(c, ws, inst.adapter);
     try{
       if(!window.IDBand || !IDBand.goToBoard){ toast('The workspace is not ready yet. Try again in a moment.'); return; }
       var sb=(typeof T==='function' && T().sb) || null;
@@ -162,10 +164,37 @@
     }
   }
 
+  // Any other card back (the Story Board cards): same idea, no task bookkeeping. The card's workspace on a board type is the header named after it
+  // under its TOPIC (a header card is its own workspace). The adapter says how to name it, how to leave the card, and where RETURN comes back to.
+  async function goGeneric(c, ws, ad){
+    try{
+      if(!window.IDBand || !IDBand.goToBoard){ toast('The workspace is not ready yet. Try again in a moment.'); return; }
+      var sb=(window.T2T && window.T2T.sb) || null;
+      var target=null;
+      if(ad.isHeader && ad.isHeader(c)) target=c.id;
+      else{
+        var topicId=ad.topicId(c), name=ad.nameOf(c);
+        if(!topicId){ toast('This card has no TOPIC yet.'); return; }
+        if(!name){ toast('Give this card a header first.'); return; }
+        if(!sb){ toast('That workspace did not open. Try again in a moment.'); return; }
+        if(ws.kind==='IDEA'){ try{ await sb.rpc('ensure_vision_header', {p_idea:c.id}); }catch(e){} }
+        target=await ensureOwnHeader(sb, c, topicId, name);
+        if(!target){ toast('That workspace did not open. Try again in a moment.'); return; }
+      }
+      rememberWs(c, ws.kind, ad);
+      ad.leave(c);
+      var ok=await IDBand.goToBoard(ws.kind, target);
+      if(ok===false) toast('That workspace did not open. Try again in a moment.');
+    }catch(e){
+      console.error('GO THERE failed', e);
+      toast('That workspace did not open. Try again in a moment.');
+    }
+  }
+
   // The board type dropdown: the same list the ID BAND offers, minus the board we are standing on. A tick marks the ones this task already has.
   var menuEl=null;
   function closeMenu(){ if(menuEl){ menuEl.remove(); menuEl=null; } }
-  function openMenu(anchor, c, have){
+  function openMenu(anchor, c, have, inst){
     closeMenu();
     var kinds=(window.IDBand && IDBand.BOARD_KINDS ? IDBand.BOARD_KINDS : []).filter(function(k){ return k.value!=='BRIEFING BOARD'; });
     if(!kinds.length) return;
@@ -174,7 +203,7 @@
       var on=have.some(function(w){ return w.kind===k.value; });
       var it=document.createElement('button'); it.type='button'; it.className='fg-go-item';
       it.innerHTML='<span>'+esc(k.label)+'</span>'+(on?'<span class="fg-go-tick">✓</span>':'');
-      it.addEventListener('click', function(e){ e.stopPropagation(); closeMenu(); go(c, {kind:k.value, label:k.label}); });
+      it.addEventListener('click', function(e){ e.stopPropagation(); closeMenu(); go(c, {kind:k.value, label:k.label}, inst); });
       menuEl.appendChild(it);
     });
     document.body.appendChild(menuEl);
@@ -185,8 +214,10 @@
   document.addEventListener('mousedown', function(e){ if(menuEl && !menuEl.contains(e.target) && !(e.target.closest && e.target.closest('.fg-go-chip'))) closeMenu(); }, true);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); }, true);
 
-  // Right of the HEADER: the board type chip (the task's default workspace, or empty when it has none) and, when it has one, the magnifying glass.
-  var wrapEl=null, ebEl=null, headEl=null;
+  // Right of the HEADER: the board type chip (the card's default workspace, or empty when it has none) and, when it has one, the magnifying glass.
+  // One routine for every card back (Oct 24 2026: "HEADER / WORKSPACE row goes on all types of cards"). An INSTANCE is one card back's row:
+  // {row, input, wrapEl, ebEl, headEl, adapter}. The Briefing Card back has one built once (below); a Story Board card back mounts its own each time it opens.
+  // The ADAPTER tells the row about its card: getCard(), and for non-task cards (generic:true) topicId(c), nameOf(c), isHeader(c), persistHidden(c), leave(c), changed(c).
   // The selector and the glass copy the HEADER field's own box (height, border, corners, text) so they read as one row.
   function matchField(el, input, minW){
     try{
@@ -198,35 +229,33 @@
       if(minW) el.style.minWidth=minW;
     }catch(e){}
   }
-  function paint(){
-    if(!wrapEl) return;
-    var c=(typeof _bbFindCardAnywhere==='function' && typeof _bbOpenCardId!=='undefined') ? _bbFindCardAnywhere(_bbOpenCardId) : null;
+  function paint(inst){
+    if(!inst || !inst.wrapEl) return;
+    var ad=inst.adapter, wrapEl=inst.wrapEl, ebEl=inst.ebEl, headEl=inst.headEl, row=inst.row, input=inst.input;
+    var c=ad.getCard();
     closeMenu();
     wrapEl.innerHTML='';
-    if(headEl){ while(headEl.lastChild && headEl.lastChild!==ebEl) headEl.removeChild(headEl.lastChild); }
+    while(headEl.lastChild && headEl.lastChild!==ebEl) headEl.removeChild(headEl.lastChild);
     if(!c){ wrapEl.style.display='none'; return; }
     wrapEl.style.display='';
     var list=workspacesOf(c), def=list[0]||null;
-    // Right of the HEADER field, with WORKSPACE on the HEADER label's line. Tasks and Hang Ups look the same (Oct 24 2026).
-    var row=document.getElementById('bb-d-subject-row'), input=document.getElementById('bb-d-subject');
-    if(row){
-      ebEl.className='fg-go-eyebrow';
-      if(wrapEl.parentNode!==row) row.appendChild(wrapEl);
-      if(headEl.parentNode!==row) row.appendChild(headEl);
-      // WORKSPACE takes the HEADER label's own type so the two eyebrows match.
-      try{
-        var lab=row.querySelector('label');
-        if(lab && lab.offsetHeight){
-          var ls=getComputedStyle(lab);
-          ['fontSize','fontWeight','letterSpacing','textTransform','color','lineHeight','fontFamily','marginBottom'].forEach(function(k){ ebEl.style[k]=ls[k]; });
-        }
-      }catch(e){}
-    }
+    // Right of the HEADER field, with WORKSPACE on the HEADER label's line. Every card type looks the same (Oct 24 2026).
+    ebEl.className='fg-go-eyebrow';
+    if(wrapEl.parentNode!==row) row.appendChild(wrapEl);
+    if(headEl.parentNode!==row) row.appendChild(headEl);
+    // WORKSPACE takes the HEADER label's own type so the two eyebrows match.
+    try{
+      var lab=row.querySelector('label');
+      if(lab && lab.offsetHeight){
+        var ls=getComputedStyle(lab);
+        ['fontSize','fontWeight','letterSpacing','textTransform','color','lineHeight','fontFamily','marginBottom'].forEach(function(k){ ebEl.style[k]=ls[k]; });
+      }
+    }catch(e){}
     var chip=document.createElement('button'); chip.type='button'; chip.className='fg-go-chip'+(def?' fg-go-has':'');
     if(!def) chip.classList.add('fg-go-empty');
     chip.title='Workspace: choose a board type to go to, or to start one';
     chip.innerHTML=(def?'<span>'+esc(def.label)+'</span>':'')+'<span aria-hidden="true">▾</span>';
-    chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list); });
+    chip.addEventListener('click', function(e){ e.stopPropagation(); if(menuEl) closeMenu(); else openMenu(chip, c, list, inst); });
     wrapEl.appendChild(chip);
     matchField(chip, input, def?'132px':'60px');
     // The eyeball (on by default): shows this workspace's badge on the front of the card, or on the back only. Every board type has a front badge (Oct 24 2026).
@@ -235,7 +264,7 @@
       var eye=document.createElement('button'); eye.type='button'; eye.className='fg-back-eye fg-go-eye';
       var paintEye=function(){
         var hidden=FGCardBackOptions.parseHidden(c.frontHidden), off=hidden.indexOf(eyeKey)>=0, ic=FGCardBackOptions.eyeIcons;
-        eye.innerHTML=ic ? (off ? ic.slash : ic.open) : (off ? '\u2298' : '\u25C9');
+        eye.innerHTML=ic ? (off ? ic.slash : ic.open) : (off ? '⊘' : '◉');
         eye.classList.toggle('fg-eye-off', off);
         eye.title=off ? 'Back only: click to also show the badge on the front' : 'Shows on the front: click for back only';
       };
@@ -244,38 +273,53 @@
         var cur=FGCardBackOptions.parseHidden(c.frontHidden).slice(), i=cur.indexOf(eyeKey);
         if(i>=0) cur.splice(i,1); else cur.push(eyeKey);
         c.frontHidden=cur.join(',');
-        if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
-        if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
-        if(typeof renderBoard==='function') renderBoard();
+        if(ad.generic){ ad.persistHidden(c); }
+        else{
+          if(typeof _bbSaveLocal==='function' && typeof _bbCardsList==='function') _bbSaveLocal(_bbCardsList());
+          if(typeof _bbPersistMergedCardById==='function') _bbPersistMergedCardById(c.id);
+          if(typeof renderBoard==='function') renderBoard();
+        }
         paintEye();
       });
       paintEye();
-      headEl.appendChild(eye);   // up by the WORKSPACE label, beside the HEADER line (Oct 24 2026)
+      headEl.appendChild(eye);   // up by the WORKSPACE label, immediately right of the eyebrow (Oct 24 2026)
     }
     if(def){
       var b=document.createElement('button'); b.type='button'; b.className='fg-go-btn'; b.title='Go to '+def.label;
       b.setAttribute('aria-label','Go to '+def.label);
       b.innerHTML=GLASS;
-      b.addEventListener('click', function(e){ e.stopPropagation(); go(c, def); });
+      b.addEventListener('click', function(e){ e.stopPropagation(); go(c, def, inst); });
       wrapEl.appendChild(b);
       matchField(b, input, '');
       b.style.background='#fff'; b.style.padding='0 7px';
     }
   }
 
-  function build(bbw){
-    if(!bbw || bbw.querySelector('.fg-go-wrap')) return;
-    var input=bbw.querySelector('#bb-d-subject'), row=bbw.querySelector('#bb-d-subject-row');
-    if(!input || !row) return;
+  // Build the row into a field that holds a "Header" label and its input as direct children.
+  function mountInto(row, input, adapter){
+    if(!row || !input || row.querySelector('.fg-go-wrap')) return null;
     injectStyle();
     row.classList.add('fg-go-grid');
-    ebEl=document.createElement('span'); ebEl.className='fg-go-eyebrow'; ebEl.textContent='Workspace';
-    wrapEl=document.createElement('span'); wrapEl.className='fg-go-wrap';
-    headEl=document.createElement('span'); headEl.className='fg-go-head'; headEl.appendChild(ebEl);
-    row.appendChild(headEl); row.appendChild(wrapEl);
-    paint();
+    var inst={row:row, input:input, adapter:adapter};
+    inst.ebEl=document.createElement('span'); inst.ebEl.className='fg-go-eyebrow'; inst.ebEl.textContent='Workspace';
+    inst.wrapEl=document.createElement('span'); inst.wrapEl.className='fg-go-wrap';
+    inst.headEl=document.createElement('span'); inst.headEl.className='fg-go-head'; inst.headEl.appendChild(inst.ebEl);
+    row.appendChild(inst.headEl); row.appendChild(inst.wrapEl);
+    paint(inst);
+    return inst;
+  }
+
+  // The Briefing Card back is built once and reused for every card.
+  var bbInst=null;
+  var bbAdapter={
+    getCard:function(){ return (typeof _bbFindCardAnywhere==='function' && typeof _bbOpenCardId!=='undefined') ? _bbFindCardAnywhere(_bbOpenCardId) : null; }
+  };
+  function build(bbw){
+    if(!bbw || bbw.querySelector('.fg-go-wrap')) return;
+    bbInst=mountInto(bbw.querySelector('#bb-d-subject-row'), bbw.querySelector('#bb-d-subject'), bbAdapter);
+    if(!bbInst) return;
     // A badge switched on or off while the back is open changes the buttons.
-    bbw.addEventListener('change', function(){ setTimeout(paint, 60); });
+    bbw.addEventListener('change', function(){ setTimeout(function(){ paint(bbInst); }, 60); });
   }
 
   // Called at the end of every Briefing Board draw: the glow follows its card, and scrolls it into view once after coming back.
@@ -295,8 +339,9 @@
     if(wrap.contains(e.target)) setGlow(null);
   }, true);
 
-  // The card back is built once and reused for every card, so each time a card opens its rows are painted again for that card.
-  function refresh(){ setTimeout(paint, 0); }   // after the card's other rows (a Hang Up hides the HEADER row) are set
+  // The Briefing Card back is reused for every card, so each time a card opens its row is painted again for that card.
+  function refresh(){ setTimeout(function(){ paint(bbInst); }, 0); }
 
-  window.FGBBGoThere={ build:build, refresh:refresh, afterRender:afterRender };
+  // Another card back (Story Board cards) puts the same row on itself: FGBBGoThere.mount(fieldEl, headerInputEl, adapter).
+  window.FGBBGoThere={ build:build, refresh:refresh, afterRender:afterRender, mount:mountInto };
 })();
