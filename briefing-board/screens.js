@@ -750,6 +750,8 @@
             }
           });
         }
+        // GO THERE, Oct 24 2026 (Larry): a badged task shows its workspace (task as topic, badge as board type) with a magnifying glass that opens it.
+        if(window.FGBBGoThere) FGBBGoThere.build(bbw);
         // The Review's own indented checklist (PRO, GROW, COMPLETE), Oct 20 2026 -- same builder, same three-click rows.
         if(window.FGCardBackFixedRows && window.FGCardBackOptions && q('bb-rv-left')){
           FGCardBackFixedRows.build(bbw, {

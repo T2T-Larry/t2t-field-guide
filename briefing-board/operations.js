@@ -1207,6 +1207,7 @@
       if(_bbScrollByCol.hasOwnProperty(key)) el.scrollTop=_bbScrollByCol[key];
     });
     _bbPlayCardMoves(wrap, _bbPrevCardPos);
+    if(window.FGBBGoThere) FGBBGoThere.afterRender(wrap);   // the card you left from by GO THERE glows until you click something else
   }
 
   // Oct 20 2026 (Larry): "an animation showing the card movement whenever it moves, even if we move it manually." Every move -- drag, lasso, the
