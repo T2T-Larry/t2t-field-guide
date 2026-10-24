@@ -1706,10 +1706,13 @@
     })();
     if(window.FGCardBackFixedRows) FGCardBackFixedRows.sync();   // the four fixed rows, Oct 19 2026
     var ov=document.getElementById('bb-detail-overlay');
-    // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js). Sits under the fixed rows.
+    // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js).
+    // Its row sits in the OPTIONS checklist just above REVIEW; its steps open to the right with the other opened options.
     if(window.FGCardProcess && ov){
-      var _pSplit=ov.querySelector('.fg-back-split');
-      if(_pSplit && _pSplit.parentNode) FGCardProcess.mount(_pSplit.parentNode, {ideaId:c.id, kind:'task', before:_pSplit.nextSibling});
+      var _pBlock=ov.querySelector('.fg-back-fixed:not(.fg-gear-rows):not(.fg-review-rows)'), _pSel=ov.querySelector('.fg-back-selected');
+      var _pRows=_pBlock?_pBlock.querySelectorAll(':scope > .fg-fixed-row:not(.fg-process-headrow)'):[];
+      var _pReview=_pRows.length?_pRows[_pRows.length-1]:null;   // Dates, Signal Flags, Review: the last one is Review
+      if(_pBlock && _pSel) FGCardProcess.mount(_pBlock, {ideaId:c.id, kind:'task', headParent:_pBlock, headBefore:_pReview, bodyParent:_pSel, scope:ov});
     }
     if(ov){ _bbResetCardPosition(ov.querySelector('.bb-overlay-card')); ov.classList.add('active'); }
   }

@@ -44,6 +44,7 @@
       +'.fg-fixed-row .fg-fixed-btn{display:flex;align-items:center;gap:7px;cursor:pointer;background:transparent;border:0;padding:0;font:inherit;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-back-util-extra>.bb-addition>.bb-addition-label{display:none}'
       +'.fg-back-util-extra>.bb-addition{margin:0}'
+      +'.fg-fixed-eyebrow{font-size:calc(9px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink);margin-bottom:2px}'
       +'.fg-fixed-row{display:flex;align-items:center;gap:6px;min-height:24px}'
       +'.fg-fixed-row label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-fixed-row input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
@@ -82,6 +83,10 @@
     injectStyle();
     var block=document.createElement('div'); block.className='fg-back-fixed'+(cfg.className?' '+cfg.className:'');
     var rows=[];
+    // OPTIONS eyebrow, Oct 24 2026 (Larry): the main checklist of a card back is headed OPTIONS.
+    if(!cfg.key || cfg.key==='main'){
+      var eb=document.createElement('div'); eb.className='fg-fixed-eyebrow'; eb.textContent='Options'; block.appendChild(eb);
+    }
     rowsDef.forEach(function(row){
       var d=document.createElement('div'); d.className='fg-fixed-row';
       var lab=document.createElement('label');

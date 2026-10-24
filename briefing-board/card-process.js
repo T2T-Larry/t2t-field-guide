@@ -11,7 +11,8 @@
    A step is saved the first time you touch the list; until then the light steps are only shown, never stored.
 
    Public surface: window.FGCardProcess
-     .mount(container, { ideaId, kind, before })  -- builds the PROCESS row + its steps into container (before = optional node to insert ahead of)
+     .mount(container, { ideaId, kind, before })  -- one block (PROCESS row + steps) into container, ahead of 'before' if given
+     .mount(container, { ideaId, kind, headParent, headBefore, bodyParent, scope })  -- split: the row goes into a checklist, its steps into bodyParent
      .SUGGESTED  -- the suggested steps per card kind (edit here to give a kind its own process)
    ============================================================ */
 (function(){
@@ -29,6 +30,10 @@
     var st=document.createElement('style'); st.id='fg-process-style';
     st.textContent=''
       +'.fg-process{width:100%;margin:2px 0 8px;padding:4px 0 6px;border-bottom:1px dotted var(--bb-accent)}'
+      +'.fg-process-split{margin:0 0 8px;padding:0 0 6px}'
+      +'.fg-process-split .fg-process-body{margin:0;padding-left:0}'
+      +'.fg-process-headrow label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
+      +'.fg-process-headrow input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
       +'.fg-process-head{display:flex;align-items:center;gap:7px;min-height:24px}'
       +'.fg-process-head label{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:calc(11px * var(--fg-text-scale,1));font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--bb-ink)}'
       +'.fg-process-head input[type=checkbox]{margin:0;width:15px;height:15px;cursor:pointer}'
@@ -56,19 +61,32 @@
     if(!container || !opts || !opts.ideaId) return;
     injectStyle();
     // One PROCESS per card back: a back that is reused for another card drops the earlier card's list first.
-    Array.prototype.slice.call(container.querySelectorAll(':scope > .fg-process')).forEach(function(n){ n.remove(); });
+    var scope=opts.scope||container;
+    Array.prototype.slice.call(scope.querySelectorAll('[data-fgprocess]')).forEach(function(n){ n.remove(); });
 
     var ideaId=opts.ideaId, kind=opts.kind||'task';
     var steps=[];            // {id (null until saved), text, state: 'suggested'|'mine'|'done'}
     var saved=false;         // true once the list has been written to the database
     var open=false;
 
-    var wrap=document.createElement('div'); wrap.className='fg-process'; wrap.setAttribute('data-idea', ideaId);
-    wrap.innerHTML='<div class="fg-process-head"><label><input type="checkbox"><span>Process</span></label></div>'
-      +'<div class="fg-process-body" style="display:none"><ul class="fg-process-list"></ul><button type="button" class="fg-process-add" title="Add a step">+</button><div class="fg-process-note" style="display:none"></div></div>';
-    if(opts.before && opts.before.parentNode===container) container.insertBefore(wrap, opts.before); else container.appendChild(wrap);
+    var bodyHTML='<div class="fg-process-body" style="display:none"><ul class="fg-process-list"></ul><button type="button" class="fg-process-add" title="Add a step">+</button><div class="fg-process-note" style="display:none"></div></div>';
+    var headHTML='<label><input type="checkbox"><span>Process</span></label>';
+    var wrap=document.createElement('div'); wrap.className='fg-process'; wrap.setAttribute('data-idea', ideaId); wrap.setAttribute('data-fgprocess','1');
+    if(opts.headParent && opts.bodyParent){
+      // Split layout (task card back): the PROCESS row sits in the OPTIONS checklist, its steps open to the right with the other opened options.
+      var head=document.createElement('div'); head.className='fg-fixed-row fg-process-headrow'; head.setAttribute('data-fgprocess','1');
+      head.innerHTML=headHTML;
+      opts.headParent.insertBefore(head, opts.headBefore||null);
+      wrap.className+=' fg-process-split';
+      wrap.innerHTML='<div class="fg-back-opt-title">Process</div>'+bodyHTML;
+      opts.bodyParent.appendChild(wrap);
+      wrap._head=head;
+    } else {
+      wrap.innerHTML='<div class="fg-process-head">'+headHTML+'</div>'+bodyHTML;
+      if(opts.before && opts.before.parentNode===container) container.insertBefore(wrap, opts.before); else container.appendChild(wrap);
+    }
 
-    var cb=wrap.querySelector('.fg-process-head input'), body=wrap.querySelector('.fg-process-body');
+    var cb=(wrap._head||wrap).querySelector('input[type=checkbox]'), body=wrap.querySelector('.fg-process-body');
     var ul=wrap.querySelector('.fg-process-list'), addBtn=wrap.querySelector('.fg-process-add'), note=wrap.querySelector('.fg-process-note');
 
     function say(msg){ note.textContent=msg||''; note.style.display=msg?'':'none'; }
@@ -78,7 +96,7 @@
       var src=SUGGESTED[kind]||FALLBACK;
       return src.map(function(t){ return {id:null, text:t, state:'suggested'}; });
     }
-    function paintOpen(){ cb.checked=open; body.style.display=open?'':'none'; }
+    function paintOpen(){ cb.checked=open; body.style.display=open?'':'none'; if(wrap._head) wrap.style.display=open?'':'none'; }
 
     // ---- saving ------------------------------------------------------------------------------------------------------------
     // The first touch writes the whole list (light steps stay light, stored as 'suggested'); after that each change is one small write.
