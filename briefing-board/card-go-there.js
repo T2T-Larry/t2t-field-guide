@@ -292,6 +292,14 @@
       wrapEl.appendChild(b);
       matchField(b, input, '');
       b.style.background='#fff'; b.style.padding='0 7px';
+    } else {
+      // Oct 24 2026 (Larry): no workspace picked yet -- the magnifying glass still shows, grayed out, so every card back has the same row.
+      var g=document.createElement('button'); g.type='button'; g.className='fg-go-btn fg-go-btn-off'; g.disabled=true;
+      g.title='Pick a workspace first'; g.setAttribute('aria-label','Pick a workspace first');
+      g.innerHTML=GLASS;
+      wrapEl.appendChild(g);
+      matchField(g, input, '');
+      g.style.background='#fff'; g.style.padding='0 7px'; g.style.opacity='0.35'; g.style.cursor='default';
     }
   }
 
