@@ -381,10 +381,10 @@
   // there's exactly one place those colors are defined. Top-left corner:
   // the one spot on an Idea tile nothing else claims (on PLAN boards the
   // step number sits there, so the badge steps right of it -- see
-  // .sb-pri-badge.sb-pri-after-order). ideas.hide_priority_front is the
+  // .sb-pri-badge.sb-pri-after-order). ideas.front_hidden ('priority' in the list) is the
   // per-card "show on front" switch on the back of the card.
   function _sboardPriorityBadgeHTML(item){
-    if(!item || !item.priority || item.hide_priority_front) return '';
+    if(!item || !item.priority || (window.FGCardBackOptions && FGCardBackOptions.isBackOnly(item.front_hidden,'priority'))) return '';
     var bg=(typeof PRI_COLOR!=='undefined' && PRI_COLOR[item.priority]) || '#9c8b73';
     var fg=(typeof PRI_TEXT!=='undefined' && PRI_TEXT[item.priority]) || '#fff';
     var cls='sb-pri-badge'+((typeof _sboardIsPlanBoard!=='undefined' && _sboardIsPlanBoard)?' sb-pri-after-order':'');
