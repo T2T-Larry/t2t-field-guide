@@ -138,6 +138,8 @@
         var own=await ensureOwnHeader(sb, c, topicId, name);
         if(!own){ toast('That workspace did not open. Try again in a moment.'); return; }
         target=own;
+        // Anchor the task to its workspace by id (Oct 24 2026): checking the topic finishes the task and finishing the task checks the topic, even after a rename.
+        try{ await sb.from('task_fields').update({workspace_header_id:own}).eq('idea_id', c.id); }catch(e){ console.error('Briefing Board: workspace link save failed', e); }
         if(ws.kind==='PLAN' && !c.needsPlan && !c.goalHeaderId){
           c.needsPlan=true;
           try{ await sb.from('task_fields').update({needs_plan:true}).eq('idea_id', c.id); }catch(e){ console.error('Briefing Board: PLAN badge save failed', e); }
