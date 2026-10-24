@@ -1,4 +1,4 @@
--- NOT YET APPLIED to the database (waiting on Larry's go-ahead, Oct 24 2026). Remove this line once it has been run.
+-- Applied to the database Oct 24 2026 (Task: add the PROCESS steps table and build PROCESS).
 -- Oct 24 2026 (Larry): PROCESS is an option on every kind of card. It holds a list of steps you shape yourself: add, edit, rearrange.
 -- One row per step, keyed to the card (every card is a row in ideas), so it works for tasks, ideas, notes and every other kind.
 --   state: 'suggested' = light text offered by the card kind; 'mine' = accepted or typed by the user (dark); 'done' = ticked off.

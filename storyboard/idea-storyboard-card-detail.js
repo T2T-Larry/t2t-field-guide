@@ -515,6 +515,11 @@
         var er=bbw.querySelector('.sb-eyebrow-row'); if(er && !er.querySelector('#sb-view-wrap, #sb-order-value')) er.remove();
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
+      // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js). An IDEA starts with its session steps in light text.
+      if(window.FGCardProcess){
+        var _pAnchor=bbw.querySelector('#sb-swatch-row');
+        FGCardProcess.mount(bbw, {ideaId:item.id, kind:'idea', before:(_pAnchor && _pAnchor.parentNode===bbw)?_pAnchor:bbw.querySelector('.bb-action-row')});
+      }
       var ux=card.querySelector('#sb-util-extra'), lw=card.querySelector('#sb-add-links-wrap');
       if(ux && lw && !isImgSrc) ux.appendChild(lw);
       // A-Z (Oct 17 2026): every card that can hold cards has an A-Z / CUSTOM toggle in its Gear. It orders the cards directly under it
