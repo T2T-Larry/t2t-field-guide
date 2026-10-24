@@ -688,13 +688,10 @@
         var q=function(id){ return detailOv.querySelector('#'+id); };
         // Priority + Subject on one line, Task full width below with its Show-on-front.
         var priF=bbw.querySelector('.bb-priorities').closest('.bb-field'), subF=q('bb-d-subject').closest('.bb-field');
-        var row=document.createElement('div'); row.className='fg-back-toprow bb-toprow-brief';
-        priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF);
-        // Oct 20 2026 (Larry): the PRIORITY eyebrow sits level with SUBJECT and carries its own eyeball (shows the priority badge on the front, or back only).
+        var tb=FGCardBack.topBand(bbw, priF, subF);
         var priLab=priF.querySelector('label');
         if(priLab){
-          var labRow=document.createElement('div'); labRow.className='fg-back-labelrow';
-          priLab.parentNode.insertBefore(labRow, priLab); labRow.appendChild(priLab);
+          var labRow=tb.labelRow;
           var priEye=document.createElement('button'); priEye.type='button'; priEye.className='fg-back-eye'; priEye.id='bb-d-pri-eye';
           labRow.appendChild(priEye);
           priEye.addEventListener('click', function(e){

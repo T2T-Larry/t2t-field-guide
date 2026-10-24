@@ -521,6 +521,7 @@
           slot.appendChild(viewWrap); arow.appendChild(slot);
         }
         var er=bbw.querySelector('.sb-eyebrow-row'); if(er && !er.querySelector('#sb-view-wrap, #sb-order-value')) er.remove();
+        (function(){ var pf=bbw.querySelector('.sb-pri-field'), sf=bbw.querySelector('.sb-subject-field'); if(pf && sf && window.FGCardBack && FGCardBack.topBand) FGCardBack.topBand(bbw, pf, sf); })();   // the one shared Priority | Subject band (same builder as the task card)
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
       // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js). An IDEA starts with its session steps in light text.

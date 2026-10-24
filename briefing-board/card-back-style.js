@@ -161,6 +161,11 @@
       +'#bb-detail-overlay .fg-back-task .bb-front-check{margin:2px 0 0}'
       +'.fg-back-toprow .bb-field:first-child{justify-self:start;width:auto}'
       +'.fg-back-toprow .bb-field:last-child{grid-column:2;width:100%;max-width:none;min-width:0}'
+      // ONE Subject band for every card back (Oct 24 2026, Larry): Priority | Subject, labels level, same box sizes. Built by FGCardBack.topBand.
+      +'.fg-back-toprow.bb-toprow-brief{grid-template-columns:auto minmax(0,1fr);align-items:start}'
+      +'.bb-toprow-brief .bb-field{margin-bottom:4px!important}'
+      +'.bb-toprow-brief .bb-field:nth-child(2){grid-column:2;width:100%;max-width:none;min-width:0;justify-self:stretch}'
+      +'.bb-toprow-brief .bb-field>label:not(.bb-front-check),.bb-toprow-brief .fg-back-labelrow{min-height:18px;display:flex;align-items:center;margin:0 0 3px}'
       // Start Date + Due Date on one line (Add-to-Calendar stays in the bottom icon row).
       +'.fg-back-daterow{display:flex;gap:10px;align-items:flex-end}'
       +'.fg-back-daterow .bb-addition-body{flex:1 1 0;min-width:0}'
@@ -230,7 +235,6 @@
       +'.fg-cardback-idea.fg-back-3x5 #sb-note-status{min-height:0;margin:0}'
       +'.fg-cardback-idea.fg-back-3x5 .fg-back-idband{margin-bottom:4px}'
       +'.fg-cardback-idea.fg-back-3x5 .bbw .bb-field{margin-bottom:4px}'
-      +'.fg-cardback-idea.fg-back-3x5 .fg-back-toprow .bb-field{margin-bottom:0}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-eyebrow-row{margin-bottom:3px;gap:6px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-hdr-eyebrow2{margin-bottom:1px}'
       +'.fg-cardback-idea.fg-back-3x5 .sb-view-frame{padding:3px 10px}'
@@ -249,7 +253,7 @@
       +'#sb-subject-input,#bb-d-subject{font-size:calc(16px * var(--fg-text-scale,1));padding:6px 8px;font-family:var(--bb-head-font,Georgia,serif)}'
       +'.fg-back-toprow .bb-field.sb-order-top{grid-column:3;justify-self:end;width:auto;max-width:none;min-width:0}'
       // Plan step Time field (Oct 11 2026): PLAN boards only; takes a 4th, narrow column beside ORDER.
-      +'.fg-back-toprow:has(.sb-steptime-field){grid-template-columns:auto minmax(0,1fr) 72px auto}'
+      +'.fg-back-toprow.bb-toprow-brief:has(.sb-steptime-field){grid-template-columns:auto minmax(0,1fr) 72px auto}'
       +'.fg-back-toprow .sb-steptime-field{grid-column:3;width:72px;min-width:0}'
       +'.fg-back-toprow:has(.sb-steptime-field) .bb-field.sb-order-top{grid-column:4}'
       +'#sb-steptime-input{font-size:calc(14px * var(--fg-text-scale,1));padding:6px 8px;font-family:inherit}'
@@ -404,5 +408,16 @@
 
   injectShape();
 
-  window.FGCardBack = { inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel };
+
+  // ONE builder for the Priority | Subject band on every card back (TASK, IDEA, ...). The caller supplies its two fields;
+  // this makes the row, the level label rows, and hands back the Priority label row so the caller can drop its eye in.
+  function topBand(bbw, priF, subF){
+    var row=priF.parentNode && priF.parentNode.classList.contains('fg-back-toprow') ? priF.parentNode : null;
+    if(!row){ row=document.createElement('div'); priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF); }
+    row.classList.add('fg-back-toprow','bb-toprow-brief');
+    var lab=priF.querySelector('label:not(.bb-front-check)'), labRow=priF.querySelector('.fg-back-labelrow');
+    if(!labRow && lab){ labRow=document.createElement('div'); labRow.className='fg-back-labelrow'; lab.parentNode.insertBefore(labRow, lab); labRow.appendChild(lab); }
+    return {row:row, labelRow:labRow};
+  }
+  window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel };
 })();

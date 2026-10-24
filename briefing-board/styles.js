@@ -942,9 +942,6 @@
       +'.bb-needs-plan-badge.bb-story-badge{background:rgba(242,183,5,.35);border-color:#b8860b;color:#6b4e00}'
       +'.bb-needs-plan-badge.bb-journey-badge{background:rgba(120,190,110,.38);border-color:#4f9a45;color:#2a5f22}'
       // Briefing card back: PRIORITY and SUBJECT eyebrows on one level, Subject flush with Task, Hang Up section as wide as Task.
-      +'#bb-detail-overlay .fg-back-toprow.bb-toprow-brief{grid-template-columns:auto minmax(0,1fr);align-items:start}'
-      +'#bb-detail-overlay .bb-toprow-brief .bb-field:last-child{grid-column:2;width:100%;max-width:none}'
-      +'#bb-detail-overlay .bb-toprow-brief .bb-field>label,#bb-detail-overlay .bb-toprow-brief .fg-back-labelrow{min-height:18px;display:flex;align-items:center;margin:0 0 3px}'
       +'#bb-detail-overlay #bb-d-hangup-wrap{width:100%;box-sizing:border-box}'
       +'.bb-needs-plan-badge.bb-why-badge{background:rgba(220,38,38,.18);border-color:rgba(185,28,28,.7);color:#991b1b}'
       +'.bb-hangup-body{display:flex;gap:16px;align-items:stretch}'
