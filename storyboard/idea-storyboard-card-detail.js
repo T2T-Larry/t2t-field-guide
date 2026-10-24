@@ -325,7 +325,6 @@
       +   '<div id="sb-pri-btns" class="bb-priorities">'
       +     ['H','M','L'].map(function(p){ return '<button type="button" class="bb-pri-btn sb-pri-btn" data-pri-base="'+p+'">'+p+'</button>'; }).join('')
       +   '</div>'
-      +   '<label class="bb-front-check" id="sb-pri-front-row"><input type="checkbox" id="sb-pri-front"><span>Show on front</span></label>'
       + '</div>'
       + '<div class="bb-field sb-subject-field"><label>Subject</label>'
       +   '<input type="text" id="sb-subject-input" autocomplete="off" placeholder="Optional headline" style="width:100%;min-width:0;box-sizing:border-box" value="'+String(item.subject||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'">'
@@ -521,7 +520,6 @@
           slot.appendChild(viewWrap); arow.appendChild(slot);
         }
         var er=bbw.querySelector('.sb-eyebrow-row'); if(er && !er.querySelector('#sb-view-wrap, #sb-order-value')) er.remove();
-        (function(){ var pf=bbw.querySelector('.sb-pri-field'), sf=bbw.querySelector('.sb-subject-field'); if(pf && sf && window.FGCardBack && FGCardBack.topBand) FGCardBack.topBand(bbw, pf, sf); })();   // the one shared Priority | Subject band (same builder as the task card)
         if(window.FGCardBackOptions) FGCardBackOptions.eyeBesideLabels(bbw);   // Priority / Contents / Order eyes sit right of their labels
       })();
       // PROCESS, Oct 24 2026 (Larry): an option on every kind of card -- a list of steps you shape yourself (card-process.js). An IDEA starts with its session steps in light text.
@@ -1208,152 +1206,15 @@
           renderSeaBoard(true);
         }catch(err){ if(statusBox) statusBox.textContent='Could not save subject: '+err.message; }
       }
-      function paintFront(){
-        var hasSubject=!!input.value.trim();
-        var showing=!hasSubject || !item.hide_contents_front;
-        if(window.FGFrontCheck) FGFrontCheck.paint(document.getElementById('sb-contents-front-row'), document.getElementById('sb-contents-front'), showing, hasSubject, 'contents');
-      }
-      function commitSubject(){
-        var val=input.value.trim();
-        if(val===(item.subject||'')) return;
-        saveSubjectFields({subject:val||null}, {subject:item.subject||null});
-      }
-      input.addEventListener('input', paintFront);
-      input.addEventListener('blur', commitSubject);
-      input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); input.blur(); } });
-      (function(){
-        var cb=document.getElementById('sb-contents-front');
-        if(cb) cb.addEventListener('change', function(e){
-          e.stopPropagation();
-          var hide=!cb.checked;
-          if(hide===!!item.hide_contents_front) return;
-          saveSubjectFields({hide_contents_front:hide}, {hide_contents_front:!!item.hide_contents_front});
-        });
-      })();
-      paintFront();
-    })();
-
-    // Organization fields -- Sept 26 2026. Same save-on-blur shape as
-    // SUBJECT just above (org_name/org_eyebrow straight onto this card's
-    // own ideas row), plus a plain upload-and-replace for the logo (no
-    // crop/resize/drag -- deliberately simpler than the old retired
-    // T2TLogo interaction; Larry can ask for that back on top of this if
-    // wanted). Any successful save re-renders the ID Band's org display
-    // (_sboardRenderOrgDisplay, idea-storyboard-navigation.js) so a Link
-    // change is visible immediately if this card is (or is an ancestor
-    // of) whatever TOPIC is currently on screen.
-    (function(){
-      var eyebrowInput=document.getElementById('sb-org-eyebrow-input');
-      var nameInput=document.getElementById('sb-org-name-input');
-      var logoSlot=document.getElementById('sb-org-logo-slot');
-      var logoInput=document.getElementById('sb-org-logo-input');
-      var orgStatus=document.getElementById('sb-org-status');
-      if(!eyebrowInput && !nameInput && !logoSlot) return;
-      async function saveOrgFields(fields){
-        try{
-          var upd=await _sb.from('ideas').update(fields).eq('id',item.id);
-          if(upd.error) throw upd.error;
-          for(var k in fields) item[k]=fields[k];
-          _sboardPatchRow(item.id, fields);
-          if(typeof _sboardRenderOrgDisplay==='function') _sboardRenderOrgDisplay();
-        }catch(err){ if(orgStatus) orgStatus.textContent='Could not save: '+err.message; }
-      }
-      if(eyebrowInput) eyebrowInput.addEventListener('blur', function(){
-        var val=eyebrowInput.value.trim();
-        if(val===(item.org_eyebrow||'')) return;
-        saveOrgFields({org_eyebrow:val||null});
+      var _band=FGCardBack.topBand(document.querySelector('.sb-pri-field').closest('.bbw'), document.querySelector('.sb-pri-field'), document.querySelector('.sb-subject-field'), {
+        id:'sb-pri-eye',
+        isShown:function(){ return !item.hide_priority_front; },
+        setShown:function(show){
+          var hide=!show; if(hide===!!item.hide_priority_front) return;
+          return saveFields({hide_priority_front:hide}, {hide_priority_front:!!item.hide_priority_front});
+        }
       });
-      if(nameInput) nameInput.addEventListener('blur', function(){
-        var val=nameInput.value.trim();
-        if(val===(item.org_name||'')) return;
-        saveOrgFields({org_name:val||null});
-      });
-      [eyebrowInput,nameInput].forEach(function(inp){
-        if(!inp) return;
-        inp.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); inp.blur(); } });
-      });
-      if(logoSlot && logoInput){
-        logoSlot.addEventListener('click', function(){ logoInput.click(); });
-        logoInput.addEventListener('change', async function(){
-          var file=logoInput.files && logoInput.files[0]; if(!file) return;
-          if(orgStatus) orgStatus.textContent='Uploading…';
-          try{
-            var toUpload=await window.T2TMedia.compressImageFile(file);
-            var user=(await _sb.auth.getUser()).data.user;
-            if(!user) throw new Error('Not signed in.');
-            var path=user.id+'/org-logo-'+item.id+'-'+Date.now()+'.png';
-            var up=await _sb.storage.from('sea-of-ideas').upload(path, toUpload);
-            if(up.error) throw up.error;
-            var pub=_sb.storage.from('sea-of-ideas').getPublicUrl(path);
-            var url=pub.data && pub.data.publicUrl;
-            if(!url) throw new Error('No public URL returned.');
-            await saveOrgFields({logo_url:url});
-            logoSlot.innerHTML='<img id="sb-org-logo-img" src="'+_sboardEsc(url)+'" style="max-width:100%;max-height:100%;object-fit:contain">';
-            if(orgStatus) orgStatus.textContent='';
-          }catch(err){ if(orgStatus) orgStatus.textContent='Logo upload failed: '+err.message; }
-        });
-      }
-    })();
-
-    // Priority buttons + "Show on front" -- Sept 22 2026. See the HTML
-    // comment on .sb-pri-field above.
-    (function(){
-      var PRI_BASE_LOCAL={H:'H',HH:'H',M:'M',MH:'M',L:'L',ML:'L'};
-      function nextPri(cur, base){
-        var _bbNext=(window.T2TBriefingBoard && window.T2TBriefingBoard.nextPriority) ? window.T2TBriefingBoard.nextPriority(cur, base) : undefined;
-        if(_bbNext!==undefined) return _bbNext;
-        var seq={H:['H','HH',''],M:['M','MH',''],L:['L','ML','']}[base];
-        var idx=PRI_BASE_LOCAL[cur]===base ? seq.indexOf(cur) : -1;
-        return idx===-1 ? seq[0] : seq[(idx+1)%seq.length];
-      }
-      function paint(){
-        var pri=item.priority||'';
-        Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-btns .sb-pri-btn'), function(b){
-          var base=b.getAttribute('data-pri-base');
-          var active=!!pri && PRI_BASE_LOCAL[pri]===base;
-          b.textContent=active?pri:base;
-          // Inactive = cleared, so the shared Briefing Card button look
-          // (and this card's light-blue edge) shows through.
-          b.style.background=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '';
-          b.style.borderColor=active && typeof PRI_COLOR!=='undefined' ? PRI_COLOR[pri] : '';
-          b.style.color=active && typeof PRI_TEXT!=='undefined' ? PRI_TEXT[pri] : '';
-        });
-      }
-      async function saveFields(fields, before){
-        try{
-          var upd=await _sb.from('ideas').update(fields).eq('id',item.id);
-          if(upd.error) throw upd.error;
-          for(var k in fields) item[k]=fields[k];
-          _sboardPatchRow(item.id, fields);
-          (function(){
-            var itemId=item.id, after=fields;
-            _sboardPushAction({label:'Edit', undo:function(){ return _sboardApplyFields(itemId, before); }, redo:function(){ return _sboardApplyFields(itemId, after); }});
-          })();
-          paint();
-          renderSeaBoard(true);
-        }catch(err){ if(statusBox) statusBox.textContent='Could not save priority: '+err.message; }
-      }
-      Array.prototype.forEach.call(document.querySelectorAll('#sb-pri-btns .sb-pri-btn'), function(b){
-        b.addEventListener('click', function(e){
-          e.stopPropagation();
-          var before={priority:item.priority||''};
-          saveFields({priority:nextPri(item.priority||'', b.getAttribute('data-pri-base'))}, before);
-        });
-      });
-      function paintFront(){
-        var hidden=!!item.hide_priority_front;
-        if(window.FGFrontCheck) FGFrontCheck.paint(document.getElementById('sb-pri-front-row'), document.getElementById('sb-pri-front'), !hidden, true);
-      }
-      (function(){
-        var cb=document.getElementById('sb-pri-front');
-        if(cb) cb.addEventListener('change', function(e){
-          e.stopPropagation();
-          var hide=!cb.checked;
-          if(hide===!!item.hide_priority_front) return;
-          var before={hide_priority_front:!!item.hide_priority_front};
-          saveFields({hide_priority_front:hide}, before).then(paintFront);
-        });
-      })();
+      function paintFront(){ _band.paintEye(); }
       paint();
       paintFront();
     })();

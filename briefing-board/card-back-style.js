@@ -411,13 +411,28 @@
 
   // ONE builder for the Priority | Subject band on every card back (TASK, IDEA, ...). The caller supplies its two fields;
   // this makes the row, the level label rows, and hands back the Priority label row so the caller can drop its eye in.
-  function topBand(bbw, priF, subF){
+  // eye = {id, isShown():bool, setShown(bool)} -- the ONLY thing a card type supplies is where "show priority on the front" is saved.
+  function topBand(bbw, priF, subF, eye){
     var row=priF.parentNode && priF.parentNode.classList.contains('fg-back-toprow') ? priF.parentNode : null;
     if(!row){ row=document.createElement('div'); priF.parentNode.insertBefore(row, priF); row.appendChild(priF); row.appendChild(subF); }
     row.classList.add('fg-back-toprow','bb-toprow-brief');
     var lab=priF.querySelector('label:not(.bb-front-check)'), labRow=priF.querySelector('.fg-back-labelrow');
     if(!labRow && lab){ labRow=document.createElement('div'); labRow.className='fg-back-labelrow'; lab.parentNode.insertBefore(labRow, lab); labRow.appendChild(lab); }
-    return {row:row, labelRow:labRow};
+    var btn=null;
+    function paintEye(){
+      if(!btn || !window.FGCardBackOptions) return;
+      var on=!!eye.isShown(), ic=FGCardBackOptions.eyeIcons;
+      btn.innerHTML = on ? ic.open : ic.slash;
+      btn.classList.toggle('fg-eye-off', !on);
+      btn.title = on ? 'Shows on the front: click for back only' : 'Back only: click to also show on the front';
+    }
+    if(eye && labRow && !labRow.querySelector('.fg-back-eye')){
+      btn=document.createElement('button'); btn.type='button'; btn.className='fg-back-eye'; if(eye.id) btn.id=eye.id;
+      labRow.appendChild(btn);
+      btn.addEventListener('click', function(e){ e.stopPropagation(); var r=eye.setShown(!eye.isShown()); if(r&&r.then) r.then(paintEye); else paintEye(); });
+      paintEye();
+    }
+    return {row:row, labelRow:labRow, paintEye:paintEye};
   }
   window.FGCardBack = { topBand: topBand, inject: inject, injectShape: injectShape, bandHTML: bandHTML, checkRegion: checkRegion, paintBand: paintBand, openTopicMenu: openTopicMenu, openKindMenu: openKindMenu, closeMenus: closeMenus, colors: { idea: IDEA }, types: TYPES, typeOfKindLabel: typeOfKindLabel };
 })();
