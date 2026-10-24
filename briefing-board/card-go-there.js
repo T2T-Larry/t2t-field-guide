@@ -314,6 +314,11 @@
     inst.headEl=document.createElement('span'); inst.headEl.className='fg-go-head'; inst.headEl.appendChild(inst.ebEl);
     row.appendChild(inst.headEl); row.appendChild(inst.wrapEl);
     paint(inst);
+    // A back that is built before it is on screen cannot measure its SUBJECT field yet, so the selector and glass would come out small.
+    // Paint again once it is showing (Oct 24 2026, Larry: every card back's WORKSPACE row looks exactly like the task card's).
+    var again=function(){ if(inst.row && inst.row.isConnected) paint(inst); };
+    if(window.requestAnimationFrame) requestAnimationFrame(function(){ requestAnimationFrame(again); });
+    setTimeout(again, 150);
     return inst;
   }
 
